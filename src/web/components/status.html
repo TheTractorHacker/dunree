@@ -422,6 +422,28 @@
     #status .diagramCard #trafficFlowDiagramWrapper{ flex: 1; min-height: 440px; height: auto; }
     #status .diagramTools{ display: flex; gap: 0.4em; }
     #status .diagramTools .ui.button{ margin: 0; }
+    /* Tune panel: collapsed by default, lives under the map inside the same card */
+    #status #tunePanel{ border-top: 1px solid var(--divider_color); margin-top: 0.8em; padding-top: 0.8em; }
+    #status .tuneBar{ display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5em 1em; }
+    #status .tuneSummary{ flex: 1 1 18em; min-width: 0; font-size: 0.93em; }
+    #status .tuneMuted{ color: var(--text_color_secondary); font-size: 0.88em; }
+    #status .tuneWin{ display: inline-flex; border: 1px solid var(--divider_color); border-radius: 0.4em; overflow: hidden; flex: none; }
+    #status .tuneWin button{ border: 0; margin: 0; padding: 0.3em 0.9em; font: inherit; font-size: 0.88em; font-weight: 600; background: transparent; color: var(--text_color_secondary); cursor: pointer; }
+    #status .tuneWin button + button{ border-left: 1px solid var(--divider_color); }
+    #status .tuneWin button[aria-pressed="true"]{ background: var(--theme_highlight, #4b75ff); color: #fff; }
+    #status .tuneWin button:focus-visible{ outline: 2px solid var(--theme_highlight, #4b75ff); outline-offset: -2px; }
+    #status .tuneTable{ margin-top: 0.6em; }
+    #status .tuneRow{ display: grid; grid-template-columns: minmax(0, 1.2fr) 5em 8.5em minmax(0, 2.8fr); gap: 0.3em 1em; padding: 0.55em 0; border-top: 1px solid var(--divider_color); font-size: 0.93em; align-items: start; }
+    #status .tuneRow.tuneHead{ border-top: 0; padding: 0.2em 0; font-size: 0.8em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text_color_secondary); }
+    #status .tuneRow .tuneName{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    #status .tuneRow .tuneNum{ font-variant-numeric: tabular-nums; }
+    #status .tuneBarTrack{ height: 6px; border-radius: 3px; background: var(--divider_color); margin: 0.3em 0; overflow: hidden; }
+    #status .tuneBarFill{ height: 100%; border-radius: 3px; background: #21ba45; }
+    #status .tuneBarFill.warn{ background: #f2711c; }
+    #status .tuneBarFill.bad{ background: #db2828; }
+    #status .tuneHint{ margin-top: 0.2em; font-size: 0.9em; color: var(--text_color_secondary); }
+    #status .tuneLink{ background: none; border: 0; padding: 0; font: inherit; color: var(--theme_highlight, #4b75ff); cursor: pointer; text-decoration: underline; }
+    #status .tuneFoot{ margin-top: 0.6em; }
     #status .healthGrid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1em; }
     #status .healthList{ margin-top: 0.3em; }
     #status .healthItem{ display: flex; align-items: center; gap: 0.6em; padding: 0.5em 0; border-bottom: 1px solid var(--divider_color); font-size: 0.93em; }
@@ -449,6 +471,11 @@
         /* the Start / Stop buttons sit above the title instead of on top of it */
         #serverstatus .poweroptions{ position: static; display: flex; gap: 0.5em; justify-content: flex-end; margin-bottom: 0.8em; }
         #status .diagramTools .ui.button span{ display: none; }
+        /* one card per rule: name on top, then the numbers, then the client */
+        #status .tuneRow{ grid-template-columns: 1fr 1fr; }
+        #status .tuneRow.tuneHead{ display: none; }
+        #status .tuneRow .tuneName, #status .tuneRow .tuneClient{ grid-column: 1 / -1; }
+        #status .tuneRow .tuneNum::before{ content: attr(data-label) ": "; color: var(--text_color_secondary); }
     }
     @media (prefers-reduced-motion: reduce){
         #status .skel .kpiValue, #status .skel .kpiSub, #status .healthSkel{ animation: none; }
@@ -591,13 +618,15 @@
                         <p class="cardSubtitle">Internet, proxy rules and upstream servers</p>
                     </div>
                     <div class="diagramTools">
-                        <button class="ui mini basic button" id="diagramAnimBtn" title="Pause or resume the moving dashes"><i class="pause icon"></i> <span>Pause animation</span></button>
+                        <button class="ui mini basic button" id="diagramTuneBtn" aria-expanded="false" aria-controls="tunePanel" title="Average and peak requests per second per rule, and the busiest client against its rate limit"><i class="sliders horizontal icon"></i> <span>Tune</span></button>
+                        <button class="ui mini basic button" id="diagramAnimBtn" title="Pause or resume the moving dashes and the live updates"><i class="pause icon"></i> <span>Pause animation</span></button>
                         <button class="ui mini basic button" id="diagramHideBtn" title="Hide the map (also stops its updates)"><i class="eye slash icon"></i> <span>Hide</span></button>
                     </div>
                 </div>
                 <div id="trafficFlowDiagramWrapper">
                     <iframe id="trafficFlowDiagram" title="Traffic map" data-src="snippet/trafficFlowDiagram.html" allowfullscreen></iframe>
                 </div>
+                <div id="tunePanel" hidden></div>
                 <div id="diagramHiddenMsg" style="display:none;" class="chartEmpty"><i class="sitemap icon"></i> The traffic map is hidden. <a href="#" id="diagramShowLink">Show it</a></div>
             </div>
         </div>
@@ -1769,9 +1798,143 @@
         tell({anim: on});
         syncDiagramButtons();
     });
-    $("#diagramHideBtn").on("click", function(){ lsSet("zoraxy_status_diagram", lsGet("zoraxy_status_diagram") === "hidden" ? "shown" : "hidden"); syncDiagramButtons(); });
-    $("#diagramShowLink").on("click", function(e){ e.preventDefault(); lsSet("zoraxy_status_diagram", "shown"); syncDiagramButtons(); });
+    $("#diagramHideBtn").on("click", function(){ lsSet("zoraxy_status_diagram", lsGet("zoraxy_status_diagram") === "hidden" ? "shown" : "hidden"); syncDiagramButtons(); syncTune(); });
+    $("#diagramShowLink").on("click", function(e){ e.preventDefault(); lsSet("zoraxy_status_diagram", "shown"); syncDiagramButtons(); syncTune(); });
     window.addEventListener("storage", function(e){ if (e.key === "zoraxy_trafficflow_anim") syncDiagramButtons(); });
+
+    /* ---- Tune panel: avg / peak per rule and the busiest client against the rate limit (GET /api/stats/livetune) ---- */
+    var tuneOpen = lsGet("zoraxy_trafficflow_tune") === "open", tuneWin = lsGet("zoraxy_trafficflow_tunewin") || "1m", tuneTimer = null, tuneBusy = false, tuneLast = null;
+    var TUNE_WINDOWS = [["10s", t("10 s"), 10], ["1m", t("1 min"), 60], ["5m", t("5 min"), 300], ["1h", t("1 h"), 3600]];
+    function tf(s){ var a = Array.prototype.slice.call(arguments, 1); return typeof window.tf === "function" ? window.tf.apply(null, [s].concat(a)) : s.replace(/\{(\d+)\}/g, function(m, n){ return a[+n] !== undefined ? a[+n] : m; }); }
+    if (!TUNE_WINDOWS.some(function(w){ return w[0] === tuneWin; })) tuneWin = "1m";
+    function fmtR(r){ r = +r || 0; return r <= 0 ? "0" : r < 10 ? r.toFixed(1) : String(Math.round(r)); }
+    function clock(sec){ return new Date(sec * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"}); }
+    function dur(sec){ return sec < 90 ? tf("{0} s", sec) : sec < 5400 ? tf("{0} min", Math.round(sec / 60)) : tf("{0} h", (sec / 3600).toFixed(1)); }
+    function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+    function hexOf(s){ return Array.prototype.map.call(new TextEncoder().encode(s), function(b){ return ("0" + b.toString(16)).slice(-2); }).join(""); }
+    /* open the proxy rule editor of a host on its Security section (where the rate limit is) - never changes anything */
+    function openRateLimitEditor(host){
+        openTabById("httprp");
+        var t0 = Date.now(), opened = false;
+        (function poll(){
+            if (!opened && typeof window.editEndpoint === "function") {
+                try { window.editEndpoint(hexOf(host)); } catch (e) {}
+                if ($("#httprpEditModal:visible, #httprpEditModal.visible").length) { opened = true; }
+            }
+            if (opened) {
+                var tab = $("#httprpEditModal .hrpedit_menu_item[cfgpage=security]").first();
+                if (tab.length) { tab.click(); setTimeout(function(){ var c = document.querySelector('#httprpEditModal [data-hrp-card="ratelimit"]'); if (c && c.scrollIntoView) c.scrollIntoView({block: "center"}); }, 250); return; }
+            }
+            if (Date.now() - t0 < 8000) setTimeout(poll, 250);
+        })();
+    }
+    function tuneClientCell(r){
+        var c = el("div", "tuneClient"), l = r.limiter || {};
+        if (!l.enabled) {
+            var m = el("span", "tuneMuted", t("No rate limit"));
+            m.title = t("Per-client rates are only measured while a rate limit is enabled on the rule.");
+            c.appendChild(m);
+            return c;
+        }
+        var lim = l.rate, b = l.busiest;
+        var head = el("div", "");
+        head.appendChild(el("span", "tuneMuted", tf("Limit {0} req/s per client", lim) + (l.burst > 0 && l.burst !== lim ? ", " + tf("burst {0}", l.burst) : "")));
+        c.appendChild(head);
+        if (!b) {
+            c.appendChild(el("div", "tuneHint", t("No client made requests in this window.")));
+            return c;
+        }
+        var line = el("div", "");
+        var ip = el("b", "", b.ip || t("a client")); line.appendChild(ip);
+        line.appendChild(document.createTextNode(" " + tf("{0} of {1} req/s", fmtR(b.rps), lim) + " (" + tf("{0} per minute", Math.round(b.perMinute)) + ")"));
+        line.title = tf("The busiest 5 second stretch in this window, at {0}", clock(b.at));
+        c.appendChild(line);
+        var pct = lim > 0 ? Math.min(100, b.rps / lim * 100) : 0;
+        var tr = el("div", "tuneBarTrack"), fill = el("div", "tuneBarFill" + (pct >= 90 ? " bad" : pct >= 60 ? " warn" : ""));
+        fill.style.width = Math.max(2, pct) + "%"; tr.appendChild(fill); c.appendChild(tr);
+        var headroom = lim > 0 ? Math.max(0, Math.round((lim - b.rps) / lim * 100)) : 0;
+        var hint = l.denied > 0 ? tf("{0} requests were rate-limited in this window. Your busiest client reached {1} of {2} req/s.", l.denied, fmtR(b.rps), lim)
+            : b.rps >= lim ? tf("Your busiest client reached {0} of {1} req/s: no headroom left.", fmtR(b.rps), lim)
+            : tf("Your busiest client reached {0} of {1} req/s: a limit of {1} req/s leaves {2}% headroom.", fmtR(b.rps), lim, headroom);
+        c.appendChild(el("div", "tuneHint", hint));
+        if (l.suggestedRate > 0 && l.suggestedRate !== lim) {
+            var sg = el("div", "tuneHint");
+            sg.appendChild(document.createTextNode(tf("A limit of {0} req/s would leave about twice the busiest client's rate (a hint only, nothing is changed). ", l.suggestedRate)));
+            c.appendChild(sg);
+        }
+        var lk = el("button", "tuneLink", t("Open the rate limit settings")); lk.type = "button";
+        lk.addEventListener("click", function(){ openRateLimitEditor(r.domain); });
+        var wrap = el("div", "tuneHint"); wrap.appendChild(lk); c.appendChild(wrap);
+        return c;
+    }
+    function renderTune(d){
+        var P = document.getElementById("tunePanel");
+        if (!P || P.hidden) return;
+        tuneLast = d;
+        P.textContent = "";
+        var bar = el("div", "tuneBar"), sum = el("div", "tuneSummary"), tot = d.total || {};
+        var ws = TUNE_WINDOWS.filter(function(w){ return w[0] === tuneWin; })[0][2];
+        sum.appendChild(el("b", "", t("All rules")));
+        sum.appendChild(document.createTextNode(": " + (tot.peak > 0
+            ? tf("average {0} req/s, peak {1} req/s (at {2}), now {3} req/s", fmtR(tot.avg), fmtR(tot.peak), clock(tot.peakAt), fmtR(tot.current))
+            : tf("average {0} req/s, no traffic peak, now {1} req/s", fmtR(tot.avg), fmtR(tot.current)))));
+        var note = [];
+        if (d.stale) note.push(t("The sampler has not reported for a while."));
+        else if (tot.coveredSeconds < ws) note.push(tf("Only the last {0} are measured so far (sampling started at {1}).", dur(tot.coveredSeconds || 0), d.started ? clock(d.started) : "-"));
+        if (note.length) { sum.appendChild(document.createElement("br")); sum.appendChild(el("span", "tuneMuted", note.join(" "))); }
+        bar.appendChild(sum);
+        var sw = el("span", "tuneWin"); sw.setAttribute("role", "group"); sw.setAttribute("aria-label", t("Window"));
+        TUNE_WINDOWS.forEach(function(w){
+            var b = el("button", "", w[1]); b.type = "button"; b.setAttribute("aria-pressed", w[0] === tuneWin ? "true" : "false");
+            b.addEventListener("click", function(){ tuneWin = w[0]; lsSet("zoraxy_trafficflow_tunewin", tuneWin); tuneTick(true); });
+            sw.appendChild(b);
+        });
+        bar.appendChild(sw);
+        P.appendChild(bar);
+        var rules = d.rules || [], tbl = el("div", "tuneTable");
+        if (!rules.length) { tbl.appendChild(el("div", "tuneMuted", t("No proxy rules yet."))); }
+        else {
+            var hd = el("div", "tuneRow tuneHead");
+            [t("Rule"), t("Average"), t("Peak"), t("Busiest client vs limit")].forEach(function(h){ hd.appendChild(el("div", "", h)); });
+            tbl.appendChild(hd);
+        }
+        var anyNoLimit = false;
+        rules.forEach(function(r){
+            var row = el("div", "tuneRow"), s = r.stats || {};
+            var nm = el("div", "tuneName", r.domain); nm.title = r.domain; row.appendChild(nm);
+            var a = el("div", "tuneNum", tf("{0} req/s", fmtR(s.avg))); a.setAttribute("data-label", t("Average")); row.appendChild(a);
+            var pk = el("div", "tuneNum", s.peak > 0 ? tf("{0} req/s", fmtR(s.peak)) : "-"); pk.setAttribute("data-label", t("Peak"));
+            if (s.peak > 0) { var at = el("div", "tuneMuted", tf("at {0}", clock(s.peakAt))); pk.appendChild(document.createElement("br")); pk.appendChild(at); }
+            row.appendChild(pk);
+            if (!(r.limiter && r.limiter.enabled)) anyNoLimit = true;
+            row.appendChild(tuneClientCell(r));
+            tbl.appendChild(row);
+        });
+        P.appendChild(tbl);
+        if (anyNoLimit) P.appendChild(el("div", "tuneMuted tuneFoot", t("Per-client rates are only measured while a rate limit is enabled on the rule.")));
+        P.appendChild(el("div", "tuneMuted tuneFoot", t("Peaks are the busiest 5 second stretch. Suggestions are hints only and are never applied.")));
+    }
+    function tuneActive(){ return tuneOpen && onScreen() && lsGet("zoraxy_status_diagram") !== "hidden"; }
+    function tuneTick(force){
+        if (tuneBusy || (!force && !tuneActive())) return;
+        tuneBusy = true;
+        $.ajax({url: "/api/stats/livetune?window=" + encodeURIComponent(tuneWin), dataType: "json", timeout: 6000, cache: false}).done(function(d){
+            tuneBusy = false; renderTune(d);
+        }).fail(function(){
+            tuneBusy = false;
+            var P = document.getElementById("tunePanel");
+            if (P && !P.hidden && !tuneLast) { P.textContent = ""; P.appendChild(el("div", "tuneMuted", t("The rate analytics are not available."))); }
+        });
+    }
+    function syncTune(){
+        var hidden = lsGet("zoraxy_status_diagram") === "hidden";
+        var P = document.getElementById("tunePanel");
+        P.hidden = !tuneOpen || hidden;
+        $("#diagramTuneBtn").attr("aria-expanded", tuneOpen && !hidden ? "true" : "false").toggle(!hidden);
+        if (tuneTimer) { clearInterval(tuneTimer); tuneTimer = null; }
+        if (tuneOpen && !hidden) { tuneTick(true); tuneTimer = setInterval(function(){ tuneTick(false); }, 5000); }
+    }
+    $("#diagramTuneBtn").on("click", function(){ tuneOpen = !tuneOpen; lsSet("zoraxy_trafficflow_tune", tuneOpen ? "open" : "closed"); syncTune(); });
 
     // The dashes freeze after 45 s without mouse / keyboard activity (a dashboard left open on a
     // second monitor should not burn CPU) and move again as soon as someone touches the page.
@@ -1791,6 +1954,7 @@
 
     initTrafficChart();
     syncDiagramButtons();
+    syncTune();
     loadGlance();
     loadLatestVisitors();
     setInterval(loadGlance, 15000);
