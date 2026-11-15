@@ -504,6 +504,7 @@ func finalSequence() {
 func ShutdownSeq() {
 	SystemWideLogger.Println("Shutting down " + SYSTEM_NAME)
 	stopHistory()
+	stopLiveSampler()
 	stopDNSResponder()
 	SystemWideLogger.Println("Closing Netstats Listener")
 	if netstatBuffers != nil {

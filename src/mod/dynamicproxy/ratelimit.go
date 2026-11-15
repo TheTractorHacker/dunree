@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"imuslab.com/zoraxy/mod/metrics"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,6 +32,11 @@ type tokenBucket struct {
 	last   time.Time
 	rate   float64
 	burst  float64
+
+	//Lifetime request counters of this bucket, updated under mu (no extra lock or lookup on the request path).
+	//Read by the Status page "Tune" sampler through ClientCounters.
+	allowed uint64
+	denied  uint64
 }
 
 // RequestCountPerIpTable is a set of token buckets keyed by endpoint + client IP.
@@ -98,9 +104,35 @@ func (t *RequestCountPerIpTable) Allow(endpointID string, ip string, rate int64,
 	}
 	if b.tokens >= 1 {
 		b.tokens--
+		b.allowed++
 		return true
 	}
+	b.denied++
 	return false
+}
+
+// ClientCounters calls visit for every tracked client bucket of the given endpoints (rule root / matching
+// domain names) with the lifetime allowed and denied request counts of that bucket. A bucket that was swept
+// while idle starts again from 0, so callers must treat a count that went down as a restart.
+func (t *RequestCountPerIpTable) ClientCounters(endpoints map[string]bool, visit func(endpoint, ip string, allowed, denied uint64)) {
+	t.table.Range(func(key, value interface{}) bool {
+		k := key.(string)
+		i := strings.IndexByte(k, '|')
+		if i < 0 || !endpoints[k[:i]] {
+			return true
+		}
+		b := value.(*tokenBucket)
+		b.mu.Lock()
+		a, d := b.allowed, b.denied
+		b.mu.Unlock()
+		visit(k[:i], k[i+1:], a, d)
+		return true
+	})
+}
+
+// RateLimitClientCounters exposes the per client counters of the host level rate limiter
+func (router *Router) RateLimitClientCounters(endpoints map[string]bool, visit func(endpoint, ip string, allowed, denied uint64)) {
+	router.rateLimitCounter.ClientCounters(endpoints, visit)
 }
 
 // Sweep removes buckets that have been idle long enough to be full again

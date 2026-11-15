@@ -23,6 +23,9 @@
             --edge-upstream-color: #f47847;
             --internet-fill: #4b75ff;
             --shadow: 0 2px 8px rgba(0,0,0,0.10);
+            --active-color: #15803d;
+            --strip-bg: #ffffff;
+            --pulse-color: #21ba45;
         }
 
         body.darkTheme {
@@ -40,6 +43,9 @@
             --edge-upstream-color: #f7c915;
             --internet-fill: #4b75ff;
             --shadow: 0 2px 12px rgba(0,0,0,0.4);
+            --active-color: #4ade80;
+            --strip-bg: #16213e;
+            --pulse-color: #4ade80;
         }
 
         * { box-sizing: border-box; }
@@ -192,18 +198,18 @@
         }
 
         .node-title {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             fill: var(--text-primary);
         }
 
         .node-subtitle {
-            font-size: 10px;
+            font-size: 11px;
             fill: var(--text-secondary);
         }
 
         .node-count {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             fill: var(--text-count);
         }
@@ -232,6 +238,18 @@
 
         .flow-edge-disabled {
             stroke: var(--node-disabled-border);
+        }
+
+        /* Live mode: an edge nothing flows through is grey and still */
+        .flow-edge-idle {
+            stroke: var(--node-disabled-border);
+            opacity: 0.55;
+        }
+
+        .node-active {
+            font-size: 11px;
+            font-weight: 700;
+            fill: var(--active-color);
         }
 
         /* The moving dashes are drawn on #flow-canvas (see drawFlow). A CSS stroke-dashoffset animation
@@ -309,6 +327,71 @@
         .legend-line-proxy { background: var(--edge-color); }
         .legend-line-upstream { background: var(--edge-upstream-color); }
         .legend-line-disabled { background: #bbb; }
+        .legend-line-idle { background: var(--node-disabled-border); opacity: 0.7; }
+
+        /* Header strip: live numbers on the left, Live / Today switch on the right */
+        #live-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 10px 0 12px;
+            background: var(--strip-bg);
+            border-bottom: 1px solid rgba(128,128,128,0.25);
+            z-index: 100;
+            font-size: 13px;
+            color: var(--text-primary);
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+        #live-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #live-text b { font-weight: 700; }
+        #live-text .live-extra { color: var(--text-secondary); }
+        #live-dot {
+            flex: none;
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #9aa0a6;
+        }
+        #live-dot.fresh { background: var(--pulse-color); animation: livePulse 1.6s ease-out infinite; }
+        #live-dot.error { background: #db2828; }
+        @keyframes livePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(33,186,69,0.55); }
+            70%  { box-shadow: 0 0 0 7px rgba(33,186,69,0); }
+            100% { box-shadow: 0 0 0 0 rgba(33,186,69,0); }
+        }
+        #mode-switch { flex: none; display: inline-flex; border: 1px solid rgba(128,128,128,0.4); border-radius: 6px; overflow: hidden; }
+        #mode-switch button {
+            border: 0; margin: 0;
+            padding: 3px 12px;
+            font: inherit; font-size: 12px; font-weight: 600;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        #mode-switch button + button { border-left: 1px solid rgba(128,128,128,0.4); }
+        #mode-switch button[aria-pressed="true"] { background: var(--edge-color); color: #fff; }
+        #mode-switch button:focus-visible { outline: 2px solid var(--edge-color); outline-offset: -2px; }
+        #fit-hint {
+            position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
+            max-width: calc(100% - 24px);
+            padding: 4px 12px; border-radius: 12px;
+            background: rgba(30,30,40,0.82); color: #fff; font-size: 12px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            z-index: 100; pointer-events: none;
+        }
+        @media (max-width: 520px) {
+            #live-text .live-extra { display: none; }
+            #mode-switch button { padding: 3px 9px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #live-dot.fresh { animation: none; }
+        }
     </style>
 </head>
 <body class="darkTheme">
@@ -318,6 +401,15 @@
     <div id="noDataMsg" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;display:none;"><i class="info circle icon"></i> No proxy rules found.</div>
     <div id="diagram-wrapper">
         <div id="grid-bg"></div>
+        <div id="live-strip">
+            <span id="live-dot" aria-hidden="true"></span>
+            <span id="live-text" role="status" aria-live="off">Live: measuring...</span>
+            <span id="mode-switch" role="group" aria-label="Traffic map mode">
+                <button type="button" id="mode-live" aria-pressed="true" title="Requests per second right now and requests being served">Live</button>
+                <button type="button" id="mode-today" aria-pressed="false" title="Today's request totals">Today</button>
+            </span>
+        </div>
+        <div id="fit-hint" style="display:none;">Drag to see the rest of the map</div>
         <div id="diagram-pan-container">
             <svg id="diagram-canvas"></svg>
         </div>
@@ -340,6 +432,7 @@
         <div id="legend-overlay">
             <div class="legend-item"><div class="legend-line legend-line-proxy"></div> Internet → Proxy Rule</div>
             <div class="legend-item"><div class="legend-line legend-line-upstream"></div> Proxy Rule → Upstream</div>
+            <div class="legend-item" id="legend-idle"><div class="legend-line legend-line-idle"></div> No traffic now</div>
             <div class="legend-item"><div class="legend-line legend-line-disabled" style="border-top:2px dashed #bbb;height:0;width:24px;"></div> Disabled / Inactive</div>
         </div>
     </div>
@@ -347,8 +440,8 @@
     <script>
     /* Layout constants */
     const INTERNET_W = 80, INTERNET_H = 80;
-    const PROXY_W = 160, PROXY_H = 54;
-    const UPSTREAM_W = 156, UPSTREAM_H = 46;
+    const PROXY_W = 176, PROXY_H = 54;
+    const UPSTREAM_W = 172, UPSTREAM_H = 46;
     const COL_INTERNET_X = 40;
     const COL_PROXY_X = 200;
     const COL_UPSTREAM_X = 440;
@@ -360,6 +453,33 @@
     const MAX_ANIMATED_EDGES = 40;
     let flowAnim = [];
     const ANIM_SPEEDS = [2.2, 1.8, 1.4, 1.1, 0.8]; // seconds, index by traffic tier
+
+    /* Live / Today mode. Live (default) shows requests per second right now and the requests being
+       served; Today shows the cumulative counters of the day. Remembered per browser. */
+    let mode = "live";
+    try { if (localStorage.getItem("zoraxy_trafficflow_mode") === "today") mode = "today"; } catch (e) {}
+    const LIVE_POLL_MS = 2000;
+    const LIVE_STALE_MS = 6000;
+    const MIN_LABEL_ZOOM = 0.85; // fit never goes below this: a 13 px title stays about 11 px on screen
+    const REDUCED_MOTION = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+    function isLive() { return mode === "live"; }
+    /* effective flow of a node or edge in Live mode: a request in flight with no completed request yet still counts */
+    function liveFlow(rps, inFlight) {
+        rps = rps || 0;
+        return rps > 0 ? rps : ((inFlight || 0) > 0 ? 0.3 : 0);
+    }
+    /* requests per second for humans: 0.4  3.2  47  1.2K */
+    function fmtRate(r) {
+        if (!(r > 0)) return "0";
+        if (r < 0.1) return "<0.1";
+        if (r < 10) return r.toFixed(1);
+        if (r < 1000) return String(Math.round(r));
+        return (r / 1000).toFixed(1) + "K";
+    }
+    /* dash period (seconds per cycle) from the live rate: slow trickle ~2.4 s, hundreds of req/s ~0.6 s */
+    function livePeriod(rps) {
+        return Math.max(0.5, 2.6 - 0.65 * Math.log10(1 + 10 * rps));
+    }
 
     /* Zoom & Pan State */
     let panX = 20, panY = 20;
@@ -399,11 +519,16 @@
         return "2.4s";
     }
 
-    /* Format large numbers compactly */
-    function fmtCount(n) {
-        if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-        if (n >= 1000)    return (n / 1000).toFixed(1) + "K";
-        return String(n);
+    /* Width, colour class and dash period of an edge for a value (today: requests, live: flow) */
+    function edgeStyle(value, maxValue, disabled, baseClass) {
+        if (disabled) return { w: MIN_EDGE_W, cls: "flow-edge-disabled", count: 0, period: 0 };
+        if (isLive()) {
+            if (!(value > 0)) return { w: MIN_EDGE_W, cls: "flow-edge-idle", count: 0, period: 0 };
+            const ref = Math.max(maxValue, 2); // a trickle must not look like a flood just because it is the busiest edge
+            const ratio = Math.sqrt(Math.min(1, value / ref));
+            return { w: MIN_EDGE_W + ratio * (MAX_EDGE_W - MIN_EDGE_W), cls: baseClass, count: value, period: livePeriod(value) };
+        }
+        return { w: edgeWidth(value, maxValue), cls: baseClass, count: value, period: parseFloat(animDuration(value, maxValue)) };
     }
 
     /* Truncate long domain/host names */
@@ -426,7 +551,8 @@
             x: x + 10, y: y + 19,
             class: "node-title"
         });
-        titleEl.textContent = truncate(proxy.domain, 22);
+        titleEl.textContent = truncate(proxy.domain, 20);
+        const tip = svgEl("title"); tip.textContent = proxy.domain; g.appendChild(tip);
         g.appendChild(titleEl);
 
         // Status / disabled badge
@@ -436,15 +562,23 @@
             g.appendChild(badge);
         }
 
-        // Request count
+        // Request count (Live: requests per second right now)
         const countEl = svgEl("text", { x: x + 10, y: y + 36, class: "node-count" });
-        countEl.textContent = proxy.kind === "stream" ? (proxy.detail || "stream") : fmtCount(proxy.requestCount) + " req";
+        const live = isLive() && proxy.kind !== "stream";
+        countEl.textContent = proxy.kind === "stream" ? (proxy.detail || "stream")
+            : live ? fmtRate(proxy.rps) + " req/s" : fmtCount(proxy.requestCount) + " req";
         g.appendChild(countEl);
 
-        // Upstream count hint
-        const uHint = svgEl("text", { x: x + PROXY_W - 10, y: y + 36, class: "node-subtitle", "text-anchor": "end" });
-        uHint.textContent = proxy.kind === "stream" ? "" : proxy.upstreams.length + " upstream" + (proxy.upstreams.length !== 1 ? "s" : "");
-        g.appendChild(uHint);
+        // Upstream count hint (Live: requests being served right now)
+        if (live && !proxy.disabled) {
+            const act = svgEl("text", { x: x + PROXY_W - 10, y: y + 36, class: proxy.inFlight > 0 ? "node-active" : "node-subtitle", "text-anchor": "end" });
+            act.textContent = proxy.inFlight > 0 ? proxy.inFlight + " active" : "idle";
+            g.appendChild(act);
+        } else {
+            const uHint = svgEl("text", { x: x + PROXY_W - 10, y: y + 36, class: "node-subtitle", "text-anchor": "end" });
+            uHint.textContent = proxy.kind === "stream" ? "" : proxy.upstreams.length + " upstream" + (proxy.upstreams.length !== 1 ? "s" : "");
+            g.appendChild(uHint);
+        }
 
         return g;
     }
@@ -461,7 +595,8 @@
         const tlsBadge = upstream.requireTLS ? "🔒 " : "";
 
         const titleEl = svgEl("text", { x: x + 10, y: y + 17, class: "node-title" });
-        titleEl.textContent = truncate(upstream.origin, 20);
+        titleEl.textContent = truncate(upstream.origin, upstream.inactive || upstream.requireTLS ? 16 : 20);
+        const tip = svgEl("title"); tip.textContent = upstream.origin; g.appendChild(tip);
         g.appendChild(titleEl);
 
         if (upstream.inactive) {
@@ -474,9 +609,15 @@
             g.appendChild(badge);
         }
 
+        const live = isLive() && !upstream.inactive;
         const countEl = svgEl("text", { x: x + 10, y: y + 34, class: "node-count" });
-        countEl.textContent = fmtCount(upstream.requestCount) + " req";
+        countEl.textContent = live ? fmtRate(upstream.rps) + " req/s" : fmtCount(upstream.requestCount) + " req";
         g.appendChild(countEl);
+        if (live) {
+            const act = svgEl("text", { x: x + UPSTREAM_W - 10, y: y + 34, class: upstream.inFlight > 0 ? "node-active" : "node-subtitle", "text-anchor": "end" });
+            act.textContent = upstream.inFlight > 0 ? upstream.inFlight + " active" : "idle";
+            g.appendChild(act);
+        }
 
         return g;
     }
@@ -525,7 +666,7 @@
     }
 
     /* Draw an animated cubic Bezier flow edge between two points */
-    function buildFlowEdge(x1, y1, x2, y2, strokeW, colorClass, count, maxCount, edgeIndex) {
+    function buildFlowEdge(x1, y1, x2, y2, strokeW, colorClass, count, period, edgeIndex) {
         const g = svgEl("g", {});
 
         // S-curve oriented along the flow axis: horizontal mode bends left↔right,
@@ -554,7 +695,7 @@
                 // control points bound the curve: used to skip edges that are scrolled out of view
                 x0: Math.min(x1, x2), x1: Math.max(x1, x2), y0: Math.min(y1, y2), y1: Math.max(y1, y2),
                 width: Math.max(strokeW * 0.55, 1.2),
-                period: parseFloat(animDuration(count, maxCount)),
+                period: period,
                 phase: (edgeIndex * 0.17) % 1.4
             });
         }
@@ -603,11 +744,16 @@
 
         svg.appendChild(defs);
 
-        // Sort proxies by request count, highest first
-        proxies.sort((a, b) => b.requestCount - a.requestCount);
+        // The busiest metric of a rule: today's requests, or the live flow
+        const live = isLive();
+        const pm = p => live ? liveFlow(p.rps, p.inFlight) : p.requestCount;
+        const um = u => live ? liveFlow(u.rps, u.inFlight) : u.requestCount;
+
+        // Sort proxies by traffic, highest first
+        proxies.sort((a, b) => pm(b) - pm(a));
 
         // Compute max traffic count for edge width scaling
-        const maxProxyCount = Math.max(...proxies.map(p => p.requestCount), 1);
+        const maxProxyCount = Math.max(...proxies.map(pm), live ? 0 : 1);
 
         // Build deduplicated upstream map
         // Key: origin string → { origin, requireTLS, inactive, requestCount, rowIndex }
@@ -620,6 +766,8 @@
                     const existing = upstreamMap.get(us.origin);
                     // upstream.requestCount is a global stat (not per-proxy), so take the max, not the sum
                     existing.requestCount = Math.max(existing.requestCount, us.requestCount);
+                    existing.rps = Math.max(existing.rps, us.rps || 0);
+                    existing.inFlight += us.inFlight || 0;
                     if (!us.inactive) existing.inactive = false;
                 } else {
                     upstreamMap.set(us.origin, {
@@ -627,6 +775,8 @@
                         requireTLS:   us.requireTLS,
                         inactive:     us.inactive,
                         requestCount: us.requestCount,
+                        rps:          us.rps || 0,
+                        inFlight:     us.inFlight || 0,
                         rowIndex:     -1, // assigned below
                     });
                 }
@@ -648,7 +798,7 @@
         }
 
         const totalUpstreamRows = nextRow;
-        const maxUpstreamCount  = Math.max(...Array.from(upstreamMap.values()).map(u => u.requestCount), 1);
+        const maxUpstreamCount  = Math.max(...Array.from(upstreamMap.values()).map(um), live ? 0 : 1);
 
         // Column sizes along the cross (stacking) axis
         const upstreamColumnCross = totalUpstreamRows * (upstreamCrossExtent + ROW_GAP_UPSTREAM) - ROW_GAP_UPSTREAM;
@@ -694,12 +844,12 @@
             const proxyExit  = toXY(COL_PROXY_X + proxyPrimaryExtent, proxyCrossCenter);  // far primary edge
 
             // Draw edge from Internet node to proxy node
-            const w1 = proxy.disabled ? MIN_EDGE_W : edgeWidth(proxy.requestCount, maxProxyCount);
+            const st1 = edgeStyle(pm(proxy), maxProxyCount, false, "flow-edge-internet");
+            if (proxy.disabled) { st1.w = MIN_EDGE_W; st1.count = 0; st1.period = 0; if (live) st1.cls = "flow-edge-idle"; }
             edgeGroup.appendChild(buildFlowEdge(
                 internetExit.x, internetExit.y,
                 proxyEntry.x, proxyEntry.y,
-                w1, "flow-edge-internet",
-                proxy.disabled ? 0 : proxy.requestCount, maxProxyCount, edgeIndex++
+                st1.w, st1.cls, st1.count, st1.period, edgeIndex++
             ));
 
             // Proxy node
@@ -713,14 +863,11 @@
                     const upstreamEntry = toXY(COL_UPSTREAM_X, upstreamCrossCenter);
 
                     const linkDisabled = upstream.inactive || proxy.disabled;
-                    const w2 = linkDisabled ? MIN_EDGE_W
-                        : edgeWidth(Math.min(proxy.requestCount, upstream.requestCount), maxUpstreamCount);
+                    const st2 = edgeStyle(Math.min(pm(proxy), um(upstream)), maxUpstreamCount, linkDisabled, "flow-edge-upstream");
                     edgeGroup.appendChild(buildFlowEdge(
                         proxyExit.x, proxyExit.y,
                         upstreamEntry.x, upstreamEntry.y,
-                        w2, linkDisabled ? "flow-edge-disabled" : "flow-edge-upstream",
-                        linkDisabled ? 0 : Math.min(proxy.requestCount, upstream.requestCount),
-                        maxUpstreamCount, edgeIndex++
+                        st2.w, st2.cls, st2.count, st2.period, edgeIndex++
                     ));
                 }
             } else {
@@ -731,7 +878,7 @@
                 edgeGroup.appendChild(buildFlowEdge(
                     proxyExit.x, proxyExit.y,
                     upstreamEntry.x, upstreamEntry.y,
-                    MIN_EDGE_W, "flow-edge-upstream", 0, 1, edgeIndex++
+                    MIN_EDGE_W, live ? "flow-edge-idle" : "flow-edge-upstream", 0, 0, edgeIndex++
                 ));
                 const phTL = toXY(COL_UPSTREAM_X, upstreamCrossCenter - upstreamCrossExtent / 2);
                 const ph = svgEl("g", { class: "upstream-node inactive" });
@@ -754,9 +901,55 @@
         }
     }
 
-    /* Fetch traffic map from API and trigger diagram render */
+    /* Fetch traffic map from API and trigger diagram render.
+       _lastData = structure + today's counters (/api/stats/trafficmap, every 30 s),
+       _live     = requests per second and in-flight counts (/api/stats/livemap, every 2 s in Live mode). */
     let _lastJSON = "";
     let _onScreen = true;
+    let _live = null;          // last good answer of /api/stats/livemap
+    let _liveAt = 0;           // when it arrived (performance.now())
+    let _liveState = "wait";   // wait | ok | error | paused
+    let _liveTimer = null, _liveBusy = false;
+
+    /* the data the diagram draws: the structure with the live numbers merged in (rates rounded so a quiet map is not rebuilt every poll) */
+    function viewData() {
+        if (!_lastData) return null;
+        if (!isLive()) return _lastData;
+        const byDomain = new Map();
+        if (_live && _live.proxies) for (const p of _live.proxies) byDomain.set(p.domain, p);
+        const r1 = v => Math.round((v || 0) * 10) / 10;
+        const out = { proxies: [], totalRequests: _lastData.totalRequests, live: true };
+        for (const p of _lastData.proxies || []) {
+            const lp = byDomain.get(p.domain);
+            const q = Object.assign({}, p, { rps: lp ? r1(lp.rps) : 0, inFlight: lp ? lp.inFlight : 0 });
+            const ups = new Map();
+            if (lp) for (const u of lp.upstreams || []) ups.set(u.origin, u);
+            q.upstreams = (p.upstreams || []).map(u => {
+                const lu = ups.get(u.origin);
+                return Object.assign({}, u, { rps: lu ? r1(lu.rps) : 0, inFlight: lu ? lu.inFlight : 0 });
+            });
+            out.proxies.push(q);
+        }
+        return out;
+    }
+
+    function drawView(forceFit) {
+        const view = viewData();
+        if (!view) return;
+        const sig = mode + JSON.stringify(view);
+        if (sig === _lastJSON && !forceFit) {
+            document.getElementById("diagram-canvas").style.display = "block";
+            return;
+        }
+        _lastJSON = sig;
+        renderDiagram(view);
+        requestFlowDraw();
+        if (_firstLoad || forceFit) {
+            _firstLoad = false;
+            recenterDiagram();
+        }
+    }
+
     function loadDiagram(manual) {
         if (_firstLoad || manual === true) {
             document.getElementById("loadingMsg").style.display = "block";
@@ -766,25 +959,113 @@
 
         $.get("/api/stats/trafficmap", function(data) {
             document.getElementById("loadingMsg").style.display = "none";
-            // the periodic refresh only rebuilds the SVG when the numbers changed
-            const sig = JSON.stringify(data);
-            if (sig === _lastJSON && !_firstLoad) {
-                document.getElementById("diagram-canvas").style.display = "block";
-                return;
-            }
-            _lastJSON = sig;
             _lastData = data;
-            renderDiagram(data);
-            requestFlowDraw();
-            if (_firstLoad) {
-                _firstLoad = false;
-                recenterDiagram();
-            }
+            drawView(false);
+            if (isLive() && manual === true) liveTick();
         }).fail(function() {
             document.getElementById("loadingMsg").innerHTML =
                 '<i class="exclamation triangle icon"></i> Failed to load traffic data.';
         });
     }
+
+    /* ---- Live polling: only while the map is on screen, the tab is active and the animation is not paused ---- */
+    function livePolling() { return isLive() && _onScreen && !document.hidden && _animOn; }
+
+    function liveTick() {
+        if (_liveBusy || !livePolling()) return;
+        _liveBusy = true;
+        $.ajax({ url: "/api/stats/livemap", dataType: "json", timeout: 4000, cache: false }).done(function(d) {
+            _liveBusy = false;
+            if (!d || !Array.isArray(d.proxies)) { _liveState = "error"; updateStrip(); return; }
+            _live = d; _liveAt = performance.now(); _liveState = "ok";
+            updateStrip();
+            if (_lastData) drawView(false);
+        }).fail(function() {
+            _liveBusy = false;
+            _liveState = "error";
+            updateStrip();
+        });
+    }
+
+    function syncLivePolling() {
+        if (_liveTimer) { clearInterval(_liveTimer); _liveTimer = null; }
+        if (livePolling()) {
+            if (_liveState === "paused") _liveState = "wait";
+            liveTick();
+            _liveTimer = setInterval(function () { updateStrip(); liveTick(); }, LIVE_POLL_MS);
+        } else if (isLive()) {
+            _liveState = "paused";
+        }
+        updateStrip();
+    }
+
+    /* header strip: "Live: X req/s, Y active" with a pulse dot that stops when the data is stale */
+    function updateStrip() {
+        const dot = document.getElementById("live-dot"), txt = document.getElementById("live-text");
+        if (!isLive()) {
+            dot.className = "";
+            const n = _lastData ? _lastData.totalRequests || 0 : 0;
+            txt.innerHTML = "";
+            txt.appendChild(document.createTextNode("Today: "));
+            const b = document.createElement("b"); b.textContent = fmtCount(n); txt.appendChild(b);
+            txt.appendChild(document.createTextNode(" requests"));
+            txt.removeAttribute("title");
+            return;
+        }
+        const stale = _liveState === "ok" && performance.now() - _liveAt > LIVE_STALE_MS;
+        if (_liveState === "error" || stale) {
+            dot.className = "error";
+            txt.textContent = "Live data unavailable";
+            txt.title = "The server did not answer the last live update";
+        } else if (_liveState === "paused") {
+            dot.className = "";
+            txt.textContent = "Live paused";
+            txt.title = "Updates are stopped while the animation is paused or the tab is not active";
+        } else if (_liveState === "ok" && _live) {
+            dot.className = _live.warmup ? "" : "fresh";
+            txt.innerHTML = "";
+            if (_live.warmup) {
+                txt.textContent = "Live: measuring...";
+            } else {
+                txt.appendChild(document.createTextNode("Live: "));
+                const b = document.createElement("b"); b.textContent = fmtRate(_live.totalRps) + " req/s"; txt.appendChild(b);
+                txt.appendChild(document.createTextNode(", "));
+                const c = document.createElement("b"); c.textContent = (_live.totalInFlight || 0) + " active"; txt.appendChild(c);
+                const extra = [];
+                if (_live.errorsPerSec >= 0.05) extra.push(fmtRate(_live.errorsPerSec) + " errors/s");
+                if (_live.blockedPerSec >= 0.05) extra.push(fmtRate(_live.blockedPerSec) + " blocked/s");
+                if (extra.length) {
+                    const e = document.createElement("span"); e.className = "live-extra"; e.textContent = " · " + extra.join(" · ");
+                    txt.appendChild(e);
+                }
+            }
+            txt.title = "Averaged over the last " + Math.round(_live.windowSeconds || 10) + " seconds. Active = requests being served right now.";
+        } else {
+            dot.className = "";
+            txt.textContent = "Live: measuring...";
+        }
+    }
+
+    function setMode(m) {
+        if (m === mode) return;
+        mode = m;
+        try { localStorage.setItem("zoraxy_trafficflow_mode", mode); } catch (e) {}
+        syncModeUI();
+        _lastJSON = "";
+        syncLivePolling();
+        drawView(false);
+    }
+
+    function syncModeUI() {
+        document.getElementById("mode-live").setAttribute("aria-pressed", isLive() ? "true" : "false");
+        document.getElementById("mode-today").setAttribute("aria-pressed", isLive() ? "false" : "true");
+        document.getElementById("legend-idle").style.display = isLive() ? "" : "none";
+        updateStrip();
+    }
+    document.getElementById("mode-live").addEventListener("click", e => { e.stopPropagation(); setMode("live"); });
+    document.getElementById("mode-today").addEventListener("click", e => { e.stopPropagation(); setMode("today"); });
+    document.getElementById("live-strip").addEventListener("mousedown", e => e.stopPropagation());
+    document.getElementById("live-strip").addEventListener("touchstart", e => e.stopPropagation(), { passive: true });
 
     /* Centre the diagram canvas within the viewport at the current zoom */
     function recenterDiagram() {
@@ -795,14 +1076,31 @@
         // Fit: a big map is scaled down (never up) so no node is cut off at the edges, and the
         // bottom strip with the zoom bar and the legend is kept free of nodes.
         const vw = wEl.clientWidth, vh = wEl.clientHeight;
-        const padX = 16, padTop = 16, padBottom = 64;
+        // The header strip (36 px) sits on top of the map. Labels must stay readable: when the whole map would need
+        // a zoom below MIN_LABEL_ZOOM, it is shown at that zoom from its top-left corner (busiest rules first) and
+        // the rest is a drag away, instead of 5 px text.
+        const padX = 16, padTop = 16 + 36, padBottom = 64;
+        let overflow = false;
         if (svgW > 0 && svgH > 0 && vw > 0 && vh > 0) {
             const fit = Math.min(1, (vw - 2 * padX) / svgW, (vh - padTop - padBottom) / svgH);
-            if (isFinite(fit) && fit > 0) zoom = Math.max(ZOOM_MIN, fit);
+            if (isFinite(fit) && fit > 0) {
+                zoom = Math.max(ZOOM_MIN, fit);
+                if (fit < MIN_LABEL_ZOOM) { zoom = MIN_LABEL_ZOOM; overflow = true; }
+            }
         }
-        panX = (vw - svgW * zoom) / 2;
-        panY = padTop + Math.max(0, (vh - padTop - padBottom - svgH * zoom) / 2);
+        panX = overflow ? padX : (vw - svgW * zoom) / 2;
+        panY = padTop + (overflow ? 0 : Math.max(0, (vh - padTop - padBottom - svgH * zoom) / 2));
+        if (overflow && svgW * zoom <= vw - 2 * padX) panX = (vw - svgW * zoom) / 2;
         applyTransform();
+        if (overflow) showFitHint();
+    }
+
+    let _hintTimer = null;
+    function showFitHint() {
+        const h = document.getElementById("fit-hint");
+        h.style.display = "block";
+        clearTimeout(_hintTimer);
+        _hintTimer = setTimeout(() => { h.style.display = "none"; }, 6000);
     }
 
     /* Toggle between horizontal and vertical flow layouts */
@@ -811,7 +1109,7 @@
         localStorage.setItem("zoraxy_trafficflow_orientation", orientation);
         updateRotateButton();
         if (_lastData) {
-            renderDiagram(_lastData);
+            renderDiagram(viewData());
             recenterDiagram();
             requestFlowDraw();
         } else {
@@ -972,18 +1270,19 @@
     });
 
     /* Initialize: apply transform, load data, start 30-second auto-refresh */
+    /* Animation control: user toggle (persisted), parent page message, off-screen and hidden tab */
+    var _animOn = true; // var: livePolling() reads it from the first loadDiagram() below
+    try { _animOn = localStorage.getItem("zoraxy_trafficflow_anim") !== "off"; } catch (e) {}
     updateRotateButton();
     applyTransform();
+    syncModeUI();
     loadDiagram();
     setInterval(function () {
-        // no network and no re-render while the diagram is not on screen (other tab, hidden iframe)
-        if (document.hidden || !_onScreen) return;
+        // no network and no re-render while the diagram is not on screen (other tab, hidden iframe);
+        // in Live mode the pause button stops this too (Today keeps its old behaviour)
+        if (document.hidden || !_onScreen || (isLive() && !_animOn)) return;
         loadDiagram();
     }, 30000);
-
-    /* Animation control: user toggle (persisted), parent page message, off-screen and hidden tab */
-    let _animOn = true;
-    try { _animOn = localStorage.getItem("zoraxy_trafficflow_anim") !== "off"; } catch (e) {}
     const _flowCanvas = document.getElementById("flow-canvas");
     const _flowCtx = _flowCanvas.getContext("2d");
     var _flowPending = false, _flowTimer = null, _flowW = 0, _flowH = 0; // var: applyTransform() calls requestFlowDraw() before this line runs
@@ -1030,7 +1329,7 @@
     }
 
     var _idle = false; // set by the Status page after a while without user activity
-    function flowRunning() { return _animOn && _onScreen && !document.hidden && !_idle; }
+    function flowRunning() { return _animOn && _onScreen && !document.hidden && !_idle && !(REDUCED_MOTION && REDUCED_MOTION.matches); }
 
     function requestFlowDraw() {
         // pan / zoom: redraw once per frame; the animation timer keeps its own cadence
@@ -1042,16 +1341,19 @@
     function startFlowLoop() {
         if (_flowTimer) { clearInterval(_flowTimer); _flowTimer = null; }
         if (flowRunning()) {
-            _flowTimer = setInterval(() => drawFlow(performance.now() / 1000), 1000 / FLOW_FPS);
+            _flowTimer = setInterval(() => { if (flowAnim.length) drawFlow(performance.now() / 1000); }, 1000 / FLOW_FPS); // nothing flows: nothing is redrawn
         } else {
             requestFlowDraw();
         }
     }
     new ResizeObserver(() => { _flowDirtySize = true; requestFlowDraw(); }).observe(_wrapper);
 
+    if (REDUCED_MOTION && REDUCED_MOTION.addEventListener) REDUCED_MOTION.addEventListener("change", () => applyAnim());
+
     function applyAnim() {
         document.body.classList.toggle("anim-paused", !flowRunning());
         startFlowLoop();
+        syncLivePolling();
         const b = document.getElementById("btn-anim");
         b.classList.toggle("off", !_animOn);
         b.title = _animOn ? "Pause animation" : "Resume animation";

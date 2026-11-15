@@ -230,6 +230,7 @@ func main() {
 
 	//Startup all modules, see start.go
 	startupSequence()
+	startLiveSampler() //one goroutine, one tick every 5 s: history for the Traffic map Tune panel (livetune.go)
 
 	//Initiate APIs
 	requireAuth = !(*noauth)
