@@ -704,6 +704,20 @@
                 localStorage.setItem('zoraxy_menu_groups', JSON.stringify(states));
             }
 
+            // Accordion: opening a menu group closes the other page groups, so the menu never grows past one screen.
+            // "Recent" is a shortcut list, not a page group: it keeps its own state.
+            function collapseOtherMenuGroups(keepId, states) {
+                $('#mainmenu .menugroup-items').each(function () {
+                    var gid = ($(this).attr('id') || '').slice('group-'.length);
+                    if (!gid || gid === keepId || gid === 'recent') return;
+                    if (!$(this).is(':hidden')) {
+                        $(this).slideUp(180);
+                        $('#chevron-' + gid).addClass('collapsed');
+                    }
+                    states[gid] = false;
+                });
+            }
+
             function toggleMenuGroup(groupId) {
                 var $items   = $('#group-' + groupId);
                 var $chevron = $('#chevron-' + groupId);
@@ -712,6 +726,7 @@
                     $items.slideDown(180);
                     $chevron.removeClass('collapsed');
                     states[groupId] = true;
+                    if (groupId !== 'recent') collapseOtherMenuGroups(groupId, states);
                 } else {
                     $items.slideUp(180);
                     $chevron.addClass('collapsed');
@@ -746,6 +761,7 @@
                     $chevron.removeClass('collapsed');
                 }
                 states[groupId] = true;
+                collapseOtherMenuGroups(groupId, states);
                 saveMenuGroupStates(states);
                 if (window.ZxNav) { ZxNav.syncAria(); setTimeout(ZxNav.syncAria, 220); }
             }

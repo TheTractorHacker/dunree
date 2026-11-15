@@ -247,14 +247,20 @@ def proxy_ux(pg, ctx):
         fail("a11y", "Enter on a group header did not collapse it")
     pg.keyboard.press("Enter")
     pg.wait_for_timeout(450)
-    # opening a page expands its group and leaves the other groups alone
+    # opening a page expands its group and closes the other page groups (accordion); Recent keeps its own state
     pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({_v: 3, overview: true, sites: true, system: false}))")
     pg.reload(wait_until="networkidle")
     pg.wait_for_timeout(900)
     pg.evaluate("openTabById('cert')")
     pg.wait_for_timeout(500)
-    if not pg.is_visible("#group-certs") or not pg.is_visible("#group-sites") or pg.is_visible("#group-system"):
-        fail("nav", "opening a page must expand its group only (sites stays open, system stays closed)")
+    if not pg.is_visible("#group-certs") or pg.is_visible("#group-sites") or pg.is_visible("#group-overview") or pg.is_visible("#group-system"):
+        fail("nav", "opening a page must expand its group and close the other groups (accordion)")
+    pg.evaluate("toggleMenuGroup('system')")
+    pg.wait_for_timeout(450)
+    if not pg.is_visible("#group-system") or pg.is_visible("#group-certs"):
+        fail("nav", "opening a group by its header must close the group that was open")
+    if pg.evaluate("JSON.parse(localStorage.getItem('zoraxy_menu_groups')).certs") is not False:
+        fail("nav", "the accordion must save the closed state of the other groups")
     # state saved by the previous menus (old group ids) is carried over to the groups that replaced them
     pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({_v: 2, proxy: false, tools: false, observe: true, system: false, security: true}))")
     pg.reload(wait_until="networkidle")
