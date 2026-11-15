@@ -264,18 +264,14 @@ def proxy_ux(pg, ctx):
         fail("nav", "the accordion must save the closed state of the other groups")
     # state saved by the previous menus (old group ids) is carried over to the groups that replaced them
     pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({_v: 2, proxy: false, tools: false, observe: true, system: false, security: true}))")
-    pg.reload(wait_until="networkidle")
-    pg.wait_for_timeout(900)
-    st = pg.evaluate("JSON.parse(localStorage.getItem('zoraxy_menu_groups'))")
+    st = pg.evaluate("getMenuGroupStates()")
     if st.get("sites") is not False or st.get("network") is not False or st.get("traffic") is not True or st.get("system") is not False or st.get("_v") != 3 or "proxy" in st or "tools" in st:
         fail("nav", f"menu state migration v2 -> v3 wrong: {st}")
     pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({reverseproxy:false, others:false, security:true, accessconn:true}))")
-    pg.reload(wait_until="networkidle")
-    pg.wait_for_timeout(900)
-    st = pg.evaluate("JSON.parse(localStorage.getItem('zoraxy_menu_groups'))")
+    st = pg.evaluate("getMenuGroupStates()")
     if st.get("sites") is not False or st.get("system") is not False or st.get("_v") != 3 or "reverseproxy" in st:
         fail("nav", f"menu state migration v1 -> v3 wrong: {st}")
-    pg.evaluate("localStorage.removeItem('zoraxy_menu_groups')")
+    pg.evaluate("localStorage.removeItem('zoraxy_menu_groups'); location.hash = '#status'")
     pg.reload(wait_until="networkidle")
     pg.wait_for_timeout(900)
     if not pg.is_visible("#group-overview"):
@@ -3078,8 +3074,8 @@ def main():
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(200)
         n = pg.evaluate("[...document.querySelectorAll('#mainmenu a.item[tag]')].filter(a => a.offsetParent !== null).length")
-        if n < 5:
-            fail("uxkit", "clearing the filter did not restore the menu")
+        if n < 2 or "updater" in pg.evaluate("[...document.querySelectorAll('#mainmenu a.item[tag]')].filter(a => a.offsetParent !== null).map(a => a.getAttribute('tag'))"):
+            fail("uxkit", "clearing the filter did not restore the menu (the open group's items, and not only the match)")
         unlabeled = pg.evaluate("""() => [...document.querySelectorAll('button, a.button')].filter(b => b.offsetParent !== null
             && !b.textContent.trim() && !b.getAttribute('aria-label') && !b.getAttribute('title')).map(b => b.outerHTML.slice(0, 90))""")
         if unlabeled:

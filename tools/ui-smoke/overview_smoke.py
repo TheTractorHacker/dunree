@@ -154,7 +154,22 @@ def overview_ui(pg, ctx):
         });
         return out;
     }""")
+    # a map that would need a zoom below 0.6 (labels under about 8 px) is shown at 0.6 from its top-left corner and the rest is a drag
+    # away (MIN_LABEL_ZOOM in trafficFlowDiagram.html): then only the Internet node and the first rules must be on screen
+    needed = pg.evaluate("""() => { const d = document.getElementById('trafficFlowDiagram').contentDocument, c = d.getElementById('diagram-canvas'), w = d.getElementById('diagram-wrapper');
+        return Math.min((w.clientWidth - 32) / parseFloat(c.getAttribute('width')), (w.clientHeight - 116) / parseFloat(c.getAttribute('height'))); }""")
+    if bad and needed < 0.6:
+        bad = [b for b in bad if b.startswith("under controls") or b.startswith("outside Internet")]
+        n_in = pg.evaluate("""() => { const d = document.getElementById('trafficFlowDiagram').contentDocument, w = d.getElementById('diagram-wrapper').getBoundingClientRect();
+            return [...d.querySelectorAll('.proxy-node')].filter(n => { const r = n.getBoundingClientRect(); return r.left >= w.left - 1 && r.right <= w.right + 1; }).length; }""")
+        if n_in < 1:
+            bad.append("no rule is readable on screen in the overflow view")
     if bad:
+        dbg = pg.evaluate("""() => { const f = document.getElementById('trafficFlowDiagram'); const d = f.contentDocument, c = d.getElementById('diagram-canvas'), w = d.getElementById('diagram-wrapper');
+            return {svgW: c.getAttribute('width'), svgH: c.getAttribute('height'), vw: w.clientWidth, vh: w.clientHeight, zoom: f.contentWindow.zoom, mode: f.contentWindow.mode}; }""")
+        print("trafficmap debug", dbg)
+        pg.locator("#trafficFlowDiagram").scroll_into_view_if_needed()
+        pg.screenshot(path=os.path.join(args.out, "overview-trafficmap-clipped.png"))
         fail("trafficmap", f"nodes clipped or covered: {bad[:5]}")
     pg.screenshot(path=out("overview-status-1366.png"), full_page=True)
     # phone width: the Start / Stop buttons must not sit on the title, the language names in the top bar More menu must not be clipped

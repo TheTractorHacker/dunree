@@ -460,7 +460,7 @@
     try { if (localStorage.getItem("zoraxy_trafficflow_mode") === "today") mode = "today"; } catch (e) {}
     const LIVE_POLL_MS = 2000;
     const LIVE_STALE_MS = 6000;
-    const MIN_LABEL_ZOOM = 0.85; // fit never goes below this: a 13 px title stays about 11 px on screen
+    const MIN_LABEL_ZOOM = 0.6; // fit never goes below this (about 5 px labels); a bigger map is shown at this zoom from its top-left corner and the rest is a drag away
     const REDUCED_MOTION = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
     function isLive() { return mode === "live"; }
     /* effective flow of a node or edge in Live mode: a request in flight with no completed request yet still counts */
@@ -1088,9 +1088,8 @@
                 if (fit < MIN_LABEL_ZOOM) { zoom = MIN_LABEL_ZOOM; overflow = true; }
             }
         }
-        panX = overflow ? padX : (vw - svgW * zoom) / 2;
+        panX = (vw - svgW * zoom) / 2; // also when it overflows: the Internet node is in the middle of the map, the outer rules are a drag away
         panY = padTop + (overflow ? 0 : Math.max(0, (vh - padTop - padBottom - svgH * zoom) / 2));
-        if (overflow && svgW * zoom <= vw - 2 * padX) panX = (vw - svgW * zoom) / 2;
         applyTransform();
         if (overflow) showFitHint();
     }
