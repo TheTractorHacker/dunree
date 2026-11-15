@@ -157,7 +157,7 @@ func TestLiveMapEndpointPermission(t *testing.T) {
 	old := auth.ProfileAdmin
 	auth.ProfileAdmin = auth.PasswordProfile{MemoryKiB: 64, Time: 1, Threads: 1}
 	defer func() { auth.ProfileAdmin = old }()
-	authAgent = auth.NewAuthenticationAgent("t", []byte("0123456789abcdef0123456789abcdef"), sysdb, false, lg, nil)
+	authAgent = auth.NewAuthenticationAgent("t", []byte("0123456789abcdef0123456789abcdef"), sysdb, false, lg, func(w http.ResponseWriter, r *http.Request) { http.Error(w, "login required", http.StatusUnauthorized) })
 	authAgent.CreateUserAccount("root", "password-1", "")
 	authAgent.CreateUser("view", "password-2", auth.RoleViewer)
 

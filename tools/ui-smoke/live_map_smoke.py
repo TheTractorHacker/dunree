@@ -139,8 +139,10 @@ def live_map_ui(pg, ctx):
         if fr.evaluate("document.getElementById('mode-live').getAttribute('aria-pressed')") != "true":
             fail("livemap", "Live must be the default mode")
 
-        # idle first: everything zero, edges grey and static
-        pg.wait_for_timeout(2500)
+        # the map polls only while it is on screen: bring it into view
+        pg.locator("#trafficFlowDiagram").scroll_into_view_if_needed()
+        # idle first: everything zero, edges grey and static. The rate is averaged over 10 s, so let the seeding requests age out.
+        pg.wait_for_timeout(13000)
         d = live()
         if d.get("totalRps", 1) != 0 or d.get("totalInFlight", 1) != 0:
             fail("livemap", f"nothing is flowing, but the API says {d.get('totalRps')} req/s / {d.get('totalInFlight')} active")
@@ -341,13 +343,13 @@ def live_map_ui(pg, ctx):
         # ---- failure: the strip says so, the dot is not green ----
         current["page"] = "livemap/failure"
         fr = frame()
-        pg.route("**/api/stats/livemap", lambda route: route.abort())
+        pg.route("**/api/stats/livemap*", lambda route: route.abort())
         pg.wait_for_timeout(5000)
         txt = fr.evaluate("document.getElementById('live-text').textContent")
         if "Live data unavailable" not in txt or fr.evaluate("document.getElementById('live-dot').className") == "fresh":
             fail("livemap", f"a failing endpoint must show 'Live data unavailable', got {txt!r}")
         shot("livemap-unavailable-light.png")
-        pg.unroute("**/api/stats/livemap")
+        pg.unroute("**/api/stats/livemap*")
         pg.wait_for_timeout(4500)
         txt = fr.evaluate("document.getElementById('live-text').textContent")
         if "Live:" not in txt:
@@ -369,6 +371,6 @@ def live_map_ui(pg, ctx):
         for srv in servers:
             srv.shutdown()
         try:
-            pg.unroute("**/api/stats/livemap")
+            pg.unroute("**/api/stats/livemap*")
         except Exception:
             pass

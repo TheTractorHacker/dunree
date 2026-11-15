@@ -190,9 +190,12 @@ func TestTuneBusiestClientAndDenied(t *testing.T) {
 	// the bucket of .1 was swept and restarted from 0: counts went down, they are not negative traffic
 	now = tuneT0.Add(10 * time.Second)
 	st.tick(now, lim(map[string][2]uint64{"10.0.0.1": {5, 0}, "10.0.0.2": {20, 0}, "10.0.0.3": {500, 0}}))
+	now = tuneT0.Add(15 * time.Second)
+	st.tick(now, lim(map[string][2]uint64{"10.0.0.1": {10, 0}, "10.0.0.2": {20, 0}, "10.0.0.3": {500, 0}}))
+	// the 10 s window now covers only the restart and the slot after it (the 8 req/s slot is outside)
 	l = st.query(now, "10s").Rules[0].Limiter
-	if l.Busiest == nil || l.Busiest.Rps != 1 {
-		t.Fatalf("after a bucket restart: %+v", l.Busiest)
+	if l.Busiest == nil || l.Busiest.Rps > 1 {
+		t.Fatalf("after a bucket restart: %+v (a counter that went down is not negative or huge traffic)", l.Busiest)
 	}
 }
 
