@@ -386,7 +386,7 @@ def certs_traffic_ui(pg, ctx):
         warnings.clear()
         pg.goto("about:blank")
         pg.goto(args.url + "/", wait_until="networkidle")
-        pg.wait_for_selector("#mainmenu .item")
+        pg.wait_for_selector("#mainmenu .item", state="attached")
         pg.wait_for_timeout(800)
         bad = [w for w in warnings if "sandbox" in w.lower() or "Unrecognized feature" in w]
         if bad:

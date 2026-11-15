@@ -806,7 +806,7 @@ def i18n_checks(pg, ctx):
     try:
         pg.evaluate("localStorage.removeItem('zoraxy.lang')")
         pg.goto(args.url + "/", wait_until="networkidle")
-        pg.wait_for_selector("#mainmenu .item")
+        pg.wait_for_selector("#mainmenu .item", state="attached")
         for h in hosts:
             api("/api/proxy/add", {"type": "host", "rootname": h, "ep": "127.0.0.1:9", "tls": "false", "tlsval": "false", "bypassGlobalTLS": "false"})
         pg.evaluate("openTabById('httprp')")
@@ -2861,7 +2861,7 @@ def main():
         pg.on("requestfailed", lambda r: fail("requestfailed", f"{r.url} {r.failure}"))
         pg.on("response", lambda r: r.status >= 400 and fail("http", f"{r.status} {r.url}"))
         pg.goto(args.url + "/", wait_until="networkidle")
-        pg.wait_for_selector("#mainmenu .item")
+        pg.wait_for_selector("#mainmenu .item", state="attached")
         pg.wait_for_timeout(800)
         current["page"] = "landing"
         qs = pg.evaluate("fetch('/api/quickstart').then(r => r.json())")

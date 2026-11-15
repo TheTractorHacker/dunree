@@ -129,7 +129,7 @@ def fill(url, raw, markdown):
         b = p.chromium.launch()
         pg = b.new_page(viewport={"width": 1366, "height": 850})
         pg.goto(url + "/", wait_until="networkidle")
-        pg.wait_for_selector("#mainmenu .item")
+        pg.wait_for_selector("#mainmenu .item", state="attached")
         pg.evaluate("openTabById('httprp')")
         pg.wait_for_selector("#httprpEditModal", state="attached")
         res = pg.evaluate("""(sels) => sels.map(s => { const els = document.querySelectorAll('#httprpEditModal ' + s);

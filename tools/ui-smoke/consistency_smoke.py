@@ -177,7 +177,7 @@ def consistency_ui(pg, ctx):
         for tag, label, h2 in (("globalsettings", "Listeners", "Listeners"), ("vdir", "Path routes", "Path routes"), ("rules", "Raw rule form", "Raw rule form")):
             pg.goto("about:blank")
             pg.goto(args.url + "/#" + tag, wait_until="networkidle")
-            pg.wait_for_selector("#mainmenu .item")
+            pg.wait_for_selector("#mainmenu .item", state="attached")
             pg.wait_for_timeout(900)
             if visible_tab() != tag:
                 fail("compat", f"deep link #{tag} opened {visible_tab()}")
@@ -189,7 +189,7 @@ def consistency_ui(pg, ctx):
         for tag in ("cert", "acme"):
             pg.goto("about:blank")
             pg.goto(args.url + "/#" + tag, wait_until="networkidle")
-            pg.wait_for_selector("#mainmenu .item")
+            pg.wait_for_selector("#mainmenu .item", state="attached")
             pg.wait_for_timeout(800)
             if visible_tab() != tag:
                 fail("compat", f"deep link #{tag} opened {visible_tab()}")
@@ -214,4 +214,4 @@ def consistency_ui(pg, ctx):
         for host in (HOSTILE, PLAIN):
             post("/api/proxy/del", {"ep": host})
         pg.goto(args.url + "/", wait_until="networkidle")
-        pg.wait_for_selector("#mainmenu .item")
+        pg.wait_for_selector("#mainmenu .item", state="attached")
