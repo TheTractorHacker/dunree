@@ -23,6 +23,7 @@
   "&middot; {0} active": "&middot; {0} active",
   "&middot;&middot;&middot;": "&middot;&middot;&middot;",
   "&rarr;": "&rarr;",
+  "').replace(/x60([^x60]+)x60/g,": "').replace(/x60([^x60]+)x60/g,",
   "'Except' needs at least one IP / CIDR or country": "'Except' needs at least one IP / CIDR or country",
   "'{0}' is not a valid CIDR range (example: 203.0.113.0/24)": "'{0}' is not a valid CIDR range (example: 203.0.113.0/24)",
   "'{0}' is not a valid IP address or CIDR range": "'{0}' is not a valid IP address or CIDR range",

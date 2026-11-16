@@ -2736,6 +2736,9 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     md = pg.evaluate("window.upRenderMarkdown('# Zoraxy fork\\n**bold** and *Listeners*\\n- one\\n- <img src=x onerror=alert(1)>')")
     if "<strong>bold</strong>" not in md or "<li>one</li>" not in md or "<img" in md or "<em>Listeners</em>" not in md:
         fail("updater", f"release notes Markdown is not rendered safely: {md!r}")
+    lk = pg.evaluate("window.upRenderMarkdown('[fork.16](https://github.com/o/r/releases/tag/v1) and [bad](javascript:alert(1)) and [quote](https://x.test/a\"onmouseover=alert(1))')")
+    if '<a href="https://github.com/o/r/releases/tag/v1" target="_blank" rel="noopener noreferrer">fork.16</a>' not in lk or "javascript:" in lk.replace("[bad](javascript:alert(1))", "") or 'href="javascript' in lk or "onmouseover=alert(1)\"" in lk:
+        fail("updater", f"release notes links: https links must render, anything else must stay text: {lk!r}")
     pg.evaluate("md => { $('#upNotesWrap').show(); $('#upNotes').html(md) }", md)
     pg.locator("#upNotesWrap").scroll_into_view_if_needed()
     shot("update-release-notes-raw-markdown-and-red-rollback-text")

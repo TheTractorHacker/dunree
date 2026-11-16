@@ -191,6 +191,14 @@
         color: var(--text_color);
     }
 
+    #status .netCardStats{
+        font-size: 0.8em;
+        color: var(--text_color_secondary, #6b7280);
+        margin-top: 0.1em;
+        font-variant-numeric: tabular-nums;
+    }
+    #status .netCardStats b{ font-weight: 600; color: var(--text_color); }
+
     @media screen and (max-width: 768px){
         #status .statusTopRow{
             flex-direction: column;
@@ -442,7 +450,9 @@
     #status .tuneBarFill.warn{ background: #f2711c; }
     #status .tuneBarFill.bad{ background: #db2828; }
     #status .tuneHint{ margin-top: 0.2em; font-size: 0.9em; color: var(--text_color_secondary); }
-    #status .tuneLink{ background: none; border: 0; padding: 0; font: inherit; color: var(--theme_highlight, #4b75ff); cursor: pointer; text-decoration: underline; }
+    #status .tuneLink{ background: none; border: 0; padding: 0; font: inherit; color: #2f5fe0; cursor: pointer; text-decoration: underline; }
+    body.darkTheme #status .tuneLink{ color: #8fb0ff; }
+    #status .tuneLink:focus-visible{ outline: 2px solid currentColor; outline-offset: 2px; border-radius: 2px; }
     #status .tuneFoot{ margin-top: 0.6em; }
     #status .healthGrid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1em; }
     #status .healthList{ margin-top: 0.3em; }
@@ -638,6 +648,7 @@
                     <div>
                         <div class="netCardTitle">Realtime Network Input</div>
                         <div class="realtimeNetValue" id="netInValue">0 bps</div>
+                        <div class="netCardStats" id="netInStats"></div>
                     </div>
                 </div>
                 <div class="realtimeChartWrapper">
@@ -650,6 +661,7 @@
                     <div>
                         <div class="netCardTitle">Realtime Network Output</div>
                         <div class="realtimeNetValue" id="netOutValue">0 bps</div>
+                        <div class="netCardStats" id="netOutStats"></div>
                     </div>
                 </div>
                 <div class="realtimeChartWrapper">
@@ -1391,15 +1403,70 @@
         return d.toLocaleTimeString([], { hour12: false });
     }
 
+    /*
+        Scale and labels of the realtime charts. One short burst (a download, a backup) can be 50x the normal traffic and would
+        squash everything else into a line at the bottom, so the axis follows the normal traffic ("focus scale"): the burst is
+        cut at the top edge and marked with a triangle and its value; the card also states the real peak. When the peak is not
+        far above normal traffic nothing is cut.
+    */
+    function netPercentile(values, p){
+        const s = values.slice().sort(function(a, b){ return a - b; });
+        return s.length ? s[Math.min(s.length - 1, Math.floor(p * (s.length - 1)))] : 0;
+    }
+    function netNiceStep(raw){
+        if (!(raw > 0)) { return 1000; }
+        const e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
+    }
+    //{max, step} of the y axis for the values: 3 or 4 round steps
+    function netAxis(values){
+        const peak = values.length ? Math.max.apply(null, values) : 0;
+        const focus = Math.max(netPercentile(values, 0.97) * 1.8, 2000);
+        const target = peak <= focus * 1.5 ? Math.max(peak * 1.1, 2000) : focus;
+        const step = netNiceStep(target / 3);
+        return { max: step * Math.ceil(target / step), step: step, clipped: peak > step * Math.ceil(target / step) };
+    }
+    function netTrim(x){ return String(Number(x.toFixed(2))); }
+    //compact bandwidth text: "0", "250 Kbps", "1.5 Mbps"
+    function netFmt(bps){
+        if (!bps) { return "0"; }
+        if (bps >= 1e9) { return netTrim(bps / 1e9) + " Gbps"; }
+        if (bps >= 1e6) { return netTrim(bps / 1e6) + " Mbps"; }
+        if (bps >= 1e3) { return netTrim(bps / 1e3) + " Kbps"; }
+        return netTrim(bps) + " bps";
+    }
+    //a triangle and the value at the top edge where the highest value of the window runs off the chart
+    const netPeakMarker = {
+        id: "netPeakMarker",
+        afterDatasetsDraw: function(chart){
+            const data = chart.data.datasets[0].data, ys = chart.scales.y, xs = chart.scales.x, area = chart.chartArea;
+            if (!data.length || !area) { return; }
+            let mi = 0;
+            for (let i = 1; i < data.length; i++) { if (data[i] > data[mi]) { mi = i; } }
+            if (data[mi] <= ys.max) { return; }
+            const ctx = chart.ctx, x = xs.getPixelForValue(mi), color = chart.data.datasets[0].borderColor, label = netFmt(data[mi]);
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.moveTo(x, area.top + 1); ctx.lineTo(x - 4, area.top + 8); ctx.lineTo(x + 4, area.top + 8); ctx.closePath(); ctx.fill();
+            ctx.font = "600 10px sans-serif"; ctx.textBaseline = "top";
+            const w = ctx.measureText(label).width;
+            const left = x + 8 + w > area.right;           //keep the label inside the chart: put it on the other side near the right edge
+            ctx.textAlign = left ? "right" : "left";
+            ctx.fillText(label, left ? x - 8 : x + 8, area.top + 1);
+            ctx.restore();
+        }
+    };
+
     function createRealtimeChart(canvasId, lineColor, fillRgb){
         return new Chart(document.getElementById(canvasId), {
             type: 'line',
+            plugins: [netPeakMarker],
             data: {
                 labels: netTimestamps,
                 datasets: [{
                     data: [],
                     borderColor: lineColor,
-                    borderWidth: 2,
+                    borderWidth: 1.75,
                     //Vertical gradient area fill: tinted at the line, fading to
                     //transparent at the baseline. Rebuilt on every layout so it
                     //tracks the (flexible) chart height.
@@ -1417,17 +1484,29 @@
                     fill: true,
                     pointStyle: false,
                     pointRadius: 0,
-                    pointHoverRadius: 0,
-                    tension: 0.4,
+                    pointHoverRadius: 3,
+                    pointHoverBackgroundColor: lineColor,
+                    //monotone: smooth, and never swings above a spike or below zero between two samples
+                    cubicInterpolationMode: 'monotone',
+                    tension: 0,
                 }]
             },
             options: {
                 animation: false,
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                layout: { padding: { right: 4 } },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: false },
+                    tooltip: {
+                        enabled: true,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(items){ return items.length ? items[0].label : ""; },
+                            label: function(ctx){ return formatBandwidth(ctx.parsed.y); }
+                        }
+                    },
                 },
                 scales: {
                     x: {
@@ -1439,7 +1518,9 @@
                             font: { size: 10 },
                             maxRotation: 0,
                             autoSkip: true,
-                            maxTicksLimit: 6,
+                            maxTicksLimit: 5,
+                            //HH:MM only: seconds on the labels are noise at a 5 minute window
+                            callback: function(value){ const l = String(this.getLabelForValue(value)); return l.length >= 5 ? l.slice(0, 5) : l; }
                         }
                     },
                     y: {
@@ -1456,7 +1537,7 @@
                             maxTicksLimit: 5,
                             padding: 6,
                             callback: function(label){
-                                return formatBandwidth(parseInt(label));
+                                return netFmt(Number(label));
                             }
                         }
                     }
@@ -1474,6 +1555,28 @@
         networkOutChart = createRealtimeChart('networkOutChart', '#8b5cf6', '139, 92, 246');
         netIOChartInitialized = true;
         fetchNetIOData();
+    }
+
+    //new data, focus scale and the "average / peak" line of one card
+    function updateNetChart(chart, values, statsSel){
+        if (chart != undefined){
+            const ax = netAxis(values);
+            chart.options.scales.y.max = ax.max;
+            chart.options.scales.y.ticks.stepSize = ax.step;
+            chart.data.datasets[0].data = values;
+            chart.update("none");
+        }
+        let sum = 0, peak = 0;
+        for (let i = 0; i < values.length; i++){ sum += values[i]; if (values[i] > peak) { peak = values[i]; } }
+        const mins = Math.max(1, Math.round(values.length / 60));
+        const el = $(statsSel).empty();
+        if (values.length){
+            el.append(document.createTextNode("average "));
+            el.append($("<b>").text(netFmt(sum / values.length)));
+            el.append(document.createTextNode(" \u00b7 peak "));
+            el.append($("<b>").text(netFmt(peak)));
+            el.append(document.createTextNode(" (last " + mins + " min)"));
+        }
     }
 
     function fetchNetIOData(){
@@ -1505,15 +1608,8 @@
 
                 $("#netInValue").text(formatBandwidth(rxValues[rxValues.length - 1]));
                 $("#netOutValue").text(formatBandwidth(txValues[txValues.length - 1]));
-
-                if (networkInChart != undefined){
-                    networkInChart.data.datasets[0].data = rxValues;
-                    networkInChart.update("none");
-                }
-                if (networkOutChart != undefined){
-                    networkOutChart.data.datasets[0].data = txValues;
-                    networkOutChart.update("none");
-                }
+                updateNetChart(networkInChart, rxValues, "#netInStats");
+                updateNetChart(networkOutChart, txValues, "#netOutStats");
             },
             complete: function(){
                 netIOFetching = false;
