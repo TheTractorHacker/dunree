@@ -3000,11 +3000,12 @@ def main():
                 # retention: off by default, a value round-trips through the API and is shown, and turning it off restores the default
                 if sp.evaluate("document.getElementById('retentionDays').value") != "0":
                     fail("statsFilters", "retention must default to Forever (0)")
+                post = """b => new Promise(res => $.cjax({url: '/api/stats/settings', method: 'POST', contentType: 'application/json', data: JSON.stringify(b), success: r => res(r), error: x => res({error: 'HTTP ' + x.status})}))"""
                 for want in (90, 0):
-                    r = sp.evaluate("w => fetch('/api/stats/settings', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ExcludeNetworks: [], ExcludeBlocked: false, QueryMode: 'strip', RetentionDays: w})}).then(r => r.json())", want)
+                    r = sp.evaluate(post, {"ExcludeNetworks": [], "ExcludeBlocked": False, "QueryMode": "strip", "RetentionDays": want})
                     if r.get("Settings", {}).get("RetentionDays") != want:
                         fail("statsFilters", f"retention {want} did not round-trip: {r}")
-                bad = sp.evaluate("fetch('/api/stats/settings', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({RetentionDays: 3})}).then(r => r.json())")
+                bad = sp.evaluate(post, {"RetentionDays": 3})
                 if "error" not in bad:
                     fail("statsFilters", f"a retention of 3 days must be refused, got {bad}")
             sp.screenshot(path=os.path.join(args.out, f"snippet-{name}.png"))
