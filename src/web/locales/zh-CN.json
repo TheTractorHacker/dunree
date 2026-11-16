@@ -3,8 +3,8 @@
   "language": "Simplified Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 71.8,
-  "coreCoverage": 70.2
+  "coverage": 71.2,
+  "coreCoverage": 69.3
  },
  "strings": {
   "\"Add Redirection Rule\"": "“添加重定向规则”",
@@ -182,7 +182,6 @@
   ":8080 or 192.168.1.1:8080": ":8080 或 192.168.1.1:8080",
   "; everything else on that host is then served without basic auth. Passwords are stored as argon2id hashes and are never shown; leave a password empty to keep the stored one. Basic auth must be the selected authentication method of the proxy rule (HTTP Proxy tab, Authentication).": "；该主机上的其他所有内容将不再使用基本认证。密码以 argon2id 哈希存储，不会显示；密码留空则保留已存储的密码。基本认证必须是该代理规则所选的认证方式（HTTP 代理选项卡，认证）。",
   "; it must be registered at the provider. Empty sends none.": "；必须已在提供商处注册。留空则不发送。",
-  "; there is no automatic update. Every binary is verified against an ed25519 signature and a SHA-256 checksum before it is installed.": "；没有自动更新。每个二进制文件在安装前都会校验 ed25519 签名和 SHA-256 校验和。",
   "; tick it if the upstream is case insensitive (IIS, Windows file systems).": "；如果上游不区分大小写（IIS、Windows 文件系统），请勾选。",
   "A / AAAA": "A / AAAA",
   "a Go regular expression that must match the": "一个 Go 正则表达式，必须匹配",
@@ -3747,7 +3746,6 @@
   "Update the group policy and click \"Save Changes\".": "更新分组策略并点击“保存更改”。",
   "Update the user information and click \"Save Changes\". Leave password blank to keep current password.": "更新用户信息并点击“保存更改”。密码留空则保持当前密码。",
   "Update to v{0}": "更新到 v{0}",
-  "Update Zoraxy to a signed release published on GitHub, or run the database / configuration migrations on demand. Releases are only fetched when you open this page or press": "将 Zoraxy 更新到 GitHub 上发布的已签名版本，或按需运行数据库 / 配置迁移。仅在你打开此页面或按下以下按钮时才会获取发行版：",
   "Update Zoraxy to {0}?": "将 Zoraxy 更新到 {0} 吗？",
   "Update {0} from v{1} to v{2}?": "将 {0} 从 v{1} 更新到 v{2} 吗？",
   "Updates as you type. Uses the provider's test site key; nothing is verified.": "随输入实时更新。使用提供商的测试站点密钥；不进行任何验证。",

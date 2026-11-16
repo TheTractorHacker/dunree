@@ -3,8 +3,8 @@
   "language": "Spanish",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 20.0,
-  "coreCoverage": 37.8
+  "coverage": 19.8,
+  "coreCoverage": 37.3
  },
  "strings": {
   "\"Add Redirection Rule\"": "\"Añadir regla de redirección\"",
