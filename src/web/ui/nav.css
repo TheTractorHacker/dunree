@@ -8,8 +8,9 @@
 #mainmenu .menugroup-header {
     color: var(--zx-text-muted);
     font-size: 0.82em;
-    padding: 0.6em 0.5em 0.4em;
+    padding: 0.5em 0.5em;
     min-height: 2.4em;
+    line-height: 1.2;
 }
 #mainmenu .menugroup-header:hover { background-color: var(--zx-surface-2); color: var(--zx-text); }
 body.darkTheme #mainmenu .menugroup-header { color: var(--zx-text-muted); }
@@ -28,6 +29,8 @@ body.darkTheme #mainmenu .menugroup-header:hover { background-color: var(--zx-su
 #mainmenu .menugroup-header .menugroup-chevron:not(.collapsed) {
     margin: 0 0.3em 0 auto !important;
     align-self: center;
+    line-height: 1;
+    height: auto;
 }
 #mainmenu .menugroup-items .item { color: var(--zx-text-muted); }
 #mainmenu .menugroup-items .item:hover { color: var(--zx-text); }
