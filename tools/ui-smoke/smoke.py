@@ -2996,6 +2996,17 @@ def main():
             if sp.evaluate("document.body.innerText.trim().length") < 50:
                 fail("page", f"{name} rendered (almost) nothing")
             check_horizontal(sp, name)
+            if name == "statsFilters":
+                # retention: off by default, a value round-trips through the API and is shown, and turning it off restores the default
+                if sp.evaluate("document.getElementById('retentionDays').value") != "0":
+                    fail("statsFilters", "retention must default to Forever (0)")
+                for want in (90, 0):
+                    r = sp.evaluate("w => fetch('/api/stats/settings', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ExcludeNetworks: [], ExcludeBlocked: false, QueryMode: 'strip', RetentionDays: w})}).then(r => r.json())", want)
+                    if r.get("Settings", {}).get("RetentionDays") != want:
+                        fail("statsFilters", f"retention {want} did not round-trip: {r}")
+                bad = sp.evaluate("fetch('/api/stats/settings', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({RetentionDays: 3})}).then(r => r.json())")
+                if "error" not in bad:
+                    fail("statsFilters", f"a retention of 3 days must be refused, got {bad}")
             sp.screenshot(path=os.path.join(args.out, f"snippet-{name}.png"))
             sp.close()
 

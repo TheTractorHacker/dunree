@@ -190,6 +190,7 @@ func (c *Collector) SaveSummaryOfDay() {
 		c.writeSummary(c.summaryKey, c.GetCurrentDailySummary())
 		c.setDailySummary(NewDailySummary())
 		c.summaryKey = todayKey
+		c.PruneOldDays()
 	}
 
 	c.writeSummary(c.summaryKey, c.GetCurrentDailySummary())

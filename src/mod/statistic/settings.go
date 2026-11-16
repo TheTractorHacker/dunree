@@ -2,9 +2,11 @@ package statistic
 
 import (
 	"errors"
+	"log"
 	"net/netip"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"imuslab.com/zoraxy/mod/blocklog"
 )
@@ -35,7 +37,16 @@ type Settings struct {
 	ExcludeNetworks []string // CIDRs or single IPs
 	ExcludeBlocked  bool
 	QueryMode       string
+	// RetentionDays deletes the daily records older than this many days (0 = keep everything, the default).
+	// Valid values: 0 or MinRetentionDays..MaxRetentionDays. Today and yesterday are never deleted.
+	RetentionDays int
 }
+
+// Bounds of the retention setting
+const (
+	MinRetentionDays = 7
+	MaxRetentionDays = 3650
+)
 
 type compiledSettings struct {
 	Settings
@@ -80,6 +91,9 @@ func compileSettings(s Settings) (*compiledSettings, error) {
 	default:
 		return nil, errors.New("invalid query mode")
 	}
+	if s.RetentionDays != 0 && (s.RetentionDays < MinRetentionDays || s.RetentionDays > MaxRetentionDays) {
+		return nil, errors.New("retention must be 0 (keep everything) or between 7 and 3650 days")
+	}
 	cs := &compiledSettings{}
 	seen := map[string]bool{}
 	for _, n := range s.ExcludeNetworks {
@@ -96,6 +110,7 @@ func compileSettings(s Settings) (*compiledSettings, error) {
 	}
 	cs.ExcludeBlocked = s.ExcludeBlocked
 	cs.QueryMode = s.QueryMode
+	cs.RetentionDays = s.RetentionDays
 	return cs, nil
 }
 
@@ -111,7 +126,44 @@ func (c *Collector) SetSettings(s Settings) error {
 		return err
 	}
 	c.settings.v.Store(cs)
+	c.PruneOldDays()
 	return nil
+}
+
+// RetentionDays returns the configured retention (0 = keep everything)
+func (c *Collector) RetentionDays() int {
+	if cs := c.settings.v.Load(); cs != nil {
+		return cs.RetentionDays
+	}
+	return 0
+}
+
+// pruneLookback bounds how far back PruneOldDays looks for records (ten years)
+const pruneLookback = 3660
+
+// PruneOldDays deletes the daily records older than the retention setting and returns how many were deleted.
+// It probes the day keys one by one (a few thousand cheap lookups) instead of reading the table, whose values
+// can be hundreds of MB. Nothing happens while retention is 0. The file does not shrink by itself: freed pages are
+// reused, and "zoraxy -compact-db" returns them to the disk.
+func (c *Collector) PruneOldDays() int {
+	days := c.RetentionDays()
+	if days == 0 || c.Option.Database == nil {
+		return 0
+	}
+	deleted := 0
+	cutoff := time.Now().AddDate(0, 0, -days) // records of this day and later are kept
+	for i := 1; i <= pruneLookback; i++ {
+		key := summaryKeyOf(cutoff.AddDate(0, 0, -i))
+		if c.Option.Database.KeyExists("stats", key) {
+			if err := c.Option.Database.Delete("stats", key); err == nil {
+				deleted++
+			}
+		}
+	}
+	if deleted > 0 {
+		log.Printf("[Statistic] Retention of %d days: deleted %d old daily records\n", days, deleted)
+	}
+	return deleted
 }
 
 // GetSettings returns the active filter settings

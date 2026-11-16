@@ -45,6 +45,21 @@
                     </select>
                 </div>
             </div>
+            <div class="ui divider"></div>
+            <h4>Keep daily statistics for</h4>
+            <p>Statistics keep one record per day and, by default, never delete old days, so the database grows with time. Choose how long to keep them; older days are deleted when you save, when Zoraxy starts and every midnight. The file only gets smaller after an offline compaction (<code>zoraxy -compact-db</code>). Off by default.</p>
+            <div class="ui form">
+                <div class="field">
+                    <select id="retentionDays" class="ui dropdown">
+                        <option value="0">Forever (default)</option>
+                        <option value="30">30 days</option>
+                        <option value="90">90 days</option>
+                        <option value="180">180 days</option>
+                        <option value="365">1 year</option>
+                        <option value="730">2 years</option>
+                    </select>
+                </div>
+            </div>
             <br>
             <button class="ui basic green button" onclick="saveSettings();"><i class="save icon"></i> Save</button>
             <button class="ui basic button iframeOnly" style="float: right;" onclick="parent.hideSideWrapper();"><i class="remove icon"></i> Close</button>
@@ -55,6 +70,9 @@
                 $("#excludeNetworks").val((data.Settings.ExcludeNetworks || []).join("\n"));
                 $("#excludeBlocked").prop("checked", !!data.Settings.ExcludeBlocked);
                 $("#queryMode").val(data.Settings.QueryMode || "strip");
+                var rd = String(data.Settings.RetentionDays || 0);
+                if ($("#retentionDays option[value='" + rd + "']").length == 0){ $("#retentionDays").append($("<option>").val(rd).text(rd + " days")); }
+                $("#retentionDays").val(rd);
                 $("#myip").text(data.YourIP);
             }
             function load(){
@@ -74,13 +92,16 @@
                 });
             }
             function saveSettings(){
+                let days = parseInt($("#retentionDays").val(), 10) || 0;
+                if (days > 0 && !confirm("Daily statistics older than " + days + " days will be deleted now. This cannot be undone. Continue?")){ return; }
                 let list = $("#excludeNetworks").val().split(/[\n,]+/).map(s => s.trim()).filter(s => s != "");
                 $.cjax({
                     url: "/api/stats/settings", method: "POST", contentType: "application/json",
                     data: JSON.stringify({
                         ExcludeNetworks: list,
                         ExcludeBlocked: $("#excludeBlocked").is(":checked"),
-                        QueryMode: $("#queryMode").val()
+                        QueryMode: $("#queryMode").val(),
+                        RetentionDays: parseInt($("#retentionDays").val(), 10) || 0
                     }),
                     success: function(data){
                         if (data.error){ parent.msgbox(data.error, false, 6000); return; }
