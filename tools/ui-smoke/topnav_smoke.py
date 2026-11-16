@@ -172,9 +172,28 @@ def topnav_ui(pg, ctx):
     pp.wait_for_timeout(4000)
     if len(hits) - n0 > 0:
         fail("topnav", f"the bar polls too often: {len(hits) - n0} requests in 4 s")
-    if any("/api/updater" in h for h in hits):
-        fail("topnav", "the bar must not call the updater (no automatic GitHub request)")
+    if any("/api/updater" in h and "/api/updater/badge" not in h for h in hits):
+        fail("topnav", "the bar may only read /api/updater/badge (cached, no GitHub request), nothing else of the updater")
     pp.close()
+
+    # ---- update badge from the optional daily check: shown only while the server says the check is on ----
+    current["page"] = "topnav/update-badge"
+    for body, want, why in (
+        ({"auto_check": False, "update_available": True, "latest": "v9.9.9", "current": "v1"}, False, "daily check off: the badge must stay silent"),
+        ({"auto_check": True, "update_available": True, "latest": "v9.9.9", "current": "v1"}, True, "daily check on and an update cached: the badge must show it"),
+        ({"auto_check": True, "update_available": False, "latest": "v1", "current": "v1"}, False, "daily check on, up to date: no badge"),
+    ):
+        bp = ctx.new_page()
+        bp.route("**/api/updater/badge*", lambda rt, b=body: rt.fulfill(status=200, content_type="application/json", body=json.dumps(b)))
+        bp.goto(base + "#status", wait_until="domcontentloaded", timeout=60000)
+        bp.evaluate("localStorage.removeItem('zoraxy.topbar.update')")
+        bp.reload(wait_until="domcontentloaded", timeout=60000)
+        bp.wait_for_function("document.querySelector('#zxTopStatus a') !== null", timeout=15000)
+        bp.wait_for_timeout(1200)
+        txt = bp.evaluate("document.getElementById('zxTopStatus').innerText")
+        if (("v9.9.9" in txt) != want):
+            fail("topnav", f"{why}, status bar text: {txt!r}")
+        bp.close()
 
     # ---- language: mouse ----
     current["page"] = "topnav/language"

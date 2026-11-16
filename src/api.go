@@ -40,6 +40,8 @@ func RegisterUpdaterAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/updater/rollback", updateManager.HandleRollback)
 	authRouter.HandleFunc("/api/updater/setChannel", updateManager.HandleSetChannel)
 	authRouter.HandleFunc("/api/updater/setBackup", updateManager.HandleSetBackup)
+	authRouter.HandleFunc("/api/updater/setAutoCheck", updateManager.HandleSetAutoCheck)
+	authRouter.HandleFunc("/api/updater/badge", updateManager.HandleBadge)
 	authRouter.HandleFunc("/api/updater/setToken", updateManager.HandleSetToken)
 }
 

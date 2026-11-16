@@ -53,6 +53,9 @@ func (s *store) readJSON(name string, v any) error {
 type Settings struct {
 	Channel     string `json:"channel"`
 	BackupFirst bool   `json:"backup_first"`
+	// AutoCheck makes Zoraxy look for a new release once a day (one request to GitHub) so the top bar badge and the
+	// "update available" notification do not depend on someone opening the Update page. Off by default.
+	AutoCheck bool `json:"auto_check"`
 	// HasToken is filled in by Manager.Settings for the UI; the token itself is never returned.
 	HasToken bool `json:"has_token,omitempty"`
 }
@@ -65,6 +68,7 @@ func (s *store) settings() Settings {
 			st.Channel = f.Channel
 		}
 		st.BackupFirst = f.BackupFirst
+		st.AutoCheck = f.AutoCheck
 	}
 	return st
 }

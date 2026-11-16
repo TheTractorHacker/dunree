@@ -13,7 +13,7 @@
     <div class="ui basic segment">
         <h2>Update</h2>
         <p>Update Zoraxy to a signed release published on GitHub, or run the database / configuration migrations on demand.
-            Releases are only fetched when you open this page or press <b>Check for updates</b>; there is no automatic update.
+            Releases are only fetched when you open this page, press <b>Check for updates</b>, or once a day if you turn on the daily check below; updates are never installed automatically.
             Every binary is verified against an ed25519 signature and a SHA-256 checksum before it is installed.</p>
     </div>
     <div class="ui divider"></div>
@@ -57,6 +57,13 @@
                         <input type="checkbox" id="upBackup" checked onchange="window.upSetBackup(this.checked);">
                         <label>Back up first (conf/, sys.db, sys.uuid to ../backups/)</label>
                     </div>
+                </div>
+                <div class="field">
+                    <div class="ui toggle checkbox" id="upAutoToggle">
+                        <input type="checkbox" id="upAuto" onchange="window.upSetAuto(this.checked);">
+                        <label>Check for updates once a day (one request to GitHub; the top bar then shows when one is available)</label>
+                    </div>
+                    <div class="zx-hint" style="margin-top:.35em;opacity:.75;font-size:.9em;">Off by default. Nothing is downloaded or installed automatically.</div>
                 </div>
             </div>
         </div>
@@ -158,6 +165,7 @@
         $("#upChannel").val(s.channel);
         $("#upChannelLabel").text(s.channel);
         $("#upBackup").prop("checked", s.backup_first);
+        $("#upAuto").prop("checked", !!s.auto_check);
         $("#upTokenState").text(s.has_token ? "A token is configured." : "No token configured.");
         $("#upTokenClear").toggle(!!s.has_token);
         $("#upCurrent").text(c.tag ? c.tag : "v" + c.version);
@@ -290,6 +298,12 @@
 
     window.upSetBackup = function(on){
         $.cjax({method: "POST", url: "./api/updater/setBackup", data: {enabled: on ? "true" : "false"},
+            error: function(xhr){ msgbox(errText(xhr), false); loadInfo(); }});
+    };
+
+    window.upSetAuto = function(on){
+        $.cjax({method: "POST", url: "./api/updater/setAutoCheck", data: {enabled: on ? "true" : "false"},
+            success: function(){ if (window.parent && window.parent.ZxTopbar && window.parent.ZxTopbar.refreshUpdate) { window.parent.ZxTopbar.refreshUpdate(); } },
             error: function(xhr){ msgbox(errText(xhr), false); loadInfo(); }});
     };
 

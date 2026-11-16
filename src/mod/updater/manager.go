@@ -289,6 +289,17 @@ func (m *Manager) SetBackupFirst(v bool) error {
 	return m.st.saveSettings(s)
 }
 
+// SetAutoCheck persists the "check for updates once a day" choice.
+func (m *Manager) SetAutoCheck(v bool) error {
+	s := m.st.settings()
+	s.AutoCheck = v
+	m.audit("", fmt.Sprintf("daily update check set to %v", v))
+	return m.st.saveSettings(s)
+}
+
+// AutoCheckEnabled reports whether the daily check is on.
+func (m *Manager) AutoCheckEnabled() bool { return m.st.settings().AutoCheck }
+
 // History returns the update history, newest last.
 func (m *Manager) History() []HistoryEntry { return m.st.history() }
 

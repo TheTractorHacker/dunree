@@ -168,6 +168,7 @@ func main() {
 	//If this start follows an in-app update, arm the automatic rollback timer.
 	//Only touches local files; MarkHealthy() below disarms it.
 	updateManager.StartGuard()
+	startUpdateAutoCheck()
 	if !utils.ValidateListeningAddress(*webUIPort) {
 		fmt.Println("Malformed -port (listening address) paramter. Do you mean -port=:" + *webUIPort + "?")
 		os.Exit(0)

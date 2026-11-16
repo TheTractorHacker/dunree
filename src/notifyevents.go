@@ -155,7 +155,7 @@ func noteLoginAddress(user, ip string) {
 }
 
 // notifyUpdaterCheckWrap emits updater.available when an administrator's update check finds a
-// release (Zoraxy never checks on its own, so this stays event driven). Each tag is announced once.
+// release (Zoraxy checks on its own only when the optional daily check is on, see updateauto.go). Each tag is announced once.
 func notifyUpdaterCheckWrap(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c := &capture{ResponseWriter: w, limit: 256 << 10}
@@ -163,31 +163,40 @@ func notifyUpdaterCheckWrap(next http.HandlerFunc) http.HandlerFunc {
 		if notifyManager == nil || (c.status != 0 && c.status != http.StatusOK) {
 			return
 		}
-		var res struct {
-			Result struct {
-				Available bool   `json:"update_available"`
-				Channel   string `json:"channel"`
-				Current   struct {
-					Version string `json:"version"`
-				} `json:"current"`
-				Latest *struct {
-					Tag string `json:"tag"`
-					URL string `json:"url"`
-				} `json:"latest"`
-			} `json:"result"`
-		}
-		if json.Unmarshal(c.buf.Bytes(), &res) != nil || !res.Result.Available || res.Result.Latest == nil || res.Result.Latest.Tag == "" {
-			return
-		}
-		var last string
-		if sysdb.KeyExists(knownIPTable, "lastUpdateTag") {
-			sysdb.Read(knownIPTable, "lastUpdateTag", &last)
-		}
-		if last == res.Result.Latest.Tag {
-			return
-		}
-		sysdb.Write(knownIPTable, "lastUpdateTag", res.Result.Latest.Tag)
-		notifyManager.Emit(notify.Event{Event: notify.EventUpdateAvail, Source: "updater", Subject: res.Result.Latest.Tag,
-			Extra: map[string]string{"current": res.Result.Current.Version, "channel": res.Result.Channel, "url": res.Result.Latest.URL}})
+		announceUpdate(c.buf.Bytes())
 	}
+}
+
+// announceUpdate emits updater.available for the body of an update check ({"result": CheckResult}) that found a
+// release. Each tag is announced once, whoever made the check (an administrator or the daily check).
+func announceUpdate(body []byte) {
+	if notifyManager == nil {
+		return
+	}
+	var res struct {
+		Result struct {
+			Available bool   `json:"update_available"`
+			Channel   string `json:"channel"`
+			Current   struct {
+				Version string `json:"version"`
+			} `json:"current"`
+			Latest *struct {
+				Tag string `json:"tag"`
+				URL string `json:"url"`
+			} `json:"latest"`
+		} `json:"result"`
+	}
+	if json.Unmarshal(body, &res) != nil || !res.Result.Available || res.Result.Latest == nil || res.Result.Latest.Tag == "" {
+		return
+	}
+	var last string
+	if sysdb.KeyExists(knownIPTable, "lastUpdateTag") {
+		sysdb.Read(knownIPTable, "lastUpdateTag", &last)
+	}
+	if last == res.Result.Latest.Tag {
+		return
+	}
+	sysdb.Write(knownIPTable, "lastUpdateTag", res.Result.Latest.Tag)
+	notifyManager.Emit(notify.Event{Event: notify.EventUpdateAvail, Source: "updater", Subject: res.Result.Latest.Tag,
+		Extra: map[string]string{"current": res.Result.Current.Version, "channel": res.Result.Channel, "url": res.Result.Latest.URL}})
 }

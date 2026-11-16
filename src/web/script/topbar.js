@@ -5,8 +5,9 @@
     Data (nothing new on the server; one light poll, only while the tab is visible):
       GET /api/stats/glance       blocked today, upstreams down, certificates that expire within 30 days (the Status page tiles)
       GET /api/proxy/status       Running + listening port (the Status page banner)      -> both every 45 s, paused while the tab is hidden
-      update badge                no request of its own (Zoraxy never contacts GitHub by itself): it shows the result of the last check
-                                  made on the Update page in this browser (ZxTopbar.setUpdate, kept 14 days, dropped once the version changes)
+      update badge                no request to GitHub from the browser: it shows the result of the last check made on the Update page in this
+                                  browser (ZxTopbar.setUpdate, kept 14 days, dropped once the version changes) and, only when the optional daily
+                                  check is on (Update page, off by default), the release the server cached (GET /api/updater/badge, no network)
       GET /api/auth/authEnabled, /api/auth/username, /api/auth/role   once, for the account menu (hidden when authentication is off)
     Every pill is a link to a real page or shows nothing.  When a request fails the bar shows one neutral "Status unavailable"
     pill instead of spinning.
@@ -196,11 +197,21 @@
         storeUpdate({ available: !!res.update_available, latest: res.latest && res.latest.tag || "", host: S.host, at: Date.now() });
     };
     function initUpdate() {
-        // No automatic request to GitHub: the badge shows the result of the last check made on the Update page in this browser
+        // No request to GitHub from the browser: the badge shows the result of the last check made on the Update page in this browser,
+        // and, only when the optional daily check is on (Update page), the release cached by the server (/api/updater/badge, no network)
         var u = null;
         try { u = JSON.parse(lsGet(UPDATE_KEY) || "null"); } catch (e) { u = null; }
         if (u && u.available && Date.now() - (u.at || 0) < UPDATE_TTL_MS && (!u.host || !S.host || u.host === S.host)) { S.update = u; renderPills(); }
+        ZxTopbar.refreshUpdate();
+        setInterval(function () { if (!document.hidden) { ZxTopbar.refreshUpdate(); } }, 15 * 60 * 1000);
     }
+    ZxTopbar.refreshUpdate = function () {
+        $.ajax({ url: "/api/updater/badge", dataType: "json", cache: false, timeout: 5000 }).done(function (b) {
+            if (!b || !b.auto_check) { return; }               // daily check off: nothing is added to what the Update page reported
+            if (b.update_available) { storeUpdate({ available: true, latest: b.latest || "", host: S.host, at: Date.now() }); }
+            else if (S.update && S.update.available && b.current && b.latest === b.current) { storeUpdate({ available: false, latest: b.latest || "", host: S.host, at: Date.now() }); }
+        });
+    };
 
     /* ---------------------------------------------------------------- theme */
     function themeMode() { var v = lsGet("theme"); return v === "dark" || v === "light" ? v : "system"; }

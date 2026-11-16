@@ -205,6 +205,38 @@ func (m *Manager) HandleSetBackup(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m.Settings())
 }
 
+// HandleSetAutoCheck turns the daily update check on or off (param: enabled=true|false).
+func (m *Manager) HandleSetAutoCheck(w http.ResponseWriter, r *http.Request) {
+	if !requirePost(w, r) {
+		return
+	}
+	if _, err := strconv.ParseBool(strings.ToLower(r.FormValue("enabled"))); err != nil {
+		writeErr(w, http.StatusBadRequest, "enabled must be true or false")
+		return
+	}
+	if err := m.SetAutoCheck(formBool(r, "enabled", false)); err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, m.Settings())
+}
+
+// HandleBadge answers what the top bar badge needs, from the release list cached on disk. It makes no network
+// request. "update_available" is only reported while the daily check is on, so with the default settings the badge
+// keeps showing only what an administrator checked on the Update page.
+func (m *Manager) HandleBadge(w http.ResponseWriter, r *http.Request) {
+	on := m.AutoCheckEnabled()
+	out := map[string]any{"auto_check": on, "update_available": false}
+	if on {
+		c := m.CachedState()
+		out["update_available"] = c.Cached && c.UpdateAvailable
+		out["latest"] = c.Latest
+		out["current"] = c.Current
+		out["checked_at"] = c.FetchedAt
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 // HandleSetToken stores or removes the optional GitHub token (param: token; empty removes it).
 // The token is never returned by any endpoint.
 func (m *Manager) HandleSetToken(w http.ResponseWriter, r *http.Request) {

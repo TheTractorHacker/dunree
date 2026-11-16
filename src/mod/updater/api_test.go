@@ -137,3 +137,63 @@ func TestAPICheckError(t *testing.T) {
 		t.Errorf("got %d", rec.Code)
 	}
 }
+
+func TestAutoCheckDefaultsOffAndPersists(t *testing.T) {
+	f := newFixture(t)
+	m := f.m
+	if m.AutoCheckEnabled() || m.Settings().AutoCheck {
+		t.Fatal("the daily update check must be off by default")
+	}
+	if rec := call(m.HandleSetAutoCheck, "GET", "/x", nil); rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("GET gave %d, want 405", rec.Code)
+	}
+	if rec := call(m.HandleSetAutoCheck, "POST", "/x", url.Values{"enabled": {"maybe"}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("a bad value gave %d, want 400", rec.Code)
+	}
+	if rec := call(m.HandleSetAutoCheck, "POST", "/x", url.Values{"enabled": {"true"}}); rec.Code != 200 || !m.AutoCheckEnabled() {
+		t.Fatalf("enabling: %d", rec.Code)
+	}
+	// the other settings written later must not switch it off
+	if err := m.SetBackupFirst(false); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.SetChannel(ChannelBeta); err != nil {
+		t.Fatal(err)
+	}
+	if !m.AutoCheckEnabled() {
+		t.Fatal("saving another setting reset the daily check")
+	}
+	if rec := call(m.HandleSetAutoCheck, "POST", "/x", url.Values{"enabled": {"false"}}); rec.Code != 200 || m.AutoCheckEnabled() {
+		t.Fatal("disabling did not work")
+	}
+}
+
+func TestBadgeFollowsTheSettingAndNeverUsesTheNetwork(t *testing.T) {
+	f := newFixture(t)
+	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	m := f.m
+	badge := func() map[string]any {
+		before := f.gh.hit("/repos/o/r/releases")
+		rec := call(m.HandleBadge, "GET", "/api/updater/badge", nil)
+		if f.gh.hit("/repos/o/r/releases") != before {
+			t.Fatal("the badge endpoint made a network request")
+		}
+		var out map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatal(err, rec.Body.String())
+		}
+		return out
+	}
+	// a check was made (as the Update page does) but the daily check is off: the badge reports nothing
+	if _, err := m.Check(context.Background(), true); err != nil {
+		t.Fatal(err)
+	}
+	if out := badge(); out["auto_check"] != false || out["update_available"] != false {
+		t.Fatalf("with the daily check off the badge must stay silent: %v", out)
+	}
+	m.SetAutoCheck(true)
+	out := badge()
+	if out["auto_check"] != true || out["update_available"] != true || out["latest"] != "v3.3.6-x.1" {
+		t.Fatalf("with the daily check on the badge must show the cached release: %v", out)
+	}
+}
