@@ -213,3 +213,21 @@ func TestLiveMapEndpointPermission(t *testing.T) {
 		t.Fatalf("viewer POST must be refused, got %d", w.Code)
 	}
 }
+
+func TestLiveRatesPerRuleErrors(t *testing.T) {
+	var r liveRates
+	t0 := time.Unix(1000, 0)
+	mk := func(at time.Time, total, down, errs int64) liveSample {
+		return liveSample{at: at, total: total, down: map[string]int64{"a.test": down}, downErr: map[string]int64{"a.test": errs}, up: map[string]int64{}}
+	}
+	r.push(mk(t0, 100, 100, 5))
+	rs := r.push(mk(t0.Add(5*time.Second), 200, 200, 25)) // 100 requests, 20 of them errors in 5 s
+	if !near(rs.Down["a.test"], 20) || !near(rs.DownErr["a.test"], 4) {
+		t.Fatalf("rule rate %v errors %v, want 20 and 4 per second", rs.Down["a.test"], rs.DownErr["a.test"])
+	}
+	// a rule without errors yet has no entry: its error rate is 0, never negative or missing a key lookup
+	rs = r.push(mk(t0.Add(10*time.Second), 300, 300, 25))
+	if rs.DownErr["a.test"] < 0 {
+		t.Fatalf("negative error rate %v", rs.DownErr["a.test"])
+	}
+}

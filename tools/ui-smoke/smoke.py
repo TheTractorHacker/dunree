@@ -43,6 +43,7 @@ ap.add_argument("--topnav-only", action="store_true", help="run only the top bar
 ap.add_argument("--topnav-auth-url", default="", help="with --topnav-only: URL of a second throw-away instance WITH authentication; adds the account menu / Log out checks (see topnav_run.sh)")
 ap.add_argument("--ech-fallback-only", action="store_true", help="run only the fallback-certificate diagnostics scenario (ech_fallback_smoke.py; real handshakes, needs a fresh instance)")
 ap.add_argument("--live-map-only", action="store_true", help="run only the Status page Traffic map Live mode scenario (live_map_smoke.py; proxy port must be UI port + 1, ports + 2 and + 3 free)")
+ap.add_argument("--live-sites-only", action="store_true", help="run only the Sites table Live column scenario (live_sites_smoke.py; proxy port must be UI port + 1, UI port + 2 free)")
 ap.add_argument("--newrule-cert-only", action="store_true", help="run only the New proxy rule certificate choice scenario (newrule_cert_smoke.py)")
 ap.add_argument("--db-usage-only", action="store_true", help="run only the System > Settings Database card scenario (dbusage_smoke.py)")
 ap.add_argument("--zrok-fake", default=os.environ.get("SMOKE_ZROK_FAKE", ""), help="path of a fake zrok script; enables the zrok flow (the instance needs -allow_external_tools)")
@@ -2845,6 +2846,7 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dbus
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "topnav_smoke.py")).read(), "topnav_smoke.py", "exec"))  # defines topnav_ui, topnav_auth_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ech_fallback_smoke.py")).read(), "ech_fallback_smoke.py", "exec"))  # defines ech_fallback_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "live_map_smoke.py")).read(), "live_map_smoke.py", "exec"))  # defines live_map_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "live_sites_smoke.py")).read(), "live_sites_smoke.py", "exec"))  # defines live_sites_ui
 
 
 def main():
@@ -2889,6 +2891,10 @@ def main():
             return
         if args.ech_fallback_only:
             ech_fallback_ui(pg, ctx)
+            b.close()
+            return
+        if args.live_sites_only:
+            live_sites_ui(pg, ctx)
             b.close()
             return
         if args.live_map_only:

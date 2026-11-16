@@ -122,6 +122,29 @@ func (t *siteTable) get(key string) *SiteSummary {
 	return v.(*SiteSummary)
 }
 
+// SiteCounters returns today's request total and the number of server error responses (HTTP status 500 and above) of
+// one site (the downstream host name), for the live views. ok is false when the site has had no request today.
+func (c *Collector) SiteCounters(site string) (total, serverErrors int64, ok bool) {
+	ds := c.GetCurrentDailySummary()
+	if ds == nil || ds.sites == nil {
+		return 0, 0, false
+	}
+	v, found := ds.sites.m.Load(truncateStatKey(site))
+	if !found {
+		return 0, 0, false
+	}
+	s := v.(*SiteSummary)
+	s.StatusCodes.Range(func(k, val interface{}) bool {
+		code, err := strconv.Atoi(k.(string))
+		n, isInt := val.(int)
+		if err == nil && code >= 500 && isInt {
+			serverErrors += int64(n)
+		}
+		return true
+	})
+	return atomic.LoadInt64(&s.Total), serverErrors, true
+}
+
 // recordSite applies one request to the per-site table of ds
 func (c *Collector) recordSite(ds *DailySummary, ri *RequestInfo, clientIP string, countryISO string, referer string, now time.Time) {
 	if ri.Site == "" || ds.sites == nil {

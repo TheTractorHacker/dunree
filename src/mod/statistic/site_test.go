@@ -183,3 +183,24 @@ func TestSiteStatsRace(t *testing.T) {
 	wg.Wait()
 	waitTotal(t, c, 1600)
 }
+
+func TestSiteCountersServerErrors(t *testing.T) {
+	c := newTestCollector(t, 1000)
+	if _, _, ok := c.SiteCounters("none.example.com"); ok {
+		t.Fatal("a site without requests must report ok=false")
+	}
+	rec := func(code int, n int) {
+		for i := 0; i < n; i++ {
+			c.RecordRequest(RequestInfo{IpAddr: "1.1.1.1", Succ: true, StatusCode: code, Site: "s.example.com", RequestURL: "s.example.com/"})
+		}
+	}
+	rec(200, 5)
+	rec(404, 2) // client errors are not server errors
+	rec(500, 2)
+	rec(502, 1)
+	waitTotal(t, c, 10)
+	total, errs, ok := c.SiteCounters("s.example.com")
+	if !ok || total != 10 || errs != 3 {
+		t.Fatalf("total %d server errors %d ok %v, want 10, 3, true", total, errs, ok)
+	}
+}

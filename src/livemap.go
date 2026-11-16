@@ -42,6 +42,7 @@ type liveSample struct {
 	errors  int64
 	blocked int64
 	down    map[string]int64 // per rule (downstream host name)
+	downErr map[string]int64 // per rule: responses with a server error status (500 and above)
 	up      map[string]int64 // per upstream origin
 }
 
@@ -62,6 +63,7 @@ type liveRateSet struct {
 	Errors  float64
 	Blocked float64
 	Down    map[string]float64
+	DownErr map[string]float64
 	Up      map[string]float64
 }
 
@@ -98,7 +100,7 @@ func (r *liveRates) push(cur liveSample) liveRateSet {
 		base = &r.samples[len(r.samples)-1]
 	}
 
-	out := liveRateSet{Down: map[string]float64{}, Up: map[string]float64{}}
+	out := liveRateSet{Down: map[string]float64{}, DownErr: map[string]float64{}, Up: map[string]float64{}}
 	if base == nil || cur.at.Sub(base.at) < liveMinElapsed {
 		out.Warmup = true
 	} else {
@@ -109,6 +111,9 @@ func (r *liveRates) push(cur liveSample) liveRateSet {
 		out.Blocked = rate(cur.blocked, base.blocked, secs)
 		for k, v := range cur.down {
 			out.Down[k] = rate(v, base.down[k], secs)
+		}
+		for k, v := range cur.downErr {
+			out.DownErr[k] = rate(v, base.downErr[k], secs)
 		}
 		for k, v := range cur.up {
 			out.Up[k] = rate(v, base.up[k], secs)
@@ -136,6 +141,7 @@ type LiveMapProxy struct {
 	Domain    string             `json:"domain"`
 	Kind      string             `json:"kind,omitempty"`
 	Rps       float64            `json:"rps"`
+	ErrRps    float64            `json:"errRps"` // responses per second with a server error status (500 and above)
 	InFlight  int64              `json:"inFlight"`
 	Upstreams []*LiveMapUpstream `json:"upstreams"`
 }
@@ -166,6 +172,7 @@ func (r *liveRates) get(now time.Time, read func(now time.Time) (liveSample, []*
 		TotalRps: rs.Total, ErrorsPerSec: rs.Errors, BlockedPerSec: rs.Blocked, Proxies: proxies}
 	for _, p := range proxies {
 		p.Rps = rs.Down[p.Domain]
+		p.ErrRps = rs.DownErr[p.Domain]
 		for _, u := range p.Upstreams {
 			u.Rps = rs.Up[u.Origin]
 			p.InFlight += u.InFlight
@@ -179,7 +186,7 @@ func (r *liveRates) get(now time.Time, read func(now time.Time) (liveSample, []*
 
 // readLiveCounters reads today's cumulative counters and the in-flight gauges of every rule
 func readLiveCounters(now time.Time) (liveSample, []*LiveMapProxy) {
-	s := liveSample{at: now, down: map[string]int64{}, up: map[string]int64{}}
+	s := liveSample{at: now, down: map[string]int64{}, downErr: map[string]int64{}, up: map[string]int64{}}
 	proxies := []*LiveMapProxy{}
 	if statisticCollector == nil || dynamicProxyRouter == nil {
 		return s, proxies
@@ -188,7 +195,9 @@ func readLiveCounters(now time.Time) (liveSample, []*LiveMapProxy) {
 	s.total = atomic.LoadInt64(&ds.TotalRequest)
 	s.errors = atomic.LoadInt64(&ds.ErrorRequest)
 	s.blocked = atomic.LoadInt64(&ds.BlockedRequest)
-	load := func(m interface{ Load(key interface{}) (interface{}, bool) }, key string) int64 {
+	load := func(m interface {
+		Load(key interface{}) (interface{}, bool)
+	}, key string) int64 {
 		if v, ok := m.Load(key); ok {
 			if c, ok := v.(int); ok {
 				return int64(c)
@@ -200,6 +209,9 @@ func readLiveCounters(now time.Time) (liveSample, []*LiveMapProxy) {
 		ep := value.(*dynamicproxy.ProxyEndpoint)
 		p := &LiveMapProxy{Domain: ep.RootOrMatchingDomain, Upstreams: []*LiveMapUpstream{}}
 		s.down[p.Domain] = load(ds.DownstreamHostnames, p.Domain)
+		if _, errs, ok := statisticCollector.SiteCounters(p.Domain); ok {
+			s.downErr[p.Domain] = errs
+		}
 		for _, o := range ep.ActiveOrigins {
 			p.Upstreams = append(p.Upstreams, &LiveMapUpstream{Origin: o.OriginIpOrDomain, InFlight: o.InFlight()})
 			s.up[o.OriginIpOrDomain] = load(ds.UpstreamHostnames, o.OriginIpOrDomain)

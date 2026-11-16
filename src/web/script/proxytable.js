@@ -198,6 +198,7 @@
             '<td class="ptName"><span class="ptDot ' + st + '" title="' + esc(stateText(r)) + '"></span><div class="ptNameBody">' +
             '<a class="ptHost" href="' + esc(hostLink(r, name)) + '" target="_blank" rel="noopener">' + e + '</a> ' + lock +
             (sub.length ? '<div class="ptSub">' + sub.join('<span class="ptSep"></span>') + '</div>' : '') + '</div></td>' +
+            '<td class="ptLive" data-live="' + e + '">' + liveCellHtml(name, r) + '</td>' +
             '<td class="ptUps">' + upHtml + '</td>' +
             '<td class="ptProt">' + b.join("") + '</td>' +
             '<td class="ptTagsCell">' + tags + '</td>' +
@@ -208,11 +209,85 @@
             '</tr>';
     }
 
+    /* ------------------------------------------------------------------ live column
+       GET /api/stats/livemap every 2 s while this page is on screen (the same data as the Status page Traffic map, no new
+       counters): requests per second now, a sparkline of the last two minutes, active requests and the error rate. The cells are
+       updated in place, so selection, focus and open menus survive; the table is never rebuilt by a tick. */
+    var LIVE_POLL_MS = 2000, LIVE_KEEP = 60;
+    var live = { by: {}, at: 0, ok: false, timer: null, busy: false };
+
+    function fmtRps(v) { return v >= 100 ? String(Math.round(v)) : v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v >= 0.05 ? v.toFixed(1) : "0"; }
+
+    function sparkSvg(vals) {
+        var n = vals.length, W = 88, H = 20;
+        if (n < 2) { return '<svg class="ptSpark" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true" focusable="false"></svg>'; }
+        var max = 0, i;
+        for (i = 0; i < n; i++) { if (vals[i] > max) { max = vals[i]; } }
+        if (max < 1) { max = 1; }                       // a quiet site draws a flat line, not noise scaled up
+        var pts = [];
+        for (i = 0; i < n; i++) { pts.push((i / (n - 1) * W).toFixed(1) + " " + (H - 1 - vals[i] / max * (H - 3)).toFixed(1)); } // the whole width, whatever has been seen so far
+        var line = "M" + pts.join(" L");
+        var x0 = pts[0].split(" ")[0], x1 = pts[n - 1].split(" ")[0];
+        return '<svg class="ptSpark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+            '<path class="fill" d="' + line + " L" + x1 + " " + H + " L" + x0 + " " + H + ' Z"/><path d="' + line + '"/></svg>';
+    }
+
+    function liveCellHtml(name, r) {
+        if (r && r.Disabled) { return '<span class="ptLiveOff">off</span>'; }
+        var d = live.by[name];
+        if (!live.ok || !d) { return '<span class="ptLiveIdle">&middot;&middot;&middot;</span>'; }
+        var rps = d.rps, vals = d.hist, peak = 0, i;
+        for (i = 0; i < vals.length; i++) { if (vals[i] > peak) { peak = vals[i]; } }
+        var title = "Now " + fmtRps(rps) + " req/s; busiest moment of the last " + Math.max(2, Math.round(vals.length * 2 / 60)) + " min: " + fmtRps(peak) + " req/s" +
+            (d.inFlight ? "; " + d.inFlight + " active now" : "") + (d.err > 0.05 ? "; " + fmtRps(d.err) + " server errors (HTTP 5xx) per second" : "");
+        var top = rps >= 0.05 ? '<span class="ptLiveNum">' + fmtRps(rps) + '</span> req/s' : '<span class="ptLiveIdle">idle</span>';
+        if (d.err > 0.05) { top += ' <span class="ptLiveErr">&middot; ' + fmtRps(d.err) + ' 5xx/s</span>'; }
+        else if (d.inFlight > 0) { top += ' <span class="ptLiveAct">&middot; ' + d.inFlight + ' active</span>'; }
+        // a site that has been silent for the whole window draws no line at all (nothing to show, no space taken)
+        return '<div title="' + esc(title) + '"><div class="ptLiveRow">' + top + '</div>' + (peak > 0 ? sparkSvg(vals) : "") + '</div>';
+    }
+
+    function applyLive() {
+        $("#httpProxyList td.ptLive").each(function () {
+            var name = $(this).closest("tr").attr("data-ep");
+            var r = byName(name);
+            $(this).html(liveCellHtml(name, r));
+        });
+    }
+
+    function liveOnScreen() { return !document.hidden && $("#httprp").is(":visible") && state.list.length > 0; }
+
+    function liveTick() {
+        if (live.busy || !liveOnScreen()) { return; }
+        live.busy = true;
+        $.ajax({ url: "/api/stats/livemap", dataType: "json", cache: false, timeout: 4000 }).done(function (d) {
+            live.busy = false;
+            if (!d || !Array.isArray(d.proxies)) { return; }
+            live.ok = true; live.at = Date.now();
+            var seen = {};
+            d.proxies.forEach(function (p) {
+                var e = live.by[p.domain] || (live.by[p.domain] = { hist: [] });
+                if (!d.warmup) { e.hist.push(p.rps || 0); if (e.hist.length > LIVE_KEEP) { e.hist.shift(); } }
+                e.rps = d.warmup ? 0 : (p.rps || 0); e.err = d.warmup ? 0 : (p.errRps || 0); e.inFlight = p.inFlight || 0;
+                seen[p.domain] = true;
+            });
+            Object.keys(live.by).forEach(function (k) { if (!seen[k]) { delete live.by[k]; } });
+            applyLive();
+        }).fail(function () { live.busy = false; live.ok = false; applyLive(); });
+    }
+
+    function liveStart() {
+        if (live.timer) { return; }
+        live.timer = setInterval(liveTick, LIVE_POLL_MS);
+        liveTick();
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) { liveTick(); } });
+    }
+
     function renderRows() {
         var start = (state.page - 1) * state.pageSize;
         var rows = state.view.slice(start, start + state.pageSize);
         var $body = $("#httpProxyList");
-        var cols = 7;
+        var cols = 8;
         if (!state.list.length) {
             $body.html('<tr class="ptEmptyRow"><td colspan="' + cols + '"><div class="ptEmpty"><i class="sitemap icon"></i><h3>No proxy rules yet</h3>' +
                 '<p>A proxy rule sends requests for a domain to a server on your network.</p>' +
@@ -224,6 +299,7 @@
             var html = "";
             for (var i = 0; i < rows.length; i++) { html += rowHtml(rows[i]); }
             $body.html(html);
+            applyLive();
         }
     }
 
@@ -581,5 +657,6 @@
     $(function () {
         if (!document.getElementById("httpProxyList")) { return; }
         bind();
+        liveStart();
     });
 })();
