@@ -36,6 +36,14 @@ manual, and trust in production**: one clear picture of what is happening right 
 - `-doctor` extended to cover the config (dangling certificates, rules with no upstream, port clashes).
 - **Healthier defaults for new installs only** (never changed for existing ones): WAF in detection-only mode, sensible rate limit suggestions.
 
+### 4b. Storage for analytics (proposal, needs a decision)
+Statistics today are one JSON record per day, rewritten in full every 10 minutes. That design, not BoltDB itself, is why
+`sys.db` grows and why long history and "average req/s per rule over a week" are hard.
+- **Step 1, embedded (no new dependency):** replace the per-day blob with small time-bucketed rollups (per minute, then per hour/day) that are appended, not rewritten, with retention built in. Config and security data stay in BoltDB.
+- **Step 2, a storage interface** for analytics only, so a backend can be chosen in settings.
+- **Step 3, optional external backend: PostgreSQL, with TimescaleDB as the recommended flavour** (hypertables, compression, `drop_chunks` retention, continuous aggregates). Off by default; Zoraxy stays a single binary that runs with no database server. MySQL/MariaDB would add maintenance for no gain over Postgres, so only one external backend is proposed.
+- Not proposed: moving config, certificates, users or the rules to an external database. They are small, must be readable at boot, and an unreachable database must never stop the proxy.
+
 ### 5. Security depth
 - Rules engine v2: conditions on path, header, country, ASN, rate, bot score; actions allow / challenge / block / tag; reorderable, with a test box ("would this request match?").
 - Per-site **mTLS and API-token** access modes with audit log.
@@ -62,4 +70,5 @@ manual, and trust in production**: one clear picture of what is happening right 
 1. Is the order right? What would you move up (the thing you hit most on Proxy2)?
 2. Ok to allow the one schema bump + backed-up migration in 4.0?
 3. Rules engine v2 and roles: do you want them in 4.0, or is "safe changes + certificates + operate it" enough for the first 4.0?
-4. Version naming: keep `-fork.N` suffix on 4.0 (e.g. `v4.0.0-fork.1`), or drop the suffix? (The updater requires the base to match `SYSTEM_VERSION`, so this also decides when that constant changes.)
+4. Storage: ok with step 1 (embedded rollups) first, then an optional PostgreSQL/TimescaleDB backend for analytics only?
+5. Version naming: keep `-fork.N` suffix on 4.0 (e.g. `v4.0.0-fork.1`), or drop the suffix? (The updater requires the base to match `SYSTEM_VERSION`, so this also decides when that constant changes.)
