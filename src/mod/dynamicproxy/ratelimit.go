@@ -198,6 +198,11 @@ func (router *Router) handleRateLimit(w http.ResponseWriter, r *http.Request, pe
 
 	//Each endpoint gets its own bucket per client IP
 	if !router.rateLimitCounter.Allow(pe.RootOrMatchingDomain, ip, pe.RateLimit, pe.RateLimitBurst) {
+		if pe.RateLimitDryRun {
+			//Dry run: the bucket has already counted this request as denied (shown on the Status page, Tune);
+			//nothing is blocked, logged as blocked or counted as rate limited
+			return nil
+		}
 		w.WriteHeader(429)
 		router.Option.Metrics.Event(metrics.EventRateLimited, pe.RootOrMatchingDomain, "limit")
 		return errors.New("rate limit exceeded")

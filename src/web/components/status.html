@@ -1839,6 +1839,7 @@
         var lim = l.rate, b = l.busiest;
         var head = el("div", "");
         head.appendChild(el("span", "tuneMuted", tf("Limit {0} req/s per client", lim) + (l.burst > 0 && l.burst !== lim ? ", " + tf("burst {0}", l.burst) : "")));
+        if (l.dryRun) { var dr = el("span", "tuneMuted", " \u00b7 "); var db = el("b", "", t("Dry run: nothing is blocked")); dr.appendChild(db); head.appendChild(dr); }
         c.appendChild(head);
         if (!b) {
             c.appendChild(el("div", "tuneHint", t("No client made requests in this window.")));
@@ -1853,7 +1854,9 @@
         var tr = el("div", "tuneBarTrack"), fill = el("div", "tuneBarFill" + (pct >= 90 ? " bad" : pct >= 60 ? " warn" : ""));
         fill.style.width = Math.max(2, pct) + "%"; tr.appendChild(fill); c.appendChild(tr);
         var headroom = lim > 0 ? Math.max(0, Math.round((lim - b.rps) / lim * 100)) : 0;
-        var hint = l.denied > 0 ? tf("{0} requests were rate-limited in this window. Your busiest client reached {1} of {2} req/s.", l.denied, fmtR(b.rps), lim)
+        var hint = l.dryRun ? (l.denied > 0 ? tf("{0} requests would have been rate-limited in this window (none was blocked). Your busiest client reached {1} of {2} req/s.", l.denied, fmtR(b.rps), lim)
+                : tf("No request would have been rate-limited in this window. Your busiest client reached {0} of {1} req/s.", fmtR(b.rps), lim))
+            : l.denied > 0 ? tf("{0} requests were rate-limited in this window. Your busiest client reached {1} of {2} req/s.", l.denied, fmtR(b.rps), lim)
             : b.rps >= lim ? tf("Your busiest client reached {0} of {1} req/s: no headroom left.", fmtR(b.rps), lim)
             : tf("Your busiest client reached {0} of {1} req/s: a limit of {1} req/s leaves {2}% headroom.", fmtR(b.rps), lim, headroom);
         c.appendChild(el("div", "tuneHint", hint));

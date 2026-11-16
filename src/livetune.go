@@ -132,6 +132,7 @@ type ruleSeries struct {
 type limSeries struct {
 	rate    int64 // configured limit, requests per second per client
 	burst   int64
+	dryRun  bool
 	denied  slotRing
 	busyCnt slotRing
 	busyIP  [tuneSlots][16]byte
@@ -141,6 +142,7 @@ type limSeries struct {
 // tuneLimiter is what the sampler learns about a rule with a rate limit
 type tuneLimiter struct {
 	Rate, Burst int64
+	DryRun      bool                 // the limit only counts, nothing is rejected
 	Clients     map[string][2]uint64 // client ip -> lifetime (allowed, denied) of its bucket
 }
 
@@ -227,7 +229,7 @@ func (st *tuneStore) tick(now time.Time, in tuneInput) {
 			rs.lim = &limSeries{}
 		}
 		ls := rs.lim
-		ls.rate, ls.burst = lim.Rate, lim.Burst
+		ls.rate, ls.burst, ls.dryRun = lim.Rate, lim.Burst, lim.DryRun
 		var deniedSum, busiest uint64
 		var busiestIP string
 		for ip, c := range lim.Clients {
@@ -292,8 +294,9 @@ type TuneClient struct {
 // TuneLimiter is the rate limit view of a rule
 type TuneLimiter struct {
 	Enabled bool        `json:"enabled"`
-	Rate    int64       `json:"rate"`  // requests per second per client
-	Burst   int64       `json:"burst"` // 0 = same as rate
+	Rate    int64       `json:"rate"`             // requests per second per client
+	Burst   int64       `json:"burst"`            // 0 = same as rate
+	DryRun  bool        `json:"dryRun,omitempty"` // dry run: "denied" counts requests that would have been rejected, none was
 	Denied  uint64      `json:"denied"`
 	Busiest *TuneClient `json:"busiest,omitempty"`
 	Hint    float64     `json:"suggestedRate,omitempty"` // a hint only, never applied
@@ -344,7 +347,7 @@ func (st *tuneStore) query(now time.Time, window string) TuneResult {
 		tr := &TuneRule{Domain: name, Stats: rs.reqs.stats(newest, rs.first, n, st.startUnix)}
 		if rs.limited && rs.lim != nil {
 			ls := rs.lim
-			tr.Limiter = TuneLimiter{Enabled: true, Rate: ls.rate, Burst: ls.burst}
+			tr.Limiter = TuneLimiter{Enabled: true, Rate: ls.rate, Burst: ls.burst, DryRun: ls.dryRun}
 			dsum, _, _, _ := ls.denied.windowStats(newest, rs.first, n)
 			tr.Limiter.Denied = dsum
 			_, peak, peakSlot, _ := ls.busyCnt.windowStats(newest, rs.first, n)
@@ -390,7 +393,7 @@ func sampleTuneInput(now time.Time) tuneInput {
 		in.Rules[ep.RootOrMatchingDomain] = s.down[ep.RootOrMatchingDomain]
 		if ep.RequireRateLimit && ep.RateLimit > 0 {
 			limited[ep.RootOrMatchingDomain] = true
-			in.Limiters[ep.RootOrMatchingDomain] = tuneLimiter{Rate: ep.RateLimit, Burst: ep.RateLimitBurst, Clients: map[string][2]uint64{}}
+			in.Limiters[ep.RootOrMatchingDomain] = tuneLimiter{Rate: ep.RateLimit, Burst: ep.RateLimitBurst, DryRun: ep.RateLimitDryRun, Clients: map[string][2]uint64{}}
 		}
 		return true
 	})

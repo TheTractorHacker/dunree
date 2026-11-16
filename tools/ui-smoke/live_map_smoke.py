@@ -364,6 +364,48 @@ def live_map_ui(pg, ctx):
         if fr.evaluate("flowRunning()"):
             fail("livemap", "prefers-reduced-motion: the dashes must not run")
         pg.emulate_media(reduced_motion="no-preference")
+
+        # ---- dry run: the limit counts what it would reject, blocks nothing; switched off it rejects ----
+        current["page"] = "livemap/dryrun"
+        stop.set()
+        pg.wait_for_timeout(1500)
+        r = post("/api/proxy/edit", {"rootname": LM_HOSTS[0], "rate": "true", "ratenum": "1", "rateburst": "2", "ratedry": "true"})
+        if isinstance(r, dict) and r.get("error"):
+            fail("livemap", f"enabling the dry run failed: {r}")
+        pg.wait_for_timeout(2500)
+        # sustained traffic, 5 req/s for 12 s from one client against a limit of 1 req/s: the sampler reads the per client counters
+        # every 5 s and idle buckets are swept after about 2 s, so a burst shorter than that can be missed (a known limit)
+        codes = []
+        for _ in range(60):
+            codes.append(hit(LM_HOSTS[0]))
+            time.sleep(0.2)
+        if 429 in codes or codes.count(200) != 60:
+            fail("livemap", f"dry run: no request may be blocked, got status codes {sorted(set(codes))} ({codes.count(429)} x 429)")
+        pg.wait_for_timeout(1500)
+        ra = [x for x in get("/api/stats/livetune?window=1m").get("rules", []) if x["domain"] == LM_HOSTS[0]]
+        lim = ra[0]["limiter"] if ra else {}
+        if not lim.get("dryRun") or lim.get("denied", 0) < 10:
+            fail("livemap", f"dry run: tune must report dryRun and the requests that would have been limited: {lim}")
+        pg.evaluate("localStorage.removeItem('zoraxy_trafficflow_mode')")
+        pg.goto(args.url + "/#status", wait_until="networkidle")
+        pg.wait_for_selector("#diagramTuneBtn")
+        pg.click("#diagramTuneBtn")
+        pg.wait_for_selector("#tunePanel .tuneRow:not(.tuneHead)", timeout=8000)
+        pg.click("#tunePanel .tuneWin button:nth-child(2)")  # 1 min
+        pg.wait_for_timeout(800)
+        ptxt = pg.evaluate("document.getElementById('tunePanel').innerText")
+        if "Dry run" not in ptxt or "would have been rate-limited" not in ptxt:
+            fail("livemap", f"dry run: the Tune panel must say that nothing is blocked and how many requests would have been limited: {ptxt!r}")
+        card = pg.locator("#tunePanel")
+        card.scroll_into_view_if_needed()
+        card.screenshot(path=os.path.join(args.out, "livemap-dryrun-light.png"))
+        r = post("/api/proxy/edit", {"rootname": LM_HOSTS[0], "ratedry": "false"})
+        if isinstance(r, dict) and r.get("error"):
+            fail("livemap", f"turning the dry run off failed: {r}")
+        pg.wait_for_timeout(3500)
+        codes = [hit(LM_HOSTS[0]) for _ in range(25)]
+        if codes.count(429) < 10:
+            fail("livemap", f"dry run off: the limit must reject again, got {codes.count(429)} x 429 of 25")
     finally:
         stop.set()
         for h in LM_HOSTS:

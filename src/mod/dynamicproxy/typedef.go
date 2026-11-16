@@ -364,6 +364,7 @@ type ProxyEndpoint struct {
 	RequireRateLimit bool
 	RateLimit        int64 // Rate limit in requests per second (token refill rate)
 	RateLimitBurst   int64 // Max burst size in requests, 0 = same as RateLimit
+	RateLimitDryRun  bool  // Dry run: count the requests the limit would reject but let them through (nothing is blocked)
 
 	// CAPTCHA Gating
 	RequireCaptcha bool           // Enable CAPTCHA gating for this endpoint

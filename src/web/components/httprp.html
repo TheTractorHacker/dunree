@@ -534,6 +534,11 @@
                                     burst (0 = same as rate)
                                 </label>
                             </div>
+                            <div class="ui checkbox" style="margin-top: 0.8em;">
+                                <input type="checkbox" class="RateLimitDryRun">
+                                <label>Dry run: count only, do not block<br>
+                                <small>Requests that would be limited are let through and counted. See "Tune" on the Status page for how many, from how many clients, then turn this off to enforce the limit.</small></label>
+                            </div>
 </div>
 </section>
 <section class="zx-card hrp-card" data-hrp-card="captcha" rpcfg="security" data-hrp-nd="captcha" aria-labelledby="hrpc-captcha">
@@ -1613,6 +1618,7 @@
         let requireRateLimit = $(editor).find(".RequireRateLimit")[0].checked;
         let rateLimit = $(editor).find(".RateLimit").val();
         let rateLimitBurst = $(editor).find(".RateLimitBurst").val();
+        let rateLimitDryRun = $(editor).find(".RateLimitDryRun")[0].checked;
         let bypassGlobalTLS = $(editor).find(".BypassGlobalTLS")[0].checked;
         let enableConnectSupport = $(editor).find(".EnableConnectSupport")[0].checked;
         let enableUpgradeForwarding = $(editor).find(".EnableUpgradeForwarding")[0].checked;
@@ -1679,6 +1685,7 @@
                 "mitigationAction": mitigationAction,
                 "ratenum" :rateLimit,
                 "rateburst": rateLimitBurst,
+                "ratedry": rateLimitDryRun,
                 "captcha": requireCaptcha,
                 "captchaProvider": captchaProvider,
                 "captchaFriendlyEndpoint": $(editor).find(".friendlyEndpointSelect").val() || "global",
@@ -2454,6 +2461,16 @@
             hrpEdited(uuid, this);
         });
         editor.find(".RateLimit").val(subd.RateLimit).on("change", rateLimitChangeEvent);
+
+        // Dry run: the limit counts what it would reject but blocks nothing
+        editor.find(".RateLimitDryRun").off("change").prop("checked", !!subd.RateLimitDryRun).on("change", function() {
+            subd.RateLimitDryRun = this.checked;
+            hrpEdited(uuid, this);
+        });
+        // the dry run only means something while the limit itself is on
+        function syncDryRunState() { editor.find(".RateLimitDryRun").closest(".checkbox").toggleClass("disabled", !editor.find(".RequireRateLimit")[0].checked); }
+        editor.find(".RequireRateLimit").on("change.dryrun", syncDryRunState);
+        syncDryRunState();
 
         // Rate limit burst (0 = same as the rate)
         editor.find(".RateLimitBurst").off("change");

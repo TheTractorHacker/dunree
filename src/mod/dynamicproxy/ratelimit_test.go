@@ -166,3 +166,36 @@ func TestHandleRateLimit_DirectConnection(t *testing.T) {
 		t.Errorf("expected 7 of 10 requests blocked at limit 3, got %d", blocked)
 	}
 }
+
+// Dry run: the limit counts what it would reject but lets every request through, writes no 429 and does not
+// count the request as rate limited. The same traffic is rejected once the dry run is switched off.
+func TestHandleRateLimit_DryRunCountsButNeverBlocks(t *testing.T) {
+	router := newTestRateLimitRouter(t, false)
+	pe := &ProxyEndpoint{RootOrMatchingDomain: "dry.example.com", RequireRateLimit: true, RateLimit: 1, RateLimitBurst: 2, RateLimitDryRun: true}
+
+	for i := 0; i < 10; i++ {
+		w := httptest.NewRecorder()
+		if err := router.handleRateLimit(w, newTestRequest("198.51.100.9:5000", nil), pe); err != nil {
+			t.Fatalf("dry run blocked request %d: %v", i, err)
+		}
+		if w.Code != http.StatusOK || w.Body.Len() != 0 {
+			t.Fatalf("dry run wrote a response (status %d) for request %d", w.Code, i)
+		}
+	}
+	var allowed, denied uint64
+	router.RateLimitClientCounters(map[string]bool{"dry.example.com": true}, func(_, _ string, a, d uint64) { allowed += a; denied += d })
+	if denied < 7 {
+		t.Fatalf("dry run must still count what it would reject: allowed %d denied %d", allowed, denied)
+	}
+
+	pe.RateLimitDryRun = false //switched off: a fresh client is limited as usual
+	blocked := 0
+	for i := 0; i < 10; i++ {
+		if err := router.handleRateLimit(httptest.NewRecorder(), newTestRequest("198.51.100.10:5000", nil), pe); err != nil {
+			blocked++
+		}
+	}
+	if blocked < 7 {
+		t.Fatalf("with the dry run off the limit must reject, blocked %d of 10", blocked)
+	}
+}

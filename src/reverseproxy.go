@@ -1159,6 +1159,7 @@ func ReverseProxyHandleEditEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	newProxyEndpoint.RequireRateLimit = requireRateLimit
 	newProxyEndpoint.RateLimit = proxyRateLimit
+	newProxyEndpoint.RateLimitDryRun = postBoolOr(r, "ratedry", cur.RateLimitDryRun)
 	if proxyRateLimitBurst >= 0 {
 		newProxyEndpoint.RateLimitBurst = proxyRateLimitBurst
 	}
