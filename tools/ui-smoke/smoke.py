@@ -3073,9 +3073,10 @@ def main():
         pg.screenshot(path=os.path.join(args.out, "nav-filter.png"))
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(200)
-        n = pg.evaluate("[...document.querySelectorAll('#mainmenu a.item[tag]')].filter(a => a.offsetParent !== null).length")
-        if n < 2 or "updater" in pg.evaluate("[...document.querySelectorAll('#mainmenu a.item[tag]')].filter(a => a.offsetParent !== null).map(a => a.getAttribute('tag'))"):
-            fail("uxkit", "clearing the filter did not restore the menu (the open group's items, and not only the match)")
+        tags = pg.evaluate("[...document.querySelectorAll('#mainmenu a.item[tag]')].filter(a => a.offsetParent !== null).map(a => a.getAttribute('tag'))")
+        # accordion: after Esc the menu is back to the one open group (Overview, opened above), no longer the filter match
+        if "status" not in tags or "updater" in tags or pg.evaluate("document.getElementById('navFilterInput').value") != "":
+            fail("uxkit", f"clearing the filter did not restore the menu, visible items: {tags}")
         unlabeled = pg.evaluate("""() => [...document.querySelectorAll('button, a.button')].filter(b => b.offsetParent !== null
             && !b.textContent.trim() && !b.getAttribute('aria-label') && !b.getAttribute('title')).map(b => b.outerHTML.slice(0, 90))""")
         if unlabeled:
