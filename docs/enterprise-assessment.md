@@ -1,6 +1,6 @@
 # Enterprise dual-proxy: final gap assessment
 
-Fork line `v3.3.6-fork.21`. Plan: [enterprise-dual-proxy-plan.md](enterprise-dual-proxy-plan.md). Guide:
+Fork line `v3.3.6-fork.22`. Plan: [enterprise-dual-proxy-plan.md](enterprise-dual-proxy-plan.md). Guide:
 [guides/enterprise-dual-proxy.md](guides/enterprise-dual-proxy.md).
 
 Evidence conventions. **E2E** = `tools/e2e/dual_proxy/run.sh enterprise` (`enterprise.py`, check ids 1a ... 11; two
