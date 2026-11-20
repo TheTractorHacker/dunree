@@ -228,6 +228,7 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 		PermissionPolicy:             headerRewriteOptions.PermissionPolicy,
 	})
 	downstreamHeaders = append(downstreamHeaders, h.Parent.rulesDownstreamHeaders(r)...) //response header actions of the rules engine
+	hardenedHeaders, hardenedOverride := hardenedForRequest(headerRewriteOptions, r)     //opt-in preset, nil when off
 
 	//Handle the request reverse proxy. Retries (if enabled for this endpoint) re-run this on another upstream
 	serveUpstream := func(w http.ResponseWriter, r *http.Request, upstream *loadbalance.Upstream) (int, error) {
@@ -239,6 +240,8 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 			PathPrefix:                     "",
 			UpstreamHeaders:                upstreamHeaders,
 			DownstreamHeaders:              downstreamHeaders,
+			HardenedHeaders:                hardenedHeaders,
+			HardenedOverride:               hardenedOverride,
 			DisableChunkedTransferEncoding: target.DisableChunkedTransferEncoding,
 			ForceHTTP11:                    target.ForceHTTP11,
 			NoRemoveUserAgentHeader:        headerRewriteOptions.DisableUserAgentHeaderRemoval,
@@ -415,6 +418,7 @@ func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, targe
 		PermissionPolicy:             headerRewriteOptions.PermissionPolicy,
 	})
 	downstreamHeaders = append(downstreamHeaders, h.Parent.rulesDownstreamHeaders(r)...) //response header actions of the rules engine
+	vdirHardened, vdirHardenedOverride := hardenedForRequest(headerRewriteOptions, r)
 
 	//Handle the virtual directory reverse proxy request
 	statusCode, err := target.proxy.ServeHTTP(w, r, &dpcore.ResponseRewriteRuleSet{
@@ -425,6 +429,8 @@ func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, targe
 		PathPrefix:                     target.MatchingPath,
 		UpstreamHeaders:                upstreamHeaders,
 		DownstreamHeaders:              downstreamHeaders,
+		HardenedHeaders:                vdirHardened,
+		HardenedOverride:               vdirHardenedOverride,
 		DisableChunkedTransferEncoding: target.parent.DisableChunkedTransferEncoding,
 		ForceHTTP11:                    target.parent.ForceHTTP11,
 		NoRemoveUserAgentHeader:        headerRewriteOptions.DisableUserAgentHeaderRemoval,

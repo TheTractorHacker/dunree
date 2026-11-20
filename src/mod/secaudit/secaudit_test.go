@@ -125,6 +125,8 @@ func TestClassifyEvents(t *testing.T) {
 		want   string
 	}{
 		{"/api/deployrole/set", nil, "deployrole.set"},
+		{"/api/securityheaders/default", nil, "securityheaders.default"},
+		{"/api/proxy/header/hardened", nil, "proxy.header.hardened"},
 		{"/api/trustedproxy/remove", nil, "trustedproxy.remove"},
 		{"/api/trustedproxy/bulkUpdate", nil, "trustedproxy.bulkupdate"},
 		{"/api/blacklist/ip/add", nil, "blacklist.ip.add"},

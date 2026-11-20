@@ -37,22 +37,24 @@ is refused for viewers until it is added here on purpose.
 var viewerReadOnlyPOST = map[string]bool{}
 
 var viewerDeniedPrefixes = []string{
-	"/api/conf/export",     //full configuration including secrets
-	"/api/info/pprof",      //heap / goroutine dumps
-	"/api/system/dbusage",  //database file path and table sizes
-	"/api/users/",          //account management
-	"/api/history/",        //configuration history (diffs, restore)
-	"/api/security/audit/", //security audit log (actors, addresses, what changed)
-	"/api/deployrole/get",  //deployment role, trusted proxy count, direct CIDRs, peer gate counters
-	"/api/destguard/get",   //allowed backend destinations and the rules that would be refused (internal topology)
-	"/api/adminallow/get",  //admin allow-list, the caller's address and the admin listen address
-	"/api/abuse/config",    //auto-ban settings
-	"/api/ech/export",      //ECH private key
-	"/api/ech/fallbacks",   //names probed by clients and scanners
-	"/api/zrok/logs",       //zrok tunnel output (share tokens, URLs)
-	"/api/proxy/script/",   //Lua script source (may hold secrets); editing is admin only
-	"/web.ssh/",            //terminal
-	"/plugin.ui/",          //plugin UIs can mutate
+	"/api/conf/export",      //full configuration including secrets
+	"/api/info/pprof",       //heap / goroutine dumps
+	"/api/system/dbusage",   //database file path and table sizes
+	"/api/users/",           //account management
+	"/api/history/",         //configuration history (diffs, restore)
+	"/api/security/audit/",  //security audit log (actors, addresses, what changed)
+	"/api/deployrole/get",   //deployment role, trusted proxy count, direct CIDRs, peer gate counters
+	"/api/destguard/get",    //allowed backend destinations and the rules that would be refused (internal topology)
+	"/api/adminallow/get",   //admin allow-list, the caller's address and the admin listen address
+	"/api/abuse/config",     //auto-ban settings
+	"/api/securityheaders/", //default hardened header preset for new sites
+	"/api/crowdsec/",        //CrowdSec LAPI address, health and the decided client addresses
+	"/api/ech/export",       //ECH private key
+	"/api/ech/fallbacks",    //names probed by clients and scanners
+	"/api/zrok/logs",        //zrok tunnel output (share tokens, URLs)
+	"/api/proxy/script/",    //Lua script source (may hold secrets); editing is admin only
+	"/web.ssh/",             //terminal
+	"/plugin.ui/",           //plugin UIs can mutate
 }
 
 func isMutatingMethod(m string) bool {

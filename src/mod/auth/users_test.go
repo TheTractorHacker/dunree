@@ -358,7 +358,7 @@ func TestLoginHooks(t *testing.T) {
 
 // A viewer must not read the Phase 2 exposure settings (network topology, admin allow-list, caller address)
 func TestViewerDeniedExposureReadEndpoints(t *testing.T) {
-	for _, p := range []string{"/api/deployrole/get", "/api/destguard/get", "/api/adminallow/get", "/api/security/audit/list", "/api/security/audit/verify"} {
+	for _, p := range []string{"/api/deployrole/get", "/api/destguard/get", "/api/adminallow/get", "/api/security/audit/list", "/api/security/audit/verify", "/api/securityheaders/default"} {
 		if ViewerAllowed("GET", p) {
 			t.Errorf("viewer may read %s", p)
 		}

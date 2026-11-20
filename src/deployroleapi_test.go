@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"imuslab.com/zoraxy/mod/access"
 	"imuslab.com/zoraxy/mod/database"
 	"imuslab.com/zoraxy/mod/deployrole"
 	"imuslab.com/zoraxy/mod/info/logger"
@@ -101,5 +102,44 @@ func TestDeployRoleAPIRefusesLockoutGate(t *testing.T) {
 	}
 	if deployGet(t).PeerGateActive {
 		t.Fatal("gate became active")
+	}
+}
+
+// A hardened role with an access rule that does not trust proxy headers makes rate limits and bans see the front proxy.
+func TestDeployRoleWarnsAboutUngatedAccessRules(t *testing.T) {
+	deployTestSetup(t)
+	ac, err := access.NewAccessController(&access.Options{
+		Logger: *SystemWideLogger, ConfigFolder: filepath.Join(t.TempDir(), "access"), TrustedProxiesFile: filepath.Join(t.TempDir(), "tp.json"),
+		Database: sysdb, SkipPublicIPCheck: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	accessController = ac
+	ac.AddTrustedProxy("10.9.0.2", "external proxy")
+	def, _ := ac.GetAccessRuleByID("default")
+
+	hasUngated := func(v deployRoleView) bool {
+		for _, w := range v.Warnings {
+			if strings.Contains(w, "Trusted Proxy Gating") {
+				return true
+			}
+		}
+		return false
+	}
+	// standalone, nothing hardened: unchanged, no warning
+	if v := deployGet(t); hasUngated(v) || len(v.UngatedRules) != 0 {
+		t.Fatalf("standalone must not warn: %+v", v)
+	}
+	if w := deploySet(`{"role":"internal"}`, http.MethodPost); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	def.TrustProxyHeadersOnly = false
+	if v := deployGet(t); !hasUngated(v) || len(v.UngatedRules) == 0 {
+		t.Fatalf("internal role with a rule without gating must warn: %+v", v)
+	}
+	def.TrustProxyHeadersOnly = true
+	if v := deployGet(t); hasUngated(v) || len(v.UngatedRules) != 0 {
+		t.Fatalf("gated rule still warns: %+v", v)
 	}
 }

@@ -27,6 +27,7 @@ type route struct {
 // Accounts and sessions (/api/auth/, /api/users/) are audited by mod/auth in auth_audit.log.
 var routes = []route{
 	{"/api/deployrole/", "deployrole"},
+	{"/api/crowdsec/", "crowdsec"},
 	{"/api/trustedproxy/", "trustedproxy"},
 	{"/api/access/", "access"},
 	{"/api/blacklist/", "blacklist"},
@@ -35,6 +36,7 @@ var routes = []route{
 	{"/api/adminallow/", "adminallow"},
 	{"/api/destguard/", "destguard"},
 	{"/api/proxy/", "proxy"},
+	{"/api/securityheaders/", "securityheaders"},
 	{"/api/waf/", "waf"},
 	{"/api/abuse/", "abuse"},
 	{"/api/botrules/", "botrules"},

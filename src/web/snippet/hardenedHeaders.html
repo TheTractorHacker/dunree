@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Notes: This should be open in its original path. Used per site (#{"ep":...}) and for the global default (#{"global":true}) -->
+        <meta charset="utf-8">
+        <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
+        <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <script src="../script/i18n.js"></script>
+        <script src="../script/jquery-3.6.0.min.js"></script>
+        <script src="../script/semantic/semantic.min.js"></script>
+        <script src="../script/utils.js"></script>
+        <style>
+            #hhOptions.disabled{ opacity: 0.45; pointer-events: none; user-select: none; }
+            #hhPreviewTable{ table-layout: fixed; }
+            #hhPreviewTable th:nth-child(1){ width: 28%; }
+            #hhPreviewTable th:nth-child(2){ width: 38%; }
+            #hhPreview td{ overflow-wrap: anywhere; word-break: break-word; }
+            #hhPreview td:first-child{ overflow-wrap: break-word; word-break: normal; }
+            #hhPreview tr.skipped td{ opacity: 0.6; }
+            .hhField{ margin-bottom: 0.9em; }
+            .hhIndent{ margin-left: 1.6em; }
+        </style>
+    </head>
+    <body>
+        <link rel="stylesheet" href="../darktheme.css">
+        <script src="../script/darktheme.js"></script>
+        <div class="ui basic segment" style="padding: 0.4em 0.2em;">
+            <div class="ui toggle checkbox" id="hhEnabledBox">
+                <input type="checkbox" id="hhEnabled">
+                <label>Send hardened security headers<br>
+                <small>Off by default. Adds the headers chosen below to responses from this site. Headers set by your own header rules or by the upstream are not replaced unless you choose that.</small></label>
+            </div>
+
+            <div id="hhOptions" class="disabled" style="margin-top: 1.2em;">
+                <div class="hhField">
+                    <div class="ui checkbox"><input type="checkbox" id="hhHSTS"><label>Strict-Transport-Security (HSTS)<br><small>Tells browsers to use HTTPS only for this site. Only sent on HTTPS requests. Browsers remember it for the whole max age, so turn it on only when every use of this name works over HTTPS.</small></label></div>
+                    <div class="hhIndent" style="margin-top: 0.5em;">
+                        <select id="hhHSTSAge" class="ui compact dropdown">
+                            <option value="2592000">1 month</option>
+                            <option value="15552000">6 months</option>
+                            <option value="31536000">1 year</option>
+                            <option value="63072000">2 years</option>
+                        </select>
+                        <div class="ui checkbox" style="margin-top: 0.5em; display:block;"><input type="checkbox" id="hhSub"><label>includeSubDomains<br><small>Also forces HTTPS on every subdomain. Not implied by anything else.</small></label></div>
+                        <div class="ui checkbox" style="margin-top: 0.5em; display:block;"><input type="checkbox" id="hhPreload"><label>preload<br><small>Signals that you want the domain on browser preload lists. Needs includeSubDomains and at least 1 year. Removal from those lists is slow, so only choose it on purpose.</small></label></div>
+                    </div>
+                </div>
+                <div class="hhField">
+                    <div class="ui checkbox"><input type="checkbox" id="hhSniff"><label>X-Content-Type-Options: nosniff<br><small>Stops browsers from guessing file types.</small></label></div>
+                </div>
+                <div class="hhField">
+                    <label for="hhReferrer"><b>Referrer-Policy</b></label><br>
+                    <select id="hhReferrer" class="ui fluid dropdown" style="margin-top: 0.3em;">
+                        <option value="">Do not send</option>
+                        <option value="no-referrer">no-referrer</option>
+                        <option value="same-origin">same-origin</option>
+                        <option value="strict-origin">strict-origin</option>
+                        <option value="strict-origin-when-cross-origin">strict-origin-when-cross-origin</option>
+                    </select>
+                </div>
+                <div class="hhField">
+                    <label for="hhFrame"><b>Framing</b></label><br>
+                    <select id="hhFrame" class="ui fluid dropdown" style="margin-top: 0.3em;">
+                        <option value="">Do not send</option>
+                        <option value="deny">X-Frame-Options: DENY</option>
+                        <option value="sameorigin">X-Frame-Options: SAMEORIGIN</option>
+                        <option value="csp-none">CSP frame-ancestors 'none'</option>
+                        <option value="csp-self">CSP frame-ancestors 'self'</option>
+                    </select>
+                    <small>The CSP choices add only a frame-ancestors policy. An existing Content-Security-Policy of the upstream is never edited.</small>
+                </div>
+                <div class="hhField">
+                    <div class="ui checkbox"><input type="checkbox" id="hhPP"><label>Permissions-Policy<br><small>Turns off camera, microphone, location, payment, USB, motion sensors and a few more for this site and its frames. Everything else stays allowed.</small></label></div>
+                </div>
+                <div class="hhField">
+                    <div class="ui checkbox"><input type="checkbox" id="hhOverride"><label>Replace values the upstream already sends<br><small>Off: a header the upstream sends is kept and only missing ones are added. On: the upstream value is replaced. Headers from your own header rules always win either way.</small></label></div>
+                </div>
+            </div>
+
+            <h5 class="ui header" style="margin-top: 1.2em;">Headers that will be sent</h5>
+            <table class="ui very compact unstackable table" id="hhPreviewTable">
+                <thead><tr><th>Header</th><th>Value</th><th>Result</th></tr></thead>
+                <tbody id="hhPreview"><tr><td colspan="3"><i class="ui loading spinner icon"></i></td></tr></tbody>
+            </table>
+            <small id="hhHttpNote" style="display:none;"></small>
+            <div style="margin-top: 0.8em;">
+                <button class="ui basic button" id="hhSave"><i class="green save icon"></i> Save</button>
+                <button class="ui basic button" id="hhRecommended" type="button">Fill in recommended values</button>
+            </div>
+        </div>
+
+        <script>
+            let target = {};
+            if (window.location.hash.length > 1){
+                try{
+                    target = JSON.parse(decodeURIComponent(window.location.hash.substr(1)));
+                }catch(ex){
+                    console.log("Unable to read the target from the hash");
+                }
+            }
+            const API = target.global ? "/api/securityheaders/default" : "/api/proxy/header/hardened";
+            function baseParams(){
+                return target.global ? {} : {domain: target.ep};
+            }
+            function say(msg, ok){
+                if (parent != undefined && parent.msgbox != undefined){ parent.msgbox(t(msg), ok !== false); }
+            }
+
+            let recommended = null;
+
+            function read(){
+                let age = parseInt($("#hhHSTSAge").val(), 10);
+                return {
+                    Enabled: $("#hhEnabled")[0].checked,
+                    HSTS: $("#hhHSTS")[0].checked,
+                    HSTSMaxAge: age,
+                    HSTSIncludeSubdomains: $("#hhSub")[0].checked,
+                    HSTSPreload: $("#hhPreload")[0].checked,
+                    NoSniff: $("#hhSniff")[0].checked,
+                    ReferrerPolicy: $("#hhReferrer").val(),
+                    FrameProtection: $("#hhFrame").val(),
+                    PermissionsPolicy: $("#hhPP")[0].checked,
+                    OverrideExisting: $("#hhOverride")[0].checked
+                };
+            }
+
+            function fill(s){
+                $("#hhEnabled").prop("checked", !!s.Enabled);
+                $("#hhHSTS").prop("checked", !!s.HSTS);
+                $("#hhHSTSAge").val(String(s.HSTSMaxAge || 31536000));
+                $("#hhSub").prop("checked", !!s.HSTSIncludeSubdomains);
+                $("#hhPreload").prop("checked", !!s.HSTSPreload);
+                $("#hhSniff").prop("checked", !!s.NoSniff);
+                $("#hhReferrer").val(s.ReferrerPolicy || "");
+                $("#hhFrame").val(s.FrameProtection || "");
+                $("#hhPP").prop("checked", !!s.PermissionsPolicy);
+                $("#hhOverride").prop("checked", !!s.OverrideExisting);
+                syncState();
+            }
+
+            function syncState(){
+                let on = $("#hhEnabled")[0].checked;
+                $("#hhOptions").toggleClass("disabled", !on);
+                let hsts = $("#hhHSTS")[0].checked;
+                $("#hhSub, #hhPreload, #hhHSTSAge").prop("disabled", !hsts);
+                if (!hsts){ $("#hhSub, #hhPreload").prop("checked", false); }
+                if ($("#hhPreload")[0].checked){
+                    $("#hhSub").prop("checked", true);
+                    if (parseInt($("#hhHSTSAge").val(), 10) < 31536000){ $("#hhHSTSAge").val("31536000"); }
+                }
+            }
+
+            function renderPreview(view){
+                let $tb = $("#hhPreview").empty();
+                let rows = view.HTTPS || [];
+                if (rows.length === 0){
+                    $tb.append($("<tr>").append($("<td colspan='3'>").text(t("Nothing is sent. The preset is off."))));
+                } else {
+                    rows.forEach(function(e){
+                        let $tr = $("<tr>").toggleClass("skipped", e.Mode === "skipped");
+                        $tr.append($("<td>").text(e.Key)).append($("<td>").append($("<code>").text(e.Value)));
+                        let res = "";
+                        if (e.Mode === "add"){ res = t("Added only if the upstream sends none"); }
+                        else if (e.Mode === "replace"){ res = t("Replaces the upstream value"); }
+                        else { res = tf("Not sent: {0}", t(e.Reason || "")); }
+                        $tr.append($("<td>").text(res));
+                        $tb.append($tr);
+                    });
+                }
+                let httpsOnly = (view.HTTPS || []).length - (view.HTTP || []).length;
+                $("#hhHttpNote").toggle(httpsOnly > 0).text(httpsOnly > 0 ? t("Strict-Transport-Security is never sent on plain HTTP requests.") : "");
+            }
+
+            let previewTimer = null;
+            function preview(){
+                clearTimeout(previewTimer);
+                previewTimer = setTimeout(function(){
+                    $.ajax({
+                        url: API, method: "GET",
+                        data: Object.assign(baseParams(), {settings: JSON.stringify(read())}),
+                        success: function(data){
+                            if (data.error != undefined){
+                                $("#hhPreview").html("").append($("<tr>").append($("<td colspan='3'>").text(data.error)));
+                            } else {
+                                renderPreview(data);
+                            }
+                        }
+                    });
+                }, 150);
+            }
+
+            function load(){
+                $.ajax({
+                    url: API, method: "GET", data: baseParams(),
+                    success: function(data){
+                        if (data.error != undefined){ say(data.error, false); return; }
+                        recommended = data.Defaults;
+                        fill(data.Settings || Object.assign({}, data.Defaults, {Enabled: false}));
+                        renderPreview(data);
+                    }
+                });
+            }
+
+            $("#hhOptions, #hhEnabledBox").on("change", "input, select", function(){
+                syncState();
+                preview();
+            });
+            $("#hhRecommended").on("click", function(){
+                if (recommended){ fill(Object.assign({}, recommended, {Enabled: $("#hhEnabled")[0].checked})); preview(); }
+            });
+            $("#hhSave").on("click", function(){
+                $.cjax({
+                    url: API, method: "POST",
+                    data: Object.assign(baseParams(), {settings: JSON.stringify(read())}),
+                    success: function(data){
+                        if (data.error != undefined){
+                            say(data.error, false);
+                        } else {
+                            say("Hardened header settings saved");
+                            load();
+                        }
+                    }
+                });
+            });
+            //Fomantic checkboxes only react to a click on their label text once initialised
+            $(".ui.checkbox").checkbox();
+            load();
+        </script>
+    </body>
+</html>

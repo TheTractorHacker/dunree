@@ -92,6 +92,9 @@ func abuseScope(sep *ProxyEndpoint) string {
 // abuseBegin returns handled=true if the request was rejected because the
 // client is banned. Otherwise the returned done must be deferred.
 func (router *Router) abuseBegin(w http.ResponseWriter, r *http.Request, sep *ProxyEndpoint) (http.ResponseWriter, *http.Request, func(), bool) {
+	if router.crowdsecBegin(w, r, sep) {
+		return w, r, noopDone, true
+	}
 	ab := router.Option.Abuse
 	if !ab.Active() {
 		return w, r, noopDone, false

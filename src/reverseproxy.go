@@ -274,6 +274,7 @@ func ReverseProxyInit() {
 
 	//Deployment role (default standalone = unchanged behaviour), see mod/deployrole
 	initDeployRole()
+	initCrowdSec()
 
 	useProxyProtocol := false
 	sysdb.Read("settings", "useProxyProtocol", &useProxyProtocol)
@@ -369,6 +370,7 @@ func ReverseProxyInit() {
 		PluginManager:       pluginManager,
 		Metrics:             metricsRegistry,
 		Abuse:               getAbuseManager(),
+		CrowdSec:            crowdsecMgr,
 		Bots:                getBotEngine(),
 		Rules:               getRulesEngine(),
 		BasicAuthLists:      getCredentialLists(),
@@ -819,6 +821,9 @@ func ReverseProxyHandleAddEndpoint(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
+		//Global default of the hardened security headers preset (off unless the admin turned it on)
+		applyHardenedDefault(&thisProxyEndpoint)
 
 		//Optional certificate for this rule's hostnames. Applied last so a template cannot undo the choice,
 		//and before anything goes live so an unknown name leaves nothing behind

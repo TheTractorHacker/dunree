@@ -117,3 +117,31 @@ func injectUserDefinedHeaders(header http.Header, userHeaders [][]string) {
 		header.Set(headerKey, headerValue)
 	}
 }
+
+// injectHardenedHeaders applies the hardened security header preset to an upstream response. A header the
+// upstream already sent is left alone unless override is set. Content-Security-Policy is never replaced: the preset
+// only carries a frame-ancestors directive, which is added as a further policy header (override only) when the
+// existing policy has none, and an existing frame-ancestors is always kept.
+func injectHardenedHeaders(header http.Header, list [][]string, override bool) {
+	for _, kv := range list {
+		if len(kv) < 2 || kv[0] == "" || kv[1] == "" {
+			continue
+		}
+		existing := header.Values(kv[0])
+		if len(existing) == 0 {
+			header.Set(kv[0], kv[1])
+			continue
+		}
+		if !override {
+			continue
+		}
+		if strings.EqualFold(kv[0], "Content-Security-Policy") {
+			joined := strings.Join(existing, ", ")
+			if !strings.Contains(strings.ToLower(joined), "frame-ancestors") {
+				header.Add(kv[0], kv[1]) //a second policy header only ever adds restrictions
+			}
+			continue
+		}
+		header.Set(kv[0], kv[1])
+	}
+}

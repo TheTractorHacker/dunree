@@ -559,6 +559,13 @@
                             </div>
 </div>
 </section>
+<section class="zx-card hrp-card" data-hrp-card="hardenedheaders" rpcfg="security" data-hrp-nd="hardenedheaders" aria-labelledby="hrpc-hardenedheaders">
+<div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-hardenedheaders">Hardened security headers</h3></div>
+<p class="zx-card__desc">Optional preset of browser hardening headers (HSTS, nosniff, referrer, framing, permissions). Off by default. This editor saves by itself and shows the headers that will be sent.</p>
+<div class="zx-card__body">
+<iframe src="" class="wrapper_frame" style="height:34em" title="Hardened security headers"></iframe>
+</div>
+</section>
 <section class="zx-card hrp-card" data-hrp-card="captcha" rpcfg="security" data-hrp-nd="captcha" aria-labelledby="hrpc-captcha">
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-captcha">CAPTCHA challenge</h3></div>
 <p class="zx-card__desc">Make visitors prove they are human.</p>
@@ -2375,6 +2382,16 @@
             }));
             let frameURL = "snippet/customHeaders.html?t=" + Date.now() + "#" + payload;
             editor.find("[data-hrp-card='headers'] .wrapper_frame").attr('src', frameURL);
+        })();
+
+        /* ------------ Hardened security headers ------------ */
+        (() => {
+            let payload = encodeURIComponent(JSON.stringify({
+                ept: "host",
+                ep: uuid
+            }));
+            let frameURL = "snippet/hardenedHeaders.html?t=" + Date.now() + "#" + payload;
+            editor.find("[data-hrp-card='hardenedheaders'] .wrapper_frame").attr('src', frameURL);
         })();
 
         /* ------------ Access Rule ------------ */

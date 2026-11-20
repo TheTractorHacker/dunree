@@ -48,6 +48,7 @@ type deployRoleView struct {
 	TrustedProxies int      `json:"trustedProxies"`
 	GateRejected   uint64   `json:"gateRejected"`
 	Warnings       []string `json:"warnings"`
+	UngatedRules   []string `json:"ungatedRules"` //Access rules without Trusted Proxy Gating while the role hardens headers (empty otherwise)
 }
 
 func deployRoleStatus() deployRoleView {
@@ -60,6 +61,23 @@ func deployRoleStatus() deployRoleView {
 		v.TrustedProxies = len(accessController.ListTrustedProxies())
 	}
 	v.GateRejected = dynamicproxy.PeerGateRejected()
+	v.UngatedRules = []string{}
+	if accessController != nil && v.HardenActive && v.TrustedProxies > 0 {
+		//Rate limits, bans and access rules take the visitor address from the forwarded headers only on rules that have
+		//Trusted Proxy Gating on. Without it they see the front proxy's address: one bucket / ban for every visitor.
+		for _, rule := range accessController.ListAllAccessRules() {
+			if rule != nil && !rule.TrustProxyHeadersOnly {
+				name := rule.Name
+				if name == "" {
+					name = rule.ID
+				}
+				v.UngatedRules = append(v.UngatedRules, name)
+			}
+		}
+		if len(v.UngatedRules) > 0 {
+			v.Warnings = append(v.Warnings, "Some access rules do not have Trusted Proxy Gating. On those rules rate limits, bans and access rules see the address of the proxy in front of this one instead of the visitor, so all visitors share one limit. Turn on Enable Trusted Proxy Gating in Access Rules.")
+		}
+	}
 	switch s.Role {
 	case deployrole.RoleInternal:
 		if !s.PeerGate {

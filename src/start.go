@@ -517,6 +517,7 @@ func ShutdownSeq() {
 	}
 
 	stopAbuseManager()
+	stopCrowdSec()
 	stopEch()
 	stopZrok()
 

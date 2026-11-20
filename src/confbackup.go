@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"imuslab.com/zoraxy/mod/aiassist"
+	"imuslab.com/zoraxy/mod/crowdsec"
 	"imuslab.com/zoraxy/mod/utils"
 )
 
@@ -45,6 +46,9 @@ func writeConfigZip(out io.Writer, confDir string, dbPath string) error {
 		}
 		if aiassist.IsSecretFile(rel) {
 			return nil // the AI assistant key and its install key are never exported
+		}
+		if crowdsec.IsSecretFile(rel) {
+			return nil // the CrowdSec bouncer API key and its install key are never exported
 		}
 		if isSecurityAuditFile(rel) {
 			return nil // the audit log is per install: an export would copy addresses out and an import must not be able to replace it

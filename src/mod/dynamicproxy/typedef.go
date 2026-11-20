@@ -29,6 +29,7 @@ import (
 	"imuslab.com/zoraxy/mod/auth/sso/forward"
 	"imuslab.com/zoraxy/mod/blocklog"
 	"imuslab.com/zoraxy/mod/botrules"
+	"imuslab.com/zoraxy/mod/crowdsec"
 	"imuslab.com/zoraxy/mod/deployrole"
 	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
 	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
@@ -120,6 +121,7 @@ type RouterOption struct {
 	BasicAuthLists       *CredentialLists           `json:"-"` //Optional named basic auth credential lists (basicauth_ext.go)
 	Bots                 *botrules.Engine           `json:"-"` //Optional bot (User-Agent) rules, see bot_hook.go
 	Abuse                *abuse.Manager             `json:"-"` //Optional automatic abuse banning (nil or disabled = no overhead), see abuse_hook.go
+	CrowdSec             *crowdsec.Manager          `json:"-"` //Optional CrowdSec bouncer (nil or disabled = no overhead), see crowdsec_hook.go
 	Rules                *ruleset.Engine            `json:"-"` //Optional rules engine (nil or no rule = one atomic load), see ruleset_hook.go
 
 	/* Timeouts */
@@ -264,6 +266,7 @@ type HeaderRewriteRules struct {
 	PermissionPolicy              *permissionpolicy.PermissionsPolicy //Permission policy header
 	DisableHopByHopHeaderRemoval  bool                                //Do not remove hop-by-hop headers
 	DisableUserAgentHeaderRemoval bool                                //Do not remove User-Agent header from server response
+	HardenedHeaders               *HardenedHeaders                    `json:",omitempty"` //Opt-in hardened security headers preset (nil = off), see hardenedheaders.go
 }
 
 /*

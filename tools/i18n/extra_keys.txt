@@ -107,3 +107,55 @@ The trusted proxy list is empty. If a CDN such as Cloudflare is in front of this
 Header hardening is on and the trusted proxy list is empty: all forwarded client address headers are dropped.
 With these settings, this would be refused for existing rules
 Connections refused by the peer gate since start: {0}.
+A key is stored (leave empty to keep it)
+Paste the key
+Off
+Starting
+OK
+Degraded
+Down
+Mode: {0}
+Enforce
+Log only
+Last successful pull: {0}
+Decisions in memory: {0} of {1}
+LAPI latency: {0} ms
+Errors since start: {0}
+Blocked: {0}
+Matched in log only mode: {0}
+Refused by fail-closed: {0}
+Ignored decisions (scope or type not enforced): {0}
+Last error: {0}
+CrowdSec is switched off. Nothing is checked.
+blocked
+captcha, logged only
+would block (log only)
+None yet.
+CrowdSec settings saved
+Start blocking?
+Visitors whose address has a CrowdSec ban decision will be refused. Check the recent matches in log only mode first.
+Fail closed?
+If the CrowdSec LAPI cannot be reached for longer than the grace period, every visitor of every site is refused until it is back. Only enable this if an outage of CrowdSec must take your sites offline.
+Fail closed
+Testing...
+Connected, the LAPI accepted the key ({0} ms).
+Connection failed: {0}
+The LAPI has been unreachable longer than the grace period and fail-closed is on: every visitor is being refused.
+The LAPI has been unreachable longer than the grace period. Failing open: traffic is allowed, only decisions already in the cache are applied.
+Log only mode: matches are counted and logged, nobody is blocked.
+Fail-closed has no effect in log only mode.
+Fail-closed is on: if the LAPI stays unreachable beyond the grace period, every visitor is refused.
+The decision cache is full: some decisions were not stored. Raise the cache size.
+The LAPI address is plain http on a non-loopback host: the API key travels unencrypted.
+The LAPI rejected the API key.
+Nothing is sent. The preset is off.
+Added only if the upstream sends none
+Replaces the upstream value
+Not sent: {0}
+a custom header rule sets it
+the site's own HSTS switch is on
+the site's own Permission Policy is on
+only sent on HTTPS requests
+Strict-Transport-Security is never sent on plain HTTP requests.
+Hardened header settings saved
+Some access rules do not have Trusted Proxy Gating. On those rules rate limits, bans and access rules see the address of the proxy in front of this one instead of the visitor, so all visitors share one limit. Turn on Enable Trusted Proxy Gating in Access Rules.

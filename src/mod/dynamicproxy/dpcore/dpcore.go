@@ -93,6 +93,11 @@ type ResponseRewriteRuleSet struct {
 	UpstreamHeaders   [][]string
 	DownstreamHeaders [][]string
 
+	/* Hardened security header preset (see dynamicproxy/hardenedheaders.go). Applied before DownstreamHeaders, so
+	headers the admin set explicitly always win. Empty = nothing is touched */
+	HardenedHeaders  [][]string
+	HardenedOverride bool //Replace values the upstream already sent (default: only fill in what is missing)
+
 	/* Advance Usecase Options */
 	HostHeaderOverwrite            string //Force overwrite of request "Host" header (advanced usecase)
 	NoRemoveHopByHop               bool   //Do not remove hop-by-hop headers (advanced usecase)
@@ -640,7 +645,8 @@ func (p *ReverseProxy) ProxyHTTP(rw http.ResponseWriter, req *http.Request, rrr 
 		res.Header.Set("Location", locationRewrite)
 	}
 
-	// Add user defined headers (to downstream)
+	// Hardened header preset (opt-in), then user defined headers (to downstream) which always win
+	injectHardenedHeaders(res.Header, rrr.HardenedHeaders, rrr.HardenedOverride)
 	injectUserDefinedHeaders(res.Header, rrr.DownstreamHeaders)
 
 	// Copy header from response to client.

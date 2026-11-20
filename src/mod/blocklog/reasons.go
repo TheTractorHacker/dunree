@@ -28,7 +28,8 @@ const (
 	ReasonPeer             = "peer"
 	ReasonAuth             = "auth"
 	ReasonPlugin           = "plugin"
-	ReasonRule             = "rule" // the rules engine (mod/ruleset); the detail is the rule name
+	ReasonRule             = "rule"     // the rules engine (mod/ruleset); the detail is the rule name
+	ReasonCrowdSec         = "crowdsec" // a CrowdSec decision (mod/crowdsec); the detail is its type and scenario
 )
 
 // Classify turns a router forwardType into a reason key and a detail. ok is false when the
@@ -54,6 +55,12 @@ func Classify(forwardType string) (reason, detail string, ok bool) {
 		return ReasonBlacklist, withDrop(""), true
 	case "whitelist":
 		return ReasonWhitelist, withDrop("not on the allow list"), true
+	case "crowdsec":
+		return ReasonCrowdSec, withDrop(""), true
+	case "crowdsec-challenge":
+		return ReasonCrowdSec, "captcha challenge", true
+	case "crowdsec-challenge-unavailable":
+		return ReasonCrowdSec, DetailChallengeUnavailable, true
 	case "auto-ban":
 		return ReasonAutoBan, withDrop(""), true
 	case "ratelimit":
@@ -158,6 +165,7 @@ func Reasons() []ReasonInfo {
 		{ReasonClientCert, "Client certificate", "The client certificate was missing or not accepted (mTLS).", "httprp", "HTTP Proxy, rule settings", ""},
 		{ReasonPeer, "Peer not allowed", "The direct connection came from an address outside the allowed peer list of the rule.", "httprp", "HTTP Proxy, rule settings", ""},
 		{ReasonAuth, "Authentication", "Basic auth, SSO or OAuth rejected the credentials.", "seccenter", "Security Center, Auth audit", "authaudit"},
+		{ReasonCrowdSec, "CrowdSec", "A CrowdSec decision (ban, or captcha when enabled) from your Local API matches the client address, or the CrowdSec Local API was unreachable and fail-closed is on.", "seccenter", "Security Center, CrowdSec", "crowdsec"},
 		{ReasonRule, "Rule", "A rule of the rules engine (global or of this site) blocked, rate limited or challenged the request. The detail is the rule name.", "ruleset", "Rules", ""},
 		{ReasonPlugin, "Plugin", "A plugin refused the request.", "plugins", "Plugins", ""},
 	}

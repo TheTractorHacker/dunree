@@ -246,6 +246,7 @@
         if (s.Ops || (s.PathRules || []).length || (s.HeaderRules || []).length) { add("ops", t("Path rules, error pages and responses"), "routing"); }
         if (ap.AuthMethod) { add("auth", t("Authentication"), "security"); }
         if (s.RequireRateLimit) { add("ratelimit", t("Rate limit"), "security"); }
+        if (hr.HardenedHeaders && hr.HardenedHeaders.Enabled) { add("hardenedheaders", t("Hardened security headers"), "security"); }
         if (s.RequireCaptcha) { add("captcha", t("CAPTCHA challenge"), "security"); }
         if (s.BlockCommonExploits || s.BlockAICrawlers || s.MitigationAction || (s.BotAllowUA || []).length) { add("exploits", t("Exploit and crawler blocking"), "security"); }
         var source = s.WAFSource || (s.WAF ? "custom" : "inherit");

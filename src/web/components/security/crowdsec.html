@@ -1,0 +1,173 @@
+<h3>CrowdSec</h3>
+<p>Use a <a href="https://docs.crowdsec.net/" target="_blank" rel="noopener noreferrer">CrowdSec</a> Local API (LAPI) that you run as a block list for this proxy.
+    Zoraxy keeps the ban decisions in memory (stream mode) and checks every visitor address against them. Off until you switch it on, and it
+    starts in <b>Log only</b> mode: matches are counted and logged, nobody is blocked. With two Zoraxy instances, point both at the same LAPI.
+    Detection (feeding CrowdSec your logs) and reporting alerts back to CrowdSec are not part of this; see the CrowdSec guide.</p>
+<div id="csStatus" class="ui segment" aria-live="polite"></div>
+<div class="ui form" id="csForm">
+    <div class="inline field">
+        <div class="ui toggle checkbox"><input type="checkbox" id="csEnabled"><label for="csEnabled">Use CrowdSec decisions</label></div>
+    </div>
+    <div class="two fields">
+        <div class="field"><label for="csUrl">LAPI address</label>
+            <input type="text" id="csUrl" placeholder="http://127.0.0.1:8080" autocomplete="off" spellcheck="false">
+            <p class="zx-help">Cloud metadata and link-local addresses are always refused; loopback and private addresses are fine. Use https when the LAPI is not on this machine.</p></div>
+        <div class="field"><label for="csKey">Bouncer API key <span id="csKeyBadge" class="ui mini label" style="display:none">Key set</span></label>
+            <input type="password" id="csKey" autocomplete="new-password" spellcheck="false" placeholder="">
+            <p class="zx-help">Create it with <code>cscli bouncers add zoraxy</code>. It is stored encrypted, never shown again and left out of exports. Leave empty to keep the stored key.</p>
+            <div class="ui checkbox"><input type="checkbox" id="csClearKey"><label for="csClearKey">Remove the stored key (only while CrowdSec is switched off)</label></div></div>
+    </div>
+    <div class="three fields">
+        <div class="field"><label for="csMode">What to do with a match</label>
+            <select id="csMode" class="ui dropdown">
+                <option value="log">Log only (nobody is blocked)</option>
+                <option value="enforce">Enforce (block banned addresses)</option>
+            </select></div>
+        <div class="field"><label for="csBan">Banned visitor gets</label>
+            <select id="csBan" class="ui dropdown">
+                <option value="page">The 403 page</option>
+                <option value="drop">No answer (connection closed)</option>
+            </select></div>
+        <div class="field"><label for="csCaptcha">Captcha decisions</label>
+            <select id="csCaptcha" class="ui dropdown">
+                <option value="log">Only logged</option>
+                <option value="challenge">Show the site CAPTCHA (sites without one: logged)</option>
+            </select></div>
+    </div>
+    <div class="four fields">
+        <div class="field"><label for="csPoll">Pull every (seconds)</label><input type="number" id="csPoll" min="5" max="3600"></div>
+        <div class="field"><label for="csMax">Cache size (decisions)</label><input type="number" id="csMax" min="100" max="500000"></div>
+        <div class="field"><label for="csTtl">Longest decision lifetime (hours)</label><input type="number" id="csTtl" min="1" max="720"></div>
+        <div class="field"><label for="csGrace">LAPI unreachable after (seconds)</label><input type="number" id="csGrace" min="10" max="86400"></div>
+    </div>
+    <div class="inline field">
+        <div class="ui toggle checkbox"><input type="checkbox" id="csClosed"><label for="csClosed">Fail closed: refuse every visitor while the LAPI is unreachable</label></div>
+        <p class="zx-help">Default is fail open: if the LAPI cannot be reached for longer than the time above, traffic is allowed and only the decisions already in memory apply.
+            Fail closed only has an effect in Enforce mode, and a LAPI outage then takes your sites offline.</p>
+    </div>
+    <div class="field"><label for="csExempt">Sites that never ask CrowdSec (one rule host name per line)</label>
+        <textarea id="csExempt" rows="2" placeholder="status.example.com"></textarea></div>
+    <div class="ui accordion"><div class="title"><i class="dropdown icon"></i> Trust for an https LAPI (private CA, pin)</div>
+        <div class="content">
+            <div class="field"><label for="csCA">CA certificates (PEM)</label><textarea id="csCA" rows="4" spellcheck="false"></textarea>
+                <p class="zx-help">Replaces the system roots for the LAPI connection. There is no option to skip certificate verification.</p></div>
+            <div class="field"><label for="csPins">Public key pins (SHA-256, one per line)</label><textarea id="csPins" rows="2" spellcheck="false"></textarea></div>
+        </div></div>
+    <div id="csMsg" class="ui negative message" style="display:none"></div>
+    <div id="csTestMsg" class="ui message" style="display:none"></div>
+    <button class="ui basic button" id="csTest"><i class="plug icon"></i> Test connection</button>
+    <button class="ui basic green button" id="csSave"><i class="save icon"></i> Save</button>
+</div>
+<h4 class="ui header">Recent matches</h4>
+<p class="zx-help">Up to 100 visitors that matched a decision (what was blocked, or would have been in log only mode).</p>
+<div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMatches"><thead><tr><th>Time</th><th>Address</th><th>Site</th><th>Result</th><th>Decision</th><th>Hits</th></tr></thead><tbody></tbody></table></div>
+<h4 class="ui header">Recent decisions from the LAPI</h4>
+<p class="zx-help">The newest 100 ban and captcha decisions received. Decisions for other scopes (country, AS ...) or types (throttle ...) are counted above and not enforced.</p>
+<div style="overflow-x:auto"><table class="ui very basic compact small table" id="csDecisions"><thead><tr><th>Received</th><th>Type</th><th>Scope</th><th>Value</th><th>Origin</th><th>Scenario</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
+<script>
+(function () {
+    var failClosedWas = false, modeWas = "log", enabledWas = false;
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
+    function fmt(ts) { if (!ts) { return "-"; } var d = new Date(ts); return isNaN(d) ? "-" : d.toLocaleString(); }
+    function cfg() {
+        var lines = function (id) { return $(id).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); };
+        return { enabled: $("#csEnabled").prop("checked"), lapiUrl: $("#csUrl").val().trim(), mode: $("#csMode").val(), caBundlePem: $("#csCA").val().trim(),
+            pinsSha256: lines("#csPins"), pollSeconds: parseInt($("#csPoll").val(), 10) || 0, maxEntries: parseInt($("#csMax").val(), 10) || 0,
+            maxTtlSeconds: (parseInt($("#csTtl").val(), 10) || 0) * 3600, graceSeconds: parseInt($("#csGrace").val(), 10) || 0,
+            failClosed: $("#csClosed").prop("checked"), banResponse: $("#csBan").val(), captchaAction: $("#csCaptcha").val(), exemptSites: lines("#csExempt") };
+    }
+    function loadSettings() {
+        $.get("/api/crowdsec/get", function (d) {
+            $("#csEnabled").prop("checked", !!d.enabled); enabledWas = !!d.enabled;
+            $("#csUrl").val(d.lapiUrl || ""); $("#csMode").val(d.mode || "log"); modeWas = d.mode || "log";
+            $("#csBan").val(d.banResponse || "page"); $("#csCaptcha").val(d.captchaAction || "log");
+            $("#csPoll").val(d.pollSeconds); $("#csMax").val(d.maxEntries); $("#csTtl").val(Math.round(d.maxTtlSeconds / 3600)); $("#csGrace").val(d.graceSeconds);
+            $("#csClosed").prop("checked", !!d.failClosed); failClosedWas = !!d.failClosed;
+            $("#csExempt").val((d.exemptSites || []).join("\n")); $("#csCA").val(d.caBundlePem || ""); $("#csPins").val((d.pinsSha256 || []).join("\n"));
+            $("#csKey").val("").attr("placeholder", d.keySet ? t("A key is stored (leave empty to keep it)") : t("Paste the key"));
+            $("#csKeyBadge").toggle(!!d.keySet);
+            $("#csClearKey").prop("checked", false);
+        });
+    }
+    var STATE = { off: N_("Off"), starting: N_("Starting"), ok: N_("OK"), degraded: N_("Degraded"), down: N_("Down") };
+    var COLOR = { off: "grey", starting: "blue", ok: "green", degraded: "orange", down: "red" };
+    function N_(s) { return s; }
+    function loadStatus() {
+        $.get("/api/crowdsec/status", function (s) {
+            var h = '<span class="ui ' + (COLOR[s.state] || "grey") + ' label">' + esc(t(STATE[s.state] || s.state)) + "</span> ";
+            if (s.enabled) {
+                h += esc(t("Mode: {0}").replace("{0}", s.mode === "enforce" ? t("Enforce") : t("Log only")));
+                h += '<div class="zx-sub">' + esc(t("Last successful pull: {0}").replace("{0}", fmt(s.lastSuccess))) + " &middot; " +
+                    esc(t("Decisions in memory: {0} of {1}").replace("{0}", s.cacheSize).replace("{1}", s.cacheMax)) + " &middot; " +
+                    esc(t("LAPI latency: {0} ms").replace("{0}", s.latencyMs)) + " &middot; " +
+                    esc(t("Errors since start: {0}").replace("{0}", s.totalErrors)) + "</div>";
+                h += '<div class="zx-sub">' + esc(t("Blocked: {0}").replace("{0}", s.enforced)) + " &middot; " + esc(t("Matched in log only mode: {0}").replace("{0}", s.logOnly)) +
+                    " &middot; " + esc(t("Refused by fail-closed: {0}").replace("{0}", s.failClosedBlocks)) + "</div>";
+                var ign = [];
+                $.each(s.ignoredScopes || {}, function (k, v) { ign.push(k + ": " + v); });
+                $.each(s.ignoredTypes || {}, function (k, v) { ign.push(k + ": " + v); });
+                if (ign.length) { h += '<div class="zx-sub">' + esc(t("Ignored decisions (scope or type not enforced): {0}").replace("{0}", ign.join(", "))) + "</div>"; }
+                if (s.lastError) { h += '<div class="zx-sub" style="color:#b03030">' + esc(t("Last error: {0}").replace("{0}", s.lastError)) + "</div>"; }
+                if ((s.warnings || []).length) {
+                    h += '<div class="ui warning message"><ul class="list">' + s.warnings.map(function (w) { return "<li>" + esc(t(w)) + "</li>"; }).join("") + "</ul></div>";
+                }
+            } else {
+                h += esc(t("CrowdSec is switched off. Nothing is checked."));
+            }
+            $("#csStatus").html(h);
+        });
+        $.get("/api/crowdsec/decisions", function (d) {
+            var m = (d.matches || []).map(function (x) {
+                var res = x.enforced ? t("blocked") : (x.action === "captcha" ? t("captcha, logged only") : t("would block (log only)"));
+                return "<tr><td>" + esc(fmt(x.time)) + "</td><td>" + esc(x.ip) + "</td><td>" + esc(x.site) + "</td><td>" + esc(res) + "</td><td>" +
+                    esc((x.type || x.action) + (x.scenario ? " " + x.scenario : "")) + "</td><td>" + esc(x.count) + "</td></tr>";
+            }).join("");
+            $("#csMatches tbody").html(m || '<tr><td colspan="6">' + esc(t("None yet.")) + "</td></tr>");
+            var r = (d.decisions || []).map(function (x) {
+                return "<tr><td>" + esc(fmt(x.added)) + "</td><td>" + esc(x.type) + "</td><td>" + esc(x.scope) + "</td><td>" + esc(x.value) + "</td><td>" +
+                    esc(x.origin) + "</td><td>" + esc(x.scenario) + "</td><td>" + esc(fmt(x.expires)) + "</td></tr>";
+            }).join("");
+            $("#csDecisions tbody").html(r || '<tr><td colspan="7">' + esc(t("None yet.")) + "</td></tr>");
+        });
+    }
+    function save(confirmClosed) {
+        var data = { config: JSON.stringify(cfg()), apikey: $("#csKey").val().trim() };
+        if ($("#csClearKey").prop("checked")) { data.clearkey = "true"; }
+        if (confirmClosed) { data.confirmfailclosed = "true"; }
+        $.cjax({ type: "POST", url: "/api/crowdsec/set", data: data, success: function (d) {
+            if (d && d.error) { $("#csMsg").text(d.error).show(); return; }
+            $("#csMsg").hide();
+            toast(t("CrowdSec settings saved"), true);
+            loadSettings(); loadStatus();
+        } });
+    }
+    $("#csSave").on("click", function () {
+        var c = cfg();
+        var needClosed = c.failClosed && !failClosedWas;
+        var steps = [];
+        if (c.mode === "enforce" && modeWas !== "enforce") {
+            steps.push(function () { return ZxUI.confirm({ title: "Start blocking?", message: "Visitors whose address has a CrowdSec ban decision will be refused. Check the recent matches in log only mode first.", confirmLabel: "Enforce" }); });
+        }
+        if (needClosed) {
+            steps.push(function () { return ZxUI.confirm({ title: "Fail closed?", message: "If the CrowdSec LAPI cannot be reached for longer than the grace period, every visitor of every site is refused until it is back. Only enable this if an outage of CrowdSec must take your sites offline.", confirmLabel: "Fail closed", danger: true }); });
+        }
+        (function next(i) {
+            if (i >= steps.length) { save(needClosed); return; }
+            steps[i]().then(function (ok) { if (ok) { next(i + 1); } });
+        })(0);
+    });
+    $("#csTest").on("click", function () {
+        var data = { config: JSON.stringify(cfg()), apikey: $("#csKey").val().trim() };
+        var box = $("#csTestMsg").removeClass("positive negative").text(t("Testing...")).show();
+        $.cjax({ type: "POST", url: "/api/crowdsec/test", data: data, success: function (d) {
+            if (d && d.error && !d.hasOwnProperty("ok")) { box.addClass("negative").text(d.error); return; }
+            if (d.ok) { box.addClass("positive").text(t("Connected, the LAPI accepted the key ({0} ms).").replace("{0}", d.latencyMs)); }
+            else { box.addClass("negative").text(t("Connection failed: {0}").replace("{0}", d.error || "")); }
+        } });
+    });
+    $("#csForm .ui.accordion").accordion();
+    loadSettings(); loadStatus();
+    var timer = setInterval(function () { if (!document.getElementById("csStatus")) { clearInterval(timer); return; } loadStatus(); }, 10000);
+})();
+</script>
