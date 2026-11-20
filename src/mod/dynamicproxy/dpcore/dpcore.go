@@ -14,8 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"imuslab.com/zoraxy/mod/adminallow"
 	"imuslab.com/zoraxy/mod/dynamicproxy/domainsniff"
 	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
+	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
 	"imuslab.com/zoraxy/mod/utils"
 )
 
@@ -72,6 +74,9 @@ type ReverseProxy struct {
 	// the TLS ClientHello (crypto/tls, per RFC 6066). See NewDynamicProxyCore.
 	useRequestHostAsSNI bool
 
+	//tunnelTLS is the verification policy (custom CA / pins) for the CONNECT tunnel, nil = historical behavior
+	tunnelTLS *tls.Config
+
 	proxyProtocol bool //send the client address to the PROXY protocol dialer through the request context
 
 	//Appended by Zoraxy project
@@ -121,6 +126,10 @@ type DpcoreOptions struct {
 	UnixSocket           string                                                      //If not empty, dial this unix domain socket path instead of TCP (target host is then only a placeholder)
 	ProxyProtocolVersion int                                                         //0 = off, 1 or 2: send a PROXY protocol header on every upstream connection (disables connection reuse), see proxyproto.go
 	ClientCertificate    func(*tls.CertificateRequestInfo) (*tls.Certificate, error) //Client certificate presented to HTTPS upstreams (upstream mTLS), nil = none
+
+	//Optional custom trust for HTTPS upstreams (private CA bundle and/or SPKI pins). When active it is used INSTEAD of
+	//IgnoreTLSVerification: the chain and host name are always verified. Zero value = historical behavior
+	UpstreamTLS upstreamtls.Policy
 }
 
 // sniServerName normalizes a host value into a usable TLS SNI ServerName.
@@ -156,6 +165,7 @@ func NewDynamicProxyCore(target *url.URL, prepender string, dpcOptions *DpcoreOp
 	// Each ReverseProxy instance targets one backend, so this is safe and avoids
 	// per-request transport cloning that defeats connection pooling.
 	useRequestHostAsSNI := false
+	var tunnelTLS *tls.Config
 	if strings.EqualFold(target.Scheme, "https") {
 		// An admin configured SNI (see #1088 follow up, from the endpoint's
 		// "Overwrite Host Header" value) takes precedence over the upstream address.
@@ -167,7 +177,10 @@ func NewDynamicProxyCore(target *url.URL, prepender string, dpcOptions *DpcoreOp
 			serverName = target.Hostname()
 		}
 		cfg := &tls.Config{ServerName: serverName}
-		if dpcOptions.IgnoreTLSVerification {
+		if dpcOptions.UpstreamTLS.Active() {
+			// Custom CA / pins: verify against them, never skip (see package upstreamtls)
+			dpcOptions.UpstreamTLS.Apply(cfg)
+		} else if dpcOptions.IgnoreTLSVerification {
 			// Verification is off for this upstream: also allow the legacy TLS versions and RSA key exchange
 			// suites that appliances (IPMI, old NAS) still use (upstream #971)
 			legacy := utils.InsecureUpstreamTLSConfig("")
@@ -189,6 +202,9 @@ func NewDynamicProxyCore(target *url.URL, prepender string, dpcOptions *DpcoreOp
 		}
 		applyUpstreamClientCert(cfg, dpcOptions.ClientCertificate)
 		thisTransporter.TLSClientConfig = cfg
+		if dpcOptions.UpstreamTLS.Active() {
+			tunnelTLS = cfg.Clone() //also used by the CONNECT / upgrade tunnel (ProxyHTTPS)
+		}
 	}
 
 	// Plain-HTTP/2 upstream (opt-in). Only meaningful for http:// targets
@@ -204,6 +220,7 @@ func NewDynamicProxyCore(target *url.URL, prepender string, dpcOptions *DpcoreOp
 		Verbal:              dpcOptions.DevelopmentMode,
 		Transport:           roundTripper,
 		useRequestHostAsSNI: useRequestHostAsSNI,
+		tunnelTLS:           tunnelTLS,
 		proxyProtocol:       dpcOptions.ProxyProtocolVersion == 1 || dpcOptions.ProxyProtocolVersion == 2,
 	}
 }
@@ -311,6 +328,26 @@ func (p *ReverseProxy) logf(format string, args ...interface{}) {
 	}
 }
 
+type dialTimeoutKey struct{}
+
+// WithDialTimeout returns a context that makes the upstream dial of the request use d instead of the
+// built-in 30 s (the per-route "upstream connect timeout"). d <= 0 returns ctx unchanged.
+func WithDialTimeout(ctx context.Context, d time.Duration) context.Context {
+	if d <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, dialTimeoutKey{}, d)
+}
+
+// dialWithRouteTimeout is the default upstream dialer: 30 s, or the route's override carried by the request context
+func dialWithRouteTimeout(ctx context.Context, network, addr string) (net.Conn, error) {
+	d := net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second, Control: adminallow.DialControl}
+	if v, ok := ctx.Value(dialTimeoutKey{}).(time.Duration); ok && v > 0 {
+		d.Timeout = v
+	}
+	return d.DialContext(ctx, network, addr)
+}
+
 func newBaseTransport(opts *DpcoreOptions) *http.Transport {
 	optimalConcurrentConnection := 256
 	if opts.MaxConcurrentConnection > 0 {
@@ -318,11 +355,8 @@ func newBaseTransport(opts *DpcoreOptions) *http.Transport {
 	}
 
 	tr := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialWithRouteTimeout,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          optimalConcurrentConnection * 2,
 		MaxIdleConnsPerHost:   optimalConcurrentConnection,
@@ -710,7 +744,14 @@ func (p *ReverseProxy) ProxyHTTPS(rw http.ResponseWriter, req *http.Request, rrr
 	tlsConfig := &tls.Config{
 		ServerName: serverName,
 	}
-	proxyConn, err := tls.Dial("tcp", host, tlsConfig)
+	if p.tunnelTLS != nil {
+		//Custom CA / pins configured for this upstream: the tunnel is verified the same way as proxied requests
+		tlsConfig = p.tunnelTLS.Clone()
+		if tlsConfig.ServerName == "" {
+			tlsConfig.ServerName = serverName
+		}
+	}
+	proxyConn, err := (&tls.Dialer{NetDialer: &net.Dialer{Control: adminallow.DialControl}, Config: tlsConfig}).DialContext(req.Context(), "tcp", host)
 	if err != nil {
 		if p.Verbal {
 			p.logf("http: proxy error: %v", err)

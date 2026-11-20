@@ -76,12 +76,74 @@ func builtinChecks() []Check {
 					return unknown("the admin interface settings could not be read")
 				}
 				switch {
+				case a.AllInterfaces && a.AllowList > 0:
+					return Result{Status: StatusOK, Evidence: []string{fmt.Sprintf("-port=%s listens on all interfaces, but only %d allowed %s may reach it (admin allow-list)", a.ListenAddr, a.AllowList, plural(a.AllowList, "network", "networks"))}}
+				case a.AllInterfaces && f.Deploy != nil && f.Deploy.Role == "external":
+					return Result{Status: StatusFail, Evidence: []string{"-port=" + a.ListenAddr + " listens on all interfaces while this is the external (internet facing) proxy: the admin panel is reachable from the public side. Bind it to the management address or set an admin allow-list"}}
 				case a.AllInterfaces:
 					return Result{Status: StatusWarn, Evidence: []string{"-port=" + a.ListenAddr + " listens on all interfaces"}}
 				case a.Loopback:
 					return Result{Status: StatusOK, Evidence: []string{"-port=" + a.ListenAddr + " listens on loopback only"}}
 				}
 				return Result{Status: StatusOK, Evidence: []string{"-port=" + a.ListenAddr + " listens on one specific address"}}
+			},
+		},
+		{
+			ID: "admin.rule_target", Title: "No proxy rule points at the admin interface", Category: CatExposure, Weight: 3,
+			Why:         "A proxy rule whose upstream is this machine's own admin port publishes the admin panel under that site name, and requests arrive from the proxy itself, which defeats any network restriction on the admin port.",
+			Remediation: Remediation{Label: "Open HTTP Proxy", Page: "httprp"},
+			Run: func(f *Facts) Result {
+				rules, early := hostRulesOrNA(f, "rules that point at the admin interface")
+				if early != nil {
+					return *early
+				}
+				var bad []string
+				for _, r := range rules {
+					if r.TargetsAdmin {
+						bad = append(bad, r.Name)
+					}
+				}
+				if len(bad) == 0 {
+					//Nothing to judge: counted only when a rule does point at the admin listener, so a clean instance's score is unchanged
+					return na("no proxy rule targets the admin listener of this instance")
+				}
+				//Warning, not failure: an existing configuration may have been working like this for years (upgrade note in docs/ux/changes.md).
+				//While the admin allow-list is on, the proxy refuses to connect to the admin port at all.
+				return Result{Status: StatusWarn, Evidence: []string{"Warning, nothing was changed: the upstream of " + listNames(bad, 8) + " is the admin interface of this instance, so that site publishes the admin panel and bypasses network limits on the admin port. Point it elsewhere or remove it. With the admin allow-list on, Zoraxy refuses to connect to its own admin port from a proxy rule"}}
+			},
+		},
+		{
+			ID: "exposure.dest_restrict", Title: "Diagnostic tools only reach approved destinations", Category: CatExposure, Weight: 3,
+			Why:         "The upstream test, port scan, web terminal, uptime checks and forward proxy connect to any address they are given. With the restriction on they refuse loopback, cloud metadata and link-local addresses and anything outside your allowed backend list, so a stolen admin session cannot be used to probe the internal network. Judged only for the external and internal roles.",
+			Remediation: Remediation{Label: "Open Security Center", Page: "seccenter", Anchor: "exposure"},
+			Run: func(f *Facts) Result {
+				if f.Deploy == nil || f.Tools == nil {
+					return unknown("the deployment role or tool settings could not be read")
+				}
+				if f.Deploy.Role != "external" && f.Deploy.Role != "internal" {
+					return na("this instance is not set to the external or internal role")
+				}
+				if f.Tools.RestrictTools {
+					return Result{Status: StatusOK, Evidence: []string{fmt.Sprintf("the diagnostic tools are restricted (%d allowed backend entries)", f.Tools.AllowedBackends)}}
+				}
+				return Result{Status: StatusWarn, Evidence: []string{"the diagnostic tools and the forward proxy accept any destination"}}
+			},
+		},
+		{
+			ID: "exposure.backend_allowlist", Title: "Existing upstreams are inside the allowed backend list", Category: CatExposure, Weight: 2,
+			Why:         "The allowed backend list is checked when an upstream is saved. A configuration import, a history restore or a list set later can leave targets outside it that nothing re-checks.",
+			Remediation: Remediation{Label: "Open Security Center", Page: "seccenter", Anchor: "exposure"},
+			Run: func(f *Facts) Result {
+				if f.Tools == nil {
+					return unknown("the destination settings could not be read")
+				}
+				if f.Tools.AllowedBackends == 0 {
+					return na("no allowed backend list is set")
+				}
+				if len(f.Tools.BackendViolations) == 0 {
+					return Result{Status: StatusOK, Evidence: []string{"every checked upstream and stream proxy target is inside the allowed backend list"}}
+				}
+				return Result{Status: StatusWarn, Evidence: append([]string{"upstreams or stream proxy targets outside the allowed backend list (nothing was changed):"}, f.Tools.BackendViolations...)}
 			},
 		},
 		{
@@ -121,7 +183,7 @@ func builtinChecks() []Check {
 					return unknown("the forward proxy state could not be read")
 				}
 				if f.Tools.ForwardProxy {
-					return Result{Status: StatusWarn, Evidence: []string{fmt.Sprintf("the HTTP forward proxy is enabled on port %d", f.Tools.ForwardPort)}}
+					return Result{Status: StatusWarn, Evidence: []string{fmt.Sprintf("the HTTP forward proxy is enabled on port %d and accepts any client without a login", f.Tools.ForwardPort)}}
 				}
 				return Result{Status: StatusOK, Evidence: []string{"the HTTP forward proxy is disabled"}}
 			},
@@ -374,6 +436,23 @@ func builtinChecks() []Check {
 					return Result{Status: StatusOK, Evidence: []string{fmt.Sprintf("%d of %d visitors arrive through a CDN or proxy; the default access rule trusts client address headers only from the %d trusted proxies", cdn, f.Visitors.Total, f.Access.TrustedProxies)}}
 				}
 				return Result{Status: StatusWarn, Evidence: []string{fmt.Sprintf("%d of %d visitors arrive through a CDN or proxy, but the default access rule does not restrict client address headers to trusted proxies", cdn, f.Visitors.Total)}}
+			},
+		},
+		{
+			ID: "deploy.internal_peer_gate", Title: "The internal proxy only accepts known peers", Category: CatExposure, Weight: 3,
+			Why:         "An internal proxy sits behind the external one. Without the peer gate, anything that can reach its port directly bypasses the external proxy's filtering (WAF, CrowdSec, rate limits). Your firewall should enforce this too; the gate is the second layer.",
+			Remediation: Remediation{Label: "Open Security Center", Page: "seccenter", Anchor: "deployment"},
+			Run: func(f *Facts) Result {
+				if f.Deploy == nil {
+					return unknown("the deployment role could not be read")
+				}
+				if f.Deploy.Role != "internal" {
+					return na("this instance is not set to the internal role")
+				}
+				if f.Deploy.PeerGate {
+					return Result{Status: StatusOK, Evidence: []string{fmt.Sprintf("internal role: connections are refused unless they come from one of %d trusted proxies or a listed direct-access network", f.Deploy.TrustedProxies)}}
+				}
+				return Result{Status: StatusWarn, Evidence: []string{"internal role, but the peer gate is off: any host that can reach this proxy can bypass the external proxy"}}
 			},
 		},
 		{
@@ -646,6 +725,27 @@ func builtinChecks() []Check {
 					return Result{Status: StatusOK, Evidence: []string{"no minimum set: the Go default (TLS 1.2) applies"}}
 				}
 				return Result{Status: StatusOK, Evidence: []string{"the minimum TLS version is " + f.Proxy.MinTLSVersion}}
+			},
+		},
+		{
+			ID: "upstream.tls_verify", Title: "Upstream HTTPS certificates are verified", Category: CatCerts, Weight: 3,
+			Why:         "With certificate verification switched off for an upstream, anyone who can intercept the traffic between the proxy and that server can read and change it, and the proxy cannot tell. A private CA bundle or a pinned key keeps verification on for self-signed or internal certificates.",
+			Remediation: Remediation{Label: "Open HTTP Proxy", Page: "httprp"},
+			Run: func(f *Facts) Result {
+				rules, early := hostRulesOrNA(f, "upstream certificate verification")
+				if early != nil {
+					return *early
+				}
+				var bad []string
+				for _, r := range rules {
+					if r.TLSVerifyOff {
+						bad = append(bad, r.Name)
+					}
+				}
+				if len(bad) == 0 {
+					return Result{Status: StatusOK, Evidence: []string{"no proxy rule skips certificate verification towards its HTTPS upstreams"}}
+				}
+				return Result{Status: StatusWarn, Evidence: []string{"TLS verification disabled for " + listNames(bad, 8) + "; use a CA bundle or a pinned key for the upstream instead"}}
 			},
 		},
 		{

@@ -37,6 +37,9 @@ func editTestBaseline() *dynamicproxy.ProxyEndpoint {
 		CaptchaConfig:                  &dynamicproxy.CaptchaConfig{SiteKey: "site", SecretKey: "secret", SessionDuration: 3600},
 		DisableChunkedTransferEncoding: true,
 		ForceHTTP11:                    true,
+		MaxRequestBodyBytes:            5 << 20,
+		RequestTimeout:                 120,
+		UpstreamDialTimeout:            7,
 		SanitiseClientIPHeaders:        true,
 		DisableWebSocket:               true,
 		WebsocketTimeout:               99,
@@ -118,6 +121,11 @@ var editCases = []editCase{
 	{"captcha off", url.Values{"captcha": {"false"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.RequireCaptcha = false; ep.CaptchaConfig = nil }},
 	{"dChunkedEnc", url.Values{"dChunkedEnc": {"false"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.DisableChunkedTransferEncoding = false }},
 	{"forceHTTP11", url.Values{"forceHTTP11": {"false"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.ForceHTTP11 = false }},
+	{"maxRequestBodyBytes", url.Values{"maxRequestBodyBytes": {"1048576"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.MaxRequestBodyBytes = 1048576 }},
+	{"maxRequestBodyBytes off", url.Values{"maxRequestBodyBytes": {"0"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.MaxRequestBodyBytes = 0 }},
+	{"maxRequestBodyBytes empty is off", url.Values{"maxRequestBodyBytes": {""}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.MaxRequestBodyBytes = 0 }},
+	{"requestTimeout", url.Values{"requestTimeout": {"30"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.RequestTimeout = 30 }},
+	{"upstreamDialTimeout", url.Values{"upstreamDialTimeout": {"3"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.UpstreamDialTimeout = 3 }},
 	{"sanitiseClientIP", url.Values{"sanitiseClientIP": {"false"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.SanitiseClientIPHeaders = false }},
 	{"disableWebSocket", url.Values{"disableWebSocket": {"false"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.DisableWebSocket = false }},
 	{"websocketTimeout", url.Values{"websocketTimeout": {"12"}}, func(ep *dynamicproxy.ProxyEndpoint) { ep.WebsocketTimeout = 12 }},
@@ -156,6 +164,31 @@ func TestEditEndpointIsPartialUpdate(t *testing.T) {
 			}
 			if g, w := endpointJSON(t, got), endpointJSON(t, want); g != w {
 				t.Errorf("fields not present in the request were modified\n got: %s\nwant: %s", g, w)
+			}
+		})
+	}
+}
+
+// Invalid request limits are refused and leave the stored rule alone (the handler must not mutate the live rule before validating).
+func TestEditEndpointRefusesBadRequestLimits(t *testing.T) {
+	for name, form := range map[string]url.Values{
+		"negative body":    {"maxRequestBodyBytes": {"-1"}},
+		"text body":        {"maxRequestBodyBytes": {"lots"}},
+		"negative timeout": {"requestTimeout": {"-5"}},
+		"huge timeout":     {"requestTimeout": {"999999"}},
+		"huge dial":        {"upstreamDialTimeout": {"999999"}},
+		"mixed good, bad":  {"maxRequestBodyBytes": {"10"}, "requestTimeout": {"-1"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			router := setupEditTest(t)
+			want := endpointJSON(t, dynamicproxy.CopyEndpoint(editTestBaseline()))
+			form["rootname"] = []string{"app.example.com"}
+			if resp := postEdit(t, form); !strings.Contains(resp, "error") {
+				t.Fatalf("accepted: %s", resp)
+			}
+			got, _ := router.LoadProxy("app.example.com")
+			if g := endpointJSON(t, got); g != want {
+				t.Errorf("a refused edit changed the rule\n got: %s\nwant: %s", g, want)
 			}
 		})
 	}

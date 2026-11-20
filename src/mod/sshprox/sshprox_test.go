@@ -1,7 +1,10 @@
 package sshprox
 
 import (
+	"net"
 	"testing"
+
+	"imuslab.com/zoraxy/mod/destguard"
 )
 
 func TestInstance_Destroy(t *testing.T) {
@@ -62,5 +65,38 @@ func TestInstance_ValidateUsernameAndRemoteAddr(t *testing.T) {
 		if !test.expectError && err != nil {
 			t.Errorf("Did not expect error for username %s and remoteAddr %s, but got %v", test.username, test.remoteAddr, err)
 		}
+	}
+}
+
+func TestIsSSHConnectableHonoursDestinationGuard(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Skip("no loopback")
+	}
+	defer ln.Close()
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			c.Write([]byte("SSH-2.0-test\r\n"))
+			c.Read(make([]byte, 64))
+			c.Close()
+		}
+	}()
+	port := ln.Addr().(*net.TCPAddr).Port
+	if !IsSSHConnectable("127.0.0.1", port) {
+		t.Fatal("unrestricted probe failed")
+	}
+	g, _ := destguard.New(nil)
+	g.Set(destguard.Settings{RestrictTools: true})
+	destguard.SetDefault(g)
+	defer destguard.SetDefault(nil)
+	if IsSSHConnectable("127.0.0.1", port) {
+		t.Fatal("loopback ssh probe allowed with the restriction on")
+	}
+	if IsSSHConnectable("169.254.169.254", 22) {
+		t.Fatal("metadata address probed")
 	}
 }

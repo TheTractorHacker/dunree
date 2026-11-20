@@ -47,6 +47,9 @@ func (router *Router) ServeHealth(w http.ResponseWriter, r *http.Request) bool {
 // withHealth wraps a handler so the health path is answered first.
 func (router *Router) withHealth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if router.deployRoleEntry(w, r) { //deployment role: peer gate and forwarded header hardening (off in standalone)
+			return
+		}
 		if router.ServeHealth(w, r) {
 			return
 		}

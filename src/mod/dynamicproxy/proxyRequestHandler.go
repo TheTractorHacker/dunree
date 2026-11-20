@@ -166,6 +166,12 @@ func (h *ProxyHandler) upstreamHostSwap(w http.ResponseWriter, r *http.Request, 
 // Handle host request
 func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, target *ProxyEndpoint) {
 	armOps(r)
+	r, cancelLimits, limitsOK := applyRouteLimits(w, r, target)
+	defer cancelLimits()
+	if !limitsOK {
+		h.Parent.logRequest(r, false, http.StatusRequestEntityTooLarge, "host-http", r.Host, "", target)
+		return
+	}
 	r.Header.Set("X-Forwarded-Host", r.Host)
 	r.Header.Set("X-Forwarded-Server", "zoraxy-"+h.Parent.Option.HostUUID)
 	reqHostname := r.Host
@@ -259,6 +265,11 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 		panic(http.ErrAbortHandler)
 	}
 	if err != nil {
+		if status, limited := routeLimitStatus(err, r, target); limited {
+			http.Error(w, http.StatusText(status), status)
+			h.Parent.logRequest(r, false, status, "host-http", reqHostname, upstreamHostname, target)
+			return
+		}
 		if !errors.Is(err, context.Canceled) {
 			h.Parent.logUpstreamFailure(reqHostname, upstreamHostname, err)
 		}
@@ -312,6 +323,9 @@ func (h *ProxyHandler) hostWebSocketRequest(w http.ResponseWriter, r *http.Reque
 
 	wspHandler := websocketproxy.NewProxy(u, websocketproxy.Options{
 		SkipTLSValidation:              selectedUpstream.SkipCertValidations,
+		TLSServerName:                  target.upstreamTLSServerName(),
+		ClientCertificate:              selectedUpstream.ClientCertificateCallback(),
+		UpstreamTLS:                    selectedUpstream.TLSPolicy(),
 		SkipOriginCheck:                selectedUpstream.SkipWebSocketOriginCheck,
 		CopyAllHeaders:                 target.EnableWebsocketCustomHeaders,
 		UserDefinedHeaders:             target.HeaderRewriteRules.UserDefinedHeaders,
@@ -325,6 +339,12 @@ func (h *ProxyHandler) hostWebSocketRequest(w http.ResponseWriter, r *http.Reque
 // Handle vdir type request
 func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, target *VirtualDirectoryEndpoint) {
 	armOps(r)
+	r, cancelLimits, limitsOK := applyRouteLimits(w, r, target.parent)
+	defer cancelLimits()
+	if !limitsOK {
+		h.Parent.logRequest(r, false, http.StatusRequestEntityTooLarge, "vdir-http", r.Host, target.Domain, target.parent)
+		return
+	}
 	rewriteURL := h.Parent.rewriteURL(target.MatchingPath, r.RequestURI)
 	r.URL, _ = url.Parse(rewriteURL)
 	r.Header.Set("X-Forwarded-Host", r.Host)
@@ -423,6 +443,11 @@ func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, targe
 		panic(http.ErrAbortHandler)
 	}
 	if err != nil {
+		if status, limited := routeLimitStatus(err, r, target.parent); limited {
+			http.Error(w, http.StatusText(status), status)
+			h.Parent.logRequest(r, false, status, "vdir-http", reqHostname, target.Domain, target.parent)
+			return
+		}
 		if !errors.Is(err, context.Canceled) {
 			h.Parent.logUpstreamFailure(reqHostname, target.Domain, err)
 		}

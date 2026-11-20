@@ -74,6 +74,7 @@ var (
 	noauth                     = flag.Bool("noauth", false, "Disable authentication for management interface")
 	showver                    = flag.Bool("version", false, "Show version of this server")
 	allowSshLoopback           = flag.Bool("sshlb", false, "Allow loopback web ssh connection (DANGER)")
+	resetAdminAllowList        = flag.Bool("reset_admin_allowlist", false, "Recovery: clear the admin listener allow-list (Security Center > Network exposure) before the admin port starts serving, then continue. Use when an allow-list locked you out; remove the flag afterwards")
 	allowMdnsScanning          = flag.Bool("mdns", true, "Enable mDNS scanner and transponder")
 	mdnsName                   = flag.String("mdnsname", "", "mDNS name, leave empty to use default (zoraxy_{node-uuid}.local)")
 	runningInDocker            = flag.Bool("docker", false, "Run Zoraxy in docker compatibility mode")

@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"imuslab.com/zoraxy/mod/destguard"
+	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
 	"imuslab.com/zoraxy/mod/utils"
 )
 
@@ -33,6 +35,10 @@ type upstreamTestResult struct {
 	LatencyMs int64  `json:"latencyMs"`
 	Address   string `json:"address"`
 	Error     string `json:"error,omitempty"`
+	//Only set when a CA bundle or pin was given: whether the certificate was accepted by that policy
+	TrustChecked bool   `json:"trustChecked,omitempty"`
+	TrustOK      bool   `json:"trustOK,omitempty"`
+	TrustError   string `json:"trustError,omitempty"`
 }
 
 const upstreamTestTimeout = 4 * time.Second
@@ -70,12 +76,23 @@ func splitUpstreamTarget(raw string) (addr string, path string, hint string, err
 
 // testUpstream probes one upstream address
 func testUpstream(raw string) upstreamTestResult {
+	return testUpstreamWith(raw, upstreamtls.Policy{}, "")
+}
+
+// testUpstreamWith probes one upstream address. When pol is active, an HTTPS upstream is verified with the same policy
+// the proxy uses (custom CA replaces the system roots, pins, host name check against serverName or the host) and a
+// certificate that does not pass is a failed test, not a note.
+func testUpstreamWith(raw string, pol upstreamtls.Policy, serverName string) upstreamTestResult {
 	start := time.Now()
 	res := upstreamTestResult{}
 
 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(raw)), "unix:") {
 		sock := strings.TrimSpace(raw)[len("unix:"):]
 		res.Address = "unix:" + sock
+		if destguard.Restricting() {
+			res.Error = "unix sockets cannot be tested while the destination restriction is on"
+			return res
+		}
 		c, err := net.DialTimeout("unix", sock, upstreamTestTimeout)
 		res.LatencyMs = time.Since(start).Milliseconds()
 		if err != nil {
@@ -95,7 +112,7 @@ func testUpstream(raw string) upstreamTestResult {
 	res.Address = addr
 
 	// 1. can we connect at all
-	c, err := net.DialTimeout("tcp", addr, upstreamTestTimeout)
+	c, err := destguard.DialTimeout("tcp", addr, upstreamTestTimeout)
 	if err != nil {
 		res.LatencyMs = time.Since(start).Milliseconds()
 		res.Error = "cannot connect: " + shortNetErr(err)
@@ -108,17 +125,31 @@ func testUpstream(raw string) upstreamTestResult {
 	// 2. does it speak TLS (unless the user said plain http)
 	if hint != "http" {
 		d := &net.Dialer{Timeout: upstreamTestTimeout}
-		tc, terr := tls.DialWithDialer(d, "tcp", addr, &tls.Config{InsecureSkipVerify: true, ServerName: host})
+		tc, terr := testTLSDial(d, addr, &tls.Config{InsecureSkipVerify: true, ServerName: host})
 		if terr == nil {
 			tc.Close()
 			res.Protocol = "https"
 			// does the certificate verify
-			vc, verr := tls.DialWithDialer(d, "tcp", addr, &tls.Config{ServerName: host})
+			vc, verr := testTLSDial(d, addr, &tls.Config{ServerName: host})
 			if verr != nil {
 				res.SelfSign = true
 			} else {
 				vc.Close()
 			}
+			if pol.Active() {
+				res.TrustChecked = true
+				pc, perr := testTLSDial(d, addr, policyTLSConfig(pol, host, serverName))
+				if perr != nil {
+					res.TrustError = shortNetErr(perr)
+					res.Error = "TLS verification with the configured CA / pin failed: " + res.TrustError
+					return res
+				}
+				pc.Close()
+				res.TrustOK = true
+			}
+		} else if pol.Active() && hint == "https" {
+			res.Error = "the address does not speak TLS"
+			return res
 		}
 	}
 	if res.Protocol == "" {
@@ -130,6 +161,14 @@ func testUpstream(raw string) upstreamTestResult {
 		Timeout:       upstreamTestTimeout,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		Transport:     &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, DisableKeepAlives: true},
+	}
+	if res.TrustChecked {
+		//Verified earlier with the policy; the request itself uses it too so it cannot talk to a different certificate
+		client.Transport = &http.Transport{TLSClientConfig: policyTLSConfig(pol, host, serverName), DisableKeepAlives: true}
+	}
+	if destguard.Restricting() {
+		//Destination restriction (opt-in): the request dials through the guard, which resolves once and checks
+		client.Transport.(*http.Transport).DialContext = destguard.DialContext
 	}
 	t0 := time.Now()
 	resp, err := client.Get(res.Protocol + "://" + addr + path)
@@ -149,6 +188,40 @@ func testUpstream(raw string) upstreamTestResult {
 	return res
 }
 
+// policyTLSConfig is the tls.Config the proxy would use for this upstream: host name verification stays on
+func policyTLSConfig(pol upstreamtls.Policy, host, serverName string) *tls.Config {
+	cfg := &tls.Config{ServerName: host}
+	if sn := strings.TrimSpace(serverName); sn != "" {
+		if h, _, err := net.SplitHostPort(sn); err == nil {
+			sn = h
+		}
+		if net.ParseIP(sn) == nil {
+			cfg.ServerName = sn
+		}
+	}
+	pol.Apply(cfg)
+	return cfg
+}
+
+// testTLSDial is tls.DialWithDialer; with the destination restriction on the TCP connection goes through the guard
+func testTLSDial(d *net.Dialer, addr string, cfg *tls.Config) (*tls.Conn, error) {
+	if !destguard.Restricting() {
+		return tls.DialWithDialer(d, "tcp", addr, cfg)
+	}
+	raw, err := destguard.DialTimeout("tcp", addr, d.Timeout)
+	if err != nil {
+		return nil, err
+	}
+	tc := tls.Client(raw, cfg)
+	raw.SetDeadline(time.Now().Add(d.Timeout))
+	if err := tc.Handshake(); err != nil {
+		raw.Close()
+		return nil, err
+	}
+	raw.SetDeadline(time.Time{})
+	return tc, nil
+}
+
 func shortNetErr(err error) string {
 	var ne net.Error
 	if errors.As(err, &ne) && ne.Timeout() {
@@ -163,10 +236,74 @@ func shortNetErr(err error) string {
 
 func HandleTestUpstream(w http.ResponseWriter, r *http.Request) {
 	target, err := utils.GetPara(r, "url")
+	if err != nil && r.Method == http.MethodPost {
+		target, err = utils.PostPara(r, "url")
+	}
 	if err != nil {
 		utils.SendErrorResponse(w, "url is required")
 		return
 	}
-	js, _ := json.Marshal(testUpstream(target))
+	//Optional trust policy (POST, because a CA bundle does not fit a query string)
+	pol := upstreamtls.Policy{}
+	serverName := ""
+	if r.Method == http.MethodPost {
+		pol.CABundlePEM, _ = utils.PostPara(r, "cabundle")
+		if pins, _ := utils.PostPara(r, "pins"); pins != "" {
+			pol.PinsSHA256 = splitPins(pins)
+		}
+		serverName, _ = utils.PostPara(r, "servername")
+		if ep, perr := utils.PostPara(r, "ep"); perr == nil && serverName == "" && dynamicProxyRouter != nil {
+			//Same host name the proxy verifies with: the rule's "overwrite host header" value
+			if rule, lerr := dynamicProxyRouter.LoadProxy(ep); lerr == nil && rule != nil && rule.HeaderRewriteRules != nil {
+				serverName = rule.HeaderRewriteRules.RequestHostOverwrite
+			}
+		}
+		norm, err := pol.Normalized()
+		if err == nil {
+			err = norm.Validate()
+		}
+		if err != nil {
+			utils.SendErrorResponse(w, err.Error())
+			return
+		}
+		pol = norm
+	}
+	js, _ := json.Marshal(testUpstreamWith(target, pol, serverName))
+	utils.SendJSONResponse(w, string(js))
+}
+
+// splitPins splits a pin list typed one per line, or separated by commas or spaces
+func splitPins(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool { return r == '\n' || r == '\r' || r == ',' || r == ' ' || r == '\t' || r == ';' })
+}
+
+// HandleUpstreamTLSInspect lists the certificates of a pasted CA bundle with their fingerprints and SPKI pins, and
+// normalizes a pin list, so the admin can check what is about to be saved. POST cabundle, pins (optional)
+func HandleUpstreamTLSInspect(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.SendErrorResponse(w, "Method not supported")
+		return
+	}
+	bundle, _ := utils.PostPara(r, "cabundle")
+	pinsRaw, _ := utils.PostPara(r, "pins")
+	out := struct {
+		Certs []upstreamtls.CertInfo
+		Pins  []string
+	}{Certs: []upstreamtls.CertInfo{}, Pins: []string{}}
+	if strings.TrimSpace(bundle) != "" {
+		_, infos, err := upstreamtls.ParseBundle(bundle, time.Now())
+		if err != nil {
+			utils.SendErrorResponse(w, err.Error())
+			return
+		}
+		out.Certs = infos
+	}
+	pins, err := upstreamtls.NormalizePins(splitPins(pinsRaw))
+	if err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+	out.Pins = pins
+	js, _ := json.Marshal(out)
 	utils.SendJSONResponse(w, string(js))
 }

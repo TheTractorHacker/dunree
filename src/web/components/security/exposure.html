@@ -1,0 +1,90 @@
+<h3>Network exposure</h3>
+<p>Two optional limits that keep this Zoraxy from being used to reach, or be reached from, places it should not.
+    Both are off until you configure them: nothing changes for an existing setup. This does not configure your firewall; keep your firewall rules, this is a second layer.</p>
+
+<div class="ui form" id="dgForm">
+    <h4>Destination restriction</h4>
+    <div class="inline field">
+        <div class="ui toggle checkbox"><input type="checkbox" id="dgRestrict"><label for="dgRestrict">Restrict diagnostic tools to allowed destinations</label></div>
+        <p class="zx-help">Applies to the upstream test, port and IP scan, uptime monitor checks, the web terminal and the HTTP forward proxy.
+            They then refuse loopback, link-local, cloud metadata (169.254.169.254, fd00:ec2::254), multicast and unspecified addresses, including their IPv6 transition forms,
+            and, when the list below is not empty, every address outside it. The name is resolved once and the checked address is the one that is dialled.
+            Note that uptime checks of an upstream on 127.0.0.1 or outside the list will fail while this is on: list those upstreams below first (the warning box shows what would be refused now).</p>
+    </div>
+    <div class="field"><label for="dgAllowed">Allowed backend destinations (one per line)</label>
+        <textarea id="dgAllowed" rows="5" placeholder="10.20.0.0/24&#10;10.20.1.5 443,8000-8100&#10;127.0.0.1:8080"></textarea>
+        <p class="zx-help">A network or address (CIDR or IP), optionally followed by a space and ports (443 or 8000-8100, comma separated), or written as 10.0.0.5:443.
+            When this list is not empty, a proxy rule, upstream, virtual directory or default site target outside it is refused when it is saved,
+            even with the switch above off. Names in a target are resolved at save time. An empty list means no restriction.
+            Loopback is only reachable when listed here. Metadata and link-local addresses are never allowed.</p></div>
+    <div id="dgWarn"></div>
+    <div id="dgMsg" class="ui negative message" style="display:none"></div>
+    <button class="ui basic green button" id="dgSave"><i class="save icon"></i> Save</button>
+</div>
+
+<div class="ui divider"></div>
+
+<div class="ui form" id="aaForm">
+    <h4>Admin panel allow-list</h4>
+    <p>Only these networks may connect to the admin port (<span id="aaListen"></span>). Everything else gets "403 Forbidden". Empty = no limit (default).
+        The API, plugin and Fleet or cluster endpoints on the admin port are covered too, so list the hosts that use them.
+        Requests that a proxy rule of this Zoraxy forwards to the admin port are refused while a list is set.
+        Plugins that use the loopback port of an HTTPS admin panel are not affected.</p>
+    <div class="field"><label for="aaCidrs">Networks that may reach the admin panel (one CIDR or IP per line)</label>
+        <textarea id="aaCidrs" rows="4" placeholder="192.168.10.0/24"></textarea>
+        <p class="zx-help">Your address, <b id="aaYou"></b>, must be in the list: a list without it is not saved, so you cannot lock yourself out from here.
+            If you are locked out anyway, stop Zoraxy and start it once with <code>-reset_admin_allowlist</code>, then remove the flag. 0.0.0.0/0 is refused.</p></div>
+    <div id="aaMsg" class="ui negative message" style="display:none"></div>
+    <p class="zx-sub" id="aaStatus"></p>
+    <button class="ui basic green button" id="aaSave"><i class="save icon"></i> Save</button>
+</div>
+<script>
+(function () {
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
+    function lines(sel) { return $(sel).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
+    function loadDg() {
+        $.get("/api/destguard/get", function (d) {
+            $("#dgRestrict").prop("checked", !!d.restrictTools);
+            $("#dgAllowed").val((d.allowedBackends || []).join("\n"));
+            var w = (d.warnings || []).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("");
+            $("#dgWarn").html(w ? '<div class="ui warning message"><div class="header">' + esc(t("With these settings, this would be refused for existing rules")) + '</div><ul class="list">' + w + "</ul></div>" : "");
+        });
+    }
+    function loadAa() {
+        $.get("/api/adminallow/get", function (d) {
+            $("#aaCidrs").val((d.cidrs || []).join("\n"));
+            $("#aaYou").text(d.yourAddr || "?");
+            $("#aaListen").text(d.listen || "");
+            $("#aaStatus").text(d.active ? t("Allow-list is on. Requests refused since start: {0}.").replace("{0}", d.denied) : t("No allow-list: every address may connect."));
+        });
+    }
+    $("#dgSave").on("click", function () {
+        var cfg = { restrictTools: $("#dgRestrict").prop("checked"), allowedBackends: lines("#dgAllowed") };
+        $.cjax({ type: "POST", url: "/api/destguard/set", data: { config: JSON.stringify(cfg) }, success: function (d) {
+            if (d && d.error) { $("#dgMsg").text(d.error).show(); return; }
+            $("#dgMsg").hide();
+            toast(t("Destination restriction saved"), true);
+            loadDg();
+        } });
+    });
+    $("#aaSave").on("click", function () {
+        var list = lines("#aaCidrs");
+        var go = function () {
+            $.cjax({ type: "POST", url: "/api/adminallow/set", data: { config: JSON.stringify({ cidrs: list }) }, success: function (d) {
+                if (d && d.error) { $("#aaMsg").text(d.error).show(); return; }
+                $("#aaMsg").hide();
+                toast(t("Admin allow-list saved"), true);
+                loadAa();
+            } });
+        };
+        if (list.length) {
+            ZxUI.confirm({ title: "Limit the admin panel to these networks?", message: "Everyone else, including this panel from another address, is refused at once. Your own address must be in the list. Recovery if locked out: start Zoraxy with -reset_admin_allowlist.", confirmLabel: "Save list" }).then(function (ok) { if (ok) { go(); } });
+            return;
+        }
+        go();
+    });
+    loadDg();
+    loadAa();
+})();
+</script>

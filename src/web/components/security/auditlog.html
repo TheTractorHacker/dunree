@@ -1,0 +1,88 @@
+<h3>Security audit log</h3>
+<p>Who changed a security setting, from which address, and what. It records the deployment role, trusted proxies, access lists, the admin
+    allow-list, upstream certificate trust, API tokens, WAF, auto-ban and rate limit settings, and configuration import, export and restore.
+    Passwords, tokens, cookies and private keys are never written; other secret-looking values show as <code>[redacted]</code>.
+    Sign-ins and admin accounts are in the Admin accounts section. The file is <code>conf/security_audit.log</code>, kept as 5 files of 5 MiB,
+    not included in configuration exports, and the addresses shown are the direct connection, not forwarded headers.</p>
+<div id="salWarn" class="ui warning message" style="display:none"></div>
+<div class="ui form">
+    <div class="three fields">
+        <div class="field">
+            <label for="salEvent">Show</label>
+            <select id="salEvent" class="ui dropdown">
+                <option value="">Everything</option>
+                <option value="deployrole.*">Deployment role</option>
+                <option value="trustedproxy.*">Trusted proxies</option>
+                <option value="access.*">Access rules</option>
+                <option value="blacklist.*">Blacklist</option>
+                <option value="whitelist.*">Whitelist</option>
+                <option value="adminallow.*">Admin allow-list</option>
+                <option value="destguard.*">Destination restriction</option>
+                <option value="upstream.tls.*">Upstream certificate trust</option>
+                <option value="apitoken.*">API tokens</option>
+                <option value="waf.*">WAF</option>
+                <option value="abuse.*">Auto-ban</option>
+                <option value="ratelimit.*">Rate limits</option>
+                <option value="config.*">Configuration import, export, restore</option>
+                <option value="restapi.*">Changes through the REST API</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="salActor">Who</label>
+            <input type="text" id="salActor" placeholder="user name or token name" autocomplete="off">
+        </div>
+        <div class="field">
+            <label>&nbsp;</label>
+            <button class="ui basic button" id="salRefresh" type="button"><i class="refresh icon"></i> Refresh</button>
+            <button class="ui basic button" id="salVerify" type="button"><i class="check icon"></i> Check log integrity</button>
+        </div>
+    </div>
+</div>
+<div id="salVerifyMsg" class="ui message" style="display:none"></div>
+<div style="overflow-x:auto">
+    <table class="ui unstackable celled table">
+        <thead><tr><th>Time</th><th>Who</th><th>From</th><th>Event</th><th>Target</th><th>Result</th><th>Details</th></tr></thead>
+        <tbody id="salRows"><tr><td colspan="7">Loading...</td></tr></tbody>
+    </table>
+</div>
+<button class="ui basic button" id="salMore" type="button" style="display:none">Load older entries</button>
+<script>
+(function () {
+    var next = 0;
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    function row(e) {
+        var d = e.detail || {}, keys = Object.keys(d).filter(function (k) { return k.charAt(0) !== "@"; });
+        var det = keys.map(function (k) { return "<b>" + esc(k) + "</b>=" + esc(d[k]); }).join("<br>");
+        var cls = e.outcome === "ok" ? "" : (e.outcome === "denied" ? "negative" : "warning");
+        return '<tr class="' + cls + '"><td>' + esc(new Date(e.ts * 1000).toLocaleString()) + "</td><td>" + esc(e.actor) + "</td><td>" + esc(e.ip) +
+            "</td><td><code>" + esc(e.event) + "</code></td><td>" + esc(e.target) + "</td><td>" + esc(e.outcome) +
+            '</td><td style="word-break:break-word;max-width:28em">' + (det || "-") + "</td></tr>";
+    }
+    function load(append) {
+        var q = { event: $("#salEvent").val(), actor: $.trim($("#salActor").val()), limit: 50 };
+        if (append && next) { q.before = next; }
+        $.get("./api/security/audit/list", q, function (d) {
+            if (d && d.error) { $("#salRows").html('<tr><td colspan="7">' + esc(d.error) + "</td></tr>"); return; }
+            var st = d.stats || {};
+            if (!d.available) { $("#salWarn").text("The audit log could not be opened; nothing is being recorded. See the system log.").show(); }
+            else if (st.queued || st.dropped) { $("#salWarn").text("The log file cannot be written right now: " + (st.queued || 0) + " entries are waiting in memory" + (st.dropped ? ", " + st.dropped + " were lost." : ".")).show(); }
+            else { $("#salWarn").hide(); }
+            var html = (d.entries || []).map(row).join("");
+            if (append) { $("#salRows").append(html); } else { $("#salRows").html(html || '<tr><td colspan="7">No entries.</td></tr>'); }
+            next = d.next || 0;
+            $("#salMore").toggle(!!next);
+        });
+    }
+    $("#salRefresh, #salEvent").on("click change", function (e) { if (e.type === "change" || this.id === "salRefresh") { load(false); } });
+    $("#salActor").on("keydown", function (e) { if (e.key === "Enter") { load(false); } });
+    $("#salMore").on("click", function () { load(true); });
+    $("#salVerify").on("click", function () {
+        $.get("./api/security/audit/verify", function (v) {
+            var box = $("#salVerifyMsg").removeClass("positive negative").show();
+            if (v.ok) { box.addClass("positive").text("The log is consistent: " + v.entries + " entries, no entry was edited or removed (a rewrite of the whole file cannot be detected here)."); }
+            else { box.addClass("negative").text("The log was changed: entry " + v.badSeq + " - " + v.problem); }
+        });
+    });
+    load(false);
+})();
+</script>

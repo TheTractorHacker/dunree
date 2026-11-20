@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"golang.org/x/net/http2"
+	"imuslab.com/zoraxy/mod/adminallow"
 )
 
 type H2CRoundTripper struct {
@@ -31,7 +32,7 @@ func (h2c *H2CRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 	tr := &http2.Transport{
 		AllowHTTP: true,
 		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-			var d net.Dialer
+			d := net.Dialer{Control: adminallow.DialControl}
 			return d.DialContext(ctx, network, addr)
 		},
 	}
@@ -48,7 +49,7 @@ func (h2c *H2CRoundTripper) CheckServerSupportsH2C(serverURL string) bool {
 	tr := &http2.Transport{
 		AllowHTTP: true,
 		DialTLSContext: func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-			var d net.Dialer
+			d := net.Dialer{Control: adminallow.DialControl}
 			return d.DialContext(ctx, network, addr)
 		},
 	}

@@ -406,7 +406,7 @@
             if (res.status) { bits.push("answered " + res.status); }
             if (res.latencyMs) { bits.push(res.latencyMs + " ms"); }
             var txt = bits.join(", ");
-            if (https && res.selfsign) { txt += ". The certificate is not trusted (self-signed?)"; }
+            if (https && res.selfsign) { txt += ". The certificate is not trusted (self-signed?). Skipping verification works, but after saving you can add the CA or a pinned key in the upstream settings and keep verification on"; }
             var cls = res.error ? "warn" : "ok";
             if (res.status >= 500) { cls = "warn"; }
             $r.addClass(cls).html('<i class="' + (cls === "ok" ? "check circle" : "exclamation triangle") + ' icon"></i> ' + esc(txt) + (res.error ? " (" + esc(res.error) + ")" : ""));

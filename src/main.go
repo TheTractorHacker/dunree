@@ -77,7 +77,7 @@ func main() {
 		os.Exit(runDoctor()) //read-only report, see doctor.go. Never opens the database or binds a port
 	}
 	instance.NotifyStatus("Starting") //no-op unless started by systemd with Type=notify
-	offline.Set(*offlineMode) //-offline: no start-up / background outbound calls (mod/offline)
+	offline.Set(*offlineMode)         //-offline: no start-up / background outbound calls (mod/offline)
 
 	//Initialize path variables from flags
 	TMP_FOLDER = *path_tmp
@@ -240,9 +240,9 @@ func main() {
 
 	// Create a entry mux to accept all management interface requests
 	entryMux := http.NewServeMux()
-	entryMux.Handle("/plugin/", pluginAPIMux)                                        //For plugins API access
-	mountAPIv1(entryMux)                                                             //REST API (/api/v1), Bearer token auth, outside cookie+CSRF stack
-	entryMux.Handle("/", historyWrap(clusterMgr.GuardLocalEdits(csrfMiddleware(webminPanelMux)))) //For webmin UI access, require csrf token
+	entryMux.Handle("/plugin/", pluginAPIMux)                                                                   //For plugins API access
+	mountAPIv1(entryMux)                                                                                        //REST API (/api/v1), Bearer token auth, outside cookie+CSRF stack
+	entryMux.Handle("/", secAuditWrap(historyWrap(clusterMgr.GuardLocalEdits(csrfMiddleware(webminPanelMux))))) //For webmin UI access, require csrf token
 	//Cluster sync endpoints authenticate with an HMAC bearer token (404 unless role=primary)
 	registerAbuseRemoteAPI(entryMux) //Token authenticated ban/unban API for external tools
 	entryMux.Handle(cluster.SnapshotPath, clusterMgr.SyncHandler())
@@ -267,15 +267,16 @@ func main() {
 	startHistory()
 	startMetrics()
 
-	var adminHandler http.Handler = entryMux
+	var adminHandler http.Handler = adminHandlerWithAllowList(entryMux) //pass-through unless an allow-list is set
 	if webUICert != nil {
 		webUIFingerprint = webUICert.Fingerprint
 		if *webUIHSTS {
+			guarded := adminHandler
 			adminHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.TLS != nil {
 					w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 				}
-				entryMux.ServeHTTP(w, r)
+				guarded.ServeHTTP(w, r)
 			})
 		}
 		// Plugins talk to Zoraxy over plain HTTP on a loopback-only port
@@ -323,7 +324,7 @@ func main() {
 	updateManager.MarkHealthy()
 
 	announceReady(listener.Addr().String())
-	err = http.Serve(listener, entryMux)
+	err = http.Serve(listener, adminHandler)
 
 	if err != nil {
 		log.Fatal(err)

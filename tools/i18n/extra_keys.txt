@@ -101,3 +101,9 @@ Enter a URL
 Turn this Zoraxy into a Fleet hub?
 Make admin
 Make viewer
+Internal role without the peer gate: any host that can reach this proxy directly skips the external proxy. Enable the gate once the external proxy is listed under Trusted Proxies, and keep the firewall rule too.
+The trusted proxy list is empty: the external proxy is not trusted, so every request looks like a direct client and its forwarded client address is ignored.
+The trusted proxy list is empty. If a CDN such as Cloudflare is in front of this proxy, its client address headers are ignored until the CDN ranges are listed under Trusted Proxies.
+Header hardening is on and the trusted proxy list is empty: all forwarded client address headers are dropped.
+With these settings, this would be refused for existing rules
+Connections refused by the peer gate since start: {0}.

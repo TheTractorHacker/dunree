@@ -27,6 +27,9 @@
         <a class="item" data-sec="basicauth"><i class="key icon"></i> Basic auth</a>
         <a class="item" data-sec="authaudit"><i class="clipboard check icon"></i> Auth audit</a>
         <a class="item" data-sec="users"><i class="users icon"></i> Admin accounts</a>
+        <a class="item" data-sec="deployment"><i class="sitemap icon"></i> Deployment</a>
+        <a class="item" data-sec="exposure"><i class="shield alternate icon"></i> Network exposure</a>
+        <a class="item" data-sec="auditlog"><i class="history icon"></i> Audit log</a>
     </div>
     <div class="ui bottom attached segment" id="secPane">
         <div class="ui active centered inline loader"></div>
@@ -34,10 +37,15 @@
 </div>
 <script>
     (function () {
-        var HISTORY_OBJECT = { abuse: "Auto-ban", bots: "Bot rules", headers: "Header rules", basicauth: "Basic auth", authaudit: "", users: "" };
+        var HISTORY_OBJECT = { abuse: "Auto-ban", bots: "Bot rules", headers: "Header rules", basicauth: "Basic auth", authaudit: "", users: "", deployment: "", exposure: "", auditlog: "" };
         function loadSecTab(name) {
             $("#secTabs .item").removeClass("active");
-            $("#secTabs .item[data-sec='" + name + "']").addClass("active");
+            var tabEl = $("#secTabs .item[data-sec='" + name + "']").addClass("active")[0];
+            if (tabEl) {   // keep the chosen section visible in the scrolling tab bar
+                var bar = document.getElementById("secTabs");
+                var left = tabEl.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft;
+                bar.scrollLeft = Math.max(0, left - (bar.clientWidth - tabEl.offsetWidth) / 2);
+            }
             $("#secHistoryBtn").attr("data-zx-history", HISTORY_OBJECT[name] || "");
             $("#secPane").html('<div class="ui active centered inline loader"></div>');
             $.get("./components/security/" + name + ".html", function (html) {

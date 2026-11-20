@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"imuslab.com/zoraxy/mod/destguard"
 )
 
 // Rewrite url based on proxy root (default site)
@@ -74,7 +76,7 @@ func isPortAvailable(port int) bool {
 // Check if a given domain and port is a valid ssh server
 func IsSSHConnectable(ipOrDomain string, port int) bool {
 	timeout := time.Second * 3
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ipOrDomain, port), timeout)
+	conn, err := destguard.DialTimeout("tcp", fmt.Sprintf("%s:%d", ipOrDomain, port), timeout)
 	if err != nil {
 		return false
 	}

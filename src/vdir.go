@@ -91,6 +91,12 @@ func ReverseProxyAddVdir(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	reqTLSForGuard, _ := utils.PostBool(r, "reqTLS")
+	if err := validateBackendTarget(domain, reqTLSForGuard); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+
 	//Assume false if not given
 	reqTLS, _ := utils.PostBool(r, "reqTLS")
 	skipValid, _ := utils.PostBool(r, "skipValid")
@@ -218,6 +224,12 @@ func ReverseProxyEditVdir(w http.ResponseWriter, r *http.Request) {
 	domain, err := utils.PostPara(r, "domain")
 	if err != nil {
 		utils.SendErrorResponse(w, "target domain not defined")
+		return
+	}
+
+	reqTLSForGuard, _ := utils.PostBool(r, "reqTLS")
+	if err := validateBackendTarget(strings.TrimSpace(domain), reqTLSForGuard); err != nil {
+		utils.SendErrorResponse(w, err.Error())
 		return
 	}
 

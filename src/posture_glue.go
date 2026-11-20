@@ -16,6 +16,7 @@ import (
 	"imuslab.com/zoraxy/mod/cluster"
 	"imuslab.com/zoraxy/mod/dynamicproxy"
 	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
 	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
 	"imuslab.com/zoraxy/mod/offline"
 	"imuslab.com/zoraxy/mod/posture"
@@ -177,7 +178,7 @@ func collectPostureFacts() *posture.Facts {
 
 	section("admin settings", func() {
 		all, loop := posture.ParseListenAddr(*webUIPort)
-		f.Admin = &posture.AdminFacts{AuthRequired: requireAuth, TLSMode: *webUITLSMode, ListenAddr: *webUIPort, AllInterfaces: all, Loopback: loop}
+		f.Admin = &posture.AdminFacts{AuthRequired: requireAuth, TLSMode: *webUITLSMode, ListenAddr: *webUIPort, AllInterfaces: all, Loopback: loop, AllowList: len(adminAllowMgr.Settings().CIDRs)}
 	})
 
 	section("tool flags", func() {
@@ -190,6 +191,9 @@ func collectPostureFacts() *posture.Facts {
 		if forwardProxy != nil {
 			t.ForwardPort = forwardProxy.Port
 		}
+		ds := destGuardMgr.Settings()
+		t.RestrictTools, t.AllowedBackends = ds.RestrictTools, len(ds.AllowedBackends)
+		t.BackendViolations = backendViolations()
 		f.Tools = t
 	})
 
@@ -213,6 +217,8 @@ func collectPostureFacts() *posture.Facts {
 			if ep.HeaderRewriteRules != nil {
 				r.HSTSMaxAge = ep.HeaderRewriteRules.HSTSMaxAge
 			}
+			r.TLSVerifyOff = upstreamTLSVerifyOff(ep)
+			r.TargetsAdmin = ruleTargetsAdminListener(ep)
 			if c, ok := coverage[strings.ToLower(ep.RootOrMatchingDomain)]; ok {
 				r.WAFMode, r.WAFOrigin = c.Mode, c.Source
 				r.ChallengeBand, r.ChallengeReady = c.ChallengeThreshold > 0, c.ChallengeReady
@@ -313,6 +319,15 @@ func collectPostureFacts() *posture.Facts {
 		}
 		f.Access = &posture.AccessFacts{TrustProxyHeadersOnly: ar.TrustProxyHeadersOnly, BlacklistEnabled: ar.BlacklistEnabled,
 			WhitelistEnabled: ar.WhitelistEnabled, TrustedProxies: len(accessController.ListTrustedProxies())}
+	})
+
+	section("deployment role", func() {
+		if deployRoleMgr == nil || accessController == nil {
+			return
+		}
+		ds := deployRoleMgr.Settings()
+		f.Deploy = &posture.DeployFacts{Role: string(ds.Role), HardenHeaders: deployRoleMgr.HardenActive(), PeerGate: deployRoleMgr.PeerGateActive(),
+			TrustedProxies: len(accessController.ListTrustedProxies())}
 	})
 
 	section("bot rules", func() {
@@ -581,4 +596,22 @@ func runInternalHandler(h http.HandlerFunc, form url.Values) error {
 		return fmt.Errorf("%s", strings.TrimSpace(rec.Body.String()))
 	}
 	return nil
+}
+
+// upstreamTLSVerifyOff reports whether a rule reaches an HTTPS upstream or virtual directory with certificate
+// verification skipped. An upstream with a CA bundle or pin does not count: that replaces skip-verify
+func upstreamTLSVerifyOff(ep *dynamicproxy.ProxyEndpoint) bool {
+	for _, list := range [][]*loadbalance.Upstream{ep.ActiveOrigins} {
+		for _, u := range list {
+			if u != nil && u.RequireTLS && u.SkipCertValidations && !u.TLSPolicy().Active() {
+				return true
+			}
+		}
+	}
+	for _, v := range ep.VirtualDirectories {
+		if v != nil && v.RequireTLS && v.SkipCertValidations {
+			return true
+		}
+	}
+	return false
 }

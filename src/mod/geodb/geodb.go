@@ -58,8 +58,9 @@ type StoreOptions struct {
 	AllowSlowIpv4LookUp          bool
 	AllowSlowIpv6Lookup          bool
 	Logger                       *logger.Logger
-	SlowLookupCacheClearInterval time.Duration //Clear slow lookup cache interval
-	ExternalGeoDBFolder          string        //Folder for storing the downloaded geodb dataset
+	SlowLookupCacheClearInterval time.Duration              //Clear slow lookup cache interval
+	ExternalGeoDBFolder          string                     //Folder for storing the downloaded geodb dataset
+	RequesterIP                  func(*http.Request) string //Optional: resolves the client address of a request (nil = netutils.GetRequesterIP, which believes proxy headers)
 }
 
 type CountryInfo struct {
@@ -217,7 +218,11 @@ func (s *Store) Close() {
 }
 
 func (s *Store) GetRequesterCountryISOCode(r *http.Request) string {
-	ipAddr := netutils.GetRequesterIP(r)
+	resolve := netutils.GetRequesterIP
+	if s.option != nil && s.option.RequesterIP != nil {
+		resolve = s.option.RequesterIP
+	}
+	ipAddr := resolve(r)
 	if ipAddr == "" {
 		return ""
 	}

@@ -355,3 +355,15 @@ func TestLoginHooks(t *testing.T) {
 		t.Fatal("blocked attempts must not count as failures again")
 	}
 }
+
+// A viewer must not read the Phase 2 exposure settings (network topology, admin allow-list, caller address)
+func TestViewerDeniedExposureReadEndpoints(t *testing.T) {
+	for _, p := range []string{"/api/deployrole/get", "/api/destguard/get", "/api/adminallow/get", "/api/security/audit/list", "/api/security/audit/verify"} {
+		if ViewerAllowed("GET", p) {
+			t.Errorf("viewer may read %s", p)
+		}
+	}
+	if !ViewerAllowed("GET", "/api/proxy/list") {
+		t.Error("ordinary read endpoint no longer open to viewers")
+	}
+}

@@ -3,6 +3,7 @@ package streamproxy
 import (
 	"errors"
 	"fmt"
+	"imuslab.com/zoraxy/mod/adminallow"
 	"io"
 	"log"
 	"net"
@@ -174,6 +175,11 @@ func (c *ProxyRelayInstance) Port2host(allowPort string, targetAddress string, s
 		go func(targetAddress string) {
 			c.LogMsg("[+] start connect host:["+targetAddress+"]", nil)
 			target, err := net.Dial("tcp", targetAddress)
+			if err == nil && adminallow.DialBlocked("tcp", target.RemoteAddr().String()) {
+				// never relay to the admin listener while the admin allow-list is on
+				target.Close()
+				err = adminallow.ErrAdminPortDial
+			}
 			if err != nil {
 				// temporarily unavailable, don't use fatal.
 				c.LogMsg("[x] connect target address ["+targetAddress+"] failed. retry in "+strconv.Itoa(c.Timeout)+" seconds.", nil)

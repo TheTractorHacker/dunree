@@ -29,6 +29,11 @@ func HandleScanPort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := CheckTarget(targetIp); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+
 	// Scan the ports
 	openPorts := ScanPorts(targetIp)
 	jsonData, err := json.Marshal(openPorts)

@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"imuslab.com/zoraxy/mod/adminallow"
 	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
 	"imuslab.com/zoraxy/mod/info/logger"
 )
 
@@ -67,6 +69,48 @@ type Options struct {
 	Logger                         *logger.Logger               //Logger, can be nil
 	Timeout                        int64                        //Connection timeout in seconds, 0 means default (300 seconds)
 	EnableTimeoutRefreshOnActivity bool                         //Refresh websocket connection deadline on activity, requires websocket timeout to be set
+
+	//Upstream TLS, all optional (zero value = historical behavior)
+	TLSServerName     string                                                      //Override of the TLS SNI / verification host name (the rule's "overwrite host header")
+	ClientCertificate func(*tls.CertificateRequestInfo) (*tls.Certificate, error) //Client certificate presented to the wss:// upstream (upstream mTLS)
+	UpstreamTLS       upstreamtls.Policy                                          //Custom CA / SPKI pins, used INSTEAD of SkipTLSValidation when active
+}
+
+// sniName strips the port from an SNI override and drops IP literals (Go sends no SNI for them), same rule as dpcore
+func sniName(host string) string {
+	host = strings.TrimSpace(host)
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	if host == "" || net.ParseIP(host) != nil {
+		return ""
+	}
+	return host
+}
+
+// upstreamTLSConfig builds the TLS config for the backend dial, nil when nothing deviates from the default dialer
+func (o Options) upstreamTLSConfig() *tls.Config {
+	custom := o.UpstreamTLS.Active()
+	//The SNI override only follows the rule's Host header overwrite when an upstream TLS option (CA bundle,
+	//pin or client certificate) is configured. Without one, wss:// upstreams keep the historical behaviour
+	//(name taken from the dial address) so existing configs do not change on upgrade.
+	followSNI := custom || o.ClientCertificate != nil
+	if !o.SkipTLSValidation && !custom && o.ClientCertificate == nil {
+		return nil
+	}
+	cfg := &tls.Config{}
+	if sn := sniName(o.TLSServerName); followSNI && sn != "" {
+		cfg.ServerName = sn
+	}
+	if custom {
+		o.UpstreamTLS.Apply(cfg)
+	} else if o.SkipTLSValidation {
+		cfg.InsecureSkipVerify = true
+	}
+	if o.ClientCertificate != nil {
+		cfg.GetClientCertificate = o.ClientCertificate
+	}
+	return cfg
 }
 
 // ProxyHandler returns a new http.Handler interface that reverse proxies the
@@ -151,17 +195,19 @@ func (w *WebsocketProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	dialer := w.Dialer
 	if w.Dialer == nil {
-		if w.Options.SkipTLSValidation {
-			//Disable TLS secure check if target allow skip verification
-			//Work on a copy: websocket.DefaultDialer is a shared pointer and mutating it would switch off
+		if tlsCfg := w.Options.upstreamTLSConfig(); tlsCfg != nil {
+			//Skip verification, custom CA / pins, SNI override or a client certificate for this upstream.
+			//Work on a copy: websocket.DefaultDialer is a shared pointer and mutating it would change
 			//certificate verification for every other WebSocket upstream in the process (and race).
-			bypassDialer := *websocket.DefaultDialer
-			bypassDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			dialer = &bypassDialer
+			customDialer := *websocket.DefaultDialer
+			customDialer.TLSClientConfig = tlsCfg
+			dialer = &customDialer
 		} else {
-			//Just use the default dialer come with gorilla websocket
-			dialer = DefaultDialer
+			//Just use the default dialer come with gorilla websocket, plus the admin listener dial guard
+			guarded := *websocket.DefaultDialer
+			dialer = &guarded
 		}
+		dialer.NetDialContext = adminallow.DialContext //dialer is always a private copy here
 	}
 
 	// Pass headers from the incoming request to the dialer to forward them to

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"net/netip"
 	"runtime"
 	"sort"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-ping/ping"
+	"imuslab.com/zoraxy/mod/destguard"
 )
 
 /*
@@ -48,9 +50,17 @@ func ScanIpRange(start, end string) ([]*DiscoveredHost, error) {
 	// replies to be dropped (especially on macOS)
 	pingLimiter := make(chan struct{}, maxConcurrentPings)
 	hosts := make([]*DiscoveredHost, 0)
+	var firstRefusal error
 	for ip := ipStart; bytes.Compare(ip, ipEnd) <= 0; inc(ip) {
-		wg.Add(1)
 		thisIp := ip.String()
+		//Destination restriction (off by default): loopback, link-local, metadata and unlisted hosts are not probed
+		if err := CheckTarget(thisIp); err != nil {
+			if firstRefusal == nil {
+				firstRefusal = err
+			}
+			continue
+		}
+		wg.Add(1)
 		go func(thisIp string) {
 			defer wg.Done()
 			host := &DiscoveredHost{IP: thisIp}
@@ -78,8 +88,23 @@ func ScanIpRange(start, end string) ([]*DiscoveredHost, error) {
 
 	//Wait until all go routine done
 	wg.Wait()
+	if firstRefusal != nil && len(hosts) == 0 {
+		return nil, firstRefusal
+	}
 	sortByIP(hosts)
 	return hosts, nil
+}
+
+// CheckTarget applies the destination restriction (mod/destguard) to one scan target; nil when it is off or allowed
+func CheckTarget(host string) error {
+	if !destguard.Restricting() {
+		return nil
+	}
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return fmt.Errorf("%q is not an IP address", host)
+	}
+	return destguard.CheckDest(ip, 0)
 }
 
 func ScanCIDRRange(cidr string) ([]*DiscoveredHost, error) {
@@ -154,7 +179,7 @@ func (host *DiscoveredHost) CheckHostname() {
 
 func (host *DiscoveredHost) CheckPort(protocol string, port int, detected *bool) {
 	// try to connect to the specified port on the host
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host.IP, strconv.Itoa(port)), 1*time.Second)
+	conn, err := destguard.DialTimeout("tcp", net.JoinHostPort(host.IP, strconv.Itoa(port)), 1*time.Second)
 	if err == nil {
 		conn.Close()
 		*detected = true
@@ -166,7 +191,7 @@ func (host *DiscoveredHost) ScanPorts(startPort, endPort int) []int {
 
 	for port := startPort; port <= endPort; port++ {
 		target := net.JoinHostPort(host.IP, fmt.Sprintf("%d", port))
-		conn, err := net.DialTimeout("tcp", target, time.Millisecond*500)
+		conn, err := destguard.DialTimeout("tcp", target, time.Millisecond*500)
 		if err == nil {
 			conn.Close()
 			openPorts = append(openPorts, port)

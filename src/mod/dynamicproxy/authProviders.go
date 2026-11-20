@@ -104,12 +104,18 @@ func handleAuthProviderRouting(sep *ProxyEndpoint, w http.ResponseWriter, r *htt
 /* Basic Auth */
 func (h *ProxyHandler) handleBasicAuthRouting(w http.ResponseWriter, r *http.Request, pe *ProxyEndpoint) error {
 	//Wrapper for oop style
-	return handleBasicAuth(w, r, pe)
+	return handleBasicAuthIP(w, r, pe, h.Parent.trustedRequesterIP)
 }
 
 // basicAuthExceptionMatched reports whether the request is exempt from basic auth
 // by one of the configured exception rules.
 func basicAuthExceptionMatched(pe *ProxyEndpoint, r *http.Request) bool {
+	return basicAuthExceptionMatchedIP(pe, r, nil)
+}
+
+// basicAuthExceptionMatchedIP is basicAuthExceptionMatched with the resolver used for rules that
+// trust proxy headers (UseTrustedProxy); nil = netutils.GetRequesterIP
+func basicAuthExceptionMatchedIP(pe *ProxyEndpoint, r *http.Request, ipOf func(*http.Request) string) bool {
 	if pe == nil || pe.AuthenticationProvider == nil || pathForcesAuth(r) {
 		return false
 	}
@@ -135,7 +141,7 @@ func basicAuthExceptionMatched(pe *ProxyEndpoint, r *http.Request) bool {
 			// was explicitly configured with UseTrustedProxy = true.
 			var requesterIp string
 			if exceptionRule.UseTrustedProxy {
-				requesterIp = netutils.GetRequesterIP(r)
+				requesterIp = exceptionIP(ipOf, r)
 			} else {
 				requesterIp = netutils.GetRequesterIPUntrusted(r)
 			}
@@ -168,6 +174,10 @@ func basicAuthExceptionMatched(pe *ProxyEndpoint, r *http.Request) bool {
 // Handle basic auth logic
 // do not write to http.ResponseWriter if err return is not nil (already handled by this function)
 func handleBasicAuth(w http.ResponseWriter, r *http.Request, pe *ProxyEndpoint) error {
+	return handleBasicAuthIP(w, r, pe, nil)
+}
+
+func handleBasicAuthIP(w http.ResponseWriter, r *http.Request, pe *ProxyEndpoint, ipOf func(*http.Request) string) error {
 	if pe.basicScopeErr != nil {
 		//Broken scope config: never fall back to "no authentication"
 		http.Error(w, "503 - Basic auth scope misconfigured", http.StatusServiceUnavailable)
@@ -178,7 +188,7 @@ func handleBasicAuth(w http.ResponseWriter, r *http.Request, pe *ProxyEndpoint) 
 		r.Header.Del("X-Remote-User")
 		return nil
 	}
-	if basicAuthExceptionMatched(pe, r) {
+	if basicAuthExceptionMatchedIP(pe, r, ipOf) {
 		return nil
 	}
 
@@ -233,7 +243,7 @@ func oauth2RuleOptions(sep *ProxyEndpoint) oauth2.RuleOptions {
 func (h *ProxyHandler) handleZorxAuth(w http.ResponseWriter, r *http.Request, sep *ProxyEndpoint) error {
 	// Check ZorxAuth exception rules before applying authentication
 	if sep != nil && sep.AuthenticationProvider != nil {
-		if zorxAuthExceptionMatched(sep.AuthenticationProvider.ZorxAuthExceptionRules, r) {
+		if zorxAuthExceptionMatchedIP(sep.AuthenticationProvider.ZorxAuthExceptionRules, r, h.Parent.trustedRequesterIP) {
 			return nil
 		}
 	}
@@ -244,6 +254,10 @@ func (h *ProxyHandler) handleZorxAuth(w http.ResponseWriter, r *http.Request, se
 // one of the configured exception rules. It takes the rule slice directly so it
 // can be exercised without a configured SSO agent.
 func zorxAuthExceptionMatched(rules []*ZorxAuthExceptionRule, r *http.Request) bool {
+	return zorxAuthExceptionMatchedIP(rules, r, nil)
+}
+
+func zorxAuthExceptionMatchedIP(rules []*ZorxAuthExceptionRule, r *http.Request, ipOf func(*http.Request) string) bool {
 	if pathForcesAuth(r) {
 		return false //a path rule requires authentication for this path
 	}
@@ -268,7 +282,7 @@ func zorxAuthExceptionMatched(rules []*ZorxAuthExceptionRule, r *http.Request) b
 		case AuthExceptionType_CIDR:
 			var requesterIp string
 			if rule.UseTrustedProxy {
-				requesterIp = netutils.GetRequesterIP(r)
+				requesterIp = exceptionIP(ipOf, r)
 			} else {
 				requesterIp = netutils.GetRequesterIPUntrusted(r)
 			}
@@ -315,3 +329,11 @@ func (s *statusSniffer) Flush() {
 }
 
 func (s *statusSniffer) Unwrap() http.ResponseWriter { return s.ResponseWriter }
+
+// exceptionIP resolves the address of a rule that trusts proxy headers
+func exceptionIP(ipOf func(*http.Request) string, r *http.Request) string {
+	if ipOf != nil {
+		return ipOf(r)
+	}
+	return netutils.GetRequesterIP(r)
+}

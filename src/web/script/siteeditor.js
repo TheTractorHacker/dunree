@@ -256,6 +256,7 @@
         if (s.BypassGlobalTLS) { add("plainhttp", t("Plain HTTP allowed"), "tls"); }
         if (s.ClientCert || (s.AllowedPeerCIDRs || []).length || s.SecondaryPortsTLS || s.BotPolicy) { add("net", t("Client certificates, peers and secondary TLS"), "tls"); }
         if (s.DisableChunkedTransferEncoding || s.ForceHTTP11 || s.SanitiseClientIPHeaders) { add("compat", t("Compatibility"), "advanced"); }
+        if (s.MaxRequestBodyBytes || s.RequestTimeout || s.UpstreamDialTimeout) { add("limits", t("Request limits and timeouts"), "advanced"); }
         if (s.EnableConnectSupport || s.EnableUpgradeForwarding) { add("forwarding", t("Tunnels and protocol upgrades"), "advanced"); }
         if (s.UptimeHealthyStatus) { add("uptimeopts", t("Uptime monitor options"), "advanced"); }
         if (s.DisableLogging || s.DisableStatisticCollection) { add("logging", t("Logging and statistics"), "advanced"); }

@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -97,6 +98,20 @@ type Manager struct {
 	//Realtime Statistics
 	Connections int //currently connected connect counts
 
+	//TargetCheck, if set, is asked about every new or changed target address ("host:port") before it is saved
+	//(the allowed backend destinations list). nil = no check = historical behaviour.
+	TargetCheck func(target string) error
+}
+
+// checkTarget runs TargetCheck
+func (m *Manager) checkTarget(target string) error {
+	if m == nil || m.TargetCheck == nil {
+		return nil
+	}
+	if err := m.TargetCheck(strings.TrimSpace(target)); err != nil {
+		return errors.New("target address: " + err.Error())
+	}
+	return nil
 }
 
 // NewStreamProxy creates a new stream proxy manager with the given options

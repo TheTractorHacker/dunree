@@ -247,6 +247,7 @@ func (router *Router) StartProxyService() error {
 			// idle keep-alive connections. WriteTimeout left at 0 by default
 			// so legitimate long-running requests still work.
 			ReadHeaderTimeout: time.Duration(router.Option.ReadHeaderTimeout) * time.Second,
+			ReadTimeout:       time.Duration(router.Option.ReadTimeout) * time.Second, //0 = off (default)
 			WriteTimeout:      time.Duration(router.Option.WriteTimeout) * time.Second,
 			IdleTimeout:       time.Duration(router.Option.IdleTimeout) * time.Second,
 		}
@@ -317,6 +318,7 @@ func (router *Router) StartProxyService() error {
 			Handler: router.withHealth(router.mux),
 			// See TLS branch above for rationale.
 			ReadHeaderTimeout: time.Duration(router.Option.ReadHeaderTimeout) * time.Second,
+			ReadTimeout:       time.Duration(router.Option.ReadTimeout) * time.Second, //0 = off (default)
 			WriteTimeout:      time.Duration(router.Option.WriteTimeout) * time.Second,
 			IdleTimeout:       time.Duration(router.Option.IdleTimeout) * time.Second,
 		}
@@ -393,6 +395,14 @@ func (router *Router) handleNonTLSRequest(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	//Per route request limits (body size, request timeout, upstream connect timeout); none set = untouched
+	r, cancelLimits, limitsOK := applyRouteLimits(w, r, sep)
+	defer cancelLimits()
+	if !limitsOK {
+		router.logRequest(r, false, http.StatusRequestEntityTooLarge, "host-http", r.Host, "", sep)
+		return
+	}
+
 	armOps(r)
 	selectedUpstream, err := router.loadBalancer.SelectUpstream(w, r, sep.ActiveOrigins, router.newSelectOptions(r, sep))
 	if err != nil {
@@ -423,7 +433,7 @@ func (router *Router) handleNonTLSRequest(w http.ResponseWriter, r *http.Request
 
 	selectedUpstream.Acquire()
 	defer selectedUpstream.Release()
-	selectedUpstream.ServeHTTP(w, r, &dpcore.ResponseRewriteRuleSet{
+	_, upErr := selectedUpstream.ServeHTTP(w, r, &dpcore.ResponseRewriteRuleSet{
 		ProxyDomain:             selectedUpstream.OriginIpOrDomain,
 		OriginalHost:            originalHostHeader,
 		UseTLS:                  selectedUpstream.RequireTLS,
@@ -438,6 +448,10 @@ func (router *Router) handleNonTLSRequest(w http.ResponseWriter, r *http.Request
 		AltSvc:                  router.getAltSvcValue(),
 		ResponseGuard:           router.responseGuard(r, sep),
 	})
+	//Only the route limits are answered here; any other upstream error keeps the behaviour this path always had
+	if status, limited := routeLimitStatus(upErr, r, sep); limited {
+		http.Error(w, http.StatusText(status), status)
+	}
 }
 
 func (router *Router) handleCaptchaGating(w http.ResponseWriter, r *http.Request, sep *ProxyEndpoint) (handled bool, challenged bool) {
@@ -515,6 +529,9 @@ func (router *Router) startSecondaryListeners() {
 		secondaryServer := &http.Server{
 			Addr: addr,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if router.deployRoleEntry(w, r) { //deployment role: peer gate and forwarded header hardening
+					return
+				}
 				if router.ServeHealth(w, r) {
 					return
 				}
@@ -558,6 +575,7 @@ func (router *Router) startSecondaryListeners() {
 				}
 			}),
 			ReadHeaderTimeout: time.Duration(router.Option.ReadHeaderTimeout) * time.Second,
+			ReadTimeout:       time.Duration(router.Option.ReadTimeout) * time.Second, //0 = off (default)
 			WriteTimeout:      time.Duration(router.Option.WriteTimeout) * time.Second,
 			IdleTimeout:       time.Duration(router.Option.IdleTimeout) * time.Second,
 		}
@@ -897,6 +915,9 @@ func (r *Router) GetCommonListeningPorts() map[string][]string {
 // is TLS on another port: HTTP-01 ACME challenges are always answered, endpoints that
 // allow plain HTTP are routed normally, everything else is redirected or rejected.
 func (router *Router) handlePort80Request(w http.ResponseWriter, r *http.Request) {
+	if router.deployRoleEntry(w, r) { //deployment role: peer gate and forwarded header hardening
+		return
+	}
 	//Health endpoint (/.zoraxy/health) is served before any host routing
 	if router.ServeHealth(w, r) {
 		return

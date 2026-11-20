@@ -29,6 +29,7 @@ import (
 	"imuslab.com/zoraxy/mod/auth/sso/forward"
 	"imuslab.com/zoraxy/mod/blocklog"
 	"imuslab.com/zoraxy/mod/botrules"
+	"imuslab.com/zoraxy/mod/deployrole"
 	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
 	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
 	"imuslab.com/zoraxy/mod/dynamicproxy/exploits"
@@ -99,6 +100,8 @@ type RouterOption struct {
 
 	SanitiseClientIPHeaders bool //Global default (off): drop client supplied X-Forwarded-For / X-Real-IP / ... from peers that are not trusted proxies
 
+	DeployRole *deployrole.Manager `json:"-"` //Optional deployment role (standalone = nil or default): forwarded header hardening and the internal peer gate, see deployrole_hook.go
+
 	WAFChallengeKeyFile string `json:"-"` //WAF graduated response: file holding the per-install key that signs challenge cookies (created when missing); empty = random key per start
 
 	/* Routing Service Managers */
@@ -121,6 +124,7 @@ type RouterOption struct {
 
 	/* Timeouts */
 	ReadHeaderTimeout int64 //HTTP server read timeout in seconds
+	ReadTimeout       int64 //HTTP server read timeout in seconds (whole request incl. body, slow uploads), 0 = off (default)
 	WriteTimeout      int64 //HTTP server write timeout in seconds
 	IdleTimeout       int64 //HTTP server idle timeout in seconds
 
@@ -395,6 +399,11 @@ type ProxyEndpoint struct {
 	// Chunked Transfer Encoding
 	DisableChunkedTransferEncoding bool //Disable chunked transfer encoding for this endpoint
 	ForceHTTP11                    bool //Force use HTTP/1.1 for upstream connection
+
+	//Request limits (all 0 = off / built-in default = behaviour before these options existed)
+	MaxRequestBodyBytes int64 `json:",omitempty"` //Largest request body accepted, in bytes; larger gets 413 (Content-Length early, chunked while reading). 0 = unlimited
+	RequestTimeout      int64 `json:",omitempty"` //Whole-request time budget in seconds (waiting for the upstream, not WebSocket / upgrade tunnels); exceeded = 504. 0 = none
+	UpstreamDialTimeout int64 `json:",omitempty"` //Seconds allowed to connect to an upstream; 0 = built-in 30 s
 
 	//Client IP header handling
 	SanitiseClientIPHeaders bool //Drop client supplied X-Forwarded-For / X-Real-IP / CF-Connecting-IP... from peers that are not trusted proxies (default off)

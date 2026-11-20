@@ -13,8 +13,8 @@ import (
 	"imuslab.com/zoraxy/mod/dynamicproxy/domainsniff"
 	"imuslab.com/zoraxy/mod/info/hardwareinfo"
 	"imuslab.com/zoraxy/mod/ipscan"
-	"imuslab.com/zoraxy/mod/netstat"
 	"imuslab.com/zoraxy/mod/netcalc"
+	"imuslab.com/zoraxy/mod/netstat"
 	"imuslab.com/zoraxy/mod/netutils"
 	"imuslab.com/zoraxy/mod/tlscert"
 	"imuslab.com/zoraxy/mod/utils"
@@ -79,6 +79,12 @@ func RegisterHTTPProxyAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/proxy/requestIsProxied", HandleManagementProxyCheck)
 	authRouter.HandleFunc("/api/proxy/developmentMode", HandleDevelopmentModeChange)
 	authRouter.HandleFunc("/api/proxy/sanitiseClientIP", HandleSanitiseClientIPChange)
+	authRouter.HandleFunc("/api/deployrole/get", HandleDeployRoleGet)
+	authRouter.HandleFunc("/api/deployrole/set", HandleDeployRoleSet)
+	authRouter.HandleFunc("/api/destguard/get", HandleDestGuardGet)
+	authRouter.HandleFunc("/api/destguard/set", HandleDestGuardSet)
+	authRouter.HandleFunc("/api/adminallow/get", HandleAdminAllowGet)
+	authRouter.HandleFunc("/api/adminallow/set", HandleAdminAllowSet)
 	authRouter.HandleFunc("/api/proxy/proxyProtocol", HandleProxyProtocolChange)
 	authRouter.HandleFunc("/api/proxy/quic", HandleQuicToggle)
 	authRouter.HandleFunc("/api/proxy/timeouts", HandleGlobalProxyTimeoutSettings)
@@ -469,6 +475,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	authRouter.HandleFunc("/api/quickstart", HandleQuickStartState)
 	authRouter.HandleFunc("/api/i18n/language", HandleUILanguage)
 	authRouter.HandleFunc("/api/proxy/testupstream", HandleTestUpstream)
+	authRouter.HandleFunc("/api/proxy/upstream/tlsinspect", HandleUpstreamTLSInspect)
 	RegisterNetworkingAPIs(authRouter)
 	RegisterOpsAPIs(authRouter)
 	RegisterEchAPIs(authRouter)
@@ -488,6 +495,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	RegisterUpdaterAPIs(authRouter)
 	RegisterClusterAPIs(authRouter)
 	RegisterHistoryAPIs(authRouter)
+	RegisterSecurityAuditAPIs(authRouter)
 	RegisterMetricsAPIs(authRouter)
 	RegisterACMEAndAutoRenewerAPIs(authRouter)
 	RegisterStaticWebServerAPIs(authRouter)

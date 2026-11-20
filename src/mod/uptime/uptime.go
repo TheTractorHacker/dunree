@@ -1,6 +1,7 @@
 package uptime
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"golang.org/x/net/publicsuffix"
+	"imuslab.com/zoraxy/mod/destguard"
 	"imuslab.com/zoraxy/mod/info/logger"
 	"imuslab.com/zoraxy/mod/utils"
 )
@@ -391,12 +393,29 @@ func (m *Monitor) getWebsiteStatus(url string, skipTLSVerification bool, timeout
 		DisableKeepAlives: true,
 		IdleConnTimeout:   15 * time.Second,
 	}
+	restricted := destguard.Restricting() //opt-in destination restriction, see mod/destguard
+	if restricted {
+		//Resolve once, check, dial the checked address; redirects go through the same dialer
+		transport.DialContext = destguard.DialContext
+	}
 	if skipTLSVerification {
 		transport.TLSClientConfig = utils.InsecureUpstreamTLSConfig("")
 		transport.DialTLS = func(network, addr string) (net.Conn, error) {
 			cfg := utils.InsecureUpstreamTLSConfig("")
 			if host, _, err := net.SplitHostPort(addr); err == nil && net.ParseIP(host) == nil {
 				cfg.ServerName = host //keep SNI: tls.Dial derives it from addr, a custom config must set it
+			}
+			if restricted {
+				raw, err := destguard.DialContext(context.Background(), network, addr)
+				if err != nil {
+					return nil, err
+				}
+				tc := tls.Client(raw, cfg)
+				if err := tc.Handshake(); err != nil {
+					raw.Close()
+					return nil, err
+				}
+				return tc, nil
 			}
 			return tls.Dial(network, addr, cfg)
 		}

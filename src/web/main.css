@@ -1055,6 +1055,20 @@ body.darkTheme .menudivider{
     border-radius: 0.6em;
     box-shadow: 0 0 0 max(100vh, 100vw) rgba(0, 0, 0, .3);
 }
+/* Security Center has nine sections: the tab bar scrolls inside its own box at every width instead of widening the page */
+#secTabs.ui.tabular.menu {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    scrollbar-width: thin;
+}
+#secTabs.ui.tabular.menu .item { flex-shrink: 0; white-space: nowrap; }
+/* Fomantic hides every .warning.message inside a .ui.form until the form itself is in its warning state: the notes built
+   by Deployment and Network exposure are meant to show as soon as they exist */
+#drForm .ui.warning.message, #dgForm .ui.warning.message { display: block; }
+/* help text under an inline (switch) field: Fomantic gives such a paragraph near-black text (unreadable in the dark theme) and label weight */
+.ui.form .inline.field > p.zx-help { font-weight: 400; display: block; margin-left: 0; color: var(--zx-text-muted); }
 /*
     UX overhaul: responsive helpers (small screens)
 */

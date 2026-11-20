@@ -144,6 +144,7 @@ func (router *Router) startHttpListener() {
 	httpServer := &http.Server{
 		Handler:           http.HandlerFunc(router.handlePort80Request),
 		ReadHeaderTimeout: time.Duration(router.Option.ReadHeaderTimeout) * time.Second,
+		ReadTimeout:       time.Duration(router.Option.ReadTimeout) * time.Second, //0 = off (default)
 		WriteTimeout:      time.Duration(router.Option.WriteTimeout) * time.Second,
 		IdleTimeout:       time.Duration(router.Option.IdleTimeout) * time.Second,
 	}

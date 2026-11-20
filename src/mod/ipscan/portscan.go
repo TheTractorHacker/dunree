@@ -12,6 +12,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"imuslab.com/zoraxy/mod/destguard"
 )
 
 // OpenedPort holds information about an open port and its service type
@@ -33,7 +35,7 @@ func ScanPorts(host string) []*OpenedPort {
 			address := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 
 			// Check TCP
-			conn, err := net.DialTimeout("tcp", address, 5*time.Second)
+			conn, err := destguard.DialTimeout("tcp", address, 5*time.Second)
 			if err == nil {
 				mu.Lock()
 				openPorts = append(openPorts, &OpenedPort{Port: port, IsTCP: true})

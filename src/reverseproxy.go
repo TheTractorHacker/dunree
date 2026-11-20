@@ -40,6 +40,7 @@ var (
 
 type globalProxyTimeoutSettings struct {
 	ReadHeaderTimeout int `json:"readHeaderTimeout"`
+	ReadTimeout       int `json:"readTimeout"` //whole request incl. body, 0 = off (default)
 	WriteTimeout      int `json:"writeTimeout"`
 	IdleTimeout       int `json:"idleTimeout"`
 }
@@ -271,6 +272,9 @@ func ReverseProxyInit() {
 	sanitiseClientIP := false
 	sysdb.Read("settings", "sanitiseClientIP", &sanitiseClientIP)
 
+	//Deployment role (default standalone = unchanged behaviour), see mod/deployrole
+	initDeployRole()
+
 	useProxyProtocol := false
 	sysdb.Read("settings", "useProxyProtocol", &useProxyProtocol)
 	if useProxyProtocol {
@@ -283,6 +287,8 @@ func ReverseProxyInit() {
 	writeTimeout := *proxyWriteTimeout
 	idleTimeout := *proxyIdleTimeout
 	sysdb.Read("settings", "readHeaderTimeout", &readHeaderTimeout)
+	readTimeout := 0 //off, as before this setting existed
+	sysdb.Read("settings", "readTimeout", &readTimeout)
 	sysdb.Read("settings", "writeTimeout", &writeTimeout)
 	sysdb.Read("settings", "idleTimeout", &idleTimeout)
 	SystemWideLogger.Println("Proxy timeout settings loaded. Read header: " + strconv.Itoa(readHeaderTimeout) + "s, Write: " + strconv.Itoa(writeTimeout) + "s, Idle: " + strconv.Itoa(idleTimeout) + "s")
@@ -344,6 +350,7 @@ func ReverseProxyInit() {
 		UseProxyProtocol:   useProxyProtocol,
 
 		SanitiseClientIPHeaders: sanitiseClientIP,
+		DeployRole:              deployRoleMgr,
 
 		WAFChallengeKeyFile: CONF_FOLDER + "/waf_challenge.key", //WAF graduated response, see mod/dynamicproxy/waf_challenge.go
 		/* Routing Service Managers */
@@ -367,6 +374,7 @@ func ReverseProxyInit() {
 		BasicAuthLists:      getCredentialLists(),
 		/* Timeouts */
 		ReadHeaderTimeout: int64(readHeaderTimeout),
+		ReadTimeout:       int64(readTimeout),
 		WriteTimeout:      int64(writeTimeout),
 		IdleTimeout:       int64(idleTimeout),
 		/* HTTP/2 */
@@ -513,6 +521,11 @@ func ReverseProxyHandleAddEndpoint(w http.ResponseWriter, r *http.Request) {
 			utils.SendErrorResponse(w, err.Error())
 			return
 		}
+	}
+
+	if err := validateBackendTarget(endpoint, useTLS); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
 	}
 
 	//Bypass global TLS value / allow direct access from port 80?
@@ -854,6 +867,10 @@ func ReverseProxyHandleAddEndpoint(w http.ResponseWriter, r *http.Request) {
 				utils.SendErrorResponse(w, err.Error())
 				return
 			}
+			if err := validateBackendTarget(endpoint, false); err != nil { //default site: the scheme in the value names TLS
+				utils.SendErrorResponse(w, err.Error())
+				return
+			}
 		}
 
 		//Write the root options to file
@@ -974,6 +991,23 @@ func formHas(r *http.Request, key string) bool {
 	return ok
 }
 
+// postInt64Or reads a whole number form parameter; absent (or empty) returns current, anything else that is not a number is an error.
+func postInt64Or(r *http.Request, key string, current int64) (int64, error) {
+	if !formHas(r, key) {
+		return current, nil
+	}
+	v, _ := utils.PostPara(r, key)
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return 0, nil
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0, errors.New(key + " must be a whole number")
+	}
+	return n, nil
+}
+
 // postBoolOr reads a boolean form parameter and returns current when it is absent or not a valid boolean.
 func postBoolOr(r *http.Request, key string, current bool) bool {
 	if v, err := utils.PostBool(r, key); err == nil {
@@ -1090,6 +1124,22 @@ func ReverseProxyHandleEditEndpoint(w http.ResponseWriter, r *http.Request) {
 	// Force HTTP/1.1
 	forceHTTP11 := postBoolOr(r, "forceHTTP11", cur.ForceHTTP11)
 
+	// Request limits: a parameter that is absent keeps the stored value, 0 switches the limit off
+	limits := dynamicproxy.ProxyEndpoint{MaxRequestBodyBytes: cur.MaxRequestBodyBytes, RequestTimeout: cur.RequestTimeout, UpstreamDialTimeout: cur.UpstreamDialTimeout}
+	limitErr := error(nil)
+	if limits.MaxRequestBodyBytes, limitErr = postInt64Or(r, "maxRequestBodyBytes", limits.MaxRequestBodyBytes); limitErr == nil {
+		if limits.RequestTimeout, limitErr = postInt64Or(r, "requestTimeout", limits.RequestTimeout); limitErr == nil {
+			limits.UpstreamDialTimeout, limitErr = postInt64Or(r, "upstreamDialTimeout", limits.UpstreamDialTimeout)
+		}
+	}
+	if limitErr == nil {
+		limitErr = dynamicproxy.ValidateRouteLimits(&limits)
+	}
+	if limitErr != nil {
+		utils.SendErrorResponse(w, "invalid request limit: "+limitErr.Error())
+		return
+	}
+
 	// Drop spoofable client IP headers sent by untrusted peers
 	sanitiseClientIP := postBoolOr(r, "sanitiseClientIP", cur.SanitiseClientIPHeaders)
 
@@ -1177,6 +1227,9 @@ func ReverseProxyHandleEditEndpoint(w http.ResponseWriter, r *http.Request) {
 	newProxyEndpoint.DisableAutoFallback = disableAutoFallback
 	newProxyEndpoint.DisableChunkedTransferEncoding = disableChunkedEncoding
 	newProxyEndpoint.ForceHTTP11 = forceHTTP11
+	newProxyEndpoint.MaxRequestBodyBytes = limits.MaxRequestBodyBytes
+	newProxyEndpoint.RequestTimeout = limits.RequestTimeout
+	newProxyEndpoint.UpstreamDialTimeout = limits.UpstreamDialTimeout
 	newProxyEndpoint.SanitiseClientIPHeaders = sanitiseClientIP
 	newProxyEndpoint.DisableWebSocket = disableWebSocket
 	newProxyEndpoint.WebsocketTimeout = websocketTimeout
@@ -2395,6 +2448,7 @@ func HandleGlobalProxyTimeoutSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		js, _ := json.Marshal(globalProxyTimeoutSettings{
 			ReadHeaderTimeout: int(dynamicProxyRouter.Option.ReadHeaderTimeout),
+			ReadTimeout:       int(dynamicProxyRouter.Option.ReadTimeout),
 			WriteTimeout:      int(dynamicProxyRouter.Option.WriteTimeout),
 			IdleTimeout:       int(dynamicProxyRouter.Option.IdleTimeout),
 		})
@@ -2413,6 +2467,16 @@ func HandleGlobalProxyTimeoutSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//Optional field: a client that does not send it (older scripts) keeps the current value
+	readTimeout := int(dynamicProxyRouter.Option.ReadTimeout)
+	if _, perr := utils.PostPara(r, "readTimeout"); perr == nil {
+		readTimeout, err = utils.PostInt(r, "readTimeout")
+		if err != nil || readTimeout < 0 || readTimeout > maxProxyTimeoutSeconds {
+			utils.SendErrorResponse(w, "Invalid read timeout given: use whole seconds between 0 and 604800 (0 = off)")
+			return
+		}
+	}
+
 	writeTimeout, err := utils.PostInt(r, "writeTimeout")
 	if err != nil || writeTimeout < 0 || writeTimeout > maxProxyTimeoutSeconds {
 		utils.SendErrorResponse(w, "Invalid write timeout given: use whole seconds between 0 and 604800")
@@ -2427,17 +2491,20 @@ func HandleGlobalProxyTimeoutSettings(w http.ResponseWriter, r *http.Request) {
 
 	previousSettings := globalProxyTimeoutSettings{
 		ReadHeaderTimeout: int(dynamicProxyRouter.Option.ReadHeaderTimeout),
+		ReadTimeout:       int(dynamicProxyRouter.Option.ReadTimeout),
 		WriteTimeout:      int(dynamicProxyRouter.Option.WriteTimeout),
 		IdleTimeout:       int(dynamicProxyRouter.Option.IdleTimeout),
 	}
 
 	dynamicProxyRouter.Option.ReadHeaderTimeout = int64(readHeaderTimeout)
+	dynamicProxyRouter.Option.ReadTimeout = int64(readTimeout)
 	dynamicProxyRouter.Option.WriteTimeout = int64(writeTimeout)
 	dynamicProxyRouter.Option.IdleTimeout = int64(idleTimeout)
 
 	if dynamicProxyRouter.Running {
 		if err := dynamicProxyRouter.Restart(); err != nil {
 			dynamicProxyRouter.Option.ReadHeaderTimeout = int64(previousSettings.ReadHeaderTimeout)
+			dynamicProxyRouter.Option.ReadTimeout = int64(previousSettings.ReadTimeout)
 			dynamicProxyRouter.Option.WriteTimeout = int64(previousSettings.WriteTimeout)
 			dynamicProxyRouter.Option.IdleTimeout = int64(previousSettings.IdleTimeout)
 			utils.SendErrorResponse(w, "Failed to restart proxy: "+err.Error())
@@ -2446,6 +2513,7 @@ func HandleGlobalProxyTimeoutSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sysdb.Write("settings", "readHeaderTimeout", readHeaderTimeout)
+	sysdb.Write("settings", "readTimeout", readTimeout)
 	sysdb.Write("settings", "writeTimeout", writeTimeout)
 	sysdb.Write("settings", "idleTimeout", idleTimeout)
 

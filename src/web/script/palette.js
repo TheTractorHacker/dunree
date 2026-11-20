@@ -48,6 +48,7 @@
         { label: N_("Basic auth"), page: "seccenter", pre: "#secTabs .item[data-sec='basicauth']", at: "#secTabs .item[data-sec='basicauth']", kw: "password htaccess username" },
         { label: N_("Admin accounts"), page: "seccenter", pre: "#secTabs .item[data-sec='users']", at: "#secTabs .item[data-sec='users']", kw: "users viewer role management login" },
         { label: N_("Auth audit"), page: "seccenter", pre: "#secTabs .item[data-sec='authaudit']", at: "#secTabs .item[data-sec='authaudit']", kw: "failed logins log" },
+        { label: N_("Deployment role"), page: "seccenter", pre: "#secTabs .item[data-sec='deployment']", at: "#drRole", kw: "external internal standalone dual proxy peer gate forwarded headers x-forwarded-for trusted" },
         { label: N_("WAF mode"), page: "waf", pre: "#wafTabs .item[data-tab='waf-overview']", at: "#wafModeCards", kw: "firewall detect block off blocking detection only" },
         { label: N_("WAF paranoia level"), page: "waf", pre: "#wafTabs .item[data-tab='waf-policy']", at: "#wafpParanoia", kw: "firewall strictness crs level" },
         { label: N_("WAF anomaly threshold"), page: "waf", pre: "#wafTabs .item[data-tab='waf-policy']", at: "#wafpThreshold", kw: "firewall score sensitivity" },

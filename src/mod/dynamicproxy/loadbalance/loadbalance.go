@@ -71,6 +71,11 @@ type Upstream struct {
 	//presented when this HTTPS upstream asks for a client certificate. See UpstreamClientCertLoader
 	ClientCertName string
 
+	//Optional upstream TLS trust, used to verify this HTTPS upstream INSTEAD of SkipCertValidations (which is then
+	//ignored). Zero values keep the historical behavior. See package upstreamtls
+	TLSCABundlePEM string   //PEM CA certificates that replace the system roots for this upstream
+	TLSPinsSHA256  []string //SPKI SHA-256 pins (hex), one verified certificate of the chain must match
+
 	//Optional runtime controls, all zero values keep the historical behavior
 	MaxInFlight int                //Maximum concurrent in-flight requests to this upstream, 0 = unlimited
 	Draining    bool               //Receive no new requests (sticky sessions are re-assigned), in-flight requests finish normally

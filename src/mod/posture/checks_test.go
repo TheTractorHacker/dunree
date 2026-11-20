@@ -34,6 +34,7 @@ func healthy() *Facts {
 		Tools:    &ToolFacts{},
 		Visitors: &VisitorFacts{Via: map[string]int{"direct": 10}, Total: 10},
 		Cluster:  &ClusterFacts{Role: "standalone"},
+		Deploy:   &DeployFacts{Role: "standalone"},
 	}
 }
 
@@ -163,6 +164,25 @@ func TestChecks_Exposure(t *testing.T) {
 		{"loopback", nil, StatusOK, "loopback"},
 		{"all", func(f *Facts) { f.Admin.AllInterfaces = true; f.Admin.Loopback = false; f.Admin.ListenAddr = ":8000" }, StatusWarn, "all interfaces"},
 		{"one address", func(f *Facts) { f.Admin.Loopback = false; f.Admin.ListenAddr = "192.168.1.5:8000" }, StatusOK, "one specific"},
+		{"all, external role", func(f *Facts) {
+			f.Admin.AllInterfaces = true
+			f.Admin.Loopback = false
+			f.Admin.ListenAddr = ":8000"
+			f.Deploy.Role = "external"
+		}, StatusFail, "external"},
+		{"all, internal role stays a warning", func(f *Facts) {
+			f.Admin.AllInterfaces = true
+			f.Admin.Loopback = false
+			f.Deploy.Role = "internal"
+		}, StatusWarn, "all interfaces"},
+		{"all, external role, allow-list set", func(f *Facts) {
+			f.Admin.AllInterfaces = true
+			f.Admin.Loopback = false
+			f.Admin.ListenAddr = ":8000"
+			f.Admin.AllowList = 2
+			f.Deploy.Role = "external"
+		}, StatusOK, "2 allowed networks"},
+		{"all, external role, deployment unknown", func(f *Facts) { f.Admin.AllInterfaces = true; f.Admin.Loopback = false; f.Deploy = nil }, StatusWarn, "all interfaces"},
 		{"unknown", func(f *Facts) { f.Admin = nil }, StatusUnknown, ""},
 	})
 	runCases(t, "exposure.default_site", []checkCase{
@@ -181,6 +201,7 @@ func TestChecks_Exposure(t *testing.T) {
 	runCases(t, "exposure.forward_proxy", []checkCase{
 		{"off", nil, StatusOK, ""},
 		{"on", func(f *Facts) { f.Tools.ForwardProxy = true; f.Tools.ForwardPort = 5587 }, StatusWarn, "5587"},
+		{"on says it has no login", func(f *Facts) { f.Tools.ForwardProxy = true; f.Tools.ForwardPort = 5587 }, StatusWarn, "without a login"},
 		{"unknown", func(f *Facts) { f.Tools = nil }, StatusUnknown, ""},
 	})
 	runCases(t, "exposure.webssh_loopback", []checkCase{
@@ -472,4 +493,55 @@ func TestRegistryRejectsBadChecks(t *testing.T) {
 			t.Errorf("%s was accepted", name)
 		}
 	}
+}
+
+func TestDeployInternalPeerGate(t *testing.T) {
+	runCases(t, "deploy.internal_peer_gate", []checkCase{
+		{"standalone is not judged", nil, StatusNA, "not set to the internal role"},
+		{"external is not judged", func(f *Facts) { f.Deploy.Role = "external" }, StatusNA, ""},
+		{"internal without gate warns", func(f *Facts) { f.Deploy.Role = "internal" }, StatusWarn, "peer gate is off"},
+		{"internal with gate", func(f *Facts) { f.Deploy.Role = "internal"; f.Deploy.PeerGate = true; f.Deploy.TrustedProxies = 2 }, StatusOK, "2 trusted proxies"},
+		{"unknown role", func(f *Facts) { f.Deploy = nil }, StatusUnknown, ""},
+	})
+}
+
+func TestAdminRuleTargetCheck(t *testing.T) {
+	runCases(t, "admin.rule_target", []checkCase{
+		{"none", nil, StatusNA, "no proxy rule targets"},
+		{"one rule targets the admin port", func(f *Facts) { f.Proxy.Rules[0].TargetsAdmin = true }, StatusWarn, "a.example.com"},
+		{"proxy unknown", func(f *Facts) { f.Proxy = nil }, StatusUnknown, ""},
+	})
+}
+
+func TestBackendAllowlistCheck(t *testing.T) {
+	runCases(t, "exposure.backend_allowlist", []checkCase{
+		{"no list", nil, StatusNA, "no allowed backend list"},
+		{"list, all inside", func(f *Facts) { f.Tools.AllowedBackends = 2 }, StatusOK, "inside"},
+		{"list, one outside", func(f *Facts) {
+			f.Tools.AllowedBackends = 2
+			f.Tools.BackendViolations = []string{"a.example.com -> 192.0.2.9:80: not in the allowed backend destinations"}
+		}, StatusWarn, "192.0.2.9"},
+		{"unknown", func(f *Facts) { f.Tools = nil }, StatusUnknown, ""},
+	})
+}
+
+func TestDestinationRestrictionCheck(t *testing.T) {
+	runCases(t, "exposure.dest_restrict", []checkCase{
+		{"standalone is not judged", nil, StatusNA, "external or internal"},
+		{"external, tools unrestricted", func(f *Facts) { f.Deploy.Role = "external" }, StatusWarn, "accept any destination"},
+		{"internal, restricted", func(f *Facts) {
+			f.Deploy.Role = "internal"
+			f.Tools.RestrictTools = true
+			f.Tools.AllowedBackends = 3
+		}, StatusOK, "3 allowed"},
+		{"unknown", func(f *Facts) { f.Tools = nil }, StatusUnknown, ""},
+	})
+}
+
+func TestUpstreamTLSVerifyCheck(t *testing.T) {
+	runCases(t, "upstream.tls_verify", []checkCase{
+		{"all verified", func(f *Facts) {}, StatusOK, "no proxy rule skips"},
+		{"one rule skips verification", func(f *Facts) { f.Proxy.Rules[0].TLSVerifyOff = true }, StatusWarn, "TLS verification disabled for a.example.com"},
+		{"proxy unknown", func(f *Facts) { f.Proxy = nil }, StatusUnknown, ""},
+	})
 }

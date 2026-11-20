@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"golang.org/x/net/http2"
+	"imuslab.com/zoraxy/mod/adminallow"
 )
 
 /*
@@ -36,7 +37,7 @@ func newH2CTransport(h1 http.RoundTripper) *h2cTransport {
 			DisableCompression: true,
 			// "TLS" dial that is really a plain TCP connection
 			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-				var d net.Dialer
+				d := net.Dialer{Control: adminallow.DialControl}
 				return d.DialContext(ctx, network, addr)
 			},
 		},

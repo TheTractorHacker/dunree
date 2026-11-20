@@ -57,6 +57,11 @@ func (m *Manager) HandleAddProxyConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := m.checkTarget(proxyAddr); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+
 	//Create the target config
 	newConfigUUID := m.NewConfig(&ProxyRelayOptions{
 		Name:                 name,
@@ -134,6 +139,14 @@ func (m *Manager) HandleEditProxyConfigs(w http.ResponseWriter, r *http.Request)
 	if err := m.validateConfig(configUUID, effName, effListen, effTarget, useTCP, useUDP, strings.TrimSpace(listenAddr) == "", strings.TrimSpace(proxyAddr) == ""); err != nil {
 		utils.SendErrorResponse(w, err.Error())
 		return
+	}
+
+	//Only a changed target is judged against the allowed backend list
+	if strings.TrimSpace(proxyAddr) != "" && proxyAddr != current.ProxyTargetAddr {
+		if err := m.checkTarget(proxyAddr); err != nil {
+			utils.SendErrorResponse(w, err.Error())
+			return
+		}
 	}
 
 	// Create a new ProxyRuleUpdateConfig with the extracted parameters

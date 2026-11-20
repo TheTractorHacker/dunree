@@ -42,7 +42,7 @@ func healthSignature(cfg *Config, upstreams []*Upstream) string {
 			continue
 		}
 		js, _ := json.Marshal(hc)
-		fmt.Fprintf(&b, "%p|%s|%t|%t|%s|%s;", u, u.OriginIpOrDomain, u.RequireTLS, u.SkipCertValidations, u.tlsServerName, js)
+		fmt.Fprintf(&b, "%p|%s|%t|%t|%s|%s|%s|%s;", u, u.OriginIpOrDomain, u.RequireTLS, u.SkipCertValidations, u.tlsServerName, u.ClientCertName, u.TLSPolicy().Key(), js)
 	}
 	return b.String()
 }
@@ -168,6 +168,9 @@ func newProber(u *Upstream, hc ActiveHealthCheck) *prober {
 	if hc.Mode != "tcp" {
 		//Same TLS rules as the proxied traffic: skip verify flag and SNI override
 		tlsCfg := &tls.Config{InsecureSkipVerify: u.SkipCertValidations, ServerName: u.tlsServerName}
+		if pol := u.TLSPolicy(); pol.Active() {
+			pol.Apply(tlsCfg) //custom CA / pins replace skip-verify, same as the proxied traffic
+		}
 		if cb := u.clientCertCallback(); cb != nil {
 			tlsCfg.GetClientCertificate = cb //upstream mTLS, same as the proxied traffic
 		}

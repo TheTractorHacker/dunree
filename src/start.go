@@ -124,7 +124,9 @@ func startupSequence() {
 	sysdb = db
 	//Create tables for the database
 	sysdb.NewTable("settings")
-	initHistory() //change history store; finishes an interrupted restore before modules read their files
+	initSecurityAudit() //security audit log (conf/security_audit.log), see securityaudit.go
+	initHistory()       //change history store; finishes an interrupted restore before modules read their files
+	initAdminExposure() //destination guard and admin allow-list (both off until configured), see adminexposure.go
 
 	//Create tmp folder and conf folder
 	os.MkdirAll(TMP_FOLDER, 0775)
@@ -182,6 +184,7 @@ func startupSequence() {
 		Logger:                       SystemWideLogger,
 		SlowLookupCacheClearInterval: GEODB_CACHE_CLEAR_INTERVAL * time.Minute,
 		ExternalGeoDBFolder:          CONF_GEODB_PATH,
+		RequesterIP:                  requesterIPForGeoDB,
 	})
 	if err != nil {
 		panic(err)
@@ -354,6 +357,8 @@ func startupSequence() {
 	if err != nil {
 		panic(err)
 	}
+	//Stream targets are judged by the allowed backend list like proxy rule upstreams (no list = no check)
+	streamProxyManager.TargetCheck = func(target string) error { return validateBackendTarget(target, false) }
 
 	//Create WoL MAC storage table
 	sysdb.NewTable("wolmac")

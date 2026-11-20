@@ -1108,6 +1108,29 @@
                             </div>
 </div>
 </section>
+<section class="zx-card hrp-card" data-hrp-card="limits" rpcfg="upstream" data-hrp-nd="limits" aria-labelledby="hrpc-limits">
+<div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-limits">Request limits and timeouts</h3></div>
+<p class="zx-card__desc">Cap upload size and waiting time for this site. 0 means no limit (the default).</p>
+<div class="zx-card__body">
+                            <div class="ui labeled input" style="margin-top: 0.4em; max-width: 18em;">
+                                <input type="number" class="MaxRequestBodyMB" min="0" step="any" value="0" placeholder="0" aria-label="Maximum request body in MiB">
+                                <div class="ui basic label">MiB</div>
+                            </div>
+                            <br><small>Largest request body accepted. A bigger upload is refused with 413 Request Entity Too Large, before it reaches the upstream when the size is announced. 0 = unlimited.</small>
+                            <br>
+                            <div class="ui labeled input" style="margin-top: 0.8em; max-width: 18em;">
+                                <input type="number" class="RequestTimeout" min="0" max="86400" step="1" value="0" placeholder="0" aria-label="Request timeout in seconds">
+                                <div class="ui basic label">sec</div>
+                            </div>
+                            <br><small>Total time one request may take, including a slow upstream. Exceeded gives 504 Gateway Timeout. Cuts long downloads and streams too, WebSocket and upgrade connections are not affected. 0 = no limit.</small>
+                            <br>
+                            <div class="ui labeled input" style="margin-top: 0.8em; max-width: 18em;">
+                                <input type="number" class="UpstreamDialTimeout" min="0" max="86400" step="1" value="0" placeholder="0" aria-label="Upstream connect timeout in seconds">
+                                <div class="ui basic label">sec</div>
+                            </div>
+                            <br><small>Time allowed to open a connection to the upstream. 0 = built-in 30 seconds.</small>
+</div>
+</section>
 <section class="zx-card hrp-card" data-hrp-card="forwarding" rpcfg="downstream" data-hrp-nd="forwarding" aria-labelledby="hrpc-forwarding">
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-forwarding">Tunnels and protocol upgrades</h3></div>
 <p class="zx-card__desc">Only turn these on when an app needs them.</p>
@@ -1643,6 +1666,10 @@
         let disableChunkedTransferEncoding = $(editor).find(".DisableChunkedTransferEncoding")[0].checked;
         let forceHTTP11 = $(editor).find(".ForceHTTP11")[0].checked;
         let sanitiseClientIP = $(editor).find(".SanitiseClientIPHeaders")[0].checked;
+        let maxBodyMB = parseFloat($(editor).find(".MaxRequestBodyMB").val());
+        let maxRequestBodyBytes = (isNaN(maxBodyMB) || maxBodyMB < 0) ? 0 : Math.round(maxBodyMB * 1048576);
+        let requestTimeout = Math.max(0, parseInt($(editor).find(".RequestTimeout").val()) || 0);
+        let upstreamDialTimeout = Math.max(0, parseInt($(editor).find(".UpstreamDialTimeout").val()) || 0);
         let disableWebSocket = !$(editor).find(".EnableWebSocket")[0].checked;
         let websocketTimeout = parseInt($(editor).find(".WebsocketTimeout").val()) || 0;
         if (websocketTimeout < 0) websocketTimeout = 0;
@@ -1693,6 +1720,9 @@
                 "dChunkedEnc": disableChunkedTransferEncoding,
                 "forceHTTP11": forceHTTP11,
                 "sanitiseClientIP": sanitiseClientIP,
+                "maxRequestBodyBytes": maxRequestBodyBytes,
+                "requestTimeout": requestTimeout,
+                "upstreamDialTimeout": upstreamDialTimeout,
                 "disableWebSocket": disableWebSocket,
                 "websocketTimeout": websocketTimeout,
                 "enableTimeoutRefreshOnActivity": enableTimeoutRefreshOnActivity,
@@ -2278,6 +2308,14 @@
         editor.find(".ForceHTTP11").off("change");
         editor.find(".ForceHTTP11").prop("checked", subd.ForceHTTP11);
         editor.find(".ForceHTTP11").on("change", function() {
+            hrpEdited(uuid, this);
+        });
+
+        editor.find(".MaxRequestBodyMB").off("change input");
+        editor.find(".MaxRequestBodyMB").val(subd.MaxRequestBodyBytes ? +(subd.MaxRequestBodyBytes / 1048576).toFixed(4) : 0);
+        editor.find(".RequestTimeout").off("change input").val(subd.RequestTimeout || 0);
+        editor.find(".UpstreamDialTimeout").off("change input").val(subd.UpstreamDialTimeout || 0);
+        editor.find(".MaxRequestBodyMB, .RequestTimeout, .UpstreamDialTimeout").on("change input", function() {
             hrpEdited(uuid, this);
         });
 

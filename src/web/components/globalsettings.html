@@ -240,6 +240,18 @@
                         </div>
                         <div class="row">
                             <div class="ten wide column">
+                                <label class="ingressFieldLabel" for="readTimeoutInput">Read Timeout</label>
+                                <small class="ingressFieldHint">Time a client has to send the whole request including its body. Limits slow uploads. 0 (default) means no limit; keep it large enough for your biggest upload.</small>
+                            </div>
+                            <div class="six wide column">
+                                <div class="ui right fluid labeled input">
+                                    <input type="number" id="readTimeoutInput" min="0" max="604800" step="1" placeholder="0">
+                                    <div class="ui basic label">sec</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="ten wide column">
                                 <label class="ingressFieldLabel" for="writeTimeoutInput">Write Timeout</label>
                                 <small class="ingressFieldHint">Time allowed to send a full response. Keep 0 for large downloads and streaming.</small>
                             </div>
@@ -750,9 +762,10 @@
             }
 
             $("#readHeaderTimeoutInput").val(data.readHeaderTimeout);
+            $("#readTimeoutInput").val(data.readTimeout || 0);
             $("#writeTimeoutInput").val(data.writeTimeout);
             $("#idleTimeoutInput").val(data.idleTimeout);
-            if (window.listenersBar){ listenersBar.tracker.commit(["readHeaderTimeoutInput", "writeTimeoutInput", "idleTimeoutInput"]); }
+            if (window.listenersBar){ listenersBar.tracker.commit(["readHeaderTimeoutInput", "readTimeoutInput", "writeTimeoutInput", "idleTimeoutInput"]); }
         });
     }
     initProxyTimeoutSettings();
@@ -760,19 +773,20 @@
     //Apply the three timeouts (promise, see handlePortChange)
     function saveProxyTimeoutSettings(){
         var done = $.Deferred();
-        const raw = ["#readHeaderTimeoutInput", "#writeTimeoutInput", "#idleTimeoutInput"].map(sel => String($(sel).val()).trim());
+        const raw = ["#readHeaderTimeoutInput", "#readTimeoutInput", "#writeTimeoutInput", "#idleTimeoutInput"].map(sel => String($(sel).val()).trim());
         //Whole seconds only: "1.5" must not be silently cut to 1, and a typo like 99999999999 is refused
         if (raw.some(value => !/^\d+$/.test(value) || Number(value) > 604800)){
             msgbox("Timeout values must be whole seconds between 0 and 604800", false, 5000);
             return done.reject("Timeout values must be whole seconds between 0 and 604800").promise();
         }
-        const [readHeaderTimeout, writeTimeout, idleTimeout] = raw.map(value => parseInt(value, 10));
+        const [readHeaderTimeout, readTimeout, writeTimeout, idleTimeout] = raw.map(value => parseInt(value, 10));
 
         $.cjax({
             url: "/api/proxy/timeouts",
             method: "POST",
             data: {
                 readHeaderTimeout: readHeaderTimeout,
+                readTimeout: readTimeout,
                 writeTimeout: writeTimeout,
                 idleTimeout: idleTimeout,
             },
@@ -902,7 +916,7 @@
             var steps = [];
             if (keys.indexOf("incomingPort") >= 0){ steps.push(["incomingPort", handlePortChange]); }
             if (keys.indexOf("httpListenAddrInput") >= 0){ steps.push(["httpListenAddrInput", applyHttpListenAddr]); }
-            var timeoutKeys = ["readHeaderTimeoutInput", "writeTimeoutInput", "idleTimeoutInput"].filter(function(k){ return keys.indexOf(k) >= 0; });
+            var timeoutKeys = ["readHeaderTimeoutInput", "readTimeoutInput", "writeTimeoutInput", "idleTimeoutInput"].filter(function(k){ return keys.indexOf(k) >= 0; });
             if (timeoutKeys.length){ steps.push([timeoutKeys, saveProxyTimeoutSettings]); }
             var chain = $.Deferred().resolve().promise();
             steps.forEach(function(step){

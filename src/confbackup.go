@@ -46,6 +46,9 @@ func writeConfigZip(out io.Writer, confDir string, dbPath string) error {
 		if aiassist.IsSecretFile(rel) {
 			return nil // the AI assistant key and its install key are never exported
 		}
+		if isSecurityAuditFile(rel) {
+			return nil // the audit log is per install: an export would copy addresses out and an import must not be able to replace it
+		}
 		return addFileToZip(zw, "conf/"+filepath.ToSlash(rel), filePath)
 	})
 	if err != nil {
@@ -118,14 +121,16 @@ func restoreConfigZip(zr *zip.Reader, confDir string, dbPath string, beforeDBRes
 	}
 
 	if hasConf {
+		oldDir := confDir + ".old_" + strconv.Itoa(int(time.Now().Unix()))
 		if utils.FileExists(confDir) {
-			if err := os.Rename(confDir, confDir+".old_"+strconv.Itoa(int(time.Now().Unix()))); err != nil {
+			if err := os.Rename(confDir, oldDir); err != nil {
 				return false, fmt.Errorf("unable to back up the current config folder: %w", err)
 			}
 		}
 		if err := os.MkdirAll(confDir, 0775); err != nil {
 			return false, fmt.Errorf("failed to create target directory: %w", err)
 		}
+		carrySecurityAuditLog(oldDir, confDir)
 	}
 
 	for _, f := range zr.File {
@@ -133,6 +138,9 @@ func restoreConfigZip(zr *zip.Reader, confDir string, dbPath string, beforeDBRes
 			continue
 		}
 		target, _ := zipRestoreTarget(f.Name, confDir, dbPath)
+		if f.Name != "sys.db" && isSecurityAuditFile(strings.TrimPrefix(strings.ReplaceAll(f.Name, "\\", "/"), "conf/")) {
+			continue //a backup never replaces the audit log of this install
+		}
 		if f.Name == "sys.db" && beforeDBRestore != nil {
 			beforeDBRestore()
 		}
@@ -229,5 +237,24 @@ func ImportConfigFromZip(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(3 * time.Second)
 			os.Exit(0)
 		}()
+	}
+}
+
+// isSecurityAuditFile matches conf/security_audit.log and its rotated copies
+func isSecurityAuditFile(rel string) bool {
+	return rel == securityAuditFile || strings.HasPrefix(rel, securityAuditFile+".")
+}
+
+// carrySecurityAuditLog moves the audit log (and its rotated files) from the config folder that
+// was just set aside into the new one, so a restore cannot erase the history of who did it.
+func carrySecurityAuditLog(oldDir, newDir string) {
+	entries, err := os.ReadDir(oldDir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() && isSecurityAuditFile(e.Name()) {
+			os.Rename(filepath.Join(oldDir, e.Name()), filepath.Join(newDir, e.Name()))
+		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"imuslab.com/zoraxy/mod/adminallow"
 	"log"
 	"net"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"imuslab.com/zoraxy/mod/database"
+	"imuslab.com/zoraxy/mod/destguard"
 	"imuslab.com/zoraxy/mod/forwardproxy/cproxy"
 	"imuslab.com/zoraxy/mod/info/logger"
 	"imuslab.com/zoraxy/mod/utils"
@@ -19,6 +21,32 @@ import (
 
 type ZrFilter struct {
 	//To be implemented
+}
+
+// guardedDialer dials through the destination guard (mod/destguard). Without the opt-in restriction this is
+// net.DialTimeout with the same 10 s as the default dialer, so behaviour is unchanged.
+type guardedDialer struct {
+	logger *logger.Logger
+}
+
+func (d guardedDialer) Dial(address string) cproxy.Socket {
+	conn, err := destguard.DialTimeout("tcp", address, 10*time.Second)
+	if err != nil {
+		if d.logger != nil {
+			d.logger.PrintAndLog("Forward Proxy", "Unable to establish connection to ["+address+"]", err)
+		}
+		return nil
+	}
+	// The admin allow-list also protects the admin port from being reached through this proxy: check the
+	// address that was actually dialled (after DNS), so names cannot be used to dodge it.
+	if adminallow.DialBlocked("tcp", conn.RemoteAddr().String()) {
+		conn.Close()
+		if d.logger != nil {
+			d.logger.PrintAndLog("Forward Proxy", "Refused connection to ["+address+"]: it is the admin listener", nil)
+		}
+		return nil
+	}
+	return conn
 }
 
 type Handler struct {
@@ -32,7 +60,7 @@ type Handler struct {
 
 func NewForwardProxy(sysdb *database.Database, port int, logger *logger.Logger) *Handler {
 	thisFilter := ZrFilter{}
-	handler := cproxy.New(cproxy.Options.Filter(thisFilter))
+	handler := cproxy.New(cproxy.Options.Filter(thisFilter), cproxy.Options.Dialer(guardedDialer{logger: logger}))
 
 	return &Handler{
 		db:      sysdb,

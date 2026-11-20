@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
 )
 
 // StartProxy create and start a HTTP proxy using dpcore
@@ -68,6 +69,7 @@ func (u *Upstream) StartProxy(tlsServerName string) error {
 		UnixSocket:              unixSock,
 		ProxyProtocolVersion:    proxyProto,
 		ClientCertificate:       u.clientCertCallback(),
+		UpstreamTLS:             u.TLSPolicy(),
 	})
 
 	u.proxy = proxy
@@ -104,6 +106,19 @@ func (u *Upstream) String() string {
 	return u.OriginIpOrDomain
 }
 
+// TLSPolicy returns the custom CA / pin policy of this upstream (zero value when none is set or TLS is off)
+func (u *Upstream) TLSPolicy() upstreamtls.Policy {
+	if !u.RequireTLS {
+		return upstreamtls.Policy{}
+	}
+	return upstreamtls.Policy{CABundlePEM: u.TLSCABundlePEM, PinsSHA256: u.TLSPinsSHA256}
+}
+
+// ClientCertificateCallback returns the upstream mTLS client certificate callback (nil when none), for the WebSocket path
+func (u *Upstream) ClientCertificateCallback() func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+	return u.clientCertCallback()
+}
+
 // UpstreamClientCertLoader loads the named client certificate pair of the certificate store.
 // Set by the main package at start up; nil disables upstream mTLS.
 var UpstreamClientCertLoader func(name string) (*tls.Certificate, error)
@@ -132,6 +147,19 @@ func (u *Upstream) ValidateTransportOptions() error {
 	}
 	if u.ProxyProtocol < 0 || u.ProxyProtocol > 2 {
 		return errors.New("PROXY protocol version must be 0 (off), 1 or 2")
+	}
+	if u.TLSCABundlePEM != "" || len(u.TLSPinsSHA256) > 0 {
+		if !u.RequireTLS {
+			return errors.New("a CA bundle or pin can only be used with an upstream that requires TLS")
+		}
+		norm, err := (upstreamtls.Policy{CABundlePEM: u.TLSCABundlePEM, PinsSHA256: u.TLSPinsSHA256}).Normalized()
+		if err != nil {
+			return err
+		}
+		if err := norm.Validate(); err != nil {
+			return err
+		}
+		u.TLSCABundlePEM, u.TLSPinsSHA256 = norm.CABundlePEM, norm.PinsSHA256
 	}
 	if u.ClientCertName != "" {
 		if !upstreamCertNamePattern.MatchString(u.ClientCertName) || strings.Contains(u.ClientCertName, "..") {

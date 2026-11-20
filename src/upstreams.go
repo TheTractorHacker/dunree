@@ -103,6 +103,10 @@ func ReverseProxyUpstreamAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	requireTLS, _ := utils.PostBool(r, "tls")
+	if err := validateBackendTarget(upstreamOrigin, requireTLS); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
 	skipTlsValidation, _ := utils.PostBool(r, "tlsval")
 	bpwsorg, _ := utils.PostBool(r, "bpwsorg")
 	disableKeepAlive, _ := utils.PostBool(r, "nokeepalive")
@@ -110,6 +114,8 @@ func ReverseProxyUpstreamAdd(w http.ResponseWriter, r *http.Request) {
 	preactivate, _ := utils.PostBool(r, "active")
 	proxyProto, _ := utils.PostInt(r, "proxyproto") //0 off, 1 / 2 = PROXY protocol version
 	clientCertName, _ := utils.PostPara(r, "clientcert")
+	caBundle, _ := utils.PostPara(r, "cabundle")
+	pinsRaw, _ := utils.PostPara(r, "pins")
 
 	//Create a new upstream object
 	newUpstream := loadbalance.Upstream{
@@ -124,6 +130,8 @@ func ReverseProxyUpstreamAdd(w http.ResponseWriter, r *http.Request) {
 		H2C:                      useH2C,
 		ProxyProtocol:            proxyProto,
 		ClientCertName:           strings.TrimSpace(clientCertName),
+		TLSCABundlePEM:           caBundle,
+		TLSPinsSHA256:            splitPins(pinsRaw),
 	}
 	if err := newUpstream.ValidateTransportOptions(); err != nil {
 		utils.SendErrorResponse(w, err.Error())
@@ -203,6 +211,14 @@ func ReverseProxyUpstreamUpdate(w http.ResponseWriter, r *http.Request) {
 	if err := newUpstream.ValidateTransportOptions(); err != nil {
 		utils.SendErrorResponse(w, err.Error())
 		return
+	}
+	//Only a changed target is judged: an unrelated edit (weight, timeout, TLS trust) of an upstream that
+	//was saved before the allow-list existed must not be refused for the target it already had.
+	if newUpstream.OriginIpOrDomain != targetUpstream.OriginIpOrDomain || newUpstream.RequireTLS != targetUpstream.RequireTLS {
+		if err := validateBackendTarget(newUpstream.OriginIpOrDomain, newUpstream.RequireTLS); err != nil {
+			utils.SendErrorResponse(w, err.Error())
+			return
+		}
 	}
 
 	//Replace the old upstream with the new one

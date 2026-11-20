@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"imuslab.com/zoraxy/mod/destguard"
 	"imuslab.com/zoraxy/mod/sshprox"
 	"imuslab.com/zoraxy/mod/utils"
 )
@@ -48,6 +49,17 @@ func HandleCreateProxySession(w http.ResponseWriter, r *http.Request) {
 			utils.SendErrorResponse(w, "loopback web ssh connection is not enabled on this host")
 			return
 		}
+	}
+
+	//Destination restriction (off by default, see mod/destguard): resolve once, check, and hand the
+	//checked address to the ssh process so a DNS answer that changes later is not used
+	if destguard.Restricting() {
+		ips, err := destguard.Default().Resolve(r.Context(), ipaddr, port, true)
+		if err != nil {
+			utils.SendErrorResponse(w, "destination refused: "+err.Error())
+			return
+		}
+		ipaddr = ips[0].Unmap().String()
 	}
 
 	//Check if the target is a valid ssh endpoint

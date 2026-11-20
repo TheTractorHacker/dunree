@@ -23,6 +23,15 @@ type Facts struct {
 	Tools    *ToolFacts
 	Visitors *VisitorFacts
 	Cluster  *ClusterFacts
+	Deploy   *DeployFacts
+}
+
+// DeployFacts: the deployment role (mod/deployrole). Role "standalone" is the default and is never judged.
+type DeployFacts struct {
+	Role           string // standalone | external | internal
+	HardenHeaders  bool   // forwarded header hardening is active (role external/internal, or opted in)
+	PeerGate       bool   // internal role: only trusted proxies and direct-access networks may connect
+	TrustedProxies int
 }
 
 // AdminFacts: the management interface
@@ -32,17 +41,19 @@ type AdminFacts struct {
 	ListenAddr    string // the -port value, e.g. ":8000" or "127.0.0.1:8000"
 	AllInterfaces bool   // bound to every interface
 	Loopback      bool   // bound to a loopback address only
+	AllowList     int    // entries of the admin listener allow-list (0 = none, no restriction)
 }
 
 // RuleFacts: one proxy rule (host rule) or the default site
 type RuleFacts struct {
-	Name       string
-	Disabled   bool
-	IsDefault  bool   // the default site (root), excluded from per rule counts
-	WAFMode    string // off | detection_only | block
-	WAFOrigin  string // where the mode comes from: inherit (central policy), off, detection_only, block, profile, custom
-	RateLimit  bool
-	AuthMethod string // none | basic | forward | oauth2 | zorxauth
+	TargetsAdmin bool // an upstream or virtual directory resolves to this instance's own admin listener
+	Name         string
+	Disabled     bool
+	IsDefault    bool   // the default site (root), excluded from per rule counts
+	WAFMode      string // off | detection_only | block
+	WAFOrigin    string // where the mode comes from: inherit (central policy), off, detection_only, block, profile, custom
+	RateLimit    bool
+	AuthMethod   string // none | basic | forward | oauth2 | zorxauth
 	// AccessLimited is true when the access rule of this proxy rule has an IP/country allow list switched on
 	AccessLimited  bool
 	UptimeMonitor  bool
@@ -56,6 +67,9 @@ type RuleFacts struct {
 	BotPolicy      string // "", on, off
 	ForwardAuthURL string
 	Wildcard       bool // host contains a wildcard
+	// TLSVerifyOff: an HTTPS upstream (or virtual directory) of this rule is reached with certificate verification
+	// switched off and no private CA or pin configured to replace it
+	TLSVerifyOff bool
 }
 
 // ProxyFacts: the reverse proxy listener and its rules
@@ -192,6 +206,11 @@ type ToolFacts struct {
 	ForwardProxy bool
 	ForwardPort  int
 	WebSSHLoop   bool // -sshlb
+
+	RestrictTools   bool // destination restriction for the diagnostic tools (mod/destguard)
+	AllowedBackends int  // entries of the allowed backend destinations list
+
+	BackendViolations []string // existing upstreams / stream targets that the allowed backend list would refuse (capped)
 }
 
 // VisitorFacts: how clients reached the proxy (used to detect a CDN in front)
