@@ -142,7 +142,7 @@ func startupSequence() {
 		http.Redirect(w, r, "/login.html", http.StatusTemporaryRedirect)
 	})
 
-	authAgent.SetAuditFile(CONF_FOLDER + "/auth_audit.log")
+	authAgent.SetAuditFile(CONF_FOLDER + "/" + authAuditFile)
 	authAgent.LoginGuard = abuseLoginGuard
 	authAgent.OnLoginFailure = abuseLoginFailed
 
@@ -506,93 +506,142 @@ func finalSequence() {
 }
 
 /* Shutdown Sequence */
-func ShutdownSeq() {
+
+// ShutdownSeq stops Zoraxy in order: stop accepting and drain in-flight proxy requests (bounded by
+// -shutdown_drain), then flush and close every module. Every step is bounded, see shutdown.go.
+// Safe to call more than once (signal plus Fleet restart): later callers wait for the first run.
+func ShutdownSeq() { runShutdownSeq(signalDrain(), shutdownStepBudget) }
+
+// ShutdownSeqForUpdater is the updater's hook: the updater waits 20 s for it, so the drain is capped.
+func ShutdownSeqForUpdater() {
+	d := shutdownDrainDuration()
+	if d > updaterDrainCap {
+		d = updaterDrainCap
+	}
+	runShutdownSeq(d, shutdownStepBudget)
+}
+
+func runShutdownSeq(drain, budget time.Duration) {
+	shutdownMu.Lock()
+	if shutdownRunning {
+		done := shutdownDone
+		shutdownMu.Unlock()
+		select { //a second caller never runs the steps again, and never waits unbounded
+		case <-done:
+		case <-time.After(drain + budget + 2*time.Second):
+		}
+		return
+	}
+	shutdownRunning = true
+	shutdownDone = make(chan struct{})
+	shutdownMu.Unlock()
+	defer close(shutdownDone)
+
 	SystemWideLogger.Println("Shutting down " + SYSTEM_NAME)
-	stopHistory()
-	stopLiveSampler()
-	stopDNSResponder()
-	SystemWideLogger.Println("Closing Netstats Listener")
-	if netstatBuffers != nil {
-		netstatBuffers.Close()
+	//checkpoint the state that lives in files before the drain: a supervisor that kills the process while
+	//requests are draining (docker stop waits 10 s) must not lose the logs, visitors and statistics
+	cp := newStepRunner(checkpointBudget, shutdownLog)
+	cp.limit = checkpointBudget / 2
+	cp.run("checkpoint blocked request log", func() {
+		if blockLog != nil {
+			blockLog.Save()
+		}
+	})
+	cp.run("checkpoint visitor list", func() {
+		if visitorTracker != nil {
+			visitorTracker.Save()
+		}
+	})
+	cp.run("checkpoint statistics", func() {
+		if statisticCollector != nil {
+			statisticCollector.SaveSummaryOfDay()
+		}
+	})
+	cp.run("checkpoint bandwidth counters", func() { dashboardBandwidth.save() })
+	if drain > 0 && dynamicProxyRouter != nil && dynamicProxyRouter.Running {
+		SystemWideLogger.Println("Closing listeners and draining in-flight requests (up to " + drain.String() + ")")
+		drainProxy(dynamicProxyRouter, drain, shutdownLog)
 	}
 
-	stopAbuseManager()
-	stopCrowdSec()
-	stopEch()
-	stopZrok()
-
-	if blockLog != nil {
-		SystemWideLogger.Println("Saving the blocked request log")
-		blockLog.Close()
-	}
-	if visitorTracker != nil {
-		SystemWideLogger.Println("Saving the visitor list")
-		visitorTracker.Close()
-	}
-
-	SystemWideLogger.Println("Closing Statistic Collector")
-	if statisticCollector != nil {
-		statisticCollector.Close()
-	}
-
-	SystemWideLogger.Println("Saving dashboard bandwidth counters")
-	if dashboardBandwidth != nil {
-		dashboardBandwidth.Close()
-	}
-
-	if mdnsTickerStop != nil {
-		SystemWideLogger.Println("Stopping mDNS Discoverer (might take a few minutes)")
-		// Stop the mdns service
-		mdnsTickerStop <- true
-	}
-	if mdnsScanner != nil {
-		mdnsScanner.Close()
-	}
-
-	SystemWideLogger.Println("Shutting down load balancer")
-	if loadBalancer != nil {
-		loadBalancer.Close()
-	}
-
-	if certExpiryWatcher != nil {
-		certExpiryWatcher.Stop()
-	}
-	SystemWideLogger.Println("Closing Certificates Auto Renewer")
-	if acmeAutoRenewer != nil {
-		acmeAutoRenewer.Close()
-	}
-
-	if accessController != nil {
-		SystemWideLogger.Println("Closing Access Controller")
-		accessController.Close()
-	}
-
-	if geodbStore != nil {
-		SystemWideLogger.Println("Closing Geo-IP Database")
-		geodbStore.Close()
-	}
-
-	//Close the zorxauth router to save browser sessions
-	if zorxAuthRouter != nil {
-		SystemWideLogger.Println("Shutting down Zoraxy Auth Router")
-		zorxAuthRouter.Close()
-	}
-
-	//Close the plugin manager
-	SystemWideLogger.Println("Shutting down plugin manager")
-	if pluginManager != nil {
-		pluginManager.Close()
-	}
-
-	//Remove the tmp folder
-	SystemWideLogger.Println("Cleaning up tmp files")
-	os.RemoveAll(TMP_FOLDER)
-
-	//Close database
-	SystemWideLogger.Println("Stopping system database")
-	sysdb.Close()
-
-	//Close logger
-	SystemWideLogger.Println("Closing system wide logger")
-	SystemWideLogger.Close()
+	steps := newStepRunner(budget, shutdownLog)
+	steps.run("history", func() { stopHistory() })
+	steps.run("live sampler", func() { stopLiveSampler() })
+	steps.run("DNS responder", func() { stopDNSResponder() })
+	steps.run("Netstats", func() {
+		if netstatBuffers != nil {
+			netstatBuffers.Close()
+		}
+	})
+	steps.run("abuse manager", func() { stopAbuseManager() })
+	steps.run("CrowdSec", func() { stopCrowdSec() })
+	steps.run("ECH", func() { stopEch() })
+	steps.run("zrok", func() { stopZrok() })
+	steps.run("blocked request log", func() {
+		if blockLog != nil {
+			blockLog.Close()
+		}
+	})
+	steps.run("visitor list", func() {
+		if visitorTracker != nil {
+			visitorTracker.Close()
+		}
+	})
+	steps.run("statistics", func() {
+		if statisticCollector != nil {
+			statisticCollector.Close()
+		}
+	})
+	steps.run("bandwidth counters", func() {
+		if dashboardBandwidth != nil {
+			dashboardBandwidth.Close()
+		}
+	})
+	steps.run("load balancer", func() {
+		if loadBalancer != nil {
+			loadBalancer.Close()
+		}
+	})
+	steps.run("certificate watcher", func() {
+		if certExpiryWatcher != nil {
+			certExpiryWatcher.Stop()
+		}
+	})
+	steps.run("ACME renewer", func() {
+		if acmeAutoRenewer != nil {
+			acmeAutoRenewer.Close()
+		}
+	})
+	steps.run("access controller", func() {
+		if accessController != nil {
+			accessController.Close()
+		}
+	})
+	steps.run("Geo-IP database", func() {
+		if geodbStore != nil {
+			geodbStore.Close()
+		}
+	})
+	steps.run("auth router", func() { //saves browser sessions
+		if zorxAuthRouter != nil {
+			zorxAuthRouter.Close()
+		}
+	})
+	steps.run("plugin manager", func() {
+		if pluginManager != nil {
+			pluginManager.Close()
+		}
+	})
+	steps.run("tmp files", func() { os.RemoveAll(TMP_FOLDER) })
+	steps.run("system database", func() { sysdb.Close() })
+	steps.run("logger", func() { SystemWideLogger.Close() })
+	loggerClosed.Store(true)
+	//mDNS last: its ticker can block for up to one scan, and it must not eat the budget of the steps that save state
+	steps.run("mDNS", func() {
+		if mdnsTickerStop != nil {
+			mdnsTickerStop <- true //can block while a scan runs, hence the bound
+		}
+		if mdnsScanner != nil {
+			mdnsScanner.Close()
+		}
+	})
 }

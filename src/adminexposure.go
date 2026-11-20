@@ -96,6 +96,12 @@ func destGuardWarnings() []string { return destGuardFindings(true, true) }
 func backendViolations() []string { return destGuardFindings(true, false) }
 
 func destGuardFindings(allowList, tools bool) []string {
+	return destGuardFindingsDNS(allowList, tools, true)
+}
+
+// destGuardFindingsDNS is destGuardFindings; with dns false a target written as a host name is skipped instead of
+// resolved (the security overview makes no network calls)
+func destGuardFindingsDNS(allowList, tools, dns bool) []string {
 	out := []string{}
 	if destGuardMgr == nil || !((allowList && destGuardMgr.HasAllowList()) || (tools && destGuardMgr.Restricting())) {
 		return out
@@ -107,6 +113,9 @@ func destGuardFindings(allowList, tools bool) []string {
 		}
 		host, port, ok := destguard.SplitTarget(origin)
 		if !ok || host == "" {
+			return
+		}
+		if _, err := netip.ParseAddr(strings.Trim(host, "[]")); err != nil && !dns {
 			return
 		}
 		port = destguard.EffectivePort(port, tls)
@@ -231,8 +240,16 @@ func HandleAdminAllowSet(w http.ResponseWriter, r *http.Request) {
 
 // ruleTargetsAdminListener reports whether any upstream or virtual directory of ep would reach the admin listener
 func ruleTargetsAdminListener(ep *dynamicproxy.ProxyEndpoint) bool {
+	return ruleTargetsAdminListenerDNS(ep, true)
+}
+
+// ruleTargetsAdminListenerDNS is ruleTargetsAdminListener; with dns false host names are not resolved
+func ruleTargetsAdminListenerDNS(ep *dynamicproxy.ProxyEndpoint, dns bool) bool {
 	local := localInterfaceAddrs()
 	resolve := func(host string) []netip.Addr {
+		if !dns {
+			return nil
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 		defer cancel()
 		ips, _ := net.DefaultResolver.LookupNetIP(ctx, "ip", host)

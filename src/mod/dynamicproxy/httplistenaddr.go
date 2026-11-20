@@ -151,11 +151,15 @@ func (router *Router) startHttpListener() {
 	router.Option.Logger.PrintAndLog("dprouter", "Starting HTTP-to-HTTPS redirector ("+ln.Addr().String()+")", nil)
 
 	stopChan := make(chan bool)
+	router.drainWG.Add(1)
 	go func() {
+		defer router.drainWG.Done()
 		<-stopChan
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), router.drainFor(5*time.Second))
 		defer cancel()
-		httpServer.Shutdown(ctx)
+		if httpServer.Shutdown(ctx) != nil && router.drainTimeout.Load() > 0 {
+			httpServer.Close() //deadline passed: force close what is left
+		}
 		router.Option.Logger.PrintAndLog("dprouter", "HTTP to HTTPS redirection listener stopped", nil)
 	}()
 	go func() {

@@ -189,6 +189,10 @@ type Router struct {
 	secondaryServerMutex sync.RWMutex            //Mutex for accessing secondary server maps
 	secondaryTLS         map[string]bool         //Secondary listeners that speak TLS (guarded by secondaryServerMutex)
 
+	drainTimeout atomic.Int64   //ns, set only while StopProxyServiceWithin runs (0 = the legacy 10 s / 5 s limits)
+	stopping     atomic.Bool    //set for good when the process stop begins (StopProxyServiceWithin): nothing may bind a listener again
+	drainWG      sync.WaitGroup //port 80 and secondary listener shutdown goroutines
+
 	defaultSiteLog defaultSiteLogger //Optional, rate limited logging of default site requests
 
 }

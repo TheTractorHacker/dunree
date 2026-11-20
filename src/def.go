@@ -103,6 +103,9 @@ var (
 	proxyWriteTimeout      = flag.Int("writetimeout", 0, "Proxy server write timeout in seconds (0 = disabled, recommended for long-running requests)")
 	proxyIdleTimeout       = flag.Int("idletimeout", 300, "Proxy server idle keep-alive connection timeout in seconds (0 = disabled)")
 
+	/* Graceful stop */
+	shutdownDrain = flag.Int("shutdown_drain", 8, "Seconds to let in-flight proxy requests finish when Zoraxy stops (SIGTERM, restart, update) before they are cut (capped at 15 on SIGTERM, 10 for the updater). Fits the 10 s grace of docker stop. 0 = stop at once without draining")
+
 	/* HTTP/2 Configuration Flags */
 	proxyDisableHttp2       = flag.Bool("disablehttp2", false, "Disable HTTP/2 on the TLS listener and serve HTTP/1.1 only")
 	proxyH2MaxStreams       = flag.Uint("h2_max_concurrent_streams", 0, "HTTP/2 max concurrent streams per connection (0 = Go default)")

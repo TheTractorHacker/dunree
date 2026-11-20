@@ -133,6 +133,21 @@ func ParseEntry(raw string) error {
 	return err
 }
 
+// EntryParts validates one allowed backend entry and returns what it means: the address range and the
+// permitted port ranges ([lo, hi] pairs, empty = any port). Used by the network plan (mod/netplan) so both
+// features read the same entry syntax from this one parser.
+func EntryParts(raw string) (netip.Prefix, [][2]int, error) {
+	r, err := parseRule(strings.TrimSpace(raw))
+	if err != nil {
+		return netip.Prefix{}, nil, err
+	}
+	ports := make([][2]int, 0, len(r.ports))
+	for _, p := range r.ports {
+		ports = append(ports, [2]int{p.lo, p.hi})
+	}
+	return r.prefix, ports, nil
+}
+
 func parseRule(raw string) (rule, error) {
 	bad := func(why string) (rule, error) { return rule{}, fmt.Errorf("%q: %s", raw, why) }
 	addrPart, portPart := raw, ""

@@ -276,7 +276,7 @@ func (m *Manager) sendFleetHeartbeat(ctx context.Context) (*fleetHeartbeatReply,
 	}
 	hb := fleetHeartbeat{Name: m.opt.NodeName, Version: m.opt.Version, AppliedVer: st.AppliedVersion, AppliedHash: st.AppliedHash,
 		AttemptHash: st.AttemptHash, LastResult: st.LastResult, LastError: st.LastError, Conflicts: st.Conflicts,
-		LocalDrift: m.localDrift(st), Stats: stats}
+		LocalDrift: m.localDrift(st), Stats: stats, ScopeHashes: localScopeHashes(m.opt.ConfDir, st.Managed)}
 	for _, k := range st.Managed {
 		hb.ManagedCount += len(k)
 	}

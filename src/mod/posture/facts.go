@@ -1,6 +1,9 @@
 package posture
 
-import "time"
+import (
+	"net/netip"
+	"time"
+)
 
 // Facts is a snapshot of everything the checks look at. A nil section means the
 // host could not determine it, and the checks that need it report unknown.
@@ -24,6 +27,7 @@ type Facts struct {
 	Visitors *VisitorFacts
 	Cluster  *ClusterFacts
 	Deploy   *DeployFacts
+	NetPlan  *NetPlanFacts
 }
 
 // DeployFacts: the deployment role (mod/deployrole). Role "standalone" is the default and is never judged.
@@ -221,3 +225,43 @@ type VisitorFacts struct {
 
 // ClusterFacts: HA / Fleet role
 type ClusterFacts struct{ Role string }
+
+// PlanPorts is an inclusive port range of the network plan
+type PlanPorts struct{ Lo, Hi int }
+
+// PlanDest is an allowed backend entry of the network plan (Ports empty = any port)
+type PlanDest struct {
+	Prefix netip.Prefix
+	Ports  []PlanPorts
+}
+
+// BackendFact is one backend destination of a proxy rule, virtual directory or stream proxy. Addr is valid only
+// when the target is written as an IP address: names are never resolved here (no network calls), they are
+// counted as unchecked. Port is the one that is really dialled (443 with TLS, 80 without, when not written).
+type BackendFact struct {
+	Rule string
+	Host string
+	Addr netip.Addr
+	Port int
+}
+
+// NetPlanFacts: the network plan (mod/netplan) and the real configuration it is compared with. Declared is
+// false until the administrator saves a plan; the checks that compare against it then do not apply. Facts that
+// do not need a plan (trusted proxy ranges, backend addresses, the admin listener) are always filled in.
+type NetPlanFacts struct {
+	Declared bool
+	Role     string // standalone | external | internal
+
+	ProxyCIDRs, MgmtCIDRs, AppCIDRs []netip.Prefix
+	TrustedUpstream                 []netip.Prefix // declared upstream proxies
+	AdminAccess                     []netip.Prefix // declared extra admin access
+	AppPorts                        []PlanPorts
+	AllowedDecl                     []PlanDest // declared allowed backend destinations
+
+	ActualTrusted []netip.Prefix // the trusted proxy list in force
+	AdminAllow    []netip.Prefix // the admin listener allow-list in force
+	GuardHasList  bool           // the allowed backend list (Network exposure) is in use
+	GuardEntries  []netip.Prefix // ... and what it allows
+	Backends      []BackendFact
+	Unresolved    int // backends written as host names (not checked)
+}

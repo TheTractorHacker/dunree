@@ -105,6 +105,11 @@ def certs_traffic_ui(pg, ctx):
         if js("document.querySelectorAll('#certExpiringList button.renewButton').length") and "replace" not in js("document.getElementById('certExpiringText').innerText").lower():
             fail("cert-renew", "the Expiring soon text does not say what Renew now does for non-ACME certificates")
         pg.click("#certAddToggle")
+        pg.wait_for_timeout(300)
+        if not pg.is_visible("#certPasteBtn"):
+            # the toggle can be clicked before its handler is attached; one more click opens the add area
+            pg.click("#certAddToggle")
+            pg.wait_for_timeout(300)
         pg.click("#certPasteBtn")
         # garbage: nothing is posted, no success box, one error toast
         before = len(posts)

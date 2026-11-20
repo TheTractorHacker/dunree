@@ -1,4 +1,9 @@
 <div class="standardContainer" id="fleetPage">
+    <style>
+        /* on a phone the tab strip scrolls sideways inside itself instead of widening the page */
+        #fleetPage #flTabs { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
+        #fleetPage #flTabs .item { flex: 0 0 auto; white-space: nowrap; }
+    </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
@@ -129,7 +134,8 @@
                 <h4 id="flGroupFormTitle">New group</h4>
                 <div class="ui form">
                     <div class="field"><label>Name</label><input type="text" id="flGName" placeholder="edge-eu"></div>
-                    <div class="field"><label>Managed scopes (nothing outside these is ever touched on the nodes)</label><div id="flGScopes"></div></div>
+                    <div class="field"><label>Managed scopes (nothing outside these is ever touched on the nodes)</label><div id="flGScopes"></div>
+                        <div class="ui tiny orange message" style="margin-top:0.5em;"><i class="key icon"></i> The <b>Certificates</b> scope sends TLS <b>private keys</b> to every node in the group. Enabling it asks for confirmation.</div></div>
                     <div class="field"><label>Only proxy rules with these tags (empty = all)</label><input type="text" id="flGTags" placeholder="edge, public"></div>
                     <div class="field"><label>Group variables (JSON)</label><textarea id="flGVars" rows="3" style="font-family:monospace;"></textarea></div>
                     <button class="ui primary basic button" id="flGSave">Save group</button>
@@ -173,7 +179,8 @@
                     <div class="field"><label>Heartbeat interval (s)</label><input type="number" id="flSetHb" min="5" max="300"></div>
                     <div class="field"><label>Canary unhealthy grace (s)</label><input type="number" id="flSetGrace" min="5" max="600"></div>
                 </div>
-                <div class="field"><div class="ui checkbox"><input type="checkbox" id="flSetCerts"><label>Include certificates and private keys in captured versions (needed for the certificates scope; stored encrypted)</label></div></div>
+                <div class="field"><div class="ui checkbox"><input type="checkbox" id="flSetCerts"><label>Include certificates and private keys in captured versions (needed for the certificates scope; stored encrypted)</label></div>
+                    <div class="ui tiny orange message" style="margin-top:0.5em;"><i class="key icon"></i> Turning this on copies TLS private keys into the hub's version store and sends them to nodes that manage the Certificates scope. Enabling it asks for confirmation.</div></div>
                 <button class="ui primary basic button" id="flSetSave">Save settings</button>
             </div>
             <div class="ui small message" style="margin-top:1.5em;">
@@ -211,8 +218,18 @@
         (ov.scopes || []).forEach(function(s){
             h += "<div class='ui checkbox' style='margin-right:1em;'><input type='checkbox' value='" + esc(s.name) + "' " + (chosen.indexOf(s.name) >= 0 ? "checked" : "") + "><label>" + esc(s.label) + "</label></div>";
         });
-        $(target).html(h);
+        $(target).html(h).find(".ui.checkbox").checkbox();   // a click on the label text must toggle the box too
     }
+    $("#fleetPage .ui.checkbox").checkbox();
+    // Certificates scope / captured keys send TLS private keys between machines: ask first, and tell the API we asked (ackCerts)
+    var CERT_WARN = "This sends TLS private keys to other machines: every node that manages the Certificates scope receives the private key of every certificate, and the hub stores them (encrypted) in its versions. Only enable it for nodes you fully trust, over a network you trust.";
+    function withCertsAck(wasOn, nowOn, data, go){
+        if (!nowOn || wasOn) { go(data); return; }
+        ask("Send TLS private keys to other machines?", CERT_WARN, "I understand, enable it", true).then(function(ok){
+            if (ok) { data.ackCerts = "true"; go(data); }
+        });
+    }
+    function hasCerts(list){ return (list || []).indexOf("certs") >= 0; }
     function picked(target){ return $(target + " input:checked").map(function(){ return this.value; }).get().join(","); }
 
     /* ---------------- standalone / node ---------------- */
@@ -311,7 +328,8 @@
                 "<td>" + esc(x.endpoints) + "</td><td style='color:" + (days != null && days < 14 ? "#c00" : "inherit") + "'>" + (days == null ? "-" : days + " d") + "</td>" +
                 "<td>" + esc(x.wafMode || "-") + "</td><td>" + Math.round(x.reqPerMin) + "</td><td>" + Math.round(x.errPerMin) + "</td>" +
                 "<td>" + (x.paused ? "<span class='ui grey mini label' title='Sync is off for this node: the hub sends it nothing'>Not synced</span>" : "v" + esc(x.appliedVersion || 0) + (x.desiredVersion ? " / v" + x.desiredVersion : "")) +
-                (x.paused ? "" : x.drift ? " <i class='orange exclamation triangle icon' title='" + esc(x.driftReason) + "'></i>" : x.desiredVersion ? " <i class='green check icon'></i>" : "") + "</td>" +
+                (x.paused ? "" : x.drift ? " <i class='orange exclamation triangle icon' title='" + esc(x.driftReason) + "'></i>" : x.desiredVersion ? " <i class='green check icon' title='" + (x.syncState == "unchecked" ? "applied; content not compared (older node)" : "in sync with the hub") + "'></i>" : "") +
+                (!x.paused && x.driftScopes && x.driftScopes.length ? "<div style='color:#c60;font-size:0.85em;'>drifted: " + esc(x.driftScopes.join(", ")) + "</div>" : "") + "</td>" +
                 "<td class='flActs'>" + (x.adminUrl ? "<a class='ui mini basic icon button' href='" + esc(x.adminUrl) + "' target='_blank' rel='noopener' title='Open the admin UI of this node'><i class='external alternate icon'></i></a>" : "") + (x.status == "revoked" ? "" :
                     "<button class='ui mini basic icon button' data-act='nodeSync' title='Sync now'><i class='sync icon'></i></button>" +
                     "<button class='ui mini basic icon button' data-act='nodeRotate' title='Rotate node key'><i class='key icon'></i></button>" +
@@ -412,7 +430,16 @@
             nodeRemove: ["Remove this node from the hub?", "The node keeps its current configuration but is no longer managed.", "Remove", true],
             nodeRotate: ["Rotate the node key?", "The node picks the new key up at its next sync.", "Rotate key", false]
         }[act];
-        if (act == "nodeGroup") { let g = prompt("New group name:"); if (!g) return; data.group = g; }
+        if (act == "nodeGroup") {
+            let g = prompt("New group name:"); if (!g) return; data.group = g;
+            // moving a node into a group that syncs certificates starts the flow of private keys to it: ask first (ackCerts)
+            let nd = ov.nodes.filter(function(n){ return n.id == id; })[0] || {};
+            let oldG = ov.groups.filter(function(x){ return x.name == nd.group; })[0], newG = ov.groups.filter(function(x){ return x.name == g; })[0];
+            let was = hasCerts(nd.override ? nd.override.scopes : (oldG ? oldG.sel.scopes : []));
+            let will = nd.override ? was : hasCerts(newG ? newG.sel.scopes : []);
+            withCertsAck(was, will, data, function(d){ hub("nodeGroup", d); });
+            return;
+        }
         if (!question) { hub(act, data); return; }
         ask(question[0], question[1], question[2], question[3]).then(function(ok){ if (ok) hub(act, data); });
     });
@@ -425,7 +452,10 @@
     });
     $("#flSaveVars").on("click", function(){ hub("nodeVars", {id: openNode, vars: $("#flNodeVars").val()}); });
     $("#flSaveNodeScopes").on("click", function(){
-        hub("nodeScopes", {id: openNode, inherit: $("#flNodeInherit").is(":checked") ? "true" : "false", scopes: picked("#flNodeScopes"), tags: $("#flNodeTags").val()});
+        let inherit = $("#flNodeInherit").is(":checked"), scopes = picked("#flNodeScopes"), nd = ov.nodes.filter(function(n){ return n.id == openNode; })[0] || {};
+        let grp = ov.groups.filter(function(g){ return g.name == nd.group; })[0];
+        let was = hasCerts(nd.override ? nd.override.scopes : (grp ? grp.sel.scopes : []));
+        withCertsAck(was, inherit ? hasCerts(grp ? grp.sel.scopes : []) : hasCerts(scopes.split(",")), {id: openNode, inherit: inherit ? "true" : "false", scopes: scopes, tags: $("#flNodeTags").val()}, function(d){ hub("nodeScopes", d); });
     });
 
     $("#flGroups").on("click", "[data-g]", function(){
@@ -454,7 +484,9 @@
     $("#flGSave").on("click", function(){
         let err = varsError($("#flGVars").val());
         if (err) { msg(err, true); return; }
-        hub("groupSet", {name: $("#flGName").val(), scopes: picked("#flGScopes"), tags: $("#flGTags").val(), vars: $("#flGVars").val()}, function(){ msg("Group saved"); });
+        let gname = $.trim($("#flGName").val()), scopes = picked("#flGScopes"), old = ov.groups.filter(function(g){ return g.name == gname; })[0];
+        withCertsAck(!!old && hasCerts(old.sel.scopes), hasCerts(scopes.split(",")), {name: $("#flGName").val(), scopes: scopes, tags: $("#flGTags").val(), vars: $("#flGVars").val()},
+            function(d){ hub("groupSet", d, function(){ msg("Group saved"); }); });
     });
     $("#flPublishBtn").on("click", function(){
         let s = $("#flPubStrategy").val();
@@ -493,7 +525,9 @@
     });
     $("#flTokens").on("click", "[data-t]", function(){ hub("tokenRevoke", {id: $(this).data("t")}); });
     $("#flSetSave").on("click", function(){
-        hub("settings", {keepVersions: $("#flSetKeep").val(), heartbeatSecs: $("#flSetHb").val(), healthGraceSec: $("#flSetGrace").val(), captureCerts: $("#flSetCerts").is(":checked") ? "true" : "false"}, function(){ msg("Saved"); });
+        let cap = $("#flSetCerts").is(":checked");
+        withCertsAck(!!ov.settings.captureCerts, cap, {keepVersions: $("#flSetKeep").val(), heartbeatSecs: $("#flSetHb").val(), healthGraceSec: $("#flSetGrace").val(), captureCerts: cap ? "true" : "false"},
+            function(d){ hub("settings", d, function(){ msg("Saved"); }); });
     });
     $("#flTabs .item").on("click", function(){
         $("#flTabs .item").removeClass("active"); $(this).addClass("active");

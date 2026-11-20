@@ -30,6 +30,8 @@
         <a class="item" data-sec="crowdsec"><i class="shield icon"></i> CrowdSec</a>
         <a class="item" data-sec="deployment"><i class="sitemap icon"></i> Deployment</a>
         <a class="item" data-sec="exposure"><i class="shield alternate icon"></i> Network exposure</a>
+        <a class="item" data-sec="overview"><i class="tachometer alternate icon"></i> Overview</a>
+        <a class="item" data-sec="netplan"><i class="network wired icon"></i> Network plan</a>
         <a class="item" data-sec="auditlog"><i class="history icon"></i> Audit log</a>
     </div>
     <div class="ui bottom attached segment" id="secPane">
@@ -38,7 +40,7 @@
 </div>
 <script>
     (function () {
-        var HISTORY_OBJECT = { abuse: "Auto-ban", bots: "Bot rules", headers: "Header rules", basicauth: "Basic auth", authaudit: "", users: "", crowdsec: "", deployment: "", exposure: "", auditlog: "" };
+        var HISTORY_OBJECT = { abuse: "Auto-ban", bots: "Bot rules", headers: "Header rules", basicauth: "Basic auth", authaudit: "", users: "", crowdsec: "", deployment: "", exposure: "", overview: "", netplan: "Network plan", auditlog: "" };
         function loadSecTab(name) {
             $("#secTabs .item").removeClass("active");
             var tabEl = $("#secTabs .item[data-sec='" + name + "']").addClass("active")[0];

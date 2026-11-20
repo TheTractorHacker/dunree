@@ -204,6 +204,9 @@ func (router *Router) UpdateHttpToHttpsRedirectSetting(useRedirect bool) {
 
 // Start the dynamic routing
 func (router *Router) StartProxyService() error {
+	if router.stopping.Load() {
+		return ErrProxyStopping
+	}
 	//Create a new server object
 	if router.server != nil {
 		return errors.New("reverse proxy server already running")
@@ -603,11 +606,15 @@ func (router *Router) startSecondaryListeners() {
 		router.secondaryServerMutex.Unlock()
 
 		// Start shutdown handler
+		router.drainWG.Add(1)
 		go func(addr string) {
+			defer router.drainWG.Done()
 			<-stopChan
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), router.drainFor(5*time.Second))
 			defer cancel()
-			secondaryServer.Shutdown(ctx)
+			if secondaryServer.Shutdown(ctx) != nil && router.drainTimeout.Load() > 0 {
+				secondaryServer.Close() //deadline passed: force close what is left
+			}
 		}(addr)
 
 		// Start the server
@@ -643,7 +650,7 @@ func (router *Router) isDomainListeningOnPort(endpoint *ProxyEndpoint, addr stri
 // UpdateSecondaryListeners updates the secondary listeners based on current proxy endpoint configurations
 // This is called when proxy endpoints are added, removed, or their listening ports are changed
 func (router *Router) UpdateSecondaryListeners() {
-	if !router.Running {
+	if !router.Running || router.stopping.Load() {
 		return
 	}
 
@@ -675,6 +682,40 @@ func (router *Router) UpdateSecondaryListeners() {
 	router.startSecondaryListeners()
 }
 
+// ErrProxyStopping is returned by StartProxyService and Restart once the process stop has begun.
+var ErrProxyStopping = errors.New("zoraxy is shutting down, the proxy service cannot be started")
+
+// StopProxyServiceWithin stops the proxy like StopProxyService but drains in-flight requests
+// for at most `drain` on every listener (main, HTTP/3, port 80 redirector, secondary ports) and
+// returns only when every listener has finished or been force closed. Used for process stop;
+// StopProxyService keeps its old 10 s / 5 s limits for listener restarts. Hijacked connections
+// (WebSocket and other upgrades) are not tracked by net/http and are closed with the process.
+func (router *Router) StopProxyServiceWithin(drain time.Duration) error {
+	if drain <= 0 {
+		drain = time.Millisecond
+	}
+	//from here on an admin or Fleet action (port change, new rule) can no longer re-bind a listener while the modules close
+	router.stopping.Store(true)
+	router.drainTimeout.Store(int64(drain))
+	defer router.drainTimeout.Store(0)
+	err := router.StopProxyService()
+	waited := make(chan struct{})
+	go func() { router.drainWG.Wait(); close(waited) }()
+	select {
+	case <-waited:
+	case <-time.After(drain + 2*time.Second): //every shutdown goroutine is bounded by drain; this only guards a bug
+	}
+	return err
+}
+
+// drainFor returns the drain limit in force, or def when none was requested
+func (router *Router) drainFor(def time.Duration) time.Duration {
+	if d := time.Duration(router.drainTimeout.Load()); d > 0 {
+		return d
+	}
+	return def
+}
+
 // StopProxyService stops the proxy server and waits for all listeners to close
 func (router *Router) StopProxyService() error {
 	if router.server == nil && router.tlsListener == nil && router.tlsRedirectStop == nil && router.h3Server == nil && len(router.secondaryServers) == 0 {
@@ -688,7 +729,7 @@ func (router *Router) StopProxyService() error {
 		wg.Add(1)
 		go func(srv *http.Server) {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), router.drainFor(10*time.Second))
 			defer cancel()
 			err := srv.Shutdown(ctx)
 			if err != nil {
@@ -704,7 +745,7 @@ func (router *Router) StopProxyService() error {
 		wg.Add(1)
 		go func(srv *http3.Server, conn net.PacketConn) {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), router.drainFor(10*time.Second))
 			defer cancel()
 			err := srv.Shutdown(ctx)
 			if err != nil {
@@ -775,6 +816,9 @@ func (router *Router) StopProxyService() error {
 
 // Restart safely restarts the proxy server
 func (router *Router) Restart() error {
+	if router.stopping.Load() {
+		return ErrProxyStopping
+	}
 	if router.restarting {
 		//Already restarting
 		return errors.New("proxy server is restarting in progress")

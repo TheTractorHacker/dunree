@@ -35,6 +35,7 @@ var routes = []route{
 	{"/api/quickban/", "quickban"},
 	{"/api/adminallow/", "adminallow"},
 	{"/api/destguard/", "destguard"},
+	{"/api/netplan/", "netplan"},
 	{"/api/proxy/", "proxy"},
 	{"/api/securityheaders/", "securityheaders"},
 	{"/api/waf/", "waf"},
@@ -69,7 +70,7 @@ var skip = []string{
 	"/api/proxy/sablier/test", "/api/proxy/templates/preview", "/api/proxy/ops/errorpreview", "/api/proxy/captcha/preview",
 	"/api/waf/validate", "/api/security/posture/preview", "/api/cert/download", "/api/history/list", "/api/history/get",
 	"/api/history/diff", "/api/abuse/remote/", "/api/cluster/status", "/api/cluster/nodes", "/api/fleet/node/info",
-	"/api/fleet/node/probe", "/api/sso/zorxauth/customization/preview",
+	"/api/fleet/node/probe", "/api/sso/zorxauth/customization/preview", "/api/conf/importcheck",
 }
 
 // always are recorded for any method: reading them hands out secrets.

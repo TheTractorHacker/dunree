@@ -168,6 +168,7 @@ func (h *Hub) recordHeartbeat(id string, hb fleetHeartbeat, now time.Time) fleet
 	hb.AppliedHash, hb.AttemptHash = trimTo(hb.AppliedHash, 64), trimTo(hb.AttemptHash, 64)
 	hb.Stats.WAFMode = trimTo(hb.Stats.WAFMode, 16)
 	hb.Stats.Health = trimTo(hb.Stats.Health, 16)
+	hb.ScopeHashes = sanitizeScopeHashes(hb.ScopeHashes)
 	if len(hb.Conflicts) > 20 {
 		hb.Conflicts = hb.Conflicts[:20]
 	}
@@ -249,6 +250,8 @@ type NodeView struct {
 	DesiredVersion int64             `json:"desiredVersion"`
 	Drift          bool              `json:"drift"`
 	DriftReason    string            `json:"driftReason,omitempty"`
+	DriftScopes    []string          `json:"driftScopes,omitempty"` //scopes whose non secret content differs from the hub
+	SyncState      string            `json:"syncState"`             //in-sync | drifted | pending | unchecked | none
 	LastResult     string            `json:"lastResult"`
 	LastError      string            `json:"lastError"`
 	Conflicts      []Conflict        `json:"conflicts,omitempty"`
@@ -314,6 +317,12 @@ func (h *Hub) Overview() map[string]any {
 		v, hs := h.DesiredHash(id)
 		desired[id] = dh{v, hs}
 	}
+	scopes := map[string]map[string]string{}
+	for _, id := range ids {
+		if desired[id].ver != 0 {
+			scopes[id] = h.DesiredScopeHashes(id)
+		}
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	agg := Aggregate{Nodes: map[string]int{}, WAFByMode: map[string]int{}}
@@ -340,11 +349,21 @@ func (h *Hub) Overview() map[string]any {
 			if rt.Errors != nil {
 				v.Errors = rt.Errors
 			}
+			v.SyncState = "none"
 			if rt.LastSeen > 0 && v.Status != StatusRevoked && desired[id].ver != 0 {
+				v.SyncState = "in-sync"
 				if hb.AppliedHash != desired[id].hash {
-					v.Drift, v.DriftReason = true, "applied configuration differs from the desired version"
-				} else if hb.LocalDrift {
-					v.Drift, v.DriftReason = true, "managed files were edited on the node"
+					v.Drift, v.DriftReason, v.SyncState = true, "applied configuration differs from the desired version", "pending"
+				} else {
+					if hb.ScopeHashes == nil || scopes[id] == nil {
+						v.SyncState = "unchecked" //an older node (or a bundle the hub cannot rebuild): only the whole-file flag below is available
+					} else if ds := DriftedScopes(hb.ScopeHashes, scopes[id]); len(ds) > 0 {
+						v.Drift, v.SyncState, v.DriftScopes = true, "drifted", ds
+						v.DriftReason = "drifted from the hub: " + strings.Join(ds, ", ")
+					}
+					if hb.LocalDrift && !v.Drift {
+						v.Drift, v.SyncState, v.DriftReason = true, "drifted", "managed files were edited on the node"
+					}
 				}
 			}
 		}
@@ -520,7 +539,12 @@ func (m *Manager) HandleFleetHub(w http.ResponseWriter, r *http.Request) {
 	case "nodeSync":
 		fail(h.SyncNow(by, id))
 	case "nodeGroup":
-		fail(h.SetNodeGroup(by, id, strings.TrimSpace(r.PostFormValue("group"))))
+		grp := strings.TrimSpace(r.PostFormValue("group"))
+		//moving a node into a group that already carries the certs scope starts the flow of private keys to it
+		if h.nodeCertsAfter(id, grp, false) && !h.nodeCertsEnabled(id) && !m.certsAck(w, r, by, "node "+id, "moving the node into a group that syncs certificates") {
+			return
+		}
+		fail(h.SetNodeGroup(by, id, grp))
 	case "nodePaused":
 		fail(h.SetNodePaused(by, id, r.PostFormValue("paused") == "true"))
 	case "nodeInfo":
@@ -534,17 +558,30 @@ func (m *Manager) HandleFleetHub(w http.ResponseWriter, r *http.Request) {
 		fail(h.SetNodeVars(by, id, v))
 	case "nodeScopes":
 		if r.PostFormValue("inherit") == "true" {
+			//clearing the override makes the node inherit its group, which may carry the certs scope
+			if h.nodeCertsAfter(id, "", true) && !h.nodeCertsEnabled(id) && !m.certsAck(w, r, by, "node "+id, "inheriting a group that syncs certificates") {
+				return
+			}
 			fail(h.SetNodeScopes(by, id, nil))
 			return
 		}
-		fail(h.SetNodeScopes(by, id, &ScopeSel{Scopes: formList(r, "scopes"), ProxyTags: formList(r, "tags")}))
+		sc := formList(r, "scopes")
+		if hasScope(sc, "certs") && !h.nodeCertsEnabled(id) && !m.certsAck(w, r, by, "node "+id, "the certificates scope") {
+			return
+		}
+		fail(h.SetNodeScopes(by, id, &ScopeSel{Scopes: sc, ProxyTags: formList(r, "tags")}))
 	case "groupSet":
 		v, err := formVars(r, "vars")
 		if err != nil {
 			fail(err)
 			return
 		}
-		fail(h.SetGroup(by, strings.TrimSpace(r.PostFormValue("name")), ScopeSel{Scopes: formList(r, "scopes"), ProxyTags: formList(r, "tags")}, v))
+		gname := strings.TrimSpace(r.PostFormValue("name"))
+		sc := formList(r, "scopes")
+		if hasScope(sc, "certs") && !h.groupCertsEnabled(gname) && !m.certsAck(w, r, by, "group "+gname, "the certificates scope") {
+			return
+		}
+		fail(h.SetGroup(by, gname, ScopeSel{Scopes: sc, ProxyTags: formList(r, "tags")}, v))
 	case "groupDelete":
 		fail(h.DeleteGroup(by, strings.TrimSpace(r.PostFormValue("name"))))
 	case "capture":
@@ -582,8 +619,79 @@ func (m *Manager) HandleFleetHub(w http.ResponseWriter, r *http.Request) {
 		keep, _ := strconv.Atoi(r.PostFormValue("keepVersions"))
 		hbs, _ := strconv.Atoi(r.PostFormValue("heartbeatSecs"))
 		gr, _ := strconv.Atoi(r.PostFormValue("healthGraceSec"))
-		fail(h.SetSettings(by, HubSettings{KeepVersions: keep, HeartbeatSecs: hbs, HealthGraceSec: gr, CaptureCerts: r.PostFormValue("captureCerts") == "true"}))
+		capture := r.PostFormValue("captureCerts") == "true"
+		if capture && !h.captureCertsEnabled() && !m.certsAck(w, r, by, "hub settings", "capturing certificates") {
+			return
+		}
+		fail(h.SetSettings(by, HubSettings{KeepVersions: keep, HeartbeatSecs: hbs, HealthGraceSec: gr, CaptureCerts: capture}))
 	default:
 		writeErr(w, "unknown action")
 	}
+}
+
+// CertsAckMessage is what the admin API answers when a certificate sync is enabled without the acknowledge flag.
+const CertsAckMessage = "Syncing certificates sends TLS PRIVATE KEYS to other machines. Confirm that you want this by sending ackCerts=true."
+
+func hasScope(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+// certsAck enforces the explicit acknowledge flag for anything that sends private keys between machines.
+// It answers the request itself and returns false when the flag is missing.
+func (m *Manager) certsAck(w http.ResponseWriter, r *http.Request, by, target, what string) bool {
+	if r.PostFormValue("ackCerts") != "true" {
+		writeErr(w, CertsAckMessage)
+		return false
+	}
+	m.hub.Audit(by, "certs.ack", target, "acknowledged that "+what+" sends TLS private keys to other machines")
+	return true
+}
+
+func (h *Hub) groupCertsEnabled(name string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	g := h.st.Groups[name]
+	return g != nil && hasScope(g.Sel.Scopes, "certs")
+}
+
+func (h *Hub) nodeCertsEnabled(id string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	n := h.st.Nodes[id]
+	if n == nil {
+		return false
+	}
+	sel, _ := h.effectiveLocked(n)
+	return hasScope(sel.Scopes, "certs")
+}
+
+// nodeCertsAfter reports whether the certs scope would be in effect for the node after a change: it is moved to
+// group (when group is not empty) and/or its own override is cleared. The current state is not changed.
+func (h *Hub) nodeCertsAfter(id, group string, clearOverride bool) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	n := h.st.Nodes[id]
+	if n == nil {
+		return false
+	}
+	cp := *n
+	if group != "" {
+		cp.Group = group
+	}
+	if clearOverride {
+		cp.Override = nil
+	}
+	sel, _ := h.effectiveLocked(&cp)
+	return hasScope(sel.Scopes, "certs")
+}
+
+func (h *Hub) captureCertsEnabled() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.st.Settings.CaptureCerts
 }

@@ -510,7 +510,9 @@ func initAPIs(targetMux *http.ServeMux) {
 	RegisterPluginAPIs(authRouter)
 	RegisterAbuseAPIs(authRouter)
 	RegisterSecurityAPIs(authRouter)
-	RegisterPostureAPIs(authRouter) //security overview, see posture_api.go
+	RegisterPostureAPIs(authRouter)          //security overview, see posture_api.go
+	RegisterSecurityOverviewAPIs(authRouter) //Security Center > Overview, one aggregated request, see secdashboard.go
+	RegisterNetPlanAPIs(authRouter)          //Security Center > Network plan, see netplanapi.go
 	RegisterBasicAuthExtAPIs(authRouter)
 	RegisterAuthAuditAPIs(authRouter)
 	RegisterAccessRuleExtraAPIs(authRouter)
@@ -532,6 +534,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	authRouter.HandleFunc("/api/geodb/autoUpdate", HandleGeoDBAutoUpdate)
 	authRouter.HandleFunc("/api/conf/export", ExportConfigAsZip)
 	authRouter.HandleFunc("/api/conf/import", ImportConfigFromZip)
+	authRouter.HandleFunc("/api/conf/importcheck", ImportCheckConfigZip) //dry run, changes nothing
 	authRouter.HandleFunc("/api/log/list", LogViewer.HandleListLog)
 	authRouter.HandleFunc("/api/log/read", LogViewer.HandleReadLog)
 	authRouter.HandleFunc("/api/log/summary", LogViewer.HandleReadLogSummary)

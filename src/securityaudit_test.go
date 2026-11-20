@@ -232,7 +232,7 @@ func TestSecurityAuditSurvivesExportAndImport(t *testing.T) {
 	// a hostile archive that tries to plant an audit log
 	var zb bytes.Buffer
 	zw := zip.NewWriter(&zb)
-	for name, body := range map[string]string{"conf/proxy/a.config": "rule-new", "conf/security_audit.log": `{"seq":1,"event":"forged"}` + "\n", "conf/security_audit.log.1": "forged\n"} {
+	for name, body := range map[string]string{"conf/proxy/a.config": `{"RootOrMatchingDomain":"rule-new"}`, "conf/security_audit.log": `{"seq":1,"event":"forged"}` + "\n", "conf/security_audit.log.1": "forged\n"} {
 		f, _ := zw.Create(name)
 		f.Write([]byte(body))
 	}
@@ -240,7 +240,7 @@ func TestSecurityAuditSurvivesExportAndImport(t *testing.T) {
 	if res := uploadZip(t, zb.Bytes()); res.Code != http.StatusOK {
 		t.Fatalf("import: %d %s", res.Code, res.Body.String())
 	}
-	if b, _ := os.ReadFile(filepath.Join(confDir, "proxy", "a.config")); string(b) != "rule-new" {
+	if b, _ := os.ReadFile(filepath.Join(confDir, "proxy", "a.config")); string(b) != `{"RootOrMatchingDomain":"rule-new"}` {
 		t.Fatal("the import did not apply")
 	}
 	b, _ := os.ReadFile(logPath)

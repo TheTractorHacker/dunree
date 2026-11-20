@@ -41,7 +41,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
@@ -58,16 +57,13 @@ import (
 /* SIGTERM handler, do shutdown sequences before closing */
 func SetupCloseHandler() {
 	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		<-c
+	signal.Notify(c, stopSignals...)
+	go stopOnSignals(c, func() {
 		instance.NotifyStopping() //so systemd shows a slow stop as stopping, not as a hang
 		if clusterMgr != nil {
 			clusterMgr.MarkHealthy() //a deliberate stop is not a failed start
 		}
-		ShutdownSeq()
-		os.Exit(0)
-	}()
+	}, ShutdownSeq, os.Exit, shutdownLog)
 }
 
 func main() {
@@ -126,7 +122,7 @@ func main() {
 		},
 		Shutdown: func() {
 			if SystemWideLogger != nil && sysdb != nil { //nothing to flush before startup completed
-				ShutdownSeq()
+				ShutdownSeqForUpdater()
 			}
 		},
 		Logf: func(format string, a ...any) {
@@ -185,6 +181,8 @@ func main() {
 		fmt.Println("Checking required config update")
 		update.RunConfigUpdateInDir(CONF_FOLDER, 0, update.GetVersionIntFromVersionNumber(SYSTEM_VERSION))
 	}
+
+	runConfigSchemaMigration() //stamp / migrate the config folder before any module reads it (confpack.Migrate)
 
 	SetupCloseHandler()
 

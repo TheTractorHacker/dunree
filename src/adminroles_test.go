@@ -59,6 +59,8 @@ func TestViewerCannotReachAnyMutatingRoute(t *testing.T) {
 	RegisterBlockedAPIs(rt)
 	RegisterDatabaseUsageAPIs(rt)
 	RegisterSecurityAuditAPIs(rt)
+	RegisterSecurityOverviewAPIs(rt)
+	RegisterNetPlanAPIs(rt)
 	defer stopAbuseManager()
 	rt.HandleFunc("/api/users/list", authAgent.HandleUserList)
 	rt.HandleFunc("/api/users/action", authAgent.HandleUserAction)
@@ -96,7 +98,7 @@ func TestViewerCannotReachAnyMutatingRoute(t *testing.T) {
 			}
 		}
 	}
-	for _, ep := range []string{"/api/users/list", "/api/abuse/config", "/api/system/dbusage", "/api/security/audit/list", "/api/security/audit/verify"} {
+	for _, ep := range []string{"/api/users/list", "/api/abuse/config", "/api/system/dbusage", "/api/security/audit/list", "/api/security/audit/verify", "/api/security/overview", "/api/netplan/get", "/api/netplan/policy"} {
 		r := httptest.NewRequest("GET", ep, nil)
 		r.AddCookie(vc)
 		w := httptest.NewRecorder()

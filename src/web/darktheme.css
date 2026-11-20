@@ -1194,6 +1194,11 @@ body.darkTheme .statistic .label {
     color: var(--text_color_secondary) !important;
 }
 
+/* Fleet summary numbers: Fomantic's near black value colour vanished on the dark background (the drifting count keeps its own orange) */
+body.darkTheme #flAgg .statistic > .value:not([style*="#c60"]) {
+    color: var(--text_color) !important;
+}
+
 /* Other Tables */
 
 body.darkTheme .ui.celled.compact.table {

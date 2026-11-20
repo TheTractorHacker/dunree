@@ -53,6 +53,7 @@ var routeTable = []routeLabel{
 	{"/api/deployrole/", "Deployment role changed"},
 	{"/api/crowdsec/", "CrowdSec settings changed"},
 	{"/api/destguard/", "Destination restriction changed"},
+	{"/api/netplan/", "Network plan changed"},
 	{"/api/adminallow/", "Admin allow-list changed"},
 	{"/api/pathrule/", "Path rule changed"},
 	{"/api/streamprox/", "Stream proxy changed"},
@@ -96,7 +97,7 @@ var skipPrefixes = []string{
 	"/api/proxy/testupstream", "/api/proxy/tlscheck", "/api/proxy/script/test", "/api/proxy/sablier/test",
 	"/api/proxy/templates/preview", "/api/proxy/ops/errorpreview", "/api/proxy/captcha/preview",
 	"/api/waf/validate", "/api/security/posture/preview", "/api/i18n/", "/api/docker/", "/api/mdns/", "/api/conf/export",
-	"/api/cert/download", "/api/authaudit/", "/api/crowdsec/test",
+	"/api/cert/download", "/api/authaudit/", "/api/crowdsec/test", "/api/conf/importcheck",
 }
 
 // labelFields name the request fields that identify the changed object.

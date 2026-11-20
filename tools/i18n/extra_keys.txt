@@ -159,3 +159,148 @@ only sent on HTTPS requests
 Strict-Transport-Security is never sent on plain HTTP requests.
 Hardened header settings saved
 Some access rules do not have Trusted Proxy Gating. On those rules rate limits, bans and access rules see the address of the proxy in front of this one instead of the visitor, so all visitors share one limit. Turn on Enable Trusted Proxy Gating in Access Rules.
+Send TLS private keys to other machines?
+I understand, enable it
+This sends TLS private keys to other machines: every node that manages the Certificates scope receives the private key of every certificate, and the hub stores them (encrypted) in its versions. Only enable it for nodes you fully trust, over a network you trust.
+Send TLS private keys to the followers?
+Sync certificates copies the private key of every certificate to every follower. Only enable it for followers you fully trust, over a network you trust.
+in sync with the hub
+applied; content not compared (older node)
+This archive CONTAINS SECRETS: TLS private keys, the cluster secret, Fleet keys, notification secrets and basic-auth hashes. Keep it like a password and delete it after the migration.
+This archive CONTAINS SECRETS: everything in the configuration backup (TLS private keys, the cluster secret, Fleet keys, notification secrets, basic-auth hashes) plus the system database with DNS-provider credentials, OAuth secrets and API tokens. Keep it like a password.
+Safe to share: no private keys, cluster secret, Fleet keys, notification secrets, WAF challenge key, CrowdSec / AI keys, API tokens or database. Credential-like fields inside rule files are replaced by [REDACTED]; manifest.json names every file that was left out. Restoring it keeps the secrets of the installation it is restored on.
+Verified:
+Unverified:
+this archive has no manifest (created by an older Zoraxy), so its integrity could not be checked. It passed the structure and JSON checks.
+Refused: {0}
+Added
+Replaced
+Removed
+Kept as they are
+... and {0} more
+{0}d {1}h
+{0}h {1}m
+{0} min
+Fail
+Warning
+Unknown
+Score {0}
+{0} checks passed, {1} do not apply to this setup.
+How the score is computed
+Configuration warnings
+The checks could not be run just now.
+No open findings. Every check that applies to this setup passes.
+Fix: {0}
+Show fewer
+Show all {0}
+Standalone
+External proxy
+Internal proxy
+Role
+default
+headers hardened
+Uptime
+Reverse proxy
+Running
+Stopped
+Peer gate on: {0} refused since start.
+Peer gate off.
+Offline mode: no outside service is contacted.
+Cluster role: {0}
+Deployment and status
+Deployment settings
+The uptime monitor is not running, so backend health is unknown.
+No upstream is monitored yet.
+Up
+Monitored
+Worst first. {0} more are up.
+Backend health
+Uptime monitor
+Routes
+{0} enabled
+With login
+Rate limited
+WAF blocking
+WAF detecting
+WAF off
+{0} req/s avg, {1} peak
+No proxy rule yet.
+Proxy routes
+HTTP Proxy
+Default site: {0}
+Certificates
+Expiring in 30 days
+Expired
+{0} days
+No certificate is stored yet.
+TLS certificates
+Encrypted Client Hello
+Decisions in memory
+Blocked
+Log only matches
+Fail-closed is active: visitors are refused while the LAPI is down.
+CrowdSec settings
+No proxy rule has a rate limit.
+Enforced rules
+Dry-run rules
+Rejected (5 min)
+would reject in dry run: {0}
+Dry run
+Enforced
+{0}/s, {1} would be rejected
+{0}/s, {1} rejected
+The live counters have not updated for a moment.
+Rate limits
+Set a limit on a proxy rule
+Allowed today
+Blocked today
+Requests / min
+Requests per minute over the last 30 minutes, blocked ones in red
+Allowed
+last 30 minutes
+No traffic in the last 30 minutes.
+Blocked requests per hour over the last 24 hours
+blocked per hour, last 24 hours
+The blocked request log is switched off.
+Blocked and allowed requests
+Statistics
+Status
+Configuration changes
+The security audit log is not available.
+No security-relevant change recorded yet.
+Latest blocked requests
+Nothing was blocked recently.
+Recent security events
+Audit log
+Blocked requests on Status
+Trusted proxies
+Gating
+On
+Header clean-up
+The list contains a catch-all range: every visitor can forge their address.
+{0} very broad ranges are trusted.
+The trusted proxy list is empty: forwarded client addresses are ignored.
+Trusted Proxies
+Network plan
+Some cards could not be filled and are left out: {0}.
+Updated {0}
+This page is not available to read-only accounts.
+The server did not answer.
+The server returned an error.
+Mismatch
+Check
+Matches
+No plan is saved yet, so nothing is compared with it. The checks below that do not need a plan still run.
+Nothing found: every check that applies matches your plan.
+{0} checks match the plan
+{0} checks do not apply yet
+Already covered by the Security Overview
+These checks exist elsewhere and are not repeated here: upstream certificate verification, a proxy rule that points at the admin panel, the allowed backend list.
+None of them reports a problem.
+Could not generate the recommendations.
+Your unsaved edits are not in this export. Save them and export again.
+Copied. Remember: nothing has been applied to any firewall.
+Press Ctrl+C to copy the selected text.
+The previous configuration was kept in {0}
+{0} have none here and are left out.
+The system database would be replaced and Zoraxy would exit.

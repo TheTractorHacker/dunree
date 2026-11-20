@@ -120,6 +120,14 @@ func (e *Engine) facts() *Facts {
 	return f
 }
 
+// Invalidate drops the cached evaluation so the next Overview(false) reads the current configuration
+// (called after a setting that checks depend on was saved)
+func (e *Engine) Invalidate() {
+	e.cacheMu.Lock()
+	e.cached = nil
+	e.cacheMu.Unlock()
+}
+
 // Overview evaluates the checks. Unless refresh is set a result younger than CacheTTL is reused.
 func (e *Engine) Overview(refresh bool) Overview {
 	e.cacheMu.Lock()

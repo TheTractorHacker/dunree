@@ -202,6 +202,8 @@ type fleetHeartbeat struct {
 	Conflicts    []Conflict `json:"conflicts,omitempty"`
 	Stats        NodeStats  `json:"stats"`
 	ManagedCount int        `json:"managedCount"`
+	// ScopeHashes: per managed scope, a hash of the non secret content (see fleet_drift.go)
+	ScopeHashes map[string]string `json:"scopeHashes,omitempty"`
 }
 
 type fleetHeartbeatReply struct {

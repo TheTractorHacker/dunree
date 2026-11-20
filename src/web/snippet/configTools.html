@@ -8,6 +8,7 @@
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
+        <script src="../script/i18n.js"></script>
     </head>
     <body>
         <link rel="stylesheet" href="../darktheme.css">
@@ -22,70 +23,168 @@
             </div>
             <h3>Backup Current Configs</h3>
             <p>This will download all your configuration on zoraxy in a zip file. This includes all the proxy configs and certificates. Please keep it somewhere safe and after migration, delete this if possible.</p>
+            <p>A shareable archive always carries a <code>manifest.json</code> (versions, mode, size and SHA-256 of each file) so a restore can verify it. For the other modes it is optional, because a Zoraxy that predates the manifest cannot restore an archive that has one.</p>
             <div class="ui form">
                 <div class="grouped fields">
                   <label>Backup Mode</label>
                   <div class="field">
                     <div class="ui radio checkbox">
                       <input type="radio" value="rules" name="backupmode" checked="checked">
-                      <label>Proxy Settings, Redirect Rules and Certificates Only</label>
+                      <label>Proxy Settings, Redirect Rules and Certificates Only <span class="ui red mini label">contains secrets</span></label>
                     </div>
                   </div>
                   <div class="field">
                     <div class="ui radio checkbox">
                       <input type="radio" value="full" name="backupmode">
-                      <label>Full System Snapshot</label>
+                      <label>Full System Snapshot <span class="ui red mini label">contains secrets</span></label>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="ui radio checkbox">
+                      <input type="radio" value="shareable" name="backupmode">
+                      <label>Shareable (redacted) <span class="ui green mini label">no secrets</span></label>
                     </div>
                   </div>
                 </div>
             </div>
-            <br>
+            <div class="ui small warning message" id="exportNote"></div>
+            <div class="ui form" id="manifestField" style="margin-bottom: 0.8em;">
+              <div class="inline field">
+                <div class="ui checkbox">
+                  <input type="checkbox" id="withManifest">
+                  <label>Add an integrity manifest (an older Zoraxy cannot restore it)</label>
+                </div>
+              </div>
+            </div>
             <button class="ui basic button" onclick="downloadConfig();"><i class="ui blue download icon"></i> Download</button>
             <div class="ui divider"></div>
 
             <h3>Restore from Config</h3>
             <p>You can restore your previous settings and database from a zip file config backup. 
-            <br><b style="color: rgba(255, 0, 0, 0.644);">RESTORE FULL SYSTEM SNAPSHOT WILL CAUSE THE SYSTEM TO SHUTDOWN AFTER COMPLETED. Make sure your Zoraxy is configured to work with systemd to automatic restart Zoraxy after system restore completed.<br>
-                
+            <br><b style="color: rgba(255, 0, 0, 0.644);">RESTORE FULL SYSTEM SNAPSHOT WILL CAUSE THE SYSTEM TO SHUTDOWN AFTER COMPLETED. Make sure your Zoraxy is configured to work with systemd to automatic restart Zoraxy after system restore completed.
             </b></p>
+            <p><b>Check file</b> validates the archive and shows what would be added, replaced and removed without changing anything.</p>
             <form class="ui form" id="uploadForm" action="/api/conf/import" method="POST" enctype="multipart/form-data">
               <input type="file" name="file" id="fileInput" accept=".zip">
-              <button style="margin-top: 0.6em;" class="ui basic button" type="submit"><i class="ui green upload icon"></i> Restore & Exit</button>
+              <div style="margin-top: 0.6em;">
+                <button class="ui basic button" type="button" id="checkBtn"><i class="ui blue search icon"></i> Check file (dry run)</button>
+                <button class="ui basic button" type="submit" id="restoreBtn" disabled><i class="ui green upload icon"></i> Restore &amp; Exit</button>
+              </div>
             </form>
+            <div id="checkReport" style="display:none; margin-top:1em;"></div>
             <small>The current config will be backup to ./conf_old{timestamp}. If you screw something up, you can always restore it by ssh to your host and restore the configs from the old folder.</small>
+            <br><small>Nothing is half restored: if a step fails the previous config is put back. Restoring a shareable archive keeps the secrets this installation already has.</small>
             <br><br>
             <button class="ui basic button"  style="float: right;" onclick="parent.hideSideWrapper();"><i class="remove icon"></i> Cancel</button>
         </div>
         <script>
+            (function(){ // own scope: a global function t() here would replace the i18n helper window.t and recurse forever
             $(".checkbox").checkbox();
+
+            // i18n.js provides window.t / window.tf; plain English when it is not loaded
+            function t(s){ return typeof window.t === "function" ? window.t(s) : s; }
+            function tf(s){
+                var a = Array.prototype.slice.call(arguments, 1);
+                if (typeof window.tf === "function") return window.tf.apply(null, [s].concat(a));
+                return s.replace(/\{(\d+)\}/g, function(m, i){ return a[i] === undefined ? m : a[i]; });
+            }
+
+            var NOTES = {
+                rules: "This archive CONTAINS SECRETS: TLS private keys, the cluster secret, Fleet keys, notification secrets and basic-auth hashes. Keep it like a password and delete it after the migration.",
+                full: "This archive CONTAINS SECRETS: everything in the configuration backup (TLS private keys, the cluster secret, Fleet keys, notification secrets, basic-auth hashes) plus the system database with DNS-provider credentials, OAuth secrets and API tokens. Keep it like a password.",
+                shareable: "Safe to share: no private keys, cluster secret, Fleet keys, notification secrets, WAF challenge key, CrowdSec / AI keys, API tokens or database. Credential-like fields inside rule files are replaced by [REDACTED]; manifest.json names every file that was left out. Restoring it keeps the secrets of the installation it is restored on."
+            };
 
             function getCheckedRadioValue() {
                 var checkedValue = $("input[name='backupmode']:checked").val();
                 return checkedValue;
             }
 
+            function showNote(){
+                var v = getCheckedRadioValue();
+                $("#manifestField").toggle(v != "shareable");
+                $("#exportNote").text(t(NOTES[v])).toggleClass("warning", v != "shareable").toggleClass("positive", v == "shareable");
+            }
+            $("input[name='backupmode']").on("change", showNote);
+            showNote();
 
-            function downloadConfig(){
+            window.downloadConfig = function downloadConfig(){
                 let backupMode = getCheckedRadioValue();
+                var mf = $("#withManifest").is(":checked") ? "manifest=true" : "";
                 if (backupMode == "full"){
-                    window.open("/api/conf/export?includeDB=true");
+                    window.open("/api/conf/export?includeDB=true" + (mf ? "&" + mf : ""));
+                }else if (backupMode == "shareable"){
+                    window.open("/api/conf/export?mode=shareable");
                 }else{
-                    window.open("/api/conf/export");
+                    window.open("/api/conf/export" + (mf ? "?" + mf : ""));
                 }
             }
 
-            $("#uploadForm").submit(function(event) {
-                event.preventDefault(); // Prevent the form from submitting normally
-
-                var fileInput = $("#fileInput")[0];
-                var file = fileInput.files[0];
+            function pick(){
+                var file = $("#fileInput")[0].files[0];
                 if (!file) {
-                    alert("Missing file.");
-                    return;
+                    alert(t("Missing file."));
+                    return null;
                 }
-
                 var formData = new FormData();
                 formData.append("file", file);
+                return formData;
+            }
+
+            function list(title, items, total){
+                if (!total) return "";
+                var box = $("<div>").css({marginTop: "0.5em"});
+                box.append($("<b>").text(t(title) + " (" + total + ")"));
+                var pre = $("<div>").css({maxHeight: "9em", overflow: "auto", fontFamily: "monospace", fontSize: "0.85em", wordBreak: "break-all", border: "1px solid rgba(128,128,128,0.4)", padding: "0.3em 0.5em"});
+                items.forEach(function(x){ pre.append($("<div>").text(x)); });
+                if (total > items.length) pre.append($("<div>").text(tf("... and {0} more", total - items.length)));
+                return box.append(pre);
+            }
+
+            function showReport(r){
+                var box = $("#checkReport").empty().show();
+                var head = $("<div>").addClass("ui small message").addClass(r.verified ? "info" : "warning");
+                // a manifest proves the archive is intact, not who made it: never shown as a green "all clear"
+                head.append($("<b>").text(r.verified ? t("Integrity checked, not authenticity: ") : t("Unverified: ")));
+                head.append(document.createTextNode(r.verified
+                    ? tf("the manifest is present and every checksum matches ({0} backup{1}{2}). This proves the file is undamaged, not who created it.", r.mode, (r.zoraxyVersion ? tf(" from Zoraxy {0}", r.zoraxyVersion) : ""), (r.created ? tf(", created {0}", r.created) : ""))
+                    : t("this archive has no manifest (created by an older Zoraxy), so its integrity could not be checked. It passed the structure and JSON checks.")));
+                box.append(head);
+                var sum = $("<div>").text(tf("Would add {0}, replace {1}, remove {2}, keep {3} files as they are, {4} unchanged.", r.nAdded, r.nReplaced, r.nRemoved, r.nKept, r.unchanged) + (r.hasDB ? " " + t("The system database would be replaced and Zoraxy would exit.") : ""));
+                box.append(sum);
+                if (r.restartRequired && !r.hasDB) box.append($("<div>").css({color: "#b36b00", marginTop: "0.3em"}).text(t("Restart Zoraxy after the restore: the running instance keeps its old settings in memory and could write them over the restored files.")));
+                if (r.mode == "shareable") box.append($("<div>").text(tf("Redacted fields keep their current value: {0}", r.secretsKept) + (r.secretsDropped ? " " + tf("{0} have none here and are left out.", r.secretsDropped) : "")));
+                (r.warnings || []).forEach(function(w){ if (!/^unverified/.test(w)) box.append($("<div>").css({color: "#b36b00", marginTop: "0.3em"}).text(w)); });
+                box.append(list("Added", r.added, r.nAdded), list("Replaced", r.replaced, r.nReplaced), list("Removed", r.removed, r.nRemoved), list("Kept as they are", r.kept, r.nKept));
+            }
+
+            $("#fileInput").on("change", function(){ $("#restoreBtn").prop("disabled", true); $("#checkReport").hide().empty(); });
+
+            $("#checkBtn").on("click", function(){
+                var formData = pick();
+                if (!formData) return;
+                $("#restoreBtn").prop("disabled", true);
+                $.cjax({
+                    url: "/api/conf/importcheck",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(r){
+                        showReport(r);
+                        $("#restoreBtn").prop("disabled", false);
+                    },
+                    error: function(xhr) {
+                        $("#checkReport").empty().show().append($("<div>").addClass("ui small negative message").text(tf("Refused: {0}", xhr.responseText)));
+                    }
+                });
+            });
+
+            $("#uploadForm").submit(function(event) {
+                event.preventDefault(); // Prevent the form from submitting normally
+                var formData = pick();
+                if (!formData) return;
+                formData.append("format", "json");
 
                 $.cjax({
                     url: "/api/conf/import",
@@ -94,13 +193,17 @@
                     processData: false, // Not to process the data
                     contentType: false, // Not to set contentType
                     success: function(response) {
-                        parent.msgbox("Config restore succeed. Restart Zoraxy to apply changes.");
+                        $("#restoreBtn").prop("disabled", true);
+                        var msg = t("Config restore succeed. Restart Zoraxy to apply changes.");
+                        if (response && response.backupDir) msg += " " + tf("The previous configuration was kept in {0}", response.backupDir);
+                        parent.msgbox(msg, true, 12000);
                     },
                     error: function(xhr) {
-                        parent.msgbox("Restore failed: " + xhr.responseText, false, 5000);
+                        parent.msgbox(tf("Restore failed: {0}", xhr.responseText), false, 5000);
                     }
                 });
             });
+            })();
         </script>
     </body>
 </html>

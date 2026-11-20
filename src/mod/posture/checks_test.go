@@ -131,8 +131,8 @@ func TestEveryCheckIsDocumented(t *testing.T) {
 			}
 		}
 	}
-	if n := len(Default.Checks()); n < 20 || n > 40 {
-		t.Errorf("%d checks, expected 20-40", n)
+	if n := len(Default.Checks()); n < 20 || n > 60 {
+		t.Errorf("%d checks, expected 20-60", n)
 	}
 	for _, a := range DefaultActions.All() {
 		for _, id := range a.Covers {

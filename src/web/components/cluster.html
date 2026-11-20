@@ -40,6 +40,7 @@
             <div id="clPrimaryFields" style="display:none;">
                 <div class="field" style="margin-bottom:1.2em;">
                     <div class="ui toggle checkbox"><input type="checkbox" id="clSyncCerts"><label>Sync certificates (private keys are sent to followers; the primary should be the only ACME issuer)</label></div>
+                    <div class="ui tiny orange message" style="margin-top:0.5em;"><i class="key icon"></i> This sends TLS <b>private keys</b> to every follower. Enabling it asks for confirmation.</div>
                 </div>
             </div>
             <button class="ui basic primary button" id="clSaveBtn" style="margin-top:.6em;"><i class="save icon"></i> Save</button>
@@ -207,8 +208,18 @@
             data.primaryFingerprint = $("#clPrimaryFp").val();
             data.syncInterval = $("#clInterval").val();
         }
-        if (role() == "primary") data.syncCerts = $("#clSyncCerts").is(":checked");
-        post("./api/cluster/config", data, function(){ dirty = false; msg("Saved"); load(); });
+        function save(){ post("./api/cluster/config", data, function(){ dirty = false; msg("Saved"); load(); }); }
+        if (role() == "primary") {
+            data.syncCerts = $("#clSyncCerts").is(":checked");
+            if (data.syncCerts && !(st && st.syncCerts)) {
+                //private keys leave this machine: confirm, and tell the API we asked
+                ZxUI.confirm({title: "Send TLS private keys to the followers?", message: "Sync certificates copies the private key of every certificate to every follower. Only enable it for followers you fully trust, over a network you trust.", confirmLabel: "I understand, enable it", danger: true}).then(function(ok){
+                    if (ok) { data.ackSyncCerts = "true"; save(); }
+                });
+                return;
+            }
+        }
+        save();
     });
 
     $("#clGenBtn").on("click", function(){

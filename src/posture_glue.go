@@ -173,7 +173,11 @@ func section(name string, fn func()) {
 	fn()
 }
 
-func collectPostureFacts() *posture.Facts {
+func collectPostureFacts() *posture.Facts { return collectPostureFactsDNS(true) }
+
+// collectPostureFactsDNS gathers the Facts snapshot. With dns false no host name is resolved: a backend written as a
+// name is not judged by the checks that need its address (the security overview uses this, it makes no network calls).
+func collectPostureFactsDNS(dns bool) *posture.Facts {
 	f := &posture.Facts{Now: time.Now()}
 
 	section("admin settings", func() {
@@ -193,7 +197,7 @@ func collectPostureFacts() *posture.Facts {
 		}
 		ds := destGuardMgr.Settings()
 		t.RestrictTools, t.AllowedBackends = ds.RestrictTools, len(ds.AllowedBackends)
-		t.BackendViolations = backendViolations()
+		t.BackendViolations = destGuardFindingsDNS(true, false, dns)
 		f.Tools = t
 	})
 
@@ -218,7 +222,7 @@ func collectPostureFacts() *posture.Facts {
 				r.HSTSMaxAge = ep.HeaderRewriteRules.HSTSMaxAge
 			}
 			r.TLSVerifyOff = upstreamTLSVerifyOff(ep)
-			r.TargetsAdmin = ruleTargetsAdminListener(ep)
+			r.TargetsAdmin = ruleTargetsAdminListenerDNS(ep, dns)
 			if c, ok := coverage[strings.ToLower(ep.RootOrMatchingDomain)]; ok {
 				r.WAFMode, r.WAFOrigin = c.Mode, c.Source
 				r.ChallengeBand, r.ChallengeReady = c.ChallengeThreshold > 0, c.ChallengeReady
@@ -328,6 +332,10 @@ func collectPostureFacts() *posture.Facts {
 		ds := deployRoleMgr.Settings()
 		f.Deploy = &posture.DeployFacts{Role: string(ds.Role), HardenHeaders: deployRoleMgr.HardenActive(), PeerGate: deployRoleMgr.PeerGateActive(),
 			TrustedProxies: len(accessController.ListTrustedProxies())}
+	})
+
+	section("network plan", func() {
+		f.NetPlan = collectNetPlanFacts()
 	})
 
 	section("bot rules", func() {

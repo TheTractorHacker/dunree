@@ -1,0 +1,301 @@
+<!-- Security Center > Overview: one page, one request (GET /api/security/overview), refreshed every 10 s while it is visible -->
+<style>
+    #ovPage .ov-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
+    #ovPage .ov-bar h3 { margin: 0; flex: 1 1 12rem; }
+    #ovPage .ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); align-items: start; }
+    #ovPage .ov-card { margin: 0; min-width: 0; }
+    #ovPage .ov-card.wide { grid-column: 1 / -1; }
+    #ovPage .zx-card__head { padding: var(--zx-space-3) var(--zx-space-3) 0; }
+    #ovPage .zx-card__body { padding: var(--zx-space-3); }
+    #ovPage .zx-card__title { font-size: var(--zx-fs-md); }
+    #ovPage .ov-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: var(--zx-space-2); margin: 0 0 var(--zx-space-2); }
+    #ovPage .ov-tiles .zx-stat { padding: var(--zx-space-2) var(--zx-space-3); box-shadow: none; }
+    #ovPage .ov-tiles .zx-stat__value { font-size: var(--zx-fs-xl); }
+    #ovPage .ov-tiles .ov-txt .zx-stat__value { font-size: var(--zx-fs-md); overflow-wrap: normal; word-break: keep-all; }   /* words (Standalone, Running) must not break mid-word */
+    #ovPage .ov-list { list-style: none; margin: 0; padding: 0; }
+    #ovPage .ov-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--zx-space-2); padding: 4px 0; border-top: 1px solid var(--zx-border); min-width: 0; font-size: var(--zx-fs-sm); }
+    #ovPage .ov-list li:first-child { border-top: 0; }
+    #ovPage .ov-list .grow { flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
+    #ovPage .ov-list .muted, #ovPage .ov-muted { color: var(--zx-text-muted); }
+    #ovPage .ov-warn { align-items: flex-start; }
+    #ovPage .ov-warn .grow { flex: 1 1 16rem; }
+    #ovPage .ov-warn .ov-ev { display: block; color: var(--zx-text-muted); }
+    #ovPage .ov-more { margin-top: var(--zx-space-2); }
+    #ovPage .ov-foot { margin-top: var(--zx-space-2); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-foot a { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+    #ovPage .ov-go { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+    #ovPage .ov-go:focus-visible, #ovPage .ov-foot a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+    #ovPage svg.ov-chart { display: block; width: 100%; height: 56px; background: var(--zx-surface-2); border-radius: var(--zx-radius-sm); }
+    #ovPage .ov-allowed { fill: var(--zx-info-solid); }
+    #ovPage .ov-blocked { fill: var(--zx-danger-solid); }
+    #ovPage .ov-legend { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-3); font-size: var(--zx-fs-xs); color: var(--zx-text-muted); margin: 2px 0 var(--zx-space-2); }
+    #ovPage .ov-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+    #ovPage .ov-skel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); }
+    #ovPage .ov-skel > div { height: 9rem; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: ovsk 1.4s linear infinite; }
+    @keyframes ovsk { from { background-position: 0 0; } to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { #ovPage .ov-skel > div { animation: none; } }
+    @media (max-width: 748px), (pointer: coarse) { #ovPage .ov-go { display: inline-block; min-height: 32px; line-height: 32px; } }
+</style>
+<div id="ovPage">
+    <div class="ov-bar">
+        <h3>Overview</h3>
+        <span class="zx-sub" id="ovStamp" role="status" aria-live="polite"></span>
+        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ovRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
+    </div>
+    <p class="zx-sub" style="margin:0 0 var(--zx-space-3)">Everything on this page comes from this Zoraxy itself, no outside service is contacted. It refreshes every 10 seconds while you look at it. The cards link to the page where each thing is changed.</p>
+    <div id="ovError" class="zx-callout zx-callout--danger" role="alert" hidden>
+        <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
+        <div class="zx-callout__body"><span class="zx-callout__title">The overview could not be loaded</span><span id="ovErrorText"></span> <a href="#" id="ovRetry" class="ov-go">Try again</a></div>
+    </div>
+    <div id="ovSkel" class="ov-skel" aria-busy="true"><div></div><div></div><div></div><div></div></div>
+    <div id="ovGrid" class="ov-grid" hidden></div>
+</div>
+<script>
+(function () {
+    function N_(s) { return s; }
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    function num(n) { return Number(n || 0).toLocaleString(); }
+    function rel(ts) { return ts ? new Date(ts * 1000).toLocaleString() : "-"; }
+    function fmtUp(sec) {
+        var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+        if (d > 0) { return t("{0}d {1}h").replace("{0}", d).replace("{1}", h); }
+        if (h > 0) { return t("{0}h {1}m").replace("{0}", h).replace("{1}", m); }
+        return t("{0} min").replace("{0}", m);
+    }
+    var root = document.getElementById("ovPage");
+    var inflight = false, timer = null, last = null, showAllWarn = false;
+
+    function badge(kind, text) { return '<span class="zx-badge zx-badge--' + kind + '">' + esc(text) + "</span>"; }
+    function stat(label, value, kind, hint) {
+        return '<div class="zx-stat' + (kind ? " zx-stat--" + kind : "") + (isNaN(value) ? " ov-txt" : "") + '"><span class="zx-stat__label">' + esc(label) + '</span><span class="zx-stat__value">' + esc(value) + "</span>" +
+            (hint ? '<span class="zx-stat__hint">' + esc(hint) + "</span>" : "") + "</div>";
+    }
+    function go(page, anchor, label) {
+        return '<a href="#" class="ov-go" data-page="' + esc(page) + '" data-anchor="' + esc(anchor || "") + '">' + esc(label) + "</a>";
+    }
+    function card(title, icon, body, foot, wide) {
+        return '<section class="zx-card ov-card' + (wide ? " wide" : "") + '"><div class="zx-card__head"><h4 class="zx-card__title"><i class="' + icon + ' icon" aria-hidden="true"></i> ' + esc(title) + "</h4></div>" +
+            '<div class="zx-card__body">' + body + (foot ? '<div class="ov-foot">' + foot + "</div>" : "") + "</div></section>";
+    }
+    function empty(text) { return '<p class="ov-muted" style="margin:0">' + esc(text) + "</p>"; }
+
+    /* ---- one chart: stacked columns, allowed (info) and blocked (danger) ---- */
+    function bars(total, blocked, label) {
+        var n = total.length, W = 300, H = 56, bw = W / n, max = 1, i;
+        for (i = 0; i < n; i++) { max = Math.max(max, total[i]); }
+        var out = '<svg class="ov-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(label) + '"><title>' + esc(label) + "</title>";
+        for (i = 0; i < n; i++) {
+            var b = Math.min(blocked[i] || 0, total[i]), a = total[i] - b;
+            var hb = b / max * (H - 2), ha = a / max * (H - 2);
+            if (ha > 0) { out += '<rect class="ov-allowed" x="' + (i * bw + 0.5).toFixed(1) + '" y="' + (H - ha - hb).toFixed(1) + '" width="' + Math.max(bw - 1, 1).toFixed(1) + '" height="' + ha.toFixed(1) + '"/>'; }
+            if (hb > 0) { out += '<rect class="ov-blocked" x="' + (i * bw + 0.5).toFixed(1) + '" y="' + (H - hb).toFixed(1) + '" width="' + Math.max(bw - 1, 1).toFixed(1) + '" height="' + hb.toFixed(1) + '"/>'; }
+        }
+        return out + "</svg>";
+    }
+    function onlyBlocked(series, label) { return bars(series, series, label); }
+
+    var SEV = { fail: ["danger", N_("Fail")], warn: ["warn", N_("Warning")], unknown: ["info", N_("Unknown")] };
+
+    function cWarnings(d) {
+        var w = d.warnings || { items: [] }, items = w.items || [], sc = d.score;
+        var head = "";
+        if (sc) { head = '<p style="margin:0 0 var(--zx-space-2)">' + badge(sc.value >= 80 ? "ok" : (sc.value >= 50 ? "warn" : "danger"), t("Score {0}").replace("{0}", sc.value + (sc.grade ? " (" + sc.grade + ")" : ""))) +
+            ' <span class="ov-muted">' + esc(t("{0} checks passed, {1} do not apply to this setup.").replace("{0}", w.ok || 0).replace("{1}", w.notApplicable || 0)) + "</span> " + go("secoverview", "", t("How the score is computed")) + "</p>"; }
+        if (!w.available) { return card(t("Configuration warnings"), "exclamation triangle", empty(t("The checks could not be run just now.")), "", true); }
+        if (!items.length) {
+            return card(t("Configuration warnings"), "exclamation triangle", head + '<div class="zx-callout zx-callout--success"><span class="zx-callout__icon"><i class="check circle icon"></i></span><div class="zx-callout__body">' + esc(t("No open findings. Every check that applies to this setup passes.")) + "</div></div>", "", true);
+        }
+        var shown = showAllWarn ? items : items.slice(0, 6);
+        var li = shown.map(function (x) {
+            var s = SEV[x.status] || SEV.unknown;
+            return '<li class="ov-warn">' + badge(s[0], t(s[1])) + '<span class="grow"><b>' + esc(t(x.title)) + '</b><span class="ov-ev">' + esc(x.evidence) + "</span></span>" +
+                (x.page ? go(x.page, x.anchor, t("Fix: {0}").replace("{0}", t(x.fix))) : '<span class="ov-muted">' + esc(x.fix) + "</span>") + "</li>";
+        }).join("");
+        var more = items.length > 6 ? '<button type="button" class="zx-btn zx-btn--ghost zx-btn--sm ov-more" id="ovWarnToggle">' + esc(showAllWarn ? t("Show fewer") : t("Show all {0}").replace("{0}", items.length + (w.more || 0))) + "</button>" : "";
+        return card(t("Configuration warnings"), "exclamation triangle", head + '<ul class="ov-list">' + li + "</ul>" + more, "", true);
+    }
+
+    function cStatus(d) {
+        var s = d.status || {}, r = d.role || {};
+        var roleName = { standalone: t("Standalone"), external: t("External proxy"), internal: t("Internal proxy") }[r.role] || r.role;
+        var body = '<div class="ov-tiles">' + stat(t("Role"), roleName, "", r.role === "standalone" ? t("default") : (r.hardenActive ? t("headers hardened") : "")) +
+            stat(t("Uptime"), fmtUp(s.uptimeSeconds || 0), "", "v" + (s.version || "?")) +
+            stat(t("Reverse proxy"), s.proxyRunning ? t("Running") : t("Stopped"), s.proxyRunning ? "ok" : "danger") + "</div>";
+        body += '<ul class="ov-list">' + (s.listeners || []).map(function (l) {
+            return '<li><span class="grow">' + esc(l.name) + ' <code>' + esc(l.addr) + "</code></span>" + badge(l.tls ? "ok" : "warn", l.tls ? "HTTPS" : "HTTP") + "</li>";
+        }).join("") + "</ul>";
+        var extra = [];
+        if (r.role === "internal") { extra.push(r.peerGateActive ? t("Peer gate on: {0} refused since start.").replace("{0}", num(r.gateRejected)) : t("Peer gate off.")); }
+        if (s.offline) { extra.push(t("Offline mode: no outside service is contacted.")); }
+        if (s.clusterRole && s.clusterRole !== "standalone") { extra.push(t("Cluster role: {0}").replace("{0}", s.clusterRole)); }
+        (r.warnings || []).forEach(function (x) { extra.push(x); });
+        if (extra.length) { body += '<div class="zx-sub" style="margin-top:var(--zx-space-2)">' + extra.map(function (x) { return esc(t(x)); }).join("<br>") + "</div>"; }
+        return card(t("Deployment and status"), "server", body, go("seccenter", "deployment", t("Deployment settings")));
+    }
+
+    function cBackends(d) {
+        var b = d.backends || {}, items = b.items || [];
+        var body;
+        if (!b.monitored) { body = empty(t("The uptime monitor is not running, so backend health is unknown.")); }
+        else if (!b.total) { body = empty(t("No upstream is monitored yet.")); }
+        else {
+            body = '<div class="ov-tiles">' + stat(t("Up"), (b.total - b.down), "ok") + stat(t("Down"), b.down, b.down ? "danger" : "") + stat(t("Monitored"), b.total) + "</div>" +
+                '<ul class="ov-list">' + items.map(function (u) {
+                    return "<li>" + badge(u.online ? "ok" : "danger", u.online ? t("Up") : t("Down")) + '<span class="grow">' + esc(u.name) + '</span><span class="muted">' + (u.online ? esc(u.latencyMs) + " ms" : esc(u.status || "")) + "</span></li>";
+                }).join("") + "</ul>" + (b.total > items.length ? '<div class="zx-sub">' + esc(t("Worst first. {0} more are up.").replace("{0}", b.total - items.length)) + "</div>" : "");
+        }
+        return card(t("Backend health"), "heartbeat", body, go("utm", "", t("Uptime monitor")));
+    }
+
+    function cRoutes(d) {
+        var r = d.routes || {}, waf = r.waf || {};
+        var body = '<div class="ov-tiles">' + stat(t("Routes"), r.total || 0, "", t("{0} enabled").replace("{0}", r.enabled || 0)) + stat(t("With login"), r.withAuth || 0) + stat(t("Rate limited"), r.rateLimited || 0) + "</div>";
+        var w = [];
+        ["block", "detection_only", "off"].forEach(function (k) { if (waf[k]) { w.push(badge(k === "block" ? "ok" : (k === "off" ? "warn" : "info"), {block: t("WAF blocking"), detection_only: t("WAF detecting"), off: t("WAF off")}[k] + " " + waf[k])); } });
+        if (w.length) { body += '<p style="margin:0 0 var(--zx-space-2)"><span class="zx-chips">' + w.join("") + "</span></p>"; }
+        if ((r.busiest || []).length) {
+            body += '<ul class="ov-list">' + r.busiest.map(function (x) { return '<li><span class="grow">' + esc(x.domain) + '</span><span class="muted">' + esc(t("{0} req/s avg, {1} peak").replace("{0}", x.avgRps).replace("{1}", x.peakRps)) + "</span></li>"; }).join("") + "</ul>";
+        } else if (!r.total) { body += empty(t("No proxy rule yet.")); }
+        return card(t("Proxy routes"), "sitemap", body, go("httprp", "", t("HTTP Proxy")) + (r.defaultSite ? ' <span class="ov-muted">&middot; ' + esc(t("Default site: {0}").replace("{0}", r.defaultSite)) + "</span>" : ""));
+    }
+
+    function cCerts(d) {
+        var c = d.certs || {}, items = c.items || [];
+        var body = '<div class="ov-tiles">' + stat(t("Certificates"), c.total || 0) + stat(t("Expiring in 30 days"), c.expiringSoon || 0, c.expiringSoon ? "warn" : "") + stat(t("Expired"), c.expired || 0, c.expired ? "danger" : "") + "</div>";
+        if ((c.issues || []).length) { body += '<ul class="ov-list">' + c.issues.map(function (x) { return '<li><span class="grow">' + esc(x) + "</span></li>"; }).join("") + "</ul>"; }
+        if (items.length) {
+            body += '<ul class="ov-list">' + items.map(function (x) {
+                return '<li>' + badge(x.expired ? "danger" : (x.daysLeft <= 30 ? "warn" : "ok"), x.expired ? t("Expired") : t("{0} days").replace("{0}", x.daysLeft)) + '<span class="grow">' + esc(x.name) + "</span></li>";
+            }).join("") + "</ul>";
+        } else { body += empty(t("No certificate is stored yet.")); }
+        return card(t("TLS certificates"), "lock", body, go("cert", "", t("Certificates")) + " &middot; " + go("ech", "", t("Encrypted Client Hello")));
+    }
+
+    function cCrowd(d) {
+        var c = d.crowdsec || {};
+        var kind = { ok: "ok", starting: "info", degraded: "warn", down: "danger", off: "info" }[c.state] || "info";
+        var name = { ok: t("OK"), starting: t("Starting"), degraded: t("Degraded"), down: t("Down"), off: t("Off") }[c.state] || c.state;
+        var body = "<p style=\"margin:0 0 var(--zx-space-2)\">" + badge(kind, name) + " ";
+        if (!c.enabled) { body += '<span class="ov-muted">' + esc(t("CrowdSec is switched off. Nothing is checked.")) + "</span></p>"; }
+        else {
+            body += '<span class="ov-muted">' + esc(c.mode === "enforce" ? t("Enforce") : t("Log only")) + "</span></p>" +
+                '<div class="ov-tiles">' + stat(t("Decisions in memory"), num(c.cacheSize)) + stat(t("Blocked"), num(c.enforced), "") + stat(t("Log only matches"), num(c.logOnly)) + "</div>" +
+                '<div class="zx-sub">' + esc(t("Last successful pull: {0}").replace("{0}", rel(c.lastSuccess))) + " &middot; " + esc(t("Errors since start: {0}").replace("{0}", num(c.totalErrors))) + "</div>";
+            if (c.failClosedActive) { body += '<div class="zx-sub">' + esc(t("Fail-closed is active: visitors are refused while the LAPI is down.")) + "</div>"; }
+            if (c.lastError) { body += '<div class="zx-sub">' + esc(t("Last error: {0}").replace("{0}", c.lastError)) + "</div>"; }
+            (c.warnings || []).forEach(function (x) { body += '<div class="zx-sub">' + esc(t(x)) + "</div>"; });
+        }
+        return card("CrowdSec", "shield", body, go("seccenter", "crowdsec", t("CrowdSec settings")));
+    }
+
+    function cRate(d) {
+        var r = d.ratelimit || {}, items = r.items || [];
+        var body;
+        if (!r.limitedRules) { body = empty(t("No proxy rule has a rate limit.")); }
+        else {
+            body = '<div class="ov-tiles">' + stat(t("Enforced rules"), r.enforcedRules || 0) + stat(t("Dry-run rules"), r.dryRunRules || 0, r.dryRunRules ? "warn" : "") +
+                stat(t("Rejected (5 min)"), num(r.deniedEnforced), r.deniedEnforced ? "warn" : "", t("would reject in dry run: {0}").replace("{0}", num(r.wouldDeny))) + "</div>" +
+                '<ul class="ov-list">' + items.map(function (x) {
+                    return "<li>" + badge(x.dryRun ? "info" : "ok", x.dryRun ? t("Dry run") : t("Enforced")) + '<span class="grow">' + esc(x.domain) + '</span><span class="muted">' +
+                        esc((x.dryRun ? t("{0}/s, {1} would be rejected") : t("{0}/s, {1} rejected")).replace("{0}", x.rate).replace("{1}", num(x.denied))) + "</span></li>";
+                }).join("") + "</ul>" + (r.stale ? '<div class="zx-sub">' + esc(t("The live counters have not updated for a moment.")) + "</div>" : "");
+        }
+        return card(t("Rate limits"), "tachometer alternate", body, go("httprp", "", t("Set a limit on a proxy rule")));
+    }
+
+    function cTraffic(d) {
+        var t0 = d.traffic || {}, bl = t0.blockLog;
+        var body = '<div class="ov-tiles">' + stat(t("Allowed today"), num(t0.allowedToday)) + stat(t("Blocked today"), num(t0.blockedToday), t0.blockedToday ? "warn" : "") + stat(t("Requests / min"), t0.requestsPerMin) + "</div>";
+        var any = (t0.series || []).some(function (v) { return v > 0; });
+        if (any) {
+            body += bars(t0.series, t0.blockedSeries, t("Requests per minute over the last 30 minutes, blocked ones in red")) +
+                '<div class="ov-legend"><span><i style="background:var(--zx-info-solid)"></i>' + esc(t("Allowed")) + '</span><span><i style="background:var(--zx-danger-solid)"></i>' + esc(t("Blocked")) + "</span><span>" + esc(t("last 30 minutes")) + "</span></div>";
+        } else { body += empty(t("No traffic in the last 30 minutes.")); }
+        if (bl && bl.enabled && (bl.hourly || []).some(function (v) { return v > 0; })) {
+            body += onlyBlocked(bl.hourly, t("Blocked requests per hour over the last 24 hours")) + '<div class="ov-legend"><span>' + esc(t("blocked per hour, last 24 hours")) + "</span></div>";
+            body += '<span class="zx-chips">' + (bl.reasons || []).map(function (x) { return badge("info", x.key + " " + x.n); }).join("") + "</span>";
+        } else if (bl && !bl.enabled) { body += '<div class="zx-sub">' + esc(t("The blocked request log is switched off.")) + "</div>"; }
+        return card(t("Blocked and allowed requests"), "chart bar", body, go("stats", "", t("Statistics")) + " &middot; " + go("status", "", t("Status")));
+    }
+
+    function cEvents(d) {
+        var e = d.events || {}, a = e.audit || [], b = e.blocked || [];
+        var body = '<h5 style="margin:0 0 4px">' + esc(t("Configuration changes")) + "</h5>";
+        if (!e.auditAvailable) { body += empty(t("The security audit log is not available.")); }
+        else if (!a.length) { body += empty(t("No security-relevant change recorded yet.")); }
+        else { body += '<ul class="ov-list">' + a.map(function (x) { return '<li><span class="muted">' + esc(rel(x.time)) + '</span><span class="grow"><b>' + esc(x.event) + "</b> " + esc(x.target) + '</span><span class="muted">' + esc(x.actor) + (x.outcome && x.outcome !== "ok" ? " (" + esc(x.outcome) + ")" : "") + "</span></li>"; }).join("") + "</ul>"; }
+        body += '<h5 style="margin:var(--zx-space-3) 0 4px">' + esc(t("Latest blocked requests")) + "</h5>";
+        if (!b.length) { body += empty(t("Nothing was blocked recently.")); }
+        else { body += '<ul class="ov-list">' + b.map(function (x) { return '<li><span class="muted">' + esc(rel(x.time)) + '</span><span class="grow">' + esc(x.ip) + " &rarr; " + esc(x.host) + "</span>" + badge("info", x.reason) + "</li>"; }).join("") + "</ul>"; }
+        return card(t("Recent security events"), "history", body, go("seccenter", "auditlog", t("Audit log")) + " &middot; " + go("status", "", t("Blocked requests on Status")), true);
+    }
+
+    function cTrusted(d) {
+        var x = d.trusted || {};
+        var body = '<div class="ov-tiles">' + stat(t("Trusted proxies"), x.count || 0, x.trustAll ? "danger" : "") + stat(t("Gating"), x.gating ? t("On") : t("Off"), x.gating ? "ok" : "warn") +
+            stat(t("Header clean-up"), (x.sanitiseClientIP || x.hardenActive) ? t("On") : t("Off"), (x.sanitiseClientIP || x.hardenActive) ? "ok" : "") + "</div>";
+        if (x.trustAll) { body += '<div class="zx-callout zx-callout--danger"><span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body">' + esc(t("The list contains a catch-all range: every visitor can forge their address.")) + "</div></div>"; }
+        else if (x.broad) { body += '<div class="zx-sub">' + esc(t("{0} very broad ranges are trusted.").replace("{0}", x.broad)) + "</div>"; }
+        if ((x.entries || []).length) {
+            body += '<span class="zx-chips">' + x.entries.map(function (e) { return '<span class="zx-badge" title="' + esc(e.desc) + '">' + esc(e.ip) + "</span>"; }).join("") + (x.count > x.entries.length ? '<span class="ov-muted">' + esc(t("... and {0} more").replace("{0}", x.count - x.entries.length)) + "</span>" : "") + "</span>";
+        } else { body += empty(t("The trusted proxy list is empty: forwarded client addresses are ignored.")); }
+        return card(t("Trusted proxies"), "handshake", body, go("trustproxy", "", t("Trusted Proxies")) + " &middot; " + go("seccenter", "netplan", t("Network plan")));
+    }
+
+    function render(d) {
+        var html = cWarnings(d) + cStatus(d) + cBackends(d) + cRoutes(d) + cCerts(d) + cCrowd(d) + cRate(d) + cTraffic(d) + cTrusted(d) + cEvents(d);
+        if ((d.errors || []).length) {
+            html = '<div class="zx-callout zx-callout--warn ov-card wide" style="grid-column:1/-1"><span class="zx-callout__icon"><i class="info circle icon"></i></span><div class="zx-callout__body">' +
+                esc(t("Some cards could not be filled and are left out: {0}.").replace("{0}", d.errors.join(", "))) + "</div></div>" + html;
+        }
+        $("#ovGrid").html(html).prop("hidden", false);
+        $("#ovSkel").hide();
+        $("#ovStamp").text(t("Updated {0}").replace("{0}", new Date(d.generated * 1000).toLocaleTimeString()));
+    }
+
+    function load() {
+        if (inflight) { return; }
+        inflight = true;
+        $("#ovRefresh").prop("disabled", true);
+        $.ajax({ url: "/api/security/overview", method: "GET", dataType: "json", cache: false, timeout: 15000 }).done(function (d) {
+            if (!d || d.error) { fail(d && d.error); return; }
+            last = d; $("#ovError").prop("hidden", true); render(d);
+        }).fail(function (x) {
+            fail(x && x.status === 403 ? t("This page is not available to read-only accounts.") : t("The server did not answer."));
+        }).always(function () { inflight = false; $("#ovRefresh").prop("disabled", false); });
+    }
+    function fail(msg) {
+        $("#ovErrorText").text(msg || t("The server returned an error."));
+        $("#ovError").prop("hidden", false);
+        if (!last) { $("#ovSkel").hide(); }   // keep the last good data on screen when a refresh fails
+    }
+
+    function visible() { return document.visibilityState === "visible" && document.body.contains(root) && $(root).is(":visible"); }
+    function tick() {
+        if (!document.body.contains(root)) { clearInterval(timer); timer = null; return; }   // the tab was left: stop polling
+        if (visible()) { load(); }
+    }
+    if (window.__ovTimer) { clearInterval(window.__ovTimer); }
+    timer = window.__ovTimer = setInterval(tick, 10000);
+    document.addEventListener("visibilitychange", function onVis() {
+        if (!document.body.contains(root)) { document.removeEventListener("visibilitychange", onVis); return; }
+        if (document.visibilityState === "visible") { load(); }
+    });
+
+    $("#ovRefresh").on("click", load);
+    $("#ovRetry").on("click", function (e) { e.preventDefault(); load(); });
+    $(root).on("click", "#ovWarnToggle", function () { showAllWarn = !showAllWarn; if (last) { render(last); } });
+    $(root).on("click", ".ov-go", function (e) {
+        e.preventDefault();
+        var page = $(this).attr("data-page"), anchor = $(this).attr("data-anchor");
+        if (page === "seccenter") {   // already in the Security Center: switch its tab (asks before dropping unsaved edits)
+            if (anchor) { $("#secTabs .item[data-sec='" + anchor + "']").trigger("click"); }
+            return;
+        }
+        if (typeof openTabById !== "function") { return; }
+        openTabById(page);
+        if (anchor) { setTimeout(function () { $("#" + page).find('[data-tab="' + anchor + '"],[data-sec="' + anchor + '"]').first().trigger("click"); }, 450); }
+    });
+    load();
+})();
+</script>

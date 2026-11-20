@@ -95,6 +95,13 @@ func (m *Manager) HandleConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if v, ok := has("syncCerts"); ok {
 		b := v == "true"
+		if b && !m.Config().SyncCerts {
+			//SyncCerts ships the TLS private keys from the primary to every follower: explicit acknowledge required
+			if r.PostForm.Get("ackSyncCerts") != "true" {
+				writeErr(w, "Syncing certificates sends TLS PRIVATE KEYS to the followers. Confirm that you want this by sending ackSyncCerts=true.")
+				return
+			}
+		}
 		u.SyncCerts = &b
 	}
 	if v, ok := has("healthDisabled"); ok {

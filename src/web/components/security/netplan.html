@@ -1,0 +1,193 @@
+<!-- Security Center > Network plan: a document, a comparison with the real configuration, and firewall recommendations to export. Applies nothing. -->
+<style>
+    #npPage .np-zone { display: grid; grid-template-columns: minmax(9rem, 13rem) 1fr; gap: var(--zx-space-2) var(--zx-space-3); margin-bottom: var(--zx-space-3); }
+    #npPage .np-zone .field { margin: 0; }
+    #npPage .np-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-3); }
+    #npPage .np-grid2 .field { margin: 0; }
+    #npPage .zx-card { margin-bottom: var(--zx-space-3); }
+    #npPage .zx-card__head { padding: var(--zx-space-3) var(--zx-space-3) 0; }
+    #npPage .zx-card__body { padding: var(--zx-space-3); }
+    #npPage .np-list { list-style: none; margin: 0; padding: 0; }
+    #npPage .np-list li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px var(--zx-space-2); padding: 5px 0; border-top: 1px solid var(--zx-border); }
+    #npPage .np-list li:first-child { border-top: 0; }
+    #npPage .np-list .grow { flex: 1 1 16rem; min-width: 0; overflow-wrap: anywhere; }
+    #npPage .np-list .np-ev { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #npPage .np-go { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; font-size: var(--zx-fs-sm); }
+    #npPage .np-go:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+    #npPage .np-actions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: var(--zx-space-2) 0; }
+    #npPage #npMd { width: 100%; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); min-height: 14rem; resize: vertical; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); padding: var(--zx-space-2); }
+    @media (max-width: 600px) { #npPage .np-zone { grid-template-columns: 1fr; } }
+</style>
+<div id="npPage">
+    <h3>Network plan</h3>
+    <div class="zx-callout zx-callout--warn" role="note" id="npDisclaimer" style="margin-bottom:var(--zx-space-3)">
+        <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
+        <div class="zx-callout__body"><span class="zx-callout__title">Zoraxy applies nothing to any firewall</span>
+            This page is a document. It does not configure your UDM Pro, Proxmox or any other firewall, and Zoraxy cannot see whether your rules exist.
+            It compares what you write here with this Zoraxy's own configuration, and it can write down firewall recommendations for you to review and apply yourself.</div>
+    </div>
+    <p class="zx-sub" style="margin:0 0 var(--zx-space-3)">Off until you fill it in: with no plan saved, nothing is compared and nothing changes. Saving a plan changes no setting of this Zoraxy. <a href="#" data-zx-history="Network plan">View history</a></p>
+
+    <div class="ui form" id="npForm">
+        <section class="zx-card"><div class="zx-card__head"><h4 class="zx-card__title">1. Your networks</h4></div><div class="zx-card__body">
+            <div class="np-zone">
+                <div class="field zx-field"><label for="npProxyName">Proxy VLAN name</label><input type="text" id="npProxyName" maxlength="48" placeholder="Proxy DMZ" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npProxyCidrs">Proxy VLAN networks (one per line)</label><textarea id="npProxyCidrs" rows="2" placeholder="10.0.1.0/24" spellcheck="false"></textarea></div>
+            </div>
+            <div class="np-zone">
+                <div class="field zx-field"><label for="npMgmtName">Management VLAN name</label><input type="text" id="npMgmtName" maxlength="48" placeholder="Management" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npMgmtCidrs">Management VLAN networks (one per line)</label><textarea id="npMgmtCidrs" rows="2" placeholder="10.0.9.0/24" spellcheck="false"></textarea></div>
+            </div>
+            <div class="np-zone">
+                <div class="field zx-field"><label for="npAppName">Application VLAN name</label><input type="text" id="npAppName" maxlength="48" placeholder="Servers" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npAppCidrs">Application VLAN networks (one per line)</label><textarea id="npAppCidrs" rows="2" placeholder="10.0.2.0/24" spellcheck="false"></textarea></div>
+            </div>
+            <p class="zx-help" style="margin:0">Names may use letters, digits, spaces and . _ - ( ). Networks are CIDR (10.0.2.0/24) or a single address; "everything" (0.0.0.0/0) is refused.</p>
+        </div></section>
+
+        <section class="zx-card"><div class="zx-card__head"><h4 class="zx-card__title">2. Who talks to whom</h4></div><div class="zx-card__body">
+            <div class="np-grid2">
+                <div class="field zx-field"><label for="npUpstream">Trusted upstream proxies (one per line)</label><textarea id="npUpstream" rows="3" placeholder="10.0.1.5" spellcheck="false"></textarea>
+                    <p class="zx-help">The proxies in front of this one (an internal proxy lists the external proxy). They should be inside the proxy VLAN and listed under <a href="#trustproxy" data-nav-open="trustproxy">Trusted Proxies</a>.</p></div>
+                <div class="field zx-field"><label for="npBackends">Allowed backend destinations (one per line)</label><textarea id="npBackends" rows="3" placeholder="10.0.3.5 443&#10;10.0.3.0/24 8000-8100" spellcheck="false"></textarea>
+                    <p class="zx-help">Single servers outside (or narrower than) the application VLAN. Same format as the list in <a href="#" class="np-go" data-page="seccenter" data-anchor="exposure">Network exposure</a>.</p></div>
+                <div class="field zx-field"><label for="npPorts">Permitted application ports</label><input type="text" id="npPorts" placeholder="443, 8000-8100" autocomplete="off">
+                    <p class="zx-help">Comma separated ports or ranges. A proxy rule that uses another port is reported.</p></div>
+                <div class="field zx-field"><label for="npAdmin">Extra administrative access (one per line)</label><textarea id="npAdmin" rows="3" placeholder="192.168.77.5" spellcheck="false"></textarea>
+                    <p class="zx-help">Addresses besides the management VLAN that may reach the admin panel, for example a jump host.</p></div>
+            </div>
+        </div></section>
+        <div id="npMsg" class="ui negative message" style="display:none" role="alert"></div>
+    </div>
+
+    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h4 class="zx-card__title">3. Does the real configuration match?</h4>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="npRecheck"><i class="sync icon" aria-hidden="true"></i> Check again</button></div>
+        <div class="zx-card__body" id="npResult" aria-live="polite"><div class="zx-skeleton zx-skeleton--block" style="height:5rem"></div></div></section>
+
+    <section class="zx-card"><div class="zx-card__head"><h4 class="zx-card__title">4. Firewall recommendations</h4></div><div class="zx-card__body">
+        <div class="zx-callout zx-callout--danger" role="note" style="margin-bottom:var(--zx-space-2)">
+            <span class="zx-callout__icon"><i class="ban icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title">Not applied. Review before you use them.</span>
+                Zoraxy has not applied, changed or checked any firewall rule. The text below is generated from the saved plan for UniFi (UDM Pro zone-based firewall) and Proxmox. Nobody has tested it against your network.</div></div>
+        <p class="zx-sub" style="margin:0">The export uses the saved plan (save your edits first). It contains your networks and the backend addresses of your proxy rules, no passwords, keys or paths.</p>
+        <div class="np-actions">
+            <button type="button" class="zx-btn zx-btn--primary" id="npGen"><i class="file alternate outline icon" aria-hidden="true"></i> Export policy recommendations</button>
+            <button type="button" class="zx-btn zx-btn--secondary" id="npDl" disabled><i class="download icon" aria-hidden="true"></i> Download .md</button>
+            <button type="button" class="zx-btn zx-btn--secondary" id="npCopy" disabled><i class="copy icon" aria-hidden="true"></i> Copy text</button>
+        </div>
+        <label for="npMd" class="zx-sr-only">Generated recommendations (markdown)</label>
+        <textarea id="npMd" readonly hidden spellcheck="false"></textarea>
+    </div></section>
+</div>
+<script>
+(function () {
+    function N_(s) { return s; }
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    function toast(m, ok) { if (window.ZxUI && ZxUI.toast) { ZxUI.toast(m, { type: ok ? "success" : "error" }); } else if (window.msgbox) { msgbox(m, ok); } }
+    function lines(sel) { return $(sel).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
+    function items(v) { return v.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean); }
+    var md = "", fname = "zoraxy-firewall-recommendations.md";
+
+    function fill(s) {
+        function z(p, v) { $("#np" + p + "Name").val(v.name || ""); $("#np" + p + "Cidrs").val((v.cidrs || []).join("\n")); }
+        z("Proxy", s.proxyVlan || {}); z("Mgmt", s.managementVlan || {}); z("App", s.applicationVlan || {});
+        $("#npUpstream").val((s.trustedProxies || []).join("\n"));
+        $("#npBackends").val((s.allowedBackends || []).join("\n"));
+        $("#npPorts").val((s.appPorts || []).join(", "));
+        $("#npAdmin").val((s.adminAccess || []).join("\n"));
+    }
+    function cfg() {
+        return {
+            proxyVlan: { name: $("#npProxyName").val().trim(), cidrs: lines("#npProxyCidrs") },
+            managementVlan: { name: $("#npMgmtName").val().trim(), cidrs: lines("#npMgmtCidrs") },
+            applicationVlan: { name: $("#npAppName").val().trim(), cidrs: lines("#npAppCidrs") },
+            trustedProxies: lines("#npUpstream"), allowedBackends: lines("#npBackends"), appPorts: items($("#npPorts").val()), adminAccess: lines("#npAdmin")
+        };
+    }
+
+    var SEV = { fail: ["danger", N_("Mismatch")], warn: ["warn", N_("Check")], unknown: ["info", N_("Unknown")], ok: ["ok", N_("Matches")] };
+    function badge(kind, text) { return '<span class="zx-badge zx-badge--' + kind + '">' + esc(text) + "</span>"; }
+    function row(f) {
+        var s = SEV[f.status] || SEV.unknown;
+        var fix = f.remediation && f.remediation.page ? '<a href="#" class="np-go" data-page="' + esc(f.remediation.page) + '" data-anchor="' + esc(f.remediation.anchor || "") + '">' + esc(t(f.remediation.label)) + "</a>" : "";
+        return "<li>" + badge(s[0], t(s[1])) + '<span class="grow"><b>' + esc(t(f.title)) + '</b><span class="np-ev">' + esc((f.evidence || [])[0] || "") + "</span></span>" + fix + "</li>";
+    }
+    function renderResult(v) {
+        var f = v.findings || [], open = [], ok = [], na = [];
+        f.forEach(function (x) { if (x.status === "ok") { ok.push(x); } else if (x.status === "not-applicable") { na.push(x); } else { open.push(x); } });
+        var rank = { fail: 0, warn: 1, unknown: 2 };
+        open.sort(function (a, b) { return (rank[a.status] - rank[b.status]); });
+        var h = "";
+        if (!v.declared) {
+            h += '<div class="zx-callout zx-callout--info" role="note"><span class="zx-callout__icon"><i class="info circle icon"></i></span><div class="zx-callout__body">' +
+                esc(t("No plan is saved yet, so nothing is compared with it. The checks below that do not need a plan still run.")) + "</div></div>";
+        }
+        if (open.length) { h += '<ul class="np-list">' + open.map(row).join("") + "</ul>"; }
+        else if (v.declared) { h += '<div class="zx-callout zx-callout--success" role="note"><span class="zx-callout__icon"><i class="check circle icon"></i></span><div class="zx-callout__body">' + esc(t("Nothing found: every check that applies matches your plan.")) + "</div></div>"; }
+        if (ok.length) { h += '<details style="margin-top:var(--zx-space-2)"><summary>' + esc(t("{0} checks match the plan").replace("{0}", ok.length)) + '</summary><ul class="np-list">' + ok.map(row).join("") + "</ul></details>"; }
+        if (na.length) { h += '<details style="margin-top:var(--zx-space-1)"><summary>' + esc(t("{0} checks do not apply yet").replace("{0}", na.length)) + '</summary><ul class="np-list">' + na.map(function (x) {
+            return "<li><span class=\"grow\"><b>" + esc(t(x.title)) + '</b><span class="np-ev">' + esc((x.evidence || [])[0] || "") + "</span></span></li>"; }).join("") + "</ul></details>"; }
+        var rel = (v.related || []).filter(function (x) { return x.status !== "ok" && x.status !== "not-applicable"; });
+        h += '<h5 style="margin:var(--zx-space-3) 0 4px">' + esc(t("Already covered by the Security Overview")) + "</h5>" +
+            '<p class="zx-sub" style="margin:0 0 4px">' + esc(t("These checks exist elsewhere and are not repeated here: upstream certificate verification, a proxy rule that points at the admin panel, the allowed backend list.")) + "</p>";
+        h += rel.length ? '<ul class="np-list">' + rel.map(row).join("") + "</ul>" : '<p class="zx-sub" style="margin:0">' + esc(t("None of them reports a problem.")) + "</p>";
+        $("#npResult").html(h);
+    }
+    function load(keepForm) {
+        $.get("/api/netplan/get", function (v) {
+            if (!keepForm) { fill(v.settings || {}); if (window.zxSecBar) { window.zxSecBar.reset(); } }
+            renderResult(v);
+        }).fail(function (x) {
+            $("#npResult").html('<div class="zx-callout zx-callout--danger" role="alert"><div class="zx-callout__body">' + esc(x && x.status === 403 ? t("This page is not available to read-only accounts.") : t("The server did not answer.")) + "</div></div>");
+        });
+    }
+    function save() {
+        $("#npMsg").hide();
+        return $.cjax({ type: "POST", url: "/api/netplan/set", data: { config: JSON.stringify(cfg()) } }).then(function (d) {
+            if (d && d.error) { $("#npMsg").text(d.error).show(); return d; }
+            md = ""; $("#npMd").prop("hidden", true); $("#npDl,#npCopy").prop("disabled", true);
+            load(false);
+            return d;
+        });
+    }
+    if (window.zxSecBar) { window.zxSecBar.destroy(); }
+    window.zxSecBar = ZxUI.saveBar({ form: "#npForm", id: "network-plan", historyObject: "Network plan", onSave: save });
+
+    $("#npForm").on("input change", function () { $("#npMsg").hide(); });
+    $("#npRecheck").on("click", function () { load(true); });
+    $("#npPage").on("click", ".np-go", function (e) {
+        e.preventDefault();
+        var page = $(this).attr("data-page"), anchor = $(this).attr("data-anchor");
+        if (page === "seccenter") { if (anchor) { $("#secTabs .item[data-sec='" + anchor + "']").trigger("click"); } return; }
+        if (typeof openTabById !== "function") { return; }
+        openTabById(page);
+        if (anchor) { setTimeout(function () { $("#" + page).find('[data-tab="' + anchor + '"],[data-sec="' + anchor + '"]').first().trigger("click"); }, 450); }
+    });
+
+    $("#npGen").on("click", function () {
+        var btn = this;
+        $(btn).prop("disabled", true);
+        $.get("/api/netplan/policy", function (d) {
+            if (!d || !d.markdown) { toast(t("Could not generate the recommendations."), false); return; }
+            md = d.markdown; fname = d.filename || fname;
+            $("#npMd").val(md).prop("hidden", false);
+            $("#npDl,#npCopy").prop("disabled", false);
+            if (window.zxSecBar && window.zxSecBar.isDirty()) { toast(t("Your unsaved edits are not in this export. Save them and export again."), false); }
+        }).fail(function () { toast(t("Could not generate the recommendations."), false); }).always(function () { $(btn).prop("disabled", false); });
+    });
+    $("#npDl").on("click", function () {
+        if (!md) { return; }
+        var url = URL.createObjectURL(new Blob([md], { type: "text/markdown;charset=utf-8" }));
+        var a = document.createElement("a");
+        a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    });
+    $("#npCopy").on("click", function () {
+        if (!md) { return; }
+        var done = function () { toast(t("Copied. Remember: nothing has been applied to any firewall."), true); };
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(md).then(done, function () { $("#npMd").trigger("select"); toast(t("Press Ctrl+C to copy the selected text."), false); }); }
+        else { $("#npMd").trigger("select"); try { document.execCommand("copy"); done(); } catch (e) { toast(t("Press Ctrl+C to copy the selected text."), false); } }
+    });
+    load(false);
+})();
+</script>

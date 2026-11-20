@@ -40,6 +40,7 @@ type Hub struct {
 	cache      map[int64]map[string][]FileEntry
 	cacheOrder []int64
 	hashMemo   map[string]string
+	scopeMemo  map[string]map[string]string //desired per scope drift hashes, see fleet_drift.go
 }
 
 func newHub(m *Manager) *Hub {
@@ -51,6 +52,7 @@ func newHub(m *Manager) *Hub {
 		syncLimiter: NewRateLimiter(fleetRateLimit, time.Minute),
 		cache:       map[int64]map[string][]FileEntry{},
 		hashMemo:    map[string]string{},
+		scopeMemo:   map[string]map[string]string{},
 	}
 	h.st = hubState{Nodes: map[string]*FleetNode{}, Groups: map[string]*FleetGroup{}, NextVer: 1}
 	h.st.Settings = defaultHubSettings()
