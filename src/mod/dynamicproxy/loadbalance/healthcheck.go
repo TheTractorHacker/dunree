@@ -50,7 +50,16 @@ func healthSignature(cfg *Config, upstreams []*Upstream) string {
 // SyncHealthChecks makes the running active health checks of the endpoint identified by key
 // match the config and upstream list. It is safe and cheap to call often
 func (m *RouteManager) SyncHealthChecks(key string, cfg *Config, upstreams []*Upstream) {
+	m.SyncHealthChecksFor(key, "", cfg, upstreams)
+}
+
+// SyncHealthChecksFor is SyncHealthChecks with the rule's primary domain, which becomes the TLS verification name of
+// probes to IP addressed https upstreams that have a custom CA bundle or pins (same as the proxied HTTP traffic)
+func (m *RouteManager) SyncHealthChecksFor(key, ruleHost string, cfg *Config, upstreams []*Upstream) {
 	sig := healthSignature(cfg, upstreams)
+	if sig != "" {
+		sig += "|" + ruleHost //empty signature = nothing to check, must stay empty
+	}
 
 	m.hcMu.Lock()
 	defer m.hcMu.Unlock()
@@ -81,7 +90,7 @@ func (m *RouteManager) SyncHealthChecks(key string, cfg *Config, upstreams []*Up
 		g.wg.Add(1)
 		go func(u *Upstream, hc ActiveHealthCheck) {
 			defer g.wg.Done()
-			m.runHealthCheck(ctx, u, hc)
+			m.runHealthCheck(ctx, u, hc, ruleHost)
 		}(u, hc)
 	}
 	if m.hcGroups == nil {
@@ -125,8 +134,8 @@ func (m *RouteManager) HealthCheckGroupCount() int {
 }
 
 // runHealthCheck probes one upstream until ctx is canceled
-func (m *RouteManager) runHealthCheck(ctx context.Context, u *Upstream, hc ActiveHealthCheck) {
-	prober := newProber(u, hc)
+func (m *RouteManager) runHealthCheck(ctx context.Context, u *Upstream, hc ActiveHealthCheck, ruleHost string) {
+	prober := newProberFor(u, hc, ruleHost)
 	defer prober.close()
 
 	interval := time.Duration(hc.IntervalSeconds) * healthIntervalUnit
@@ -164,10 +173,45 @@ type prober struct {
 }
 
 func newProber(u *Upstream, hc ActiveHealthCheck) *prober {
+	return newProberFor(u, hc, "")
+}
+
+// probeServerName picks the TLS verification name of an http(s) probe, in the same order as the proxied HTTP traffic:
+// the explicit override (rule host overwrite), then for an IP literal upstream with a custom CA bundle or pins the
+// rule's primary domain (Go sends no SNI for an IP), otherwise "" = the upstream host name. Verification is never skipped.
+func probeServerName(u *Upstream, ruleHost string) string {
+	if u.tlsServerName != "" {
+		return u.tlsServerName
+	}
+	if !u.TLSPolicy().Active() {
+		return ""
+	}
+	hostport := trimmedOrigin(u.OriginIpOrDomain)
+	if i := strings.Index(hostport, "/"); i >= 0 {
+		hostport = hostport[:i]
+	}
+	host := hostport
+	if h, _, err := net.SplitHostPort(hostport); err == nil {
+		host = h
+	}
+	if net.ParseIP(strings.Trim(host, "[]")) == nil {
+		return ""
+	}
+	name := strings.TrimSpace(ruleHost)
+	if h, _, err := net.SplitHostPort(name); err == nil {
+		name = h
+	}
+	if net.ParseIP(strings.Trim(name, "[]")) != nil || strings.Contains(name, "*") {
+		return ""
+	}
+	return name
+}
+
+func newProberFor(u *Upstream, hc ActiveHealthCheck, ruleHost string) *prober {
 	p := &prober{u: u, hc: hc}
 	if hc.Mode != "tcp" {
 		//Same TLS rules as the proxied traffic: skip verify flag and SNI override
-		tlsCfg := &tls.Config{InsecureSkipVerify: u.SkipCertValidations, ServerName: u.tlsServerName}
+		tlsCfg := &tls.Config{InsecureSkipVerify: u.SkipCertValidations, ServerName: probeServerName(u, ruleHost)}
 		if pol := u.TLSPolicy(); pol.Active() {
 			pol.Apply(tlsCfg) //custom CA / pins replace skip-verify, same as the proxied traffic
 		}

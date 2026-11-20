@@ -129,3 +129,93 @@ func TestWebsocketDefaultDialerStaysUntouchedByPolicy(t *testing.T) {
 		t.Fatal("a shared dialer was modified")
 	}
 }
+
+// roundTripHost is roundTrip with a visitor request Host header, which names the site for an IP addressed upstream
+func roundTripHost(t *testing.T, target *url.URL, o Options, host string) bool {
+	t.Helper()
+	o.SkipOriginCheck = true
+	proxy := httptest.NewServer(NewProxy(target, o))
+	defer proxy.Close()
+	hdr := http.Header{}
+	hdr.Set("Host", host)
+	c, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(proxy.URL, "http"), hdr)
+	if err != nil {
+		return false
+	}
+	defer c.Close()
+	if err := c.WriteMessage(websocket.TextMessage, []byte("hi")); err != nil {
+		return false
+	}
+	_, msg, err := c.ReadMessage()
+	return err == nil && string(msg) == "echo:hi"
+}
+
+// An IP addressed wss upstream whose certificate only carries DNS names: the request host is the verification name
+// (and SNI), the same as the HTTP path, with hostname verification staying on
+func TestWebsocketIPUpstreamUsesRequestHostAsSNI(t *testing.T) {
+	ca, other := tlstest.NewCA("good"), tlstest.NewCA("other")
+	cert := ca.Issue(tlstest.Options{DNS: []string{"app.test"}}) //SAN DNS only, no IP SAN
+	target := wssBackend(t, cert, nil)
+	pin := upstreamtls.SPKIHash(cert.Leaf)
+	pinHex := hex.EncodeToString(pin[:])
+	caPol := upstreamtls.Policy{CABundlePEM: ca.PEM()}
+	pinPol := upstreamtls.Policy{CABundlePEM: ca.PEM(), PinsSHA256: []string{pinHex}}
+
+	cases := []struct {
+		name string
+		o    Options
+		host string
+		want bool
+	}{
+		{"CA bundle, request host covered", Options{UpstreamTLS: caPol}, "app.test", true},
+		{"CA bundle, request host with port", Options{UpstreamTLS: caPol}, "app.test:8443", true},
+		{"CA bundle and pin, request host covered", Options{UpstreamTLS: pinPol}, "app.test", true},
+		{"wrong host name still fails", Options{UpstreamTLS: caPol}, "evil.test", false},
+		{"wrong host name fails with pin too", Options{UpstreamTLS: pinPol}, "evil.test", false},
+		{"IP request host: nothing to verify the DNS-only certificate against", Options{UpstreamTLS: caPol}, "127.0.0.1", false},
+		{"unknown CA still fails", Options{UpstreamTLS: upstreamtls.Policy{CABundlePEM: other.PEM()}}, "app.test", false},
+		{"pin mismatch still fails", Options{UpstreamTLS: upstreamtls.Policy{CABundlePEM: ca.PEM(), PinsSHA256: []string{strings.Repeat("00", 32)}}}, "app.test", false},
+		{"explicit override wins over the request host", Options{UpstreamTLS: caPol, TLSServerName: "app.test"}, "evil.test", true},
+		{"explicit override that is not covered fails even if the request host is", Options{UpstreamTLS: caPol, TLSServerName: "evil.test"}, "app.test", false},
+		{"CA replaces skip verify, wrong host fails", Options{SkipTLSValidation: true, UpstreamTLS: caPol}, "evil.test", false},
+		{"skip verify without a policy unchanged (accepts anything)", Options{SkipTLSValidation: true}, "evil.test", true},
+		{"no policy and no skip: unchanged (system roots, rejected)", Options{}, "app.test", false},
+	}
+	for _, tc := range cases {
+		if got := roundTripHost(t, target, tc.o, tc.host); got != tc.want {
+			t.Errorf("%s: got %v want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+// Hostname upstreams keep verifying the upstream host name: the request host must not replace it
+func TestWebsocketHostnameUpstreamUnchanged(t *testing.T) {
+	ca := tlstest.NewCA("good")
+	o := Options{UpstreamTLS: upstreamtls.Policy{CABundlePEM: ca.PEM()}}
+	if cfg := o.upstreamTLSConfig("backend.internal", "front.example.com"); cfg.ServerName != "" {
+		t.Fatalf("hostname upstream: ServerName must stay empty (dial host verified), got %q", cfg.ServerName)
+	}
+	if cfg := o.upstreamTLSConfig("127.0.0.1", "front.example.com"); cfg.ServerName != "front.example.com" || cfg.InsecureSkipVerify {
+		t.Fatalf("IP upstream: want request host with verification on, got %q skip=%v", cfg.ServerName, cfg.InsecureSkipVerify)
+	}
+	if cfg := (Options{}).upstreamTLSConfig("127.0.0.1", "front.example.com"); cfg != nil {
+		t.Fatal("no TLS option: config must stay nil")
+	}
+	if cfg := (Options{SkipTLSValidation: true}).upstreamTLSConfig("127.0.0.1", "front.example.com"); cfg.ServerName != "" || !cfg.InsecureSkipVerify {
+		t.Fatal("skip verify without a policy must be unchanged")
+	}
+	// end to end, hostname upstream: the certificate covers the dial host name only, an unrelated request host must not matter
+	cert := ca.Issue(tlstest.Options{DNS: []string{"localhost"}})
+	target := wssBackend(t, cert, nil)
+	target.Host = "localhost:" + target.Port()
+	if !roundTripHost(t, target, o, "unrelated.example.com") {
+		t.Fatal("hostname upstream must verify the dial host name, not the request host")
+	}
+	// and a hostname upstream whose certificate does not cover its name still fails
+	bad := ca.Issue(tlstest.Options{DNS: []string{"unrelated.example.com"}})
+	target2 := wssBackend(t, bad, nil)
+	target2.Host = "localhost:" + target2.Port()
+	if roundTripHost(t, target2, o, "unrelated.example.com") {
+		t.Fatal("hostname upstream must not be rescued by the request host")
+	}
+}

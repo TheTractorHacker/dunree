@@ -1,7 +1,11 @@
 # Enterprise dual-proxy and network segmentation: audit and plan
 
-Status: **plan for approval. Nothing in this document is built.** Phase 1 (audit) is a read-only survey by search and
-spot reading; items marked *to verify* were not read line by line and each phase starts by confirming them.
+Status: **Phases 1 to 5 are built and tested on one machine; see [enterprise-assessment.md](enterprise-assessment.md)
+(23 PASS, 0 FAIL in the two-instance run; the one defect it found, no SNI for websockets and active probes to IP upstreams, is fixed).**
+Real CrowdSec, a real two-VLAN network, Cloudflare, UniFi, Proxmox and HA are unverified. The text below is the original
+plan, kept for the design record; "Nothing in this document is built" no longer applies. Phase 1 (audit) was a read-only
+survey by search and spot reading; items marked *to verify* were confirmed in later phases unless the assessment says otherwise.
+
 Fork rules apply to every item: new behaviour is **off or log-only by default**, no silent default changes, no changes
 to existing installs, signed releases, a test and a "known limits" note per feature.
 
@@ -171,6 +175,9 @@ Acceptance: you approve scope and answer section 7. Rollback: delete this file.
   Cloudflare to present a client certificate (Zoraxy's per-route mTLS can verify it).
 
 ## 9. Verified findings (read-only deep check, 7 independent readers, static reading only)
+
+**As of the audit, before phases 2-4.** Everything below is written in the present tense of that audit; many items
+were fixed or changed by the later phases. See [enterprise-assessment.md](enterprise-assessment.md) for the current status.
 
 Corrections to section 3 and new facts. File references are to `src/`.
 

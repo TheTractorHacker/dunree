@@ -172,3 +172,78 @@ func TestHealthSignatureIncludesTLSPolicy(t *testing.T) {
 		t.Fatal("signature does not change with the TLS policy")
 	}
 }
+
+// An IP addressed https upstream with a custom CA / pin and a DNS-only certificate: the probe verifies against the
+// rule's primary domain, like the proxied HTTP traffic does with the request host
+func TestProbeIPUpstreamUsesRuleHostAsSNI(t *testing.T) {
+	ca, other := tlstest.NewCA("good"), tlstest.NewCA("other")
+	cert := ca.Issue(tlstest.Options{DNS: []string{"app.test"}}) //no IP SAN
+	addr := tlsBackend(t, cert, nil)
+	probeWith := func(u *Upstream, sni, ruleHost string) bool {
+		t.Helper()
+		if err := u.StartProxy(sni); err != nil {
+			t.Fatal(err)
+		}
+		p := newProberFor(u, ActiveHealthCheck{}.Normalized(), ruleHost)
+		defer p.close()
+		return p.probe(t.Context()) == nil
+	}
+	mk := func(mod func(*Upstream)) *Upstream {
+		u := &Upstream{OriginIpOrDomain: addr, RequireTLS: true, TLSCABundlePEM: ca.PEM()}
+		if mod != nil {
+			mod(u)
+		}
+		return u
+	}
+	cases := []struct {
+		name     string
+		u        *Upstream
+		sni      string
+		ruleHost string
+		want     bool
+	}{
+		{"CA bundle, rule host covered", mk(nil), "", "app.test", true},
+		{"CA bundle and pin, rule host covered", mk(func(u *Upstream) { u.TLSPinsSHA256 = []string{spkiHex(cert)} }), "", "app.test", true},
+		{"rule host with port", mk(nil), "", "app.test:8443", true},
+		{"wrong host name still fails", mk(nil), "", "evil.test", false},
+		{"wrong host name fails with a pin too", mk(func(u *Upstream) { u.TLSPinsSHA256 = []string{spkiHex(cert)} }), "", "evil.test", false},
+		{"no rule host: verified against the IP, DNS-only certificate fails", mk(nil), "", "", false},
+		{"wildcard rule host is no usable name", mk(nil), "", "*.test", false},
+		{"explicit override wins over the rule host", mk(nil), "app.test", "evil.test", true},
+		{"override not covered fails even if the rule host is", mk(nil), "evil.test", "app.test", false},
+		{"unknown CA still fails", mk(func(u *Upstream) { u.TLSCABundlePEM = other.PEM() }), "", "app.test", false},
+		{"pin mismatch still fails", mk(func(u *Upstream) { u.TLSPinsSHA256 = []string{hex.EncodeToString(make([]byte, 32))} }), "", "app.test", false},
+		{"CA replaces skip verify, wrong host fails", mk(func(u *Upstream) { u.SkipCertValidations = true }), "", "evil.test", false},
+		{"skip verify without a policy unchanged", &Upstream{OriginIpOrDomain: addr, RequireTLS: true, SkipCertValidations: true}, "", "evil.test", true},
+		{"no policy and no skip unchanged (private CA untrusted)", &Upstream{OriginIpOrDomain: addr, RequireTLS: true}, "", "app.test", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := probeWith(tc.u, tc.sni, tc.ruleHost); got != tc.want {
+				t.Errorf("got %v want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// Hostname upstreams keep verifying their own host name, the rule host is ignored
+func TestProbeHostnameUpstreamUnchanged(t *testing.T) {
+	ca := tlstest.NewCA("good")
+	addr := tlsBackend(t, ca.Issue(tlstest.Options{DNS: []string{"localhost"}}), nil)
+	_, port, _ := net.SplitHostPort(addr)
+	u := &Upstream{OriginIpOrDomain: "localhost:" + port, RequireTLS: true, TLSCABundlePEM: ca.PEM()}
+	if err := u.StartProxy(""); err != nil {
+		t.Fatal(err)
+	}
+	if n := probeServerName(u, "unrelated.example.com"); n != "" {
+		t.Fatalf("hostname upstream must not take the rule host, got %q", n)
+	}
+	p := newProberFor(u, ActiveHealthCheck{}.Normalized(), "unrelated.example.com")
+	defer p.close()
+	if err := p.probe(t.Context()); err != nil {
+		t.Fatalf("hostname upstream probe: %v", err)
+	}
+	if n := probeServerName(&Upstream{OriginIpOrDomain: "127.0.0.1:1", RequireTLS: true}, "app.test"); n != "" {
+		t.Fatalf("no CA/pin: nothing changes, got %q", n)
+	}
+}

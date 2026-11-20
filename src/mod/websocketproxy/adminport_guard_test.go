@@ -57,11 +57,11 @@ func TestWebsocketCannotDialAdminPort(t *testing.T) {
 // unless an upstream trust option is configured.
 func TestWebsocketSNIOverrideOnlyWithTrustOption(t *testing.T) {
 	o := Options{TLSServerName: "app.internal"}
-	if o.upstreamTLSConfig() != nil {
+	if o.upstreamTLSConfig("127.0.0.1", "front.example.com") != nil {
 		t.Error("SNI override alone changed the upstream TLS config of an existing rule")
 	}
 	o.SkipTLSValidation = true
-	if cfg := o.upstreamTLSConfig(); cfg == nil || cfg.ServerName != "" || !cfg.InsecureSkipVerify {
+	if cfg := o.upstreamTLSConfig("127.0.0.1", "front.example.com"); cfg == nil || cfg.ServerName != "" || !cfg.InsecureSkipVerify {
 		t.Errorf("skip-verify rule: SNI override leaked in or skip lost: %+v", cfg)
 	}
 }

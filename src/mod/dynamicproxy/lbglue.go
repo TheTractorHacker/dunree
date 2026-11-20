@@ -52,7 +52,7 @@ func (router *Router) syncHealthChecks(ep *ProxyEndpoint) {
 		router.loadBalancer.StopHealthChecks(healthCheckKey(ep))
 		return
 	}
-	router.loadBalancer.SyncHealthChecks(healthCheckKey(ep), ep.LoadBalanceConfig, ep.ActiveOrigins)
+	router.loadBalancer.SyncHealthChecksFor(healthCheckKey(ep), ep.RootOrMatchingDomain, ep.LoadBalanceConfig, ep.ActiveOrigins)
 }
 
 // syncAllHealthChecks syncs every endpoint, called after the router started

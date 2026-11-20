@@ -89,7 +89,10 @@ func sniName(host string) string {
 }
 
 // upstreamTLSConfig builds the TLS config for the backend dial, nil when nothing deviates from the default dialer
-func (o Options) upstreamTLSConfig() *tls.Config {
+// dialHost is the host name or IP of the upstream being dialed, requestHost the Host of the visitor's request.
+// The verification name follows the dpcore HTTP path: explicit SNI override (the rule's host overwrite), then, for an
+// upstream addressed by IP, the request host, otherwise the upstream host name. Verification itself is never skipped here.
+func (o Options) upstreamTLSConfig(dialHost, requestHost string) *tls.Config {
 	custom := o.UpstreamTLS.Active()
 	//The SNI override only follows the rule's Host header overwrite when an upstream TLS option (CA bundle,
 	//pin or client certificate) is configured. Without one, wss:// upstreams keep the historical behaviour
@@ -99,8 +102,16 @@ func (o Options) upstreamTLSConfig() *tls.Config {
 		return nil
 	}
 	cfg := &tls.Config{}
-	if sn := sniName(o.TLSServerName); followSNI && sn != "" {
-		cfg.ServerName = sn
+	if followSNI {
+		if sn := sniName(o.TLSServerName); sn != "" {
+			cfg.ServerName = sn
+		} else if net.ParseIP(strings.Trim(dialHost, "[]")) != nil {
+			//IP literal upstream: Go sends no SNI for an IP, so the upstream would present its default certificate.
+			//Use the requested site name, like the HTTP path (dpcore useRequestHostAsSNI). Empty = keep verifying the IP.
+			if sn := sniName(requestHost); sn != "" {
+				cfg.ServerName = sn
+			}
+		}
 	}
 	if custom {
 		o.UpstreamTLS.Apply(cfg)
@@ -195,7 +206,7 @@ func (w *WebsocketProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	dialer := w.Dialer
 	if w.Dialer == nil {
-		if tlsCfg := w.Options.upstreamTLSConfig(); tlsCfg != nil {
+		if tlsCfg := w.Options.upstreamTLSConfig(backendURL.Hostname(), req.Host); tlsCfg != nil {
 			//Skip verification, custom CA / pins, SNI override or a client certificate for this upstream.
 			//Work on a copy: websocket.DefaultDialer is a shared pointer and mutating it would change
 			//certificate verification for every other WebSocket upstream in the process (and race).
