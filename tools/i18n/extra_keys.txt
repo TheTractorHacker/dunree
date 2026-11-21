@@ -342,3 +342,60 @@ this item no longer exists
 could not restore
 The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.
 Copied. Read the command before you run it.
+All passed
+App update
+Automatic rollback
+Back up
+Checking for updates...
+Checking the new version
+Could not check for updates
+Database update
+Download
+Failed
+GitHub is limiting requests from this address. Try again later, or add a GitHub token under Settings to raise the limit.
+Install
+Installed
+Keep this page open. The admin page may be unavailable for a few seconds while Zoraxy restarts.
+Last checked {0}.
+Migrate
+Migration failed
+No newer release on this channel
+No updates installed yet
+Not checked yet
+Prepare
+Press Check for updates to look for a new release.
+Release notes for {0}
+Restart
+Restarting Zoraxy...
+Roll back
+Rollback
+Rollback failed
+Rolled back
+Rolling back
+Running migrations
+Success
+The update is installed and Zoraxy is waiting for it to confirm it is healthy. If it does not within 90 seconds, the previous version is restored automatically.
+Update App
+Update available: {0}
+Update failed
+Update not available
+Update to {0}
+Updating Zoraxy
+Updating to {0}
+Verify signature
+What is new in {0}
+You are running {0}.
+You are up to date
+Zoraxy could not get the release list from GitHub. Check that this server can reach github.com, then try again.
+Zoraxy is still running {0}. Open Technical details and the technical log to see what happened.
+done
+failed
+in progress
+just now
+waiting
+{0} d ago
+{0} failed
+{0} h ago
+{0} min ago
+{0} of {1} downloaded
+{0} to review

@@ -1,126 +1,298 @@
 <style>
-    /* Release notes: rendered Markdown in a scroll box that follows the theme */
-    #upNotes { max-height: 20em; overflow: auto; background: var(--zx-surface-2, #f6f6f6); color: var(--zx-text, #222); padding: 0.75em 1em 1em; border-radius: 4px; line-height: 1.5; overflow-wrap: anywhere; }
-    #upNotes h1, #upNotes h2, #upNotes h3, #upNotes h4 { margin: 0.6em 0 0.3em; font-size: 1.1em; }
-    #upNotes h1:first-child, #upNotes h2:first-child, #upNotes h3:first-child { margin-top: 0; }
-    #upNotes p { margin: 0.3em 0; }
-    #upNotes ul { margin: 0.3em 0; padding-left: 1.4em; }
-    #upNotes code { font-family: var(--zx-font-mono, monospace); font-size: 0.92em; background: rgba(128,128,128,.18); padding: 0 .3em; border-radius: 3px; }
-    /* reasons why a button is off are explanations, not errors */
-    #upBtnReasons { color: var(--zx-text-muted, #666); font-size: 0.95em; }
-    /* release notes: a soft shadow at the bottom edge shows that the box scrolls (the last line is no longer cut without a hint) */
-    #upNotes { background: linear-gradient(var(--zx-surface-2, #f6f6f6) 30%, transparent) top / 100% 1.6em no-repeat local, linear-gradient(transparent, var(--zx-surface-2, #f6f6f6) 70%) bottom / 100% 1.6em no-repeat local,
-        radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.25), transparent) top / 100% .5em no-repeat scroll, radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.25), transparent) bottom / 100% .5em no-repeat scroll, var(--zx-surface-2, #f6f6f6); padding-bottom: 1.6em; }
-    #upPage .ui.message, .standardContainer .ui.message#upAvailable { margin: 1em 0; }
-    #upOptions .ui.form .inline.fields { align-items: flex-start; }
-    #upOptions .ui.form .inline.fields > .field { margin-top: 0; }
-    /* disabled buttons stay readable */
-    .standardContainer .ui.basic.button.disabled, .standardContainer .ui.basic.disabled.button { opacity: .7; color: var(--zx-text-muted, #545b66) !important; }
+    /* Update page. Everything is prefixed up- and built from the zx tokens (zxui.css), so light and dark follow the theme. */
+    #upPage { --up-measure: 70ch; }
+    #upPage .up-card { margin-bottom: var(--zx-space-4); }
+    #upPage .up-card__body--tight { padding-top: var(--zx-space-2); }
+
+    /* ---- status hero ---- */
+    .up-hero { background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-4); overflow: hidden; }
+    .up-hero__top { display: flex; gap: var(--zx-space-4); align-items: flex-start; padding: var(--zx-space-5); }
+    .up-hero__icon { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; line-height: 1;
+        background: var(--zx-neutral-bg); color: var(--zx-neutral-text); border: 1px solid var(--zx-neutral-line); }
+    .up-hero__icon i.icon { margin: 0; width: auto; height: auto; }
+    .up-hero[data-tone="ok"] .up-hero__icon { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
+    .up-hero[data-tone="info"] .up-hero__icon { background: var(--zx-info-bg); color: var(--zx-info-text); border-color: var(--zx-info-line); }
+    .up-hero[data-tone="warn"] .up-hero__icon { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    .up-hero[data-tone="danger"] .up-hero__icon { background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
+    .up-hero__main { flex: 1 1 auto; min-width: 0; }
+    .up-hero__title { margin: 0; font-size: var(--zx-fs-xl); line-height: 1.25; font-weight: 700; color: var(--zx-text); overflow-wrap: anywhere; }
+    .up-hero__sub { margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-md); max-width: var(--up-measure); overflow-wrap: anywhere; }
+    .up-hero__note { margin: var(--zx-space-3) 0 0; padding: var(--zx-space-3) var(--zx-space-4); border-radius: var(--zx-radius-md); border: 1px solid var(--zx-border); background: var(--zx-surface-2); color: var(--zx-text); max-width: var(--up-measure); overflow-wrap: anywhere; }
+    .up-hero[data-tone="warn"] .up-hero__note { background: var(--zx-warn-bg); border-color: var(--zx-warn-line); color: var(--zx-warn-text); }
+    .up-hero[data-tone="danger"] .up-hero__note { background: var(--zx-danger-bg); border-color: var(--zx-danger-line); color: var(--zx-danger-text); }
+    .up-hero__actions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-4); align-items: center; }
+    .up-hero__why { margin-top: var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); max-width: var(--up-measure); }
+    .up-hero__why:empty { display: none; }
+    .up-tech { margin-top: var(--zx-space-3); font-size: var(--zx-fs-sm); color: var(--zx-text-muted); max-width: var(--up-measure); }
+    .up-tech summary { cursor: pointer; font-weight: 600; color: var(--zx-text-muted); }
+    .up-tech summary:focus-visible, .up-more summary:focus-visible, .up-notes-sum:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+    .up-tech__text { margin-top: var(--zx-space-2); padding: var(--zx-space-2) var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md);
+        font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); color: var(--zx-text); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 12em; overflow: auto; }
+    .up-facts { display: grid; grid-template-columns: 1fr 1fr; margin: 0; border-top: 1px solid var(--zx-border); background: var(--zx-surface-2); }
+    .up-fact { padding: var(--zx-space-3) var(--zx-space-5); min-width: 0; }
+    .up-fact + .up-fact { border-left: 1px solid var(--zx-border); }
+    .up-fact dt { font-size: var(--zx-fs-xs); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--zx-text-muted); }
+    .up-fact dd { margin: 2px 0 0; min-width: 0; overflow-wrap: anywhere; }
+    .up-fact__value { font-size: var(--zx-fs-lg); font-weight: 700; color: var(--zx-text); }
+    .up-fact__detail { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); margin-top: 2px; }
+    .up-trust { display: flex; gap: var(--zx-space-2); align-items: flex-start; padding: var(--zx-space-3) var(--zx-space-5); border-top: 1px solid var(--zx-border); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    .up-trust i.icon { margin: 2px 0 0; color: var(--zx-ok-text); flex: 0 0 auto; }
+
+    /* ---- release notes ---- */
+    .up-notes { padding: 0; }
+    .up-notes-sum { display: flex; align-items: center; gap: var(--zx-space-3); padding: var(--zx-space-4); cursor: pointer; font-weight: 700; font-size: var(--zx-fs-lg); list-style: none; color: var(--zx-text); min-height: var(--zx-control-h); }
+    .up-notes-sum::-webkit-details-marker { display: none; }
+    .up-notes-sum i.icon { margin: 0; transition: transform .15s; color: var(--zx-text-muted); }
+    .up-notes[open] > .up-notes-sum i.icon { transform: rotate(90deg); }
+    .up-notes-sum span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .up-notes__body { padding: 0 var(--zx-space-4) var(--zx-space-4); }
+    #upNotes { max-height: 26em; overflow: auto; color: var(--zx-text); padding: var(--zx-space-3) var(--zx-space-4) 1.6em; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); line-height: 1.55; overflow-wrap: anywhere;
+        background: linear-gradient(var(--zx-surface-2) 30%, transparent) top / 100% 1.6em no-repeat local, linear-gradient(transparent, var(--zx-surface-2) 70%) bottom / 100% 1.6em no-repeat local,
+            radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.42), transparent) top / 100% .8em no-repeat scroll, radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.42), transparent) bottom / 100% .8em no-repeat scroll, var(--zx-surface-2); }
+    #upNotes > * { max-width: var(--up-measure); }
+    #upNotes h4, #upNotes h5 { margin: 1.1em 0 .35em; font-size: 1.05em; font-weight: 700; color: var(--zx-text); line-height: 1.3; }
+    #upNotes h5 { font-size: 1em; color: var(--zx-text); }
+    #upNotes h4:first-child, #upNotes h5:first-child { margin-top: 0; }
+    #upNotes p { margin: .35em 0; }
+    #upNotes ul { margin: .35em 0 .6em; padding-left: 1.4em; list-style: disc; }
+    #upNotes li { margin: .25em 0; padding-left: .1em; }
+    #upNotes li::marker { color: var(--zx-text-faint); }
+    #upNotes a { color: var(--zx-link); text-decoration: underline; text-underline-offset: 2px; }
+    #upNotes a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: 2px; }
+    #upNotes code { font-family: var(--zx-font-mono); font-size: .9em; background: var(--zx-surface-3); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); overflow-wrap: anywhere; }
+    #upNotes:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+
+    /* ---- progress ---- */
+    .up-steps { list-style: none; margin: 0 0 var(--zx-space-4); padding: 0; display: flex; gap: var(--zx-space-1); }
+    .up-step { flex: 1 1 0; min-width: 0; text-align: center; position: relative; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); font-weight: 600; line-height: 1.25; padding: 0 2px; }
+    .up-step::before { content: ""; position: absolute; top: 13px; left: calc(-50% + 16px); right: calc(50% + 16px); height: 2px; background: var(--zx-border-strong); opacity: .5; }
+    .up-step:first-child::before { display: none; }
+    .up-step.is-done::before, .up-step.is-current::before, .up-step.is-failed::before { background: var(--zx-primary); opacity: 1; }
+    .up-step__dot { display: grid; place-items: center; width: 28px; height: 28px; margin: 0 auto 6px; border-radius: 50%; position: relative; z-index: 1; background: var(--zx-surface); border: 2px solid var(--zx-border-strong); color: var(--zx-text-muted); font-weight: 700; font-size: var(--zx-fs-xs); }
+    .up-step__dot i.icon { margin: 0; font-size: 12px; width: auto; height: auto; }
+    .up-step.is-done .up-step__dot { background: var(--zx-ok-solid); border-color: var(--zx-ok-solid); color: var(--zx-on-solid); }
+    .up-step.is-current .up-step__dot { border-color: var(--zx-primary); color: var(--zx-primary); box-shadow: 0 0 0 3px var(--zx-primary-soft); }
+    .up-step.is-current, .up-step.is-done { color: var(--zx-text); }
+    .up-step.is-failed .up-step__dot { background: var(--zx-danger-solid); border-color: var(--zx-danger-solid); color: var(--zx-on-solid); }
+    .up-step.is-failed { color: var(--zx-danger-text); }
+    #upProgress.ui.progress { margin: 0 0 var(--zx-space-2); background: var(--zx-surface-3); border-radius: var(--zx-radius-pill); border: 0; }
+    #upProgress.ui.progress .bar { background: var(--zx-primary) !important; min-width: 0; border-radius: var(--zx-radius-pill); height: 8px; }
+    #upProgress.ui.progress .bar::after { display: none; }
+    .up-progress-text { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: 0 0 var(--zx-space-3); }
+    .up-progress-text:empty { display: none; }
+    .up-more { margin-top: var(--zx-space-3); }
+    .up-more > summary { cursor: pointer; font-weight: 600; color: var(--zx-text-muted); min-height: 28px; }
+    #upLog { max-height: 18em; overflow: auto; margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere;
+        background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); line-height: 1.5; }
+    #upStage { font-weight: 400; color: var(--zx-text-muted); font-size: var(--zx-fs-md); }
+
+    /* ---- settings ---- */
+    .up-setting { display: flex; align-items: center; justify-content: space-between; gap: var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
+    .up-setting__text { flex: 1 1 auto; min-width: 0; }
+    .up-setting__title { display: block; font-weight: 600; color: var(--zx-text); }
+    .up-setting__desc { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; max-width: var(--up-measure); }
+    .up-setting select.zx-input { width: auto; min-width: 13em; max-width: 100%; }
+    .up-more.up-token { border-top: 0; padding-top: var(--zx-space-3); margin-top: 0; }
+    .up-token__row { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin-top: var(--zx-space-2); }
+    .up-token__row input { flex: 1 1 14em; min-width: 0; max-width: 24em; }
+    #upTokenState { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+
+    /* ---- checks, history ---- */
+    .up-ico-ok { color: var(--zx-ok-text); } .up-ico-warn { color: var(--zx-warn-text); } .up-ico-bad { color: var(--zx-danger-text); }
+    #upPage .zx-table i.icon { margin: 0; }
+    .up-checks-sum { display: flex; align-items: center; gap: var(--zx-space-3); flex-wrap: wrap; }
+    .up-checks-meta { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-3); overflow-wrap: anywhere; }
+    .up-checks-meta code { font-family: var(--zx-font-mono); color: var(--zx-text); }
+    .up-hist-ver { white-space: nowrap; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
+    .up-hist-when { white-space: nowrap; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    .up-hist-detail { overflow-wrap: anywhere; color: var(--zx-text); max-width: 34em; }
+    .up-danger { margin-top: var(--zx-space-4); padding: var(--zx-space-4); border: 1px solid var(--zx-danger-line); border-radius: var(--zx-radius-md); display: flex; flex-wrap: wrap; gap: var(--zx-space-3) var(--zx-space-4); align-items: center; justify-content: space-between; }
+    .up-danger__text { flex: 1 1 18em; min-width: 0; }
+    .up-danger__title { font-weight: 700; color: var(--zx-danger-text); display: block; }
+    .up-danger__desc { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); display: block; margin-top: 2px; }
+    .up-reason { display: block; margin-top: var(--zx-space-1); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    .up-reason:empty { display: none; }
+    #upBtnReasons { color: var(--zx-text-muted); }
+    #upPage .zx-btn span { color: inherit; } /* the dark theme colours bare spans; keep the button text on its own colour */
+    #upPage .zx-btn.disabled { opacity: .55; cursor: not-allowed; pointer-events: none; }
+
+    @media (max-width: 640px) {
+        .up-hero__top { padding: var(--zx-space-4); gap: var(--zx-space-3); }
+        .up-hero__icon { width: 44px; height: 44px; font-size: 20px; }
+        .up-hero__title { font-size: var(--zx-fs-lg); }
+        .up-facts { grid-template-columns: 1fr; }
+        .up-fact { padding: var(--zx-space-3) var(--zx-space-4); }
+        .up-fact + .up-fact { border-left: 0; border-top: 1px solid var(--zx-border); }
+        .up-trust { padding: var(--zx-space-3) var(--zx-space-4); }
+        .up-hero__actions .zx-btn { flex: 1 1 100%; min-height: var(--zx-touch); }
+        .up-setting { align-items: flex-start; flex-direction: column; gap: var(--zx-space-2); }
+        .up-setting--switch { flex-direction: row; align-items: center; }
+        .up-setting select.zx-input { width: 100%; min-height: var(--zx-touch); }
+        .up-danger .zx-btn, #upDbBtn { width: 100%; min-height: var(--zx-touch); }
+        .up-step { font-size: 11px; }
+        /* history rows become small cards: no sideways scrolling */
+        #upPage .up-hist-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+        #upPage .up-hist-table, #upPage .up-hist-table tbody { display: block; }
+        #upPage .up-hist-table tr { display: flex; flex-wrap: wrap; gap: 2px var(--zx-space-3); align-items: center; padding: var(--zx-space-3); border-bottom: 1px solid var(--zx-border); }
+        #upPage .up-hist-table td { display: block; padding: 0; border: 0; text-align: left; }
+        #upPage .up-hist-table tbody tr:hover td { background: transparent; }
+        #upPage .up-hist-table .up-hist-what { font-weight: 700; flex: 1 1 auto; }
+        #upPage .up-hist-table .up-hist-detail { flex: 1 1 100%; max-width: none; font-size: var(--zx-fs-sm); }
+        #upPage .up-hist-table .up-hist-when { flex: 1 1 100%; }
+        #upPage .up-hist-table .up-hist-ver { flex: 1 1 100%; }
+        #upPage .up-hist-table td:empty { display: none; }
+        #upPage .up-prefl-table td:first-child { width: 2.2em; }
+    }
+    @media (prefers-reduced-motion: reduce) { .up-notes-sum i.icon { transition: none; } }
 </style>
 <div class="standardContainer" id="upPage">
-    <div class="ui basic segment">
-        <h2>Update</h2>
-        <p>Update Zoraxy to a signed release published on GitHub, or run the database / configuration migrations on demand.
-            Releases are only fetched when you open this page, press <b>Check for updates</b>, or once a day if you turn on the daily check below; updates are never installed automatically.
-            Every binary is verified against an ed25519 signature and a SHA-256 checksum before it is installed.</p>
-    </div>
-    <div class="ui divider"></div>
-
-    <!-- Versions -->
-    <div class="ui basic segment">
-        <h3>Versions</h3>
-        <div class="ui two stackable cards" style="margin-top:0;">
-            <div class="card"><div class="content">
-                <div class="meta">Running</div>
-                <div class="header" id="upCurrent">-</div>
-                <div class="description" id="upCurrentDetail" style="color:grey;"></div>
-            </div></div>
-            <div class="card"><div class="content">
-                <div class="meta">Latest on channel <span id="upChannelLabel">stable</span></div>
-                <div class="header" id="upLatest">Not checked yet</div>
-                <div class="description" id="upLatestDetail" style="color:grey;"></div>
-            </div></div>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <h2 class="zx-page-header__title">Update</h2>
+            <p class="zx-page-header__sub">Install a signed Zoraxy release from GitHub. Nothing is installed until you confirm it.</p>
         </div>
-        <div id="upReason" class="ui small message" style="display:none;"></div>
-        <div id="upNotesWrap" style="display:none;">
-            <h4>Release notes</h4>
+    </header>
+
+    <!-- Status: one headline, one primary action -->
+    <section class="up-hero" id="upHero" data-tone="neutral" aria-label="Update status">
+        <div class="up-hero__top">
+            <span class="up-hero__icon" id="upHeroIcon" aria-hidden="true"><i class="circle notch loading icon"></i></span>
+            <div class="up-hero__main">
+                <h3 class="up-hero__title" id="upHeadline" aria-live="polite">Checking for updates...</h3>
+                <p class="up-hero__sub" id="upSub"></p>
+                <div id="upReason" class="up-hero__note" style="display:none;"></div>
+                <details class="up-tech" id="upErrDetail" style="display:none;">
+                    <summary>Technical details</summary>
+                    <div class="up-tech__text" id="upRateLimit"></div>
+                </details>
+                <div class="up-hero__actions" id="upActions">
+                    <button type="button" class="zx-btn zx-btn--primary" id="upAppBtn" onclick="window.upConfirm('app');" style="display:none;"><i class="download icon" aria-hidden="true"></i> <span id="upAppBtnLabel">Update App</span></button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="upCheckBtn" onclick="window.upCheck(true);"><i class="refresh icon" aria-hidden="true"></i> Check for updates</button>
+                </div>
+                <div class="up-hero__why" id="upBtnReasons"></div>
+            </div>
+        </div>
+        <dl class="up-facts">
+            <div class="up-fact">
+                <dt>Running</dt>
+                <dd><div class="up-fact__value" id="upCurrent">-</div><div class="up-fact__detail" id="upCurrentDetail"></div></dd>
+            </div>
+            <div class="up-fact">
+                <dt>Latest on channel <span id="upChannelLabel">stable</span></dt>
+                <dd><div class="up-fact__value" id="upLatest">Not checked yet</div><div class="up-fact__detail" id="upLatestDetail"></div></dd>
+            </div>
+        </dl>
+        <div class="up-trust"><i class="shield alternate icon" aria-hidden="true"></i><span>Every download is verified against an ed25519 signature and a SHA-256 checksum before it is installed. If the new version is not healthy within 90 seconds, Zoraxy rolls back by itself.</span></div>
+    </section>
+
+    <!-- Progress of a running operation -->
+    <section class="zx-card up-card" id="upLogWrap" style="display:none;" aria-label="Update progress">
+        <div class="zx-card__head"><h3 class="zx-card__title">Progress <span id="upStage"></span></h3></div>
+        <div class="zx-card__body">
+            <ol class="up-steps" id="upSteps"></ol>
+            <div class="ui indicating progress" id="upProgress" style="display:none;"><div class="bar"></div></div>
+            <p class="up-progress-text" id="upProgressText"></p>
+            <details class="up-more" id="upLogDetails">
+                <summary>Technical log</summary>
+                <pre id="upLog"></pre>
+            </details>
+        </div>
+    </section>
+
+    <!-- Release notes -->
+    <details class="zx-card up-card up-notes" id="upNotesWrap" style="display:none;">
+        <summary class="up-notes-sum"><i class="chevron right icon" aria-hidden="true"></i><span id="upNotesTitle">Release notes</span></summary>
+        <div class="up-notes__body">
             <div id="upNotes" class="upNotes" tabindex="0" role="region" aria-label="Release notes"></div>
         </div>
-    </div>
+    </details>
 
-    <!-- Options -->
-    <div class="ui basic segment" id="upOptions">
-        <h3>Options</h3>
-        <div class="ui form">
-            <div class="inline fields">
-                <div class="field">
-                    <label for="upChannel">Release channel</label>
-                    <select id="upChannel" class="ui dropdown" onchange="window.upSetChannel(this.value);">
-                        <option value="stable">stable (releases only)</option>
-                        <option value="beta">beta (includes pre-releases)</option>
-                    </select>
+    <!-- Settings -->
+    <section class="zx-card up-card" id="upOptions">
+        <div class="zx-card__head"><h3 class="zx-card__title">Settings</h3></div>
+        <p class="zx-card__desc">Releases are only fetched when you open this page, press Check for updates, or once a day if you turn on the daily check. Updates are never installed automatically.</p>
+        <div class="zx-card__body up-card__body--tight">
+            <div class="up-setting">
+                <div class="up-setting__text">
+                    <label class="up-setting__title" for="upChannel">Release channel</label>
+                    <span class="up-setting__desc">Beta also offers pre-releases.</span>
                 </div>
-                <div class="field">
-                    <div class="ui toggle checkbox" id="upBackupToggle">
-                        <input type="checkbox" id="upBackup" checked onchange="window.upSetBackup(this.checked);">
-                        <label>Back up first (conf/, sys.db, sys.uuid to ../backups/)</label>
-                    </div>
+                <select id="upChannel" class="zx-input" onchange="window.upSetChannel(this.value);">
+                    <option value="stable">stable (releases only)</option>
+                    <option value="beta">beta (includes pre-releases)</option>
+                </select>
+            </div>
+            <label class="up-setting up-setting--switch" id="upBackupToggle" for="upBackup">
+                <span class="up-setting__text">
+                    <span class="up-setting__title">Back up first</span>
+                    <span class="up-setting__desc">Copy conf/, sys.db and sys.uuid to ../backups/ before updating. The update stops if the backup fails.</span>
+                </span>
+                <input type="checkbox" class="zx-switch" id="upBackup" checked onchange="window.upSetBackup(this.checked);">
+            </label>
+            <label class="up-setting up-setting--switch" id="upAutoToggle" for="upAuto">
+                <span class="up-setting__text">
+                    <span class="up-setting__title">Check for updates once a day</span>
+                    <span class="up-setting__desc">One request to GitHub per day; the top bar then shows when an update is available. Off by default. Nothing is downloaded or installed automatically.</span>
+                </span>
+                <input type="checkbox" class="zx-switch" id="upAuto" onchange="window.upSetAuto(this.checked);">
+            </label>
+            <details class="up-more up-token">
+                <summary>GitHub access token (optional)</summary>
+                <p class="up-setting__desc" style="margin:var(--zx-space-2) 0 0;">Release checks use the anonymous GitHub API (60 requests per hour per IP address). A token without any scopes raises that limit.
+                    It is stored on this server with mode 0600, only sent to api.github.com and never shown again.</p>
+                <div class="up-token__row">
+                    <input type="password" class="zx-input" id="upToken" autocomplete="off" placeholder="ghp_..." aria-label="GitHub access token">
+                    <button type="button" class="zx-btn zx-btn--secondary" onclick="window.upSetToken(false);">Save</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="upTokenClear" onclick="window.upSetToken(true);">Remove</button>
                 </div>
-                <div class="field">
-                    <div class="ui toggle checkbox" id="upAutoToggle">
-                        <input type="checkbox" id="upAuto" onchange="window.upSetAuto(this.checked);">
-                        <label>Check for updates once a day (one request to GitHub; the top bar then shows when one is available)</label>
-                    </div>
-                    <div class="zx-hint" style="margin-top:.35em;opacity:.75;font-size:.9em;">Off by default. Nothing is downloaded or installed automatically.</div>
+                <div style="margin-top:var(--zx-space-2);"><span id="upTokenState"></span></div>
+            </details>
+        </div>
+    </section>
+
+    <!-- Database / configuration migrations -->
+    <section class="zx-card up-card" id="upDbCard">
+        <div class="zx-card__head"><h3 class="zx-card__title">Database and configuration</h3></div>
+        <p class="zx-card__desc">Run the same migrations Zoraxy runs at start-up, for example after copying a configuration from an older version. Reports what changed. No restart.</p>
+        <div class="zx-card__body">
+            <button type="button" class="zx-btn zx-btn--secondary" id="upDbBtn" onclick="window.upConfirm('db');"><i class="database icon" aria-hidden="true"></i> Update Database</button>
+            <span class="up-reason" id="upDbReason"></span>
+        </div>
+    </section>
+
+    <!-- Checks -->
+    <section class="zx-card up-card">
+        <div class="zx-card__head"><h3 class="zx-card__title">Preflight checks</h3><span id="upChecksBadge"></span></div>
+        <div class="zx-card__body">
+            <details class="up-more" id="upChecksDetails" style="margin-top:0;">
+                <summary>Show all checks</summary>
+                <div class="zx-table-wrap zx-table-wrap--tall" style="margin-top:var(--zx-space-2);"><table class="zx-table up-prefl-table">
+                    <thead><tr><th style="width:2.5em;"><span class="zx-sr-only">Status</span></th><th>Check</th><th>Detail</th></tr></thead>
+                    <tbody id="upPreflight"><tr><td colspan="3">Loading...</td></tr></tbody>
+                </table></div>
+            </details>
+            <div class="up-checks-meta">Restart method: <b id="upMethod">-</b> &nbsp; Binary: <code id="upExe">-</code></div>
+        </div>
+    </section>
+
+    <!-- History and rollback -->
+    <section class="zx-card up-card">
+        <div class="zx-card__head"><h3 class="zx-card__title">History</h3></div>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--tall"><table class="zx-table up-hist-table">
+                <thead><tr><th>Time</th><th>Action</th><th>Version</th><th>Result</th><th>Detail</th></tr></thead>
+                <tbody id="upHistory"><tr><td colspan="5">No history</td></tr></tbody>
+            </table></div>
+            <div class="up-danger">
+                <div class="up-danger__text">
+                    <span class="up-danger__title">Roll back to the previous version</span>
+                    <span class="up-danger__desc">Restores the previous binary and restarts Zoraxy. Configuration is not reverted.</span>
+                    <span class="up-reason" id="upRbReason"></span>
                 </div>
+                <button type="button" class="zx-btn zx-btn--danger-outline" id="upRollbackBtn" onclick="window.upConfirm('rollback');"><i class="undo icon" aria-hidden="true"></i> Roll back</button>
             </div>
         </div>
-        <div style="margin-top:1em;">
-            <button class="ui basic button" id="upCheckBtn" onclick="window.upCheck(true);"><i class="refresh icon"></i> Check for updates</button>
-            <button class="ui primary button" id="upAppBtn" onclick="window.upConfirm('app');"><i class="download icon"></i> Update App</button>
-            <button class="ui orange button" id="upDbBtn" onclick="window.upConfirm('db');"><i class="database icon"></i> Update Database</button>
-            <button class="ui basic red button" id="upRollbackBtn" onclick="window.upConfirm('rollback');"><i class="undo icon"></i> Roll back</button>
-        </div>
-        <div id="upBtnReasons" style="margin-top:0.75em;"></div>
-        <div id="upRateLimit" class="ui warning message" style="display:none; margin-top:0.75em;"></div>
-        <details style="margin-top:1em;">
-            <summary>GitHub access token (optional)</summary>
-            <p style="margin:0.5em 0;">Release checks use the anonymous GitHub API (60 requests per hour per IP address). A token without any scopes raises that limit.
-                It is stored on this server with mode 0600, only sent to api.github.com and never shown again.</p>
-            <div class="ui action input">
-                <input type="password" id="upToken" autocomplete="off" placeholder="ghp_..." style="min-width:18em;">
-                <button class="ui basic button" onclick="window.upSetToken(false);">Save</button>
-                <button class="ui basic button" id="upTokenClear" onclick="window.upSetToken(true);">Remove</button>
-            </div>
-            <span id="upTokenState" style="margin-left:0.75em;"></span>
-        </details>
-    </div>
-
-    <!-- Preflight -->
-    <div class="ui basic segment">
-        <h3>Preflight checks</h3>
-        <div style="overflow-x:auto; max-width:100%;"><table class="ui unstackable basic celled table">
-            <thead><tr><th style="width:2.5em;"></th><th>Check</th><th>Detail</th></tr></thead>
-            <tbody id="upPreflight"><tr><td colspan="3">Loading...</td></tr></tbody>
-        </table></div>
-        <div style="color:grey; overflow-wrap:anywhere;">Restart method: <b id="upMethod">-</b> &nbsp; Binary: <code id="upExe">-</code></div>
-    </div>
-
-    <!-- Live log -->
-    <div class="ui basic segment" id="upLogWrap" style="display:none;">
-        <h3>Progress <span id="upStage" style="font-weight:normal; color:grey;"></span></h3>
-        <div class="ui indicating progress" id="upProgress" style="display:none;"><div class="bar"></div></div>
-        <pre id="upLog" style="max-height:20em; overflow:auto; background:#1b1c1d; color:#ddd; padding:0.75em; border-radius:4px; white-space:pre-wrap;"></pre>
-    </div>
-
-    <!-- History -->
-    <div class="ui basic segment">
-        <h3>History</h3>
-        <div style="overflow-x:auto; max-width:100%;"><table class="ui unstackable basic celled table">
-            <thead><tr><th>Time</th><th>Action</th><th>From</th><th>To</th><th>Result</th><th>Detail</th></tr></thead>
-            <tbody id="upHistory"><tr><td colspan="6">No history</td></tr></tbody>
-        </table></div>
-    </div>
+    </section>
 </div>
 
 <!-- Confirmation modal -->
@@ -135,8 +307,10 @@
 
 <script>
 (function(){
-    let state = { info: null, check: null, pollTimer: null, active: false, sawRunning: false };
+    let state = { info: null, check: null, checkErr: null, checking: false, status: null, pollTimer: null, active: false, sawRunning: false, checkedLocal: 0 };
 
+    function T(s){ return typeof window.t === "function" ? window.t(s) : s; }
+    function TF(s){ let a = Array.prototype.slice.call(arguments, 1); return T(s).replace(/\{(\d+)\}/g, function(m, n){ return a[+n] !== undefined ? a[+n] : m; }); }
     function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
     function errText(xhr){
         if (xhr && xhr.responseJSON && xhr.responseJSON.error) return xhr.responseJSON.error;
@@ -158,19 +332,85 @@
                 return;
             }
             if (inList){ out += "</ul>"; inList = false; }
-            if (h){ out += "<h4>" + inline(h[2]) + "</h4>"; }
+            if (h){ let tag = h[1].length <= 2 ? "h4" : "h5"; out += "<" + tag + ">" + inline(h[2]) + "</" + tag + ">"; }
             else if (line.trim() !== ""){ out += "<p>" + inline(line) + "</p>"; }
         });
         if (inList){ out += "</ul>"; }
         return out;
     }
     window.upRenderMarkdown = renderMarkdown; //exposed for tools/ui-smoke
-    function fmtTime(t){ return t && t.indexOf("0001-") != 0 ? new Date(t).toLocaleString() : "-"; }
+    function validTime(t){ return t && String(t).indexOf("0001-") != 0 && !isNaN(new Date(t).getTime()); }
+    function fmtTime(t){ return validTime(t) ? new Date(t).toLocaleString() : "-"; }
+    function fmtShort(t){ return validTime(t) ? new Date(t).toLocaleString(undefined, {dateStyle: "medium", timeStyle: "short"}) : "-"; }
+    function fmtAgo(t){
+        if (!validTime(t)) return "";
+        let s = (Date.now() - new Date(t).getTime()) / 1000;
+        if (s < 90) return T("just now");
+        if (s < 3600) return TF("{0} min ago", Math.round(s / 60));
+        if (s < 86400) return TF("{0} h ago", Math.round(s / 3600));
+        return TF("{0} d ago", Math.round(s / 86400));
+    }
     function fmtSize(n){ return n > 0 ? (n / 1048576).toFixed(1) + " MiB" : "-"; }
+    function curLabel(){ let c = state.info && state.info.current; return c ? (c.tag ? c.tag : "v" + c.version) : ""; }
+
+    // ---- status hero: one headline, one primary action; everything comes from state the page already has ----
+    function setHero(tone, icon, title, sub){
+        $("#upHero").attr("data-tone", tone);
+        $("#upHeroIcon").html('<i class="' + icon + ' icon"></i>');
+        $("#upHeadline").text(title);
+        $("#upSub").text(sub || "").toggle(!!sub);
+    }
+    function setNote(text){ $("#upReason").text(text || "").toggle(!!text); }
+    function setTech(text){ $("#upRateLimit").text(text || ""); $("#upErrDetail").toggle(!!text); }
+
+    function renderHero(){
+        let st = state.status, chk = state.check, p = state.info ? state.info.preflight : {}, running = state.active || (st && (st.state == "running" || st.state == "restarting"));
+        let canUpdate = !!(chk && chk.update_available);
+        let tag = chk && chk.latest ? chk.latest.tag : "";
+        setNote(""); setTech("");
+        $("#upAppBtnLabel").text(tag && canUpdate ? TF("Update to {0}", tag) : T("Update App"));
+        if (running){
+            let op = st && st.op || "app";
+            let title = st && st.state == "restarting" ? T("Restarting Zoraxy...") : op == "db" ? T("Running migrations") : op == "rollback" ? T("Rolling back") : (tag ? TF("Updating to {0}", tag) : T("Updating Zoraxy"));
+            setHero("info", "circle notch loading", title, T("Keep this page open. The admin page may be unavailable for a few seconds while Zoraxy restarts."));
+        }else if (st && st.state == "failed"){
+            let op = st.op || "app";
+            setHero("danger", "times circle", op == "db" ? T("Migration failed") : op == "rollback" ? T("Rollback failed") : T("Update failed"),
+                TF("Zoraxy is still running {0}. Open Technical details and the technical log to see what happened.", curLabel() || "its current version"));
+            setTech(st.error || "");
+        }else if (p && p.pending_confirmation){
+            setHero("warn", "hourglass half", T("Checking the new version"), T("The update is installed and Zoraxy is waiting for it to confirm it is healthy. If it does not within 90 seconds, the previous version is restored automatically."));
+        }else if (state.checkErr){
+            setHero(state.checkErr.code == 429 ? "warn" : "danger", "exclamation triangle", T("Could not check for updates"), state.checkErr.friendly);
+            setTech(state.checkErr.tech);
+        }else if (state.checking && !chk){
+            setHero("neutral", "circle notch loading", T("Checking for updates..."), "");
+        }else if (!chk){
+            setHero("neutral", "question circle outline", T("Not checked yet"), T("Press Check for updates to look for a new release."));
+        }else{
+            let ago = fmtAgo(chk.checked_at) || (state.checkedLocal ? fmtAgo(new Date(state.checkedLocal).toISOString()) : "");
+            let seen = ago ? " " + TF("Last checked {0}.", ago) : "";
+            if (canUpdate){
+                setHero("info", "download", TF("Update available: {0}", tag),
+                    TF("You are running {0}.", curLabel() || "this version") + seen);
+            }else if (/^You are running the latest/.test(chk.reason || "") || !chk.reason){
+                setHero("ok", "check circle", T("You are up to date"), TF("You are running {0}.", curLabel() || "the latest release") + seen);
+            }else if (/older than the running build/.test(chk.reason)){
+                setHero("ok", "check circle", T("No newer release on this channel"), TF("You are running {0}.", curLabel() || "this version") + seen);
+                setNote(chk.reason);
+            }else{
+                setHero("warn", "exclamation triangle", T("Update not available"), TF("You are running {0}.", curLabel() || "this version") + seen);
+                setNote(chk.reason);
+            }
+        }
+        $("#upAppBtn").toggle(canUpdate && !running);
+        $("#upCheckBtn").toggle(!running);
+        $("#upActions").toggle(!running);
+    }
 
     function renderInfo(info){
         state.info = info;
-        let s = info.settings, p = info.preflight, c = info.current;
+        let s = info.settings || {}, p = info.preflight || {}, c = info.current || {};
         $("#upChannel").val(s.channel);
         $("#upChannelLabel").text(s.channel);
         $("#upBackup").prop("checked", s.backup_first);
@@ -180,58 +420,69 @@
         $("#upCurrent").text(c.tag ? c.tag : "v" + c.version);
         $("#upCurrentDetail").text(c.known ? "Installed by the updater, published " + fmtTime(c.published) :
             "Base version " + c.version + " (build date unknown: not installed by the updater yet)");
-        $("#upMethod").text(p.restart_method);
+        $("#upMethod").text(p.restart_method || "-");
         $("#upExe").text(p.executable || "unknown");
-        let rows = "";
+        let rows = "", bad = 0, warn = 0;
         (p.checks || []).forEach(function(ch){
-            let icon = ch.status == "ok" ? '<i class="green check circle icon"></i>' :
-                ch.status == "warn" ? '<i class="yellow exclamation triangle icon"></i>' : '<i class="red times circle icon"></i>';
+            let icon = ch.status == "ok" ? '<i class="check circle icon up-ico-ok"></i><span class="zx-sr-only">' + esc(T("OK")) + '</span>' :
+                ch.status == "warn" ? '<i class="exclamation triangle icon up-ico-warn"></i><span class="zx-sr-only">' + esc(T("Warning")) + '</span>' : '<i class="times circle icon up-ico-bad"></i><span class="zx-sr-only">' + esc(T("Failed")) + '</span>';
+            if (ch.status == "warn") warn++; else if (ch.status != "ok") bad++;
             rows += "<tr><td>" + icon + "</td><td>" + esc(ch.label) + "</td><td>" + esc(ch.detail) + "</td></tr>";
         });
         $("#upPreflight").html(rows || "<tr><td colspan='3'>No checks</td></tr>");
+        let n = (p.checks || []).length;
+        $("#upChecksBadge").html(!n ? "" : bad ? '<span class="zx-badge zx-badge--danger"><i class="times circle icon"></i>' + esc(TF("{0} failed", bad)) + '</span>' :
+            warn ? '<span class="zx-badge zx-badge--warn"><i class="exclamation triangle icon"></i>' + esc(TF("{0} to review", warn)) + '</span>' :
+            '<span class="zx-badge zx-badge--ok"><i class="check circle icon"></i>' + esc(T("All passed")) + '</span>');
+        if (bad || warn) $("#upChecksDetails").attr("open", "");
+        // the last operation of this process (e.g. a failed update) stays visible after a reload of the page
+        if (info.status && !state.active){
+            state.status = info.status;
+            if (info.status.state != "idle") renderStatus(info.status);
+        }
         updateButtons();
     }
 
     function setBtn(sel, reason){
         let $b = $(sel);
-        $b.toggleClass("disabled", !!reason).attr("title", reason || "");
+        $b.toggleClass("disabled", !!reason).attr("title", reason || "").attr("aria-disabled", reason ? "true" : "false");
         return reason ? reason : null;
     }
 
     function updateButtons(){
         let info = state.info;
         if (!info) return;
-        let p = info.preflight, busy = state.active || p.busy;
-        let reasons = [];
+        let p = info.preflight || {}, busy = state.active || p.busy;
         let appReason = busy ? "An update operation is running." : (p.app_blocked ||
             (!state.check ? "Press \"Check for updates\" first." : (!state.check.update_available ? (state.check.reason || "No update available.") : "")));
-        let r;
-        if ((r = setBtn("#upAppBtn", appReason))) reasons.push("Update App: " + r);
-        if ((r = setBtn("#upDbBtn", busy ? "An update operation is running." : p.db_blocked))) reasons.push("Update Database: " + r);
+        let r, appR = "", dbR = "", rbR = "";
+        if ((r = setBtn("#upAppBtn", appReason))) appR = r;
+        if ((r = setBtn("#upDbBtn", busy ? "An update operation is running." : p.db_blocked))) dbR = r;
         let rbReason = busy ? "An update operation is running." : (p.restart_method == "docker" ? "Disabled in Docker." :
             (p.pending_confirmation ? "An update is awaiting health confirmation; it rolls back automatically." :
             (!p.rollback_available ? "There is no previous binary to roll back to." : "")));
-        if ((r = setBtn("#upRollbackBtn", rbReason))) reasons.push("Roll back: " + r);
+        if ((r = setBtn("#upRollbackBtn", rbReason))) rbR = r;
         setBtn("#upCheckBtn", busy ? "An update operation is running." : "");
         $("#upChannel").prop("disabled", busy);
-        $("#upBtnReasons").html(reasons.length ? esc(t("Not available right now:")) + "<br>" + reasons.map(esc).join("<br>") : "");
+        // only reasons that matter for what is on screen: why the update cannot be installed, and why the other actions are off
+        $("#upBtnReasons").text(state.check && state.check.update_available && appR && !busy ? appR : "");
+        $("#upDbReason").text(dbR);
+        $("#upRbReason").text(rbR);
+        renderHero();
     }
 
     function renderCheck(res){
-        state.check = res;
+        state.check = res; state.checkErr = null; state.checkedLocal = Date.now();
         if (window.parent && window.parent.ZxTopbar) { window.parent.ZxTopbar.setUpdate(res); } else if (window.ZxTopbar) { window.ZxTopbar.setUpdate(res); }
         let l = res.latest;
         $("#upLatest").text(l ? l.tag : "none");
         $("#upLatestDetail").text(l ? ("Published " + fmtTime(l.published) + ((l.early_access || l.prerelease) ? " (early access / pre-release)" : "") +
             ", " + res.asset_name + " " + fmtSize(res.asset_size)) : "");
-        let $r = $("#upReason");
-        if (res.update_available){
-            $r.attr("class", "ui small positive message").text("An update is available.").show();
-        }else{
-            $r.attr("class", "ui small message").text(res.reason || "No update available.").show();
-        }
         if (l && l.notes){
             $("#upNotes").html(renderMarkdown(l.notes));
+            $("#upNotesTitle").text(res.update_available ? TF("What is new in {0}", l.tag) : TF("Release notes for {0}", l.tag));
+            // open for an available update (that is what you decide on), collapsed when there is nothing to decide
+            if (res.update_available) $("#upNotesWrap").attr("open", ""); else $("#upNotesWrap").removeAttr("open");
             $("#upNotesWrap").show();
         }else{
             $("#upNotesWrap").hide();
@@ -239,30 +490,63 @@
         updateButtons();
     }
 
+    // Plain steps for the stages the backend already reports (Preflight / Backing up, Downloading signature files, Downloading <asset>, Smoke test / Installing, Restarting).
+    function stepsFor(st){
+        let op = st.op || "app", s = (st.stage || "").toLowerCase(), rs = st.state == "restarting";
+        if (op == "db") return {labels: [T("Back up"), T("Migrate")], idx: s.indexOf("running migrations") == 0 ? 1 : 0};
+        if (op == "rollback") return {labels: [T("Roll back"), T("Restart")], idx: rs || s.indexOf("restart") == 0 ? 1 : 0};
+        let idx = 0;
+        if (rs || s.indexOf("restart") == 0) idx = 4;
+        else if (s == "installing" || s == "smoke test") idx = 3;
+        else if (s.indexOf("downloading signature") == 0) idx = 1;
+        else if (s.indexOf("downloading ") == 0) idx = 2;
+        let backup = !state.info || !state.info.settings || state.info.settings.backup_first;
+        return {labels: [backup ? T("Back up") : T("Prepare"), T("Verify signature"), T("Download"), T("Install"), T("Restart")], idx: idx};
+    }
+    function renderSteps(st){
+        let sf = stepsFor(st), failed = st.state == "failed", done = st.state == "done", html = "";
+        sf.labels.forEach(function(lb, i){
+            let cls = done || i < sf.idx ? "is-done" : i == sf.idx ? (failed ? "is-failed" : "is-current") : "";
+            let dot = cls == "is-done" ? '<i class="check icon"></i>' : cls == "is-failed" ? '<i class="times icon"></i>' : String(i + 1);
+            let sr = cls == "is-done" ? T("done") : cls == "is-failed" ? T("failed") : cls == "is-current" ? T("in progress") : T("waiting");
+            html += '<li class="up-step ' + cls + '"' + (cls == "is-current" ? ' aria-current="step"' : '') + '><span class="up-step__dot" aria-hidden="true">' + dot + '</span>' + esc(lb) + '<span class="zx-sr-only"> (' + esc(sr) + ')</span></li>';
+        });
+        $("#upSteps").html(html);
+    }
+
     function renderStatus(st){
         if (!st || st.state == "idle" && !state.active) return;
+        state.status = st;
         $("#upLogWrap").show();
-        $("#upStage").text(st.stage ? "- " + st.stage + " (" + st.state + ")" : "");
+        $("#upStage").text(st.stage ? "- " + st.stage + (st.state == "running" ? "" : " (" + st.state + ")") : "");
+        renderSteps(st);
         let lines = (st.log || []).map(function(l){ return new Date(l.time).toLocaleTimeString() + "  " + l.text; });
         if (st.error) lines.push("ERROR: " + st.error);
         let el = document.getElementById("upLog");
         let atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
         $("#upLog").text(lines.join("\n"));
         if (atBottom) el.scrollTop = el.scrollHeight;
+        if (st.state == "failed") $("#upLogDetails").attr("open", "");
         if (st.total > 0 && st.state == "running" && st.stage && st.stage.indexOf("Downloading ") == 0 && st.stage.indexOf("signature") < 0){
             $("#upProgress").show().progress({percent: Math.floor(st.done * 100 / st.total)});
+            $("#upProgressText").text(TF("{0} of {1} downloaded", (st.done / 1048576).toFixed(1) + " MiB", (st.total / 1048576).toFixed(1) + " MiB"));
         }else{
-            $("#upProgress").hide();
+            $("#upProgress").hide(); $("#upProgressText").text("");
         }
+        renderHero();
     }
 
+    var HIST_ACTION = {app_update: "App update", db_update: "Database update", rollback: "Rollback", auto_rollback: "Automatic rollback"};
+    var HIST_RESULT = {success: ["ok", "Success"], installed: ["ok", "Installed"], failed: ["danger", "Failed"], rolled_back: ["warn", "Rolled back"]};
     function loadHistory(){
         $.get("./api/updater/history", function(data){
-            if (!data || !data.length){ $("#upHistory").html("<tr><td colspan='6'>No history</td></tr>"); return; }
+            if (!data || !data.length){ $("#upHistory").html("<tr><td colspan='5'>" + esc(T("No updates installed yet")) + "</td></tr>"); return; }
             let rows = "";
             data.forEach(function(h){
-                rows += "<tr><td>" + esc(fmtTime(h.time)) + "</td><td>" + esc(h.action) + "</td><td>" + esc(h.from) + "</td><td>" +
-                    esc(h.to) + "</td><td>" + esc(h.result) + "</td><td>" + esc(h.detail) + "</td></tr>";
+                let rs = HIST_RESULT[h.result], badge = '<span class="zx-badge' + (rs ? " zx-badge--" + rs[0] : "") + '">' + esc(rs ? T(rs[1]) : h.result) + '</span>';
+                let ver = h.from || h.to ? esc(h.from || "?") + " &rarr; " + esc(h.to || "?") : "";
+                rows += "<tr><td class='up-hist-when' title='" + esc(fmtTime(h.time)) + "'>" + esc(fmtShort(h.time)) + "</td><td class='up-hist-what'>" + esc(HIST_ACTION[h.action] ? T(HIST_ACTION[h.action]) : h.action) +
+                    "</td><td class='up-hist-ver'>" + ver + "</td><td>" + badge + "</td><td class='up-hist-detail'>" + esc(h.detail) + "</td></tr>";
             });
             $("#upHistory").html(rows);
         });
@@ -276,22 +560,26 @@
     }
 
     window.upCheck = function(force){
-        $("#upCheckBtn").addClass("loading");
+        $("#upCheckBtn").addClass("loading is-loading");
+        state.checking = true; renderHero();
         $.get("./api/updater/check" + (force ? "?force=true" : ""), function(data){
             renderCheck(data.result);
             if (state.info) { state.info.preflight = data.preflight; renderInfo(state.info); }
-            $("#upRateLimit").hide();
         }).fail(function(xhr){
-            if (xhr.status == 429) { $("#upRateLimit").text(errText(xhr)).show(); }
+            let rate = xhr.status == 429;
+            state.checkErr = {code: xhr.status, tech: errText(xhr),
+                friendly: rate ? T("GitHub is limiting requests from this address. Try again later, or add a GitHub token under Settings to raise the limit.") :
+                    T("Zoraxy could not get the release list from GitHub. Check that this server can reach github.com, then try again.")};
+            renderHero();
             msgbox(errText(xhr), false, 6000);
-        }).always(function(){ $("#upCheckBtn").removeClass("loading"); });
+        }).always(function(){ state.checking = false; $("#upCheckBtn").removeClass("loading is-loading"); });
     };
 
     window.upSetToken = function(clear){
         let tok = clear ? "" : $("#upToken").val();
         $.cjax({method: "POST", url: "./api/updater/setToken", data: {token: tok}, success: function(){
             $("#upToken").val("");
-            $("#upRateLimit").hide();
+            state.checkErr = null; renderHero();
             msgbox(clear ? "GitHub token removed" : "GitHub token saved", true);
             loadInfo();
         }, error: function(xhr){ msgbox(errText(xhr), false); }});
@@ -299,8 +587,8 @@
 
     window.upSetChannel = function(ch){
         $.cjax({method: "POST", url: "./api/updater/setChannel", data: {channel: ch}, success: function(){
-            state.check = null;
-            $("#upLatest").text("Not checked yet"); $("#upLatestDetail").text(""); $("#upNotesWrap").hide(); $("#upReason").hide();
+            state.check = null; state.checkErr = null;
+            $("#upLatest").text("Not checked yet"); $("#upLatestDetail").text(""); $("#upNotesWrap").hide();
             loadInfo(function(){ window.upCheck(true); });
         }, error: function(xhr){ msgbox(errText(xhr), false); loadInfo(); }});
     };
@@ -344,7 +632,8 @@
         let data = kind == "rollback" ? {confirm: "true"} : {action: kind, backup: backup ? "true" : "false", confirm: "true"};
         $.cjax({method: "POST", url: url, data: data, success: function(){
             state.active = true; state.sawRunning = false;
-            $("#upLog").text(""); $("#upLogWrap").show();
+            state.status = {state: "running", op: kind, stage: "Preflight checks", log: []};
+            $("#upLog").text(""); $("#upLogWrap").show(); renderSteps(state.status);
             updateButtons();
             poll();
         }, error: function(xhr){ msgbox(errText(xhr), false, 6000); }});
@@ -364,6 +653,7 @@
         }, error: function(){
             // server is restarting: keep trying
             $("#upStage").text("- waiting for Zoraxy to restart...");
+            if (state.status && (state.status.op || "app") == "app") renderSteps({op: "app", state: "restarting", stage: "Restarting"});
             state.pollTimer = setTimeout(poll, 1500);
         }});
     }
