@@ -24,10 +24,10 @@
     #visitorsPage .vToolbar{
         display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; margin: 0.8em 0;
     }
-    #visitorsPage .vToolbar .ui.input{ flex: 1 1 20em; min-width: 10em; }
+    #visitorsPage .vToolbar .ui.input{ flex: 1 1 14em; min-width: 10em; }
     #visitorsPage .vToolbar select{
         padding: 0.55em 0.6em; border-radius: 0.3em; border: 1px solid var(--divider_color);
-        background: var(--theme_bg_primary); color: var(--text_color); max-width: 13em;
+        background: var(--theme_bg_primary); color: var(--text_color); max-width: 13em; min-height: 2.6em; font: inherit;
     }
     #visitorsPage .vTableWrap{ overflow-x: auto; }
     #visitorsPage table.vTable{ width: 100%; border-collapse: collapse; font-size: 0.92em; }
@@ -63,9 +63,19 @@
     @media (prefers-reduced-motion: reduce){ #visitorsPage .vSkel td > div{ animation: none; } }
     #visitorsPage .vPrivacy{ font-size: 0.9em; }
     #visitorsPage .vTabs .item{ cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
-    #visitorsPage .vTabs{ overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; }
+    #visitorsPage .vTabs{ overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; scrollbar-width: thin;
+        /* soft edge: there are more tabs on that side */
+        background: linear-gradient(to right, var(--theme_bg_primary) 30%, transparent) left center / 2em 100% no-repeat local, linear-gradient(to left, var(--theme_bg_primary) 30%, transparent) right center / 2em 100% no-repeat local,
+            linear-gradient(to right, rgba(0,0,0,.22), transparent) left center / .9em 100% no-repeat scroll, linear-gradient(to left, rgba(0,0,0,.22), transparent) right center / .9em 100% no-repeat scroll; }
     #visitorsPage table.vTable td[colspan]{ white-space: normal; }
     @media (max-width: 748px){
+        #visitorsPage .vKpis > .vKpi:last-child:nth-child(odd){ grid-column: 1 / -1; }   /* no orphan tile */
+        #visitorsPage .vToolbar select{ flex: 1 1 calc(50% - .5em); max-width: none; min-width: 0; }
+        #visitorsPage .vToolbar > span[style]{ display: none; }
+        #visitorsPage .vToolbar > .button{ flex: 1 1 auto; margin: 0; }
+        #visitorsPage .vPager{ flex-wrap: nowrap; gap: .4em; }
+        #visitorsPage .vPager .button{ padding-left: .7em; padding-right: .7em; margin: 0; white-space: nowrap; }
+        #visitorsPage .vPager #vPageInfo{ flex: 1 1 auto; text-align: center; min-width: 0; }
         /* the wide table scrolls sideways: keep the empty / error message inside the visible part */
         #visitorsPage .vTableWrap .vEmpty{ position: sticky; left: 0; max-width: min(100%, 20em); margin: 0; box-sizing: border-box; }
     }

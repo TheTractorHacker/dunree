@@ -62,7 +62,7 @@ body{
 
 .contentWindow{
     display: inline-block;
-    width: calc(100% - 244px);
+    width: calc(100% - 240px - 1em);   /* sidebar + the right gutter: the panel ends where the top bar buttons end */
     vertical-align: top;
     background-color: var(--theme_bg_primary);
     border-radius: 1em;
@@ -116,7 +116,28 @@ body{
     margin-top: -0.2em;
 }
 
+/* a wide table in a sideways scrolling box: soft edges show that there is more, and with the modifier zx-scrollx--sticky-last the last (Actions) column also stays reachable on phones (opt-in per table) */
+.zx-scrollx {
+    width: 100%;
+    overflow-x: auto;
+    background: linear-gradient(to right, var(--zx-surface, #fff) 30%, transparent) left center / 2em 100% no-repeat local,
+        linear-gradient(to left, var(--zx-surface, #fff) 30%, transparent) right center / 2em 100% no-repeat local,
+        linear-gradient(to right, rgba(0,0,0,.22), transparent) left center / .9em 100% no-repeat scroll,
+        linear-gradient(to left, rgba(0,0,0,.22), transparent) right center / .9em 100% no-repeat scroll;
+}
+@media screen and (max-width: 748px) {
+    .zx-scrollx.zx-scrollx--sticky-last table th:last-child, .zx-scrollx.zx-scrollx--sticky-last table td:last-child {
+        position: sticky; right: 0; background: var(--zx-surface, #fff) !important; box-shadow: -8px 0 8px -8px rgba(0,0,0,.3);
+    }
+}
+
 /* Standard containers */
+/* pages that wrap their header and content in a basic segment: no second side inset (title and cards line up with the pages that use the page header) */
+.standardContainer > .ui.basic.segment:first-child{
+    padding-left: 0;
+    padding-right: 0;
+}
+
 .standardContainer{
     position: relative;
 }
@@ -623,10 +644,12 @@ body.darkTheme .menudivider{
 */
 
 #currentVirtualDirectoryAttachingHost{
-    background: var(--theme_background); 
-    color: white;
-    border-radius: 1em;
-    font-weight: bolder;
+    background: var(--zx-surface-2, #f3f4f6);
+    color: var(--zx-text, #1c2027);
+    border: 1px solid var(--zx-border, #d9dde3);
+    border-left: 4px solid var(--zx-primary, #2563eb);
+    border-radius: .6em;
+    font-weight: 600;
 }
 
 .section.disabled{
@@ -661,6 +684,7 @@ body.darkTheme .menudivider{
 */
 
 .streamproxConfig td:first-child{
+    white-space: nowrap;
     position: relative;
 }
 
@@ -669,13 +693,13 @@ body.darkTheme .menudivider{
 }
 
 .streamproxConfig.stopped td:first-child{
-    border-left: 0.6em solid #1b1b1b !important;
+    border-left: 0.6em solid var(--zx-border-strong, #b5b5b5) !important;   /* neutral: a stopped rule is not an error */
 }
 
 .streamproxConfig td:first-child .statusText{
-    position: absolute;
-    bottom: 0.1em;
-    right: 0.2em;
+    position: static;
+    display: block;
+    margin-top: 0.2em;
     font-size: 0.9em;
     color: var(--zx-text-muted, #545b66); /* was pale grey on white (1.3:1) */
     opacity: 1;
@@ -899,8 +923,10 @@ body.darkTheme .menudivider{
 
 #traceroute_results{
     resize: none; 
-    background-color: #202020; 
-    color: white;
+    background-color: var(--zx-surface-2, #f3f4f6);   /* follows the theme instead of a black block in the light theme (audit ST-09) */
+    color: var(--zx-text, #1c2027);
+    font-family: var(--zx-font-mono, monospace);
+    border: 1px solid var(--zx-border, #d9dde3);
 }
 
 #traceroute_results::selection {
@@ -1064,6 +1090,20 @@ body.darkTheme .menudivider{
     scrollbar-width: thin;
 }
 #secTabs.ui.tabular.menu .item { flex-shrink: 0; white-space: nowrap; }
+/* tab strips that scroll sideways (Security Center, and the strips that carry the zx-tabscroll class: Utilities, Network Tools): a soft edge shows that there is more on that side (same cue as the WAF tabs) */
+#secTabs.ui.tabular.menu,
+.ui.tabular.menu.zx-tabscroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    scrollbar-width: thin;
+    background: linear-gradient(to right, var(--zx-surface, #fff) 30%, transparent) left center / 2em 100% no-repeat local,
+        linear-gradient(to left, var(--zx-surface, #fff) 30%, transparent) right center / 2em 100% no-repeat local,
+        linear-gradient(to right, rgba(0,0,0,.22), transparent) left center / .9em 100% no-repeat scroll,
+        linear-gradient(to left, rgba(0,0,0,.22), transparent) right center / .9em 100% no-repeat scroll;
+}
+.ui.tabular.menu.zx-tabscroll .item { flex-shrink: 0; white-space: nowrap; }
 /* Fomantic hides every .warning.message inside a .ui.form until the form itself is in its warning state: the notes built
    by Deployment and Network exposure are meant to show as soon as they exist */
 #drForm .ui.warning.message, #dgForm .ui.warning.message { display: block; }
@@ -1249,3 +1289,47 @@ html { scroll-padding-top: 5.5rem; }
 body > .ui.container[style*="color: grey"], .ui.container[style*="color: grey"] { color: var(--zx-text-muted) !important; }
 body.darkTheme .ui.basic.red.button, body.darkTheme .ui.basic.red.buttons .button { color: var(--zx-danger-text) !important; box-shadow: 0 0 0 1px var(--zx-danger-line) inset !important; }
 .ui.progress .bar > .progress { color: var(--zx-text) !important; }
+
+/* ---- fix2 sweep ---- */
+@media screen and (min-width: 750px) {
+    /* footer text lines up with the page content (it was centred in a narrower .ui.container) */
+    .ui.container.zx-footer-text { margin-left: 240px !important; margin-right: 1em !important; width: auto !important; padding-left: 33.6px; box-sizing: border-box; }
+}
+/* Network Tools: section headings in proportion to the page, columns line up with the sections above and below (audit ST-09, ST-10) */
+.nettoolstab h2 { font-size: 1.45em; margin: 0 0 .3em; }
+.nettoolstab .ui.stackable.grid { margin-left: 0; margin-right: 0; }
+.nettoolstab .ui.stackable.grid > .column:first-child { padding-left: 0 !important; }
+@media screen and (max-width: 748px) {
+    .nettoolstab h2 { font-size: 1.25em; }
+    .nettoolstab .ui.stackable.grid > .column { padding-left: 0 !important; padding-right: 0 !important; }
+}
+/* inline code in running text: not larger than the body text (audit ST-15) */
+.standardContainer p code, .standardContainer li code, .standardContainer label code, .standardContainer .zx-help code { font-size: .9em; }
+/* a select in a form row fills its field, so it does not butt against the next input (ST-15) */
+.ui.form .field > select { width: 100%; box-sizing: border-box; }
+/* disabled buttons stay readable */
+.standardContainer .ui.button.disabled, .standardContainer .ui.disabled.button { opacity: .6; }
+/* help text in the pages: the browser default for <small> is about 11px, too small for explanations (audit ST-17) */
+.standardContainer small, .standardContainer small code { font-size: var(--zx-fs-sm); line-height: 1.4; overflow-wrap: anywhere; }
+#aiPage .ui.progress { margin: .4em 0 .5em; }
+#aiPage .ui.progress .bar { min-height: .6em; }
+/* table row actions stay on one line on wide screens (Fallback + refresh + delete were stacked in two rows, audit CE-01) */
+@media screen and (min-width: 749px) {
+    .zx-table td.zx-actions .zx-row-actions { flex-wrap: nowrap; white-space: nowrap; }
+}
+/* every checked toggle uses the same colour (ACME toggles were Fomantic blue, others green; audit AC-01) */
+.ui.toggle.checkbox input:checked ~ label::before,
+.ui.toggle.checkbox input:focus:checked ~ label::before { background-color: var(--buttom_toggle_active, #21ba45) !important; }
+/* Auto-ban detectors on a phone: one compact card per detector (name, then the three controls in one row; audit ST-14) */
+@media (max-width: 480px) {
+    .zx-table.zx-table--det tr { display: grid; grid-template-columns: auto 1fr 1fr; grid-template-areas: "ev ev ev" "en n t"; column-gap: var(--zx-space-3); padding: 4px 0 8px; }
+    .zx-table.zx-table--det td { width: auto; flex-direction: column; align-items: flex-start; justify-content: flex-start; text-align: left; gap: 2px; padding: 4px 12px; }
+    .zx-table.zx-table--det td::before { flex: none; }
+    .zx-table.zx-table--det td[data-label="Event"] { grid-area: ev; flex-direction: row; font-weight: 600; }
+    .zx-table.zx-table--det td[data-label="Event"]::before { content: none; }
+    .zx-table.zx-table--det td[data-label="Enabled"] { grid-area: en; }
+    .zx-table.zx-table--det td[data-label="Events (N)"] { grid-area: n; }
+    .zx-table.zx-table--det td[data-label="Within seconds (T)"] { grid-area: t; }
+    .zx-table.zx-table--det td input[type=number] { width: 100% !important; }
+    .zx-table.zx-table--det td input[type=checkbox] { width: 1.3em; height: 1.3em; margin: .3em 0; }
+}

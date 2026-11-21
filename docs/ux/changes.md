@@ -414,3 +414,7 @@ The decision is stored once in `sys.db` (`settings/baseline`): `{decision, decid
 * The configuration history does not label the baseline route; the change shows as the individual settings (deployment settings, header default) when the history picks them up. Undo is the baseline's own way back.
 * A fresh start that crashed before the decision was stored is treated as existing on the next start (conservative).
 * Checked in a throwaway instance with a headless browser at 1366 and 390 px, light and dark (no horizontal overflow, no console errors). The full UI smoke was not run here.
+
+## CrowdSec setup helper (Security Center > CrowdSec)
+
+A collapsible **Set up CrowdSec** panel at the top of the tab (open until a LAPI address is saved, closed afterwards): plain 3-step explanation, copy buttons for the Debian/Ubuntu install, the Docker compose file, `cscli bouncers add zoraxy-$(hostname)`, the acquisition file for `zr_*.log` and the test/restart command, notes (one key per instance, address reachable from Zoraxy), documentation links in the footer. Zoraxy installs nothing. No backend change, no new endpoint (viewer access unchanged). The "Detect local CrowdSec" button was skipped: no unauthenticated health path is documented. Checked on a throwaway instance (light/dark, 1366 and 390 px, no horizontal overflow, no page errors, copy to clipboard verified, panel open when empty and closed when an address is saved). Commands come from docs.crowdsec.net and were not run against a real CrowdSec.

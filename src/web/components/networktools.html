@@ -8,7 +8,7 @@
     </header>
 
 
-    <div class="ui top attached tabular menu">
+    <div class="ui top attached tabular menu zx-tabscroll">
         <a class="nettools item active bluefont" data-tab="tab1">Discovery &amp; Lookup</a>
         <a class="nettools item bluefont" data-tab="tab2">Connection</a>
         <a class="nettools item bluefont" data-tab="tab3">Diagnostics</a>
@@ -20,20 +20,20 @@
         <!-- MDNS Scanner-->
         <h2>Multicast DNS (mDNS) Scanner</h2>
         <p>Discover mDNS enabled service in this gateway forwarded network</p>
-        <button class="ui basic larger circular button" onclick="launchToolWithSize('./tools/mdns.html',1000, 640);">View Discovery</button>
+        <button class="ui basic button" onclick="launchToolWithSize('./tools/mdns.html',1000, 640);">View Discovery</button>
         <div class="ui divider"></div>
         <div class="ui stackable grid">
             <div class="eight wide column">
                  <!-- IP Scanner-->
                 <h2>IP Scanner</h2>
                 <p>Discover local area network devices by pinging them one by one</p>
-                <button class="ui basic larger circular button" onclick="launchToolWithSize('./tools/ipscan.html',1000, 640);">Start Scanner</button>
+                <button class="ui basic button" onclick="launchToolWithSize('./tools/ipscan.html',1000, 640);">Start Scanner</button>
             </div>  
             <div class="eight wide column">
                  <!-- Port Scanner-->
                 <h2>Port Scanner</h2>
                 <p>Scan for open ports on a given IP address</p>
-                <button class="ui basic larger circular button" onclick="launchToolWithSize('./tools/portscan.html',1000, 640);">Start Scanner</button>
+                <button class="ui basic button" onclick="launchToolWithSize('./tools/portscan.html',1000, 640);">Start Scanner</button>
             </div>
         </div>  
        

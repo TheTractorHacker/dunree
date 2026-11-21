@@ -9,6 +9,11 @@
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
         <style>
+            html, body, body.darkTheme{ background: var(--theme_bg_primary, #fff) !important; }
+            .ui.container{ width: auto !important; max-width: none !important; margin: 0 !important; }
+            .accessRule.ui.segment{ padding: 0.8em 1em !important; margin: 0 0 0.6em !important; }
+            .accessRule p{ margin: 0.4em 0 0; }
+            .accessRule p:last-child{ margin-bottom: 0; }
             .accessRule{
                 cursor: pointer;
                 border-radius: 0.4em !important;
@@ -34,16 +39,15 @@
             }
 
             #accessRuleList{
-                padding: 0.6em;
+                padding: 0;
                 /* border: 1px solid rgb(228, 228, 228); */
                 border-radius: 0.4em !important;
-                max-height: calc(100vh - 15em);
-                min-height: 300px;
+                max-height: 28em;
                 overflow-y: auto;
             }
 
             body.darkTheme #accessRuleList{
-                border: 1px solid rgb(50, 50, 50) !important;
+                border: 0 !important;
 
             }
 
@@ -63,7 +67,6 @@
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
-        <br>
         <div class="ui container">
             <p>Select an access rule to apply blacklist / whitelist filtering</p>
             <div id="accessRuleList">
@@ -77,9 +80,7 @@
                     </div>
                 </div>
             </div>
-            <br>
             <!-- <button class="ui basic button" onclick="applyChange()"><i class="ui green check icon"></i> Apply Change</button> -->
-            <br><br><br>
 
         </div>
         <script>

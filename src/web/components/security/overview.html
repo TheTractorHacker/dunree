@@ -2,7 +2,7 @@
 <style>
     #ovPage .ov-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
     #ovPage .ov-bar h3 { margin: 0; flex: 1 1 12rem; }
-    #ovPage .ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); align-items: start; }
+    #ovPage .ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); align-items: stretch; }
     #ovPage .ov-card { margin: 0; min-width: 0; }
     #ovPage .ov-card.wide { grid-column: 1 / -1; }
     #ovPage .zx-card__head { padding: var(--zx-space-3) var(--zx-space-3) 0; }
@@ -48,6 +48,16 @@
     .bl-prev li:first-child { border-top: 0; }
     .bl-prev .bl-vals { display: block; margin-top: 2px; }
     .bl-prev .bl-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
+    @media (max-width: 748px) {
+        #secPane.ui.segment { padding-left: .6em; padding-right: .6em; }
+        #ovPage .zx-card__head { padding: var(--zx-space-2) var(--zx-space-2) 0; }
+        #ovPage .zx-card__body { padding: var(--zx-space-2); }
+        #ovPage .ov-warn .grow { flex: 1 1 10rem; }
+        /* chip left, text and the fix link in one column to its right (the link used to drop to the left edge) */
+        #ovPage .ov-list li.ov-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; column-gap: var(--zx-space-2); }
+        #ovPage .ov-warn > :nth-child(n+3) { grid-column: 2; }
+        #ovPage .ov-warn > :first-child { grid-row: 1; }
+    }
     @media (max-width: 748px) { #ovPage .bl-list li { grid-template-columns: minmax(0, 1fr); } }
     @media (prefers-reduced-motion: reduce) { #ovPage .ov-skel > div { animation: none; } }
     @media (max-width: 748px), (pointer: coarse) { #ovPage .ov-go { display: inline-block; min-height: 32px; line-height: 32px; } }

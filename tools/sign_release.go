@@ -6,7 +6,8 @@
 // Modes:
 //
 //	sign    (default)  go run tools/sign_release.go -dist DIR -key PRIVATE.pem -tag vX.Y.Z[-topic.N] -build N [-pub PUBLIC.pem]
-//	        Writes DIR/SHA256SUMS (sha256sum format, over every zoraxy_* file in DIR,
+//	        Writes DIR/SHA256SUMS (sha256sum format, over every zoraxy_* file in DIR
+//	        plus the fixed extra assets listed in extraAssets when present,
 //	        preceded by the signed header line
 //	        "# zoraxy-release tag=<tag> build=<n> upstream=<X.Y.Z>" that binds the
 //	        release tag and a monotonically increasing build number so an old signed
@@ -39,6 +40,11 @@ import (
 	"sort"
 	"strings"
 )
+
+// extraAssets are non-binary release files that are signed along with the
+// binaries (CrowdSec setup helpers). The in-app updater only looks up the line
+// of its own binary, so extra lines do not affect it.
+var extraAssets = []string{"CROWDSEC-README.md", "crowdsec-docker-compose.yml", "crowdsec-setup.sh"}
 
 const (
 	sumsName = "SHA256SUMS"
@@ -190,6 +196,11 @@ func signDist(dist, keyPath, pubPath, tag string, build int) error {
 	}
 	if len(names) == 0 {
 		return fmt.Errorf("no zoraxy_* files found in %s", dist)
+	}
+	for _, n := range extraAssets {
+		if st, err := os.Lstat(filepath.Join(dist, n)); err == nil && st.Mode().IsRegular() {
+			names = append(names, n)
+		}
 	}
 	sort.Strings(names)
 	var sums strings.Builder

@@ -341,3 +341,4 @@ Configure
 this item no longer exists
 could not restore
 The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.
+Copied. Read the command before you run it.

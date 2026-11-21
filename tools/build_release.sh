@@ -67,6 +67,14 @@ for t in "${targets[@]}"; do
 done
 cd "$root"
 
+# CrowdSec setup helpers: shipped as release assets, signed in SHA256SUMS like the binaries.
+cs="$root/contrib/crowdsec"
+cp "$cs/crowdsec-setup.sh" "$dist/crowdsec-setup.sh"
+chmod 755 "$dist/crowdsec-setup.sh"
+cp "$cs/docker-compose.yml" "$dist/crowdsec-docker-compose.yml"
+cp "$cs/README.md" "$dist/CROWDSEC-README.md"
+chmod 644 "$dist/crowdsec-docker-compose.yml" "$dist/CROWDSEC-README.md"
+
 echo "signing"
 go run tools/sign_release.go -dist "$dist" -key "$key" -pub "$pub" -tag "$tag" -build "$build"
 
@@ -76,4 +84,4 @@ go run tools/sign_release.go -verify -dist "$dist" -pub "$pub"
 echo
 echo "Release assets in $dist:"
 ls -l "$dist"
-echo "Attach all of them (binaries, SHA256SUMS, SHA256SUMS.sig) to the GitHub release."
+echo "Attach all of them (binaries, crowdsec-setup.sh, crowdsec-docker-compose.yml, CROWDSEC-README.md, SHA256SUMS, SHA256SUMS.sig) to the GitHub release."

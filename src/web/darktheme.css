@@ -306,10 +306,11 @@ body.darkTheme .ui.pointing.secondary.menu .item:hover {
     color: var(--item_color) !important;
 }
 
+/* same underline style as light theme (was a filled blue pill) */
 body.darkTheme .ui.pointing.secondary.menu .item.active {
-    background-color: var(--theme_bg_secondary) !important;
+    background-color: transparent !important;
     color: var(--text_color) !important;
-    border-bottom: 1px solid var(--divider_color) !important;
+    border-bottom: 2px solid var(--text_color) !important;
 }
 
 body.darkTheme .ui.pointing.secondary.menu .item.narrowpadding {
@@ -1286,3 +1287,6 @@ body.darkTheme select:not(.i18n-picker):not(.ui) {
     border: 1px solid var(--button_border_color);
     border-radius: 4px;
 }
+
+/* native <select> pop-ups and arrows follow the dark theme */
+body.darkTheme select { color-scheme: dark; }

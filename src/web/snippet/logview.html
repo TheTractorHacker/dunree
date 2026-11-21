@@ -94,7 +94,15 @@
             }
         }
 
+        body.darkTheme .ui.secondary.menu .active.item{ background: rgba(255,255,255,.12) !important; color: #fff !important; }
+        body.darkTheme .loglist{ background-color: #1d1e22; }
         @media (max-width: 767px) {
+            /* the three icon buttons share one row (they were three full-width bars without a label) and the log pane keeps the page margin */
+            .ui.stackable.secondary.menu{ display: flex !important; flex-direction: row !important; flex-wrap: wrap; align-items: center; }
+            .ui.stackable.secondary.menu > .dropdown{ flex: 1 1 100%; margin-left: 0 !important; }
+            .logfile_menu_btn{ flex: 1 1 0; margin: .4em .2em 0 0 !important; display: inline-flex !important; justify-content: center; align-items: center; }
+            #logrender{ box-sizing: border-box; padding: .6em .8em; font-size: 1em; white-space: pre-wrap; }
+            #logrenderWrapper{ padding: 0 .4em; box-sizing: border-box; }
             #toggleFullscreenBtn {
                 display: none !important;
             }
@@ -107,9 +115,8 @@
     </style>
 </head>
 <body>
-    <!-- Currently not darktheme ready -->
     <link rel="stylesheet" href="../darktheme.css">
-     <!-- <script src="../script/darktheme.js"></script> -->
+    <script src="../script/darktheme.js"></script>
     <br>
     <div class="ui container">
         <div class="ui stackable secondary menu">

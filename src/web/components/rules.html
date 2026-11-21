@@ -1,9 +1,10 @@
 <!-- Proxy Create Form-->
 <style>
     .rulesInstructions{
-        background: var(--theme_background) !important; 
+        background: linear-gradient(160deg, #1d4f91, #2b3f8f) !important;   /* deep enough for white text (was a blue-cyan gradient under 3:1) */
         color: var(--theme_lgrey);
         border-radius: 1em !important;
+        align-self: flex-start;
     }
 
     .ui.form .sub.field{
@@ -26,7 +27,7 @@
 <div class="standardContainer">
     <div class="ui stackable grid">
         <div class="ten wide column">
-            <div class="ui basic segment" style="border-radius: 1em; padding: 1em !important;">
+            <div class="ui basic segment" style="border-radius: 1em; padding: 1em 0 !important;">
                 <h2>Raw rule form</h2>
                 <p>The full form with every option. For the quick flow (domain, upstream, template) use
                     <a href="#" onclick="openNewRuleDialog(); return false;"><i class="plus icon"></i>New proxy rule</a>.</p>

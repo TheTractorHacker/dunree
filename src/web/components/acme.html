@@ -1,10 +1,11 @@
 <style>
-    #acme .expiredDomain { color: rgb(238, 31, 31); }
-    #acme .validDomain   { color: rgb(49, 192, 113); }
-    #acme .disabled.table { opacity: 0.5; pointer-events: none; }
+    #acme .expiredDomain { color: var(--zx-danger-text, #b42318); }
+    #acme small { font-size: var(--zx-fs-sm); }
+    #acme .validDomain   { color: var(--zx-ok-text, #0d5a2e); }
+    #acme .disabled.table { opacity: 0.7; pointer-events: none; }
     .renew_all_certificate.section-disabled,
     .renew_selected_certificate.section-disabled {
-        opacity: 0.4;
+        opacity: 0.65;
         pointer-events: none;
         user-select: none;
     }

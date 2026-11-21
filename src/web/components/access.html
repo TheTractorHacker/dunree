@@ -1,10 +1,15 @@
 <style>
     #currentEditingAccessRule {
-        background: var(--zx-primary);
-        color: var(--zx-on-primary);
-        border-radius: 1em;
-        font-weight: bolder;
+        background: var(--zx-surface-2);
+        color: var(--zx-text);
+        border: 1px solid var(--zx-border);
+        border-left: 4px solid var(--zx-primary);
+        border-radius: .6em;
+        font-weight: 600;
+        padding: .8em 1em;
     }
+    /* the rule selector stays in view while the long pane on the right scrolls */
+    @media (min-width: 768px) { .standardContainer > .ui.stackable.grid > .four.wide.column { position: sticky; top: 4.5em; align-self: flex-start; } }
 </style>
 <div class="standardContainer">
     <header class="zx-page-header">

@@ -5,17 +5,17 @@ instance; the CrowdSec configuration itself was **not** run (no CrowdSec here), 
 
 ## Reading the logs (detection)
 
-* Zoraxy appends every proxied request to `log/zr_<YYYY>-<MM>.log` as it happens (one file per month, older months
+* Zoraxy appends every proxied request to `log/zr_<year>-<month>.log` as it happens (month without a leading zero, e.g. `zr_2026-9.log`; one file per month, older months
   stay in the folder). That *is* the live log: point CrowdSec at it with a glob so it follows the monthly rotation:
 
   ```yaml
   # /etc/crowdsec/acquis.d/zoraxy.yaml
   filenames:
-    - /opt/zoraxy/log/zr_*.log
+    - /path/to/your-zoraxy-log-folder/zr_*.log   # default: ./log next to the program
   labels:
     type: zoraxy
   ```
-  (In Docker mount the log folder read-only into the CrowdSec container.)
+  (`sudo mkdir -p /etc/crowdsec/acquis.d` first if it does not exist. In Docker mount the log folder read-only into the container and use the in-container path in the file.)
 * Line format (verified on 19,000 lines; all matched the pattern below):
 
   ```
@@ -33,6 +33,38 @@ instance; the CrowdSec configuration itself was **not** run (no CrowdSec here), 
 * Alternative: per-site log files in **JSON lines** (`time, class, site, origin, upstream, client, useragent, method,
   uri, status`), configured in the logging settings; easier to parse with CrowdSec's JSON helpers (not tested here).
   They default to *off*.
+
+## Setting CrowdSec up (the "Set up CrowdSec" panel)
+
+Zoraxy only *talks to* CrowdSec; it never installs it or runs a package manager (that would need root and is a supply-chain risk).
+Security Center > CrowdSec has a collapsible **Set up CrowdSec** panel (open until a LAPI address is saved) with copy buttons for the steps:
+
+1. Install CrowdSec on a server. Debian/Ubuntu: `curl -s https://install.crowdsec.net | sudo sh` then `sudo apt install crowdsec`. Docker: the compose
+   example (image `crowdsecurity/crowdsec`, port published on `127.0.0.1:8080`, data and config volumes, `./crowdsec/acquis.yaml` mounted at `/etc/crowdsec/acquis.yaml`, Zoraxy's log folder mounted read-only at `/var/log/zoraxy`).
+2. Create a key on that server: `sudo cscli bouncers add zoraxy-$(hostname)`. One key per Zoraxy instance. For Docker, run cscli inside the container
+   (the Docker docs page does not show that exact command, so the panel does not either).
+3. Paste address and key in the form, **Test connection**, save, stay in Log only until the matches look right. The address must be reachable from Zoraxy (firewall, published port).
+4. Detection (optional): CrowdSec has **no built-in parser for the log type `zoraxy`**, so without your own parser (above) or a hub collection the lines are
+   read but not understood. The community blocklist works in Zoraxy without this step. Package install: `sudo mkdir -p /etc/crowdsec/acquis.d`, then
+   `/etc/crowdsec/acquis.d/zoraxy.yaml` with `filenames: [<full path of your Zoraxy log folder>/zr_*.log]`, `labels: {type: zoraxy}`, then
+   `sudo crowdsec -t && sudo systemctl restart crowdsec`. Docker: mount your log folder read-only at `/var/log/zoraxy` and the file `./crowdsec/acquis.yaml` at
+   `/etc/crowdsec/acquis.yaml` (the Docker docs' compose example); inside that file use the in-container path `/var/log/zoraxy/zr_*.log`.
+
+### Setup files shipped with every release
+
+Each release carries three extra assets (signed in `SHA256SUMS` like the binaries; the in-app updater ignores them):
+`crowdsec-setup.sh` (Debian/Ubuntu helper: downloads the official repository installer to a temp file, shows its sha256 and asks before running it,
+`apt install crowdsec`, optional acquis file with `--log-dir`, creates the key `zoraxy-<hostname>` only if that name is not registered, prints the address
+and key once; `--dry-run` changes nothing and needs no root; it never calls sudo and stores no secret), `crowdsec-docker-compose.yml` (the compose file of the panel)
+and `CROWDSEC-README.md`. Sources are in `contrib/crowdsec/`. Zoraxy itself still installs nothing. They were checked with `bash -n` and `--dry-run` only, not against a real CrowdSec install.
+
+Official sources used: <https://docs.crowdsec.net/u/getting_started/installation/linux>, <https://docs.crowdsec.net/u/getting_started/installation/docker>,
+<https://docs.crowdsec.net/docs/local_api/bouncers>, <https://docs.crowdsec.net/u/getting_started/post_installation/acquisition_new>,
+<https://docs.crowdsec.net/docs/log_processor/data_sources/intro>.
+
+Left out on purpose: a "Detect local CrowdSec" button (no unauthenticated health/version path of the Local API is documented, so there is nothing safe to call without a key),
+`systemctl enable`, a docker-exec form of `cscli`, and the default Local API port as a claim (the docs' examples use 8080 and the Docker docs list a default listen address of `0.0.0.0:8080`).
+The commands were taken from the documentation and were **not run** here.
 
 ## Built-in bouncer (Security Center > CrowdSec)
 

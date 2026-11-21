@@ -35,6 +35,9 @@
         #bulkBar .ui.button.danger{ color:#c92a2a !important; }
         body.darkTheme #bulkBar .ui.button.danger{ color:#ff6b6b !important; }
         #bulkBar .bulkSpacer{ flex:1 1 auto; }
+        #bulkBar .ui.mini.button{ padding:0.7em 0.75em; }
+        @media screen and (max-width:1500px){ #bulkBar .bulkHint{ display:none; } }
+        #bulkBar .bulkHint{ white-space:nowrap; }
         #bulkBar .bulkHint{ opacity:0.6; font-size:0.85em; margin-left:0.3em; }
         #bulkSelectMatching{ display:none; padding:0.45em 0.8em; margin-bottom:0.6em; border-radius:0.5em; background:var(--theme_bg_active); font-size:0.92em; }
 
@@ -68,7 +71,7 @@
         table.ptTable .ptName{ min-width:14em; }
         table.ptTable .ptName > .ptDot{ float:left; margin:0.5em 0.7em 0 0; }
         table.ptTable .ptNameBody{ overflow:hidden; }
-        table.ptTable .ptHost{ font-weight:600; word-break:break-all; }
+        table.ptTable .ptHost{ font-weight:600; overflow-wrap:anywhere; }
         table.ptTable .ptSub{ font-size:0.82em; color:var(--text_color_secondary); margin-top:0.15em; }
         table.ptTable .ptSub .ptSep::after{ content:"\00b7"; margin:0 0.45em; opacity:0.6; }
         table.ptTable .ptSub .icon{ margin-right:0.25em; }
@@ -119,7 +122,10 @@
         @media screen and (max-width: 640px){
             #httprpPage .ptSearch{ max-width:none; flex-basis:100%; }
             #httprpPage .ptSeg{ flex-wrap:wrap; max-width:100%; }
-            #httprpPage .ptHead .ui.primary.button{ width:100%; }
+            #httprpPage .ptHead > div:last-child{ display:flex; flex-direction:column; gap:0.5em; width:100%; }
+            #httprpPage .ptHead .ui.button{ width:100%; margin:0; }
+            #httprpPage .ptSeg button{ flex:1 1 auto; }
+            table.ptTable td.ptLive:has(.ptLiveIdle):not(:has(svg)){ display:none; }
             #bulkBar{ top:3.9em; padding:0.4em 0.5em; }
             #bulkBar .ui.button:not(.icon){ font-size:0; padding:1.05em 1.15em; }
             #bulkBar .ui.button:not(.icon) > i.icon{ font-size:1rem; margin:0; }
@@ -195,8 +201,8 @@
         <button type="button" class="ui mini button" data-act="access" title="Choose the access rule of the selected rules" aria-label="Access rule of the selected rules"><i class="ban icon"></i> Access rule</button>
         <button type="button" class="ui mini button" data-act="cert" title="Choose the certificate of the selected rules" aria-label="Certificate of the selected rules"><i class="lock icon"></i> Certificate</button>
         <button type="button" class="ui mini button" data-act="template" title="Apply a template to the selected rules" aria-label="Apply a template to the selected rules"><i class="clone icon"></i> Template</button>
-        <button type="button" class="ui mini button danger" data-act="delete" title="Delete the selected rules" aria-label="Delete the selected rules"><i class="trash icon"></i> Delete</button>
         <span class="bulkSpacer"></span>
+        <button type="button" class="ui mini button danger" data-act="delete" title="Delete the selected rules" aria-label="Delete the selected rules"><i class="trash icon"></i> Delete</button>
         <span class="bulkHint">Esc to clear</span>
         <button type="button" class="ui mini icon button" data-act="clear" title="Clear selection (Esc)" aria-label="Clear selection"><i class="times icon"></i></button>
     </div>
@@ -301,7 +307,7 @@
                             <div class="upstream_list" style="margin-top: 0.4em;">
 
                             </div>
-                            <button class="ui basic compact button editUpstreamButton" style="margin-left: 0.4em; margin-top: 1em;"><i class="grey server icon"></i> Edit Upstreams</button>
+                            <button class="ui basic compact button editUpstreamButton" style="margin-left: 0; margin-top: 1em;"><i class="grey server icon"></i> Edit Upstreams</button>
 </div>
 </section>
 <section class="zx-card hrp-card" data-hrp-card="lb" rpcfg="upstream" data-hrp-nd="lb" aria-labelledby="hrpc-lb">
@@ -389,7 +395,7 @@
 
                             </div>
                             <div class="ui divider"></div>
-                            <button class="ui basic tiny button editVdirBtn" style="margin-left: 0.4em; margin-top: 0.4em;">
+                            <button class="ui basic compact button editVdirBtn" style="margin-left: 0; margin-top: 0.4em;">
                                 <i class="ui yellow folder icon"></i> Edit Virtual Directories
                             </button>
 </div>

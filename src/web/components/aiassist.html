@@ -87,20 +87,20 @@
                 <h4>Rules from your traffic</h4>
                 <p>Looks at counts from the last day (top paths, user agents, countries, status codes, WAF rules) and proposes rules.</p>
                 <button type="button" class="ui basic button" id="aiSuggest">Suggest rules</button>
-                <button type="button" class="ui basic mini button aiPrev" data-feature="suggest">Preview what will be sent</button>
+                <button type="button" class="ui basic button aiPrev" data-feature="suggest">Preview what will be sent</button>
             </div>
             <div class="aiCard">
                 <h4>Plain English to rule</h4>
                 <div class="ui form"><div class="field"><textarea id="aiRuleText" rows="3" maxlength="500" placeholder="For example: log every request to wp-login.php that does not come from my office country" aria-label="Describe the rule you want"></textarea></div></div>
                 <div class="aiHint"><span id="aiRuleCount">0</span> / 500</div>
                 <button type="button" class="ui basic button" id="aiRule">Propose a rule</button>
-                <button type="button" class="ui basic mini button aiPrev" data-feature="rule">Preview what will be sent</button>
+                <button type="button" class="ui basic button aiPrev" data-feature="rule">Preview what will be sent</button>
             </div>
             <div class="aiCard" id="aiAuditCard" style="display:none;">
                 <h4>Configuration audit</h4>
                 <p>Turns the posture check results into a prioritised plan in plain language.</p>
                 <button type="button" class="ui basic button" id="aiAudit">Make a plan</button>
-                <button type="button" class="ui basic mini button aiPrev" data-feature="audit">Preview what will be sent</button>
+                <button type="button" class="ui basic button aiPrev" data-feature="audit">Preview what will be sent</button>
             </div>
         </div>
         <div id="aiPreviewBox" class="aiPreviewBox" style="display:none;"></div>

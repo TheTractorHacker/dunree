@@ -34,6 +34,7 @@ type fakeRelease struct {
 	Build        int    // signed build number (0 = default 1000)
 	SignedTag    string // tag written into the signed header (default: Tag)
 	NoHeader     bool   // legacy SHA256SUMS without the release header
+	ExtraAssets  bool   // attach the CrowdSec helper files (and their lines in SHA256SUMS)
 }
 
 type fakeGitHub struct {
@@ -77,6 +78,17 @@ func (g *fakeGitHub) set(r ...fakeRelease) {
 
 const testAsset = "zoraxy_linux_amd64"
 
+// extraTestAssets are the CrowdSec helper files plus look-alike names.
+var extraTestAssets = []string{"crowdsec-setup.sh", "crowdsec-docker-compose.yml", "CROWDSEC-README.md", "zoraxy_linux_amd64.sh", "zoraxy_linux_amd64_old"}
+
+func extraSums() []byte {
+	var b []byte
+	for _, n := range extraTestAssets {
+		b = append(b, sumsFor(n, []byte("content of "+n))...)
+	}
+	return b
+}
+
 func sumsFor(name string, bin []byte) []byte {
 	h := sha256.Sum256(bin)
 	return []byte(fmt.Sprintf("%s  %s\n", hex.EncodeToString(h[:]), name))
@@ -110,6 +122,11 @@ func (g *fakeGitHub) serve(w http.ResponseWriter, r *http.Request) {
 			}
 			for _, a := range fr.ArchAssets {
 				add(a, 10)
+			}
+			if fr.ExtraAssets {
+				for _, n := range extraTestAssets {
+					add(n, 123)
+				}
 			}
 			add(SumsAsset, 100)
 			if !fr.NoSig {
@@ -147,6 +164,10 @@ func (g *fakeGitHub) serve(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		sums := sumsFor(testAsset, fr.Binary)
+		if fr.ExtraAssets {
+			// Extra files are listed before and after the binary, including look-alike names.
+			sums = append(append(extraSums(), sums...), extraSums()...)
+		}
 		if !fr.NoHeader {
 			st, b := fr.SignedTag, fr.Build
 			if st == "" {

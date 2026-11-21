@@ -3,6 +3,7 @@ package updater
 import (
 	"archive/zip"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"os"
 	"path/filepath"
@@ -647,5 +648,55 @@ func TestRefuseNonHTTPS(t *testing.T) {
 	f.build(func(c *Config) { c.AllowHTTP = false })
 	if _, err := f.m.Check(context.Background(), true); err == nil || !strings.Contains(err.Error(), "non-https") {
 		t.Errorf("http must be refused by default, got %v", err)
+	}
+}
+
+// Extra release assets (CrowdSec helpers) and their SHA256SUMS lines must not
+// confuse asset selection or checksum parsing. The updater only reads the line
+// of its own binary; the extra files are never downloaded, so a bad extra file
+// cannot block an update (and is covered by the signature, not verified by the updater).
+func TestUpdateWithExtraAssets(t *testing.T) {
+	f := newFixture(t)
+	r := f.release("v3.3.5-rc5-grpcfix.1", false, time.Hour, "NEW-BINARY")
+	r.ExtraAssets = true
+	f.gh.set(r)
+
+	res, err := f.m.Check(context.Background(), true)
+	must(t, err)
+	if !res.UpdateAvailable || res.AssetName != testAsset || res.AssetSize != int64(len("NEW-BINARY")) {
+		t.Fatalf("check: %+v", res)
+	}
+	must(t, f.m.RunApp(context.Background(), RunOptions{Backup: false, Actor: "tester"}))
+	if f.readExe() != "NEW-BINARY" {
+		t.Fatalf("binary not replaced: %q", f.readExe())
+	}
+}
+
+func TestSumForIgnoresExtraLines(t *testing.T) {
+	bin := []byte("bin")
+	sums := append(append(extraSums(), sumsFor(testAsset, bin)...), extraSums()...)
+	sums = append([]byte("# zoraxy-release tag=v1.2.3-x.1 build=5 upstream=1.2.3\n"), sums...)
+	got := sha256.Sum256(bin)
+	if err := VerifyBinarySum(sums, testAsset, got); err != nil {
+		t.Fatalf("binary must verify with extra lines: %v", err)
+	}
+	// A wrong hash for an extra file does not matter to the binary...
+	bad := append([]byte(strings.Repeat("0", 64)+"  crowdsec-setup.sh\n"), sums...)
+	if err := VerifyBinarySum(bad, testAsset, got); err != nil {
+		t.Fatalf("tampered extra file must not block the binary: %v", err)
+	}
+	// ...while a wrong binary is still caught, and look-alike names never match.
+	if err := VerifyBinarySum(sums, testAsset, sha256.Sum256([]byte("other"))); err == nil {
+		t.Fatal("wrong binary hash must fail")
+	}
+	if _, err := SumFor(sums, "zoraxy_linux_arm64"); err == nil {
+		t.Fatal("unlisted binary must not be found via look-alike lines")
+	}
+	if _, err := ParseSumsHeader(sums); err != nil {
+		t.Fatalf("header: %v", err)
+	}
+	rel := Release{Assets: []Asset{{Name: "crowdsec-setup.sh"}, {Name: "zoraxy_linux_amd64.sh"}, {Name: testAsset}, {Name: SumsAsset}, {Name: SigAsset}}}
+	if a, ok := FindAsset(rel, AssetName("linux", "amd64")); !ok || a.Name != testAsset {
+		t.Fatalf("asset selection: %+v %v", a, ok)
 	}
 }

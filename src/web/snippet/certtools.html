@@ -7,6 +7,12 @@
     <script src="../script/jquery-3.6.0.min.js"></script>
     <script src="../script/semantic/semantic.min.js"></script>
     <script src="../script/utils.js"></script>
+    <style>
+      /* dark theme: the tab content has the same box as in the light theme, so the tab strip and the fields line up */
+      body.darkTheme .ui.bottom.attached.tab.segment { border: 1px solid var(--divider_color, #3a3b40) !important; border-top: 0 !important; background: transparent !important; }
+      body.darkTheme .ui.tabular.menu { border-bottom: 1px solid var(--divider_color, #3a3b40) !important; }
+      body.darkTheme .ui.tabular.menu .active.item { border-color: var(--divider_color, #3a3b40) !important; background: var(--theme_bg_primary, #1a1b1f) !important; }
+    </style>
   </head>
   <body>
     <link rel="stylesheet" href="../darktheme.css">

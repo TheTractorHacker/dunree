@@ -8,8 +8,16 @@
     #upNotes code { font-family: var(--zx-font-mono, monospace); font-size: 0.92em; background: rgba(128,128,128,.18); padding: 0 .3em; border-radius: 3px; }
     /* reasons why a button is off are explanations, not errors */
     #upBtnReasons { color: var(--zx-text-muted, #666); font-size: 0.95em; }
+    /* release notes: a soft shadow at the bottom edge shows that the box scrolls (the last line is no longer cut without a hint) */
+    #upNotes { background: linear-gradient(var(--zx-surface-2, #f6f6f6) 30%, transparent) top / 100% 1.6em no-repeat local, linear-gradient(transparent, var(--zx-surface-2, #f6f6f6) 70%) bottom / 100% 1.6em no-repeat local,
+        radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.25), transparent) top / 100% .5em no-repeat scroll, radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.25), transparent) bottom / 100% .5em no-repeat scroll, var(--zx-surface-2, #f6f6f6); padding-bottom: 1.6em; }
+    #upPage .ui.message, .standardContainer .ui.message#upAvailable { margin: 1em 0; }
+    #upOptions .ui.form .inline.fields { align-items: flex-start; }
+    #upOptions .ui.form .inline.fields > .field { margin-top: 0; }
+    /* disabled buttons stay readable */
+    .standardContainer .ui.basic.button.disabled, .standardContainer .ui.basic.disabled.button { opacity: .7; color: var(--zx-text-muted, #545b66) !important; }
 </style>
-<div class="standardContainer">
+<div class="standardContainer" id="upPage">
     <div class="ui basic segment">
         <h2>Update</h2>
         <p>Update Zoraxy to a signed release published on GitHub, or run the database / configuration migrations on demand.
@@ -41,7 +49,7 @@
     </div>
 
     <!-- Options -->
-    <div class="ui basic segment">
+    <div class="ui basic segment" id="upOptions">
         <h3>Options</h3>
         <div class="ui form">
             <div class="inline fields">

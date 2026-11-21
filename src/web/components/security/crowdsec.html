@@ -1,9 +1,94 @@
 <h3>CrowdSec</h3>
+<style>
+    #csMatches th, #csMatches td, #csDecisions th, #csDecisions td { padding: .5em .8em !important; }
+    #csMatches, #csDecisions { margin-top: .4em !important; }
+    #csForm .zx-select { width: 100%; }
+    #csSetup { border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface); margin: 0 0 1em; padding: 0; }
+    #csSetup > summary { cursor: pointer; padding: var(--zx-space-3) var(--zx-space-4); font-weight: 600; color: var(--zx-text); }
+    #csSetup .cs-body { padding: 0 var(--zx-space-4) var(--zx-space-3); color: var(--zx-text); }
+    #csSetup .cs-body h5 { margin: var(--zx-space-4) 0 var(--zx-space-1); }
+    #csSetup .cs-cmd { position: relative; margin: var(--zx-space-1) 0 var(--zx-space-2); }
+    #csSetup .cs-cmd pre { margin: 0; padding: var(--zx-space-3); padding-right: 5.5rem; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-sm); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--zx-fs-sm); }
+    #csSetup .cs-cmd button { position: absolute; top: var(--zx-space-1); right: var(--zx-space-1); }
+    @media (max-width: 560px) { #csSetup .cs-cmd pre { padding-right: var(--zx-space-3); } #csSetup .cs-cmd button { position: static; margin-top: var(--zx-space-1); } }
+    #csSetup .cs-foot { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); overflow-wrap: anywhere; }
+    #csSetup ol.cs-steps { padding-left: 1.3em; }
+</style>
 <p>Use a <a href="https://docs.crowdsec.net/" target="_blank" rel="noopener noreferrer">CrowdSec</a> Local API (LAPI) that you run as a block list for this proxy.
     Zoraxy keeps the ban decisions in memory (stream mode) and checks every visitor address against them. Off until you switch it on, and it
     starts in <b>Log only</b> mode: matches are counted and logged, nobody is blocked. With two Zoraxy instances, point both at the same LAPI.
     Detection (feeding CrowdSec your logs) and reporting alerts back to CrowdSec are not part of this; see the CrowdSec guide.</p>
-<div id="csStatus" class="ui segment" aria-live="polite"></div>
+<details id="csSetup" open>
+<summary>Set up CrowdSec (not installed yet?)</summary>
+<div class="cs-body">
+<p>Zoraxy does <b>not</b> install CrowdSec and never runs installers from this page. It is only the <b>bouncer</b>: it asks a CrowdSec Local API (LAPI)
+    for the addresses to refuse. CrowdSec itself runs on a server of your choice. Three steps:</p>
+<ol class="cs-steps">
+    <li><b>Install CrowdSec</b> on a server (below). It can be this machine or another one.</li>
+    <li><b>Create a bouncer key</b> for this Zoraxy on that server.</li>
+    <li><b>Paste the address and the key</b> in the form below, press <b>Test connection</b>, and start in <b>Log only</b> mode.</li>
+</ol>
+<p class="zx-help">Use one bouncer key per Zoraxy instance. The LAPI address must be reachable from Zoraxy (check firewalls and where the port is published). The commands below come from the CrowdSec documentation and were not run by Zoraxy; read them before you run them.</p>
+<p class="zx-help" id="csShipped">Each Zoraxy release also ships a helper script <code>crowdsec-setup.sh</code> (Debian/Ubuntu, asks before every change, has <code>--dry-run</code>), a Docker file <code>crowdsec-docker-compose.yml</code> and <code>CROWDSEC-README.md</code>.
+    Download them from the <a id="csRelLink" href="https://github.com/TheTractorHacker/zoraxy/releases" target="_blank" rel="noopener noreferrer">release page of the version you are running</a> and run them yourself on the CrowdSec machine; Zoraxy never runs them.</p>
+<h5>1a. Install on Debian or Ubuntu</h5>
+<p class="zx-help"><b>Careful:</b> the first command downloads a script from the internet and runs it as root (<code>curl | sh</code>). Read it first if you can: open <code>https://install.crowdsec.net</code> in a browser, or add the repository by hand as the CrowdSec documentation describes.</p>
+<div class="cs-cmd"><pre id="csCmdDeb">curl -s https://install.crowdsec.net | sudo sh
+sudo apt install crowdsec</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdDeb"><i class="copy icon"></i> Copy</button></div>
+<p class="zx-help">The first line adds the CrowdSec package repository by running a script from crowdsec.net; the documentation also describes adding the repository by hand if you prefer to inspect it first.</p>
+<h5>1b. Or run it in Docker (compose file)</h5>
+<div class="cs-cmd"><pre id="csCmdDocker"># compose.yaml  (optional: create ./crowdsec/acquis.yaml first, see step 4b; remove that line if you skip log reading)
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec
+    restart: always
+    ports:
+      - 127.0.0.1:8080:8080
+    environment:
+      COLLECTIONS: "crowdsecurity/linux"
+    volumes:
+      # optional log reading: create ./crowdsec/acquis.yaml and un-comment both lines
+      # - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
+      # - /path/to/your-zoraxy-log-folder:/var/log/zoraxy:ro
+      - crowdsec-db:/var/lib/crowdsec/data/
+      - crowdsec-config:/etc/crowdsec/
+volumes:
+  crowdsec-db:
+  crowdsec-config:</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdDocker"><i class="copy icon"></i> Copy</button></div>
+<p class="zx-help">Replace <code>/path/to/your-zoraxy-log-folder</code> with your Zoraxy log folder (default <code>./log</code> next to the Zoraxy program). Inside the container that folder appears as <code>/var/log/zoraxy</code>. Port 8080 is published on 127.0.0.1 only, as in the documentation; when Zoraxy runs on another machine publish it on an address Zoraxy can reach and keep it off the internet.</p>
+<h5>2. Create the bouncer key</h5>
+<div class="cs-cmd"><pre id="csCmdKey">sudo cscli bouncers add zoraxy-$(hostname)</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdKey"><i class="copy icon"></i> Copy</button></div>
+<p class="zx-help">Prints the key once; copy it at once. Run it where CrowdSec runs (inside the container for Docker; the documentation page for Docker does not show the exact command for that, so it is not given here). Use a different name for each Zoraxy instance.</p>
+<h5>3. Paste address and key</h5>
+<p>In the form below enter the LAPI address (the documentation examples use <code>http://127.0.0.1:8080</code>) and the key, press <b>Test connection</b>, then save. Leave the mode on <b>Log only</b> until the recent matches look right.</p>
+<h5>4. Let CrowdSec read Zoraxy's request logs (optional)</h5>
+<p class="zx-help"><b>This step is optional.</b> CrowdSec has no built-in parser for the log type <code>zoraxy</code>, so without a parser of your own (see the CrowdSec guide) the lines are read but not understood and no scenario fires. The <b>community blocklist</b> and every other decision your LAPI holds work in Zoraxy without this step. Zoraxy writes one file per month named <code>zr_&lt;year&gt;-&lt;month&gt;.log</code> (for example <code>zr_2026-9.log</code>, no leading zero) in its log folder.</p>
+<h5>4a. CrowdSec installed from packages</h5>
+<div class="cs-cmd"><pre id="csCmdAcq">sudo mkdir -p /etc/crowdsec/acquis.d
+sudo tee /etc/crowdsec/acquis.d/zoraxy.yaml &gt;/dev/null &lt;&lt;'EOF'
+filenames:
+  - /path/to/your-zoraxy-log-folder/zr_*.log
+labels:
+  type: zoraxy
+EOF
+sudo crowdsec -t &amp;&amp; sudo systemctl restart crowdsec</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdAcq"><i class="copy icon"></i> Copy</button></div>
+<p class="zx-help">Replace <code>/path/to/your-zoraxy-log-folder</code> with your Zoraxy log folder (default <code>./log</code> next to the Zoraxy program; use its full path). The last line checks the configuration and restarts CrowdSec, as in the documentation.</p>
+<h5>4b. CrowdSec in Docker</h5>
+<div class="cs-cmd"><pre id="csCmdAcqDocker"># ./crowdsec/acquis.yaml   (mounted at /etc/crowdsec/acquis.yaml by the compose file above)
+filenames:
+  - /var/log/zoraxy/zr_*.log
+labels:
+  type: zoraxy</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdAcqDocker"><i class="copy icon"></i> Copy</button></div>
+<p class="zx-help">The path in this file is the one <b>inside the container</b> (where the compose file mounts your log folder), not the path on the host. Then run <code>docker compose up -d</code> (recreates the container).</p>
+<p class="cs-foot">Not offered: a "Detect" button for a local CrowdSec. The documentation does not list a public health or version address on the Local API, so Zoraxy has nothing it may call without a key. Use <b>Test connection</b>.<br>
+Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux" target="_blank" rel="noopener noreferrer">install on Linux</a> &middot;
+<a href="https://docs.crowdsec.net/u/getting_started/installation/docker" target="_blank" rel="noopener noreferrer">Docker</a> &middot;
+<a href="https://docs.crowdsec.net/docs/local_api/bouncers" target="_blank" rel="noopener noreferrer">bouncers (cscli bouncers add)</a> &middot;
+<a href="https://docs.crowdsec.net/u/getting_started/post_installation/acquisition_new" target="_blank" rel="noopener noreferrer">add new log sources</a> &middot;
+<a href="https://docs.crowdsec.net/docs/log_processor/data_sources/intro" target="_blank" rel="noopener noreferrer">data sources</a></p>
+</div>
+</details>
+<div id="csStatus" aria-live="polite" style="margin:0 0 1em"></div>
 <div class="ui form" id="csForm">
     <div class="inline field">
         <div class="ui toggle checkbox"><input type="checkbox" id="csEnabled"><label for="csEnabled">Use CrowdSec decisions</label></div>
@@ -19,17 +104,17 @@
     </div>
     <div class="three fields">
         <div class="field"><label for="csMode">What to do with a match</label>
-            <select id="csMode" class="ui dropdown">
+            <select id="csMode" class="zx-select">
                 <option value="log">Log only (nobody is blocked)</option>
                 <option value="enforce">Enforce (block banned addresses)</option>
             </select></div>
         <div class="field"><label for="csBan">Banned visitor gets</label>
-            <select id="csBan" class="ui dropdown">
+            <select id="csBan" class="zx-select">
                 <option value="page">The 403 page</option>
                 <option value="drop">No answer (connection closed)</option>
             </select></div>
         <div class="field"><label for="csCaptcha">Captcha decisions</label>
-            <select id="csCaptcha" class="ui dropdown">
+            <select id="csCaptcha" class="zx-select">
                 <option value="log">Only logged</option>
                 <option value="challenge">Show the site CAPTCHA (sites without one: logged)</option>
             </select></div>
@@ -66,6 +151,7 @@
 <div style="overflow-x:auto"><table class="ui very basic compact small table" id="csDecisions"><thead><tr><th>Received</th><th>Type</th><th>Scope</th><th>Value</th><th>Origin</th><th>Scenario</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
 <script>
 (function () {
+    var setupDecided = false;
     var failClosedWas = false, modeWas = "log", enabledWas = false;
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
@@ -80,6 +166,7 @@
     function loadSettings() {
         $.get("/api/crowdsec/get", function (d) {
             $("#csEnabled").prop("checked", !!d.enabled); enabledWas = !!d.enabled;
+            if (!setupDecided) { setupDecided = true; $("#csSetup").prop("open", !d.lapiUrl); }
             $("#csUrl").val(d.lapiUrl || ""); $("#csMode").val(d.mode || "log"); modeWas = d.mode || "log";
             $("#csBan").val(d.banResponse || "page"); $("#csCaptcha").val(d.captchaAction || "log");
             $("#csPoll").val(d.pollSeconds); $("#csMax").val(d.maxEntries); $("#csTtl").val(Math.round(d.maxTtlSeconds / 3600)); $("#csGrace").val(d.graceSeconds);
@@ -166,7 +253,26 @@
             else { box.addClass("negative").text(t("Connection failed: {0}").replace("{0}", d.error || "")); }
         } });
     });
+    $("#csSetup").on("click", ".cs-copy", function () {
+        var el = document.getElementById($(this).data("for")), txt = el ? el.textContent : "";
+        var ok = function () { toast(t("Copied. Read the command before you run it."), true); };
+        var fail = function () {
+            try { var r = document.createRange(); r.selectNodeContents(el); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) { }
+            toast(t("Press Ctrl+C to copy the selected text."), false);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(ok, fail); }
+        else { fail(); }
+    });
     $("#csForm .ui.accordion").accordion();
+    // Point the download link at the release of the running version (falls back to the releases list).
+    $.get("./api/updater/info", function (i) {
+        try {
+            var repo = (i && i.repo) || "", tag = (i && i.current && i.current.known) ? i.current.tag : "";
+            if (/^[\w.-]+\/[\w.-]+$/.test(repo)) {
+                $("#csRelLink").attr("href", "https://github.com/" + repo + "/releases" + (/^[\w.+-]+$/.test(tag || "") ? "/tag/" + tag : ""));
+            }
+        } catch (e) { }
+    });
     loadSettings(); loadStatus();
     var timer = setInterval(function () { if (!document.getElementById("csStatus")) { clearInterval(timer); return; } loadStatus(); }, 10000);
 })();

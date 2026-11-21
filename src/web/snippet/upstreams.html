@@ -13,6 +13,17 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
         <style>
+            /* The drawer content fills the frame: one shared inset for menu, rows and info box */
+            body{ padding: 0 0 1.5em; }
+            .ui.container{ width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 1.25em; }
+            .ui.container > .ui.menu{ margin-top: 0.8em; }
+            .ui.tab.basic.segment{ padding: 1em 0 0; margin: 0; }
+            /* the tab bar stays in view while a long tab scrolls (audit SU-10) */
+            .ui.container > .ui.pointing.secondary.menu{ position: sticky; top: 0; z-index: 5; background: var(--theme_bg_primary, #fff); margin-top: 0; padding-top: .8em; }
+            .ui.tab small, .ui.tab .sub.header{ font-size: 13px; line-height: 1.4; }
+            .ui.tab[data-tab="loadbalance"] .ui.message{ padding: .6em .9em; font-size: 13px; }
+            body.darkTheme .ui.checkbox label, body.darkTheme .ui.checkbox label small{ color: var(--text_color, #ddd) !important; opacity: 1 !important; }
+
             .upstreamActions{
                 position: absolute;
                 top: 0.6em;
@@ -20,9 +31,9 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
             }
 
             .upstreamLink{
-                max-width: 220px;
                 display: inline-block;
-                word-break: break-all;
+                max-width: 100%;
+                overflow-wrap: anywhere;
             }
 
             .upstreamEntry .ui.toggle.checkbox input:checked ~ label::before{
@@ -33,32 +44,37 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 background-color: #00ca52 !important;
             }
 
+            /* the list grows with the page (the drawer scrolls); no nested scroll box */
             #upstreamTable{
-                max-height: 480px;
-                border-radius: 0.3em;
-                padding: 0.3em;
-                overflow-y: auto;
-            }
-
-            body.darkTheme #upstreamTable{
-	            border: 1px solid var(--button_border_color);
+                padding: 0;
             }
 
             .upstreamEntry.inactive{
-                background-color: #f3f3f3 !important;
+                background-color: var(--theme_advance, #f3f3f3) !important;
             }
 
-            .upstreamEntry{
+            .upstreamEntry.ui.basic.segment{
                 border-radius: 0.4em !important;
-                border: 1px solid rgb(233, 233, 233) !important;
+                border: 1px solid var(--divider_color, rgb(233, 233, 233)) !important;
+                margin: 0 0 0.8em;
+                padding: 0.8em 1em;
             }
+            .upstreamEntry h4.ui.header{ margin: 0; }
+            /* keep the status line clear of the absolutely positioned action buttons */
+            .upstreamEntry h4.ui.header .content{ padding-right: 7.5em; min-width: 0; }
+            .upstreamEntry .sub.header{ overflow-wrap: anywhere; }
+            .upstreamEntry .advanceOptions{ margin-top: 1em; }
+            .ui.tab[data-tab="upstreamlist"] > .ui.message{ margin: 0.2em 0 0; }
 
             @media (max-width: 499px) {
+                .ui.container{ padding: 0 0.9em; }
+                .upstreamEntry h4.ui.header .content{ padding-right: 0; }
                 .upstreamActions{
                     position: relative;
-                    margin-top: 1em;
-                    margin-left: 0.4em;
-                    margin-bottom: 0.4em;
+                    top: auto;
+                    right: auto;
+                    margin-top: 0.7em;
+                    margin-left: 0;
                 }
             }
 
@@ -77,7 +93,6 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
-        <br>
         <div class="ui container">
             <div class="ui small pointing secondary menu">
                 <a class="item active narrowpadding" data-tab="upstreamlist">Upstreams</a>
@@ -164,9 +179,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         <br>
                     </div>
                 </div>
-                
-                <br><br>
-                <button class="ui basic button" onclick="addNewUpstream();"><i class="ui green circle add icon"></i> Create</button>
+                <button class="ui basic button" style="margin-top:1.2em;" onclick="addNewUpstream();"><i class="ui green circle add icon"></i> Create</button>
             </div>
             <div class="ui tab basic segment" data-tab="loadbalance">
                 <h4 class="ui header">

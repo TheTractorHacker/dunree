@@ -3,6 +3,11 @@
         /* on a phone the tab strip scrolls sideways inside itself instead of widening the page */
         #fleetPage #flTabs { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
         #fleetPage #flTabs .item { flex: 0 0 auto; white-space: nowrap; }
+        /* the two cards are equally tall; help text is readable */
+        #fleetPage .ui.two.column.stackable.grid > .column { display: flex; }
+        #fleetPage .ui.two.column.stackable.grid > .column > .ui.segment { flex: 1 1 auto; margin: 0; }
+        #fleetPage small { font-size: var(--zx-fs-sm); opacity: 1 !important; color: var(--zx-text-muted); line-height: 1.4; display: block; margin-top: .3em; }
+        #fleetPage small code { font-size: inherit; }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">

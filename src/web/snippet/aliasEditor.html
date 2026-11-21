@@ -8,11 +8,16 @@
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
+        <style>
+            html, body, body.darkTheme{ background: var(--theme_bg_primary, #fff) !important; }
+            /* embedded in a card of the Edit site window: use the whole width of the frame (no fixed-width centred container) */
+            .ui.container{ width: auto !important; max-width: none !important; margin: 0 !important; }
+            body{ padding: 0 0 .4em; }
+        </style>
     </head>
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
-        <br>
         <div class="ui container">
             <!-- 
             <div class="ui header">

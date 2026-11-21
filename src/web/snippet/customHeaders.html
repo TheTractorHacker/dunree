@@ -9,6 +9,8 @@
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
         <style>
+            /* embedded in a card of the Edit site window: same surface as the card */
+            html, body, body.darkTheme{ background: var(--theme_bg_primary, #fff) !important; }
             .ui.tabular.menu .item.narrowpadding{
                 padding: 0.6em !important;
                 margin: 0.15em !important;
@@ -42,7 +44,7 @@
             }
 
             #customHeaderTable th.removeCol{
-                width: 4.5em;
+                width: 6em;
             }
 
             #customHeaderTable td{

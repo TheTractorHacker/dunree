@@ -122,6 +122,8 @@
       display: none;
   }
 
+  #selectablePluginList > .item, #selectedTagPluginList > .item { display: block !important; }
+  #selectablePluginList > .item p { margin: 0 0 .3em; }
   .selectColTitle{
     font-weight: bold;
     margin-bottom: 0.4em;
@@ -195,6 +197,7 @@
       </div>
       <div class="seven wide column">
         <!-- Tag / Plugin List -->
+        <div class="selectColTitle">Assigned Plugins</div>
         <div class="ui fluid selection dropdown" id="pluginTagList">
           <input type="hidden" name="tag">
           <i class="dropdown icon"></i>
@@ -203,9 +206,7 @@
             <!-- <div class="item" data-value="tag1">Tag 1</div> -->
           </div>
         </div>
-        <button class="ui basic fluid button" onclick="loadTags();" style="margin-top: 0.4em;"><i class="ui green refresh icon"></i> Refresh Tag List</button>
-        <div class="ui divider"></div>
-        <div class="selectColTitle">Assigned Plugins</div>
+        <button class="ui basic fluid button" onclick="loadTags();" style="margin-top: 0.4em; margin-bottom: 0.8em;"><i class="ui green refresh icon"></i> Refresh Tag List</button>
         <div id="selectedTagPluginList" class="ui relaxed divided list" style="border: 1px solid var(--divider_color);">
             <div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
             <i class="ui arrow up icon"></i> Select a tag to view assigned plugins

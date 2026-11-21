@@ -83,7 +83,8 @@
 #httprpEditModal .hrp-card .ui.checkbox:not(.disabled) input:checked ~ label,
 #httprpEditModal .hrp-card .ui.checkbox:not(.disabled) input:focus ~ label { color: var(--zx-text) !important; opacity: 1; }
 #httprpEditModal .hrp-card .ui.checkbox label small { color: var(--zx-text-muted) !important; }
-#httprpEditModal .hrp-card .wrapper_frame { width: 100%; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface); display: block; }
+/* an embedded editor sits directly in its card: no second box inside the card */
+#httprpEditModal .hrp-card .wrapper_frame { width: 100%; border: 0; border-radius: 0; background: var(--zx-surface); display: block; }
 #httprpEditModal .hrp-card br + br { display: none; }
 #httprpEditModal .hrp-btnrow { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
 #httprpEditModal .hrp-btnrow .ui.button { margin: 0; }
@@ -91,6 +92,9 @@
 #httprpEditModal .hrp-hostline { display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-2); font-size: var(--zx-fs-lg); font-weight: 700; }
 #httprpEditModal .hrp-hostline .downstream_primary_hostname { min-width: 0; overflow-wrap: anywhere; }
 #httprpEditModal .downstream_alias_hostname { margin-top: var(--zx-space-2); }
+/* alias chips: readable size and contrast */
+#httprpEditModal .downstream_alias_hostname .ui.label { font-size: var(--zx-fs-sm); font-weight: 600; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border-strong); }
+#httprpEditModal .downstream_alias_hostname .ui.label a { color: var(--zx-link); opacity: 1; }   /* Fomantic fades links inside labels to 50% */
 #httprpEditModal .hrp-select, #httprpEditModal select.oauth2ProviderSelect, #httprpEditModal select.friendlyEndpointSelect {
     width: 100%; min-height: var(--zx-control-h); padding: 0 var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md);
     background: var(--zx-surface); color: var(--zx-text); font: inherit;
@@ -118,7 +122,9 @@
     #httprpEditModal .hrp-head { padding: var(--zx-space-2) var(--zx-space-4); padding-top: calc(var(--zx-space-2) + env(safe-area-inset-top, 0px)); }
     #httprpEditModal .hrp-body { flex-direction: column; }
     #httprpEditModal .hrp-nav { flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--zx-border); padding: var(--zx-space-2) var(--zx-space-4); }
-    #httprpEditModal .hrp-nav__item { width: auto; flex: 0 0 auto; min-height: var(--zx-touch); white-space: nowrap; }
+    #httprpEditModal .hrp-nav { gap: 0; padding-left: var(--zx-space-2); padding-right: var(--zx-space-2); }
+    #httprpEditModal .hrp-nav__item { width: auto; flex: 1 0 auto; justify-content: center; min-height: var(--zx-touch); white-space: nowrap; padding-left: var(--zx-space-2); padding-right: var(--zx-space-2); }
+    #httprpEditModal .hrp-nav__item i.icon { display: none; }   /* all five sections fit without sideways scrolling */
     #httprpEditModal .hrp-main { padding: var(--zx-space-3) var(--zx-space-4); }
     #httprpEditModal .hrp-main .ui.two.fields, #httprpEditModal .hrp-main .ui.three.fields { flex-direction: column; }
     #httprpEditModal .hrp-main .ui.form .fields > .field { width: 100% !important; }
@@ -160,3 +166,9 @@
 #httprpEditModal .hrpBotAllowList li { display: inline-flex; align-items: center; gap: var(--zx-space-1); max-width: 100%; padding: 2px 4px 2px var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); }
 #httprpEditModal .hrpBotAllowItem { font-family: var(--zx-font-mono); font-size: .95em; overflow-wrap: anywhere; color: var(--zx-text); background: none; padding: 0; }
 #httprpEditModal .hrpBotAllowHelp { display: block; color: var(--zx-text-muted); }
+
+/* ---- fix2: one rhythm in the cards ---- */
+#httprpEditModal .hrp-card .ui.checkbox + br { display: none; }            /* the <br> between stacked checkboxes made the gaps uneven */
+#httprpEditModal .hrp-card .ui.labeled.input { display: flex; max-width: 14em !important; }
+#httprpEditModal .hrp-card .ui.labeled.input > input[type=number] { width: 8em; flex: 1 1 auto; min-width: 0; }   /* the three limit fields are the same width */
+#httprpEditModal .hrp-card small { font-size: var(--zx-fs-sm); line-height: 1.4; }

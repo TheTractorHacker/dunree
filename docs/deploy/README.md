@@ -106,3 +106,11 @@ processes of other users (and which process owns a socket); it prints what it co
 with `sudo` for the complete picture. Linux only; on other systems it says so and checks nothing.
 The ports 80 and 443 are checked as "fine if not listening", because inbound can be disabled in the
 settings, which `-doctor` does not read.
+
+## CrowdSec setup files
+
+Every release ships `crowdsec-setup.sh` (Debian/Ubuntu helper), `crowdsec-docker-compose.yml` and `CROWDSEC-README.md`
+(sources in `contrib/crowdsec/`). CrowdSec is a separate program that Zoraxy can use as a block list
+(Security Center > CrowdSec); Zoraxy does not install it and these files do not touch Zoraxy. Try
+`bash crowdsec-setup.sh --dry-run` first (no root, changes nothing), then `sudo bash crowdsec-setup.sh`. See
+[the CrowdSec guide](../guides/crowdsec.md).
