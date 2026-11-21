@@ -33,6 +33,22 @@
     #ovPage .ov-skel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); }
     #ovPage .ov-skel > div { height: 9rem; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: ovsk 1.4s linear infinite; }
     @keyframes ovsk { from { background-position: 0 0; } to { background-position: -200% 0; } }
+    #ovPage .bl-card { margin: 0 0 var(--zx-space-3); }
+    #ovPage .bl-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); }
+    #ovPage .bl-head h4 { margin: 0; flex: 1 1 12rem; min-width: 0; }
+    #ovPage .bl-list { list-style: none; margin: var(--zx-space-2) 0 0; padding: 0; }
+    #ovPage .bl-list li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 2px var(--zx-space-3); padding: var(--zx-space-2) 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); align-items: start; }
+    #ovPage .bl-list li:first-child { border-top: 0; }
+    #ovPage .bl-list .bl-txt { min-width: 0; overflow-wrap: anywhere; }
+    #ovPage .bl-list .bl-why, #ovPage .bl-note { display: block; color: var(--zx-text-muted); }
+    #ovPage .bl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-3); }
+    #ovPage .bl-actions .bl-note { flex: 1 1 14rem; min-width: 0; }
+    .bl-prev { list-style: none; margin: var(--zx-space-3) 0 0; padding: 0; }
+    .bl-prev li { padding: var(--zx-space-2) 0; border-top: 1px solid var(--zx-border); min-width: 0; overflow-wrap: anywhere; }
+    .bl-prev li:first-child { border-top: 0; }
+    .bl-prev .bl-vals { display: block; margin-top: 2px; }
+    .bl-prev .bl-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
+    @media (max-width: 748px) { #ovPage .bl-list li { grid-template-columns: minmax(0, 1fr); } }
     @media (prefers-reduced-motion: reduce) { #ovPage .ov-skel > div { animation: none; } }
     @media (max-width: 748px), (pointer: coarse) { #ovPage .ov-go { display: inline-block; min-height: 32px; line-height: 32px; } }
 </style>
@@ -43,6 +59,7 @@
         <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ovRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
     </div>
     <p class="zx-sub" style="margin:0 0 var(--zx-space-3)">Everything on this page comes from this Zoraxy itself, no outside service is contacted. It refreshes every 10 seconds while you look at it. The cards link to the page where each thing is changed.</p>
+    <section id="blCard" tabindex="-1" class="zx-card bl-card" aria-labelledby="blTitle" aria-busy="true"></section>
     <div id="ovError" class="zx-callout zx-callout--danger" role="alert" hidden>
         <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
         <div class="zx-callout__body"><span class="zx-callout__title">The overview could not be loaded</span><span id="ovErrorText"></span> <a href="#" id="ovRetry" class="ov-go">Try again</a></div>
@@ -296,6 +313,143 @@
         openTabById(page);
         if (anchor) { setTimeout(function () { $("#" + page).find('[data-tab="' + anchor + '"],[data-sec="' + anchor + '"]').first().trigger("click"); }, 450); }
     });
+    load();
+})();
+</script>
+
+<script>
+/* Enterprise baseline card: status of the built-in security features, preview + apply + undo (GET /api/baseline/get, POST /api/baseline/apply and /undo) */
+(function () {
+    function N_(s) { return s; }
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    var root = document.getElementById("blCard");
+    var cur = null, busy = false, opening = false;
+
+    function badge(kind, text) { return '<span class="zx-badge zx-badge--' + kind + '">' + esc(text) + "</span>"; }
+    function chip(it) {
+        if (it.status === "on") { return badge("ok", t("On")); }
+        if (it.status === "off") { return badge("warn", t("Off")); }
+        if (it.status === "skipped") { return badge("info", t("Not applied")); }
+        var c = it.current || "";
+        if (c === "recording") { return badge("ok", t("Recording")); }
+        if (c === "not configured") { return badge("warn", t("Not configured")); }
+        if (c.indexOf("on") === 0) { return badge("ok", t(c)); }
+        return badge("info", t(c));
+    }
+    function openLink(it, label) {
+        return ' <a href="#" class="ov-go" data-page="' + esc(it.page) + '" data-anchor="' + esc(it.anchor || "") + '">' + esc(label) + "</a>";
+    }
+    function when(ts) { return ts ? new Date(ts * 1000).toLocaleString() : ""; }
+
+    function render(d) {
+        $(root).attr("aria-busy", "false");
+        if (!d.available) { $(root).html('<div class="zx-card__body">' + esc(t("The enterprise baseline is not available.")) + "</div>"); return; }
+        var items = d.items || [], changeable = items.filter(function (i) { return !i.info; });
+        var on = changeable.filter(function (i) { return i.status === "on"; }).length;
+        var allOn = changeable.length > 0 && on === changeable.length;
+        var notApplied = changeable.filter(function (i) { return i.status === "skipped"; }).length;
+        var h = '<div class="zx-card__head"><div class="bl-head"><h4 class="zx-card__title" id="blTitle"><i class="shield alternate icon" aria-hidden="true"></i> ' + esc(t("Enterprise baseline")) + "</h4>" +
+            badge(allOn ? "ok" : (d.pending ? "warn" : "info"), allOn ? t("All applicable settings are on") : t("{0} of {1} settings on").replace("{0}", on).replace("{1}", changeable.length)) + "</div></div>";
+        h += '<div class="zx-card__body"><p class="zx-sub" style="margin:0">' + esc(t("A short list of safe security settings. Nothing in it blocks traffic, limits who can log in or changes a site you already have. Everything can be undone.")) + "</p>";
+        (d.warnings || []).forEach(function (w) {
+            h += '<div class="zx-callout zx-callout--warn" role="alert"><span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body">' + esc(t(w)) + "</div></div>";
+        });
+        h += '<ul class="bl-list">' + items.map(function (it) {
+            var why = '<span class="bl-why">' + esc(t(it.why)) + "</span>";
+            var eff = '<span class="bl-why">' + esc(t(it.effect)) + "</span>";
+            var reason = (it.status === "skipped" && it.reason) ? '<span class="bl-why"><b>' + esc(t("Why not applied:")) + "</b> " + esc(t(it.reason)) + "</span>" : "";
+            var label = it.info && it.current === "not configured" ? t("Configure") : t("Open");
+            return "<li><span>" + chip(it) + '</span><span class="bl-txt"><b>' + esc(t(it.title)) + "</b>" + openLink(it, label) + why + eff + reason + "</span></li>";
+        }).join("") + "</ul>";
+        var st = d.state || {};
+        var note = "";
+        if (d.canUndo) {
+            note = (st.source === "fresh" ? t("Applied automatically when this installation was created ({0}).") : t("Applied by an administrator ({0}).")).replace("{0}", when(st.appliedAt));
+        } else if (st.decision === "fresh" && st.undoneAt) {
+            note = t("Undone on {0}. It will not be applied again by itself.").replace("{0}", when(st.undoneAt));
+        } else if (d.pending) {
+            note = t("This installation was not changed by the update. Press the button to see what would change.");
+        } else if (notApplied) {
+            note = t("{0} setting(s) not applied, see the reasons above.").replace("{0}", notApplied);
+        }
+        h += '<div class="bl-actions"><button type="button" class="zx-btn zx-btn--primary" id="blApply"' + (d.pending ? "" : " disabled") + '><i class="check icon" aria-hidden="true"></i> ' + esc(t("Apply enterprise baseline")) + "</button>";
+        if (d.canUndo) { h += '<button type="button" class="zx-btn zx-btn--secondary" id="blUndo"><i class="undo icon" aria-hidden="true"></i> ' + esc(t("Undo")) + "</button>"; }
+        h += '<span class="bl-note" role="status">' + esc(note) + "</span></div></div>";
+        $(root).html(h);
+    }
+
+    function load() {
+        $.ajax({ url: "/api/baseline/get", method: "GET", dataType: "json", cache: false, timeout: 15000 }).done(function (d) {
+            cur = d; render(d);
+        }).fail(function (x) {
+            $(root).attr("aria-busy", "false");
+            if (!cur) { $(root).html('<div class="zx-card__body zx-sub">' + esc(x && x.status === 403 ? t("This card is not available to read-only accounts.") : t("The enterprise baseline could not be loaded.")) + "</div>"); }
+        });
+    }
+
+    function line(c) {
+        var kind = { change: "warn", changed: "ok", restored: "ok", already: "ok", skipped: "info", info: "info" }[c.status] || "info";
+        var lab = { change: t("Will change"), changed: t("Changed"), restored: t("Restored"), already: t("Already on"), skipped: t("Not changed"), info: t("Not changed") }[c.status] || c.status;
+        var vals = c.status === "change" || c.status === "changed" || c.status === "restored" ?
+            '<span class="bl-vals">' + esc(t("now")) + ": <code>" + esc(t(c.from)) + "</code> &rarr; <code>" + esc(t(c.to)) + "</code></span>" :
+            '<span class="bl-vals"><code>' + esc(t(c.from)) + "</code></span>";
+        return "<li>" + badge(kind, lab) + " <b>" + esc(t(c.title)) + "</b>" + vals + (c.reason ? '<span class="bl-sub">' + esc(t(c.reason)) + "</span>" : "") + "</li>";
+    }
+
+    function post(url, drawer, okMsg) {
+        if (busy) { return; }
+        busy = true;
+        $.cjax({ type: "POST", url: url, data: {}, success: function (d) {
+            busy = false;
+            if (d && d.error) { ZxUI.toast(d.error, { type: "error" }); $("#blPrevOk").prop("disabled", false); return; }
+            if (drawer) { drawer.close(); }
+            var res = (d && d.result) || {}, skipped = (res.changes || []).filter(function (c) { return c.status === "skipped" && c.reason && c.reason.indexOf("changed since") === 0; });
+            if (skipped.length) { ZxUI.toast(t("Undone, but {0} setting(s) were changed by you since and were left as they are.").replace("{0}", skipped.length), { type: "warn" }); }
+            else { ZxUI.toast(okMsg, { type: "success" }); }
+            if (d && d.status) { cur = d.status; render(cur); } else { load(); }
+        }, error: function () { busy = false; $("#blPrevOk").prop("disabled", false); ZxUI.toast(t("The server did not answer."), { type: "error" }); } });
+    }
+
+    function preview() {
+        if (opening) { return; }   // one drawer at a time (a double click must not stack two)
+        opening = true;
+        $("#blApply").prop("disabled", true);
+        // the preview comes from the server now, not from the card's older snapshot
+        $.ajax({ url: "/api/baseline/get", method: "GET", dataType: "json", cache: false, timeout: 15000 }).done(function (d) {
+            cur = d; render(d);
+            if (!d || !d.available) { opening = false; return; }
+            showPreview(d);
+        }).fail(function () {
+            opening = false; $("#blApply").prop("disabled", !(cur && cur.pending));
+            ZxUI.toast(t("The enterprise baseline could not be loaded."), { type: "error" });
+        });
+    }
+
+    function showPreview(d) {
+        var list = (d.preview || []).filter(function (c) { return c.status !== "info"; });
+        var n = list.filter(function (c) { return c.status === "change"; }).length;
+        $("#blApply").prop("disabled", true);
+        var dr = ZxUI.drawer({ title: t("Apply the enterprise baseline"), returnFocus: document.getElementById("blCard"), onClose: function () { opening = false; $("#blApply").prop("disabled", !(cur && cur.pending)); } });
+        dr.body.innerHTML = '<div class="zx-callout zx-callout--success"><span class="zx-callout__icon"><i class="check circle icon"></i></span><div class="zx-callout__body">' +
+            esc(t("Nothing that blocks traffic is changed. No site, rule, account, role, allow-list or CrowdSec mode is touched, and the settings below can be undone with one click.")) + "</div></div>" +
+            '<p class="zx-sub" style="margin:var(--zx-space-3) 0 0">' + esc(t("This is exactly what will change:")) + '</p><ul class="bl-prev">' + list.map(line).join("") + "</ul>";
+        dr.foot.innerHTML = '<button type="button" class="zx-btn zx-btn--secondary" id="blPrevCancel">' + esc(t("Cancel")) + '</button><button type="button" class="zx-btn zx-btn--primary" id="blPrevOk"' + (n ? "" : " disabled") + ">" + esc(t("Apply {0} change(s)").replace("{0}", n)) + "</button>";
+        $(dr.foot).on("click", "#blPrevCancel", function () { dr.close(); });
+        $(dr.foot).on("click", "#blPrevOk", function () { $(this).prop("disabled", true); post("/api/baseline/apply", dr, t("Enterprise baseline applied.")); });
+    }
+
+    function undoPreview() {
+        ZxUI.confirm({ title: t("Undo the enterprise baseline?"), message: t("Each setting it changed goes back to the value it had before. A setting you have changed yourself since is left as it is."), confirmLabel: t("Undo") }).then(function (ok) {
+            if (ok) { post("/api/baseline/undo", null, t("Enterprise baseline undone.")); }
+        });
+    }
+
+    $(root).on("click", "#blApply", preview).on("click", "#blUndo", undoPreview);
+    $("#ovRefresh").on("click", load);
+    var blTimer = setInterval(function () {   // keep the card in step with the page's own 10 second refresh
+        if (!document.body.contains(root)) { clearInterval(blTimer); return; }
+        if (document.visibilityState === "visible" && !opening && !busy) { load(); }
+    }, 10000);
     load();
 })();
 </script>

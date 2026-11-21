@@ -51,6 +51,7 @@ var viewerDeniedPrefixes = []string{
 	"/api/securityheaders/",  //default hardened header preset for new sites
 	"/api/crowdsec/",         //CrowdSec LAPI address, health and the decided client addresses
 	"/api/security/overview", //dashboard: listener addresses, host names, client addresses, audit events
+	"/api/baseline/",         //enterprise baseline: preview, apply and undo change security settings
 	"/api/netplan/",          //network plan (VLAN networks, admin access) and the firewall recommendations
 	"/api/ech/export",        //ECH private key
 	"/api/ech/fallbacks",     //names probed by clients and scanners

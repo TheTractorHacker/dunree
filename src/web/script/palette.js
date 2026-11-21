@@ -51,6 +51,7 @@
         { label: N_("CrowdSec"), page: "seccenter", pre: "#secTabs .item[data-sec='crowdsec']", at: "#csEnabled", kw: "crowdsec lapi bouncer decisions ban blocklist api key" },
         { label: N_("Deployment role"), page: "seccenter", pre: "#secTabs .item[data-sec='deployment']", at: "#drRole", kw: "external internal standalone dual proxy peer gate forwarded headers x-forwarded-for trusted" },
         { label: N_("Security dashboard"), page: "seccenter", pre: "#secTabs .item[data-sec='overview']", at: "#ovRefresh", kw: "overview dashboard status health backends certificates crowdsec rate limit blocked events trusted proxies warnings" },
+        { label: N_("Enterprise baseline"), page: "seccenter", pre: "#secTabs .item[data-sec='overview']", at: "#blCard", kw: "enterprise baseline default secure built in apply undo preview headers hardening nosniff hsts forwarded crowdsec audit log safe settings" },
         { label: N_("Network plan"), page: "seccenter", pre: "#secTabs .item[data-sec='netplan']", at: "#npProxyCidrs", kw: "vlan segmentation management application proxy zones cidr admin access ports firewall document" },
         { label: N_("Export network policy recommendations"), page: "seccenter", pre: "#secTabs .item[data-sec='netplan']", at: "#npGen", kw: "udm pro unifi proxmox firewall rules zone policy markdown download recommendations" },
         { label: N_("WAF mode"), page: "waf", pre: "#wafTabs .item[data-tab='waf-overview']", at: "#wafModeCards", kw: "firewall detect block off blocking detection only" },

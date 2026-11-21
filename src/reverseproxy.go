@@ -275,6 +275,7 @@ func ReverseProxyInit() {
 	//Deployment role (default standalone = unchanged behaviour), see mod/deployrole
 	initDeployRole()
 	initCrowdSec()
+	initBaseline() //fresh installs start with the enterprise baseline, existing ones are left alone (baselineapi.go)
 
 	useProxyProtocol := false
 	sysdb.Read("settings", "useProxyProtocol", &useProxyProtocol)

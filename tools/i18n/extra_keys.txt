@@ -304,3 +304,40 @@ Press Ctrl+C to copy the selected text.
 The previous configuration was kept in {0}
 {0} have none here and are left out.
 The system database would be replaced and Zoraxy would exit.
+Clean up forwarded client-address headers
+Safe security headers for sites created later
+Security audit log
+CrowdSec
+A visitor can write X-Forwarded-For, X-Real-Ip and similar headers themselves. With the clean-up on, those headers are only believed when they come from a proxy listed under Trusted Proxies, so rate limits, bans, GeoIP and logs cannot be fooled by a forged address.
+New sites start with X-Content-Type-Options: nosniff, Referrer-Policy: strict-origin-when-cross-origin and, on HTTPS only, Strict-Transport-Security for 30 days (no includeSubDomains, no preload). Headers the website itself sends are never overwritten.
+Every security-relevant change made through the admin interface or the REST API is written to a tamper-evident log (who, from where, what).
+Blocks addresses that the CrowdSec community and your own CrowdSec engine have decided on. It starts in log-only mode, so the first thing you see is what it would block.
+Does not block anything. If this Zoraxy sits behind a proxy or CDN that is not listed under Trusted Proxies, the client address (and X-Forwarded-Proto/Host) that proxy sends is ignored and sites see the proxy's address instead. List the proxy first. On an existing install the button only applies it when the trusted proxy list is not empty.
+Only the default for sites you create afterwards. No existing site is touched. Frame blocking and Permissions-Policy are not included, because they break embedding and camera, microphone or map features. Each site can still turn the preset off or change it.
+Always on, there is no switch. Shown here so you can see that it is working.
+The baseline cannot turn it on: it needs the address of your CrowdSec local API and an API key. Configure it once and the log-only-first behaviour applies by itself.
+deployment settings not loaded
+the deployment role manages this itself
+no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, list it under Trusted Proxies first, otherwise its client addresses would be ignored
+the current default could not be read
+you already chose your own default for new sites
+shown only
+on
+off
+recording
+not configured
+configured, switched off
+on, enforcing
+on, log only
+not available (the log file could not be opened)
+not applied, nothing was changed
+changed since the baseline was applied, left as it is
+the current value could not be read
+Why not applied:
+{0} of {1} settings on
+All applicable settings are on
+Configure
+{0} setting(s) not applied, see the reasons above.
+this item no longer exists
+could not restore
+The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.

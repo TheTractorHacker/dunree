@@ -364,3 +364,53 @@ Known limits of the scenario:
 - The refresh checks take about 40 s of real waiting (10 s timer), so the scenario runs for about three minutes.
 - The "Restore & Exit" button is never pressed: an import would replace the throw-away instance's configuration. The apply path is covered by the Go tests only.
 - The side drawer's own Close button floats over the top of long drawer content (all drawers, not changed here).
+
+## Enterprise baseline (safe settings on by default for new installs, one button for existing ones)
+
+Code: `src/mod/baseline` (bookkeeping, fresh-install detection), `src/baselineapi.go` (items, API, startup hook), Security Center > Overview (card at the top), palette entry "Enterprise baseline".
+
+### What it does
+
+* **Fresh installs** start with the baseline already applied (at the first start only).
+* **Existing installs are not changed by an update.** The Overview card shows the status of each item and an "Apply enterprise baseline" button. The button opens a preview (current value -> new value per item, and the reason for every item it will not touch) with the statement that nothing that blocks traffic is changed. After an apply an **Undo** button restores the previous values.
+* The card lists every item with on/off, why it matters, what the baseline does and the one thing to know, and a link to the tab where it is changed.
+
+### The items, and why exactly these
+
+| Item | In the baseline | Decision |
+| --- | --- | --- |
+| Security audit log | shown only | Already always on (there is no switch; it only stays off when the log file cannot be opened). Shown as "Recording" so it is visible. |
+| Forwarded client-address header clean-up (deployment "harden headers", standalone role) | changed | Headers such as X-Forwarded-For are only believed from proxies on the Trusted Proxies list. Blocks nothing. **Effect behind an unknown proxy:** if this Zoraxy sits behind a proxy or CDN that is not listed, that proxy's client address and X-Forwarded-Proto/Host are ignored and sites see the proxy's address. Therefore: on a fresh install it is applied (no site exists yet, and the Deployment tab already warns when the list is empty); on an existing install the button applies it **only when the trusted proxy list is not empty**, otherwise the preview shows it as not applied with that reason. It is never applied when the role is external or internal (the role manages it). |
+| Default security headers for sites created later | changed | Writes the existing "security headers for new sites" default: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security` for 30 days on HTTPS requests only (no includeSubDomains, no preload; short enough to recover from a certificate mistake). Per-site settings of existing sites are never read or written; a site that has its own choice keeps it. If the administrator already has an enabled default, it is left alone. **Left out on purpose:** frame blocking (breaks embedding) and `Permissions-Policy` (the existing preset sets camera, microphone, geolocation, display capture and more to none, which breaks video calls, maps and screen sharing; the preset has no "minimal" variant, so it is excluded rather than changed). |
+| CrowdSec | shown only | Cannot be enabled by a baseline: it needs the LAPI address and an API key. The card shows "Not configured" with a Configure link. Once configured, the existing log-only-first behaviour applies. |
+| Destination guard for diagnostic tools (cloud metadata and link-local) | **excluded** | `RestrictTools` also refuses loopback addresses for the uptime monitor, port tools and web SSH, so a backend on `127.0.0.1` would show as down. It cannot be limited to metadata/link-local without a code change, so it stays an explicit choice under Network exposure. |
+
+**Never in the baseline:** internal peer gate, admin allow-list, role changes, fail-closed CrowdSec, enforce mode, rate-limit enforcement, destination allow-lists, anything that blocks traffic or restricts admin access. The tests assert that these settings are not written.
+
+### Fresh-install detection and the stored state
+
+`CaptureProbe` runs in `main()` before the config schema migration and before the database is opened (both create files) and only reads. A start is a new install only when **all** hold: no `sys.db` (file or folder), no `config_schema.json` stamp, and no regular file anywhere in the config folder (proxy rules, certificates, settings, anything). An unreadable stamp or folder, a database error, an older stamp with no proxy rules, or any file at all means "existing". Any doubt is existing.
+
+The decision is stored once in `sys.db` (`settings/baseline`): `{decision, decidedAt, appliedAt, source: fresh|button, undoneAt, items: {id: {previous, applied}}}`. Later starts read the stored decision and never decide again, so a restart after an undo does not re-apply the baseline. Only items that were really changed are recorded; an item that already had the baseline value is not recorded and Undo never touches it.
+
+### Apply, preview and undo rules
+
+* The preview and the apply use the same plan, so the preview is exactly what apply does. Apply is idempotent: with nothing left to change it writes nothing and records no audit entry; the recorded previous values of an earlier apply are kept.
+* Apply is all or nothing: if one item fails or the state cannot be saved, the items already set are put back. The result, the card and the audit entry then report nothing as changed (outcome "error", `changed` 0, the error text in the audit detail). If an item cannot be put back, the error names it and it stays recorded, so Undo can still revert it.
+* A failed apply on the first start of a new install is logged ("the first-start apply failed, nothing was changed") and audited as `baseline.apply` by `system` with outcome `error`; the decision stays stored (no retry on later starts) and the button on the Overview card is the way to retry.
+* The card rows, the preview and the button use one rule (button-time eligibility), so a row never says "Off" while the preview says "not applied". The preview drawer is loaded from the server when it opens, and the card refreshes every 10 seconds. The header badge is green only when every changeable item is on; otherwise it reads "{on} of {total} settings on".
+* A default for new sites that is already stored, enabled or explicitly off, is the administrator's choice: the baseline skips it.
+* **Fresh install behind a proxy or CDN:** the forwarded-header clean-up is applied on a new install even though Trusted Proxies is still empty (a directly exposed Zoraxy is the common case, and a new install has no sites yet). If a proxy or CDN is in front, every visitor then appears with the proxy's address and X-Forwarded-Proto/Host are ignored until the proxy is listed. The first-start log line and audit entry (detail `warning`) say so, and the card shows a warning for as long as the clean-up is on and the list is empty.
+* Undo decides ownership by value: if the administrator turned an item off and on again, or saved identical values, Undo still reverts it. It only happens when the administrator presses Undo.
+* The first start of this build over an existing install writes one bookkeeping row (`settings/baseline`, decision "existing"). Because the settings table is tracked by configuration history, that can show as one extra history version; no setting changes.
+* Undo restores an item only while it still holds the value the baseline wrote. An item the administrator changed afterwards is left as it is and reported ("changed since the baseline was applied"). Undo with nothing recorded is an error, not a silent success.
+
+### API
+
+`GET /api/baseline/get` (items, preview, state), `POST /api/baseline/apply`, `POST /api/baseline/undo`. Admin session and CSRF like their siblings, **closed for viewer accounts** (`/api/baseline/` in `viewerDeniedPrefixes`). Audit log: `baseline.apply` (detail `source` = `fresh` for the automatic one with actor `system`, `button` for the button, `changed`, and `items` with old -> new) and `baseline.undo` (restored items and the ones left as they are). A fresh install shows its `baseline.apply` / source `fresh` entry in Security Center > Audit log.
+
+### Known limits
+
+* The configuration history does not label the baseline route; the change shows as the individual settings (deployment settings, header default) when the history picks them up. Undo is the baseline's own way back.
+* A fresh start that crashed before the decision was stored is treated as existing on the next start (conservative).
+* Checked in a throwaway instance with a headless browser at 1366 and 390 px, light and dark (no horizontal overflow, no console errors). The full UI smoke was not run here.

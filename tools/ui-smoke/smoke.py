@@ -49,6 +49,7 @@ ap.add_argument("--db-usage-only", action="store_true", help="run only the Syste
 ap.add_argument("--enterprise-only", action="store_true", help="run only the Phase 2 enterprise GUI scenario (enterprise_smoke.py: Security Center Deployment / Network exposure / Audit log, site editor limits and upstream trust; changes and restores instance-wide settings, UI port + 2 must be free)")
 ap.add_argument("--crowdsec-only", action="store_true", help="run only the CrowdSec bouncer + hardened security headers GUI scenario (crowdsec_smoke.py: starts a fake LAPI on UI port + 3 and an upstream on + 2, the proxy port must be UI port + 1; changes and restores instance-wide settings)")
 ap.add_argument("--phase4-only", action="store_true", help="run only the Phase 4 GUI scenario (phase4_smoke.py: Security overview, Network plan, Config Tools export / import dry run, Fleet certs confirmation; UI port + 2 must be free; creates and removes its own rules, plan and certificate, run it on a throw-away instance)")
+ap.add_argument("--baseline-only", action="store_true", help="run only the enterprise baseline card scenario (baseline_smoke.py: preview, Apply, Undo on an existing-style throw-away instance; changes and restores instance-wide settings; the fresh-start check is baseline_fresh_check.py)")
 ap.add_argument("--zrok-fake", default=os.environ.get("SMOKE_ZROK_FAKE", ""), help="path of a fake zrok script; enables the zrok flow (the instance needs -allow_external_tools)")
 ap.add_argument("--allow", action="append", default=[], help="regex of messages whose failure is tolerated")
 args = ap.parse_args()
@@ -2856,6 +2857,7 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "live
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "enterprise_smoke.py")).read(), "enterprise_smoke.py", "exec"))  # defines enterprise_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "crowdsec_smoke.py")).read(), "crowdsec_smoke.py", "exec"))  # defines crowdsec_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "phase4_smoke.py")).read(), "phase4_smoke.py", "exec"))  # defines phase4_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "baseline_smoke.py")).read(), "baseline_smoke.py", "exec"))  # defines baseline_ui
 
 
 def main():
@@ -2916,6 +2918,10 @@ def main():
             return
         if args.phase4_only:
             phase4_ui(pg, ctx)
+            b.close()
+            return
+        if args.baseline_only:
+            baseline_ui(pg, ctx)
             b.close()
             return
         if args.live_map_only:
@@ -3915,6 +3921,8 @@ def main():
         crowdsec_ui(pg, ctx)
         # runs after crowdsec_ui and last of all: it needs a fresh network plan and briefly makes this instance a Fleet hub (and puts it back)
         phase4_ui(pg, ctx)
+        # the very last: it applies and undoes the enterprise baseline (and puts every setting back); it needs an existing-style instance (run.sh seeds one)
+        baseline_ui(pg, ctx)
         b.close()
 
 

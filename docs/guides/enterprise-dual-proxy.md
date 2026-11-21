@@ -235,11 +235,15 @@ already on the machine. If the imported config locks you out of the admin panel,
 ## 6. Hardened security headers (per site, optional)
 
 Edit site > **Security** > *Hardened security headers*, default for new sites under **Network > Listeners** > *Security
-headers for new sites*. Both are off by default. The page shows the headers that will be sent and, per header, whether it
+headers for new sites*. Both are off by default on existing installs (a new installation starts with the conservative default from 6.1). The page shows the headers that will be sent and, per header, whether it
 is added only when the upstream sent none, replaces the upstream value (an option), or is skipped because you set it
 yourself. Details and limits: [../ux/changes.md](../ux/changes.md), section "Rate limit identity check and hardened
 security headers". HSTS and preload are remembered by browsers for the whole max age: only use them when every use of the
 name works over HTTPS.
+
+### 6.1 Enterprise baseline (on by default for new installs)
+
+A new installation starts with a short list of safe settings already on: the forwarded client-address header clean-up and a conservative security header default for sites created later (nosniff, Referrer-Policy, HSTS for 30 days on HTTPS). The security audit log is always on and CrowdSec is shown as "Not configured" until you add the LAPI address and key. An existing installation is not changed by an update: Security Center > Overview has an "Apply enterprise baseline" button with a preview of every change and an Undo. The baseline never enables the peer gate, the admin allow-list, enforce mode, rate-limit enforcement or any allow-list, and never touches the settings of existing sites. **Behind a proxy or CDN (for example the Proxy1/Proxy2 layout, a tunnel or a Docker first start behind a load balancer):** a new install turns the header clean-up on while Trusted Proxies is still empty, so every visitor would appear with the proxy's address, rate limits and bans would key on that one address, X-Forwarded-Proto/Host would be ignored (scheme redirects can loop behind a Flexible-SSL CDN). The first-start log, the audit entry and a warning on the Overview card say so. Add the proxy under Trusted Proxies right after the first start, or switch the clean-up off under Deployment settings (or press Undo on the card) until you have. Details: docs/ux/changes.md, "Enterprise baseline".
 
 ## 7. UniFi UDM Pro zone-based firewall and Proxmox recommendations
 

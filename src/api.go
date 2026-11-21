@@ -512,6 +512,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	RegisterSecurityAPIs(authRouter)
 	RegisterPostureAPIs(authRouter)          //security overview, see posture_api.go
 	RegisterSecurityOverviewAPIs(authRouter) //Security Center > Overview, one aggregated request, see secdashboard.go
+	RegisterBaselineAPIs(authRouter)         //enterprise baseline preview / apply / undo, see baselineapi.go
 	RegisterNetPlanAPIs(authRouter)          //Security Center > Network plan, see netplanapi.go
 	RegisterBasicAuthExtAPIs(authRouter)
 	RegisterAuthAuditAPIs(authRouter)

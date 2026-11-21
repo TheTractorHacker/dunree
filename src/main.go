@@ -33,6 +33,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import (
 	"flag"
 	"fmt"
+	"imuslab.com/zoraxy/mod/baseline"
 	"imuslab.com/zoraxy/mod/offline"
 	"log"
 	"net"
@@ -90,6 +91,9 @@ func main() {
 	ACME_AUTORENEW_CONFIG_PATH = CONF_FOLDER + "/acme_conf.json"
 	CONF_TRUSTED_PROXIES = CONF_FOLDER + "/trusted_proxies.json"
 	CONF_WAF_CENTRAL = CONF_FOLDER + "/waf_central.json"
+
+	//Enterprise baseline: look at what exists before this start creates anything (read only), see baselineapi.go
+	baselineProbe = baseline.CaptureProbe(*path_database, CONF_FOLDER)
 
 	//Warn about a leftover ./conf (etc.) when a custom folder is used: older builds ran
 	//the config migrations against ./conf regardless of -conf

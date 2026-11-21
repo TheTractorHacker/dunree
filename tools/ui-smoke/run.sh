@@ -29,6 +29,11 @@ start_zoraxy() {
   pid=$!
   for _ in $(seq 60); do curl -fs "http://127.0.0.1:$PORT/" >/dev/null && break; sleep 0.5; done
 }
+# The instance must look like an EXISTING install: on a completely empty folder the first start applies the enterprise baseline by itself
+# (mod/baseline), which would change what the older scenarios see and leave nothing for baseline_smoke.py to apply. One file in conf/ is enough.
+# The fresh-start behaviour has its own check: baseline_fresh_check.py.
+mkdir -p "$tmp/conf"
+echo "seeded by run.sh: marks this throw-away instance as an existing installation" >"$tmp/conf/existing-install.txt"
 # First start: creates the database and runs the config upgrades (they would rewrite a seeded config).
 start_zoraxy
 kill "$pid" 2>/dev/null || true
