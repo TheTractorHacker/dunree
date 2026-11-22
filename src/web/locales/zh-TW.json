@@ -4,7 +4,7 @@
   "reviewed": false,
   "author": "machine-assisted (Claude)",
   "coverage": 14.8,
-  "coreCoverage": 28.1
+  "coreCoverage": 28.0
  },
  "strings": {
   "\"Add Redirection Rule\"": "「新增重新導向規則」",
@@ -706,7 +706,6 @@
   "Page {0} / {1}": "第 {0} / {1} 頁",
   "Paranoia level": "偏執等級",
   "Password": "密碼",
-  "Password does not match": "密碼不相符",
   "Path": "路徑",
   "Path Rules": "路徑規則",
   "Path scoped exclusions": "路徑範圍排除",
@@ -819,7 +818,6 @@
   "Since": "自",
   "Skip Verification": "略過驗證",
   "Skip WebSocket Origin Check": "略過 WebSocket 來源檢查",
-  "Something went wrong.": "發生錯誤。",
   "Soonest to expire": "最快到期",
   "Source": "來源",
   "SSO / OAuth2": "SSO / OAuth2",

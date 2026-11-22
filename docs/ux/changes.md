@@ -2,6 +2,11 @@
 
 Newest first within each area. Each item names the page and what a user notices; design background is in [audit-2026-11.md](audit-2026-11.md), the components in [components.md](components.md).
 
+## Login screen
+* New look: frosted card, five layers of waves that swell and cross and follow the pointer a little, drifting light, and a sky that matches the time of day (stars at night). It pauses when the tab is hidden and shows one still picture when the system asks for reduced motion.
+* **Password manager fix**: the card no longer has a fixed height with its own scrollbar and no longer plays an entrance animation on the fields, and the form no longer toggles field state while typing, so autofilling the username and password does not move the fields. Autofill keeps the field colours.
+* Smaller things: Login and Confirm are real buttons (keyboard focus, Enter still submits), show/hide password, Caps Lock hint, errors appear in the card (with a short shake) instead of alert boxes, the button shows "Signing in...", autocomplete hints for password managers.
+
 ## Full-app polish pass (fork.27)
 * **Shared look**: legacy Fomantic controls inside the admin pages (buttons, inputs, selects, checkboxes, tables, messages, labels, accordions, tab strips, headings) now render as the kit components in light and dark, so pages that were not migrated yet stop looking different. Page frames lose their extra box; cards and tables are the only boxes. Tab strips are underlined, scroll sideways with an edge fade on phones and keep the chosen tab in view. See [components.md](components.md) for the recipe.
 * **Pages reworked** (headers, cards, form grids, real empty states, plain wording, phone layouts): Security Center (all tabs), Access rules, WAF, CAPTCHA, SSO, Network tools, Listeners, Trusted proxies, Encrypted Client Hello, Tunnels (zrok), Interfaces, Utilities, Settings, AI assistant, App Store, API tokens, Plugins, History, Updater, HTTP Proxy and its tag, alias and header dialogs, Redirection, Virtual directories, Stream proxy, Proxy root, Status, Statistics, Visitors, Uptime Monitor, Certificates, ACME, Fleet and Cluster.

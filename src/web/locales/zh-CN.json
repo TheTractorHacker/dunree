@@ -4,7 +4,7 @@
   "reviewed": false,
   "author": "machine-assisted (Claude)",
   "coverage": 51.8,
-  "coreCoverage": 52.2
+  "coreCoverage": 52.1
  },
  "strings": {
   "\"Add Redirection Rule\"": "“添加重定向规则”",
@@ -2050,7 +2050,6 @@
   "pass the client identity to the upstream": "将客户端身份传递给上游",
   "Passive health checks": "被动健康检查",
   "Password": "密码",
-  "Password does not match": "密码不匹配",
   "Password must be at least 8 characters long": "密码长度至少为 8 个字符",
   "Paste": "粘贴",
   "Paste entries (one IP address or CIDR per line,": "粘贴条目（每行一个 IP 地址或 CIDR，",
@@ -2714,7 +2713,6 @@
   "SNI (optional)": "SNI（可选）",
   "Solomon Islands": "所罗门群岛",
   "Somalia": "索马里",
-  "Something went wrong.": "出错了。",
   "Soonest to expire": "最先到期",
   "Sort by name": "按名称排序",
   "Sort by: Author": "排序：作者",

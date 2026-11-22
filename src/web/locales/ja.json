@@ -4,7 +4,7 @@
   "reviewed": false,
   "author": "machine-assisted (Claude)",
   "coverage": 14.4,
-  "coreCoverage": 27.7
+  "coreCoverage": 27.6
  },
  "strings": {
   "\"Add Redirection Rule\"": "「リダイレクトルールを追加」",
@@ -681,7 +681,6 @@
   "Page {0} / {1}": "ページ {0} / {1}",
   "Paranoia level": "パラノイアレベル",
   "Password": "パスワード",
-  "Password does not match": "パスワードが一致しません",
   "Path": "パス",
   "Path Rules": "パスルール",
   "Path scoped exclusions": "パス単位の除外",
@@ -792,7 +791,6 @@
   "Since": "開始",
   "Skip Verification": "検証をスキップ",
   "Skip WebSocket Origin Check": "WebSocketのオリジン確認をスキップ",
-  "Something went wrong.": "問題が発生しました。",
   "Soonest to expire": "まもなく期限切れ",
   "Source": "ソース",
   "SSO / OAuth2": "SSO / OAuth2",

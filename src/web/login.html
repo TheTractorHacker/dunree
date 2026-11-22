@@ -4,162 +4,172 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
     <link rel="icon" type="image/png" href="./favicon.png" />
     <title>Login | Zoraxy</title>
     <link rel="stylesheet" href="script/semantic/semantic.min.css">
-    <link href="script/aos.css" rel="stylesheet">
-    <script src="script/aos.js"></script>
     <script src="script/i18n.js"></script>
     <script type="application/javascript" src="script/jquery-3.6.0.min.js"></script>
     <script type="application/javascript" src="script/semantic/semantic.min.js"></script>
     <style>
+        :root {
+            --lg-sky-a: #abc7ff; --lg-sky-b: #c1e3ff;
+            --lg-card: rgba(255,255,255,.66); --lg-card-line: rgba(255,255,255,.75);
+            --lg-text: #17202e; --lg-muted: #4b5a70;
+            --lg-field: rgba(255,255,255,.85); --lg-field-line: rgba(23,32,46,.18);
+            --lg-accent: #2f6df6; --lg-accent-2: #5b8cff;
+            --lg-orb-a: rgba(255,255,255,.55); --lg-orb-b: rgba(120,160,255,.45);
+            --lg-foot: #17202e;
+        }
+        body.morning   { --lg-sky-a: #abc7ff; --lg-sky-b: #ffe3f1; --lg-orb-b: rgba(255,170,210,.45); }
+        body.afternoon { --lg-sky-a: #5c9dff; --lg-sky-b: #8debff; --lg-orb-b: rgba(80,200,255,.5); }
+        body.evening   { --lg-sky-a: #f78fad; --lg-sky-b: #fdeb82; --lg-accent: #e0457b; --lg-accent-2: #f2784b; --lg-orb-b: rgba(255,120,150,.5); }
+        body.night {
+            --lg-sky-a: #0d1020; --lg-sky-b: #28344a;
+            --lg-card: rgba(18,22,34,.62); --lg-card-line: rgba(255,255,255,.14);
+            --lg-text: #eef2fa; --lg-muted: #9fb0c9;
+            --lg-field: rgba(255,255,255,.07); --lg-field-line: rgba(255,255,255,.2);
+            --lg-accent: #6c8dff; --lg-accent-2: #9a6bff;
+            --lg-orb-a: rgba(120,140,255,.28); --lg-orb-b: rgba(160,90,255,.28);
+            --lg-foot: #cfd8ea;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
         body {
-            background: rgb(231, 231, 231);
+            min-height: 100vh; min-height: 100dvh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px 16px 18vh;
+            overflow: hidden;
+            font-family: Lato, "Segoe UI", system-ui, -apple-system, sans-serif;
+            color: var(--lg-text);
+            background: linear-gradient(160deg, var(--lg-sky-a), var(--lg-sky-b));
+            background-size: 160% 160%;
+            animation: lgSky 28s ease-in-out infinite alternate;
         }
+        @keyframes lgSky { from { background-position: 0% 20%; } to { background-position: 100% 80%; } }
 
-        /* Time based background */
-        body.morning{
-            background: rgb(171,199,255);
-            background: linear-gradient(48deg, rgba(171,199,255,1) 21%, rgba(193,227,255,1) 79%); 
-        }
+        /* animated canvas: motes and layered waves */
+        #lgCanvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .lg-orb { position: fixed; border-radius: 50%; filter: blur(60px); pointer-events: none; z-index: 0; will-change: transform; }
+        .lg-orb.a { width: 46vmax; height: 46vmax; left: -14vmax; top: -18vmax; background: var(--lg-orb-a); animation: lgDriftA 22s ease-in-out infinite alternate; }
+        .lg-orb.b { width: 40vmax; height: 40vmax; right: -12vmax; top: 6vmax; background: var(--lg-orb-b); animation: lgDriftB 26s ease-in-out infinite alternate; }
+        @keyframes lgDriftA { to { transform: translate(9vmax, 7vmax) scale(1.12); } }
+        @keyframes lgDriftB { to { transform: translate(-8vmax, 9vmax) scale(.9); } }
 
-        body.afternoon{
-            background: rgb(108,172,255);
-            background: linear-gradient(21deg, rgba(108,172,255,1) 21%, rgba(141,235,255,1) 79%); 
-        }
-
-        body.evening{
-            background: rgb(247,143,173);
-            background: linear-gradient(21deg, rgba(247,143,173,1) 21%, rgba(253,235,130,1) 79%); 
-        }
-
-        body.night{
-            background: rgb(18,19,23);
-            background: linear-gradient(48deg, rgba(18,19,23,1) 21%, rgba(50,59,66,1) 79%); 
-        }
-
-        #errmsg{
-            color: #9f3a38;
-            margin-top: 1em;
-            margin-bottom: 0.4em;
-            text-align: left;
-        }
-
-        .registerOnly{
-            display:none;
-        }
-
-        .ui.fluid.button.registerOnly{
-            display:none;
-        }
-
+        /* the card: always as tall as its content, never scrolls inside itself */
         #loginForm {
-                border-radius: 1em;
-                width: 25em;
-                height: 450px;
-                position: absolute; /*Can also be `fixed`*/
-                left: 0;
-                right: 0;
-                top: 0;
-                bottom: 0;
-                margin: auto;
-                /*Solves a problem in which the content is being cut when the div is smaller than its' wrapper:*/
-                max-width: 100%;
-                max-height: 100%;
-                overflow: auto;
-                background-color: white;
+            position: relative; z-index: 2;
+            width: 26em; max-width: 100%;
+            padding: 2.2em 2em 1.8em;
+            border-radius: 22px;
+            background: var(--lg-card);
+            border: 1px solid var(--lg-card-line);
+            -webkit-backdrop-filter: blur(22px) saturate(160%);
+            backdrop-filter: blur(22px) saturate(160%);
+            box-shadow: 0 24px 60px rgba(10,20,50,.28), 0 2px 0 rgba(255,255,255,.35) inset;
+            animation: lgIn .7s cubic-bezier(.2,.8,.2,1) both;
         }
+        @keyframes lgIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+        #loginForm.shake { animation: lgShake .45s ease; }
+        @keyframes lgShake { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } 100% { transform: none; } }
+        #loginForm .lg-logo { display: block; width: 78%; max-width: 15em; margin: 0 auto 1.1em; pointer-events: none; user-select: none; }
+        body.night #loginForm .lg-logo { filter: invert(.94) hue-rotate(180deg); }
+        .lg-title { margin: 0 0 1.2em; text-align: center; color: var(--lg-muted); font-size: .95em; letter-spacing: .02em; }
 
-        .wavebase {
-            position:fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height:5vh;
-            text-align:center;
-            padding-top: 1em;
-            background-color: white;
+        #loginForm form { margin: 0; }
+        #loginForm .field { margin: 0 0 1em; }
+        #loginForm .ui.input { width: 100%; }
+        #loginForm .ui.form .field input[type=text],
+        #loginForm .ui.form .field input[type=password] {
+            height: 48px; font-size: 1rem; color: var(--lg-text);
+            background: var(--lg-field); border: 1px solid var(--lg-field-line); border-radius: 12px;
+            padding-left: 2.9em !important; padding-right: 1em;
+            transition: border-color .2s, box-shadow .2s, background-color .2s;
         }
+        #loginForm .ui.form .field input::placeholder { color: var(--lg-muted); opacity: .85; }
+        #loginForm .ui.form .field input:focus {
+            background: var(--lg-field); color: var(--lg-text);
+            border-color: var(--lg-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lg-accent) 24%, transparent);
+        }
+        #loginForm .ui.icon.input > i.icon { color: var(--lg-muted); opacity: .9; width: 2.9em; transition: color .2s; }
+        #loginForm .ui.icon.input:focus-within > i.icon { color: var(--lg-accent); }
+        #loginForm .ui.form .field input#magic { padding-right: 3em; }
+        /* autofill: keep the field exactly as it is, no colour flash and no size change */
+        #loginForm input:-webkit-autofill, #loginForm input:-webkit-autofill:hover, #loginForm input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--lg-text);
+            -webkit-box-shadow: 0 0 0 1000px var(--lg-field) inset !important;
+            box-shadow: 0 0 0 1000px var(--lg-field) inset !important;
+            caret-color: var(--lg-text);
+            transition: background-color 600000s 0s, color 600000s 0s;
+            border-radius: 12px;
+        }
+        .lg-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--lg-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 3; }
+        .lg-eye:hover { color: var(--lg-text); background: color-mix(in srgb, var(--lg-text) 8%, transparent); }
+        .lg-eye:focus-visible { outline: 2px solid var(--lg-accent); outline-offset: 1px; }
+        .lg-eye i.icon { margin: 0; }
+        #capsHint { display: none; margin: -.4em 0 .9em; font-size: .85em; color: #b4690e; }
+        body.night #capsHint { color: #ffc46b; }
 
-        /* 
-            Waves CSS 
-        */
+        #loginForm .ui.checkbox label { color: var(--lg-muted) !important; font-size: .95em; }
+        #loginForm .ui.checkbox label:hover { color: var(--lg-text) !important; }
+        #loginForm .ui.checkbox input:checked ~ label { color: var(--lg-text) !important; }
+        #loginForm .ui.checkbox label:before { background: var(--lg-field); border-color: var(--lg-field-line); }
+        #loginForm .ui.checkbox input:checked ~ label:before { background: var(--lg-accent); border-color: var(--lg-accent); }
+        #loginForm .ui.checkbox input:checked ~ label:after { color: #fff; }
 
-        #wavesWrapper{
-            position: fixed;
-            bottom: 5vh;
-            width: 100%;
-            left: 0;
+        .lg-btn {
+            position: relative; display: flex; align-items: center; justify-content: center; gap: .55em;
+            width: 100%; height: 50px; margin: .4em 0 0; padding: 0 1em;
+            border: 0; border-radius: 13px; cursor: pointer;
+            font: inherit; font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; color: #fff;
+            background: linear-gradient(120deg, var(--lg-accent), var(--lg-accent-2), var(--lg-accent));
+            background-size: 220% 100%;
+            box-shadow: 0 10px 24px color-mix(in srgb, var(--lg-accent) 42%, transparent);
+            transition: transform .15s, box-shadow .2s, background-position .5s;
         }
-        
-        .waves {
-            position:relative;
-            width: 100%;
-            height:15vh;
-            margin-bottom:-7px; /*Fix for safari gap*/
-            min-height:100px;
-            max-height:150px;
-        }
+        .lg-btn:hover { background-position: 100% 0; transform: translateY(-1px); box-shadow: 0 14px 30px color-mix(in srgb, var(--lg-accent) 50%, transparent); }
+        .lg-btn:active { transform: translateY(0); }
+        .lg-btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--lg-accent) 45%, transparent); outline-offset: 3px; }
+        .lg-btn.busy { cursor: progress; opacity: .85; }
+        .lg-btn.busy::before { content: ""; width: 1em; height: 1em; border-radius: 50%; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; animation: lgSpin .7s linear infinite; }
+        @keyframes lgSpin { to { transform: rotate(360deg); } }
+        .lg-btn i.icon { margin: 0; }
 
-        
-        .parallax > use {
-            animation: move-forever 25s cubic-bezier(.55,.5,.45,.5)     infinite;
+        #errmsg { display: none; margin: 1em 0 0; padding: .65em .9em; border-radius: 11px; text-align: left; font-size: .95em;
+            color: #8d2523; background: rgba(219,40,40,.12); border: 1px solid rgba(219,40,40,.35); }
+        body.night #errmsg { color: #ffb4b0; background: rgba(255,90,90,.14); border-color: rgba(255,120,120,.4); }
+        .registerOnly, .ui.fluid.button.registerOnly { display: none; }
+
+        .wavebase { position: fixed; z-index: 3; left: 0; right: 0; bottom: 0; padding: .7em 1em .9em; text-align: center; font-size: .9em; color: var(--lg-foot); }
+        .wavebase p { margin: 0; opacity: .85; }
+        .wavebase a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+        @media (max-width: 480px) {
+            body { padding-bottom: 14vh; align-items: flex-start; padding-top: 6vh; }
+            #loginForm { padding: 1.7em 1.3em 1.4em; border-radius: 18px; }
         }
-        .parallax > use:nth-child(1) {
-            animation-delay: -8s;
-            animation-duration: 28s;
-        }
-        .parallax > use:nth-child(2) {
-            animation-delay: -12s;
-            animation-duration: 40s;
-        }
-        .parallax > use:nth-child(3) {
-            animation-delay: -16s;
-            animation-duration: 52s;
-        }
-        .parallax > use:nth-child(4) {
-            animation-delay: -20s;
-            animation-duration: 80s;
-        }
-        @keyframes move-forever {
-            0% {
-                transform: translate3d(-90px,0,0);
-            }
-            100% { 
-                transform: translate3d(85px,0,0);
-            }
-        }
-        /*Shrinking for mobile*/
-        @media (max-width: 768px) {
-            .waves {
-                height:40px;
-                min-height:40px;
-            }
+        @media (max-height: 560px) { body { align-items: flex-start; padding-top: 12px; overflow-y: auto; } }
+        @media (prefers-reduced-motion: reduce) {
+            body, .lg-orb, #loginForm, #loginForm.shake, .lg-btn.busy::before { animation: none !important; }
+            .lg-btn { transition: none; }
         }
     </style>
     </head>
     <body>
         <script>
-            $(document).ready(function() {
-                var currentHour = new Date().getHours();
-                if (currentHour >= 5 && currentHour < 12) {
-                    $("body").addClass("morning");
-                } else if (currentHour >= 12 && currentHour < 17) {
-                    $("body").addClass("afternoon");
-                } else if (currentHour >= 17 && currentHour < 20) {
-                    $("body").addClass("evening");
-                } else {
-                    $("body").addClass("night");
-                }
-            });
+            (function(){
+                var h = new Date().getHours();
+                document.body.className = (h >= 5 && h < 12) ? "morning" : (h >= 12 && h < 17) ? "afternoon" : (h >= 17 && h < 20) ? "evening" : "night";
+            })();
 
             // csrf Ajax wrapper
             $.cjax = function(payload){
                 let requireTokenMethod = ["POST", "PUT", "DELETE"];
                 if (requireTokenMethod.includes(payload.method) || requireTokenMethod.includes(payload.type)){
                     //csrf token is required
-                    let csrfToken = document.querySelector('meta[name="zoraxy.csrf.Token"]').getAttribute("content");                    payload.headers = {
+                    let csrfToken = document.querySelector('meta[name="zoraxy.csrf.Token"]').getAttribute("content");
+                    payload.headers = {
                         "X-CSRF-Token": csrfToken,
                     }
                 }
@@ -167,67 +177,124 @@
                 $.ajax(payload);
             }
         </script>
-        <div id="loginForm" class="ui middle aligned center aligned grid" data-aos="fade-up">
-            <div class="column" style="padding-top: 0 !important;">
-                <form class="ui large form content">
-                    <div class="ui basic segment">
-                        <img class="ui fluid image" src="img/public/logo.svg" style="pointer-events:none;">
-                        <p class="registerOnly">Account Setup</p>
-                        <div class="field">
-                            <div class="ui left icon input">
-                                <i class="user icon"></i>
-                                <input id="username" type="text" name="username" placeholder="Username">
-                            </div>
-                        </div>
-                        <div class="field">
-                            <div class="ui left icon input">
-                                <i class="lock icon"></i>
-                                <input id="magic" type="password" name="password" placeholder="Password">
-                            </div>
-                        </div>
-                        <div class="field registerOnly">
-                            <div class="ui left icon input">
-                                <i class="lock icon"></i>
-                                <input id="repeatMagic" type="password" name="passwordconfirm" placeholder="Confirm Password" >
-                            </div>
-                        </div>
-                        <div class="field loginOnly" style="text-align: left;">
-                            <div class="ui checkbox">
-                            <input id="rmbme" type="checkbox" tabindex="0" class="hidden">
-                            <label>Remember Me</label>
-                            </div>
-                        </div>
-                        <div id="loginbtn" class="ui fluid basic button loginOnly"> <i class="ui blue sign-in icon"></i> Login</div>
-                        <div id="regsiterbtn" class="ui fluid basic button registerOnly"><i class="ui green checkmark icon"></i> Confirm</div>
-                        <div id="errmsg"></div>
+        <div class="lg-orb a" aria-hidden="true"></div>
+        <div class="lg-orb b" aria-hidden="true"></div>
+        <canvas id="lgCanvas" aria-hidden="true"></canvas>
+        <main id="loginForm">
+            
+            <form id="lgForm" class="ui large form content" autocomplete="on">
+                <img class="lg-logo" src="img/public/logo.svg" alt="Zoraxy">
+                <p class="lg-title registerOnly">Account Setup</p>
+                <div class="field">
+                    <div class="ui left icon input">
+                        <i class="user icon"></i>
+                        <input id="username" type="text" name="username" placeholder="Username" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="Username">
                     </div>
-                </form>
-            </div>
-        </div>
-        <div id="wavesWrapper">
-            <!-- CSS waves-->
-            <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-            viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
-                <defs>
-                <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
-                </defs>
-                <g class="parallax">
-                <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7" />
-                <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
-                <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
-                <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
-                </g>
-            </svg>
-        </div>
+                </div>
+                <div class="field">
+                    <div class="ui left icon input" style="position:relative;">
+                        <i class="lock icon"></i>
+                        <input id="magic" type="password" name="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+                        <button type="button" class="lg-eye" id="lgEye" aria-label="Show password" title="Show password"><i class="eye icon"></i></button>
+                    </div>
+                </div>
+                <div id="capsHint" role="status"><i class="exclamation triangle icon"></i> Caps Lock is on</div>
+                <div class="field registerOnly">
+                    <div class="ui left icon input">
+                        <i class="lock icon"></i>
+                        <input id="repeatMagic" type="password" name="passwordconfirm" placeholder="Confirm Password" autocomplete="new-password" aria-label="Confirm password">
+                    </div>
+                </div>
+                <div class="field loginOnly" style="text-align: left;">
+                    <div class="ui checkbox">
+                        <input id="rmbme" type="checkbox" tabindex="0" class="hidden">
+                        <label for="rmbme">Remember Me</label>
+                    </div>
+                </div>
+                <button type="button" id="loginbtn" class="lg-btn loginOnly"><i class="sign-in icon"></i> <span class="lg-btn__label">Login</span></button>
+                <button type="button" id="regsiterbtn" class="lg-btn registerOnly"><i class="checkmark icon"></i> Confirm</button>
+                <div id="errmsg" role="alert"></div>
+            </form>
+        </main>
         <div class="wavebase">
-            <p>Proudly powered by <a href="https://zoraxy.aroz.org" target="_blank">Zoraxy</a></p>
+            <p>Proudly powered by <a href="https://zoraxy.aroz.org" target="_blank" rel="noopener">Zoraxy</a></p>
         </div>
     <script>
-        AOS.init();
+        /* Background: drifting light motes and five layers of waves that swell, cross and follow the pointer a little.
+           Pauses when the tab is hidden, draws one still frame when the system asks for reduced motion. */
+        (function(){
+            var cv = document.getElementById("lgCanvas"), cx = cv.getContext("2d");
+            var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+            var night = document.body.classList.contains("night"), evening = document.body.classList.contains("evening");
+            var tint = night ? "150,170,255" : evening ? "255,255,255" : "255,255,255";
+            var layers = [
+                { amp: .060, len: 1.15, spd: .55, base: .70, a: night ? .10 : .26 },
+                { amp: .075, len: .85,  spd: -.40, base: .76, a: night ? .13 : .32 },
+                { amp: .055, len: 1.55, spd: .32, base: .81, a: night ? .17 : .42 },
+                { amp: .085, len: .70,  spd: -.62, base: .87, a: night ? .24 : .58 },
+                { amp: .050, len: 1.05, spd: .46, base: .93, a: night ? .34 : .86 }
+            ];
+            var W = 0, H = 0, dpr = 1, motes = [], px = 0, tx = 0, t0 = performance.now(), raf = 0;
+            function size(){
+                dpr = Math.min(window.devicePixelRatio || 1, 2);
+                W = cv.clientWidth; H = cv.clientHeight;
+                cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+                cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                var n = Math.round(Math.min(46, W / 28));
+                motes = [];
+                for (var i = 0; i < n; i++) motes.push({ x: Math.random() * W, y: Math.random() * H, r: 1 + Math.random() * 2.6, v: 6 + Math.random() * 16, p: Math.random() * 6.28 });
+            }
+            function wave(L, t, shift){
+                var top = H * L.base, step = Math.max(6, W / 160), k = 6.28318 / (W * L.len);
+                cx.beginPath(); cx.moveTo(0, H);
+                for (var x = 0; x <= W + step; x += step){
+                    var y = top
+                        + Math.sin(x * k + t * L.spd + shift) * H * L.amp
+                        + Math.sin(x * k * 2.3 - t * L.spd * 1.4 + shift * 1.7) * H * L.amp * .35;
+                    cx.lineTo(x, y);
+                }
+                cx.lineTo(W, H); cx.closePath();
+                cx.fillStyle = "rgba(" + tint + "," + L.a + ")"; cx.fill();
+            }
+            function frame(now){
+                var t = (now - t0) / 1000;
+                px += (tx - px) * .05;
+                cx.clearRect(0, 0, W, H);
+                if (night) {
+                    for (var s = 0; s < motes.length; s++) { var m = motes[s], tw = .35 + .65 * Math.abs(Math.sin(t * .8 + m.p));
+                        cx.fillStyle = "rgba(200,215,255," + (tw * .55) + ")"; cx.beginPath(); cx.arc(m.x, (m.y * .7), m.r * .6, 0, 6.28318); cx.fill(); }
+                } else {
+                    for (var i = 0; i < motes.length; i++) { var o = motes[i];
+                        o.y -= o.v * (1 / 60); o.x += Math.sin(t * .6 + o.p) * .25; if (o.y < -10) { o.y = H + 10; o.x = Math.random() * W; }
+                        cx.fillStyle = "rgba(255,255,255," + (.18 + .25 * Math.abs(Math.sin(t + o.p))) + ")"; cx.beginPath(); cx.arc(o.x, o.y, o.r, 0, 6.28318); cx.fill(); }
+                }
+                for (var j = 0; j < layers.length; j++) wave(layers[j], t, px * (1.2 + j * .5) + j * 1.3);
+                if (!reduce && !document.hidden) raf = requestAnimationFrame(frame);
+            }
+            function start(){ cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); }
+            size(); start();
+            window.addEventListener("resize", function(){ size(); if (reduce) start(); });
+            document.addEventListener("visibilitychange", function(){ if (!document.hidden && !reduce) start(); });
+            if (!reduce) window.addEventListener("pointermove", function(e){ tx = (e.clientX / Math.max(1, window.innerWidth) - .5) * 3.2; }, { passive: true });
+        })();
+
+        /* show/hide password and Caps Lock hint */
+        (function(){
+            var eye = document.getElementById("lgEye"), pw = document.getElementById("magic");
+            eye.addEventListener("click", function(){
+                var show = pw.type === "password"; pw.type = show ? "text" : "password";
+                eye.setAttribute("aria-label", show ? "Hide password" : "Show password"); eye.title = show ? "Hide password" : "Show password";
+                eye.querySelector("i").className = (show ? "eye slash" : "eye") + " icon"; pw.focus();
+            });
+            function caps(e){ if (e.getModifierState) document.getElementById("capsHint").style.display = e.getModifierState("CapsLock") ? "block" : "none"; }
+            pw.addEventListener("keydown", caps); pw.addEventListener("keyup", caps);
+            pw.addEventListener("blur", function(){ document.getElementById("capsHint").style.display = "none"; });
+        })();
         var registerMode = false;
+        $(".checkbox").checkbox();
         var redirectionAddress = "/";
         var loginAddress = "/api/auth/login";
-        $(".checkbox").checkbox();
+        
         $(document).ready(function(){
             var currentdate = new Date(); 
             var datetime = currentdate.getDate() + "/"
@@ -292,7 +359,8 @@
                         $("#regsiterbtn").click();
                     }else{
                         //Focus to next field
-                        $(this).next().focus();
+                        var fields = $("#lgForm input[type=text], #lgForm input[type=password]").filter(":visible");
+                        fields.eq(fields.index(this) + 1).focus();
                     }
                 }else{
                     //Login mode
@@ -312,7 +380,7 @@
             let repeatMagic = $("#repeatMagic").val();
             let csrfToken = document.querySelector('meta[name="zoraxy.csrf.Token"]').getAttribute("content");
             if (magic !== repeatMagic) {
-                alert("Password does not match");
+                showError("The passwords do not match.");
                 return;
             }
 
@@ -328,7 +396,7 @@
                 },
                 success: function(data) {
                     if (data.error != undefined){
-                        alert(data.error);
+                        showError(data.error);
                     }else{
                         //Register success. Refresh page
                         window.location.reload();
@@ -336,6 +404,7 @@
                 },
                 error: function(xhr, status, error) {
                     console.error("Error registering user:", error);
+                    showError("Could not create the account. Try again.");
                 }
             });
         });
@@ -348,7 +417,7 @@
             let rmbme = document.getElementById("rmbme").checked;
             let csrfToken = document.querySelector('meta[name="zoraxy.csrf.Token"]').getAttribute("content");
             $("#errmsg").stop().finish().slideUp("fast");
-            $("input").addClass('disabled');
+            setBusy(true);
             $.cjax({
                 url: loginAddress, 
                 type: "POST",
@@ -363,8 +432,7 @@
                 success: function(data){
                     if (data.error !== undefined){
                         //Something went wrong during the login
-                        $("#errmsg").html(`<i class="red remove icon"></i> ${data.error}`);
-                        $("#errmsg").stop().finish().slideDown('fast');
+                        showError(data.error);
                     }else if(data.redirect !== undefined){
                         //LDAP Related Code
                         window.location.href = data.redirect;
@@ -377,13 +445,26 @@
                             window.location.href = redirectionAddress;
                         }
                     }
-                    $("input").removeClass('disabled');
+                    if (data.error !== undefined) { setBusy(false); }
                 },
                 error: function(){
-                    alert("Something went wrong.")
+                    showError("Something went wrong. Check your connection and try again.");
+                    setBusy(false);
                 }
             });
 
+        }
+
+        function showError(msg){
+            $("#errmsg").text("").append($('<i class="exclamation circle icon"></i>')).append(document.createTextNode(" " + msg));
+            $("#errmsg").stop().finish().slideDown('fast');
+            var card = document.getElementById("loginForm");
+            card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+        }
+        function setBusy(on){
+            $("#loginbtn").toggleClass("busy", on).prop("disabled", on);
+            $("#loginbtn .lg-btn__label").text(on ? "Signing in..." : "Login");
+            $("#username, #magic").prop("readonly", on);
         }
 
         function get(name){

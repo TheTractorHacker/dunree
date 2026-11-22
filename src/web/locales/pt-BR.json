@@ -4,7 +4,7 @@
   "reviewed": false,
   "author": "machine-assisted (Claude)",
   "coverage": 14.7,
-  "coreCoverage": 27.9
+  "coreCoverage": 27.8
  },
  "strings": {
   "\"Add Redirection Rule\"": "\"Adicionar regra de redirecionamento\"",
@@ -698,7 +698,6 @@
   "Page {0} / {1}": "Página {0} / {1}",
   "Paranoia level": "Nível de paranoia",
   "Password": "Senha",
-  "Password does not match": "As senhas não coincidem",
   "Path": "Caminho",
   "Path Rules": "Regras de caminho",
   "Path scoped exclusions": "Exclusões por caminho",
@@ -811,7 +810,6 @@
   "Since": "Desde",
   "Skip Verification": "Ignorar verificação",
   "Skip WebSocket Origin Check": "Ignorar verificação de origem do WebSocket",
-  "Something went wrong.": "Algo deu errado.",
   "Soonest to expire": "Próximos a expirar",
   "Source": "Origem",
   "SSO / OAuth2": "SSO / OAuth2",

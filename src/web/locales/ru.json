@@ -4,7 +4,7 @@
   "reviewed": false,
   "author": "machine-assisted (Claude)",
   "coverage": 14.9,
-  "coreCoverage": 28.5
+  "coreCoverage": 28.4
  },
  "strings": {
   "\"Add Redirection Rule\"": "«Добавить правило перенаправления»",
@@ -712,7 +712,6 @@
   "Page {0} / {1}": "Страница {0} / {1}",
   "Paranoia level": "Уровень паранойи",
   "Password": "Пароль",
-  "Password does not match": "Пароли не совпадают",
   "Path": "Путь",
   "Path Rules": "Правила путей",
   "Path scoped exclusions": "Исключения по путям",
@@ -825,7 +824,6 @@
   "Since": "С",
   "Skip Verification": "Пропустить проверку",
   "Skip WebSocket Origin Check": "Пропустить проверку Origin для WebSocket",
-  "Something went wrong.": "Что-то пошло не так.",
   "Soonest to expire": "Скоро истекают",
   "Source": "Источник",
   "SSO / OAuth2": "SSO / OAuth2",
