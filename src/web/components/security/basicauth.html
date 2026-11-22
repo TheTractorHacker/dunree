@@ -1,30 +1,46 @@
-<h3>Basic auth: shared credential lists and path scope</h3>
-<p>Create named credential lists once and assign them to several proxy rules (in addition to the rule's own users). Optionally limit
-    basic auth to path prefixes such as <code>/admin</code>; everything else on that host is then served without basic auth.
-    Passwords are stored as argon2id hashes and are never shown; leave a password empty to keep the stored one.
-    Basic auth must be the selected authentication method of the proxy rule (HTTP Proxy tab, Authentication).</p>
 <div id="baMsg" class="ui negative message" style="display:none"></div>
-<h4>Credential lists</h4>
-<div id="baLists"></div>
-<div class="ui form">
-    <div class="two fields">
-        <div class="field"><label for="baName">List name</label><input id="baName" placeholder="team-a" autocomplete="off"></div>
-        <div class="field"><label for="baUsers">Users (one per line: <code>username:password</code>, password optional for existing users)</label><textarea id="baUsers" rows="3" autocomplete="off"></textarea></div>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Credential lists</h3>
+        <p class="zx-card__desc">Named lists of users that several proxy rules can share, on top of each rule's own users. Passwords are stored hashed and never shown.</p>
     </div>
-    <button class="ui basic green button" id="baSave"><i class="save icon"></i> Save list</button>
-</div>
-<div class="ui divider"></div>
-<h4>Per proxy rule</h4>
-<div class="ui form">
-    <div class="three fields">
-        <div class="field"><label>Proxy rule</label><select id="baEp" class="ui dropdown"></select></div>
-        <div class="field"><label>Assigned lists (comma separated)</label><input id="baAssign" placeholder="team-a, team-b"></div>
-        <div class="field"><label>Only below these paths (comma separated, empty = whole host)</label><input id="baScope" placeholder="/admin, /private"></div>
+    <div class="zx-card__body">
+        <div id="baLists" class="zx-listrows"></div>
+        <h4 class="zx-subhead">Add or change a list</h4>
+        <div class="ui form">
+            <div class="zx-form-grid">
+                <div class="field zx-field"><label for="baName">List name</label><input id="baName" placeholder="team-a" autocomplete="off"></div>
+                <div class="field zx-field"><label for="baUsers">Users</label><textarea id="baUsers" rows="3" autocomplete="off" placeholder="alice:secret&#10;bob"></textarea><p class="zx-help">One per line as username:password. Leave the password out to keep an existing user's password.</p></div>
+            </div>
+            <button class="ui primary button" id="baSave"><i class="save icon"></i> Save list</button>
+        </div>
     </div>
-    <button class="ui basic green button" id="baApply"><i class="save icon"></i> Apply</button>
-</div>
+</section>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Per proxy rule</h3>
+        <p class="zx-card__desc">Choose which lists protect a proxy rule and, if you like, only some paths. Basic auth must also be the rule's authentication method (HTTP Proxy, Authentication).</p>
+    </div>
+    <div class="zx-card__body">
+        <div class="ui form">
+            <div class="zx-form-grid">
+                <div class="field zx-field"><label for="baEp">Proxy rule</label><select id="baEp"></select></div>
+                <div class="field zx-field"><label for="baAssign">Assigned lists</label><input id="baAssign" placeholder="team-a, team-b"><p class="zx-help">Separate list names with commas.</p></div>
+                <div class="field zx-field"><label for="baScope">Only below these paths</label><input id="baScope" placeholder="/admin, /private"><p class="zx-help">Separate with commas. Empty protects the whole host.</p></div>
+            </div>
+            <button class="ui primary button" id="baApply"><i class="save icon"></i> Apply</button>
+        </div>
+    </div>
+</section>
+<style>
+    #baLists .zx-listrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
+    #baLists .zx-listrow:first-child { padding-top: 0; }
+    #baLists .zx-listrow__main { flex: 1 1 16rem; min-width: 0; overflow-wrap: anywhere; }
+    #baLists .zx-listrow__meta { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+</style>
 <script>
 (function () {
+    function t(s) { return typeof window.t === "function" ? window.t(s) : s; }
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
     function err(m) { $("#baMsg").text(m).show(); }
@@ -33,9 +49,9 @@
         $.get("/api/basicauth/lists/get", function (d) {
             $("#baMsg").hide();
             $("#baLists").html((d || []).map(function (l) {
-                return '<div class="ui segment"><b>' + esc(l.Name) + "</b> - users: " + esc((l.Users || []).join(", ") || "none") + "<br><small>used by: " + esc((l.UsedBy || []).join(", ") || "no proxy rule") + '</small> ' +
-                    '<button class="ui mini basic button baEdit" data-n="' + esc(l.Name) + '" data-u="' + esc((l.Users || []).join(",")) + '">Edit</button> <button class="ui mini basic red button baDel" data-n="' + esc(l.Name) + '">Delete</button></div>';
-            }).join("") || "<p><i>No lists yet.</i></p>");
+                return '<div class="zx-listrow"><div class="zx-listrow__main"><strong>' + esc(l.Name) + '</strong> <span class="zx-badge">' + esc(String((l.Users || []).length)) + ' ' + esc(t("users")) + '</span><span class="zx-listrow__meta">' + esc(t("Users:")) + " " + esc((l.Users || []).join(", ") || t("none")) + " · " + esc(t("Used by:")) + " " + esc((l.UsedBy || []).join(", ") || t("no proxy rule")) + '</span></div>' +
+                    '<div class="zx-row-actions"><button class="ui mini basic button baEdit" data-n="' + esc(l.Name) + '" data-u="' + esc((l.Users || []).join(",")) + '">Edit</button> <button class="ui mini basic red button baDel" data-n="' + esc(l.Name) + '">Delete</button></div></div>';
+            }).join("") || '<div class="zx-empty zx-empty--inline"><p class="zx-empty__text">No lists yet. Create the first list below, then assign it to a proxy rule.</p></div>');
         });
     }
     $("#baLists").on("click", ".baEdit", function () {
@@ -61,7 +77,7 @@
         });
     }
     $.cjax({ type: "POST", url: "/api/proxy/list", data: { type: "host" }, success: function (list) {
-        $("#baEp").html((list || []).map(function (e) { return "<option>" + esc(e.RootOrMatchingDomain) + "</option>"; }).join("") || "<option value=''>(no proxy rules)</option>");
+        $("#baEp").html((list || []).map(function (e) { return "<option>" + esc(e.RootOrMatchingDomain) + "</option>"; }).join("") || "<option value=''>No proxy rules yet</option>");
         loadEp();
     } });
     $("#baEp").on("change", loadEp);

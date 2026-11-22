@@ -322,7 +322,7 @@ def phase4_ui(pg, ctx):
         # ---------------------------------------------------------------- Network plan
         current["page"] = "phase4-netplan"
         sec_tab("netplan", "#npPage #npResult .zx-callout, #npPage #npResult .np-list")
-        if P4_DISCLAIMER not in js("document.getElementById('npDisclaimer').innerText") and "applies nothing" not in js("document.getElementById('npDisclaimer').innerText"):
+        if P4_DISCLAIMER not in js("document.getElementById('npDisclaimer').innerText") and "applies nothing" not in js("document.getElementById('npDisclaimer').innerText") and "does not change your firewall" not in js("document.getElementById('npDisclaimer').innerText"):
             fail("phase4-netplan", "the standing disclaimer is missing from the tab")
         if "No plan is saved yet" not in js("document.getElementById('npResult').innerText"):
             fail("phase4-netplan", "with no plan saved the tab must say nothing is compared: " + js("document.getElementById('npResult').innerText")[:200])

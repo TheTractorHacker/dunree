@@ -11,54 +11,16 @@
     margin-bottom: 0.2em;
   }
   #appstore .as-header p{
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
   }
 
-  /* Stat cards */
-  #appstore .as-stats{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1em;
-    margin-top: 1em;
-  }
-  #appstore .as-stat-card{
-    display: flex;
-    align-items: center;
-    gap: 1em;
-    background-color: var(--theme_bg_primary);
-    border: 1px solid var(--divider_color);
-    border-radius: 0.8em;
-    padding: 1.2em;
-  }
-  #appstore .as-stat-icon{
-    width: 3em;
-    height: 3em;
-    border-radius: 0.6em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2em;
-    flex-shrink: 0;
-  }
-  #appstore .as-stat-icon.blue{ background-color: rgba(85,131,238,0.15); color: #5583ee; }
-  #appstore .as-stat-icon.purple{ background-color: rgba(163,85,238,0.15); color: #a355ee; }
-  #appstore .as-stat-icon.green{ background-color: rgba(65,199,175,0.15); color: #21ba45; }
-  #appstore .as-stat-icon.yellow{ background-color: rgba(250,172,38,0.15); color: #f2a20c; }
-  #appstore .as-stat-title{
-    color: var(--text_color_secondary);
-    font-size: 0.9em;
-  }
-  #appstore .as-stat-value{
-    font-size: 1.6em;
-    font-weight: bold;
-    color: var(--text_color);
-    line-height: 1.2em;
-  }
-  #appstore .as-stat-sub{
-    color: var(--text_color_secondary);
-    font-size: 0.85em;
-  }
-
+  /* Stat tiles */
+  #appstore .as-stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--zx-space-3); margin: 0; }
+  #appstore .as-stats .as-stat-card{ background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-3) var(--zx-space-4); }
+  #appstore .as-stat-title{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 600; }
+  #appstore .as-stat-value{ font-size: var(--zx-fs-2xl); font-weight: 700; color: var(--zx-text); line-height: 1.2; }
+  #appstore .as-stat-sub{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+  @media (max-width: 480px){ #appstore .as-stats{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   /* Toolbar */
   #appstore .as-toolbar{
     display: flex;
@@ -96,15 +58,15 @@
     min-width: 0;
   }
   #appstore .as-panel{
-    background-color: var(--theme_bg_primary);
-    border: 1px solid var(--divider_color);
+    background-color: var(--zx-surface);
+    border: 1px solid var(--zx-border);
     border-radius: 0.8em;
     padding: 1em;
     margin-bottom: 1em;
   }
   #appstore .as-panel-title{
     font-weight: bold;
-    color: var(--text_color);
+    color: var(--zx-text);
     margin-bottom: 0.6em;
   }
   #appstore .as-cat-item{
@@ -114,37 +76,37 @@
     padding: 0.45em 0.6em;
     border-radius: 0.4em;
     cursor: pointer;
-    color: var(--text_color);
+    color: var(--zx-text);
   }
   #appstore .as-cat-item:hover{
-    background-color: var(--theme_bg_active);
+    background-color: var(--zx-surface-2);
   }
   #appstore .as-cat-item.active{
-    background-color: rgba(85,131,238,0.15);
-    color: #5583ee;
+    background-color: var(--zx-primary-soft);
+    color: var(--zx-primary-soft-text);
     font-weight: bold;
   }
   #appstore .as-count-chip{
-    background-color: var(--theme_bg_active);
-    color: var(--text_color_secondary);
+    background-color: var(--zx-surface-2);
+    color: var(--zx-text-muted);
     border-radius: 0.8em;
-    font-size: 0.8em;
+    font-size: var(--zx-fs-sm);
     padding: 0.1em 0.7em;
   }
   #appstore .as-cat-item.active .as-count-chip{
-    background-color: rgba(85,131,238,0.2);
-    color: #5583ee;
+    background-color: var(--zx-surface);
+    color: var(--zx-primary-soft-text);
   }
   #appstore .as-source-item{
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.3em 0;
-    color: var(--text_color);
+    color: var(--zx-text);
   }
   #appstore .as-source-item label{
     cursor: pointer;
-    color: var(--text_color);
+    color: var(--zx-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -152,10 +114,10 @@
   }
   #appstore .as-compat-chip{
     display: inline-block;
-    background-color: var(--theme_bg_active);
-    color: var(--text_color_secondary);
+    background-color: var(--zx-surface-2);
+    color: var(--zx-text-muted);
     border-radius: 0.4em;
-    font-size: 0.8em;
+    font-size: var(--zx-fs-sm);
     padding: 0.25em 0.6em;
     margin: 0 0.3em 0.3em 0;
   }
@@ -163,8 +125,8 @@
   /* Featured banner */
   #appstore .as-featured{
     position: relative;
-    background: linear-gradient(90deg, rgba(85,131,238,0.12) 0%, rgba(65,216,221,0.10) 100%);
-    border: 1px solid var(--divider_color);
+    background: var(--zx-surface);
+    border: 1px solid var(--zx-border);
     border-radius: 0.8em;
     padding: 1.5em;
     margin-bottom: 1.2em;
@@ -179,8 +141,8 @@
     width: 72px;
     height: 72px;
     border-radius: 1em;
-    background-color: var(--theme_bg_primary);
-    border: 1px solid var(--divider_color);
+    background-color: var(--zx-surface);
+    border: 1px solid var(--zx-border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,10 +156,10 @@
   }
   #appstore .as-featured-label{
     display: inline-block;
-    background-color: rgba(85,131,238,0.15);
-    color: #5583ee;
-    border-radius: 0.8em;
-    font-size: 0.8em;
+    background-color: var(--zx-info-bg);
+    color: var(--zx-info-text);
+    border-radius: var(--zx-radius-pill);
+    font-size: var(--zx-fs-sm);
     font-weight: bold;
     padding: 0.2em 0.8em;
     margin-bottom: 0.4em;
@@ -205,11 +167,11 @@
   #appstore .as-featured-title{
     font-size: 1.4em;
     font-weight: bold;
-    color: var(--text_color);
+    color: var(--zx-text);
     margin: 0.1em 0 0.2em 0;
   }
   #appstore .as-featured-desc{
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
     margin-bottom: 0.6em;
   }
   #appstore .as-featured-meta{
@@ -217,7 +179,7 @@
     text-align: right;
   }
   #appstore .as-featured-version{
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
     font-size: 0.9em;
     margin-bottom: 0.8em;
   }
@@ -230,12 +192,12 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: var(--divider_color);
+    background-color: var(--zx-border);
     margin: 0 3px;
     cursor: pointer;
   }
   #appstore .as-featured-dot.active{
-    background-color: #5583ee;
+    background-color: var(--zx-primary);
   }
 
   /* App cards */
@@ -248,8 +210,8 @@
     grid-template-columns: 1fr;
   }
   #appstore .as-app-card{
-    background-color: var(--theme_bg_primary);
-    border: 1px solid var(--divider_color);
+    background-color: var(--zx-surface);
+    border: 1px solid var(--zx-border);
     border-radius: 0.8em;
     padding: 1.2em;
     display: flex;
@@ -273,7 +235,7 @@
     width: 42px;
     height: 42px;
     border-radius: 0.6em;
-    background-color: var(--theme_bg_active);
+    background-color: var(--zx-surface-2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -287,14 +249,14 @@
   }
   #appstore .as-app-name{
     font-weight: bold;
-    color: var(--text_color);
+    color: var(--zx-text);
     cursor: pointer;
   }
   #appstore .as-app-name:hover{
-    color: #5583ee;
+    color: var(--zx-link);
   }
   #appstore .as-app-desc{
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
     font-size: 0.9em;
     margin-bottom: 0.8em;
     flex: 1;
@@ -309,16 +271,16 @@
   }
   #appstore .as-tag{
     display: inline-block;
-    background-color: var(--theme_bg_active);
-    color: var(--text_color_secondary);
+    background-color: var(--zx-surface-2);
+    color: var(--zx-text-muted);
     border-radius: 0.4em;
-    font-size: 0.78em;
+    font-size: var(--zx-fs-sm);
     padding: 0.2em 0.6em;
     margin: 0 0.3em 0.3em 0;
   }
   #appstore .as-tag-preview{
-    background-color: rgba(250,172,38,0.15);
-    color: #f2a20c;
+    background-color: var(--zx-warn-bg);
+    color: var(--zx-warn-text);
     font-weight: bold;
   }
   #appstore .as-app-footer{
@@ -328,14 +290,14 @@
     gap: 0.5em;
   }
   #appstore .as-app-version{
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
     font-size: 0.85em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   #appstore .as-installed-label{
-    color: #21ba45;
+    color: var(--zx-ok-text);
     font-size: 0.9em;
     font-weight: bold;
     white-space: nowrap;
@@ -346,7 +308,7 @@
   }
   #appstore .as-noresult{
     text-align: center;
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
     padding: 3em 1em;
   }
 
@@ -358,18 +320,18 @@
     margin-top: 1.5em;
   }
   #appstore .as-footer-card{
-    background-color: var(--theme_bg_primary);
-    border: 1px solid var(--divider_color);
+    background-color: var(--zx-surface);
+    border: 1px solid var(--zx-border);
     border-radius: 0.8em;
     padding: 1.2em;
   }
   #appstore .as-footer-card .title{
     font-weight: bold;
-    color: var(--text_color);
+    color: var(--zx-text);
     margin-bottom: 0.3em;
   }
   #appstore .as-footer-card p{
-    color: var(--text_color_secondary);
+    color: var(--zx-text-muted);
     font-size: 0.9em;
     margin-bottom: 0.5em;
   }
@@ -395,70 +357,81 @@
   body.darkTheme .ui.modal > .header,
   body.darkTheme .ui.modal > .content,
   body.darkTheme .ui.modal > .actions{
-    background-color: #1b1c1d;
-    color: rgba(255, 255, 255, 0.9);
+    background-color: var(--zx-surface);
+    color: var(--zx-text);
   }
   body.darkTheme .ui.modal > .header{
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--zx-border);
   }
   body.darkTheme .ui.modal > .actions{
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--zx-border);
   }
   body.darkTheme .ui.modal .table{
-    background-color: #1b1c1d;
-    color: rgba(255, 255, 255, 0.9);
+    background-color: var(--zx-surface);
+    color: var(--zx-text);
   }
   body.darkTheme .ui.modal .table td{
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--zx-border);
   }
+  #appstore .as-app-name{ overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+  #appstore .as-panel .zx-disclosure{ margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  #appstore .as-panel .zx-disclosure > summary{ padding: 0; font-weight: 700; }
+  #appstore .as-panel .zx-disclosure__body{ padding: var(--zx-space-3) 0 0; border: 0; }
+  #appstore .as-sidebar{ position: sticky; top: var(--zx-space-3); }
+  #appstore .as-toolbar, #appstore .as-main{ margin-top: var(--zx-space-4); }
+  #appstore .as-footer-links{ display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-5); margin-top: var(--zx-space-5); }
+  #appstore .as-footer-links a{ color: var(--zx-link); }
+  @media (max-width: 900px){ #appstore .as-sidebar{ position: static; } }
+  /* Phone: compact stats, one toolbar, filters behind a disclosure */
+  #appstore .as-filters > summary.as-filters-toggle{ display: none; }
+  #appstore .zx-page-header__actions{ align-self: flex-end; }
+  @media (max-width: 900px){
+    #appstore .as-filters > summary.as-filters-toggle{ display: flex; align-items: center; gap: var(--zx-space-2); cursor: pointer; min-height: var(--zx-touch); padding: 0 var(--zx-space-4); font-weight: 700; color: var(--zx-text); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
+    #appstore .as-filters[open] > summary.as-filters-toggle{ margin-bottom: var(--zx-space-3); }
+  }
+  @media (max-width: 600px){
+    #appstore .zx-page-header__actions{ align-self: stretch; }
+    #appstore .as-stats{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zx-space-2); }
+    #appstore .as-stats .as-stat-card{ padding: var(--zx-space-2) var(--zx-space-3); }
+    #appstore .as-stat-sub{ display: none; }
+    #appstore .as-stat-value{ font-size: var(--zx-fs-xl); }
+    #appstore .as-toolbar .as-search{ flex: 1 1 100%; max-width: none; }
+    #appstore .as-toolbar-right{ flex: 1 1 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--zx-space-2); }
+    #appstore .as-toolbar-right .ui.buttons{ display: none; }
+    #appstore .as-toolbar-right .ui.dropdown{ min-width: 0; width: 100%; }
+  }
+
 </style>
 <div class="standardContainer">
-  <div class="ui basic segment">
-    <!-- Header -->
-    <div class="as-header">
-      <div>
-        <h2>App Store</h2>
-        <p>Extend Zoraxy with powerful plugins and integrations.</p>
+  <div>
+    <header class="zx-page-header">
+      <div class="zx-page-header__main">
+        <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+        <h2 class="zx-page-header__title">App Store</h2>
+        <p class="zx-page-header__sub">Extend Zoraxy with plugins and integrations.</p>
       </div>
-      <div class="as-header-actions">
-        <button class="ui basic button" onclick="asOpenSettings();"><i class="cog icon"></i> Settings</button>
-        <button id="asRefreshBtn" class="ui basic button" onclick="asResyncStore(this);"><i class="sync alternate icon"></i> Refresh</button>
+      <div class="zx-page-header__actions zx-btn-row">
+        <button class="ui button" onclick="asOpenSettings();"><i class="cog icon"></i> Settings</button>
+        <button id="asRefreshBtn" class="ui button" onclick="asResyncStore(this);"><i class="sync alternate icon"></i> Refresh</button>
       </div>
-    </div>
+    </header>
 
-    <!-- Stat cards -->
+    <!-- Stat tiles -->
     <div class="as-stats">
       <div class="as-stat-card">
-        <div class="as-stat-icon blue"><i class="shopping bag icon"></i></div>
-        <div>
-          <div class="as-stat-title">Total Apps</div>
-          <div class="as-stat-value" id="asStatTotal">-</div>
-          <div class="as-stat-sub">Community &amp; Official</div>
-        </div>
+        <div class="as-stat-title">Total apps</div>
+        <div class="as-stat-value" id="asStatTotal">-</div>
+        <div class="as-stat-sub">Community and official</div>
       </div>
       <div class="as-stat-card">
-        <div class="as-stat-icon purple"><i class="download icon"></i></div>
-        <div>
-          <div class="as-stat-title">Installed</div>
-          <div class="as-stat-value" id="asStatInstalled">-</div>
-          <div class="as-stat-sub">Active on this server</div>
-        </div>
+        <div class="as-stat-title">Installed</div>
+        <div class="as-stat-value" id="asStatInstalled">-</div>
+        <div class="as-stat-sub">On this server</div>
       </div>
       <div class="as-stat-card">
-        <div class="as-stat-icon green"><i class="sync icon"></i></div>
-        <div>
-          <div class="as-stat-title">Updates Available</div>
-          <div class="as-stat-value" id="asStatUpdates">-</div>
-          <div class="as-stat-sub">Keep your apps updated</div>
-        </div>
-      </div>
-      <div class="as-stat-card">
-        <div class="as-stat-icon yellow"><i class="th large icon"></i></div>
-        <div>
-          <div class="as-stat-title">Categories</div>
-          <div class="as-stat-value" id="asStatCategories">-</div>
-          <div class="as-stat-sub">Organized for you</div>
-        </div>
+        <div class="as-stat-title">Updates available</div>
+        <div class="as-stat-value" id="asStatUpdates">-</div>
+        <div class="as-stat-sub">Apps with a newer version</div>
       </div>
     </div>
 
@@ -499,6 +472,8 @@
     <div class="as-main">
       <!-- Sidebar -->
       <div class="as-sidebar">
+       <details class="as-filters" id="asFilters" open>
+        <summary class="as-filters-toggle"><i class="filter icon"></i> Filters</summary>
         <div class="as-panel">
           <div class="as-panel-title">Categories</div>
           <div id="asCategoryList"></div>
@@ -508,9 +483,12 @@
           <div id="asSourceList"></div>
         </div>
         <div class="as-panel">
-          <div class="as-panel-title">Compatibility</div>
-          <div id="asCompatList"></div>
+          <details class="zx-disclosure">
+            <summary>Compatibility</summary>
+            <div class="zx-disclosure__body" id="asCompatList"></div>
+          </details>
         </div>
+       </details>
       </div>
 
       <!-- Content -->
@@ -540,28 +518,16 @@
           <p>No apps match your filters.</p>
         </div>
         <div class="as-loadmore" id="asLoadMoreWrapper" style="display: none;">
-          <button class="ui basic button" onclick="asLoadMore();">Load More Apps <i class="chevron down icon"></i></button>
+          <button class="ui button" onclick="asLoadMore();">Load more apps <i class="chevron down icon"></i></button>
         </div>
       </div>
     </div>
 
-    <!-- Footer cards -->
-    <div class="as-footer-cards">
-      <div class="as-footer-card">
-        <div class="title"><i class="code icon"></i> Develop an App</div>
-        <p>Build custom plugins for Zoraxy using our SDK.</p>
-        <a href="https://zoraxy.aroz.org/plugins/html/" target="_blank">Developer Documentation <i class="external alternate icon"></i></a>
-      </div>
-      <div class="as-footer-card">
-        <div class="title"><i class="comment outline icon"></i> Request an App</div>
-        <p>Missing something? Let us know what you need.</p>
-        <a href="https://github.com/aroz-online/zoraxy-official-plugins/issues" target="_blank">Request an App <i class="external alternate icon"></i></a>
-      </div>
-      <div class="as-footer-card">
-        <div class="title"><i class="question circle outline icon"></i> App Store Help</div>
-        <p>Learn how to install and manage apps.</p>
-        <a href="https://zoraxy.aroz.org/plugins/html/" target="_blank">View Documentation <i class="external alternate icon"></i></a>
-      </div>
+    <!-- Help links -->
+    <div class="as-footer-links">
+      <a href="https://zoraxy.aroz.org/plugins/html/" target="_blank" rel="noopener"><i class="code icon"></i> Build an app</a>
+      <a href="https://github.com/aroz-online/zoraxy-official-plugins/issues" target="_blank" rel="noopener"><i class="comment outline icon"></i> Request an app</a>
+      <a href="https://zoraxy.aroz.org/plugins/html/" target="_blank" rel="noopener"><i class="question circle outline icon"></i> App Store help</a>
     </div>
   </div>
 </div>
@@ -571,7 +537,7 @@
   <i class="close icon"></i>
   <div class="header">App Store Settings</div>
   <div class="content">
-    <h4 class="ui header">Plugin Store Sources</h4>
+    <h4 class="ui header">Plugin store sources</h4>
     <p style="color: var(--text_color_secondary);">Apps are loaded from the sources below. You can add community plugin index URLs as additional sources.</p>
     <table class="ui celled unstackable table">
       <thead>
@@ -585,7 +551,7 @@
     </table>
     <div class="ui fluid action input">
       <input id="asNewSourceURL" type="text" placeholder="https://example.com/plugins/index.json">
-      <button class="ui basic button" onclick="asAddSource(this);"><i class="green add icon"></i> Add Source</button>
+      <button class="ui primary button" onclick="asAddSource(this);"><i class="add icon"></i> Add source</button>
     </div>
     <small>The source URL must point to a plugin index JSON file following the Zoraxy plugin list format.</small>
   </div>
@@ -609,6 +575,19 @@
 </div>
 
 <script>
+(function(){
+  function sync(){ var d = document.getElementById("asFilters"); if (!d) return; var wide = window.innerWidth > 900; if (d.dataset.wide !== String(wide)){ d.dataset.wide = String(wide); d.open = wide; } }
+  sync(); $(window).on("resize", sync);
+})();
+//Tag chips of an app: preview marker, category and kind; the kind is left out when it repeats the category
+function asTagsHtml(app, spec){
+  const cat = asGetAppCategory(app);
+  const kind = spec.type == 0 ? "Router" : "Utilities";
+  return (asIsPreviewApp(app) ? `<span class="as-tag as-tag-preview">Preview</span>` : "") +
+    `<span class="as-tag">${asEscapeHtml(cat)}</span>` +
+    (String(cat).toLowerCase() === kind.toLowerCase() ? "" : `<span class="as-tag">${kind}</span>`);
+}
+
   /*
     Zoraxy App Store
 
@@ -918,15 +897,22 @@
         counts[platform] = (counts[platform] || 0) + 1;
       });
     });
+    const asPlatformName = function(p){
+      const m = /^(linux|windows|darwin|freebsd)_(.+)$/.exec(p);
+      if (!m) return p;
+      const os = {linux: "Linux", windows: "Windows", darwin: "macOS", freebsd: "FreeBSD"}[m[1]];
+      const arch = {amd64: "64-bit", x86_64: "64-bit", "386": "32-bit", arm64: "ARM 64-bit", arm: "ARM", mipsle: "MIPS", riscv64: "RISC-V 64-bit"}[m[2]] || m[2];
+      return os + " " + arch;
+    };
     const list = $("#asCompatList");
     list.empty();
     const platforms = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
     if (platforms.length == 0) {
-      list.append(`<div style="color: var(--text_color_secondary); font-size: 0.9em;">No platform info</div>`);
+      list.append(`<div class="zx-help">No platform info</div>`);
       return;
     }
     platforms.forEach(platform => {
-      list.append(`<span class="as-compat-chip">${asEscapeHtml(platform)} <b>${counts[platform]}</b></span>`);
+      list.append(`<span class="as-compat-chip" title="${asEscapeHtml(platform)}">${asEscapeHtml(asPlatformName(platform))} <b>${counts[platform]}</b></span>`);
     });
   }
 
@@ -971,9 +957,7 @@
     $("#asFeaturedDesc").text(spec.description);
     $("#asFeaturedVersion").html(`v${asEscapeHtml(asGetVersionString(spec))} by ${asEscapeHtml(spec.author)}`);
     $("#asFeaturedTags").html(`
-      ${asIsPreviewApp(app) ? `<span class="as-tag as-tag-preview">Preview</span>` : ""}
-      <span class="as-tag">${asEscapeHtml(asGetAppCategory(app))}</span>
-      <span class="as-tag">${spec.type == 0 ? "Router" : "Utilities"}</span>
+      ${asTagsHtml(app, spec)}
     `);
 
     //Action button
@@ -1037,7 +1021,7 @@
           actionHtml = `<span class="as-installed-label"><i class="check circle icon"></i> Installed</span>`;
         }
       } else {
-        actionHtml = `<button class="ui mini blue button" onclick="asInstallApp('${escapedId}', this);">Install</button>`;
+        actionHtml = `<button class="zx-btn zx-btn--primary zx-btn--sm" onclick="asInstallApp('${escapedId}', this);">Install</button>`;
       }
 
       grid.append(`
@@ -1046,14 +1030,12 @@
             <div class="as-app-head">
               <div class="as-app-icon"><img src="${asEscapeHtml(asGetIconSrc(app))}" alt="${asEscapeHtml(spec.name)}"></div>
               <div style="min-width: 0;">
-                <div class="as-app-name" onclick="asShowAppDetails('${escapedId}');">${asEscapeHtml(spec.name)}</div>
+                <div class="as-app-name" title="${asEscapeHtml(spec.name)}" onclick="asShowAppDetails('${escapedId}');">${asEscapeHtml(spec.name)}</div>
               </div>
             </div>
             <div class="as-app-desc">${asEscapeHtml(spec.description)}</div>
             <div class="as-app-tags">
-              ${asIsPreviewApp(app) ? `<span class="as-tag as-tag-preview">Preview</span>` : ""}
-              <span class="as-tag">${asEscapeHtml(asGetAppCategory(app))}</span>
-              <span class="as-tag">${spec.type == 0 ? "Router" : "Utilities"}</span>
+              ${asTagsHtml(app, spec)}
             </div>
           </div>
           <div class="as-app-footer">
@@ -1250,7 +1232,7 @@
       const row = $(`
         <tr>
           <td style="word-break: break-all;">${asEscapeHtml(source.url)}</td>
-          <td>${source.official ? `<span class="ui blue mini label">Official</span>` : `<span class="ui mini label">Community</span>`}</td>
+          <td>${source.official ? `<span class="zx-badge zx-badge--info">Official</span>` : `<span class="zx-badge">Community</span>`}</td>
           <td></td>
         </tr>
       `);

@@ -1,20 +1,58 @@
+<style>
+    #utm { background: transparent; }
+    #utm .standardContainer, body.darkTheme #utm .standardContainer { background: transparent !important; }
+    #utmrender { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 28em), 1fr)); gap: var(--zx-space-3); align-items: start; }
+    #utmrender > .zx-empty, #utmrender > .utmLoading { grid-column: 1 / -1; }
+    #utm .utmHost { margin: 0; min-width: 0; }
+    #utm .utmInline { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+    #utm .utmInline .zx-input { flex: 1 1 14em; min-width: 0; }
+    #utm .utmHost__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-3); margin-bottom: var(--zx-space-3); }
+    #utm .utmHost__name { min-width: 0; flex: 1 1 16em; }
+    #utm .utmHost__name h3 { margin: 0 0 2px; font-size: var(--zx-fs-md); line-height: 1.3; overflow-wrap: anywhere; }
+    #utm .utmHost__name a { display: block; font-size: var(--zx-fs-sm); overflow-wrap: anywhere; color: var(--zx-link); }
+    #utm .utmHost__badges { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+    #utm .statusbar .status { display: flex; flex-wrap: wrap; gap: 3px; }
+    #utm .statusDot { margin-left: 0; width: 8px; height: 22px; border-radius: 4px; }
+    #utm .utmHost__note { margin: var(--zx-space-2) 0 0; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); }
+    #utm .selectedDotInfo { position: relative; margin-top: var(--zx-space-3); padding: var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); font-size: var(--zx-fs-sm); }
+    #utm .selectedDotInfo .ui.list .item { padding: 2px 0; color: var(--zx-text); }
+    #utm .utmSetting { max-width: 40em; }
+    #utm .utmSetting .zx-help { margin-bottom: 0; }
+    #utm .utmSetting .zx-btn-row { margin-top: var(--zx-space-3); }
+    #utm .utmLoading { padding: var(--zx-space-6); text-align: center; color: var(--zx-text-muted); }
+</style>
 <div class="standardContainer">
-    <div class="ui basic segment">
-        <h2>Uptime Monitor</h2>
-        <p>Check the online state of proxied targets</p>
-    </div>
-    <div class="ui segment" id="utmStatusSetting">
-        <b>Status codes that count as up</b>
-        <div class="ui action fluid input" style="margin-top:0.5em; max-width:34em;">
-            <input type="text" id="utmHealthyStatus" placeholder="any" autocomplete="off">
-            <button class="ui button" id="utmHealthyStatusSave">Save</button>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Uptime Monitor</h2>
+            <p class="zx-page-header__sub">See which of your sites answer, and how fast.</p>
         </div>
-        <div style="margin-top:0.4em; opacity:0.75;">
-            Comma separated: codes (<code>401</code>), ranges (<code>200-399</code>), classes (<code>2xx</code>) or <code>any</code>.
-            Empty = <code>any</code>: every answer except 502, 503, 504 and 52x gateway errors counts as up, so login-protected or virtual-host apps are not shown offline.
-            Use <code>200-399</code> to require a success or redirect. A single proxy rule can override this in its editor.
+        <div class="zx-page-header__actions">
+            <button type="button" class="zx-btn zx-btn--secondary" id="utmRefreshBtn" onclick="reloadUptimeList();"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
         </div>
-    </div>
+    </header>
+
+    <div class="zx-statrow" id="utmStats" aria-live="polite" hidden></div>
+
+    <section class="zx-card" id="utmStatusSetting">
+        <div class="zx-card__head"><h3 class="zx-card__title">What counts as up</h3></div>
+        <p class="zx-card__desc">Choose which answers from a site are treated as online.</p>
+        <div class="zx-card__body utmSetting">
+            <div class="zx-field">
+                <div class="zx-field__label-row">
+                    <label class="zx-field__label" for="utmHealthyStatus">Status codes that count as up</label>
+                    <button type="button" class="zx-whatis" aria-label="What can I enter here?" aria-controls="utmStatusHelp" aria-expanded="false">?</button>
+                </div>
+                <div class="utmInline">
+                    <input type="text" class="zx-input" id="utmHealthyStatus" placeholder="Any answer" autocomplete="off">
+                    <button type="button" class="zx-btn zx-btn--primary" id="utmHealthyStatusSave">Save</button>
+                </div>
+                <p class="zx-help">Leave empty to accept any answer except gateway errors (502, 503, 504, 52x). Example: 200-399.</p>
+                <div class="zx-popover" id="utmStatusHelp" hidden>Comma separated: single codes (<code>401</code>), ranges (<code>200-399</code>), classes (<code>2xx</code>) or <code>any</code>. Empty means <code>any</code>, so login-protected apps are not shown offline. Use <code>200-399</code> to require a success or redirect. A single proxy rule can override this in its editor.</div>
+            </div>
+        </div>
+    </section>
     <script>
         $.get("./api/utm/healthyStatus", function(d){ if (d && d.status !== undefined) { $("#utmHealthyStatus").val(d.status); } });
         $("#utmHealthyStatusSave").on("click", function(){
@@ -23,20 +61,13 @@
             }});
         });
     </script>
-    <div class="ui divider"></div>
-    <div id="utmrender" class="ui basic segment">
-        <div class="ui basic segment">
-            <h4 class="ui header">
-                <i class="red remove icon"></i>
-                <div class="content">
-                    Uptime Monitoring service is currently unavailable
-                    <div class="sub header">This might be caused by an error in cluster communication within the host servers. Please wait for administrator to resolve the issue.</div>
-                </div>
-            </h4> 
+    <div id="utmrender">
+        <div class="zx-empty">
+            <div class="zx-empty__icon"><i class="heartbeat icon" aria-hidden="true"></i></div>
+            <div class="zx-empty__title">Uptime Monitor is not available</div>
+            <p class="zx-empty__text">The service could not be reached. Try again in a moment.</p>
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="reloadUptimeList();">Try again</button>
         </div>
-    </div>
-    <div align="center">
-        <button class="ui basic circular green icon button" onclick="reloadUptimeList();"><i class="refresh icon"></i></button>   
     </div>
 </div>
 
@@ -81,48 +112,47 @@
           }
         });
 
+    function utmUnavailable(icon, title, text){
+        $("#utmrender").html(`<div class="zx-empty">
+            <div class="zx-empty__icon"><i class="${icon} icon" aria-hidden="true"></i></div>
+            <div class="zx-empty__title">${title}</div>
+            <p class="zx-empty__text">${text}</p>
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="reloadUptimeList();">Try again</button>
+        </div>`);
+        $("#utmStats").prop("hidden", true).empty();
+    }
+
     function initUptimeTable(){
         $.get("/api/utm/list", function(data){
             let records = data;
             renderRecords(records);
         }).fail(function(jqXHR){
             if (jqXHR.status === 500){
-                $("#utmrender").html(`<div class="ui basic segment">
-                    <h4 class="ui header">
-                        <i class="yellow clock outline icon"></i>
-                        <div class="content">
-                            Uptime Monitor is still initializing
-                            <div class="sub header">The uptime monitoring service is starting up. Please wait a moment and try again.</div>
-                        </div>
-                    </h4>
-                </div>`);
+                utmUnavailable("clock outline", "Uptime Monitor is still starting", "The service is starting up. Wait a moment and try again.");
+            }else{
+                utmUnavailable("heartbeat", "Uptime Monitor is not available", "The service could not be reached. Try again in a moment.");
             }
         });
     }
     initUptimeTable();
 
     function reloadUptimeList(){
-        $("#utmrender").html(`<div class="ui utmloading segment">
-        <div class="ui active inverted dimmer" style="z-index: 2;">
-            <div class="ui text loader">Loading</div>
-        </div>
-        <br><br><br><br>
-        </div>`);
+        $("#utmrender").html(`<div class="utmLoading" role="status"><i class="notched circle loading icon" aria-hidden="true"></i> Loading</div>`);
         setTimeout(initUptimeTable, 300);
     }
 
     //For every 5 minutes
     setInterval(function(){
         $.get("/api/utm/list", function(data){
-            console.log("Status Updated");
             records = data;
             renderRecords(records);
         });
     }, (300 * 1000));
-    
+
     function renderRecords(records){
         $("#utmrender").html("");
         if (Object.keys(records).length === 0){
+            $("#utmStats").prop("hidden", true).empty();
             $("#utmrender").html(`<div class="zx-empty" id="utmEmpty">
                 <div class="zx-empty__icon"><i class="heartbeat icon" aria-hidden="true"></i></div>
                 <div class="zx-empty__title">No uptime monitor targets yet</div>
@@ -131,9 +161,21 @@
             </div>`);
             return;
         }
-        for (let [key, value] of Object.entries(records)) {
+        let up = 0, down = 0, total = 0;
+        //sites that are down first
+        let entries = Object.entries(records).sort(function(a, b){
+            let ad = a[1] && a[1].length ? (a[1][a[1].length - 1].Online ? 1 : 0) : 1, bd = b[1] && b[1].length ? (b[1][b[1].length - 1].Online ? 1 : 0) : 1;
+            return ad - bd;
+        });
+        for (let [key, value] of entries) {
+            if (!value || value.length == 0){ continue; }
+            total++;
+            if (value[value.length - 1].Online){ up++; }else{ down++; }
             renderUptimeData(key, value);
         }
+        $("#utmStats").html(`<div class="zx-stat"><div class="zx-stat__label">Monitored sites</div><div class="zx-stat__value">${total}</div></div>
+            <div class="zx-stat zx-stat--ok"><div class="zx-stat__label">Online</div><div class="zx-stat__value">${up}</div></div>
+            <div class="zx-stat ${down > 0 ? "zx-stat--danger" : ""}"><div class="zx-stat__label">Not reachable</div><div class="zx-stat__value">${down}</div></div>`).prop("hidden", false);
     }
 
     function format_time(s) {
@@ -170,10 +212,10 @@
             $(statusInfoEle).text(httpErrorStatusCodeToText(statusData.StatusCode));
         }else if (statusData.StatusCode == 0 && !statusData.Online){
             $(statusDotInfoEle).addClass("red");
-            $(statusInfoEle).text("Upstream is offline");
+            $(statusInfoEle).text("Target is offline");
         }else{
             $(statusDotInfoEle).addClass("green");
-            $(statusInfoEle).text("Upstream Online");
+            $(statusInfoEle).text("Target is online");
         }
 
         $(statusDotInfoEle).show();
@@ -193,10 +235,6 @@
 
         //Generate the status dot
         let statusDotList = ``;
-        for(var i = 0; i < (288 - value.length); i++){
-            //Padding
-            statusDotList += `<div class="padding statusDot"></div>`
-        }
 
         let ontimeRate = 0;
         for (var i = 0; i < value.length; i++){
@@ -236,101 +274,66 @@
         }
 
         ontimeRate = ontimeRate / value.length * 100;
-        let ontimeColor = "#df484a"
-        if (ontimeRate > 0.8){
-            ontimeColor = "#3bd671";
-        }else if(ontimeRate > 0.5) {
-            ontimeColor = "#f29030";
+        let rateBadge = "zx-badge--danger";
+        if (ontimeRate > 80){
+            rateBadge = "zx-badge--ok";
+        }else if(ontimeRate > 50) {
+            rateBadge = "zx-badge--warn";
         }
         //Check of online status now
+        let last = value[value.length - 1];
         let currentOnlineStatus = "Unknown";
-        let onlineStatusCss = ``;
+        let stateBadge = "zx-badge--danger";
         let reminderEle = ``;
-        if (value[value.length - 1].Online){
+        if (last.Online){
             currentOnlineStatus = `Online`;
-            onlineStatusCss = `color: #3bd671;`;
+            stateBadge = "zx-badge--ok";
         }else{
-            if (value[value.length - 1].StatusCode >= 500 && value[value.length - 1].StatusCode < 600){
-                var latestStatusCode = value[value.length - 1].StatusCode
-                currentOnlineStatus = `${latestStatusCode} - ${resolveUptime5xxErrorMessage(latestStatusCode)}`;
-                onlineStatusCss = `color: #f38020;`;
-                reminderEle = `<small style="${onlineStatusCss}">Downstream proxy server is responsive but returning server error</small>`;
-            }else if (value[value.length - 1].StatusCode >= 400 && value[value.length - 1].StatusCode <= 405){
-                let latestStatusCode = value[value.length - 1].StatusCode;
-                switch(latestStatusCode){
-                    case 400:
-                        currentOnlineStatus = `Bad Request`;
-                        break;
-                    case 401:
-                        currentOnlineStatus = `Unauthorized`;
-                        break;
-                    case 403:
-                        currentOnlineStatus = `Forbidden`;
-                        break;
-                    case 404: 
-                        currentOnlineStatus = ` Not Found`;
-                        break; 
-                    case 405: 
-                        currentOnlineStatus = `Method Not Allowed`;
-                        break;
-                    default:
-                        currentOnlineStatus = `Status Code: ${latestStatusCode}`;
-                        break;
-                }
-                
-                onlineStatusCss = `color: #5583ee;`;
-                reminderEle = `<small style="${onlineStatusCss}">Target online and returning ${latestStatusCode} status code</small>`;
+            if (last.StatusCode >= 500 && last.StatusCode < 600){
+                currentOnlineStatus = `${last.StatusCode} - ${resolveUptime5xxErrorMessage(last.StatusCode)}`;
+                stateBadge = "zx-badge--warn";
+                reminderEle = `<p class="utmHost__note">The target answers but returns a server error.</p>`;
+            }else if (last.StatusCode >= 400 && last.StatusCode <= 405){
+                let latestStatusCode = last.StatusCode;
+                currentOnlineStatus = httpErrorStatusCodeToText(latestStatusCode);
+                stateBadge = "zx-badge--info";
+                reminderEle = `<p class="utmHost__note">The target is online and answers with status ${latestStatusCode}.</p>`;
             }else{
                 currentOnlineStatus = `Unreachable`;
-                onlineStatusCss = `color: #df484a;`;
             }
-           
         }
-
-        let notOnlineDetail = '';
-        let latency = 0;
-        if (!value[value.length - 1].Online) {
-            notOnlineDetail = `<div class="detail" style="background-color: transparent;">${currentOnlineStatus}</div>`;
-        }else{
-            latency = value[value.length - 1].Latency;
-        }
-
-        
+        let latency = last.Online ? last.Latency : 0;
+        let safeUrl = ZxUI.esc(url);
 
         //Generate the html
-        $("#utmrender").append(`<div class="ui basic segment statusbar">
-            <div class="domain">
-                <div>
-                    <h3 class="ui header" style="margin-bottom: 0.2em;">${ZxUI.esc(name)}</h3>
-                    <a href="${ZxUI.esc(/^https?:\/\//i.test(url) ? url : "#")}" target="_blank" rel="noopener">${ZxUI.esc(url)}</a>
+        $("#utmrender").append(`<section class="zx-card utmHost statusbar"><div class="zx-card__body">
+            <div class="domain utmHost__head">
+                <div class="utmHost__name">
+                    <h3>${ZxUI.esc(name)}</h3>
+                    <a href="${ZxUI.esc(/^https?:\/\//i.test(url) ? url : "#")}" target="_blank" rel="noopener" title="${safeUrl}">${safeUrl}</a>
                 </div>
-                <div style="position: absolute; bottom: 0; right: 0.2em; margin-bottom: -0.6em;">
-                    <div class="ui basic label protocol">
-                        ${latency} ms
-                    </div>
-                    <div class="ui label protocol" style="margin-left: 0.5em; background-color: ${ontimeColor}; color: #ffffff;">
-                        ${(ontimeRate).toFixed(2)}%
-                        ${notOnlineDetail}
-                    </div>
+                <div class="utmHost__badges">
+                    <span class="zx-badge ${stateBadge} zx-badge--dot">${ZxUI.esc(currentOnlineStatus)}</span>
+                    <span class="zx-badge">${last.Online ? latency + " ms" : "no answer"}</span>
+                    <span class="zx-badge ${rateBadge}" title="Share of checks that succeeded">${(ontimeRate).toFixed(2)}% up</span>
                 </div>
             </div>
-            <div class="status" style="marign-top: 1em;">
+            <div class="status">
                     ${statusDotList}
             </div>
             ${reminderEle}
-            <div class="ui basic segment selectedDotInfo" style="display:none; border: 0.4em;">
+            <div class="selectedDotInfo" style="display:none;">
                 <div class="ui list">
-                    <div class="item"><b>Timestamp</b>: <span class="status_dot_timestamp"></span></div>
+                    <div class="item"><b>Time</b>: <span class="status_dot_timestamp"></span></div>
                     <div class="item"><b>Latency</b>: <span class="status_dot_latency"></span></div>
-                    <div class="item"><b>Status Code</b>: <span class="status_dot_status_code"></span></div>
-                    <div class="item"><b>Status Info</b>: <span class="status_dot_status_info"></span></div>
+                    <div class="item"><b>Status code</b>: <span class="status_dot_status_code"></span></div>
+                    <div class="item"><b>Result</b>: <span class="status_dot_status_info"></span></div>
                 </div>
-                <button onclick="$(this).parent().hide();" style="position: absolute; right: 0.4em; top: 0.6em;" class="ui basic tiny circular icon button"><i class="ui times icon"></i></button>
+                <button type="button" onclick="$(this).parent().hide();" style="position: absolute; right: 0.4em; top: 0.6em;" aria-label="Close" class="ui basic tiny circular icon button"><i class="ui times icon"></i></button>
             </div>
-            <div class="ui divider"></div>
-        </div>`);
+        </div></section>`);
     }
-    
+
     function httpErrorStatusCodeToText(statusCode){
         switch(statusCode){
             case 400:

@@ -14,26 +14,33 @@
     var CSS = '' +
         '.wfa .wfaTop { display:flex; flex-wrap:wrap; gap:.6em 1.5em; align-items:flex-end; margin-bottom:.8em; }' +
         '.wfa .wfaTop .field { margin:0 !important; min-width:12em; }' +
-        '.wfa .wfaInfo { opacity:.8; font-size:.92em; flex:1 1 18em; }' +
-        '.wfa .wfaSec { margin:1.1em 0 0; padding-top:.9em; border-top:1px solid rgba(128,128,128,.3); }' +
-        '.wfa .wfaSec > h5 { margin:0 0 .5em; }' +
-        '.wfa .wfaGroup { margin:.8em 0 .2em; font-weight:600; opacity:.85; }' +
-        '.wfa .wfaGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(13em,1fr)); gap:.6em 1em; }' +
+        '.wfa .wfaInfo { color:var(--zx-text-muted); font-size:var(--zx-fs-sm); flex:1 1 18em; }' +
+        '.wfa .wfaSec { margin:1.1em 0 0; padding-top:.9em; border-top:1px solid var(--zx-border); }' +
+        '.wfa .wfaSec > h5 { margin:0 0 .5em; font-size:var(--zx-fs-md); font-weight:700; }' +
+        '.wfa .wfaSub { margin:var(--zx-space-3) 0 0; padding:var(--zx-space-3) var(--zx-space-4); border:1px solid var(--zx-border); border-radius:var(--zx-radius-md); background:var(--zx-surface); }' +
+        '.wfa .wfaGroup { margin:0 0 var(--zx-space-2); font-weight:700; font-size:var(--zx-fs-md); color:var(--zx-text); }' +
+        '.wfa .wfaGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--zx-space-3); align-items:end; }' +
+        '@media (max-width:900px){ .wfa .wfaGrid { grid-template-columns:repeat(2,minmax(0,1fr)); } }' +
+        '@media (max-width:480px){ .wfa .wfaGrid { grid-template-columns:minmax(0,1fr); } }' +
         '.wfa .wfaGrid .field { margin:0 !important; }' +
-        '.wfa .wfaGrid label { font-size:.88em !important; }' +
-        '.wfa .wfaGrid .wfaCheck { align-self:end; padding-bottom:.5em; }' +
-        '.wfa .wfaMuted { opacity:.7; font-size:.9em; }' +
+        '.wfa .wfaGrid label, .wfa .wfaSub .field > label { font-size:var(--zx-fs-sm) !important; font-weight:600; }' +
+        '.wfa .wfaGrid input[type=number] { width:100%; }' +
+        '.wfa .wfaChecks { display:flex; flex-wrap:wrap; gap:var(--zx-space-2) var(--zx-space-5); margin-top:var(--zx-space-3); }' +
+        '.wfa .wfaChecks .field { margin:0 !important; }' +
+        '.wfa .wfaEmpty { margin:var(--zx-space-2) 0; }' +
+        'html body .contentWindow .wfa input:disabled, html body .contentWindow .wfa select:disabled { color:var(--zx-text-muted); background:var(--zx-surface-2); opacity:1; }' +
+        '.wfa .ui.checkbox input:disabled ~ label, .wfa .ui.checkbox input[disabled] ~ label { opacity:1 !important; color:var(--zx-text-muted) !important; }' +
+        '.wfa .wfaMuted { color:var(--zx-text-muted); font-size:var(--zx-fs-sm); }' +
         '.wfa .wfaScroll { overflow-x:auto; }' +
         '.wfa table.wfaAllow { min-width:34em; }' +
         '.wfa table.wfaAllow input { width:100%; }' +
         '.wfa textarea.wfaSpec { font-family:monospace; font-size:.85em; white-space:pre; overflow:auto; }' +
-        '.wfa .wfaResult { margin-top:.6em; padding:.5em .8em; border-radius:4px; border:1px solid rgba(128,128,128,.4); word-break:break-word; }' +
-        '.wfa .wfaResult.ok { border-color:#21ba45; background:rgba(33,186,69,.1); }' +
-        '.wfa .wfaResult.bad { border-color:#db2828; background:rgba(219,40,40,.1); }' +
+        '.wfa .wfaResult { margin-top:.6em; padding:.5em .8em; border-radius:4px; border:1px solid var(--zx-border-strong); word-break:break-word; }' +
+        '.wfa .wfaResult.ok { border-color:var(--zx-ok-line); background:var(--zx-ok-bg); color:var(--zx-ok-text); }' +
+        '.wfa .wfaResult.bad { border-color:var(--zx-danger-line); background:var(--zx-danger-bg); color:var(--zx-danger-text); }' +
         '.wfa .wfaBtns { margin-top:1em; display:flex; flex-wrap:wrap; gap:.5em; align-items:center; }' +
-        'body.darkTheme .wfa input[type=file] { background:transparent; color:inherit; border:1px solid rgba(128,128,128,.4); border-radius:4px; padding:.3em; }' +
-        'body.darkTheme .wfa .wfaResult.ok { background:rgba(33,186,69,.16); }' +
-        'body.darkTheme .wfa .wfaResult.bad { background:rgba(219,40,40,.18); }';
+        '.wfa input[type=file] { background:transparent; color:inherit; border:1px solid var(--zx-border-strong); border-radius:var(--zx-radius-sm); padding:.3em; }' +
+        '.wfa .wfaOffNote { display:none; margin:.2em 0 .8em; }';
 
     function esc(t){ return $("<div>").text(t == null ? "" : String(t)).html(); }
     function toast(m, ok){ if (typeof msgbox === "function") msgbox(m, ok !== false, ok === false ? 6000 : undefined); }
@@ -60,21 +67,22 @@
             (o.scope == "policy" ? '' : '<option value="">Inherit</option>') +
             '<option value="off">Off</option><option value="log">Log only</option><option value="block">Block</option></select></div>' +
             '<div class="wfaInfo"></div></div>' +
+            '<div class="wfaOffNote zx-callout zx-callout--info" role="note"><div class="zx-callout__body">API protection is off. Turn it on to apply the limits below.</div></div>' +
             '<div class="wfaBody">' +
             '<div class="wfaSec"><h5>Limits</h5>' +
-            '<div class="ui checkbox"><input type="checkbox" class="wfaCustom"><label>Customise the limits <span class="wfaMuted">(unchecked: the inherited limits or the defaults shown below apply)</span></label></div>';
+            '<div class="ui checkbox"><input type="checkbox" class="wfaCustom"><label>Customize the limits <span class="wfaMuted">(off: the inherited limits or the defaults shown below apply)</span></label></div>';
         GROUPS.forEach(function(g){
-            h += '<div class="wfaGroup">' + g[0] + '</div><div class="wfaGrid">';
+            var nums = '', checks = '';
             g[1].forEach(function(f){
-                if (f[2] == "bool") h += '<div class="field wfaCheck"><div class="ui checkbox"><input type="checkbox" class="wfaL" data-k="' + f[0] + '"><label>' + f[1] + '</label></div></div>';
-                else h += '<div class="field"><label>' + f[1] + '</label><input type="number" class="wfaL wfaN" data-k="' + f[0] + '"' + (f[2] == "kib" ? ' data-kib="1"' : '') + ' min="-1"></div>';
+                if (f[2] == "bool") checks += '<div class="field wfaCheck"><div class="ui checkbox"><input type="checkbox" class="wfaL" data-k="' + f[0] + '"><label>' + f[1] + '</label></div></div>';
+                else nums += '<div class="field"><label>' + f[1] + '</label><input type="number" class="wfaL wfaN" data-k="' + f[0] + '"' + (f[2] == "kib" ? ' data-kib="1"' : '') + ' min="-1"></div>';
             });
-            h += '</div>';
+            h += '<div class="wfaSub"><div class="wfaGroup">' + g[0] + '</div><div class="wfaGrid">' + nums + '</div>' + (checks ? '<div class="wfaChecks">' + checks + '</div>' : '') + '</div>';
         });
         h += '<div class="wfaMuted" style="margin-top:.6em">Empty = default, -1 = unlimited. A request that goes over a limit is logged or blocked (400, 413, 414 or 431) depending on the mode. Limits apply to bodies up to the maximum body size, which is also the most that is ever held in memory per request.</div></div>' +
             '<div class="wfaSec"><h5>Allowed methods and content types per path</h5>' +
             '<div class="wfaMuted" style="margin-bottom:.5em">A path prefix matches on path segments (<code>/api</code> matches <code>/api</code> and <code>/api/x</code>, not <code>/apix</code>; end it with <code>*</code> for a plain prefix). The longest matching prefix decides. Empty methods or content types = any. Content types are checked on requests that have a body; <code>type/*</code> works.</div>' +
-            '<div class="wfaScroll"><table class="ui compact very basic small unstackable table wfaAllow"><thead><tr><th>Path prefix</th><th>Methods</th><th>Content types</th><th style="width:1%"></th></tr></thead><tbody class="wfaAllowBody"></tbody></table></div>' +
+            '<div class="wfaEmpty zx-empty zx-empty--inline"><p class="zx-empty__text">No paths listed. Every method and content type is allowed on every path.</p></div><div class="wfaScroll wfaAllowTable"><table class="ui compact very basic small unstackable table wfaAllow"><thead><tr><th>Path prefix</th><th>Methods</th><th>Content types</th><th style="width:1%"></th></tr></thead><tbody class="wfaAllowBody"></tbody></table></div>' +
             '<button type="button" class="ui basic mini button wfaAddRule"><i class="plus icon"></i> Add path</button></div>';
         if (o.spec){
             h += '<div class="wfaSec"><h5>OpenAPI 3 validation <span class="wfaMuted">(optional)</span></h5>' +
@@ -90,7 +98,7 @@
                 '<div class="field wfaCheck"><div class="ui checkbox"><input type="checkbox" class="wfaOA" data-k="BlockUnknown"><label>Block when the spec cannot be used (otherwise fail open)</label></div></div></div></div>';
         }
         h += '</div>' +
-            '<div class="wfaBtns"><button type="button" class="ui green button wfaSave"><i class="save icon"></i> Save API protection</button>' +
+            '<div class="wfaBtns"><button type="button" class="ui primary button wfaSave"><i class="save icon"></i> Save API protection</button>' +
             '<span class="wfaMuted">Applies immediately, no restart.</span></div></div></div>';
         return h;
     }
@@ -118,9 +126,14 @@
             });
             if (!on){ box.find(".wfaN").val(""); box.find("input.wfaL:checkbox").prop("checked", false); }
         }
+        function syncAllow(){
+            var n = box.find(".wfaAllowBody tr").length;
+            box.find(".wfaAllowTable").toggle(n > 0);
+            box.find(".wfaEmpty").toggle(n === 0);
+        }
         function syncMode(){
             var m = box.find(".wfaMode").val();
-            box.find(".wfaBody").css("opacity", m == "off" ? .55 : 1);
+            box.find(".wfaOffNote").toggle(m == "off");
         }
 
         var ctl = {
@@ -157,7 +170,7 @@
                 }
                 box.find(".wfaInfo").text(info);
                 box.find("input,select,textarea,button.wfaAddRule,button.wfaSave").prop("disabled", !!o.readOnly);
-                syncCustom(); syncMode();
+                syncCustom(); syncMode(); syncAllow();
             },
             reload: function(cb){
                 var q = {scope: o.scope, name: o.name || ""};
@@ -220,8 +233,8 @@
 
         box.on("change", ".wfaCustom", syncCustom);
         box.on("change", ".wfaMode", syncMode);
-        box.on("click", ".wfaAddRule", function(){ box.find(".wfaAllowBody").append(allowRow()); box.find(".wfaAllowBody tr:last .wfaP").focus(); });
-        box.on("click", ".wfaDel", function(){ $(this).closest("tr").remove(); });
+        box.on("click", ".wfaAddRule", function(){ box.find(".wfaAllowBody").append(allowRow()); syncAllow(); box.find(".wfaAllowBody tr:last .wfaP").focus(); });
+        box.on("click", ".wfaDel", function(){ $(this).closest("tr").remove(); syncAllow(); });
         box.on("click", ".wfaSave", function(){
             var b = $(this).addClass("loading");
             ctl.save(function(){ b.removeClass("loading"); ctl.reload(); });
@@ -248,7 +261,7 @@
                 },
                 error: function(){ b.removeClass("loading"); res.attr("class", "wfaResult bad").text("Request failed").show(); }});
         });
-        syncCustom();
+        syncCustom(); syncAllow();
         return ctl;
     }
 

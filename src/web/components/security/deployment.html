@@ -1,41 +1,48 @@
-<h3>Deployment</h3>
-<p>Tell Zoraxy where it sits in your network. The default, <b>Standalone</b>, changes nothing: Zoraxy behaves exactly as before.
-    The other roles are for a two proxy chain (internet &rarr; external proxy &rarr; internal proxy &rarr; servers). They turn on stricter
-    handling of the client address headers and, on the internal proxy, an optional "known peers only" gate.
-    This does not configure your firewall; keep your firewall rules, this is a second layer.</p>
 <div class="ui form" id="drForm">
-    <div class="field">
-        <label for="drRole">Role of this Zoraxy</label>
-        <select id="drRole" class="ui dropdown">
-            <option value="standalone">Standalone (default, no change)</option>
-            <option value="external">External proxy (faces the internet, forwards to an internal proxy)</option>
-            <option value="internal">Internal proxy (receives traffic from the external proxy)</option>
-        </select>
-        <p class="zx-help" id="drRoleHelp"></p>
-    </div>
-    <div class="inline field">
-        <div class="ui toggle checkbox"><input type="checkbox" id="drHarden"><label for="drHarden">Harden forwarded client address headers</label></div>
-        <p class="zx-help">Always on in the External and Internal roles. A connection that is not from a <a href="#trustproxy" data-nav-open="trustproxy">trusted proxy</a>
-            loses its X-Forwarded-For, Forwarded, X-Real-IP, CF-Connecting-IP(v6), Fastly-Client-IP, True-Client-IP, X-Client-IP, X-Forwarded-Host/Proto/Port and X-Client-Cert-* headers.
-            From a trusted proxy, the client is the right-most address in X-Forwarded-For that is not itself a trusted proxy.
-            List your CDN or external proxy under Trusted Proxies first, or every visitor will look like a direct client.</p>
-    </div>
-    <div id="drGateBox" style="display:none">
-        <div class="ui divider"></div>
-        <h4>Peer gate (internal role)</h4>
-        <div class="inline field">
-            <div class="ui toggle checkbox"><input type="checkbox" id="drGate"><label for="drGate">Only accept connections from trusted proxies and the networks below</label></div>
-            <p class="zx-help">Everything else gets "403 Forbidden" before any routing, the health endpoint included. Off until you switch it on.
-                The admin panel is not affected (it has its own port).</p>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Where Zoraxy sits in your network</h3>
+            <p class="zx-card__desc">The default, Standalone, changes nothing. The other roles are for a chain of two proxies (internet, external proxy, internal proxy, servers) and handle client address headers more strictly. Zoraxy does not change your firewall.</p>
         </div>
-        <div class="field"><label for="drCidrs">Networks that may connect directly (one CIDR or IP per line)</label>
-            <textarea id="drCidrs" rows="3" placeholder="192.168.10.0/24"></textarea>
-            <p class="zx-help">For example the management VLAN or your monitoring host. 0.0.0.0/0 is refused.</p></div>
-    </div>
+        <div class="zx-card__body">
+            <div class="field zx-field">
+                <label for="drRole">Role of this Zoraxy</label>
+                <select id="drRole">
+                    <option value="standalone">Standalone (default, no change)</option>
+                    <option value="external">External proxy (faces the internet, forwards to an internal proxy)</option>
+                    <option value="internal">Internal proxy (receives traffic from the external proxy)</option>
+                </select>
+                <p class="zx-help" id="drRoleHelp"></p>
+            </div>
+            <label class="zx-toggle-row" for="drHarden">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Harden forwarded client address headers</span><span class="zx-toggle-row__desc">Always on in the External and Internal roles. A connection that is not from a <a href="#trustproxy" data-nav-open="trustproxy">trusted proxy</a> loses its X-Forwarded-For and similar client address headers. List your CDN or external proxy under Trusted Proxies first, or every visitor will look like a direct client.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="drHarden">
+            </label>
+        </div>
+    </section>
+    <section class="zx-card" id="drGateBox" style="display:none">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Peer gate</h3>
+            <p class="zx-card__desc">For the internal proxy: refuse everyone except the external proxy and networks you list. The admin panel is not affected.</p>
+        </div>
+        <div class="zx-card__body">
+            <label class="zx-toggle-row" for="drGate">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Only accept connections from trusted proxies and the networks below</span><span class="zx-toggle-row__desc">Everything else gets "403 Forbidden" before any routing, the health check included. Off until you switch it on.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="drGate">
+            </label>
+            <div class="field zx-field"><label for="drCidrs">Networks that may connect directly</label>
+                <textarea id="drCidrs" rows="3" placeholder="192.168.10.0/24"></textarea>
+                <p class="zx-help">One IP address or range (CIDR) per line, for example your management network or monitoring host. 0.0.0.0/0 is refused.</p></div>
+        </div>
+    </section>
     <div id="drWarn"></div>
     <div id="drMsg" class="ui negative message" style="display:none"></div>
-    <p class="zx-sub" id="drStatus"></p>
-    <button class="ui basic green button" id="drSave"><i class="save icon"></i> Save</button>
+    <section class="zx-card">
+        <div class="zx-card__foot" style="border-top:0;display:flex;align-items:center;gap:var(--zx-space-4);flex-wrap:wrap">
+            <button class="ui primary button" id="drSave"><i class="save icon"></i> Save</button>
+            <span class="zx-help" id="drStatus" style="margin:0"></span>
+        </div>
+    </section>
 </div>
 <script>
 (function () {
@@ -69,7 +76,7 @@
             $("#drCidrs").val((d.directCIDRs || []).join("\n"));
             sync();
             var w = (d.warnings || []).map(function (x) { return "<li>" + esc(t(x)) + "</li>"; }).join("");
-            $("#drWarn").html(w ? '<div class="ui warning message"><ul class="list">' + w + "</ul></div>" : "");
+            $("#drWarn").html(w ? '<div class="zx-callout zx-callout--warn" role="note"><ul class="list">' + w + "</ul></div>" : "");
             var s = t("Trusted proxies listed: {0}.").replace("{0}", d.trustedProxies);
             if (d.peerGateActive) { s += " " + t("Connections refused by the peer gate since start: {0}.").replace("{0}", d.gateRejected); }
             $("#drStatus").text(s);

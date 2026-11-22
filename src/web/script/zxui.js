@@ -605,6 +605,7 @@
                 if (p) { p.hidden = !on; p.setAttribute("role", "tabpanel"); }
             });
             if (focus) { tab.focus(); }
+            try { if (tab.scrollIntoView && listEl.scrollWidth > listEl.clientWidth) { tab.scrollIntoView({ block: "nearest", inline: "nearest" }); } } catch (e) { /* older browsers */ }
             if (o.onChange) { o.onChange(tab.getAttribute("data-zx-panel"), tab); }
         }
         tabs.forEach(function (t) {

@@ -5,6 +5,7 @@
         <meta charset="utf-8">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
         <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <link rel="stylesheet" href="../ui/zxui.css">
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
@@ -99,9 +100,31 @@
             }
 
             .advanceoptions{
-               background: var(--theme_advance) !important;
-               border-radius: 0.4em !important;
+               background: transparent !important;
             }
+            /* ---- kit alignment (tokens only) ---- */
+            body{ color: var(--zx-text); }
+            .hdPage .ui.secondary.pointing.menu{ border-bottom: 1px solid var(--zx-border); margin: 0 0 var(--zx-space-4); }
+            .hdPage .ui.secondary.pointing.menu .item{ color: var(--zx-text-muted); font-weight: 600; border-bottom: 3px solid transparent !important; background: transparent !important; margin: 0 0 -1px !important; border-radius: 0; }
+            .hdPage .ui.secondary.pointing.menu .item:hover{ color: var(--zx-text); }
+            .hdPage .ui.secondary.pointing.menu .item.active{ color: var(--zx-primary-soft-text); border-bottom-color: var(--zx-primary) !important; }
+            .hdPage .zxs-h{ margin: var(--zx-space-4) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
+            .hdPage p{ opacity: 1; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+            .hdPage .zx-table-wrap{ max-height: none; margin-bottom: var(--zx-space-3); }
+            .hdSeg{ border-color: var(--zx-border-strong); border-radius: var(--zx-radius-md); }
+            .hdSeg button{ color: var(--zx-text); }
+            .hdSeg button + button{ border-left-color: var(--zx-border-strong); }
+            .hdSeg button:hover{ background: var(--zx-surface-2); }
+            .hdSeg button.active{ background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
+            .hdSeg button.active i.icon{ color: inherit !important; }
+            .hdSeg button:focus-visible{ outline: none; box-shadow: var(--zx-focus-ring); }
+            .hdForm .hdFields .field small, .hdPage small{ opacity: 1; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+            .hdPage .zx-disclosure{ margin: var(--zx-space-4) 0; }
+            .hdPage .zx-disclosure__body{ color: var(--zx-text); font-size: var(--zx-fs-md); padding-bottom: var(--zx-space-2); }
+            .hdPage .zx-disclosure__body p{ color: var(--zx-text-muted); }
+            .hdPage .zx-callout{ margin-top: var(--zx-space-4); }
+            #permissionPolicyEditor .experimental{ background-color: var(--zx-surface-2) !important; }
+            .hdPage .zx-card__foot{ border-radius: var(--zx-radius-md); margin-top: var(--zx-space-3); }
         </style>
     </head>
     <body>
@@ -110,32 +133,32 @@
         <br>
         <div class="hdPage">
             <div class="ui small pointing secondary menu">
-                <a class="item active narrowpadding" data-tab="customheaders">Custom Headers</a>
-                <a class="item narrowpadding" data-tab="security">Security Headers</a>
+                <a class="item active narrowpadding" data-tab="customheaders">Custom headers</a>
+                <a class="item narrowpadding" data-tab="security">Security headers</a>
             </div>
             <div class="ui tab basic segment active" data-tab="customheaders">
                 <div class="customHeaderTableWrapper">
-                    <table id="customHeaderTable" class="ui basic very compacted unstackable celled table">
+                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Header rewrite rules"><table id="customHeaderTable" class="zx-table zx-table--compact">
                         <thead>
                         <tr>
                             <th class="keyCol">Key</th>
                             <th>Value</th>
-                            <th class="removeCol">Remove</th>
+                            <th class="removeCol zx-actions">Remove</th>
                         </tr></thead>
                         <tbody id="headerTable">
                         <tr>
-                            <td colspan="3"><i class="ui green circle check icon"></i> No Additional Header</td>
+                            <td colspan="3" class="zx-empty-cell">No custom headers yet</td>
                         </tr>
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
                 <p>
                     <i class="angle double right blue icon"></i> Add or remove headers before sending to origin server <br>
                     <i class="angle double left orange icon"></i> Modify headers from origin server responses before sending to client
                 </p>
                 <div class="ui divider"></div>
-                <h4>Edit Custom Header</h4>
-                <p>Add or remove custom header(s) over this proxy target</p>
+                <p class="zxs-h">Add a header rule</p>
+                <p>Add or remove headers on requests to the server, or on its answers.</p>
                 <div class="ui form hdForm">
                     <div class="hdChoices">
                         <div class="hdSeg" role="group" aria-label="Direction">
@@ -143,44 +166,39 @@
                             <button type="button" id="toClientButton" title="Upstream to Downstream">Client <i class="angle double left orange icon"></i> Zoraxy</button>
                         </div>
                         <div class="hdSeg" role="group" aria-label="Action">
-                            <button type="button" id="headerModeAdd" class="active"><i class="add icon"></i> Add Header</button>
-                            <button type="button" id="headerModeRemove"><i class="times icon"></i> Remove Header</button>
+                            <button type="button" id="headerModeAdd" class="active"><i class="add icon"></i> Add header</button>
+                            <button type="button" id="headerModeRemove"><i class="times icon"></i> Remove header</button>
                         </div>
                     </div>
                     <div class="hdFields">
                         <div class="field">
-                            <label>Header Key</label>
+                            <label>Header name</label>
                             <input id="headerName" type="text" placeholder="X-Custom-Header" autocomplete="off">
-                            <small>The header key is <b>NOT</b> case sensitive</small>
+                            <small>Not case sensitive</small>
                         </div>
                         <div class="field">
-                            <label>Header Value</label>
+                            <label>Header value</label>
                             <input id="headerValue" type="text" placeholder="value1,value2,value3" autocomplete="off">
                         </div>
                     </div>
-                    <button type="button" class="ui primary button hdAdd" onclick="addCustomHeader();"><i class="add icon"></i> Add Header Rewrite Rule</button>
+                    <button type="button" class="ui primary button hdAdd" onclick="addCustomHeader();"><i class="add icon"></i> Add header rule</button>
                 </div>
                 <div class="ui divider"></div>
-                <div class="ui basic segment advanceoptions">
-                    <div class="ui fluid accordion">
-                        <div class="title">
-                        <i class="dropdown icon" tabindex="0"><div class="menu" tabindex="-1"></div></i>
-                        Advanced Settings
-                        </div>
-                        <div class="content">
-                            <br>
-                            <div>
-                                <h4>Overwrite Host Header</h4>
+                <details class="zx-disclosure">
+                    <summary>Advanced settings</summary>
+                    <div class="zx-disclosure__body">
+                        <div>
+                                <p class="zxs-h">Overwrite Host Header</p>
                                 <p>Manual override the automatic "Host" header rewrite logic. Leave empty for automatic.<br>
                                 For HTTPS upstreams, this hostname is also used as the TLS SNI and the name the upstream certificate is verified against. Set this if your upstream is addressed by a name its certificate does not cover, such as a Docker service name.</p>
                                 <div class="ui fluid action input">
                                     <input type="text" id="manualHostOverwrite" placeholder="Overwrite Host name">
-                                    <button onclick="updateManualHostOverwrite();" class="ui basic icon button" title="Update"><i class="ui green save icon"></i></button>
-                                    <button onclick="clearManualHostOverwrite();" class="ui basic icon button" title="Clear"><i class="ui grey remove icon"></i></button>
+                                    <button onclick="updateManualHostOverwrite();" class="ui basic icon button" title="Save" aria-label="Save"><i class="save icon"></i></button>
+                                    <button onclick="clearManualHostOverwrite();" class="ui basic icon button" title="Clear" aria-label="Clear"><i class="remove icon"></i></button>
                                 </div>
                                 
-                                <div class="ui divider"></div>
-                                <h4>Remove Hop-by-hop Headers</h4>
+                                
+                                <p class="zxs-h">Remove Hop-by-hop Headers</p>
                                 <p>Remove headers like "Connection" and "Keep-Alive" from both upstream and downstream requests. Set to ON by default.</p>
                                 <div class="ui toggle checkbox">
                                     <input type="checkbox" id="removeHopByHop" name="">
@@ -188,8 +206,8 @@
                                     <small>This should be ON by default</small></label>
                                 </div>
 
-                                 <div class="ui divider"></div>
-                                <h4>Remove User-Agent Header</h4>
+                                 
+                                <p class="zxs-h">Remove User-Agent Header</p>
                                 <p>Remove User-Agent header from upstream before sending to downstream. Set to ON by default.</p>
                                 <div class="ui toggle checkbox">
                                     <input type="checkbox" id="removeUserAgent" name="">
@@ -197,8 +215,8 @@
                                     <small>This should be ON by default</small></label>
                                 </div>
 
-                                <div class="ui divider"></div>
-                                <h4> WebSocket Custom Headers</h4>
+                                
+                                <p class="zxs-h">WebSocket Custom Headers</p>
                                 <p>Copy custom headers from HTTP requests to WebSocket connections.
                                     Might be required by some projects like MeshCentral.</p>
                                 <div class="ui toggle checkbox">
@@ -206,25 +224,21 @@
                                     <label>Enable WebSocket Custom Header<br>
                                     <small>This should be OFF by default</small></label>
                                 </div>
-                                <div class="ui yellow message">
-                                    <p><i class="exclamation triangle icon"></i>Settings in this section are for advanced users. Invalid settings might cause werid, unexpected behavior.</p>
-                                </div>
+                                <div class="zx-callout zx-callout--warn"><div class="zx-callout__body">These settings are for advanced users. A wrong value can cause unexpected behavior.</div></div>
                             </div>
-                        </div>
                     </div>
-                </div>
+                </details>
                
             </div>
             <div class="ui tab basic segment" data-tab="security">
-                <h4>HTTP Strict Transport Security</h4>
+                <p class="zxs-h">HTTP Strict Transport Security</p>
                 <p>Force future attempts to access this site to only use HTTPS</p>
                 <div class="ui toggle checkbox">
                     <input type="checkbox" id="enableHSTS" name="enableHSTS">
                     <label>Enable HSTS<br>
                     <small>HSTS header will be automatically ignored if the site is accessed using HTTP</small></label>
                 </div>
-                <div class="ui divider"></div>
-                <h4>Permission Policy</h4>
+                <p class="zxs-h">Permission policy</p>
                 <p>Explicitly declare what functionality can and cannot be used on this website. </p>
                 <div class="ui toggle checkbox" style="margin-top: 0.6em;">
                     <input type="checkbox" id="enablePP" name="enablePP">
@@ -232,7 +246,7 @@
                     <small>Enable Permission-Policy header with all allowed state.</small></label>
                 </div>
                 <div style="margin-top: 1em;" id="permissionPolicyEditor">
-                    <table class="ui celled unstackable very compact table">
+                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Permission policy features"><table class="zx-table zx-table--compact">
                         <thead>
                           <tr><th>Feature</th>
                             <th>Enabled</th>
@@ -241,14 +255,13 @@
                         </tr></thead>
                         <tbody id="permissionPolicyEditTable">
                           <tr>
-                            <td colspan="4"><i class="ui loading spinner icon"></i> Generating</td>
+                            <td colspan="4" class="zx-empty-cell">Loading...</td>
                           </tr>
                         </tbody>
-                      </table>
+                      </table></div>
                 </div>
-                <small><i class="ui yellow exclamation triangle icon"></i> Grey out fields are non-standard permission policies</small>
-                <br><br>
-                <button class="ui basic button" onclick="savePermissionPolicy();"><i class="green save icon"></i> Save</button>
+                <small>Greyed-out rows are non-standard permission policies.</small>
+                <div style="margin-top: var(--zx-space-3);"><button class="ui primary button" onclick="savePermissionPolicy();"><i class="save icon"></i> Save</button></div>
             </div>
         </div>
         
@@ -389,7 +402,7 @@
             }
 
             function listCustomHeaders(){
-                $("#headerTable").html(`<tr><td colspan="3"><i class="ui loading spinner icon"></i> Loading</td></tr>`);
+                $("#headerTable").html(`<tr><td colspan="3" class="zx-empty-cell">Loading...</td></tr>`);
                 $.ajax({
                     url: "/api/proxy/header/list",
                     method: "GET",
@@ -413,14 +426,14 @@
                                 <tr>
                                     <td>${direction} ${header.Key}</td>
                                     <td><div class="headerValueCell">${editModeIcon}<span>${valueField}</span></div></td>
-                                    <td><button class="ui basic circular mini red icon button" onclick="deleteCustomHeader('${header.Key}');"><i class="ui trash icon"></i></button></td>
+                                    <td class="zx-actions"><button class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" aria-label="Remove header" title="Remove header" onclick="deleteCustomHeader('${header.Key}');"><i class="trash icon"></i></button></td>
                                 </tr>
                                 `);
                             });
 
                             if (data.length == 0){
                                 $("#headerTable").html(`<tr>
-                                    <td colspan="3"><i class="ui green circle check icon"></i> No Additional Header</td>
+                                    <td colspan="3" class="zx-empty-cell">No custom headers yet</td>
                                 </tr>`);
                             }
                         }

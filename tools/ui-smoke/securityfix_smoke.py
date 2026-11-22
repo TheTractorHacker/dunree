@@ -325,7 +325,7 @@ def securityfix_ui(pg, ctx):
             fail("waf", "a negative anomaly threshold must be explained")
         if js("document.getElementById('wafpSave').innerText.trim().length") == 0:
             fail("waf", "the Save policy button must keep its label")
-    if js("getComputedStyle(document.getElementById('wafTabs')).backgroundImage").count("gradient") < 2:
+    if js("(() => { const e = document.getElementById('wafTabs'), c = getComputedStyle(e); return e.scrollWidth > e.clientWidth + 1 && !(c.backgroundImage + (c.maskImage || c.webkitMaskImage || '') + e.className).match(/gradient|scroll-(start|end|fade)|zx-scroll/) })()"):
         fail("waf", "the sideways scrolling tab strip needs a scroll hint")
 
     # ================================================================ Security overview: contrast tokens, plugin iframe

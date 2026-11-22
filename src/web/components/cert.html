@@ -4,6 +4,28 @@
     #certPage .zx-table td .zx-row-actions { display: flex; gap: var(--zx-space-1); flex-wrap: wrap; }
     #certPage #certAddBody .ui.form .field { margin-bottom: var(--zx-space-3); }
     #certPage .certFileHint { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #certPage .zx-card .zx-table-wrap { border: 0; border-radius: 0; box-shadow: none; }
+    #certPage .certTools { margin-left: auto; }
+    #certPage .certDescFallback { position: relative; padding-bottom: var(--zx-space-3); }
+    #certPage .certDescFallback .zx-whatis { vertical-align: middle; margin-left: var(--zx-space-1); }
+    #certPage input.certFile { padding: 4px; height: auto; min-height: var(--zx-control-h); }
+    #certPage input.certFile::file-selector-button { margin-right: var(--zx-space-2); padding: 4px var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-sm); background: var(--zx-surface-2); color: var(--zx-text); font: inherit; cursor: pointer; }
+    #certPage .certAddActions { margin-top: var(--zx-space-3); }
+    #certPage .certMissingHost code { overflow-wrap: anywhere; }
+    #certPage .certToolRow { margin-bottom: var(--zx-space-3); }
+    #certPage .certMissingExtra[hidden] { display: none !important; }
+    /* an empty list shows its empty state, not a lonely table header */
+    #certPage .zx-table-wrap:has(.zx-empty) thead { display: none; }
+    @media (max-width: 480px) {
+        /* rows of a list inside a card: dividers, not a box in a box */
+        #certPage .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
+        #certPage .zx-card .zx-table tbody tr:last-child { border-bottom: 0; }
+        #certPage .certMissingHost { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-2); padding: var(--zx-space-2) 0; }
+        #certPage .certMissingHost td { display: block; width: auto; border: 0; padding: 0; text-align: left; }
+        #certPage .certMissingHost td::before { content: none; }
+        #certPage .certMissingHost td:first-child { flex: 1 1 100%; }
+        #certPage .certMissingHost td.zx-actions { margin-left: auto; width: auto; }
+    }
 </style>
 <!-- Certificates (tag cert). Lead with what matters: expiry, expiring soon, hosts without a certificate; adding one is a collapsible card. -->
 <style>
@@ -41,14 +63,34 @@
 
     <div id="certMissingBox" class="zx-card" hidden>
         <div class="zx-card__head"><h3 class="zx-card__title">Hosts without a certificate</h3></div>
-        <p class="zx-card__desc">No stored certificate matches these host names, so visitors get the fallback certificate and a browser warning. Add a certificate that covers them or request one with ACME.</p>
-        <div class="zx-card__body"><ul class="zx-itemlist" id="certMissingList"></ul></div>
+        <p class="zx-card__desc">Visitors to these hosts get the fallback certificate and a browser warning. Add a certificate that covers them or request one with ACME.</p>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Hosts without a certificate">
+                <table class="zx-table zx-table--compact">
+                    <thead><tr><th scope="col">Host</th><th scope="col">Status</th><th scope="col" class="zx-actions">Action</th></tr></thead>
+                    <tbody id="certMissingList"></tbody>
+                </table>
+            </div>
+            <div class="zx-btn-row" id="certMissingMoreRow" style="margin-top: var(--zx-space-3);" hidden>
+                <button type="button" class="zx-btn zx-btn--ghost zx-btn--sm" id="certMissingMore" aria-expanded="false">Show all</button>
+            </div>
+        </div>
     </div>
 
     <div class="zx-card" tourstep="certTable">
-        <div class="zx-card__head"><h3 class="zx-card__title">Certificates, expiring first</h3></div>
-        <p class="zx-card__desc">Loaded certificates with the sites that use them. Select a name to download the certificate.</p>
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Certificates, expiring first</h3>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm certTools" onclick="initManagedDomainCertificateList();"><i class="refresh icon" aria-hidden="true"></i> Refresh list</button>
+        </div>
+        <div class="zx-card__desc certDescFallback">Loaded certificates with the sites that use them. Select a name to download the certificate. A fallback certificate answers when no certificate matches the requested name.
+            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certFallbackWhat" aria-label="What is a fallback certificate?">?</button>
+            <div class="zx-popover" id="certFallbackWhat" role="note" hidden>A fallback certificate is used when the reverse proxy cannot find a matching certificate for the requested server name. If you are using Cloudflare full (strict) mode, you can also upload the Cloudflare origin certificate here and set it as the fallback.</div>
+        </div>
         <div class="zx-card__body">
+            <div class="zx-btn-row certToolRow">
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showSideWrapper('snippet/certtools.html?t=' + Date.now());"><i class="wrench icon" aria-hidden="true"></i> CSR, certificate folder &amp; hooks</button>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showSideWrapper('snippet/acmeprofiles.html?t=' + Date.now());"><i class="cog icon" aria-hidden="true"></i> ACME profiles &amp; defaults</button>
+            </div>
             <div class="zx-table-wrap zx-table-wrap--tall" tabindex="0" role="region" aria-label="Certificates">
                 <table class="zx-table zx-table--comfortable">
                     <thead>
@@ -63,22 +105,10 @@
                     <tbody id="certifiedDomainList"></tbody>
                 </table>
             </div>
-            <div class="zx-row-actions" style="margin-top: var(--zx-space-3); display:flex; flex-wrap:wrap; gap: var(--zx-space-2);">
-                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="initManagedDomainCertificateList();"><i class="refresh icon" aria-hidden="true"></i> Refresh list</button>
-                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showSideWrapper('snippet/certtools.html?t=' + Date.now());"><i class="wrench icon" aria-hidden="true"></i> CSR, certificate folder &amp; hooks</button>
-                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showSideWrapper('snippet/acmeprofiles.html?t=' + Date.now());"><i class="cog icon" aria-hidden="true"></i> ACME profiles &amp; defaults</button>
-            </div>
             <div id="renewLogBox" class="ui segment" style="display:none; margin-top:1em;">
                 <button type="button" class="ui mini basic right floated icon button" aria-label="Close the renewal log" onclick="$('#renewLogBox').hide();"><i class="close icon"></i></button>
                 <b id="renewLogTitle">Renewal log</b>
                 <pre id="renewLog" style="max-height: 18em; overflow:auto; white-space: pre-wrap; margin-top:0.6em;"></pre>
-            </div>
-            <div class="zx-field" style="margin-top: var(--zx-space-3);">
-                <div class="zx-field__label-row">
-                    <strong>What is a fallback certificate?</strong>
-                    <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certFallbackWhat" aria-label="What is a fallback certificate?">?</button>
-                </div>
-                <div class="zx-popover" id="certFallbackWhat" role="note" hidden>A fallback certificate is used when the reverse proxy cannot find a matching certificate for the requested server name. If you are using Cloudflare full (strict) mode, you can also upload the Cloudflare origin certificate here and set it as the fallback.</div>
             </div>
         </div>
     </div>
@@ -94,11 +124,11 @@
         <p class="zx-card__desc">Upload a certificate and key pair, paste them, or request a free one with ACME.</p>
         <div class="zx-card__body" id="certAddBody" hidden>
             <div class="ui fluid form">
-                <div class="three fields">
-                    <div class="field">
-                        <div class="zx-field__label-row"><label for="certdomain">Server name (domain)</label>
+                <div class="zx-form-grid">
+                    <div class="zx-field field">
+                        <div class="zx-field__label-row"><label class="zx-field__label" for="certdomain">Server name (domain)</label>
                             <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certSniWhat" aria-label="What are server names and SNI?">?</button></div>
-                        <input type="text" id="certdomain" placeholder="">
+                        <input type="text" id="certdomain" class="zx-input" placeholder="app.example.com">
                         <div class="zx-popover" id="certSniWhat" role="note" hidden>
     <strong>Server names and SNI.</strong> SNI is the host name a browser sends before the encrypted connection starts; Zoraxy uses it to pick the certificate.
     <ul>
@@ -107,23 +137,25 @@
         <li>A certificate with several hosts: enter the first domain and Zoraxy matches the remaining CN/DNS names.</li>
     </ul>
 </div>
-                        <small class="certFileHint">Match the server name with the CN/DNS entry of the certificate for faster lookup.</small>
+                        <p class="zx-help">Match it with the CN/DNS entry of the certificate for faster lookup.</p>
                     </div>
-                    <div class="field">
-                        <label for="pubkeySelector">Public key (.pem)</label>
-                        <input type="file" id="pubkeySelector" onchange="handleFileSelect(event, 'pub')">
-                        <small class="certFileHint">or .crt files in other systems</small>
+                    <div class="zx-field field">
+                        <label class="zx-field__label" for="pubkeySelector">Public key (.pem)</label>
+                        <input type="file" id="pubkeySelector" class="zx-input certFile" onchange="handleFileSelect(event, 'pub')">
+                        <p class="zx-help">Or a .crt file from other systems.</p>
                     </div>
-                    <div class="field">
-                        <label for="prikeySelector">Private key (.key)</label>
-                        <input type="file" id="prikeySelector" onchange="handleFileSelect(event, 'pri')">
+                    <div class="zx-field field">
+                        <label class="zx-field__label" for="prikeySelector">Private key (.key)</label>
+                        <input type="file" id="prikeySelector" class="zx-input certFile" onchange="handleFileSelect(event, 'pri')">
+                        <p class="zx-help">Stays on this server.</p>
                     </div>
                 </div>
-                <button type="button" id="certUploadBtn" class="ui basic button showOnlyInCertUploadMode" onclick="handleDomainUploadByKeypress();"><i class="ui teal upload icon"></i> Upload</button>
-                <button type="button" id="certPasteBtn" class="ui basic button showOnlyInCertUploadMode" onclick="togglePasteCertInterface();"><i class="ui yellow paste icon"></i> Paste certificate directly</button>
-                <button type="button" class="ui basic button" onclick="typeof openACMEManager === 'function' ? openACMEManager() : openTabById('acme');"><i class="ui yellow certificate icon"></i> Request a free certificate (ACME)</button>
-                <br class="showOnlyInCertUploadMode">
-                <small class="showOnlyInCertUploadMode">Do you have an intermediate certificate? <a href="#" onclick="showSideWrapper('snippet/intermediateCertConv.html'); return false;">Open the conversion tool</a></small>
+                <div class="zx-btn-row certAddActions">
+                    <button type="button" id="certUploadBtn" class="zx-btn zx-btn--primary showOnlyInCertUploadMode" onclick="handleDomainUploadByKeypress();"><i class="upload icon" aria-hidden="true"></i> Upload</button>
+                    <button type="button" id="certPasteBtn" class="zx-btn zx-btn--secondary showOnlyInCertUploadMode" onclick="togglePasteCertInterface();"><i class="paste icon" aria-hidden="true"></i> Paste certificate directly</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" onclick="typeof openACMEManager === 'function' ? openACMEManager() : openTabById('acme');"><i class="certificate icon" aria-hidden="true"></i> Request a free certificate (ACME)</button>
+                </div>
+                <p class="zx-help showOnlyInCertUploadMode" style="margin-top: var(--zx-space-3);">Do you have an intermediate certificate? <a href="#" onclick="showSideWrapper('snippet/intermediateCertConv.html'); return false;">Open the conversion tool</a></p>
             </div>
             <div id="certPasteArea" style="display:none;">
                 <!-- Paste cert function implementation -->
@@ -138,8 +170,8 @@
                             <textarea id="prikeyPasteContent" rows="8" placeholder="Paste your private key content here..."></textarea>
                         </div>
                     </div>
-                    <button type="button" class="ui basic button" onclick="handlePasteInBrowserAndUpload();"><i class="ui teal upload icon"></i> Upload from pasted content</button>
-                    <button type="button" class="ui basic button" onclick="togglePasteCertInterface();"><i class="ui grey cancel icon"></i> Cancel</button>
+                    <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--primary" onclick="handlePasteInBrowserAndUpload();"><i class="upload icon" aria-hidden="true"></i> Upload from pasted content</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" onclick="togglePasteCertInterface();">Cancel</button></div>
                 </div>
             </div>
             <div id="certUploadSuccMsg" class="ui green message" style="display:none; overflow-wrap:anywhere;" role="status">
@@ -504,7 +536,7 @@
             if (data.length == 0){
                 tbody.append(`<tr><td colspan="6"><div class="zx-empty"><div class="zx-empty__title">No certificates yet</div>
                     <p class="zx-empty__text">Sites served over HTTPS need a certificate. Upload one or request a free one with ACME.</p>
-                    <button type="button" class="zx-btn zx-btn--primary" data-act="addcert">Add a certificate</button></div></td></tr>`);
+                    <button type="button" class="zx-btn zx-btn--secondary" data-act="addcert">Add a certificate</button></div></td></tr>`);
             }
             renderCertSummary(data, usage);
         });
@@ -542,9 +574,16 @@
                 });
             });
             var ul = $("#certMissingList").empty();
-            missing.forEach(function(h){
-                ul.append(`<li class="certMissingHost"><code>${certEsc(h)}</code> <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="usehost" data-host="${certEsc(h)}">Add a certificate</button></li>`);
+            var cap = 5;
+            missing.forEach(function(h, i){
+                ul.append(`<tr class="certMissingHost${i >= cap ? " certMissingExtra" : ""}"${i >= cap ? " hidden" : ""}>
+                    <td data-label="Host">${certEsc(h)}</td>
+                    <td data-label="Status"><span class="zx-badge zx-badge--warn">No certificate</span></td>
+                    <td data-label="Action" class="zx-actions"><div class="zx-row-actions"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="usehost" data-host="${certEsc(h)}" aria-label="${certEsc(tf("Add a certificate for {0}", h))}"><i class="plus icon" aria-hidden="true"></i> ${certEsc(t("Add"))}</button></div></td>
+                </tr>`);
             });
+            $("#certMissingMoreRow").prop("hidden", missing.length <= cap);
+            $("#certMissingMore").attr("aria-expanded", "false").text(tf("Show all {0}", missing.length));
             $("#certMissingBox").prop("hidden", missing.length == 0);
         });
     }
@@ -557,6 +596,12 @@
         else if (act == "delete"){ deleteCertificate(cert); }
         else if (act == "addcert"){ openCertAddCard(); }
         else if (act == "usehost"){ openCertAddCard(); $("#certdomain").val(b.attr("data-host")).trigger("input").focus(); }
+    });
+
+    $(document).on("click", "#certMissingMore", function(){
+        var open = $(this).attr("aria-expanded") === "true";
+        $(".certMissingExtra").prop("hidden", open);
+        $(this).attr("aria-expanded", open ? "false" : "true").text(open ? tf("Show all {0}", $(".certMissingHost").length) : t("Show fewer"));
     });
 
     function openCertAddCard(){

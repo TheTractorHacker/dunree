@@ -1,21 +1,28 @@
 <style>
-    #acme .expiredDomain { color: var(--zx-danger-text, #b42318); }
-    #acme small { font-size: var(--zx-fs-sm); }
-    #acme .validDomain   { color: var(--zx-ok-text, #0d5a2e); }
-    #acme .disabled.table { opacity: 0.7; pointer-events: none; }
-    .renew_all_certificate.section-disabled,
-    .renew_selected_certificate.section-disabled {
-        opacity: 0.65;
-        pointer-events: none;
-        user-select: none;
-    }
+    #acme .expiredDomain { color: var(--zx-danger-text); }
+    #acme .validDomain   { color: var(--zx-ok-text); }
+    #acme #acmeDomainCertTable.disabled { opacity: 0.6; pointer-events: none; }
+    #acme .renewPanel { margin-top: var(--zx-space-3); padding-top: var(--zx-space-3); border-top: 1px solid var(--zx-border); }
+    #acme .renewPanel.section-disabled .zx-table-wrap, #acme .renewPanel.section-disabled .zx-btn-row { opacity: 0.75; pointer-events: none; user-select: none; }
+    #acme .renewPanel__lead { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); }
+    #acme .acmeState { display: inline-flex; margin-left: var(--zx-space-2); vertical-align: middle; }
+    #acme #acmeEnableToggleSucc { margin: var(--zx-space-2) 0 0; color: var(--zx-ok-text); font-size: var(--zx-fs-sm); }
+    #acme .zx-form-grid { max-width: 56em; }
+    #acme .zx-table-wrap { border: 0; }
+    #acme #acmeDomainTableBody td.acmeEmptyRow { color: var(--zx-text-muted); }
+    /* the switch keeps its full width (it used to run past the card edge on a phone) and an off / disabled switch stays visible */
+    #acme .zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
+    #acme .zx-toggle-row > .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
+    #acme .zx-toggle-row > .ui.toggle.checkbox.disabled, #acme .zx-toggle-row > .ui.toggle.checkbox.read-only { opacity: 1; }
+    #acme .zx-toggle-row__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-2); }
+    #acme .acmeState { margin-left: 0; }
 </style>
 <div class="standardContainer" id="acmePage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">ACME Client</h2>
-            <p class="zx-page-header__sub">Let Zoraxy request and renew free certificates from a certificate authority such as Let's Encrypt, so HTTPS sites keep a valid certificate without manual work.</p>
+            <p class="zx-page-header__sub">Request and renew free certificates from a certificate authority such as Let's Encrypt.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="ACME"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -25,6 +32,132 @@
         <a href="#cert" data-nav-open="cert">Certificates</a>
         <a href="#acme" data-nav-open="acme" aria-current="page">ACME Client</a>
     </nav>
+
+    <section class="zx-card" tourstep="acmeSettings">
+        <div class="zx-card__head"><h3 class="zx-card__title">Authority and email</h3></div>
+        <p class="zx-card__desc">The certificate authority used by default when you create a proxy rule with a TLS certificate.</p>
+        <div class="zx-card__body">
+            <div class="ui fluid form">
+                <div class="zx-form-grid">
+                    <div class="zx-field field">
+                        <label class="zx-field__label" id="defaultCALabel">Certificate authority</label>
+                        <div class="ui selection dropdown" id="defaultCA" aria-labelledby="defaultCALabel">
+                            <input type="hidden" name="defaultCA">
+                            <i class="dropdown icon"></i>
+                            <div class="default text">Let's Encrypt</div>
+                            <div class="menu">
+                                <div class="item" data-value="Let's Encrypt">Let's Encrypt</div>
+                                <!-- <div class="item" data-value="Buypass">Buypass</div> -->
+                                <div class="item" data-value="ZeroSSL">ZeroSSL</div>
+                                <div class="item" data-value="custom">Custom ACME server</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="zx-field field">
+                        <label class="zx-field__label" for="prefACMEEmail">Email address</label>
+                        <input id="prefACMEEmail" type="text" placeholder="admin@example.com" autocomplete="email">
+                        <p class="zx-help">The authority sends expiry notices here. Example: admin@example.com</p>
+                    </div>
+                    <div class="zx-field field" id="prefcaInput" style="display:none;">
+                        <label class="zx-field__label" for="prefcaURL">ACME server URL</label>
+                        <input id="prefcaURL" type="text" placeholder="https://example.com/acme/directory">
+                    </div>
+                    <div class="zx-field field" id="prefkidInput" style="display:none;">
+                        <label class="zx-field__label" for="prefeab_kid">EAB key ID for this provider</label>
+                        <input id="prefeab_kid" type="text" placeholder="Leave empty to keep the current value">
+                    </div>
+                    <div class="zx-field field" id="prefhmacInput" style="display:none;">
+                        <label class="zx-field__label" for="prefeab_hmac">EAB HMAC key for this provider</label>
+                        <input id="prefeab_hmac" type="text" placeholder="Leave empty to keep the current value">
+                    </div>
+                    <div class="zx-field field zx-field--wide" id="skipTLS" style="display:none;">
+                        <div class="ui checkbox">
+                            <input type="checkbox" id="skipTLSCheckbox">
+                            <label>Ignore TLS verification errors<br><small class="zx-help">For example a self-signed or expired server certificate. Not recommended.</small></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" onclick="saveDefaultCA();">Save</button></div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head"><h3 class="zx-card__title">Auto-renew</h3></div>
+        <p class="zx-card__desc">Renew certificates before they expire, without manual work.</p>
+        <div class="zx-card__body">
+            <div id="acmeToggleRow">
+                <div class="zx-toggle-row">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Renew certificates automatically <span class="acmeState"><span class="zx-badge zx-badge--dot" id="acmeAutoRenewer"><span id="acmeAutoRenewerStatus">Disabled</span></span></span></span>
+                        <span class="zx-toggle-row__desc">Needs an email address above. Zoraxy checks daily and renews certificates close to expiry.</span>
+                    </span>
+                    <div class="ui toggle checkbox" id="acmeAutoRenewCheckbox">
+                        <input type="checkbox" id="enableCertAutoRenew" aria-label="Renew certificates automatically">
+                        <label></label>
+                    </div>
+                </div>
+                <p id="acmeEnableToggleSucc" style="display:none;"><i class="check icon" aria-hidden="true"></i> Setting updated</p>
+                <div id="acmeEmailRequiredHint" class="zx-callout zx-callout--warn" role="note" hidden style="margin-top: var(--zx-space-3);">
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+                    <div class="zx-callout__body">Set the ACME email above and save it before you turn on auto-renew.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head"><h3 class="zx-card__title">Renew policy</h3></div>
+        <p class="zx-card__desc">Choose which certificates the auto-renewer looks after.</p>
+        <div class="zx-card__body">
+            <div class="zx-toggle-row">
+                <span class="zx-toggle-row__text">
+                    <span class="zx-toggle-row__title">Renew all certificates</span>
+                    <span class="zx-toggle-row__desc">Turn off to pick individual certificates.</span>
+                </span>
+                <div class="ui toggle checkbox" id="renewAllSupportedCheckbox">
+                    <input type="checkbox" id="renewAllSupported" aria-label="Renew all certificates" onchange="window.acmeSetAutoRenewMode(this.checked);">
+                    <label></label>
+                </div>
+            </div>
+            <div class="renewPanel renew_all_certificate">
+                <p class="renewPanel__lead">Every certificate is renewed automatically.</p>
+                <div class="zx-btn-row">
+                    <button type="button" id="acmeRenewNowBtn" onclick="window.acmeRenewNow();" class="ui basic button"><i class="refresh icon" aria-hidden="true"></i> Renew now</button>
+                </div>
+            </div>
+            <div class="renewPanel renew_selected_certificate">
+                <p class="renewPanel__lead">Select the certificates to renew automatically. Expired ones are marked.</p>
+                <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Certificates to renew automatically">
+                    <table id="acmeDomainCertTable" class="zx-table zx-table--compact disabled">
+                        <thead>
+                            <tr>
+                                <th scope="col">Domain name</th>
+                                <th scope="col">Certificate file</th>
+                                <th scope="col">Auto-renew</th>
+                            </tr>
+                        </thead>
+                        <tbody id="acmeDomainTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="zx-callout zx-callout--warn" role="note" style="margin-top: var(--zx-space-3);">
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+                    <div class="zx-callout__body">Auto-renew only works with certificate authorities that Zoraxy supports. See the Zoraxy wiki for the list.</div>
+                </div>
+                <div class="zx-btn-row" style="margin-top: var(--zx-space-3);">
+                    <button type="button" id="acmeRenewSelectedBtn" onclick="window.acmeRenewNow();" class="ui basic disabled button"><i class="refresh icon" aria-hidden="true"></i> Renew selected</button>
+                </div>
+            </div>
+        </div>
+        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--secondary" onclick="window.acmeSaveRenewPolicy();">Save renew policy</button></div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head"><h3 class="zx-card__title">Request a certificate</h3></div>
+        <p class="zx-card__desc">Request one now for a domain that has no certificate yet.</p>
+        <div class="zx-card__body"><button type="button" class="zx-btn zx-btn--secondary" tourstep="openACMEManager" onclick="openACMEManager();"><i class="external icon" aria-hidden="true"></i> Open ACME tool</button></div>
+    </section>
+
     <aside class="zx-related" aria-label="Related pages">
         <span class="zx-related__title">Related</span>
         <ul>
@@ -32,121 +165,6 @@
             <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>the sites that use the certificates</span></li>
         </ul>
     </aside>
-    <div class="ui divider"></div>
-    <div class="ui basic segment acmeRenewStateWrapper">
-        <h4 class="ui header" id="acmeAutoRenewer">
-            <i class="white remove icon"></i>
-            <div class="content">
-                <span id="acmeAutoRenewerStatus">Disabled</span>
-                <div class="sub header">ACME Auto-Renewer</div>
-            </div>
-        </h4>
-    </div>
-    <div style="margin-top: 1.2em;" id="acmeToggleRow">
-        <p style="float: right; color: #b3c2b6; display:none;" id="acmeEnableToggleSucc"><i class="green checkmark icon"></i> Setting Updated</p>
-        <div class="ui toggle checkbox" id="acmeAutoRenewCheckbox">
-            <input type="checkbox" id="enableCertAutoRenew">
-            <label>Enable Certificate Auto Renew</label>
-        </div>
-        <div id="acmeEmailRequiredHint" class="zx-callout zx-callout--warn" role="note" hidden style="margin-top: 0.8em;">
-            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
-            <div class="zx-callout__body">Set the ACME email below and save it before enabling auto renew.</div>
-        </div>
-    </div>
-    <div class="ui divider"></div>
-    <h3>Preferred Certificate Authority</h3>
-    <p>The default CA used when you create a new subdomain proxy endpoint with a TLS certificate.</p>
-    <div class="ui fluid form" tourstep="acmeSettings">
-        <div class="field">
-            <label id="defaultCALabel">Preferred CA</label>
-            <div class="ui selection dropdown" id="defaultCA" aria-labelledby="defaultCALabel">
-                <input type="hidden" name="defaultCA">
-                <i class="dropdown icon"></i>
-                <div class="default text">Let's Encrypt</div>
-                <div class="menu">
-                    <div class="item" data-value="Let's Encrypt">Let's Encrypt</div>
-                    <!-- <div class="item" data-value="Buypass">Buypass</div> -->
-                    <div class="item" data-value="ZeroSSL">ZeroSSL</div>
-                    <div class="item" data-value="custom">Custom ACME Server</div>
-                </div>
-            </div>
-        </div>
-        <div class="field">
-            <label for="prefACMEEmail">ACME Email</label>
-            <input id="prefACMEEmail" type="text" placeholder="ACME Email">
-        </div>
-        <div class="field" id="prefcaInput" style="display:none;">
-            <label for="prefcaURL">ACME Server URL</label>
-            <input id="prefcaURL" type="text" placeholder="https://example.com/acme/directory">
-        </div>
-        <div class="field" id="prefkidInput" style="display:none;">
-            <label for="prefeab_kid">EAB Credentials (KID) for current provider</label>
-            <input id="prefeab_kid" type="text" placeholder="Leave this field blank to keep the current configuration">
-        </div>
-        <div class="field" id="prefhmacInput" style="display:none;">
-            <label for="prefeab_hmac">EAB HMAC Key for current provider</label>
-            <input id="prefeab_hmac" type="text" placeholder="Leave this field blank to keep the current configuration">
-        </div>
-        <div class="field" id="skipTLS" style="display:none;">
-            <div class="ui checkbox">
-                <input type="checkbox" id="skipTLSCheckbox">
-                <label>Ignore TLS/SSL Verification Error<br><small>E.g. self-signed, expired certificate (Not Recommended)</small></label>
-            </div>
-        </div>
-        <button class="ui basic button" onclick="saveDefaultCA();"><i class="ui green save icon"></i> Save</button>
-    </div>
-    <br>
-    <div class="ui divider"></div>
-    <h3>Advanced Renew Policy</h3>
-    <p>Configure which certificates the ACME auto-renewer should renew automatically.</p>
-    <div style="display: flex; align-items: center; gap: 1.6em; flex-wrap: wrap;">
-        <div class="ui toggle checkbox" id="renewAllSupportedCheckbox">
-            <input type="checkbox" id="renewAllSupported" onchange="window.acmeSetAutoRenewMode(this.checked);">
-            <label>Renew All Certs</label>
-        </div>
-        <br>
-       
-    </div>
-    <div class="ui segment renew_all_certificate">
-        <p>All certificates will be renewed automatically.</p>
-         <button id="acmeRenewNowBtn" onclick="window.acmeRenewNow();" class="ui basic button">
-            <i class="yellow refresh icon"></i> Renew Now
-        </button>
-    </div>
-    <div class="ui segment renew_selected_certificate">
-        <p>Select specific certificates to renew automatically:</p>
-        <div style="width: 100%; overflow-x: auto; margin-bottom: 1em;">
-            <table id="acmeDomainCertTable" class="ui very compact unstackable basic disabled table">
-                <thead>
-                    <tr>
-                        <th>Domain Name</th>
-                        <th>Match Rule</th>
-                        <th>Auto-Renew</th>
-                    </tr>
-                </thead>
-                <tbody id="acmeDomainTableBody"></tbody>
-            </table>
-        </div>
-        <small><i class="ui red info circle icon"></i> Domains in red are expired</small><br><br>
-        <div class="ui yellow message">
-            Certificate auto-renew only works with CAs supported by Zoraxy. Check the Zoraxy wiki for the supported CA list.
-        </div>
-        <div class="">
-            <button id="acmeRenewSelectedBtn" onclick="window.acmeRenewNow();" class="ui basic disabled button">
-                <i class="yellow refresh icon"></i> Renew Selected
-            </button>
-        
-        </div>
-    </div>
-    <button class="ui basic button" onclick="window.acmeSaveRenewPolicy();">
-            <i class="green save icon"></i> Save Renew Policy
-    </button>
-    
-    <br>
-    <div class="ui divider"></div>
-    <h3>Generate New Certificate</h3>
-    <p>Manually generate a certificate if one of your domain do not have certificate.</p>
-    <button class="ui basic button" tourstep="openACMEManager" onclick="openACMEManager();"><i class="yellow external icon"></i> Open ACME Tool</button>
 </div>
 <script>
 (function(){
@@ -174,7 +192,7 @@
     // The toggle is disabled while no email is set; a click on it must say why instead of doing nothing
     $("#acmeToggleRow").on("click", function(){
         if ($("#acmeAutoRenewCheckbox").hasClass("disabled")){
-            msgbox("Set the ACME email first (Preferred Certificate Authority, below), then enable auto renew.", false, 5000);
+            msgbox("Set the ACME email first (Authority and email, above), then turn on auto-renew.", false, 5000);
             $("#prefACMEEmail").focus();
         }
     });
@@ -259,10 +277,10 @@
             }
 
             var row = $('<tr>');
-            row.append($('<td class="' + domainClass + '">').html(domains.join("<br>")));
-            row.append($('<td>').text(srcfile));
+            row.append($('<td class="' + domainClass + '" data-label="Domain name">').html($("<div>").text(domains.join("\n")).html().replace(/\n/g, "<br>") + (domainClass === "expiredDomain" ? ' <span class="zx-badge zx-badge--danger">Expired</span>' : '')));
+            row.append($('<td data-label="Certificate file">').text(srcfile));
 
-            var checkboxCell = $('<td>').attr('srcfile', srcfile).attr('domain', encodeURIComponent(JSON.stringify(domains)));
+            var checkboxCell = $('<td data-label="Auto-renew">').attr('srcfile', srcfile).attr('domain', encodeURIComponent(JSON.stringify(domains)));
             checkboxCell.append($('<input type="checkbox">').attr('name', srcfile));
             row.append(checkboxCell);
 
@@ -270,7 +288,7 @@
         }
 
         if (Object.keys(domainFileList).length === 0){
-            tableBody.append('<tr><td colspan="3"><i class="ui green circle check icon"></i> No certificate in use</td></tr>');
+            tableBody.append('<tr><td class="zx-empty-cell acmeEmptyRow" colspan="3">No certificates in use yet.</td></tr>');
         }
     }
 
@@ -403,12 +421,7 @@
     // setACMEEnableStates is also called from snippet/acme.html via parent.setACMEEnableStates
     window.setACMEEnableStates = function(enabled){
         $("#acmeAutoRenewerStatus").text(enabled ? "Enabled" : "Disabled");
-        if (enabled){
-            $(".acmeRenewStateWrapper").addClass("enabled");
-        } else {
-            $(".acmeRenewStateWrapper").removeClass("enabled");
-        }
-        $("#acmeAutoRenewer").find("i").attr("class", enabled ? "white circle check icon" : "white circle times icon");
+        $("#acmeAutoRenewer").toggleClass("zx-badge--ok", !!enabled);
     };
 
     $("input[name=defaultCA]").on("change", function(){

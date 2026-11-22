@@ -1,148 +1,191 @@
+<div class="standardContainer zxs-narrow" id="redirectPage">
+    <style>
+        #redirectPage { max-width: 1100px; }
+        /* empty list: no box inside the card, no header row above the message */
+        #redirectPage .zx-table:has(td.zx-empty-cell) thead { display: none; }
+        #redirectPage .zx-table, body.darkTheme #redirectPage .zx-table { border: 0 !important; }
+        #redirectPage td.zx-empty-cell { padding: var(--zx-space-4); }
+        #redirectPage td.zx-empty-cell .zx-empty { padding: var(--zx-space-3) 0; }
+        @media (max-width: 480px) { #redirectPage .zx-table tr:has(> td.zx-empty-cell) { border: 0; background: transparent; margin: 0; border-radius: 0; } #redirectPage .zx-table td.zx-empty-cell { padding: var(--zx-space-3) 0; } }
+        #redirectPage .zx-table-wrap { --zx-table-max: 28rem; }
+        #redirectPage .zx-table td.zxs-url { word-break: break-all; min-width: 9rem; }
+        #redirectPage td .zx-switch { min-width: 42px; }
+        #redirectPage .zx-btn.disabled { opacity: .55; pointer-events: none; }
+        #redirectPage .zxs-opts .field { margin: 0 0 var(--zx-space-2); }
+        #redirectPage .ui.checkbox label small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; margin-top: 2px; }
+        #redirectPage .zxs-choice { display: grid; gap: var(--zx-space-1) var(--zx-space-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+        #redirectPage .zxs-choice > .field { margin: 0 0 var(--zx-space-3); }
+        #redirectPage .zxs-fieldset { margin: 0 0 var(--zx-space-3); }
+        #redirectPage .zxs-fieldset > .zx-field__label { display: block; margin-bottom: var(--zx-space-2); }
+        #redirectPage .zxs-edit-cell .ui.input { min-width: 10rem; }
+        #redirectPage .zxs-pathdemo { margin-top: var(--zx-space-1); font-size: var(--zx-fs-sm); color: var(--zx-text-muted); }
+        #redirectPage .zxs-pathdemo code { background: var(--zx-surface-2); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); }
+        #redirectPage .zx-card__foot { align-items: center; }
+        #redirectPage .zx-card__foot .ui.button { margin: 0; }
+        #redirectPage .zx-card__foot > [tourstep] { display: flex !important; }
+        #redirectPage .zxs-msg { margin-top: var(--zx-space-3); }
+        #redirectPage .zx-disclosure { margin: 0; border-top: 0; }
+    </style>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Redirection</h2>
+            <p class="zx-page-header__sub">Send visitors from one address to another</p>
+        </div>
+    </header>
 
-<div class="standardContainer">
-    <div class="ui basic segment" style="padding-left: 0; padding-right: 0;">
-      <h2>Redirection Rules</h2>
-      <p>Add exception case for redirecting any matching URLs</p>
-    </div>
     <!-- Current list of redirection rules-->
-    <div class="zx-scrollx zx-scrollx--sticky-last">
-        <table class="ui sortable unstackable celled table" >
-          <thead>
-              <tr>
-                  <th><!-- Enable Toggle Field --></th>
-                  <th>Redirection URL</th>
-                  <th>Destination URL</th>
-                  <th class="no-sort">Forward Pathname</th>
-                  <th class="no-sort">Require Exact Match</th>
-                  <th class="no-sort">Device Type</th>
-                  <th class="no-sort">Status Code</th>
-                  <th class="no-sort">Actions</th>
-              </tr>
-          </thead>
-          <tbody id="redirectionRuleList">
-              <tr>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-              </tr>
-          </tbody>
-      </table>
-    </div>
-    <div class="ui green message" id="delRuleSucc" style="display:none;">
-      <i class="ui green checkmark icon"></i> Redirection Rule Deleted
-    </div>
-    <!-- Options -->
-    <div class="ui basic segment advanceoptions">
-      <div id="redirectionAdvanceSettings" class="ui accordion advanceSettings">
-          <div class="title">
-            <i class="dropdown icon"></i>
-              Advanced Settings
-          </div>
-          <div class="content">
-            <div class="ui basic segment">
-              <div class="ui toggle checkbox">
-                  <input id="redirectRegex" type="checkbox">
-                  <label>Enable Regular Expression Support<br>
-                  <small>Regular expression redirection check will noticeably slow down page load<br>
-                    Support <a href="https://yourbasic.org/golang/regexp-cheat-sheet/" target="_blank">Go style regex</a>. e.g. <code style="background-color: rgb(44, 44, 44); color: white">.\.redirect\.example\.com</code></small></label>
-              </div>
-              <br>
-              <div class="ui toggle checkbox" style="margin-top: 0.4em;">
-                <input id="redirectRegexAdvanced" type="checkbox">
-                <label>Advanced regex engine (experimental)<br>
-                <small>Uses a backtracking engine that supports lookahead <code>(?=...)</code>, lookbehind <code>(?&lt;=...)</code> and backreferences, which Go's default engine does not. Only active together with the option above. Every match is cut off after 50 ms to stop catastrophic patterns (a timed out rule simply does not match). Patterns are limited to 500 characters, matched text to 4096.</small></label>
-              </div>
-              <br>
-              <div class="ui toggle checkbox" style="margin-top: 0.4em;">
-                <input id="redirectCaseSensitive" type="checkbox">
-                <label>Force Case Sensitive Check<br>
-                <small>If enabled, URL matching will be case sensitive</small></label>
-              </div>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Redirection rules</h3>
+            <p class="zx-card__desc">Requests that match a rule go to its destination instead of reaching a site.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Redirection rules">
+                <table class="zx-table zx-table--compact">
+                    <thead>
+                        <tr>
+                            <th><span class="zx-sr-only">Enabled</span></th>
+                            <th>Redirect from</th>
+                            <th>Redirect to</th>
+                            <th>Keep the path</th>
+                            <th>Exact match</th>
+                            <th>Devices</th>
+                            <th>Status code</th>
+                            <th class="zx-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="redirectionRuleList">
+                        <tr><td colspan="8" class="zx-empty-cell">Loading rules...</td></tr>
+                    </tbody>
+                </table>
             </div>
-          </div>
-      </div>
-    </div>
+            <div class="zx-callout zx-callout--success zxs-msg" id="delRuleSucc" style="display:none;" role="status">
+                <div class="zx-callout__body"><i class="green checkmark icon"></i> Redirection rule deleted</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Options: every switch saves at once -->
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Matching options</h3>
+            <p class="zx-card__desc">These switches apply to all rules and save at once.</p>
+        </div>
+        <div class="zx-card__body">
+            <details id="redirectionAdvanceSettings" class="zx-disclosure advanceSettings">
+                <summary>Advanced settings</summary>
+                <div class="zx-disclosure__body">
+                    <label class="zx-toggle-row" for="redirectRegex">
+                        <span class="zx-toggle-row__text">
+                            <span class="zx-toggle-row__title">Enable regular expression support</span>
+                            <span class="zx-toggle-row__desc">Checking patterns noticeably slows down page loads. Uses <a href="https://yourbasic.org/golang/regexp-cheat-sheet/" target="_blank" rel="noopener">Go style regex</a>, for example <code>.\.redirect\.example\.com</code></span>
+                        </span>
+                        <input id="redirectRegex" type="checkbox" class="zx-switch" role="switch">
+                    </label>
+                    <label class="zx-toggle-row" for="redirectRegexAdvanced">
+                        <span class="zx-toggle-row__text">
+                            <span class="zx-toggle-row__title">Advanced regex engine (experimental)</span>
+                            <span class="zx-toggle-row__desc">Adds lookahead <code>(?=...)</code>, lookbehind <code>(?&lt;=...)</code> and backreferences, which Go's default engine does not support. Only active together with the option above. A match is cut off after 50 ms, and a rule that times out simply does not match. Patterns are limited to 500 characters, matched text to 4096.</span>
+                        </span>
+                        <input id="redirectRegexAdvanced" type="checkbox" class="zx-switch" role="switch">
+                    </label>
+                    <label class="zx-toggle-row" for="redirectCaseSensitive">
+                        <span class="zx-toggle-row__text">
+                            <span class="zx-toggle-row__title">Case-sensitive matching</span>
+                            <span class="zx-toggle-row__desc">When on, /Blog and /blog are treated as different addresses</span>
+                        </span>
+                        <input id="redirectCaseSensitive" type="checkbox" class="zx-switch" role="switch">
+                    </label>
+                </div>
+            </details>
+        </div>
+    </section>
 
     <!-- Add New Redirection Rules -->
-    <div class="ui divider"></div>
-    <h4>Add Redirection Rule</h4>
-    <div class="ui form">
-        <div class="field" tourstep="url-from">
-          <label>Redirection URL (From)</label>
-          <input type="text" id="rurl" name="redirection-url" placeholder="Redirection URL" aria-label="Redirection URL (From)">
-          <small> Any matching prefix of the request URL will be redirected to the destination URL, e.g. redirect.example.com</small>
+    <section class="zx-card" id="addRedirectCard">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Add a rule</h3>
+            <p class="zx-card__desc">Any request whose address starts with the "from" address is sent to the "to" address.</p>
         </div>
-        <div class="field" tourstep="url-to">
-          <label>Destination URL (To)</label>
-          <input type="text" name="destination-url" placeholder="Destination URL" aria-label="Destination URL (To)">
-          <small>The target URL request being redirected to, e.g. dest.example.com/mysite/ or dest.example.com/script.php, <b>sometime you might need to add tailing slash (/) to your URL depending on your use cases</b></small>
-        </div>
-        <div class="field">
-          <div class="ui checkbox">
-            <input type="checkbox" name="require-exact-match" tabindex="0" class="hidden">
-            <label>Require Exact Match</label>
-          </div>
-          <br>
-          <small>If enabled, only exact URL matches will be redirected (no prefix matching)</small>
-        </div>
-        <div class="field">
-          <div class="ui checkbox">
-            <input type="checkbox" name="forward-childpath" tabindex="0" class="hidden" checked>
-            <label>Forward Pathname</label>
-          </div>
-          <div class="ui message">
-            <p>Append the current pathname after the redirect destination</p>
-            <i class="check square outline icon"></i> old.example.com<b>/blog?post=13</b> <i class="long arrow alternate right icon" style="margin-left: 1em;"></i> new.example.com<b>/blog?post=13</b> <br>
-            <i class="square outline icon"></i> old.example.com<b>/blog?post=13</b> <i class="long arrow alternate right icon" style="margin-left: 1em;"></i> new.example.com
-          </div>
-        </div>
-        <div class="grouped fields">
-            <label>Device Type Filters</label>
-            <div class="field">
-              <div class="ui radio checkbox">
-                <input type="radio" name="redirect-device" value="all" checked>
-                <label>All Devices<br><small>Apply this redirection rule to all devices</small></label>
-              </div>
+        <div class="zx-card__body">
+            <div class="ui form">
+                <div class="zx-form-grid">
+                    <div class="zx-field field" tourstep="url-from">
+                        <label class="zx-field__label" for="rurl">Redirect from</label>
+                        <input type="text" id="rurl" name="redirection-url" placeholder="redirect.example.com" aria-label="Redirect from">
+                        <p class="zx-help">The address to catch, for example redirect.example.com</p>
+                    </div>
+                    <div class="zx-field field" tourstep="url-to">
+                        <label class="zx-field__label" for="rdest">Redirect to</label>
+                        <input type="text" id="rdest" name="destination-url" placeholder="dest.example.com/mysite/" aria-label="Redirect to">
+                        <p class="zx-help">Where visitors are sent, for example dest.example.com/mysite/. Depending on your use, you may need a slash (/) at the end.</p>
+                    </div>
+                </div>
+                <label class="zx-toggle-row" for="rExact">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Match the exact address only</span>
+                        <span class="zx-toggle-row__desc">When on, only an identical address is redirected, not addresses that merely start with it</span>
+                    </span>
+                    <input type="checkbox" class="zx-switch" role="switch" id="rExact" name="require-exact-match">
+                </label>
+                <label class="zx-toggle-row" for="rForward">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Keep the path</span>
+                        <span class="zx-toggle-row__desc">Add the rest of the address after the destination</span>
+                        <span class="zxs-pathdemo"><code>old.example.com/blog?post=13</code> becomes <code>new.example.com/blog?post=13</code> when on, and <code>new.example.com</code> when off</span>
+                    </span>
+                    <input type="checkbox" class="zx-switch" role="switch" id="rForward" name="forward-childpath" checked>
+                </label>
+                <div class="zxs-choice" style="margin-top: var(--zx-space-4);">
+                    <div class="grouped fields zxs-fieldset">
+                        <label>Devices</label>
+                        <div class="field">
+                            <div class="ui radio checkbox">
+                                <input type="radio" name="redirect-device" value="all" checked>
+                                <label>All devices<br><small>Redirect every visitor</small></label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="ui radio checkbox">
+                                <input type="radio" name="redirect-device" value="desktop">
+                                <label>Desktop only<br><small>Unknown device types count as desktop</small></label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="ui radio checkbox">
+                                <input type="radio" name="redirect-device" value="mobile">
+                                <label>Mobile only<br><small>Redirect phones and tablets</small></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grouped fields zxs-fieldset">
+                        <label>Status code</label>
+                        <div class="field">
+                            <div class="ui radio checkbox">
+                                <input type="radio" name="redirect-type" value="307" checked>
+                                <label>Temporary redirect<br><small>Status code 307</small></label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="ui radio checkbox">
+                                <input type="radio" name="redirect-type" value="301">
+                                <label>Moved permanently<br><small>Status code 301</small></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="field">
-              <div class="ui radio checkbox">
-                <input type="radio" name="redirect-device" value="desktop">
-                <label>Desktop Devices Only<br><small>Apply this redirection rule to desktop device only. Unknown device types will be treated as desktop</small></label>
-              </div>
-            </div>
-            <div class="field">
-              <div class="ui radio checkbox">
-                <input type="radio" name="redirect-device" value="mobile">
-                <label>Mobile Devices Only<br><small>Apply this redirection rule to mobile devices only</small></label>
-              </div>
+            <div class="zx-callout zx-callout--success zxs-msg" id="ruleAddSucc" style="display:none;" role="status">
+                <div class="zx-callout__body"><i class="green checkmark icon"></i> Redirection rule added</div>
             </div>
         </div>
-        <div class="grouped fields">
-            <label>Redirection Status Code</label>
-            <div class="field">
-              <div class="ui radio checkbox">
-                <input type="radio" name="redirect-type" value="307" checked>
-                <label>Temporary Redirect <br><small>Status Code: 307</small></label>
-              </div>
-            </div>
-            <div class="field">
-              <div class="ui radio checkbox">
-                <input type="radio" name="redirect-type" value="301">
-                <label>Moved Permanently <br><small>Status Code: 301</small></label>
-              </div>
+        <div class="zx-card__foot">
+            <div tourstep="save_redirect_btn" style="display:inline-block;">
+                <button class="ui primary button" id="addRedirectBtn" onclick="addRules();"><i class="plus icon"></i> Add rule</button>
             </div>
         </div>
-        <div tourstep="save_redirect_btn" style="display:inline-block;">
-          <button class="ui basic button" id="addRedirectBtn" onclick="addRules();"><i class="ui teal plus icon"></i> Add Redirection Rule</button>
-        </div>
-        <div class="ui green message" id="ruleAddSucc" style="display:none;">
-          <i class="ui green checkmark icon"></i> Redirection Rules Added
-        </div>
-        <br><br>
-    </div>
-  </div>
+    </section>
 </div>
 <script>
     /*
@@ -150,9 +193,6 @@
     */
 
     $(".checkbox").checkbox();
-    // Scope to this page's accordion only; .advanceSettings is reused by
-    // other webmin components loaded dynamically via ajax.
-    $("#redirectionAdvanceSettings").accordion();
     function resetForm() {
       document.getElementById("rurl").value = "";
       document.getElementsByName("destination-url")[0].value = "";
@@ -248,34 +288,34 @@
               if (!hrefURL.startsWith("http")){
                 hrefURL = "https://" + hrefURL;
               }
-              let deviceTypeLabel = "All Devices";
+              let deviceTypeLabel = "All devices";
               if (entry.DeviceType === "desktop") {
-                deviceTypeLabel = "Desktop Only";
+                deviceTypeLabel = "Desktop only";
               } else if (entry.DeviceType === "mobile") {
-                deviceTypeLabel = "Mobile Only";
+                deviceTypeLabel = "Mobile only";
               }
+              let yesNo = function(v){ return v ? "<span class='zx-badge zx-badge--ok'>Yes</span>" : "<span class='zx-badge'>No</span>"; };
               $("#redirectionRuleList").append(`<tr>
-                  <td class="collapsing">
-                    <div class="ui toggle tiny fitted checkbox" style="margin-bottom: -0.5em; margin-right: 0.4em;" title="Enable / Disable Rule">
-                        <input type="checkbox" class="enableToggle" name="active" aria-label="Enable / Disable Rule" onchange="handleRedirectionRuleEnableToggle(this);" payload="${encodedEntry}" ${entry.Enabled ? "checked" : ""}>
-                        <label></label>
-                    </div>
+                  <td class="collapsing" data-label="Enabled">
+                    <input type="checkbox" class="zx-switch enableToggle" name="active" title="Enable / Disable Rule" aria-label="Enable / Disable Rule" onchange="handleRedirectionRuleEnableToggle(this);" payload="${encodedEntry}" ${entry.Enabled ? "checked" : ""}>
                   </td>
-                  <td><a href="${ZxUI.esc(/^(https?:)?\/\//i.test(hrefURL) ? hrefURL : "#")}" target="_blank" rel="noopener">${ZxUI.esc(entry.RedirectURL)}</a></td>
-                  <td>${ZxUI.esc(entry.TargetURL)}</td>
-                  <td>${entry.ForwardChildpath?"<i class='ui green checkmark icon'></i>":"<i class='ui red remove icon'></i>"}</td>
-                  <td>${entry.RequireExactMatch?"<i class='ui green checkmark icon'></i>":"<i class='ui red remove icon'></i>"}</td>
-                  <td>${deviceTypeLabel}</td>
-                  <td>${entry.StatusCode==307?"Temporary Redirect (307)":"Moved Permanently (301)"}</td>
-                  <td>
-                    <button onclick="editRule(this);" payload="${encodedEntry}" title="Edit redirection rule" aria-label="Edit redirection rule" class="ui mini circular icon basic button redirectEditBtn"><i class="edit icon"></i></button>
-                    <button onclick="deleteRule(this);" rurl="${encodeURIComponent(JSON.stringify(entry.RedirectURL))}" title="Delete redirection rule" aria-label="Delete redirection rule" class="ui mini red circular icon basic button"><i class="trash icon"></i></button>
+                  <td class="zxs-url" data-label="Redirect from"><a href="${ZxUI.esc(/^(https?:)?\/\//i.test(hrefURL) ? hrefURL : "#")}" target="_blank" rel="noopener">${ZxUI.esc(entry.RedirectURL)}</a></td>
+                  <td class="zxs-url" data-label="Redirect to">${ZxUI.esc(entry.TargetURL)}</td>
+                  <td data-label="Keep the path">${yesNo(entry.ForwardChildpath)}</td>
+                  <td data-label="Exact match">${yesNo(entry.RequireExactMatch)}</td>
+                  <td data-label="Devices">${deviceTypeLabel}</td>
+                  <td data-label="Status code">${entry.StatusCode==307?"Temporary (307)":"Permanent (301)"}</td>
+                  <td class="zx-actions">
+                    <span class="zx-row-actions">
+                    <button onclick="editRule(this);" payload="${encodedEntry}" title="Edit redirection rule" aria-label="Edit redirection rule" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon redirectEditBtn"><i class="edit icon"></i></button>
+                    <button onclick="deleteRule(this);" rurl="${encodeURIComponent(JSON.stringify(entry.RedirectURL))}" title="Delete redirection rule" aria-label="Delete redirection rule" class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon"><i class="trash icon"></i></button>
+                    </span>
                   </td>
               </tr>`);
             });
             
             if (data.length == 0){
-              $("#redirectionRuleList").append(`<tr><td colspan="8"><i class="grey info circle icon"></i> No redirection rule yet</td></tr>`);
+              $("#redirectionRuleList").append(`<tr><td colspan="8" class="zx-empty-cell"><div class="zx-empty"><div class="zx-empty__icon"><i class="share icon" aria-hidden="true"></i></div><p class="zx-empty__title">No redirection rules yet</p><p class="zx-empty__text">Add your first rule in the form below.</p><button type="button" class="zx-btn zx-btn--secondary" onclick="document.getElementById('rurl').scrollIntoView({behavior:'smooth', block:'center'}); document.getElementById('rurl').focus();"><i class="plus icon"></i> Add a rule</button></div></td></tr>`);
             }
             
         });
@@ -294,36 +334,35 @@
       let deviceType = payload.DeviceType || "all";
 
       row.html(`
-        <td class="collapsing">
-          <div class="ui toggle tiny fitted checkbox" style="margin-bottom: -0.5em; margin-right: 0.4em;" title="Save or cancel the edit to change the enable state">
-              <input type="checkbox" class="enableToggle" name="active" disabled ${payload.Enabled ? "checked" : ""}>
-              <label></label>
-          </div>
+        <td class="collapsing" data-label="Enabled">
+          <input type="checkbox" class="zx-switch enableToggle" name="active" disabled title="Save or cancel the edit to change the enable state" aria-label="Enable / Disable Rule" ${payload.Enabled ? "checked" : ""}>
         </td>
-        <td>
+        <td class="zxs-edit-cell" data-label="Redirect from">
           <div class="ui small input">
-            <input type="text" value="${ZxUI.esc(redirectUrl)}" id="editRedirectUrl" aria-label="Redirection URL">
+            <input type="text" value="${ZxUI.esc(redirectUrl)}" id="editRedirectUrl" aria-label="Redirect from">
           </div>
         </td>
-        <td>
+        <td class="zxs-edit-cell" data-label="Redirect to">
           <div class="ui small input">
-            <input type="text" value="${ZxUI.esc(destUrl)}" id="editDestUrl" aria-label="Destination URL">
+            <input type="text" value="${ZxUI.esc(destUrl)}" id="editDestUrl" aria-label="Redirect to">
           </div>
         </td>
-        <td><div class="ui toggle checkbox"><input type="checkbox" ${forwardChildpath ? "checked" : ""} id="editForwardChildpath"><label></label></div></td>
-        <td><div class="ui toggle checkbox"><input type="checkbox" ${requireExactMatch ? "checked" : ""} id="editRequireExactMatch"><label></label></div></td>
-        <td>
+        <td data-label="Keep the path"><input type="checkbox" class="zx-switch" role="switch" aria-label="Keep the path" ${forwardChildpath ? "checked" : ""} id="editForwardChildpath"></td>
+        <td data-label="Exact match"><input type="checkbox" class="zx-switch" role="switch" aria-label="Exact match" ${requireExactMatch ? "checked" : ""} id="editRequireExactMatch"></td>
+        <td data-label="Devices">
           <div class="ui radio checkbox"><input type="radio" name="editDeviceType" value="all" ${deviceType == "all" ? "checked" : ""}><label>All</label></div><br>
           <div class="ui radio checkbox"><input type="radio" name="editDeviceType" value="desktop" ${deviceType == "desktop" ? "checked" : ""}><label>Desktop</label></div><br>
           <div class="ui radio checkbox"><input type="radio" name="editDeviceType" value="mobile" ${deviceType == "mobile" ? "checked" : ""}><label>Mobile</label></div>
         </td>
-        <td>
-          <div class="ui radio checkbox"><input type="radio" name="editStatusCode" value="307" ${statusCode == 307 ? "checked" : ""}><label>Temporary Redirect (307)</label></div><br>
-          <div class="ui radio checkbox"><input type="radio" name="editStatusCode" value="301" ${statusCode == 301 ? "checked" : ""}><label>Moved Permanently (301)</label></div>
+        <td data-label="Status code">
+          <div class="ui radio checkbox"><input type="radio" name="editStatusCode" value="307" ${statusCode == 307 ? "checked" : ""}><label>Temporary (307)</label></div><br>
+          <div class="ui radio checkbox"><input type="radio" name="editStatusCode" value="301" ${statusCode == 301 ? "checked" : ""}><label>Permanent (301)</label></div>
         </td>
-        <td>
-          <button onclick="saveEditRule(this);" payload="${encodeURIComponent(JSON.stringify(payload))}" class="ui small circular green icon basic button" title="Save" aria-label="Save"><i class="save icon"></i></button>
-          <button onclick="initRedirectionRuleList();" class="ui small circular icon basic button" title="Cancel" aria-label="Cancel"><i class="cancel icon"></i></button>
+        <td class="zx-actions">
+          <span class="zx-row-actions">
+          <button onclick="saveEditRule(this);" payload="${encodeURIComponent(JSON.stringify(payload))}" class="zx-btn zx-btn--primary zx-btn--sm" title="Save" aria-label="Save">Save</button>
+          <button onclick="initRedirectionRuleList();" class="zx-btn zx-btn--secondary zx-btn--sm" title="Cancel" aria-label="Cancel">Cancel</button>
+          </span>
         </td>
       `);
 
@@ -366,9 +405,9 @@
       $.get("/api/redirect/regex", function(data){
         //Set the checkbox initial state
         if (data == true){
-          $("#redirectRegex").parent().checkbox("set checked");
+          $("#redirectRegex").prop("checked", true);
         }else{
-          $("#redirectRegex").parent().checkbox("set unchecked");
+          $("#redirectRegex").prop("checked", false);
         }
 
         //Bind event to the checkbox
@@ -393,7 +432,7 @@
 
     function initAdvancedRegexToggle(){
       $.get("/api/redirect/advancedregex", function(data){
-        $("#redirectRegexAdvanced").parent().checkbox(data && data.enabled ? "set checked" : "set unchecked");
+        $("#redirectRegexAdvanced").prop("checked", !!(data && data.enabled));
         $("#redirectRegexAdvanced").on("change", function(){
           $.cjax({
             url: "/api/redirect/advancedregex",
@@ -416,9 +455,9 @@
       $.get("/api/redirect/case_sensitive", function(data){
         //Set the checkbox initial state
         if (data == true){
-          $("#redirectCaseSensitive").parent().checkbox("set checked");
+          $("#redirectCaseSensitive").prop("checked", true);
         }else{
-          $("#redirectCaseSensitive").parent().checkbox("set unchecked");
+          $("#redirectCaseSensitive").prop("checked", false);
         }
 
         //Bind event to the checkbox

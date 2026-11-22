@@ -1081,17 +1081,8 @@ body.darkTheme .menudivider{
     border-radius: 0.6em;
     box-shadow: 0 0 0 max(100vh, 100vw) rgba(0, 0, 0, .3);
 }
-/* Security Center has nine sections: the tab bar scrolls inside its own box at every width instead of widening the page */
-#secTabs.ui.tabular.menu {
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    max-width: 100%;
-    scrollbar-width: thin;
-}
-#secTabs.ui.tabular.menu .item { flex-shrink: 0; white-space: nowrap; }
+
 /* tab strips that scroll sideways (Security Center, and the strips that carry the zx-tabscroll class: Utilities, Network Tools): a soft edge shows that there is more on that side (same cue as the WAF tabs) */
-#secTabs.ui.tabular.menu,
 .ui.tabular.menu.zx-tabscroll {
     overflow-x: auto;
     overflow-y: hidden;

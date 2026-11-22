@@ -1,244 +1,195 @@
-<div class="standardContainer">
-    <div class="ui basic segment">
-        <h2>Static Web Server</h2>
-        <p>A simple static web server that serves HTML, CSS and JS files.</p>
-    </div>
-    <div class="ui divider"></div>
-    <div class="ui basic segment webservRunningStateWrapper">
-        <h4 class="ui header" id="webservRunningState">
-            <i class="green circle icon"></i>
-            <div class="content">
-                <span class="webserv_status">Running</span>
-                <div class="sub header">Listen port :<span class="webserv_port">8081</span></div>
-            </div>
-        </h4>
-    </div>
-    <div>
-        <h3>Web Server Settings</h3>
-        <div class="ui form">
-            <div class="inline field">
-                <div class="ui toggle checkbox webservRootDisabled">
-                    <input id="webserv_enable" type="checkbox" class="hidden">
-                    <label>Enable Static Web Server</label>
-                </div>
-            </div>
-            <div class="inline field">
-                <div class="ui toggle checkbox">
-                    <input id="webserv_enableDirList" type="checkbox" class="hidden">
-                    <label>Enable Directory Listing</label>
-                    <small>If this folder does not contain an index file, list the contents of the folder.</small>
-                </div>
-            </div>
-            <div class="inline field">
-                <div class="ui toggle checkbox">
-                    <input id="webserv_enableAllInterfaces" type="checkbox" class="hidden">
-                    <label>Listening to All Interfaces</label>
-                    <small>When disabled, the web server will only listen to localhost (127.0.0.1) and only reachable via reverse proxy rules.</small>
-                </div>
-            </div>
-            <div class="field">
-                <label>Document Root Folder</label>
-                <input id="webserv_docRoot" type="text" readonly="true">
-                <small>
-                    The web server root folder can only be changed via startup flags of zoraxy for security reasons. 
-                    See the -webserv flag for more details.
-                </small>
-            </div>
-            <div class="field webservRootDisabled">
-                <label>Port Number</label>
-                <input id="webserv_listenPort" type="number" step="1" min="1" max="65535" value="8081" onchange="updateWebServLinkExample(this.value);">
-                <small>Use <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> in proxy rules to access the web server</small>
-            </div>
+<div class="standardContainer" id="webservPage">
+    <style>
+        #webservPage { max-width: 1100px; }
+        #webservPage .zxs-readonly { background: var(--zx-surface-2) !important; color: var(--zx-text) !important; cursor: default; }
+        #webservPage .zxs-short { max-width: 10rem; }
+        #webservPage .zx-field small, #webservPage .field small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+        #webservPage .zx-card__head .zx-badge { flex: 0 0 auto; }
+        #webservPage .zx-disclosure { margin: var(--zx-space-4) 0 0; }
+        #webservPage .zx-disclosure__body ol, #webservPage .zx-disclosure__body ul { padding-left: 1.4em; margin: var(--zx-space-1) 0 var(--zx-space-3); }
+        #webservPage .zxs-step { margin: var(--zx-space-3) 0 var(--zx-space-1); font-weight: 700; color: var(--zx-text); }
+        #webservPage .zx-disclosure__body code { background: var(--zx-surface-2); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); }
+        #webservPage .zxs-oslist { list-style: none; padding: 0 !important; }
+        #webservPage .zxs-oslist > li { margin: 0 0 var(--zx-space-3); }
+        #webservPage .zxs-note { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: var(--zx-space-3) 0 0; }
+    </style>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Static Web Server</h2>
+            <p class="zx-page-header__sub">Serve HTML, CSS and JavaScript files from a folder on this host</p>
         </div>
-    </div>
-    <small><i class="ui blue save icon"></i> Changes are saved automatically</small>
-    <br>
-    <div class="ui message">
-        <div class="ui accordion webservhelp">
-            <div class="title">
-                <i class="dropdown icon"></i>
-                How to access the static web server?
-            </div>
-            <div class="content">
-                There are three ways to access the static web server. <br>
-                <div class="ui ordered list">
-                    <div class="item">
-                        If you are using Zoraxy as your gateway reverse proxy server, 
-                        you can add a new subdomain proxy rule that points to 
-                        <a>http://127.0.0.1:<span class="webserv_port">8081</span></a>
+    </header>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Web server</h3>
+            <span class="zx-badge" id="webservRunningState" role="status"><i class="minus circle icon" aria-hidden="true"></i> <span class="webserv_status">Stopped</span>&nbsp;&middot;&nbsp;port&nbsp;:<span class="webserv_port">8081</span></span>
+            <p class="zx-card__desc">Changes on this page are saved automatically.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="ui form">
+                <label class="zx-toggle-row webservRootDisabled" for="webserv_enable">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Run the static web server</span>
+                        <span class="zx-toggle-row__desc">Starts or stops the built-in server at once</span>
+                    </span>
+                    <input id="webserv_enable" type="checkbox" class="zx-switch" role="switch">
+                </label>
+                <label class="zx-toggle-row" for="webserv_enableDirList">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Show directory listing</span>
+                        <span class="zx-toggle-row__desc">If a folder has no index file, list what is inside it</span>
+                    </span>
+                    <input id="webserv_enableDirList" type="checkbox" class="zx-switch" role="switch">
+                </label>
+                <label class="zx-toggle-row" for="webserv_enableAllInterfaces">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Listen on all interfaces</span>
+                        <span class="zx-toggle-row__desc">When off, the server only listens on localhost (127.0.0.1) and can only be reached through proxy rules</span>
+                    </span>
+                    <input id="webserv_enableAllInterfaces" type="checkbox" class="zx-switch" role="switch">
+                </label>
+                <div style="margin-top: var(--zx-space-4);">
+                    <div class="field zx-field">
+                        <label class="zx-field__label" for="webserv_docRoot">Document root folder</label>
+                        <input id="webserv_docRoot" type="text" readonly="true" class="zxs-readonly">
+                        <small>Fixed for security reasons. To use another folder, start Zoraxy with the <code>-webserv</code> flag.</small>
                     </div>
-                    <div class="item">
-                        If you are using Zoraxy under another reverse proxy server, 
-                        add <a>http://127.0.0.1:<span class="webserv_port">8081</span></a> to the config of your upper layer reverse proxy server's config file. 
-                    </div>
-                    <div class="item">
-                        Directly access the web server via <a>http://{zoraxy_host_ip}:<span class="webserv_port">8081</span></a> (Not recommended)
-                    </div>
-                    <br>
-                </div>
-                
-            </div>
-        </div>
-    </div>
-    
-    <div class="ui divider"></div>
-   
-    <div class="ui basic segment">
-        <h2>WebDAV Server</h2>
-        <p>Manage your files in the web directory using WebDAV protocol</p>
-    </div>
-    <div class="ui form">
-        <div class="ui basic segment webdavRunningStateWrapper">
-            <h4 class="ui header" id="webdavRunningState">
-                <i class="grey circle icon"></i>
-                <div class="content">
-                    <span class="webdav_status">Stopped</span>
-                    <div class="sub header">Listen port :<span class="webdav_port">5488</span></div>
-                </div>
-            </h4>
-        </div>
-        <div class="inline field">
-            <div class="ui toggle checkbox">
-                <input id="webdav_enable" type="checkbox" class="hidden">
-                <label>Enable WebDAV Server</label>
-                <small>Notes: You still need to add a proxy rule to access the WebDAV server remotely.</small>
-            </div>
-        </div>
-        <div class="field">
-            <label>WebDAV Server Port</label>
-            <input id="webdav_port" type="number" step="1" min="1" max="65535" value="5488">
-            <small>WebDAV server listens only on localhost (127.0.0.1) for security reasons.</small>
-        </div>
-        <div class="ui basic segment advanceoptions accordion" style="margin-top:0.6em;">
-            <div class="title">
-                <i class="dropdown icon"></i>
-                Advanced Options
-            </div>
-            <div class="content">
-                <div class="inline field">
-                    <div class="ui toggle checkbox">
-                        <input id="webdav_useCustomCredentials" type="checkbox" class="hidden">
-                        <label>Use Custom Credentials</label>
-                        <small>Use custom username and password for WebDAV instead of Zoraxy admin credentials.</small>
+                    <div class="field zx-field webservRootDisabled">
+                        <label class="zx-field__label" for="webserv_listenPort">Port number</label>
+                        <input id="webserv_listenPort" class="zxs-short" type="number" step="1" min="1" max="65535" value="8081" onchange="updateWebServLinkExample(this.value);">
+                        <small>Use <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> in a proxy rule to reach the web server</small>
                     </div>
                 </div>
-                <div id="webdav_customCredentialsForm">
-                    <div class="field">
-                        <label>Custom Username</label>
-                        <input id="webdav_customUsername" type="text" placeholder="Enter username (3-32 characters)">
-                    </div>
-                    <div class="field">
-                        <label>Custom Password</label>
-                        <input id="webdav_customPassword" type="password" placeholder="Enter password (minimum 8 characters)">
-                    </div>
-                    <button class="ui basic button" id="webdav_saveCustomCredentials">
-                        <i class="green save icon"></i>
-                        Save
-                    </button>
-                    <br><br>
-                    <small><i class="ui blue info circle icon"></i> Custom credentials are saved separately from other settings</small>
+            </div>
+            <details class="zx-disclosure webservhelp">
+                <summary>How to reach the static web server</summary>
+                <div class="zx-disclosure__body">
+                    <p>There are three ways:</p>
+                    <ol>
+                        <li>If Zoraxy is your gateway, add a proxy rule for a subdomain that points to <code>http://127.0.0.1:<span class="webserv_port">8081</span></code></li>
+                        <li>If Zoraxy runs behind another reverse proxy, add <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> to that proxy's configuration</li>
+                        <li>Open it directly at <code>http://{zoraxy_host_ip}:<span class="webserv_port">8081</span></code> (not recommended)</li>
+                    </ol>
                 </div>
-            </div>
+            </details>
         </div>
-    </div>
-    <br>
-    <small><i class="ui blue save icon"></i> Changes are saved automatically</small>
-    <br>
-    <div class="ui message">
-        <div class="ui accordion webdavhelp">
-            <div class="title">
-                <i class="dropdown icon"></i>
-                How to access the WebDAV server?
-            </div>
-            <div class="content">
-                <h4>Step 1: Add Proxy Rule</h4>
-                <p>Add a new subdomain proxy rule (e.g., <code>webdav.example.com</code>) that points to <code>http://127.0.0.1:<span class="webdav_port">5488</span></code></p>
-                
-                <h4>Step 2: Connect with WebDAV Client</h4>
-                <div class="ui list">
-                    <div class="item">
-                        <i class="windows icon"></i>
-                        <div class="content">
-                            <div class="header">Windows</div>
-                            <div class="description">
-                                Use <strong>WinSCP</strong> or map network drive:
-                                <ol>
-                                    <li>Open File Explorer</li>
-                                    <li>Right-click "This PC" → "Map network drive"</li>
-                                    <li>Enter: <code>\\webdav.example.com@SSL\</code> (or <code>http://webdav.example.com</code>)</li>
-                                    <li>Use your Zoraxy admin username and password</li>
-                                </ol>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">WebDAV server</h3>
+            <span class="zx-badge" id="webdavRunningState" role="status"><i class="minus circle icon" aria-hidden="true"></i> <span class="webdav_status">Stopped</span>&nbsp;&middot;&nbsp;port&nbsp;:<span class="webdav_port">5488</span></span>
+            <p class="zx-card__desc">Manage the files of the web folder with a WebDAV client. Changes are saved automatically.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="ui form">
+                <label class="zx-toggle-row" for="webdav_enable">
+                    <span class="zx-toggle-row__text">
+                        <span class="zx-toggle-row__title">Run the WebDAV server</span>
+                        <span class="zx-toggle-row__desc">You still need a proxy rule to reach it from outside</span>
+                    </span>
+                    <input id="webdav_enable" type="checkbox" class="zx-switch" role="switch">
+                </label>
+                <div class="field zx-field" style="margin-top: var(--zx-space-4);">
+                    <label class="zx-field__label" for="webdav_port">WebDAV port</label>
+                    <input id="webdav_port" class="zxs-short" type="number" step="1" min="1" max="65535" value="5488">
+                    <small>For security, the WebDAV server only listens on localhost (127.0.0.1)</small>
+                </div>
+                <details class="zx-disclosure">
+                    <summary>Advanced options</summary>
+                    <div class="zx-disclosure__body">
+                        <label class="zx-toggle-row" for="webdav_useCustomCredentials">
+                            <span class="zx-toggle-row__text">
+                                <span class="zx-toggle-row__title">Use custom credentials</span>
+                                <span class="zx-toggle-row__desc">Sign in to WebDAV with its own user name and password instead of the Zoraxy admin account</span>
+                            </span>
+                            <input id="webdav_useCustomCredentials" type="checkbox" class="zx-switch" role="switch">
+                        </label>
+                        <div id="webdav_customCredentialsForm">
+                            <div class="zx-form-grid" style="margin-top: var(--zx-space-3);">
+                                <div class="field zx-field">
+                                    <label class="zx-field__label" for="webdav_customUsername">Custom user name</label>
+                                    <input id="webdav_customUsername" type="text" placeholder="3 to 32 characters">
+                                </div>
+                                <div class="field zx-field">
+                                    <label class="zx-field__label" for="webdav_customPassword">Custom password</label>
+                                    <input id="webdav_customPassword" type="password" placeholder="At least 8 characters">
+                                </div>
                             </div>
+                            <button class="ui primary button" id="webdav_saveCustomCredentials"><i class="save icon"></i> Save credentials</button>
+                            <p class="zx-help">Credentials are saved separately from the other settings.</p>
                         </div>
                     </div>
-                    <div class="item">
-                        <i class="apple icon"></i>
-                        <div class="content">
-                            <div class="header">macOS</div>
-                            <div class="description">
-                                Use <strong>Finder → Go → Connect to Server</strong>:
-                                <ol>
-                                    <li>Press <kbd>Cmd</kbd>+<kbd>K</kbd></li>
-                                    <li>Enter: <code>https://webdav.example.com</code></li>
-                                    <li>Click "Connect" and enter your Zoraxy admin credentials</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="item">
-                        <i class="linux icon"></i>
-                        <div class="content">
-                            <div class="header">Linux</div>
-                            <div class="description">
-                                Use your file manager's "Connect to Server" feature or mount with <code>davfs2</code>:
-                                <br><code>mount -t davfs https://webdav.example.com /mnt/webdav</code>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <h4>Important Notes</h4>
-                <ul>
-                    <li>Use HTTPS (SSL/TLS) for secure connections</li>
-                    <li>Authenticate with your Zoraxy admin username and password</li>
-                    <li>The WebDAV server serves the entire <code>www/</code> folder, including both <code>html/</code> (static web files) and <code>templates/</code> (Zoraxy templates)</li>
-                </ul>
+                </details>
             </div>
+            <details class="zx-disclosure webdavhelp">
+                <summary>How to reach the WebDAV server</summary>
+                <div class="zx-disclosure__body">
+                    <p class="zxs-step">Step 1: add a proxy rule</p>
+                    <p>Add a proxy rule for a subdomain (for example <code>webdav.example.com</code>) that points to <code>http://127.0.0.1:<span class="webdav_port">5488</span></code></p>
+
+                    <p class="zxs-step">Step 2: connect with a WebDAV client</p>
+                    <ul class="zxs-oslist">
+                        <li><strong><i class="windows icon"></i> Windows</strong> Use <strong>WinSCP</strong> or map a network drive:
+                            <ol>
+                                <li>Open File Explorer</li>
+                                <li>Right-click "This PC" and choose "Map network drive"</li>
+                                <li>Enter <code>\\webdav.example.com@SSL\</code> (or <code>http://webdav.example.com</code>)</li>
+                                <li>Sign in with your Zoraxy admin user name and password</li>
+                            </ol>
+                        </li>
+                        <li><strong><i class="apple icon"></i> macOS</strong> Use <strong>Finder, Go, Connect to Server</strong>:
+                            <ol>
+                                <li>Press <kbd>Cmd</kbd>+<kbd>K</kbd></li>
+                                <li>Enter <code>https://webdav.example.com</code></li>
+                                <li>Click "Connect" and enter your Zoraxy admin credentials</li>
+                            </ol>
+                        </li>
+                        <li><strong><i class="linux icon"></i> Linux</strong> Use the "Connect to Server" feature of your file manager, or mount it with <code>davfs2</code>:
+                            <br><code>mount -t davfs https://webdav.example.com /mnt/webdav</code>
+                        </li>
+                    </ul>
+
+                    <p class="zxs-step">Good to know</p>
+                    <ul>
+                        <li>Use HTTPS (SSL/TLS) for secure connections</li>
+                        <li>Sign in with your Zoraxy admin user name and password</li>
+                        <li>The WebDAV server serves the whole <code>www/</code> folder, including <code>html/</code> (static web files) and <code>templates/</code> (Zoraxy templates)</li>
+                    </ul>
+                </div>
+            </details>
         </div>
-    </div>
+    </section>
 
     <script>
-        $(".webservhelp").accordion();
-        $(".webdavhelp").accordion();
-        $(".advanceoptions.accordion").accordion();
-        $(".ui.checkbox").checkbox();
 
-        function setWebServerRunningState(running){
-            if (running){
-                $("#webserv_enable").parent().checkbox("set checked");
-                $("#webservRunningState").find("i").attr("class", "white circle check icon");
-                $("#webservRunningState").find(".webserv_status").text("Running");
-                $(".webservRunningStateWrapper").addClass("enabled")
-            }else{
-                $("#webserv_enable").parent().checkbox("set unchecked");
-                $("#webservRunningState").find("i").attr("class", "white circle times icon");
-                $("#webservRunningState").find(".webserv_status").text("Stopped");
-                $(".webservRunningStateWrapper").removeClass("enabled")
+        //Keep a switch and its change handlers in step with the server state (a real change event is fired only when the value differs, as the Fomantic checkbox did)
+        function setSwitchState(selector, value){
+            let el = $(selector);
+            if (el.prop("checked") !== !!value){
+                el.prop("checked", !!value).trigger("change");
             }
         }
 
+        function setRunningBadge(selector, statusClass, running){
+            let badge = $(selector);
+            badge.toggleClass("zx-badge--ok", running);
+            badge.find("i").attr("class", running ? "check circle icon" : "minus circle icon");
+            badge.find(statusClass).text(running ? "Running" : "Stopped");
+        }
+
+        function setWebServerRunningState(running){
+            setSwitchState("#webserv_enable", running);
+            setRunningBadge("#webservRunningState", ".webserv_status", running);
+            $(".webservRunningStateWrapper").toggleClass("enabled", running);
+        }
+
         function setWebDAVServerRunningState(running){
-            if (running){
-                $("#webdav_enable").parent().checkbox("set checked");
-                $("#webdavRunningState").find("i").attr("class", "white circle check icon");
-                $("#webdavRunningState").find(".webdav_status").text("Running");
-                $(".webdavRunningStateWrapper").addClass("enabled")
-            }else{
-                $("#webdav_enable").parent().checkbox("set unchecked");
-                $("#webdavRunningState").find("i").attr("class", "white circle times icon");
-                $("#webdavRunningState").find(".webdav_status").text("Stopped");
-                $(".webdavRunningStateWrapper").removeClass("enabled")
-            }
+            setSwitchState("#webdav_enable", running);
+            setRunningBadge("#webdavRunningState", ".webdav_status", running);
+            $(".webdavRunningStateWrapper").toggleClass("enabled", running);
         }
 
         function updateWebServState(){
@@ -254,11 +205,7 @@
 
                 setWebServerRunningState(data.Running);
 
-                if (data.EnableDirectoryListing){
-                    $("#webserv_enableDirList").parent().checkbox("set checked");
-                }else{
-                    $("#webserv_enableDirList").parent().checkbox("set unchecked");
-                }
+                $("#webserv_enableDirList").prop("checked", !!data.EnableDirectoryListing);
 
                 $("#webserv_docRoot").val(data.WebRoot + "/html/");
 
@@ -267,12 +214,8 @@
                     $("#webserv_dirManager").remove();
                 }
 
-                if (!data.DisableListenToAllInterface){
-                    //Options on UI is flipped
-                    $("#webserv_enableAllInterfaces").parent().checkbox("set checked");
-                }else{
-                    $("#webserv_enableAllInterfaces").parent().checkbox("set unchecked");
-                }
+                //Options on UI is flipped
+                $("#webserv_enableAllInterfaces").prop("checked", !data.DisableListenToAllInterface);
 
                 $("#webserv_listenPort").val(data.ListeningPort);
                 updateWebServLinkExample(data.ListeningPort);
@@ -284,11 +227,7 @@
                 updateWebDAVPortExample(data.WebDAVPort);
 
                 //Custom credentials settings
-                if (data.UseCustomCredentials){
-                    $("#webdav_useCustomCredentials").parent().checkbox("set checked");
-                }else{
-                    $("#webdav_useCustomCredentials").parent().checkbox("set unchecked");
-                }
+                $("#webdav_useCustomCredentials").prop("checked", !!data.UseCustomCredentials);
                 
                 // Set the custom username if available
                 if (data.CustomCredentialsUsername){

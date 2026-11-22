@@ -226,6 +226,13 @@
         ZxUI.segmented($(pane).find(".zx-segmented")[0]);
     });
 
+    ex("disclosure", "Disclosure, long value, inline empty state", "Disclosure replaces boxed 'Advanced' accordions. A long structured value wraps in .zx-longvalue (3 lines, then scrolls). The inline empty state is for tables and small cards.",
+`<details class="zx-disclosure"><summary>Advanced options</summary><div class="zx-disclosure__body">Rarely needed settings go here.</div></details>
+<div class="zx-table-wrap"><table class="zx-table"><thead><tr><th>Time</th><th>Details</th></tr></thead><tbody>
+  <tr><td data-label="Time">12:01</td><td data-label="Details" class="zx-cell-long"><div class="zx-longvalue" tabindex="0">{"ip":"203.0.113.9","ua":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36","path":"/wp-login.php?redirect_to=https%3A%2F%2Fexample.com%2Fadmin"}</div></td></tr>
+</tbody></table></div>
+<div class="zx-empty zx-empty--inline" style="margin-top:12px"><h4 class="zx-empty__title">No bans yet</h4><p class="zx-empty__text">Banned clients appear here.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm">Add a ban</button></div>`);
+
     ex("stat", "Stat tile", "A single number with a label and a hint. Tone modifiers .zx-stat--ok / --warn / --danger colour only the value text.",
 `<div class="zx-grid">
   <div class="zx-stat"><span class="zx-stat__label">Requests today</span><span class="zx-stat__value">24,310</span><span class="zx-stat__hint">+12% vs yesterday</span></div>

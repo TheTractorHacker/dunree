@@ -1,9 +1,32 @@
 <div class="standardContainer" id="vdirPage">
+    <style>
+        #vdirPage { max-width: 1100px; }
+        /* empty list: no box inside the card, no header row above the message */
+        #vdirPage .zx-table:has(td.zx-empty-cell) thead { display: none; }
+        #vdirPage .zx-table, body.darkTheme #vdirPage .zx-table { border: 0 !important; }
+        #vdirPage td.zx-empty-cell { padding: var(--zx-space-4); }
+        #vdirPage td.zx-empty-cell .zx-empty { padding: var(--zx-space-3) 0; }
+        @media (max-width: 480px) { #vdirPage .zx-table tr:has(> td.zx-empty-cell) { border: 0; background: transparent; margin: 0; border-radius: 0; } #vdirPage .zx-table td.zx-empty-cell { padding: var(--zx-space-3) 0; } }
+        #vdirPage .zx-table-wrap { --zx-table-max: 26rem; }
+        #vdirPage .zx-btn.disabled { opacity: .55; pointer-events: none; }
+        #vdirPage #newVDSection.disabled { display: none; }
+        #vdirPage .zxs-or { display: flex; align-items: center; gap: var(--zx-space-3); margin: var(--zx-space-3) 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        #vdirPage .zxs-or::before, #vdirPage .zxs-or::after { content: ""; flex: 1 1 0; border-top: 1px solid var(--zx-border); }
+        #vdirPage .ui.checkbox label small, #vdirPage .field small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
+        #vdirPage .zx-disclosure { margin: var(--zx-space-2) 0 var(--zx-space-4); }
+        #vdirPage .zx-disclosure__body { padding-top: var(--zx-space-3); }
+        #vdirPage td.zxs-dest { word-break: break-all; }
+        #vdirPage .zx-card__head .zx-btn { flex: 0 0 auto; }
+        #vdirPage #currentVirtualDirectoryAttachingHost { background: none; border: 0; border-radius: 0; font-weight: 400; color: var(--zx-text-muted); padding: 0; }
+        #vdirPage .zxs-choose .ui.dropdown { min-height: var(--zx-control-h); }
+        #vdirPage .zx-card__foot { align-items: center; }
+        #vdirPage .zx-card__foot .ui.button { margin: 0; }
+    </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Path routes</h2>
-            <p class="zx-page-header__sub">Send part of a site to a different place: requests whose path starts with a prefix such as <code>/api/</code> go to another upstream, the rest of the site is unchanged. Previously named Virtual Directories.</p>
+            <p class="zx-page-header__sub">Send part of a site to a different place</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Virtual directory"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -17,95 +40,103 @@
             <li><a href="#setroot" data-nav-open="setroot">Default Site</a> <span>what answers when no site matches</span></li>
         </ul>
     </aside>
-    <div id="currentVirtualDirectoryAttachingHost" class="ui basic segment" role="status">
-        Select a host / routing rule to start editing path routes
-    </div>  
-    <div class="ui stackable grid">
-        <div class="six wide column">
-            <h4>Select a Target Host / Site</h4>
-            <p>Attach path routes to the root proxy router</p>
+
+    <section class="zx-card zxs-choose">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Choose a site</h3>
+            <p class="zx-card__desc">A request whose path starts with a prefix such as <code>/api/</code> goes to another server, the rest of the site is unchanged.</p>
+        </div>
+        <div class="zx-card__body">
             <div class="ui checkbox">
                 <input type="checkbox" id="useRootProxyRouterForVdir" onchange="handleVdirAttachTargetChange(this);">
-                <label for="useRootProxyRouterForVdir">Root Proxy Router<br>
-                <small>Only applicable when Default Site is set to "Reverse Proxy" mode</small></label>
+                <label for="useRootProxyRouterForVdir">Default site<br>
+                <small>Only works when the Default Site is set to "Reverse proxy target"</small></label>
             </div>
-            <div class="ui horizontal divider">OR</div>
-            <p>Create path routes on an existing host / routing rule</p>
-            <div class="ui fluid search selection dropdown">
-                <input type="hidden" id="vdirBaseRoutingRule" name="vdirBaseRoutingRule" onchange="handleVdirAttachTargetChange();">
-                <i class="dropdown icon"></i>
-                <div class="default text">Select a host to edit</div>
-                <div class="menu" id="hostDomainList">
-                    
+            <div class="zxs-or" aria-hidden="true">or</div>
+            <div class="field zx-field" style="margin:0;">
+                <label class="zx-field__label" for="vdirBaseRoutingRule">A site you already created</label>
+                <div class="ui fluid search selection dropdown">
+                    <input type="hidden" id="vdirBaseRoutingRule" name="vdirBaseRoutingRule" onchange="handleVdirAttachTargetChange();">
+                    <i class="dropdown icon"></i>
+                    <div class="default text">Select a site</div>
+                    <div class="menu" id="hostDomainList">
+
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="ten wide column">
-            <h4>Edit path routes</h4>
-            <p>The path routes currently handled by the host selected on the left</p>
-            <div style="width: 100%; overflow-x: auto; margin-bottom: 1em;">
-                <table class="ui celled sortable unstackable compact table">
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Path routes</h3>
+            <button class="zx-btn zx-btn--secondary zx-btn--sm" type="button" onclick="reloadVdirList();" title="Refresh list"><i class="refresh icon"></i> Refresh</button>
+            <p class="zx-card__desc" id="currentVirtualDirectoryAttachingHost" role="status">Each path route sends one path prefix to its own destination.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Path routes">
+                <table class="zx-table zx-table--compact">
                     <thead>
                         <tr>
                             <th>Path route</th>
                             <th>Destination</th>
-                            <th class="no-sort" style="min-width: 7.2em;">Actions</th>
+                            <th class="zx-actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="vdirList">
                         <tr>
-                            <td data-label="" colspan="3">No Selected Host</td>
+                            <td colspan="3" class="zx-empty-cell">Choose a site above to see its path routes</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <button class="ui icon right floated basic button" onclick="reloadVdirList();"><i class="green refresh icon"></i> Refresh</button>
-            <br><br>
-            <div class="ui divider"></div>
-            <div id="newVDSection" class="disabled section">
-                <h4>New path route</h4>
-                <form class="ui form">
-                    <div class="field">
-                        <label for="virtualDirectoryPath">Matching Path Prefix</label>
-                        <input type="text" id="virtualDirectoryPath" placeholder="/mysite/">
-                        <small>Path that follows your select host / domain, e.g. <code>/mysite/</code> as path prefix will forward all request that matches <code>mydomain.com/mysite/*</code></small>
-                    </div>
-                    <div class="field">
-                        <label>Target IP Address or Domain Name with port</label>
-                        <input type="text" id="virtualDirectoryDomain" onchange="updateVDTargetTLSState();">
-                        <small>E.g. 192.168.0.101:8000 or example.com</small>
-                    </div>
+        </div>
+    </section>
+
+    <section id="newVDSection" class="zx-card disabled section">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">New path route</h3>
+            <p class="zx-card__desc">Requests that start with the path prefix are sent to the target.</p>
+        </div>
+        <form class="ui form">
+          <div class="zx-card__body">
+            <div class="zx-form-grid">
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="virtualDirectoryPath">Path prefix</label>
+                    <input type="text" id="virtualDirectoryPath" placeholder="/mysite/">
+                    <small>For example <code>/mysite/</code> sends everything under <code>mydomain.com/mysite/</code> to the target</small>
+                </div>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="virtualDirectoryDomain">Target address</label>
+                    <input type="text" id="virtualDirectoryDomain" placeholder="192.168.0.101:8000" onchange="updateVDTargetTLSState();">
+                    <small>An IP address or domain name with its port, for example 192.168.0.101:8000 or example.com</small>
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" id="vdReqTls">
+                    <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://</small></label>
+                </div>
+            </div>
+
+            <!-- Advance configs -->
+            <details id="advanceVdirRules" class="zx-disclosure">
+                <summary>Advanced settings</summary>
+                <div class="zx-disclosure__body">
                     <div class="field">
                         <div class="ui checkbox">
-                            <input type="checkbox" id="vdReqTls">
-                            <label>Proxy Target require TLS Connection <br><small>(i.e. Your proxy target starts with https://)</small></label>
+                            <input type="checkbox" id="vdSkipTLSValidation">
+                            <label>Ignore TLS/SSL certificate errors<br><small>For targets with a self-signed or expired certificate (not recommended)</small></label>
                         </div>
                     </div>
-
-                    <!-- Advance configs -->
-                    <div class="ui basic segment advanceoptions">
-                        <div id="advanceProxyRules" class="ui fluid accordion">
-                            <div class="title">
-                            <i class="dropdown icon"></i>
-                            Advanced Settings
-                            </div>
-                            <div class="content">
-                                <p></p>
-                                <div class="field">
-                                    <div class="ui checkbox">
-                                        <input type="checkbox" id="vdSkipTLSValidation">
-                                        <label>Ignore TLS/SSL Verification Error<br><small>For targets that is using self-signed, expired certificate (Not Recommended)</small></label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="ui basic button" onclick="addVdirToHost(); event.preventDefault();"><i class="green add icon"></i> Create path route</button>
-                </form>
-            </div>
-        </div>
-    </div>
-    <br><br>
+                </div>
+            </details>
+          </div>
+          <div class="zx-card__foot">
+            <button class="ui primary button" onclick="addVdirToHost(); event.preventDefault();"><i class="add icon"></i> Create path route</button>
+          </div>
+        </form>
+    </section>
 </div>
 <script>
     //Virtual directories functions
@@ -162,7 +193,7 @@
 
     //List the Vdir of the given endpoint, use "root" for root router
     function loadVdirList(endpoint){
-        $("#currentVirtualDirectoryAttachingHost").text("Editing host: " + endpoint);
+        $("#currentVirtualDirectoryAttachingHost").text(endpoint == "root" ? t("Showing the path routes of the default site") : t("Showing the path routes of") + " " + endpoint);
         let reqURL = "/api/proxy/vdir/list?type=host&ep=" + endpoint;
         if (endpoint == "root"){
             //Load root endpoint vdir list
@@ -177,7 +208,7 @@
                 if (data.length == 0){
                     //No virtual directory for this host
                     $("#vdirList").append(`<tr>
-                        <td data-label="" colspan="3"><div class="zx-empty"><div class="zx-empty__title">No path routes yet</div><p class="zx-empty__text">Every request to this host goes to its main upstream. Add a path prefix below to send part of the site elsewhere.</p></div></td>
+                        <td colspan="3" class="zx-empty-cell"><div class="zx-empty"><div class="zx-empty__title">No path routes yet</div><p class="zx-empty__text">Every request to this site goes to its main upstream. Add a path prefix below to send part of the site elsewhere.</p></div></td>
                     </tr>`);
                 }else{
                     //List the vdirs
@@ -194,11 +225,13 @@
                         let payload = JSON.stringify(vdir).hexEncode();
 
                         $("#vdirList").append(`<tr vdirid="${vdir.MatchingPath.hexEncode()}" class="vdirEntry" payload="${payload}">
-                            <td data-label="" editable="false" >${ZxUI.esc(vdir.MatchingPath)}</td>
-                            <td data-label="" editable="true" datatype="domain">${ZxUI.esc(vdir.Domain)} ${tlsIcon}</td>
-                            <td class="center aligned" editable="true" datatype="action" data-label="">
-                                <button type="button" aria-label="Edit this path route" class="ui circular mini basic icon button editBtn" data-vact="edit" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="edit icon"></i></button>
-                                <button type="button" aria-label="Delete this path route" class="ui circular mini red basic icon button" data-vact="delete" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="trash icon"></i></button>
+                            <td data-label="Path route" editable="false" >${ZxUI.esc(vdir.MatchingPath)}</td>
+                            <td class="zxs-dest" data-label="Destination" editable="true" datatype="domain">${ZxUI.esc(vdir.Domain)} ${tlsIcon}</td>
+                            <td class="zx-actions" editable="true" datatype="action">
+                                <span class="zx-row-actions">
+                                <button type="button" aria-label="Edit this path route" title="Edit this path route" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon editBtn" data-vact="edit" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="edit icon"></i></button>
+                                <button type="button" aria-label="Delete this path route" title="Delete this path route" class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" data-vact="delete" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="trash icon"></i></button>
+                                </span>
                             </td>
                         </tr>`);
                     })
@@ -373,20 +406,22 @@
                     </div>
                     <div class="ui checkbox" style="margin-top: 0.4em;">
                         <input type="checkbox" class="RequireTLS" ${tls}>
-                        <label>Require TLS<br>
-                            <small>Proxy target require HTTPS connection</small></label>
+                        <label>Needs TLS<br>
+                            <small>The target needs an HTTPS connection</small></label>
                     </div><br>
                     <div class="ui checkbox" style="margin-top: 0.4em;">
                         <input type="checkbox" class="SkipCertValidations" ${checkstate}>
-                        <label>Skip Verification<br>
-                        <small>Check this if proxy target is using self signed certificates</small></label>
+                        <label>Skip certificate check<br>
+                        <small>For targets with a self-signed certificate</small></label>
                     </div>
                 `;
                 column.empty().append(input);
             }else if (datatype == 'action'){
                 column.empty().append(`
-                    <button type="button" title="Save" aria-label="Save" onclick="saveVdirInlineEdit('${payload.MatchingPath.hexEncode()}');" class="ui basic small icon circular button inlineEditActionBtn"><i class="ui green save icon"></i></button>
-                    <button type="button" title="Cancel" aria-label="Cancel" onclick="exitVdirInlineEdit();" class="ui basic small icon circular button inlineEditActionBtn"><i class="ui remove icon"></i></button>
+                    <span class="zx-row-actions">
+                    <button type="button" title="Save" aria-label="Save" onclick="saveVdirInlineEdit('${payload.MatchingPath.hexEncode()}');" class="zx-btn zx-btn--primary zx-btn--sm inlineEditActionBtn">Save</button>
+                    <button type="button" title="Cancel" aria-label="Cancel" onclick="exitVdirInlineEdit();" class="zx-btn zx-btn--secondary zx-btn--sm inlineEditActionBtn">Cancel</button>
+                    </span>
                 `);
             }
         }); 

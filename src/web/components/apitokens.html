@@ -2,45 +2,68 @@
     <style>
         #apiTokensPage .atName { overflow-wrap: anywhere; min-width: 10rem; max-width: 22rem; }
         #apiTokensPage .zx-table-wrap { max-height: none; }
+        #apiTokensPage .zx-callout { margin-bottom: var(--zx-space-4); }
+        #apiTokensPage .zx-callout code { font-size: 0.9em; }
+        #apiTokensPage .zx-page-header__actions { align-self: flex-end; }
+        #apiTokensPage .zx-page-header__actions .zx-btn { min-height: var(--zx-control-h); }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">API Tokens</h2>
-            <p class="zx-page-header__sub">Tokens let scripts and automation use the stable REST API under <code>/api/v1</code> with
-            <code>Authorization: Bearer &lt;token&gt;</code>. A token is shown <b>once</b> when created; only its hash is stored.
-            Read-only tokens can only issue GET requests. Tokens work nowhere except <code>/api/v1</code>.
-            <a href="./api/v1/docs" target="_blank">API documentation</a> &middot;
-            <a href="./api/v1/openapi.yaml" target="_blank">openapi.yaml</a></p>
+            <p class="zx-page-header__sub">Let scripts and automation use the Zoraxy REST API.</p>
+        </div>
+        <div class="zx-page-header__actions zx-btn-row">
+            <a class="zx-btn zx-btn--secondary" href="./api/v1/docs" target="_blank"><i class="book icon"></i> API documentation</a>
+            <a class="zx-btn zx-btn--ghost" href="./api/v1/openapi.yaml" target="_blank"><i class="file code outline icon"></i> OpenAPI file</a>
         </div>
     </header>
 
-    <div class="ui basic segment">
-        <h3>Create token</h3>
-        <div class="ui form">
-            <div class="three fields">
-                <div class="field"><label>Name</label><input type="text" id="atName" maxlength="64" placeholder="e.g. ci-deploy"></div>
-                <div class="field"><label>Scope</label>
-                    <select id="atScope" class="ui dropdown"><option value="read">Read only</option><option value="readwrite">Read / write</option></select></div>
-                <div class="field"><label for="atDays">Expires in (days, empty = never)</label><input type="number" id="atDays" min="1" max="3650" step="1" placeholder="never"></div>
-            </div>
-            <div class="field"><label>Allowed IPs / CIDRs (optional, comma separated)</label>
-                <input type="text" id="atCidrs" placeholder="203.0.113.7, 10.0.0.0/8">
-                <small id="atFormError" role="alert" style="display:none; color: var(--zx-danger-text, #b00020); font-weight: 600;"></small>
-                <small style="color:grey;">The address is taken from the TCP connection; if the admin panel sits behind a reverse proxy, list the proxy's address.</small></div>
-            <button class="ui basic blue button" onclick="atCreate();"><i class="add icon"></i> Create token</button>
-        </div>
+    <div class="zx-callout zx-callout--info" role="note">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+        <div class="zx-callout__body">Send a token as <code>Authorization: Bearer &lt;token&gt;</code> to <code>/api/v1</code>. A token is shown <b>once</b> when you create it and only its hash is stored. Read-only tokens can only make GET requests, and tokens work nowhere except <code>/api/v1</code>.</div>
     </div>
 
-    <div class="ui basic segment">
-        <h3>Existing tokens</h3>
-        <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Existing API tokens">
-            <table class="zx-table zx-table--compact">
-                <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Expires</th><th>Allowed IPs</th><th>Last used</th><th>Status</th><th></th></tr></thead>
-                <tbody id="atRows"><tr><td colspan="8">Loading...</td></tr></tbody>
-            </table>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Create a token</h3>
+            <p class="zx-card__desc">Give it a name you will recognise and the least access it needs.</p>
         </div>
-    </div>
+        <div class="zx-card__body">
+            <div class="ui form">
+                <div class="zx-form-grid">
+                    <div class="zx-field"><label class="zx-field__label" for="atName">Name</label><input type="text" id="atName" maxlength="64" placeholder="e.g. ci-deploy"><p class="zx-help">Shown in the token list.</p></div>
+                    <div class="zx-field"><label class="zx-field__label" for="atScope">Scope</label>
+                        <select id="atScope" class="zx-select"><option value="read">Read only</option><option value="readwrite">Read / write</option></select><p class="zx-help">Read only allows GET requests.</p></div>
+                    <div class="zx-field"><label class="zx-field__label" for="atDays">Expires after (days)</label><input type="number" id="atDays" min="1" max="3650" step="1" placeholder="never"><p class="zx-help">Leave empty for no expiry.</p></div>
+                    <div class="zx-field zx-field--wide"><label class="zx-field__label" for="atCidrs">Allowed IPs or CIDRs (optional)</label>
+                        <input type="text" id="atCidrs" placeholder="203.0.113.7, 10.0.0.0/8">
+                        <p class="zx-help">Separate with commas. The address comes from the TCP connection, so behind a reverse proxy list the proxy's address.</p>
+                        <small id="atFormError" role="alert" style="display:none; color: var(--zx-danger-text); font-weight: 600;"></small></div>
+                </div>
+                <button class="ui primary button" onclick="atCreate();"><i class="add icon"></i> Create token</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Existing tokens</h3>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-empty" id="atEmpty" hidden>
+                <div class="zx-empty__icon" aria-hidden="true"><i class="key icon"></i></div>
+                <div class="zx-empty__title">No tokens yet</div>
+                <p class="zx-empty__text">Create one above to use the REST API.</p>
+            </div>
+            <div class="zx-table-wrap zx-table-wrap--flush" id="atTableWrap" tabindex="0" role="region" aria-label="Existing API tokens">
+                <table class="zx-table zx-table--compact">
+                    <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Expires</th><th>Allowed IPs</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="atRows"><tr><td class="zx-empty-cell" colspan="8">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 
     <div class="ui small modal" id="atShowModal">
         <div class="header">Copy your new token</div>
@@ -63,7 +86,9 @@
     window.atLoad = function(){
         $.get("./api/apitoken/list", function(list){
             var rows = $("#atRows").empty();
-            if (!list || !list.length){ rows.append("<tr><td colspan='8'>No API tokens.</td></tr>"); return; }
+            var none = !list || !list.length;
+            $("#atEmpty").prop("hidden", !none); $("#atTableWrap").prop("hidden", none);
+            if (none){ return; }
             list.forEach(function(tok){
                 var status = tok.revoked ? "Revoked" : (tok.expired ? "Expired" : "Active");
                 var tr = $("<tr>");
@@ -73,7 +98,7 @@
                     "<td data-label='" + esc(t("Expires")) + "'>" + (tok.expires ? ts(tok.expires) : "Never") + "</td>" +
                     "<td data-label='" + esc(t("Allowed IPs")) + "'>" + (tok.allowedCidrs.length ? esc(tok.allowedCidrs.join(", ")) : "Any") + "</td>" +
                     "<td data-label='" + esc(t("Last used")) + "'>" + ts(tok.lastUsed) + "</td>" +
-                    "<td data-label='" + esc(t("Status")) + "'>" + status + "</td>");
+                    "<td data-label='" + esc(t("Status")) + "'><span class='zx-badge " + (tok.revoked ? "zx-badge--danger" : (tok.expired ? "zx-badge--warn" : "zx-badge--ok")) + "'>" + status + "</span></td>");
                 var td = $("<td class='zx-actions'>");
                 if (!tok.revoked){
                     td.append($("<button class='ui basic mini red button'>Revoke</button>").click(function(){ atAct("revoke", tok.id, "Revoke token '" + tok.name + "'?"); }));

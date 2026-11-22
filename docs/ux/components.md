@@ -203,3 +203,24 @@ Deliberately left, because a save bar would change behaviour:
 ### 7.3 Escaping
 
 Anything that came from the configuration (host names, aliases, upstreams, tags, rule names, redirect addresses, user names) is escaped with `ZxUI.esc()` (components) or the local `zxEsc()` (snippets run in their own iframe). Values that a button needs are carried in `data-*` attributes and read with `this.dataset`, never put inside `onclick="f('${value}')"`. `tools/ui-smoke` adds a rule with the host name `"><img src=x onerror=...>` and fails if it becomes markup on any listing page.
+
+## 8. Foundation pass (shared building blocks)
+
+Added to `zxui.css` (opt-in, new pages) and `zxpages.css` (a skin for the legacy Fomantic classes, inside `.contentWindow` only; opt out with `zx-legacy-off` on an ancestor). Tokens only, both themes.
+
+| What | Classes | Notes |
+|---|---|---|
+| Page frame | automatic | `.contentWindow` has no fill: cards and tables are the only boxes. Legacy pages (`.standardContainer > .ui.basic.segment > h2`) get the kit title size and the same y as `.zx-page-header` pages |
+| Tabs | `.zx-tabs`/`.zx-tab` and legacy `.ui.tabular.menu` (same look, automatic) | Underline = active, icons take the text colour, strip scrolls with an edge fade (`uxkit.js`) and the chosen tab is scrolled into view. Panels `.ui.bottom.attached.(tab.)segment` lose border and inset. `.zx-tab .zx-badge` for counts |
+| Section headings | `.zx-section` + `__title` (20px) `__desc`; legacy `h3` = 20px, `h4` = 16px (automatic) | Card titles stay 16px |
+| Disclosure | `details.zx-disclosure > summary + .zx-disclosure__body`; legacy `.ui.accordion` and `.advanceoptions` look the same (automatic) | Replaces "Advanced" boxes |
+| Form grid | `.zx-form-grid` (+ `.zx-field--wide`) | One column on phones |
+| Select | `.zx-select` and every native `select` in a page (automatic) | Kit chevron |
+| Buttons | `.zx-btn`; legacy `.ui.button` (automatic): blue/green/teal/primary filled = primary, red filled = danger, orange/yellow filled = warning, all else and `basic` = secondary, `basic red` = danger outline; mini/tiny = 28px | `.zx-btn-row` for a group (8px gap, wraps) |
+| Inputs, checkboxes, radios, messages, labels, `.ui.table` | automatic | `.ui.message` = callout, `.ui.label` = badge colours, `.ui.table` = kit table look |
+| Long values | `.zx-cell-long`, `.zx-longvalue`, `.zx-ellipsis`, `dl.zx-kv` | Wrap anywhere, 3 lines then scroll |
+| Tables in cards | `.zx-table-wrap--flush`, `td.zx-empty-cell` | |
+| Empty state | `.zx-empty--inline` | Compact, left aligned |
+| Related | `.zx-related` | One quiet line; the explanation is the link tooltip (`zxpage.js`) |
+| `.zx-whatis` | 24px visible, 40px hit area (32/44 on touch) | |
+| `.zx-card__desc` | no extra inset inside head/body | |

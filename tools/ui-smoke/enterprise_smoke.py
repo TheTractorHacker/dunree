@@ -269,7 +269,7 @@ def enterprise_ui(pg, ctx):
     current["page"] = "enterprise-auditlog"
     open_sec("auditlog", "#salRows tr")
     pg.wait_for_timeout(500)
-    rows_txt = js("document.getElementById('salRows').innerText")
+    rows_txt = js("document.getElementById('salRows').innerHTML")  # the raw event name is the cell's title; the cell shows a plain-language label
     for ev in ("deployrole.set", "adminallow.set", "destguard.set"):
         if ev not in rows_txt:
             fail("audit", f"no audit entry {ev} after changing that setting")
@@ -280,7 +280,7 @@ def enterprise_ui(pg, ctx):
         fail("audit", "the refused admin allow-list save left no non-ok audit entry")
     pg.select_option("#salEvent", "deployrole.*")
     pg.wait_for_timeout(900)
-    evs = js("[...document.querySelectorAll('#salRows tr td:nth-child(4)')].map(e => e.innerText.trim())")
+    evs = js("[...document.querySelectorAll('#salRows tr td:nth-child(4)')].map(e => (e.getAttribute('title') || e.innerText).trim())")
     if not evs or any(not e.startswith("deployrole.") for e in evs):
         fail("audit", f"the event filter does not filter: {evs[:5]}")
     pg.select_option("#salEvent", "")
@@ -458,7 +458,7 @@ def enterprise_ui(pg, ctx):
     if "BEGIN CERTIFICATE" in json.dumps(ents) or "Enterprise smoke private CA" in json.dumps(ents):
         fail("audit", "the audit log contains the pasted CA certificate")
     open_sec("auditlog", "#salRows tr")
-    if "upstream.tls.change" not in js("document.getElementById('salRows').innerText"):
+    if "upstream.tls.change" not in js("document.getElementById('salRows').innerHTML"):
         fail("audit", "the audit log card does not list the upstream trust change")
     js("toggleTheme()")
     pg.wait_for_timeout(500)

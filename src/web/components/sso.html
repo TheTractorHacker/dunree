@@ -1,9 +1,42 @@
+<style>
+    /* SSO page: kit look for the legacy markup */
+    .sso .ui.form .field > small, .sso .ui.form .field > label > small { display: block; margin-top: var(--zx-space-1); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; line-height: 1.45; }
+    .sso .ui.form .ui.checkbox label small { display: block; margin-top: var(--zx-space-1); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    .sso small code { font-size: inherit; }
+    .sso .ui.form .field > small code { overflow-wrap: anywhere; }
+    .sso .ui.bottom.attached.tab.segment { width: 100%; margin-left: 0; margin-right: 0; }
+    .sso .zx-card .ui.segment:not(.ssoRunningState) { background: transparent; border: 0; box-shadow: none; padding: 0; margin: 0; }
+    .sso .zx-card .ui.accordion .content .ui.segment { background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-3) var(--zx-space-4); margin: var(--zx-space-2) 0; }
+    .sso .zx-card .ui.form .field + .field, .sso .zx-card .ui.form .fields + .field, .sso .zx-card .ui.form .field + .fields { margin-top: var(--zx-space-3); }
+    .sso .zx-card .ui.form .fields { margin-bottom: 0; }
+    .sso .zx-card .zx-btn-row { margin-top: var(--zx-space-3); }
+    .sso .zx-card .ui.form .ui.toggle.checkbox label small { display: block; margin-top: var(--zx-space-1); }
+    .sso .ui.form > .zx-card, .sso #oauth2Editor > .zx-card { margin-bottom: var(--zx-space-4); }
+    .sso #oauth2Editor { margin-top: var(--zx-space-5); }
+    .sso #oauth2Editor > h3 { margin: 0 0 var(--zx-space-3); }
+    .sso .zx-card .zx-disclosure { margin: var(--zx-space-2) 0; }
+    .sso .tab.segment .ui.basic.segment { background: transparent; border: 0; box-shadow: none; padding: 0; }
+    .sso .tab.segment .ui.basic.segment.advanceoptions { margin: var(--zx-space-3) 0; }
+    .sso #zorxAuthSettings { margin-top: var(--zx-space-6); }
+    .sso .ssoAddRow { margin: var(--zx-space-3) 0 var(--zx-space-5); }
+    .sso .tab.segment > h3.zx-section__title, .sso .tab.segment form > h3.zx-section__title { margin-top: var(--zx-space-5); }
+    .sso .ui.form .zx-btn-row, .sso form > .ui.button { margin-top: var(--zx-space-2); }
+    /* running state: a compact status pill instead of a banner */
+    .sso .ssoRunningState, .sso .ssoRunningState.enabled, .sso .ssoRunningState:not(.enabled) { display: inline-block; border: 1px solid var(--zx-border) !important; border-radius: var(--zx-radius-pill) !important; padding: var(--zx-space-1) var(--zx-space-3) !important; box-shadow: none !important; margin: var(--zx-space-3) 0 var(--zx-space-4) !important; }
+    .sso .ssoRunningState.enabled { background: var(--zx-ok-bg) !important; border-color: var(--zx-ok-line) !important; }
+    .sso .ssoRunningState:not(.enabled) { background: var(--zx-neutral-bg) !important; border-color: var(--zx-neutral-line) !important; }
+    .sso .ssoRunningState.enabled .ui.header, .sso .ssoRunningState.enabled .sub.header, .sso .ssoRunningState.enabled .header i.icon { color: var(--zx-ok-text) !important; }
+    .sso .ssoRunningState:not(.enabled) .ui.header, .sso .ssoRunningState:not(.enabled) .sub.header, .sso .ssoRunningState:not(.enabled) .header i.icon { color: var(--zx-neutral-text) !important; }
+    .sso .ssoRunningState .ui.header { margin: 0; font-size: var(--zx-fs-sm); display: flex; align-items: center; gap: var(--zx-space-2); }
+    .sso .ssoRunningState .ui.header .content { display: flex; gap: var(--zx-space-2); align-items: baseline; }
+    .sso .ssoRunningState .sub.header { font-weight: 400; font-size: var(--zx-fs-sm); margin: 0; }
+</style>
 <div class="sso standardContainer">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">SSO / OAuth2</h2>
-            <p class="zx-page-header__sub">Put a login in front of your sites: forward authentication to an identity provider such as Authentik, OAuth 2.0 / OpenID Connect providers, or Zoraxy's own login.</p>
+            <p class="zx-page-header__sub">Put a login in front of your sites</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Single sign-on"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -15,50 +48,48 @@
             <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>basic auth, admin accounts and the authentication audit</span></li>
             <li><a href="#access" data-nav-open="access">Access Rules</a> <span>limit who can reach a site before the login</span></li>
             <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>switch authentication on for a site</span></li>
-            <li><a href="#secoverview" data-nav-open="secoverview">Security Overview</a> <span>are your sites behind a login?</span></li>
         </ul>
     </aside>
-    <div class="ui divider"></div>
     <div class="ui top attached tabular menu ssoTabs">
-        <a class="item active" data-tab="forward_auth_tab">Forward Auth</a>
+        <a class="item active" data-tab="forward_auth_tab">Forward auth</a>
         <a class="item" data-tab="oauth2_tab">OAuth 2.0</a>
         <a class="item" data-tab="zoraxy_sso_tab">Zoraxy Auth</a>
         </div>
         <div class="ui bottom attached tab segment active" data-tab="forward_auth_tab">
         <!-- Forward Auth -->
-        <h2>Forward Auth</h2>
-        <p>Configuration settings for the Forward Auth provider.</p>
-        <p>The Forward Auth provider makes a subrequest to an authorization server that supports Forward Auth, then either:</p>
-        <ul>
-            <li>Allows the request to flow through to the backend when the authorization server responds with a 200-299 status code.</li>
-            <li>Responds with the response from the authorization server.</li>
-        </ul>
-        <p>Example authorization servers that support this:</p>
-        <ul>
-            <li><a href="https://www.authelia.com" rel=”noopener noreferrer” target="_blank">Authelia</a></li>
-            <li><a href="https://goauthentik.io/" rel=”noopener noreferrer” target="_blank">Authentik</a></li>
-            <li><a href="https://oauth2-proxy.github.io/oauth2-proxy/" rel=”noopener noreferrer” target="_blank">OAuth2 Proxy</a></li>
-        </ul>
         <form class="ui form" action="#" id="forwardAuthSettings">
-            <div class="ui segment" id="forwardAuthPresets">
-                <h4 class="ui header" style="margin-bottom:0.3em;">Quick setup presets</h4>
-                <p style="margin-top:0;"><small>Enter the base URL of your authorization server, then click a preset. It only fills in the form; review the values and press <b>Apply Change</b> to save. See <code>docs/authentik.md</code> for the matching Authentik provider settings.</small></p>
+            <section class="zx-card" id="forwardAuthPresets">
+                <div class="zx-card__head"><h3 class="zx-card__title">Quick setup</h3>
+                <p class="zx-card__desc">Zoraxy asks an authorization server whether each request may pass: a 200-299 answer lets it through, any other answer is shown to the visitor. Works with
+            <a href="https://www.authelia.com" rel="noopener noreferrer" target="_blank">Authelia</a>,
+            <a href="https://goauthentik.io/" rel="noopener noreferrer" target="_blank">Authentik</a> and
+            <a href="https://oauth2-proxy.github.io/oauth2-proxy/" rel="noopener noreferrer" target="_blank">OAuth2 Proxy</a>. Enter the base URL of your server and click a preset: it only fills in the form, nothing is saved until you press <b>Save changes</b>.</p></div>
+                <div class="zx-card__body">
                 <div class="field">
                     <label for="forwardAuthPresetBase">Authorization server base URL</label>
                     <input type="text" id="forwardAuthPresetBase" placeholder="https://auth.example.com   or   http://outpost:9000">
-                    <small>For Authentik this is the URL of the proxy outpost (the embedded outpost is served by the Authentik server itself). No path, no trailing slash.</small>
+                    <small>For Authentik this is the URL of the proxy outpost. No path, no trailing slash.</small>
                 </div>
+                <div class="zx-btn-row">
                 <button class="ui basic small button" type="button" id="presetAuthentikSingle"><i class="shield alternate icon"></i> Authentik: single application</button>
                 <button class="ui basic small button" type="button" id="presetAuthentikDomain"><i class="globe icon"></i> Authentik: domain level</button>
                 <button class="ui basic small button" type="button" id="presetAuthelia"><i class="lock icon"></i> Authelia</button>
-            </div>
+                </div>
+                </div>
+            </section>
+            <section class="zx-card">
+                <div class="zx-card__head"><h3 class="zx-card__title">Authorization server</h3><p class="zx-card__desc">Where Zoraxy sends each request to be checked.</p></div>
+                <div class="zx-card__body">
             <div class="field">
                 <label for="forwardAuthAddress">Address</label>
-                <input type="text" id="forwardAuthAddress" name="forwardAuthAddress" placeholder="Enter Forward Auth Address">
-                <small>The full remote address or URL of the authorization servers forward auth endpoint. <strong>Example:</strong> http://127.0.0.1:9091/authz/forward-auth<br><b>Authentik:</b> <code>https://auth.example.com/outpost.goauthentik.io/auth/nginx</code> (or <code>/auth/traefik</code>, <code>/auth/caddy</code>, <code>/auth/envoy</code>). Use a preset above and fill in the outpost options below instead of Ignored Paths / Virtual Directories.</small>
+                <input type="text" id="forwardAuthAddress" name="forwardAuthAddress" placeholder="http://127.0.0.1:9091/authz/forward-auth">
+                <small>The full address of the forward auth endpoint of your authorization server. For Authentik use a preset above, or <code>https://auth.example.com/outpost.goauthentik.io/auth/nginx</code> (or <code>/auth/traefik</code>, <code>/auth/caddy</code>, <code>/auth/envoy</code>).</small>
             </div>
-            <div class="ui segment" id="forwardAuthOutpostBox">
-                <h4 class="ui header" style="margin-bottom:0.3em;">Authentik outpost options</h4>
+                </div>
+            </section>
+            <section class="zx-card" id="forwardAuthOutpostBox">
+                <div class="zx-card__head"><h3 class="zx-card__title">Authentik outpost options</h3><p class="zx-card__desc">Only needed for Authentik. Leave empty for Authelia and other servers.</p></div>
+                <div class="zx-card__body">
                 <div class="field">
                     <label for="forwardAuthOutpostUrl">Outpost URL</label>
                     <input type="text" id="forwardAuthOutpostUrl" placeholder="https://auth.example.com">
@@ -82,33 +113,37 @@
                     <input type="checkbox" id="forwardAuthPreserveHost" name="forwardAuthPreserveHost">
                     <label for="forwardAuthPreserveHost">Send the protected host as the Host header of the auth subrequest<br><small>Required for Authentik: the outpost picks the application by Host. Leave off for Authelia.</small></label>
                 </div>
-            </div>
-            <div class="ui basic segment advanceoptions" style="margin-top:0.6em;">
+                </div>
+            </section>
+            <section class="zx-card">
+                <div class="zx-card__head"><h3 class="zx-card__title">Advanced</h3><p class="zx-card__desc">The defaults suit most servers.</p></div>
+                <div class="zx-card__body">
+            <div class="ui basic segment advanceoptions">
                 <div class="ui advancedSSOForwardAuthOptions accordion">
                     <div class="title">
                         <i class="dropdown icon"></i>
-                        Advanced Options
+                        Headers, cookies and ignored paths
                     </div>
                     <div class="content">
                         <div class="field">
-                            <label for="forwardAuthResponseHeaders">Response Headers</label>
-                            <input type="text" id="forwardAuthResponseHeaders" name="forwardAuthResponseHeaders" placeholder="Enter Forward Auth Response Headers">
+                            <label for="forwardAuthResponseHeaders">Response headers</label>
+                            <input type="text" id="forwardAuthResponseHeaders" name="forwardAuthResponseHeaders" placeholder="Enter Forward Auth Response headers">
                             <small>
                                 Comma separated list of case-insensitive headers to copy from the authorization servers response to the request sent to the backend. If not set no headers are copied. <br>
                                 <strong>Example:</strong> <code>Remote-User,Remote-Groups,Remote-Email,Remote-Name</code>
                             </small>
                         </div>
                         <div class="field">
-                            <label for="forwardAuthResponseClientHeaders">Response Client Headers</label>
-                            <input type="text" id="forwardAuthResponseClientHeaders" name="forwardAuthResponseClientHeaders" placeholder="Enter Forward Auth Response Client Headers">
+                            <label for="forwardAuthResponseClientHeaders">Response client headers</label>
+                            <input type="text" id="forwardAuthResponseClientHeaders" name="forwardAuthResponseClientHeaders" placeholder="Enter Forward Auth Response client headers">
                             <small>
                                 Comma separated list of case-insensitive headers to copy from the authorization servers response to the <b><i>response sent to the client</i></b>. If not set no headers are copied. <br>
                                 <strong>Example:</strong> <code>Set-Cookie,WWW-Authenticate</code>
                             </small>
                         </div>
                         <div class="field">
-                            <label for="forwardAuthRequestHeaders">Request Headers</label>
-                            <input type="text" id="forwardAuthRequestHeaders" name="forwardAuthRequestHeaders" placeholder="Enter Forward Auth Request Headers">
+                            <label for="forwardAuthRequestHeaders">Request headers</label>
+                            <input type="text" id="forwardAuthRequestHeaders" name="forwardAuthRequestHeaders" placeholder="Enter Forward Auth Request headers">
                             <small>
                                 Comma separated list of case-insensitive headers to copy from the original request to the <b><i>request made to the authorization server</i></b>. If not set all headers are copied. <br>
                                 <strong>Recommendation:</strong> Generally it's recommended to leave this blank or use the below example for predictable results. <br>
@@ -116,16 +151,16 @@
                             </small>
                         </div>
                         <div class="field">
-                            <label for="forwardAuthRequestIncludedCookies">Request Included Cookies</label>
-                            <input type="text" id="forwardAuthRequestIncludedCookies" name="forwardAuthRequestIncludedCookies" placeholder="Enter Forward Auth Request Included Cookies">
+                            <label for="forwardAuthRequestIncludedCookies">Request included cookies</label>
+                            <input type="text" id="forwardAuthRequestIncludedCookies" name="forwardAuthRequestIncludedCookies" placeholder="Enter Forward Auth Request included cookies">
                             <small>
                                 Comma separated list of case-sensitive cookie names to copy from the original request to the <b><i>request made to the authorization server</i></b>. If not set all cookies are included. This allows omitting all cookies not required by the authorization server.<br>
                                 <strong>Example:</strong> <code>authelia_session,another_session</code>
                             </small>
                         </div>
                         <div class="field">
-                            <label for="forwardAuthRequestExcludedCookies">Request Excluded Cookies</label>
-                            <input type="text" id="forwardAuthRequestExcludedCookies" name="forwardAuthRequestExcludedCookies" placeholder="Enter Forward Auth Request Excluded Cookies">
+                            <label for="forwardAuthRequestExcludedCookies">Request excluded cookies</label>
+                            <input type="text" id="forwardAuthRequestExcludedCookies" name="forwardAuthRequestExcludedCookies" placeholder="Enter Forward Auth Request excluded cookies">
                             <small>
                                 Comma separated list of case-sensitive cookie names to exclude from the <b><i>request made to the backend application</i></b>. If not set no cookies are excluded. This allows omitting the cookie intended only for the authorization server.<br>
                                 <strong>Example:</strong> <code>authelia_session,another_session</code>
@@ -133,14 +168,14 @@
                         </div>
                         <div class="ui checkbox">
                             <input type="checkbox" id="forwardAuthRequestIncludeBody" name="forwardAuthRequestIncludeBody" value="Forward Auth Request Include Request Body">
-                            <label for="forwardAuthRequestIncludeBody">Forward Auth Request Include Request Body<br><small>This allows the request body from the <b><i>request made from the client</i></b> to be included in the <b><i>request made to the authorization server</i></b>. Generally this should not be enabled.</small></label>
+                            <label for="forwardAuthRequestIncludeBody">Include the request body<br><small>This allows the request body from the <b><i>request made from the client</i></b> to be included in the <b><i>request made to the authorization server</i></b>. Generally this should not be enabled.</small></label>
                         </div>
                         <div class="ui checkbox">
                             <input type="checkbox" id="forwardAuthRequestUseXOriginalHeaders" name="forwardAuthRequestUseXOriginalHeaders" value="Use X-Original-* Headers">
-                            <label for="forwardAuthRequestUseXOriginalHeaders">Use X-Original-* Headers<br><small>This is used for implementations which do not use the X-Forwarded-* headers. In addition if the authorization server responds with a 401 and Location header the status will be changed to 302.</small></label>
+                            <label for="forwardAuthRequestUseXOriginalHeaders">Use X-Original-* headers<br><small>This is used for implementations which do not use the X-Forwarded-* headers. In addition if the authorization server responds with a 401 and Location header the status will be changed to 302.</small></label>
                         </div>
                         <div class="field" style="margin-top: 1em;">
-                            <label for="forwardAuthIgnoredPaths">Ignored Paths</label>
+                            <label for="forwardAuthIgnoredPaths">Ignored paths</label>
                             <input type="text" id="forwardAuthIgnoredPaths" name="forwardAuthIgnoredPaths" placeholder="/outpost.goauthentik.io">
                             <small>
                                 Comma-separated list of request path prefixes that are <b>excluded from Forward Auth</b>. Matching is normalized (path traversal and prefix-boundary tricks are rejected). <br>
@@ -152,7 +187,7 @@
                             </div>
                         </div>
                         <div class="field" style="margin-top: 1em;">
-                            <label>Callback path route (bulk apply)</label>
+                            <label>Callback path route (apply to many hosts)</label>
                             <small>
                                 In single-application mode the auth callback path also needs a path route on each protected host to route it to the outpost. These buttons manage that directory across all hosts based on their Forward Auth state; a directory with different settings is never touched. <br>
                                 <strong>Add</strong> creates it on every host using Forward Auth. <strong>Remove</strong> deletes it from every host that does not (cleanup).
@@ -160,7 +195,7 @@
                             <div class="two fields" style="margin-top: 0.5em;">
                                 <div class="field">
                                     <input type="text" id="bulkVdirPath" placeholder="/outpost.goauthentik.io">
-                                    <small>Matching path (defaults to your first Ignored Path)</small>
+                                    <small>Matching path (defaults to your first ignored path)</small>
                                 </div>
                                 <div class="field">
                                     <input type="text" id="bulkVdirTarget" placeholder="10.0.0.6:9000/outpost.goauthentik.io">
@@ -180,36 +215,53 @@
                     </div>
                 </div>
             </div>
-            <button class="ui basic button" type="submit"><i class="green check icon"></i> Apply Change</button>
-            <button class="ui basic button" type="button" id="forwardAuthClear"><i class="red trash icon"></i> Clear</button>
+                </div>
+            </section>
+            <div class="zx-btn-row">
+            <button class="ui primary button" type="submit"><i class="check icon"></i> Save changes</button>
+            <button class="ui basic button" type="button" id="forwardAuthClear"><i class="trash icon"></i> Clear settings</button>
+            </div>
         </form>
         </div>
         <div class="ui bottom attached tab segment" data-tab="oauth2_tab">
         <!-- OAuth 2.0 -->
-        <h2>OAuth 2.0 / OpenID Connect providers</h2>
-        <p>Any number of identity providers can be configured. Each proxy rule that uses the <b>OAuth2</b> authentication method picks one in its Security tab; rules that pick none use the provider <code>default</code>.</p>
-        <div class="ui info message">
-            <b>Redirect (callback) URI</b> to register at your identity provider, one per protected host:
-            <code>https://&lt;protected-host&gt;/internal/oauth2</code> for the provider <code>default</code>,
-            <code>https://&lt;protected-host&gt;/internal/oauth2/p/&lt;provider-id&gt;</code> for every other provider (shown in the list below). Logout URL: the callback URI followed by <code>/logout</code> (clears the Zoraxy session and, if the provider supports it, ends the provider session too).
-            Sessions are stored encrypted in the Zoraxy database and survive a restart; refresh tokens never leave the server.
-        </div>
-        <div style="overflow-x:auto;">
-        <table class="ui very basic compact celled unstackable table" id="oauth2ProviderTable">
-            <thead><tr><th>ID</th><th>Name</th><th>Issuer / endpoint</th><th>Used by</th><th>Redirect path</th><th></th></tr></thead>
-            <tbody id="oauth2ProviderList"><tr><td colspan="6"><i>No provider configured</i></td></tr></tbody>
-        </table>
-        </div>
-        <button class="ui basic small button" type="button" id="oauth2NewProvider"><i class="green plus icon"></i> Add provider</button>
-        <div class="ui divider"></div>
-        <h4 class="ui header" id="oauth2EditorTitle">Add provider</h4>
-        <div class="ui segment" id="oauth2Presets">
-            <h4 class="ui header" style="margin-bottom:0.3em;">Quick setup presets</h4>
+        <section class="zx-card" id="oauth2ListCard">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Identity providers</h3>
+                <p class="zx-card__desc">A proxy rule that uses the <b>OAuth2</b> method picks one in its Security tab. Rules that pick none use the provider <code>default</code>.</p>
+            </div>
+            <div class="zx-card__body">
+                <details class="zx-disclosure">
+                    <summary>Callback addresses to register at your identity provider</summary>
+                    <div class="zx-disclosure__body">
+                    <b>Redirect (callback) URI</b>, one per protected host:
+                    <code>https://&lt;protected-host&gt;/internal/oauth2</code> for the provider <code>default</code>,
+                    <code>https://&lt;protected-host&gt;/internal/oauth2/p/&lt;provider-id&gt;</code> for every other provider (shown in the list below). The logout URL is the callback URI followed by <code>/logout</code>.
+                    Sessions are stored encrypted in the Zoraxy database and survive a restart; refresh tokens never leave the server.
+                    </div>
+                </details>
+                <div class="zx-table-wrap zx-table-wrap--flush">
+                <table class="zx-table zx-table--compact" id="oauth2ProviderTable">
+                    <thead><tr><th>ID</th><th>Name</th><th>Issuer / endpoint</th><th>Used by</th><th>Redirect path</th><th class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
+                    <tbody id="oauth2ProviderList"><tr><td colspan="6" class="zx-empty-cell">No providers yet. Add one to let sites use single sign-on.</td></tr></tbody>
+                </table>
+                </div>
+                <div class="zx-btn-row ssoAddRow"><button class="ui primary button" type="button" id="oauth2NewProvider"><i class="plus icon"></i> Add provider</button></div>
+            </div>
+        </section>
+        <div id="oauth2Editor" style="display:none">
+        <h3 class="zx-section__title" id="oauth2EditorTitle">Add provider</h3>
+        <section class="zx-card" id="oauth2Presets">
+            <div class="zx-card__head">
+                <h4 class="zx-card__title">Quick setup</h4>
+                <p class="zx-card__desc">Pick a provider type and fill in the form. Nothing is saved until you press Save provider.</p>
+            </div>
+            <div class="zx-card__body">
             <div class="ui form">
               <div class="two fields">
                 <div class="field">
                     <label for="oauth2PresetKind">Provider type</label>
-                    <select id="oauth2PresetKind" style="width:100%;padding:0.6em;">
+                    <select id="oauth2PresetKind">
                         <option value="">Generic OIDC</option>
                         <option value="authentik">Authentik</option>
                         <option value="keycloak">Keycloak</option>
@@ -225,175 +277,197 @@
                 </div>
               </div>
             </div>
-            <button class="ui basic small button" style="margin-top:0.6em;" type="button" id="presetApply"><i class="magic icon"></i> Fill in the form</button>
-        </div>
+            <button class="ui basic small button" type="button" id="presetApply"><i class="magic icon"></i> Fill in the form</button>
+            </div>
+        </section>
 
         <form class="ui form" action="#" id="oauth2Settings">
-            <div class="two fields">
-                <div class="field">
-                    <label for="oauth2ProviderId">Provider ID</label>
-                    <input type="text" id="oauth2ProviderId" name="id" placeholder="corp" maxlength="32">
-                    <small>Lower case letters, digits, <code>-</code> and <code>_</code>. Cannot be changed later. <code>default</code> is used by rules that name no provider.</small>
-                </div>
-                <div class="field">
-                    <label for="oauth2ProviderName">Display name</label>
-                    <input type="text" id="oauth2ProviderName" name="name" placeholder="Company SSO" maxlength="64">
-                </div>
-            </div>
             <input type="hidden" id="oauth2Preset" name="preset" value="">
-            <div class="field">
-                <label for="oauth2ClientId">Client ID</label>
-                <input type="text" id="oauth2ClientId" name="oauth2ClientId" placeholder="Enter Client ID">
-                <small>Public identifier of the OAuth2 application</small>
-            </div>
-            <div class="field">
-                <label for="oauth2ClientSecret">Client Secret</label>
-                <input type="password" id="oauth2ClientSecret" name="oauth2ClientSecret" placeholder="Enter Client Secret" autocomplete="new-password">
-                <small>Secret key of the OAuth2 application. When editing, leave empty to keep the stored secret (it is never sent to the browser).</small>
-            </div>
-            <div class="field">
-                <label for="oauth2CodeChallengeMethod">Code Challenge Method</label>
-
-                <div class="ui selection dropdown" id="oauth2CodeChallengeMethod">
-                    <input type="hidden" name="oauth2CodeChallengeMethod">
-                    <i class="dropdown icon"></i>
-                    <div class="default text">None</div>
-                    <div class="menu">
-                        <div class="item" data-value="plain">None (no PKCE)</div>
-                        <div class="item" data-value="PKCE">PKCE</div>
-                        <div class="item" data-value="PKCE_S256">PKCE (S256)</div>
+            <section class="zx-card">
+                <div class="zx-card__head"><h4 class="zx-card__title">Identity provider</h4><p class="zx-card__desc">Who signs your users in.</p></div>
+                <div class="zx-card__body">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="oauth2ProviderId">Provider ID</label>
+                        <input type="text" id="oauth2ProviderId" name="id" placeholder="corp" maxlength="32">
+                        <small>Lower case letters, digits, <code>-</code> and <code>_</code>. Cannot be changed later.</small>
+                    </div>
+                    <div class="field">
+                        <label for="oauth2ProviderName">Display name</label>
+                        <input type="text" id="oauth2ProviderName" name="name" placeholder="Company SSO" maxlength="64">
+                        <small>Shown in this list only.</small>
                     </div>
                 </div>
-                <small>Options: <br>
-                    None: No code challenge is used (legacy).<br>
-                    PKCE: Uses the code verifier itself as challenge ("plain" method). Only for providers without S256.<br>
-                    PKCE (S256): Uses a hashed code challenge (SHA-256). <strong>Recommended</strong>, supported by Authentik.
-                </small>
-            </div>
-            <div class="field">
-                <label for="oauth2Issuer">Issuer URL (OIDC)</label>
-                <input type="text" id="oauth2Issuer" name="oauth2Issuer" placeholder="https://auth.example.com/application/o/my-app-slug/">
-                <small>OpenID Connect issuer. Zoraxy fetches <code>&lt;issuer&gt;/.well-known/openid-configuration</code>, checks that the provider reports the same issuer and validates ID token signature, <code>iss</code>, <code>aud</code>, <code>exp</code> and <code>nonce</code> against the provider's JWKS. Replaces the Discovery URL below.</small>
-                <div style="margin-top:0.6em;">
-                    <button class="ui basic small button" type="button" id="oauth2TestDiscovery"><i class="plug icon"></i> Test discovery</button>
-                </div>
-                <div id="oauth2DiscoveryResult" style="margin-top:0.6em;"></div>
-            </div>
-            <div class="field">
-                <label for="oauth2WellKnownUrl">Discovery URL</label>
-                <input type="text" id="oauth2WellKnownUrl" name="oauth2WellKnownUrl" placeholder="Enter Well-Known URL">
-                <small>Optional alternative to the Issuer URL: the full URL to the OpenID Connect 1.0 Discovery document (ending with /.well-known/openid-configuration).</small>
-            </div>
-
-            <div class="field">
-                <label for="oauth2ServerUrl">Authorization URL</label>
-                <input type="text" id="oauth2ServerUrl" name="oauth2ServerUrl" placeholder="Enter Authorization URL">
-                <small>URL used to authenticate against the OAuth2 provider. Will redirect the user to the OAuth2 provider login view. Optional if Well-Known url is configured.</small>
-            </div>
-
-            <div class="field">
-                <label for="oauth2TokenUrl">Token URL</label>
-                <input type="text" id="oauth2TokenUrl" name="oauth2TokenUrl" placeholder="Enter Token URL">
-                <small>URL used by Zoraxy to exchange a valid OAuth2 authentication code for an access token. Optional if Well-Known url is configured.</small>
-            </div>
-
-            <div class="field">
-                <label for="oauth2UserInfoUrl">User Info URL</label>
-                <input type="text" id="oauth2UserInfoUrl" name="oauth2UserInfoUrl" placeholder="Enter User Info URL">
-                <small>URL used by the OAuth2 provider to validate generated token. Optional if Well-Known url is configured.</small>
-            </div>
-
-            <div class="field">
-                <label for="oauth2Scopes">Scopes</label>
-                <input type="text" id="oauth2Scopes" name="oauth2Scopes" placeholder="Enter Scopes">
-                <small>Comma or space separated. Defaults to <code>openid profile email</code> (plus <code>offline_access</code> when the provider supports it, which Authentik needs to issue refresh tokens). Without the <code>openid</code> scope the login is treated as plain OAuth 2.0 and the user is identified through the User Info URL.</small>
-            </div>
-
-            <h4 class="ui dividing header">Access control and identity headers</h4>
-            <div class="two fields">
                 <div class="field">
-                    <label for="oauth2GroupsClaim">Groups claim</label>
-                    <input type="text" id="oauth2GroupsClaim" name="oauth2GroupsClaim" placeholder="groups">
-                    <small>Claim that lists the user's groups. Defaults to <code>groups</code>. Dots address nested claims (<code>realm_access.roles</code>).</small>
+                    <label for="oauth2Issuer">Issuer URL (OIDC)</label>
+                    <input type="text" id="oauth2Issuer" name="oauth2Issuer" placeholder="https://auth.example.com/application/o/my-app-slug/">
+                    <small>Zoraxy reads the provider's settings from <code>&lt;issuer&gt;/.well-known/openid-configuration</code> and checks every login against them.</small>
+                    <div style="margin-top:var(--zx-space-2);">
+                        <button class="ui basic small button" type="button" id="oauth2TestDiscovery"><i class="plug icon"></i> Test discovery</button>
+                    </div>
+                    <div id="oauth2DiscoveryResult" style="margin-top:var(--zx-space-2);"></div>
+                </div>
+                <details class="zx-disclosure ssoEndpoints"><summary>Endpoints (advanced, filled in by discovery)</summary><div class="zx-disclosure__body">
+                <div class="field">
+                    <label for="oauth2WellKnownUrl">Discovery URL</label>
+                    <input type="text" id="oauth2WellKnownUrl" name="oauth2WellKnownUrl" placeholder="https://auth.example.com/.well-known/openid-configuration">
+                    <small>Optional alternative to the issuer URL: the full address of the OpenID Connect discovery document.</small>
                 </div>
                 <div class="field">
-                    <label for="oauth2AllowedGroups">Allowed groups</label>
-                    <input type="text" id="oauth2AllowedGroups" name="oauth2AllowedGroups" placeholder="admins,family">
-                    <small>Comma separated. A user must be in <b>at least one</b> of these groups. Empty allows every user who can sign in. If the claim is missing the user is denied (403).</small>
-                </div>
-            </div>
-            <div class="field">
-                <label for="oauth2AllowedClaims">Allowed claim values (roles, department, ...)</label>
-                <input type="text" id="oauth2AllowedClaims" name="oauth2AllowedClaims" placeholder="roles=admin,editor; department=it">
-                <small>Optional. <code>claim=value1,value2</code> rules separated by <code>;</code>. Every rule must match (any of its values). Works on any claim (text, lists, nested paths). Values are compared exactly and case sensitively. Empty = not checked.
-                    <br>Examples: Keycloak realm roles <code>realm_access.roles=admin</code>, client roles <code>resource_access.my-client.roles=editor</code> (client ids containing dots work); Microsoft Entra app roles <code>roles=Task.Admin</code> or group object IDs <code>groups=&lt;guid&gt;</code> (Entra omits groups above 200 and the login is then denied); Authentik <code>groups=authentik Admins</code>; Google Workspace domain <code>hd=example.com</code>. A missing claim never grants access. Rule level lists in the proxy rule are checked in addition to these.</small>
-            </div>
-            <div class="two fields">
-                <div class="field">
-                    <label for="oauth2AllowedEmails">Allowed e-mail addresses</label>
-                    <input type="text" id="oauth2AllowedEmails" name="oauth2AllowedEmails" placeholder="alice@example.com,bob@example.com">
+                    <label for="oauth2ServerUrl">Authorization URL</label>
+                    <input type="text" id="oauth2ServerUrl" name="oauth2ServerUrl" placeholder="https://auth.example.com/authorize">
+                    <small>Where users are sent to sign in. Optional when discovery is set.</small>
                 </div>
                 <div class="field">
-                    <label for="oauth2AllowedEmailDomains">Allowed e-mail domains</label>
-                    <input type="text" id="oauth2AllowedEmailDomains" name="oauth2AllowedEmailDomains" placeholder="example.com">
-                    <small>Exact domain only (subdomains are not included). The provider must not report the e-mail as unverified.</small>
-                </div>
-            </div>
-            <div class="field">
-                <label for="oauth2HeaderMappings">Upstream header mappings</label>
-                <input type="text" id="oauth2HeaderMappings" name="oauth2HeaderMappings" placeholder="X-Auth-User=preferred_username,X-Auth-Email=email,X-Auth-Groups=groups">
-                <small><code>Header=claim</code> pairs, comma separated. The listed headers are always removed from incoming requests (so clients cannot spoof them) and then set from the verified claims. List claims are joined with commas. Host, Authorization, Cookie and forwarding headers cannot be mapped.</small>
-            </div>
-            <div class="two fields">
-                <div class="field">
-                    <label for="oauth2EndSessionUrl">End session URL (optional)</label>
-                    <input type="text" id="oauth2EndSessionUrl" name="oauth2EndSessionUrl" placeholder="taken from discovery">
-                    <small>Overrides the provider's <code>end_session_endpoint</code> for RP-initiated logout.</small>
+                    <label for="oauth2TokenUrl">Token URL</label>
+                    <input type="text" id="oauth2TokenUrl" name="oauth2TokenUrl" placeholder="https://auth.example.com/token">
+                    <small>Where Zoraxy exchanges the sign-in code for an access token. Optional when discovery is set.</small>
                 </div>
                 <div class="field">
-                    <label for="oauth2PostLogoutRedirectUrl">Post logout redirect URL (optional)</label>
-                    <input type="text" id="oauth2PostLogoutRedirectUrl" name="oauth2PostLogoutRedirectUrl" placeholder="https://app.example.com/">
-                    <small>Sent as <code>post_logout_redirect_uri</code>; it must be registered at the provider. Empty sends none.</small>
+                    <label for="oauth2UserInfoUrl">User info URL</label>
+                    <input type="text" id="oauth2UserInfoUrl" name="oauth2UserInfoUrl" placeholder="https://auth.example.com/userinfo">
+                    <small>Where Zoraxy looks up the signed-in user. Optional when discovery is set.</small>
                 </div>
+                <div class="field">
+                    <label for="oauth2Scopes">Scopes</label>
+                    <input type="text" id="oauth2Scopes" name="oauth2Scopes" placeholder="openid profile email">
+                    <small>Comma or space separated. Empty uses <code>openid profile email</code>. Without <code>openid</code> the login is plain OAuth 2.0 and the user is found through the user info URL.</small>
+                </div>
+                </div></details>
+                </div>
+            </section>
+            <section class="zx-card">
+                <div class="zx-card__head"><h4 class="zx-card__title">Credentials</h4><p class="zx-card__desc">The application you created at the identity provider.</p></div>
+                <div class="zx-card__body">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="oauth2ClientId">Client ID</label>
+                        <input type="text" id="oauth2ClientId" name="oauth2ClientId" placeholder="Public identifier of the application">
+                    </div>
+                    <div class="field">
+                        <label for="oauth2ClientSecret">Client secret</label>
+                        <input type="password" id="oauth2ClientSecret" name="oauth2ClientSecret" placeholder="Enter Client Secret" autocomplete="new-password">
+                        <small>When editing, leave it empty to keep the stored secret. It is never sent back to the browser.</small>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="oauth2CodeChallengeMethod">Code challenge method</label>
+                    <div class="ui selection dropdown" id="oauth2CodeChallengeMethod">
+                        <input type="hidden" name="oauth2CodeChallengeMethod">
+                        <i class="dropdown icon"></i>
+                        <div class="default text">None</div>
+                        <div class="menu">
+                            <div class="item" data-value="plain">None (no PKCE)</div>
+                            <div class="item" data-value="PKCE">PKCE</div>
+                            <div class="item" data-value="PKCE_S256">PKCE (S256)</div>
+                        </div>
+                    </div>
+                    <small><strong>PKCE (S256)</strong> is recommended and works with Authentik. Use PKCE only for providers without S256, and None only for legacy providers.</small>
+                </div>
+                </div>
+            </section>
+            <section class="zx-card">
+                <div class="zx-card__head"><h4 class="zx-card__title">Access control and identity headers</h4><p class="zx-card__desc">Who may sign in, and what the backend learns about them. Empty fields allow everyone who can sign in.</p></div>
+                <div class="zx-card__body">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="oauth2GroupsClaim">Groups claim</label>
+                        <input type="text" id="oauth2GroupsClaim" name="oauth2GroupsClaim" placeholder="groups">
+                        <small>The claim that lists the user's groups. Empty uses <code>groups</code>. Dots reach nested claims (<code>realm_access.roles</code>).</small>
+                    </div>
+                    <div class="field">
+                        <label for="oauth2AllowedGroups">Allowed groups</label>
+                        <input type="text" id="oauth2AllowedGroups" name="oauth2AllowedGroups" placeholder="admins,family">
+                        <small>Comma separated. A user must be in at least one. A user without the claim is denied (403).</small>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="oauth2AllowedClaims">Allowed claim values (roles, department, ...)</label>
+                    <input type="text" id="oauth2AllowedClaims" name="oauth2AllowedClaims" placeholder="roles=admin,editor; department=it">
+                    <small>Optional. Rules look like <code>claim=value1,value2</code>, separated by <code>;</code>. Every rule must match one of its values, exactly and case sensitively. A missing claim never grants access.</small>
+                    <details class="zx-disclosure"><summary>Examples</summary><div class="zx-disclosure__body">
+                        Keycloak realm roles <code>realm_access.roles=admin</code>; client roles <code>resource_access.my-client.roles=editor</code>; Microsoft Entra app roles <code>roles=Task.Admin</code> or group object IDs <code>groups=&lt;guid&gt;</code> (Entra leaves out groups above 200 and the login is then denied); Authentik <code>groups=authentik Admins</code>; Google Workspace domain <code>hd=example.com</code>. Rule level lists in the proxy rule are checked in addition to these.
+                    </div></details>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label for="oauth2AllowedEmails">Allowed e-mail addresses</label>
+                        <input type="text" id="oauth2AllowedEmails" name="oauth2AllowedEmails" placeholder="alice@example.com,bob@example.com">
+                    </div>
+                    <div class="field">
+                        <label for="oauth2AllowedEmailDomains">Allowed e-mail domains</label>
+                        <input type="text" id="oauth2AllowedEmailDomains" name="oauth2AllowedEmailDomains" placeholder="example.com">
+                        <small>Exact domain only, subdomains are not included. The e-mail must be verified by the provider.</small>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="oauth2HeaderMappings">Upstream header mappings</label>
+                    <input type="text" id="oauth2HeaderMappings" name="oauth2HeaderMappings" placeholder="X-Auth-User=preferred_username,X-Auth-Email=email,X-Auth-Groups=groups">
+                    <small><code>Header=claim</code> pairs, comma separated. These headers are always removed from incoming requests, so clients cannot fake them, and then set from the verified claims. Host, Authorization, Cookie and forwarding headers cannot be mapped.</small>
+                </div>
+                </div>
+            </section>
+            <section class="zx-card">
+                <div class="zx-card__head"><h4 class="zx-card__title">Advanced</h4><p class="zx-card__desc">Sign-out behaviour and caching. The defaults suit most providers.</p></div>
+                <div class="zx-card__body">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="oauth2EndSessionUrl">End session URL (optional)</label>
+                        <input type="text" id="oauth2EndSessionUrl" name="oauth2EndSessionUrl" placeholder="Empty: taken from discovery">
+                        <small>Replaces the provider's own sign-out address.</small>
+                    </div>
+                    <div class="field">
+                        <label for="oauth2PostLogoutRedirectUrl">Post logout redirect URL (optional)</label>
+                        <input type="text" id="oauth2PostLogoutRedirectUrl" name="oauth2PostLogoutRedirectUrl" placeholder="https://app.example.com/">
+                        <small>Where users land after signing out. It must be registered at the provider.</small>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="oauth2ConfigurationCacheTime">Configuration cache time</label>
+                    <input type="text" id="oauth2ConfigurationCacheTime" name="oauth2ConfigurationCacheTime" placeholder="60s">
+                    <small>How long the provider's settings are kept before they are fetched again, for example 1m, 10m or 1h. Empty uses 60s.</small>
+                </div>
+                </div>
+            </section>
+            <div class="zx-btn-row">
+            <button class="ui primary button" type="submit"><i class="check icon"></i> Save provider</button>
+            <button class="ui basic button" type="button" id="oauth2Cancel">Cancel</button>
+            <button class="ui basic red button" type="button" id="oauth2Clear"><i class="trash icon"></i> Delete provider</button>
             </div>
-
-            <div class="field">
-                <label for="oauth2ConfigurationCacheTime">Configuration cache time</label>
-                <input type="text" id="oauth2ConfigurationCacheTime" name="oauth2ConfigurationCacheTime" placeholder="Enter Configuration Cache Time">
-                <small>Time to cache OAuth2 configuration before refresh. Accepts Go time.Duration format (e.g. 1m, 10m, 1h). Defaults to 60s.</small>
-            </div>
-
-            <button class="ui basic button" type="submit"><i class="green check icon"></i> Save provider</button>
-            <button class="ui basic button" type="button" id="oauth2Clear"><i class="red trash icon"></i> Delete provider</button>
         </form>
+        </div>
         </div>
         <div class="ui bottom attached tab segment" data-tab="zoraxy_sso_tab">
             <!-- Zoraxy Auth -->
-            <h2>Zoraxy Auth</h2>
-            <p>Zoraxy Auth is a built-in SSO authentication system that allows you to manage users directly within Zoraxy.</p>
-            <!-- Setup Instructions -->
-            <div class="ui accordion zorxAuthGatewayInstructions">
+            <section class="zx-card">
+                <div class="zx-card__head">
+                    <h3 class="zx-card__title">Gateway</h3>
+                    <p class="zx-card__desc">Zoraxy Auth is a built-in login system: you manage the users directly in Zoraxy.</p>
+                </div>
+                <div class="zx-card__body">
+            <!-- Setup instructions -->
+            <div class="ui accordion zorxAuthGatewayInstructions zx-legacy-note">
                 <div class="title">
                     <i class="dropdown icon"></i>
-                    Setup Instructions
+                    Setup instructions
                 </div>
                 <div class="content">
                     <div class="ui segment">
                         <p>To use Zoraxy Auth, you will need to configure the gateway settings below.</p>
                         <ol>
-                            <li>Enable the Zoraxy Auth Gateway by toggling the switch below.</li>
+                            <li>Enable the Zoraxy Auth gateway by toggling the switch below.</li>
                             <li>Set up an HTTP proxy rule to forward the SSO domain to the Zoraxy Auth SSO port. <br>
                                 e.g. <code>auth.example.com → localhost:5489</code></li>
                             <li>Configure the SSO Redirect URL in the settings below to point to the SSO domain.<br>
                                 e.g. <code>https://auth.example.com</code></li>
                         </ol>
                         <br>
-                        <p><b>Logout Instructions</b></p>
+                        <p><b>Logout instructions</b></p>
                         <p>If your site uses Zoraxy Auth for SSO, for better UX, add a hyperlink to the logout URL in your application's navigation or user menu.</p>
                         <ol>
                             <li>To logout from SSO, navigate to the SSO domain and append <code>/logout</code> to the URL.<br>
                                 e.g. <code>https://auth.example.com/logout</code></li>
-                            <li>Click the "Logout from All Services" button to end your session across all connected services.</li>
+                            <li>Click the "Log out from all services" button to end your session across all connected services.</li>
                         </ol>
                     </div>
                 </div>
@@ -409,31 +483,37 @@
                 </h4>
             </div>
             <form class="ui form" action="#" id="zorxAuthGatewaySettings">
-                 <div class="field" style="margin-top: 2em;">
+                 <div class="field">
                     <div class="ui toggle checkbox">
                         <input type="checkbox" id="zorxAuthGatewayEnabled" name="gatewayEnabled">
-                        <label for="zorxAuthGatewayEnabled">Enable Zoraxy Auth Gateway<br>
-                        <small>Enable or disable the Zoraxy Auth Gateway (login interface) web request handling. Already authentication sessions will remain active until they expire</small></label>
+                        <label for="zorxAuthGatewayEnabled">Enable the Zoraxy Auth gateway<br>
+                        <small>Turns the login page on or off. Sessions that are already signed in stay active until they expire.</small></label>
                     </div>
                  </div>
-                <div class="field" style="margin-top: 1.4em;">
-                    <label for="zorxAuthGatewayPort">Gateway Port</label>
+                <div class="field">
+                    <label for="zorxAuthGatewayPort">Gateway port</label>
                     <input type="number" id="zorxAuthGatewayPort" name="gatewayPort" placeholder="5489" min="1" max="65535" value="5489">
-                    <small>Port number for the Zoraxy Auth Gateway to listen on</small>
+                    <small>The port the login page listens on.</small>
                 </div>
-                <button class="ui basic button" type="submit"><i class="green check icon"></i> Apply Change</button>
-                <button class="ui basic button" type="button" onclick="openZorxAuthUserEditor();"><i class="ui green users icon"></i> Manage Users</button>
-                <button class="ui basic red button" type="button" onclick="logoutAllUsers();"><i class="ui sign-out icon"></i> Logout All Users</button>
+                <div class="zx-btn-row">
+                <button class="ui primary button" type="submit"><i class="check icon"></i> Save changes</button>
+                <button class="ui basic button" type="button" onclick="openZorxAuthUserEditor();"><i class="ui users icon"></i> Manage users</button>
+                </div>
             </form>
-            <div class="ui divider"></div>
+                </div>
+            </section>
             <!-- SSO Settings -->
             <form class="ui form" action="#" id="zorxAuthSettings">
-                <h3>SSO Behavior</h3>
-                <p>Configure the behavior of the Zoraxy SSO authentication system.</p>
+            <section class="zx-card">
+                <div class="zx-card__head">
+                    <h3 class="zx-card__title">Login behavior</h3>
+                    <p class="zx-card__desc">How visitors are sent to the Zoraxy login page.</p>
+                </div>
+                <div class="zx-card__body">
                 <div class="field">
-                    <label for="zorxAuthSSORedirectURL">SSO Redirect URL</label>
+                    <label for="zorxAuthSSORedirectURL">SSO redirect URL</label>
                     <input type="text" id="zorxAuthSSORedirectURL" name="ssoRedirectURL" placeholder="https://auth.example.com">
-                    <small>URL of the SSO authentication endpoint where unauthenticated users will be redirected. <br><b>Remember to include protocol (e.g., https://) in the URL</b></small>
+                    <small>Where visitors who are not signed in are sent. Include the protocol, for example <code>https://</code>.</small>
                 </div>
                 <div class="ui message">
                     <p>Logged in users can logout by navigating to: <code id="logoutUrlDisplay">N/A</code></p>
@@ -442,64 +522,73 @@
                     <div class="ui advancedSSOZorxAuthOptions accordion">
                         <div class="title">
                             <i class="dropdown icon"></i>
-                            Advanced Options
+                            Advanced options
                         </div>
                         <div class="content">
                             <br>
                             <div class="field">
-                                <label for="zorxAuthSSOSessionSetURL">Session Set URL</label>
+                                <label for="zorxAuthSSOSessionSetURL">Session set URL</label>
                                 <input type="text" id="zorxAuthSSOSessionSetURL" name="ssoSessionSetURL" placeholder="/.wellknown/zorxauth/session/set">
                                 <small>URL that will be called by the SSO endpoint after successful authentication to set the session ID.</small>
                             </div>
                             <div class="ui divider"></div>
-                            <b>Cookie Settings</b>
+                            <b>Cookie settings</b>
                             <br><br>
                             <div class="field">
-                                <label for="zorxAuthCookieName">Cookie Name</label>
+                                <label for="zorxAuthCookieName">Cookie name</label>
                                 <input type="text" id="zorxAuthCookieName" name="cookieName" placeholder="zr_xauth_session">
                                 <small>Name of the cookie to store the session ID. Default: zr_xauth_session</small>
                             </div>
                             <div class="field">
-                                <label for="zorxAuthCookieDuration">Cookie Duration (seconds)</label>
+                                <label for="zorxAuthCookieDuration">Cookie duration (seconds)</label>
                                 <input type="number" id="zorxAuthCookieDuration" name="cookieDuration" placeholder="3600" min="60">
                                 <small>Duration in seconds for the session cookie. Default: 3600 (1 hour)</small>
                             </div>
                             <div class="field">
-                                <label for="zorxAuthCookieDurationRememberMe">Cookie Duration (seconds) - Remember Me</label>
+                                <label for="zorxAuthCookieDurationRememberMe">Cookie duration when "Remember me" is chosen (seconds)</label>
                                 <input type="number" id="zorxAuthCookieDurationRememberMe" name="cookieDurationRememberMe" placeholder="604800" min="60">
-                                <small>Duration in seconds for the session cookie when user selected Remember Me. Default: 604800 (7 days)</small>
+                                <small>Duration in seconds for the session cookie when the user chose Remember me. Default: 604800 (7 days)</small>
                             </div>
                             <div class="ui divider"></div>
-                            <b>Rate Limiting</b>
+                            <b>Rate limiting</b>
                             <br><br>
                             <div class="ui checkbox" style="margin-bottom: 1em;">
                                 <input type="checkbox" id="zorxAuthEnableRateLimit" name="enableRateLimit">
-                                <label>Enable Rate Limiting<br><small>Limit authentication attempts per IP address to prevent brute force attacks</small></label>
+                                <label>Enable rate limiting<br><small>Limit authentication attempts per IP address to prevent brute force attacks</small></label>
                             </div>
                             <div class="field">
-                                <label for="zorxAuthRateLimitPerIp">Rate Limit Per IP (attempts/minute)</label>
+                                <label for="zorxAuthRateLimitPerIp">Rate limit per IP (attempts/minute)</label>
                                 <input type="number" id="zorxAuthRateLimitPerIp" name="rateLimitPerIp" placeholder="60" min="1">
                                 <small>Number of allowed authentication attempts per minute per IP. Default: 60</small>
                             </div>
                             <div class="ui checkbox">
                                 <input type="checkbox" id="zorxAuthUseExpotentialBackoff" name="useExpotentialBackoff">
-                                <label>Use Exponential Backoff<br><small>Increase delay between failed authentication attempts exponentially</small></label>
+                                <label>Use exponential backoff<br><small>Increase delay between failed authentication attempts exponentially</small></label>
                             </div>
                             <div class="ui divider"></div>
-                            <b>Login Page Appearance</b>
+                            <b>Login page appearance</b>
                             <br><br>
                             <p><small>Replace the logo, wording and panel artwork on the Zoraxy Auth login page with your own resources.</small></p>
-                            <button class="ui basic button" type="button" onclick="openZorxAuthCustomization();"><i class="ui purple paint brush icon"></i> Customization</button>
+                            <button class="ui basic button" type="button" onclick="openZorxAuthCustomization();"><i class="paint brush icon"></i> Customization</button>
                         </div>
                     </div>
                 </div>
-                
-                <div style="margin-top: 1.5em;">
-                    <button class="ui basic button" type="submit"><i class="green check icon"></i> Apply Change</button>
-                    <button class="ui basic button" type="button" id="zorxAuthClear"><i class="red trash icon"></i> Clear</button></div>
+                <div class="zx-btn-row">
+                    <button class="ui primary button" type="submit"><i class="check icon"></i> Save changes</button>
+                    <button class="ui basic button" type="button" id="zorxAuthClear"><i class="trash icon"></i> Clear settings</button>
                 </div>
+                </div>
+            </section>
             </form>
-            <br>
+            <section class="zx-card zx-card--danger">
+                <div class="zx-card__head">
+                    <h3 class="zx-card__title">Sessions</h3>
+                    <p class="zx-card__desc">Signs every user out of Zoraxy Auth at once. They have to log in again.</p>
+                </div>
+                <div class="zx-card__body">
+                    <button class="ui basic red button" type="button" onclick="logoutAllUsers();"><i class="ui sign-out icon"></i> Log out all users</button>
+                </div>
+            </section>
         </div>
 </div>
 
@@ -612,7 +701,7 @@
         const startRedirect = $('#forwardAuthStartRedirect').val();
         const preserveHost = $('#forwardAuthPreserveHost').is(':checked');
 
-        console.log(`Updating Forward Auth settings. Address: ${address}. Response Headers: ${responseHeaders}. Response Client Headers: ${responseClientHeaders}. Request Headers: ${requestHeaders}. Request Included Cookies: ${requestIncludedCookies}. Request Excluded Cookies: ${requestExcludedCookies}. Request Include Body: ${requestIncludeBody}. Use X-Original-* Headers: ${useXOriginalHeaders}.`);
+        console.log(`Updating Forward Auth settings. Address: ${address}. Response headers: ${responseHeaders}. Response client headers: ${responseClientHeaders}. Request headers: ${requestHeaders}. Request included cookies: ${requestIncludedCookies}. Request excluded cookies: ${requestExcludedCookies}. Request Include Body: ${requestIncludeBody}. Use X-Original-* Headers: ${useXOriginalHeaders}.`);
 
         $.cjax({
             url: '/api/sso/forward-auth',
@@ -647,7 +736,7 @@
 
 
     /*
-        Forward Auth presets (they only fill the form, nothing is saved until "Apply Change")
+        Forward Auth presets (they only fill the form, nothing is saved until "Save changes")
     */
     $('#forwardAuthStartRedirectDropdown').dropdown();
     function ssoPresetBase() {
@@ -672,7 +761,7 @@
         $("#forwardAuthRequestUseXOriginalHeaders").parent().checkbox(p.useXOriginal ? "set checked" : "set unchecked");
         $("#forwardAuthRequestIncludeBody").parent().checkbox("set unchecked");
         $("#forwardAuthPreserveHost").parent().checkbox(p.preserveHost ? "set checked" : "set unchecked");
-        msgbox("Preset loaded. Review the values, then press Apply Change to save.", true);
+        msgbox("Preset loaded. Review the values, then press Save changes to save.", true);
     }
     const authentikHeaders = "X-authentik-username,X-authentik-groups,X-authentik-entitlements,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version,X-authentik-meta-*";
     function authentikPreset(startRedirect) {
@@ -806,6 +895,12 @@
         $('#oauth2EditorTitle').text('Add provider');
         $('#oauth2Clear').hide();
     }
+    /* the editor is only shown while a provider is added or edited */
+    function oauth2ShowEditor(show) {
+        $('#oauth2Editor').toggle(!!show);
+        $('.ssoAddRow').toggle(!show);
+        if (show) { var el = document.getElementById('oauth2Editor'); if (el && el.scrollIntoView) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }
+    }
 
     function oauth2FillEditor(p) {
         oauth2Editing = p.id;
@@ -830,17 +925,17 @@
                 oauth2Providers = list || [];
                 const body = $('#oauth2ProviderList').empty();
                 if (oauth2Providers.length === 0) {
-                    body.append('<tr><td colspan="6"><i>No provider configured</i></td></tr>');
+                    body.append('<tr><td colspan="6" class="zx-empty-cell">' + t('No providers yet. Add one to let sites use single sign-on.') + '</td></tr>');
                 }
                 oauth2Providers.forEach(function(p) {
                     const used = (p.usedBy || []);
                     const row = $('<tr></tr>').attr('data-id', p.id);
-                    row.append($('<td></td>').append($('<code></code>').text(p.id)));
-                    row.append($('<td></td>').text(p.name || ''));
-                    row.append($('<td></td>').text(p.oauth2Issuer || p.oauth2WellKnownUrl || p.oauth2ServerUrl || ''));
-                    row.append($('<td></td>').text(used.length ? used.join(', ') : 'no rule'));
-                    row.append($('<td></td>').append($('<code></code>').text(p.redirectPath)));
-                    row.append($('<td></td>').append($('<button class="ui mini basic button oauth2EditBtn" type="button">Edit</button>')));
+                    row.append($('<td data-label="ID"></td>').append($('<code></code>').text(p.id)));
+                    row.append($('<td data-label="Name"></td>').text(p.name || ''));
+                    row.append($('<td data-label="Issuer / endpoint" class="zx-cell-long"></td>').append($('<div class="zx-longvalue" tabindex="0"></div>').text(p.oauth2Issuer || p.oauth2WellKnownUrl || p.oauth2ServerUrl || '')));
+                    row.append($('<td data-label="Used by"></td>').text(used.length ? used.join(', ') : 'no rule'));
+                    row.append($('<td data-label="Redirect path"></td>').append($('<code></code>').text(p.redirectPath)));
+                    row.append($('<td class="zx-actions"></td>').append($('<button class="ui mini basic button oauth2EditBtn" type="button">Edit</button>')));
                     body.append(row);
                 });
             },
@@ -853,9 +948,10 @@
     $('#oauth2ProviderList').on('click', '.oauth2EditBtn', function() {
         const id = $(this).closest('tr').attr('data-id');
         const p = oauth2Providers.find(function(x){ return x.id === id; });
-        if (p) oauth2FillEditor(p);
+        if (p) { oauth2FillEditor(p); oauth2ShowEditor(true); }
     });
-    $('#oauth2NewProvider').on('click', function() { oauth2ResetEditor(); $('#oauth2ProviderId').focus(); });
+    $('#oauth2NewProvider').on('click', function() { oauth2ResetEditor(); oauth2ShowEditor(true); $('#oauth2ProviderId').focus(); });
+    $('#oauth2Cancel').on('click', function() { oauth2ResetEditor(); oauth2ShowEditor(false); });
 
     /*
         OAuth 2.0 provider save handler.
@@ -891,6 +987,7 @@
                 }
                 msgbox('OAuth2 provider saved', true);
                 oauth2ResetEditor();
+                oauth2ShowEditor(false);
                 getOAuth20Settings();
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -1008,6 +1105,7 @@
                     return;
                 }
                 oauth2ResetEditor();
+                oauth2ShowEditor(false);
                 getOAuth20Settings();
                 msgbox('OAuth2 provider ' + id + ' deleted', true);
             },

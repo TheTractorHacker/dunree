@@ -310,6 +310,8 @@
         position: relative;
         height: 240px;
         width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
     }
 
     /* System resource bars */
@@ -493,9 +495,48 @@
     }
 </style>
 
+<style>
+    /* polish round 1: kit tokens for the tiles, the hero and the health colours (duplicates of the hero and tiles are hidden) */
+    #status .dashboard-card, #status .kpiCard{ background: var(--zx-surface); border-color: var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); color: var(--zx-text); }
+    #status .dashboard-card{ padding: var(--zx-space-4); }
+    #status .dashboard-card .cardSubtitle, #status .kpiLabel, #status .kpiSub, #status .dbstatCard .dbstatLabel, #status .dbstatCard .dbstatDelta{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #status .cardHead h4, #status .dashboard-card > h4{ font-size: var(--zx-fs-lg); font-weight: 700; }
+    #status .kpiCard{ padding: var(--zx-space-4); }
+    #status .kpiCard::before{ display: none; }
+    #status .kpiCard.skel::before{ display: none; }
+    #status .kpiValue, #status .dbstatCard .dbstatValue{ font-size: var(--zx-fs-2xl); font-weight: 700; color: var(--zx-text); }
+    #status .kpiValue.ok{ color: var(--zx-ok-text); } #status .kpiValue.warn{ color: var(--zx-warn-text); } #status .kpiValue.bad{ color: var(--zx-danger-text); }
+    #status .kpiLinked:hover, #status .kpiLinked:focus-visible{ border-color: var(--zx-primary); box-shadow: var(--zx-focus-ring); }
+    #status .dbstatCard .dbstatDelta.trendUp{ color: var(--zx-ok-text); } #status .dbstatCard .dbstatDelta.trendDown{ color: var(--zx-danger-text); }
+    #status .healthItem .hDot.ok{ background: var(--zx-ok-solid); } #status .healthItem .hDot.warn{ background: var(--zx-warn-solid); } #status .healthItem .hDot.bad{ background: var(--zx-danger-solid); }
+    #status .healthItem .hBadge.ok{ background: var(--zx-ok-bg); color: var(--zx-ok-text); }
+    #status .healthItem .hBadge.warn{ background: var(--zx-warn-bg); color: var(--zx-warn-text); }
+    #status .healthItem .hBadge.bad{ background: var(--zx-danger-bg); color: var(--zx-danger-text); }
+    #status .tuneBarFill{ background: var(--zx-ok-solid); } #status .tuneBarFill.warn{ background: var(--zx-warn-solid); } #status .tuneBarFill.bad{ background: var(--zx-danger-solid); }
+    #status .tuneLink{ color: var(--zx-link); }
+    /* hero: a card with a state colour instead of the full-width gradient */
+    html body #serverstatus.ui.inverted.segment{ background: var(--zx-danger-bg) !important; color: var(--zx-danger-text) !important; border: 1px solid var(--zx-danger-line) !important; border-radius: var(--zx-radius-lg) !important; box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-4); }
+    html body #serverstatus.ui.inverted.segment.green{ background: var(--zx-ok-bg) !important; color: var(--zx-ok-text) !important; border-color: var(--zx-ok-line) !important; }
+    #status .column[hidden], .ui.grid > .column[hidden]{ display: none !important; }
+    html body #serverstatus.ui.inverted.segment #statusTitle, html body #serverstatus.ui.inverted.segment i, html body #serverstatus.ui.inverted.segment .sub.header, html body #serverstatus.green #statusTitle, html body #serverstatus:not(.green) #statusTitle, html body #serverstatus.green i, html body #serverstatus:not(.green) i, html body #serverstatus.green .sub.header, html body #serverstatus:not(.green) .sub.header, html body #serverstatus #statusTitle, html body #serverstatus i.icon, html body #serverstatus .sub.header, html body #serverstatus .heroMetric span, html body #serverstatus .heroMetric .heroMetricLabel{ color: var(--zx-danger-text) !important; }
+    html body #serverstatus.green.ui.inverted.segment .ui.header, html body #serverstatus.green.ui.inverted.segment #statusTitle, html body #serverstatus.green.ui.inverted.segment i, html body #serverstatus.green.ui.inverted.segment .sub.header, html body #serverstatus.green.ui.inverted.segment .heroMetric span, html body #serverstatus.green.ui.inverted.segment .heroMetric .heroMetricLabel, html body #serverstatus.green.ui.inverted.segment #statusText{ color: var(--zx-ok-text) !important; }
+    html body #serverstatus.ui.inverted.segment .ui.header{ color: inherit !important; }
+    html body #serverstatus .heroMetric .heroMetricValue{ font-weight: 700; opacity: 1; }
+    html body #serverstatus .heroMetric .heroMetricLabel{ opacity: 1; }
+    html body #serverstatus .heroDivider{ border-top-color: currentColor; opacity: .35; }
+    html body #serverstatus .ui.inverted.button, html body #serverstatus .ui.basic.inverted.button{ background: var(--zx-surface) !important; color: var(--zx-text) !important; border: 1px solid var(--zx-border-strong) !important; box-shadow: none !important; }
+    html body #serverstatus .ui.inverted.button.disabled{ opacity: 1; color: var(--zx-text-faint) !important; }
+    /* three lower cards size to their content */
+    #status .healthGrid{ align-items: start; }
+    #status .healthGrid > .dashboard-card{ height: auto; }
+    @media (max-width: 748px){
+        #status .diagramCard{ display: none; }
+        #status .statusTopRow{ display: block; }
+    }
+</style>
 <!-- Page title (same header as every other page); the hero banner below carries the live state -->
 <div class="standardContainer nobottom">
-    <header class="zx-page-header" style="margin-bottom:0.8em">
+    <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Status</h2>
@@ -718,7 +759,7 @@
 <!-- Visitor Locations -->
 <div class="standardContainer nobottom">
     <div class="dashboard-card">
-        <h4>Visitor Locations (Today)</h4>
+        <h4>Visitor locations (today)</h4>
         <p class="cardSubtitle">Unique visitor distribution resolved by GeoIP</p>
         <div class="ui stackable grid" style="margin-top: 0.2em;">
             <div class="ten wide column">
@@ -737,11 +778,11 @@
                 </div>
             </div>
             <div class="six wide column">
-                <h5 style="margin-bottom: 0.4em;">Top Countries</h5>
+                <h5 style="margin-bottom: 0.4em;">Top countries</h5>
                 <div id="topCountriesList">
                     <p style="color: var(--text_color_secondary);"><i class="ui loading circle notch icon"></i> Resolving GeoIP</p>
                 </div>
-                <button class="ui fluid basic small button" style="margin-top: 1em;" onclick="openTabById('stats');">View All</button>
+                <button class="ui fluid basic small button" style="margin-top: 1em;" onclick="openTabById('stats');">View all</button>
             </div>
         </div>
     </div>
@@ -750,7 +791,7 @@
 <!-- Summary Statistic Cards -->
 <div class="standardContainer nobottom">
     <div class="ui four column stackable grid" style="margin: -0.5em;">
-        <div class="column">
+        <div class="column" hidden>
             <div class="dashboard-card dbstatCard">
                 <span class="dbstatLabel">Total Requests</span>
                 <span class="dbstatValue" id="cardTotalRequests">-</span>
@@ -759,26 +800,26 @@
         </div>
         <div class="column">
             <div class="dashboard-card dbstatCard">
-                <span class="dbstatLabel">Unique Visitors</span>
+                <span class="dbstatLabel">Unique visitors</span>
                 <span class="dbstatValue" id="cardUniqueVisitors">-</span>
                 <span class="dbstatDelta" id="cardUniqueVisitorsDelta"></span>
             </div>
         </div>
-        <div class="column">
+        <div class="column" hidden>
             <div class="dashboard-card dbstatCard">
                 <span class="dbstatLabel">Bandwidth (Today)</span>
                 <span class="dbstatValue" id="cardBandwidth">-</span>
                 <span class="dbstatDelta" id="cardBandwidthDetail"></span>
             </div>
         </div>
-        <div class="column">
+        <div class="column" hidden>
             <div class="dashboard-card dbstatCard">
                 <span class="dbstatLabel">Error Rate (Today)</span>
                 <span class="dbstatValue" id="cardErrorRate">-</span>
                 <span class="dbstatDelta" id="cardErrorRateDelta"></span>
             </div>
         </div>
-        <div class="column">
+        <div class="column" hidden>
             <div class="dashboard-card dbstatCard">
                 <span class="dbstatLabel">Active Connections</span>
                 <span class="dbstatValue" id="cardActiveConns">-</span>
@@ -787,21 +828,21 @@
         </div>
         <div class="column">
             <div class="dashboard-card dbstatCard">
-                <span class="dbstatLabel">Proxy Hosts</span>
+                <span class="dbstatLabel">Proxy hosts</span>
                 <span class="dbstatValue" id="cardProxyHosts">-</span>
                 <span class="dbstatDelta">Configured proxy rules</span>
             </div>
         </div>
         <div class="column">
             <div class="dashboard-card dbstatCard">
-                <span class="dbstatLabel">Upstream Servers</span>
+                <span class="dbstatLabel">Upstream servers</span>
                 <span class="dbstatValue" id="cardUpstreams">-</span>
                 <span class="dbstatDelta">Active upstream origins</span>
             </div>
         </div>
         <div class="column">
             <div class="dashboard-card dbstatCard">
-                <span class="dbstatLabel">Countries (Today)</span>
+                <span class="dbstatLabel">Countries (today)</span>
                 <span class="dbstatValue" id="cardCountries">-</span>
                 <span class="dbstatDelta">Distinct visitor origins</span>
             </div>
@@ -814,7 +855,7 @@
     <div class="ui two column stackable grid" style="margin: 0;">
         <div class="column" style="padding-left: 0;">
             <div class="dashboard-card">
-                <h4>Top Requested Paths</h4>
+                <h4>Top requested paths</h4>
                 <p class="cardSubtitle">Most requested URLs today</p>
                 <div id="topPathsList">
                     <p style="color: var(--text_color_secondary);"><i class="green circle check icon"></i> No data</p>
@@ -823,7 +864,7 @@
         </div>
         <div class="column" style="padding-right: 0;">
             <div class="dashboard-card">
-                <h4>Request Methods</h4>
+                <h4>Request methods</h4>
                 <p class="cardSubtitle">HTTP methods of proxied requests today</p>
                 <div class="methodChartWrapper">
                     <canvas id="methodChart"></canvas>
@@ -839,26 +880,26 @@
 <!-- System Resources -->
 <div class="standardContainer">
     <div class="dashboard-card">
-        <h4>System Resources</h4>
+        <h4>System resources</h4>
         <p class="cardSubtitle" id="hostInfoLine">Loading host information</p>
         <div class="resourceGrid">
             <div class="resourceBarRow">
                 <div class="resourceLabel">
-                    <span>CPU Usage</span>
+                    <span>CPU usage</span>
                     <span id="cpuUsageText">-</span>
                 </div>
                 <div class="resourceBarTrack"><div class="resourceBarFill" id="cpuUsageBar" style="width: 0%;"></div></div>
             </div>
             <div class="resourceBarRow">
                 <div class="resourceLabel">
-                    <span>Memory Usage</span>
+                    <span>Memory usage</span>
                     <span id="ramUsageText">-</span>
                 </div>
                 <div class="resourceBarTrack"><div class="resourceBarFill" id="ramUsageBar" style="width: 0%;"></div></div>
             </div>
             <div class="resourceBarRow">
                 <div class="resourceLabel">
-                    <span>Disk Usage</span>
+                    <span>Disk usage</span>
                     <span id="diskUsageText">-</span>
                 </div>
                 <div class="resourceBarTrack"><div class="resourceBarFill" id="diskUsageBar" style="width: 0%;"></div></div>
@@ -1302,7 +1343,7 @@
                             cutout: "65%",
                             plugins: {
                                 legend: {
-                                    position: 'right',
+                                    position: 'bottom',
                                 }
                             }
                         }
@@ -1447,12 +1488,13 @@
             const ctx = chart.ctx, x = xs.getPixelForValue(mi), color = chart.data.datasets[0].borderColor, label = netFmt(data[mi]);
             ctx.save();
             ctx.fillStyle = color;
-            ctx.beginPath(); ctx.moveTo(x, area.top + 1); ctx.lineTo(x - 4, area.top + 8); ctx.lineTo(x + 4, area.top + 8); ctx.closePath(); ctx.fill();
+            const ty = area.top - 15;   //above the plot area, so the label never covers the line
+            ctx.beginPath(); ctx.moveTo(x, ty + 1); ctx.lineTo(x - 4, ty + 8); ctx.lineTo(x + 4, ty + 8); ctx.closePath(); ctx.fill();
             ctx.font = "600 10px sans-serif"; ctx.textBaseline = "top";
             const w = ctx.measureText(label).width;
             const left = x + 8 + w > area.right;           //keep the label inside the chart: put it on the other side near the right edge
             ctx.textAlign = left ? "right" : "left";
-            ctx.fillText(label, left ? x - 8 : x + 8, area.top + 1);
+            ctx.fillText(label, left ? x - 8 : x + 8, ty);
             ctx.restore();
         }
     };
@@ -1496,7 +1538,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                layout: { padding: { right: 4 } },
+                layout: { padding: { right: 4, top: 16 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -1865,7 +1907,7 @@
                     var flag = "";
                     if (v.country && v.country.length === 2){ var A = 0x1F1E6, u = v.country.toUpperCase(); flag = String.fromCodePoint(A + u.charCodeAt(0) - 65, A + u.charCodeAt(1) - 65) + " "; }
                     var via = v.via === "cloudflare" ? "Cloudflare" : v.via === "proxy" ? "Proxy" : "Direct";
-                    return '<div class="healthItem"><i class="hDot ' + (v.blocked ? "bad" : v.status >= 500 ? "warn" : "ok") + '"></i><span class="hName"><b>' + flag + esc(v.ip) + "</b> &nbsp;" + esc(v.host) + esc(v.path) + '</span><span class="hMeta">' + esc(via) + '</span><span class="hMeta">' + esc(ago(v.t)) + "</span></div>";
+                    return '<div class="healthItem"><i class="hDot ' + (v.blocked ? "bad" : v.status >= 500 ? "warn" : "ok") + '"></i><span class="hName" title="' + esc(v.ip + " " + v.host + v.path) + '"><b>' + flag + esc(v.ip) + "</b> &nbsp;" + esc(v.host) + esc(v.path) + '</span><span class="hMeta">' + esc(via) + '</span><span class="hMeta">' + esc(ago(v.t)) + "</span></div>";
                 }).join(""));
         }).fail(function(){ $("#latestVisitors").html(empty("user clock", "The visitor list is not available.")); });
     }

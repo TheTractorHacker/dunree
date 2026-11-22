@@ -5,6 +5,7 @@
         <meta charset="utf-8">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
         <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <link rel="stylesheet" href="../ui/zxui.css">
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
@@ -12,7 +13,10 @@
             html, body, body.darkTheme{ background: var(--theme_bg_primary, #fff) !important; }
             /* embedded in a card of the Edit site window: use the whole width of the frame (no fixed-width centred container) */
             .ui.container{ width: auto !important; max-width: none !important; margin: 0 !important; }
-            body{ padding: 0 0 .4em; }
+            body{ padding: 0 0 .4em; color: var(--zx-text); }
+            .zx-table-wrap{ max-height: none; margin-bottom: var(--zx-space-4); }
+            code{ background: var(--zx-surface-2); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); }
+            small{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
         </style>
     </head>
     <body>
@@ -29,38 +33,29 @@
             <div class="ui divider"></div>-->
             <div class="scrolling content ui form">
                 <div id="inlineEditBasicAuthCredentials" class="field">
-                    <p>Enter alias hostname or wildcard matching keywords for <code class="epname"></code></p>
-                    <table class="ui basic very compact unstackable celled table">
+                    <p class="zx-help" style="margin-bottom: var(--zx-space-3);">Other names or wildcard patterns that reach <code class="epname"></code></p>
+                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Alias host names"><table class="zx-table zx-table--compact">
                         <thead>
                         <tr>
-                            <th>Alias Hostname</th>
-                            <th>Remove</th>
+                            <th>Alias host name</th>
+                            <th class="zx-actions">Remove</th>
                         </tr></thead>
                         <tbody id="inlineEditTable">
                         <tr>
-                            <td colspan="2"><i class="ui green circle check icon"></i> No Alias Hostname</td>
+                            <td colspan="2" class="zx-empty-cell">No alias host names yet</td>
                         </tr>
                         </tbody>
-                    </table>
-                    <div class="ui divider"></div>
-                    <div class="three small fields">
-                        <div class="field">
-                            <label>Alias Hostname</label>
-                            <input id="aliasHostname" type="text" placeholder="alias.mydomain.com" autocomplete="off">
-                            <small>Support wildcards e.g. alias.mydomain.com or *.alias.mydomain.com</small>
-                        </div>
-                        <div class="field" >
-                            <button class="ui basic button" onclick="addAliasToRoutingRule();"><i class="green add icon"></i> Add Alias</button>
-                        </div>
-                        <div class="ui divider"></div>
+                    </table></div>
+                    <div class="field">
+                        <label>New alias host name</label>
+                        <input id="aliasHostname" type="text" placeholder="alias.mydomain.com" autocomplete="off">
+                        <small>Wildcards work, for example alias.mydomain.com or *.alias.mydomain.com</small>
                     </div>
+                    <button class="zx-btn zx-btn--primary" onclick="addAliasToRoutingRule();"><i class="add icon"></i> Add alias</button>
                 </div>
             </div>
         </div>
             
-        <br><br><br><br>
-
-        </div>
         <script>
             let aliasList = [];
             let editingEndpoint = {};
@@ -97,7 +92,7 @@
                             }else{
                                 //Assume no alias
                                 $("#inlineEditTable").html(`<tr>
-                                    <td colspan="2"><i class="ui green circle check icon"></i> No Alias Hostname</td>
+                                    <td colspan="2" class="zx-empty-cell">No alias host names yet</td>
                                 </tr>`);
                             }
 
@@ -167,14 +162,14 @@
                     }else{
                         cell.append($("<a target=\"_blank\" rel=\"noopener noreferrer\"></a>").attr("href", "//" + aliasDomain).text(aliasDomain));
                     }
-                    let del = $('<button class="ui basic mini circular icon button" aria-label="Remove alias"><i class="red trash icon"></i></button>')
+                    let del = $('<button class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" aria-label="Remove alias" title="Remove alias"><i class="trash icon"></i></button>')
                         .on("click", function(){ removeAliasDomain(aliasDomain); });
-                    $("#inlineEditTable").append($("<tr></tr>").append(cell).append($("<td></td>").append(del)));
+                    $("#inlineEditTable").append($("<tr></tr>").append(cell).append($("<td class=\"zx-actions\"></td>").append(del)));
                 });
 
                 if (aliasList.length == 0){
                     $("#inlineEditTable").html(`<tr>
-                        <td colspan="2"><i class="ui green circle check icon"></i> No Alias Hostname</td>
+                        <td colspan="2" class="zx-empty-cell">No alias host names yet</td>
                     </tr>`);
                 }
             }

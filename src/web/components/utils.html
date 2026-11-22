@@ -1,270 +1,308 @@
-<div class="standardContainer">
-    <div class="ui basic segment">
-        <h2>Utilities</h2>
-        <p>You might find these tools or information helpful when setting up your gateway server</p>
-    </div>
+<div class="standardContainer" id="utilsPage">
+    <style>
+        #utilsPage .ut-result { margin: var(--zx-space-3) 0 0; padding: var(--zx-space-3); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text); font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; min-height: 2.5em; }
+        #utilsPage .ut-result.is-empty { color: var(--zx-text-muted); font-family: inherit; }
+        #utilsPage .ut-result.is-error { color: var(--zx-danger-text); border-color: var(--zx-danger-line); background: var(--zx-danger-bg); font-family: inherit; }
+        #utilsPage .ut-inline { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: stretch; }
+        #utilsPage .ut-inline > input { flex: 1 1 14rem; min-width: 0; }
+        #utilsPage .ut-inline > .ui.button { flex: 0 0 auto; align-self: stretch; height: auto; margin: 0; }
+        #utilsPage .ut-range { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-3); }
+        #utilsPage .ut-range .zx-field { margin-bottom: 0; }
+        #utilsPage .ut-kv { display: grid; grid-template-columns: 14rem minmax(0, 1fr); margin: 0; }
+        #utilsPage .ut-kv dt, #utilsPage .ut-kv dd { margin: 0; padding: var(--zx-space-3) 0; border-top: 1px solid var(--zx-border); }
+        #utilsPage .ut-kv dt:first-of-type, #utilsPage .ut-kv dd:first-of-type { border-top: 0; }
+        #utilsPage .ut-kv dt { color: var(--zx-text-muted); font-weight: 600; padding-right: var(--zx-space-4); }
+        #utilsPage .ut-kv dd { overflow-wrap: anywhere; min-width: 0; }
+        #utilsPage .ut-kv dd.uuid { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
+        #utilsPage .ut-supporters { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
+        #utilsPage .ut-supporters .zx-badge { font-size: var(--zx-fs-md); padding: 4px 12px; }
+        #utilsPage .zx-card .ui.message { margin-top: var(--zx-space-3); }
+        #utilsPage .ut-hint { margin: var(--zx-space-3) 0 0; }
+        @media (max-width: 600px) {
+            #utilsPage .ut-kv { grid-template-columns: minmax(0, 1fr); }
+            #utilsPage .ut-kv dt { border-top: 1px solid var(--zx-border); padding-bottom: 0; }
+            #utilsPage .ut-kv dd { border-top: 0; padding-top: var(--zx-space-1); }
+            #utilsPage .ut-kv dt:first-of-type { border-top: 0; }
+        }
+    </style>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Utilities</h2>
+            <p class="zx-page-header__sub">Logs, backups, geo-IP data and network helpers.</p>
+        </div>
+    </header>
     <div class="ui top attached tabular menu zx-tabscroll">
-        <a class="utils item active" data-tab="utiltab1"><i class="ui user circle blue icon"></i> Accounts</a>
-        <a class="utils item" data-tab="utiltab2"><i class="ui grey file alternate outline icon"></i> Logger</a>
-        <a class="utils item" data-tab="utiltab3">Toolbox</a>
-        <a class="utils item" data-tab="utiltab4">System</a>
-        <a class="utils item" data-tab="utiltab5"><i class="heart red icon"></i> Contributors</a>
+        <a class="utils item active" data-tab="utiltab1"><i class="user circle outline icon"></i> Accounts</a>
+        <a class="utils item" data-tab="utiltab2"><i class="file alternate outline icon"></i> Logger</a>
+        <a class="utils item" data-tab="utiltab3"><i class="wrench icon"></i> Toolbox</a>
+        <a class="utils item" data-tab="utiltab4"><i class="server icon"></i> System</a>
+        <a class="utils item" data-tab="utiltab5"><i class="heart outline icon"></i> Contributors</a>
     </div>
 
     <div class="ui bottom attached tab segment utilitiesTabs active" data-tab="utiltab1">
         <div class="extAuthOnly" style="display:none;">
-            <div class="ui basic segment">
-                <i class="ui green circle check icon"></i> Account options are not available due to -noauth flag is set to true.
+            <div class="zx-empty">
+                <div class="zx-empty__icon" aria-hidden="true"><i class="user circle outline icon"></i></div>
+                <div class="zx-empty__title">No accounts to manage</div>
+                <p class="zx-empty__text">Sign-in is turned off, so there are no accounts to manage here. Zoraxy was started without its own login, for example behind another authentication service.</p>
             </div>
         </div>
         <div class="selfauthOnly">
-            <h3>Change Password</h3>
-            <p>Update the current account credentials</p>
-            <div class="ui basic segment">
-                <h5><i class="chevron down icon"></i> Change Password</h5>
-                <div class="ui form">
-                    <div class="field">
-                        <label>Current Password</label>
-                        <input type="password" name="oldPassword" placeholder="Current Password">
-                    </div>
-                    <div class="field">
-                        <label>New Password</label>
-                        <input type="password" name="newPassword" placeholder="New Password">
-                    </div>
-                    <div class="field">
-                        <label>Confirm New Password</label>
-                        <input type="password" name="confirmNewPassword" placeholder="Confirm New Password">
-                    </div>
-                    <button class="ui basic button" onclick="changePassword()"><i class="ui teal key icon"></i> Change Password</button>
+            <section class="zx-card">
+                <div class="zx-card__head">
+                    <h3 class="zx-card__title">Change password</h3>
+                    <p class="zx-card__desc">Update the password of the account you are signed in with.</p>
                 </div>
-    
-                <div id="passwordChangeSuccMsg" class="ui green message" style="display:none;">
-                    <i class="ui circle checkmark green icon "></i> Password Updated
+                <div class="zx-card__body">
+                    <div class="ui form">
+                        <div class="zx-form-grid">
+                            <div class="zx-field zx-field--wide">
+                                <label class="zx-field__label" for="utPwOld">Current password</label>
+                                <input type="password" id="utPwOld" name="oldPassword" autocomplete="current-password">
+                            </div>
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="utPwNew">New password</label>
+                                <input type="password" id="utPwNew" name="newPassword" autocomplete="new-password">
+                            </div>
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="utPwConfirm">Confirm new password</label>
+                                <input type="password" id="utPwConfirm" name="confirmNewPassword" autocomplete="new-password">
+                            </div>
+                        </div>
+                        <button type="button" class="ui primary button" onclick="changePassword()"><i class="key icon"></i> Update password</button>
+                    </div>
+                    <div id="passwordChangeSuccMsg" class="ui green message" style="display:none;">
+                        <i class="circle checkmark icon"></i> Password updated
+                    </div>
                 </div>
-            </div>
-     </div>
+            </section>
+        </div>
     </div>
+
     <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab2">
-        <!-- Log Settings -->
-        <h3>Log Settings</h3>
-        <p>Configure log rotation settings for the system logger</p>
-        <div class="ui basic segment">
-            <form id="log-settings-form" class="ui form">
-                <div class="field">
-                    <div class="ui toggle checkbox">
-                        <input type="checkbox" id="logRotationEnabled" name="enabled">
-                        <label>Enable Log Rotation</label>
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Log rotation</h3>
+                <p class="zx-card__desc">Keep the Zoraxy log from growing without limit by rotating it into numbered backup files.</p>
+            </div>
+            <div class="zx-card__body">
+                <form id="log-settings-form" class="ui form">
+                    <label class="zx-toggle-row">
+                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Enable log rotation</span><span class="zx-toggle-row__desc">Start a new log file when the current one reaches the maximum size.</span></span>
+                        <input type="checkbox" class="zx-switch" role="switch" id="logRotationEnabled" name="enabled">
+                    </label>
+                    <label class="zx-toggle-row">
+                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Compress rotated logs</span><span class="zx-toggle-row__desc">Rotated log files are saved as ZIP archives.</span></span>
+                        <input type="checkbox" class="zx-switch" role="switch" id="logCompressionEnabled" name="compress">
+                    </label>
+                    <div class="zx-form-grid" style="margin-top: var(--zx-space-4);">
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="logMaxSize">Maximum log file size</label>
+                            <div class="zx-inputgroup">
+                                <input type="text" id="logMaxSize" name="maxSize" placeholder="e.g. 200M, 10K, 500" value="0">
+                                <span class="zx-inputgroup__unit">bytes, K, M or G</span>
+                            </div>
+                            <p class="zx-help">Use a plain number of bytes or add K, M or G. Set to 0 to turn the size limit off.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="logMaxBackups">Maximum backup files</label>
+                            <input type="number" id="logMaxBackups" name="maxBackups" placeholder="10" min="1" value="16">
+                            <p class="zx-help">How many rotated log files to keep.</p>
+                        </div>
                     </div>
-                </div>
-                <div class="field">
-                    <label>Maximum Log File Size</label>
-                    <div class="ui right labeled input">
-                        <input type="text" id="logMaxSize" name="maxSize" placeholder="e.g. 200M, 10K, 500" value="0">
-                        <div class="ui basic label">bytes or K / M / G</div>
+                    <div class="zx-btn-row">
+                        <button class="ui primary button" type="submit"><i class="save icon"></i> Save</button>
+                        <button class="ui button" id="rotateLogBtn" onclick="triggerLogRotation(event)"><i class="sync icon"></i> Rotate now</button>
                     </div>
-                    <small>Enter size with suffix (K, M, G) or plain number. Set to 0 to disable.</small>
-                </div>
-                <div class="field">
-                    <label>Maximum Backup Files</label>
-                    <input type="number" id="logMaxBackups" name="maxBackups" placeholder="10" min="1" value="16">
-                    <small>Maximum number of rotated log files to keep.</small>
-                </div>
-                <div class="field">
-                    <div class="ui checkbox">
-                        <input type="checkbox" id="logCompressionEnabled" name="compress">
-                        <label>Enable Log Compression</label>
+                    <div id="logSettingsSuccessMsg" class="ui green message" style="display:none;">
+                        <i class="checkmark icon"></i> Log settings updated successfully
                     </div>
-                    <br>
-                    <small>When enabled, rotated log files will be compressed using ZIP format.</small>
-                </div>
-                <button class="ui basic button" type="submit">
-                    <i class="green save icon"></i> Save Settings
-                </button>
-                <button class="ui basic button" id="rotateLogBtn" onclick="triggerLogRotation(event)">
-                    <i class="yellow archive icon" ></i> Rotate Log Now
-                </button>
-                <div id="logSettingsSuccessMsg" class="ui green message" style="display:none;">
-                    <i class="checkmark icon"></i> Log settings updated successfully
-                </div>
-                <div id="logSettingsErrorMsg" class="ui red message" style="display:none;">
-                    <i class="exclamation triangle icon"></i> <span id="logSettingsErrorText"></span>
-                </div>
-            </form>
-        </div>
-        <div class="ui divider"></div>
+                    <div id="logSettingsErrorMsg" class="ui red message" style="display:none;">
+                        <i class="exclamation triangle icon"></i> <span id="logSettingsErrorText"></span>
+                    </div>
+                </form>
+            </div>
+        </section>
 
-        <!-- Log Viewer -->
-        <h3>System Log Viewer</h3>
-        <p>View and download Zoraxy log</p>
-        <a class="ui basic button" href="snippet/logview.html" target="_blank"><i class="ui blue file icon"></i> Open Log Viewer</a>
-        <a class="ui basic button" href="snippet/logsearch.html" target="_blank"><i class="ui teal search icon"></i> Search Access Logs</a>
-        <a class="ui basic button" href="snippet/notifications.html" target="_blank"><i class="ui orange bell icon"></i> Notifications</a>
-        <div class="ui divider"></div>
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">System log viewer</h3>
+                <p class="zx-card__desc">View and download the Zoraxy log, search access logs or read notifications.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="zx-btn-row">
+                    <a class="ui button" href="snippet/logview.html" target="_blank"><i class="file alternate outline icon"></i> Open log viewer</a>
+                    <a class="ui button" href="snippet/logsearch.html" target="_blank"><i class="search icon"></i> Search access logs</a>
+                    <a class="ui button" href="snippet/notifications.html" target="_blank"><i class="bell outline icon"></i> Notifications</a>
+                </div>
+            </div>
+        </section>
     </div>
+
     <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab3">
-        <h3> IP Address to CIDR</h3>
-        <p>No experience with CIDR notations? Here are some tools you can use to make setting up easier.</p>
-        <div class="ui basic segment">
-            <h5><i class="chevron down icon"></i> IP Range to CIDR Conversion</h5>
-            <div class="ui message">
-                <i class="info circle icon"></i> A range that does not fit one CIDR block is converted into the shortest list of blocks that covers exactly that range. Works for IPv4 and IPv6.
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">IP range to CIDR</h3>
+                <p class="zx-card__desc">Turn a start and end address into CIDR blocks for allow and block lists. A range that does not fit one block becomes the shortest list that covers it exactly (IPv4 and IPv6).</p>
             </div>
-            <div class="ui input">
-                <input type="text" placeholder="Start IP" id="startIpInput">
-            </div>
-            <div class="ui input">
-                <input type="text" placeholder="End IP" id="endIpInput">
-            </div>
-            <br>
-            <button style="margin-top: 0.6em;" class="ui basic button" onclick="convertToCIDR()">Convert</button>
-            <p>Results: <div id="cidrOutput">N/A</div></p>
-        </div>
-    
-        <div class="ui basic segment">
-            <h5><i class="chevron down icon"></i> CIDR to IP Range Conversion</h5>
-            <div class="ui action input">
-                <input type="text" placeholder="CIDR" id="cidrInput">
-                <button class="ui basic button" onclick="convertToIPRange()">Convert</button>
-            </div>
-            <p>Results: <div id="ipRangeOutput">N/A</div></p>
-        </div>
-        <div class="ui divider"></div>
-        <h3>Geo-IP Lookup</h3>
-        <p>Enter an IP address and see its estimated geographical location and access control rule results.</p>
-        <div class="ui basic segment">
-            <div class="ui action input" style="width: 100%; max-width: 420px;">
-                <input type="text" id="geoipInput" placeholder="IPv4 or IPv6 address (e.g. 1.1.1.1)">
-                <button class="ui basic blue button" onclick="lookupGeoIp()"><i class="search icon"></i> Lookup</button>
-            </div>
-            <div id="geoipResult" style="display:none; margin-top: 1em;">
-                <div class="ui small label" style="margin-bottom: 1em;">
-                    <i class="globe icon"></i> Country ISO Code: <span id="geoipCountryCode" class="detail">-</span>
-                </div>
-                <h5>Access Rule Check</h5>
-                <p style="color: grey; font-size: 0.9em;">Shows whether this IP would be permitted by each configured access rule.</p>
-                <table class="ui very basic celled table" id="geoipRuleTable">
-                    <thead>
-                        <tr>
-                            <th>Rule UUID</th>
-                            <th>Rule Name</th>
-                            <th>Access</th>
-                        </tr>
-                    </thead>
-                    <tbody id="geoipRuleTableBody">
-                    </tbody>
-                </table>
-            </div>
-            <div id="geoipError" class="ui red message" style="display:none;"></div>
-        </div>
-    </div>
-    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab4">
-        <!-- Geo-IP Database Update -->
-        <h3>Geo-IP Database Update</h3>
-        <p>The Geo-IP database resolves visitor IP addresses into country codes for access control rules and statistics. Updating it keeps the country lookup results accurate.</p>
-        <div class="ui basic segment">
-            <table class="ui very basic collapsing celled table">
-                <tbody>
-                    <tr>
-                        <td>Database Source</td>
-                        <td id="geodbSource">-</td>
-                    </tr>
-                    <tr>
-                        <td>Database Date</td>
-                        <td id="geodbDate">-</td>
-                    </tr>
-                    <tr>
-                        <td>Loaded Entries</td>
-                        <td id="geodbEntries">-</td>
-                    </tr>
-                    <tr>
-                        <td>Last Updated</td>
-                        <td id="geodbLastUpdate">-</td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="ui basic button" id="geodbUpdateNowBtn" onclick="updateGeoDBNow();"><i class="ui blue download icon"></i> Update Now</button>
-            <div class="ui form" style="margin-top: 1.4em;">
-                <div class="field">
-                    <div class="ui toggle checkbox">
-                        <input type="checkbox" id="geodbAutoUpdateEnabled">
-                        <label>Enable Scheduled Update</label>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="ut-range">
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="startIpInput">Start IP</label>
+                            <input type="text" id="startIpInput" placeholder="e.g. 192.168.0.0" autocomplete="off">
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="endIpInput">End IP</label>
+                            <input type="text" id="endIpInput" placeholder="e.g. 192.168.0.255" autocomplete="off">
+                        </div>
                     </div>
-                    <br>
-                    <small>When enabled, the database is refreshed once a week counting from the time Zoraxy was started, plus a random offset of up to 30 minutes. The randomized schedule prevents all Zoraxy instances (including those started by a cron job at a fixed time) from requesting the update server at the same moment.</small>
+                    <button type="button" class="ui button" onclick="convertToCIDR()">Convert</button>
+                </div>
+                <div id="cidrOutput" class="ut-result is-empty" aria-live="polite">No result yet</div>
+            </div>
+        </section>
+
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">CIDR to IP range</h3>
+                <p class="zx-card__desc">See the first and last address covered by a CIDR block.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-field">
+                        <label class="zx-field__label" for="cidrInput">CIDR block</label>
+                        <div class="ut-inline">
+                            <input type="text" placeholder="e.g. 192.168.0.0/24" id="cidrInput" autocomplete="off"><button type="button" class="ui button" onclick="convertToIPRange()">Convert</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="ipRangeOutput" class="ut-result is-empty" aria-live="polite">No result yet</div>
+            </div>
+        </section>
+
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Geo-IP lookup</h3>
+                <p class="zx-card__desc">Enter an IP address to see its estimated country and whether each access rule would let it in.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-field">
+                        <label class="zx-field__label" for="geoipInput">IP address (IPv4 or IPv6)</label>
+                        <div class="ut-inline">
+                            <input type="text" id="geoipInput" placeholder="e.g. 1.1.1.1" autocomplete="off"><button type="button" class="ui button" onclick="lookupGeoIp()"><i class="search icon"></i> Lookup</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="geoipResult" style="display:none; margin-top: var(--zx-space-4);">
+                    <p><span class="zx-badge zx-badge--info"><i class="globe icon"></i> Country code: <span id="geoipCountryCode">-</span></span></p>
+                    <h4>Access rule check</h4>
+                    <p class="zx-help">Shows whether this IP would be permitted by each access rule.</p>
+                    <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Access rule check">
+                        <table class="zx-table zx-table--compact" id="geoipRuleTable">
+                            <thead>
+                                <tr>
+                                    <th>Rule ID</th>
+                                    <th>Rule name</th>
+                                    <th>Access</th>
+                                </tr>
+                            </thead>
+                            <tbody id="geoipRuleTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="geoipError" class="ui red message" style="display:none;"></div>
+            </div>
+        </section>
+    </div>
+
+    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab4">
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Geo-IP database update</h3>
+                <p class="zx-card__desc">The Geo-IP database turns visitor IP addresses into country codes for access rules and statistics. Updating it keeps those lookups accurate.</p>
+            </div>
+            <div class="zx-card__body">
+                <dl class="ut-kv">
+                    <dt>Database source</dt><dd id="geodbSource">-</dd>
+                    <dt>Database date</dt><dd id="geodbDate">-</dd>
+                    <dt>Loaded entries</dt><dd id="geodbEntries">-</dd>
+                    <dt>Last updated</dt><dd id="geodbLastUpdate">-</dd>
+                </dl>
+                <div class="zx-btn-row" style="margin-top: var(--zx-space-4);">
+                    <button class="ui button" id="geodbUpdateNowBtn" onclick="updateGeoDBNow();"><i class="download icon"></i> Update now</button>
+                </div>
+                <div class="ui form">
+                    <label class="zx-toggle-row" style="margin-top: var(--zx-space-3);">
+                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Update automatically</span><span class="zx-toggle-row__desc">Refresh the database once a week, counting from when Zoraxy started, plus a random delay of up to 30 minutes so installations do not all contact the update server at the same moment.</span></span>
+                        <input type="checkbox" class="zx-switch" role="switch" id="geodbAutoUpdateEnabled">
+                    </label>
+                </div>
+                <div id="geodbNextUpdate" class="ui green message" style="display:none;">
+                    <i class="clock outline icon"></i> Next update in <span id="geodbCountdown">-</span>
+                </div>
+                <div id="geodbUpdateMsg" class="ui message" style="display:none;"></div>
+            </div>
+        </section>
+
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">System backup &amp; restore</h3>
+                <p class="zx-card__desc">Export the configuration to move or protect it, or restore it from a backup.</p>
+            </div>
+            <div class="zx-card__body">
+                <button class="ui button" onclick="showSideWrapper('snippet/configTools.html');"><i class="database icon"></i> Open config tools</button>
+            </div>
+        </section>
+
+        <section class="zx-card zx-card--danger">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Statistics</h3>
+                <p class="zx-card__desc">Delete all the traffic statistics Zoraxy has collected. This cannot be undone.</p>
+            </div>
+            <div class="zx-card__body">
+                <button class="ui basic red button" onclick="handleResetAllStats();"><i class="trash alternate outline icon"></i> Reset all statistics</button>
+            </div>
+        </section>
+
+        <section class="zx-card" id="zoraxyinfo">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">System information</h3>
+                <p class="zx-card__desc">Basic information about this Zoraxy host.</p>
+            </div>
+            <div class="zx-card__body">
+                <dl class="ut-kv">
+                    <dt>Host ID</dt><dd class="uuid"></dd>
+                    <dt>Version</dt><dd class="version"></dd>
+                    <dt>Build</dt><dd class="development"></dd>
+                    <dt>Running since</dt><dd class="boottime"></dd>
+                    <dt>SSH loopback</dt><dd class="sshlb"></dd>
+                </dl>
+                <p class="zx-help ut-hint">Zoraxy is developed by tobychui for <a href="//imuslab.com" target="_blank">imuslab</a> and open source under <a href="https://www.gnu.org/licenses/agpl-3.0.txt" target="_blank">AGPL</a>.</p>
+            </div>
+        </section>
+    </div>
+
+    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab5">
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title"><i class="heart outline icon"></i> Financial supporters</h3>
+                <p class="zx-card__desc">Zoraxy is made possible by the generosity of its supporters. Thank you to everyone who has donated to keep this project free and open source.</p>
+            </div>
+            <div class="zx-card__body">
+                <div id="supportersList">
+                    <div class="ui active centered inline loader" style="margin: 2em 0;"></div>
                 </div>
             </div>
-            <div id="geodbNextUpdate" class="ui green message" style="display:none;">
-                <i class="clock outline icon"></i> Next update in <span id="geodbCountdown">-</span>
-            </div>
-            <div id="geodbUpdateMsg" class="ui message" style="display:none;"></div>
-        </div>
-        <div class="ui divider"></div>
-
-        <!-- Config Tools -->
-        <h3>System Backup & Restore</h3>
-        <p>Options related to system backup, migrate and restore.</p>
-        <button class="ui basic button" onclick="showSideWrapper('snippet/configTools.html');"><i class="ui green undo icon icon"></i> Open Config Tools</button>
-        <div class="ui divider"></div>
-        
-        <!-- Statistic Reset or Export -->
-        <h3>Advanced Statistics Operations</h3>
-        <p>Export or reset the statistics collected by Zoraxy within a selected time range</p>
-        <button class="ui basic red button" onclick="handleResetAllStats();"><i class="trash icon"></i> RESET ALL STATISTICS</button>
-        <div class="ui divider"></div>
-        
-            <!-- System Information -->
-        <div id="zoraxyinfo">
-            <h3 class="ui header">
-                System Information
-            </h3>
-            <p>Basic information about this zoraxy host</p>
-            <table class="ui very basic collapsing celled table">
-                <tbody>
-                    <tr>
-                        <td>Host UUID</td>
-                        <td class="uuid"></td>
-                    </tr>
-                    <tr>
-                        <td>Version</td>
-                        <td class="version"></td>
-                    </tr>
-                    <tr>
-                        <td>Build</td>
-                        <td class="development"></td>
-                    </tr>
-                    <tr>
-                        <td>Running Since</td>
-                        <td class="boottime"></td>
-                    </tr>
-                    <tr>
-                        <td>Enable SSH Loopback</td>
-                        <td class="sshlb"></td>
-                    </tr>
-                </tbody>
-            </table>
-            <p>Zoraxy is developed by tobychui for <a href="//imuslab.com" target="_blank">imuslab</a> and open source under <a href="https://www.gnu.org/licenses/agpl-3.0.txt">AGPL</a></p>
+        </section>
+        <div class="zx-callout zx-callout--info" role="note">
+            <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+            <div class="zx-callout__body"><strong>Privacy:</strong> If you would prefer not to have your name shown here, ask on the <a href="https://github.com/tobychui/zoraxy" target="_blank">Zoraxy GitHub repository</a>. You can use a pseudonym or any text you like, and requests are handled promptly.</div>
         </div>
     </div>
-    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab5">
-        <!-- Financial Supporters -->
-        <h3><i class="heart red icon"></i> Financial Supporters</h3>
-        <p>Zoraxy is made possible by the generosity of our wonderful supporters. A huge thank you to everyone who has donated to keep this project free and open source!</p>
-        <div class="ui basic segment">
-            <div id="supportersList" class="ui">
-                <div class="ui active centered inline loader" style="margin: 2em 0;"></div>
-            </div>
-        </div>
-        <div class="ui divider"></div>
-        <!-- Privacy Notice -->
-        <div class="ui info message">
-            <i class="info circle icon"></i>
-            <strong>Privacy Notice:</strong> If you would prefer not to have your name displayed here, please open a pull request on the
-            <a href="https://github.com/tobychui/zoraxy" target="_blank">Zoraxy GitHub repository</a>
-            and edit the <code>src/web/script/supporters.txt</code> file — you may replace your name with a pseudonym or any text you like.
-            We fully respect your privacy and will merge such requests promptly.
-        </div>
-    </div>
-    <br>
 </div>
 <script>
     $('.menu .utils.item').tab();
@@ -325,7 +363,7 @@
         $(".zrversion").text("v." + data.Version); //index footer
         //BootTime 0 = not disclosed to this session: never print 1 Jan 1970
         $("#zoraxyinfo .boottime").text(data.BootTime > 0 ? timeConverter(data.BootTime) + ` ( ${secondsToDhms(parseInt(Date.now()/1000) - data.BootTime)} ago)` : "Not available");
-        $("#zoraxyinfo .sshlb").html(data.EnableSshLoopback?`<i class="ui yellow exclamation triangle icon"></i> Enabled`:`Disabled`);
+        $("#zoraxyinfo .sshlb").html(data.EnableSshLoopback?`<span class="zx-badge zx-badge--warn"><i class="exclamation triangle icon"></i> ${t("Enabled")}</span>`:t("Disabled"));
     });
 
     function changePassword() {
@@ -360,7 +398,7 @@
     loadLogSettings();
 
     /*
-        Geo-IP Database Update
+        Geo-IP database update
     */
     let geodbNextUpdateTime = 0;    //Unix timestamp of the next scheduled update, 0 if not scheduled
     let geodbCountdownTimer = null; //Interval handler for the countdown ticker
@@ -368,7 +406,7 @@
     //Convert a unix timestamp into a human readable time string
     function geodbUnixToString(unixTimestamp){
         if (unixTimestamp == undefined || unixTimestamp <= 0){
-            return "N/A";
+            return t("Never");
         }
         return new Date(unixTimestamp * 1000).toLocaleString();
     }
@@ -399,8 +437,8 @@
             }
 
             $("#geodbSource").html(data.usingExternalDB ?
-                `<i class="green check circle icon"></i> Downloaded database` :
-                `<i class="grey box icon"></i> Bundled database (never updated)`);
+                `<span class="zx-badge zx-badge--ok"><i class="check circle icon"></i> ${t("Downloaded database")}</span>` :
+                `<span class="zx-badge"><i class="box icon"></i> ${t("Bundled database (never updated)")}</span>`);
             $("#geodbDate").text(data.usingExternalDB ? geodbUnixToString(data.databaseTime) : "Same as Zoraxy build date");
             $("#geodbEntries").text(data.ipv4EntryCount.toLocaleString() + " IPv4 / " + data.ipv6EntryCount.toLocaleString() + " IPv6 ranges");
             $("#geodbLastUpdate").text(geodbUnixToString(data.lastUpdateTime));
@@ -518,7 +556,7 @@
     loadGeoDBUpdateStatus();
 
     /*
-        Geo-IP Lookup & Access Rule Check
+        Geo-IP lookup & Access Rule Check
     */
     function lookupGeoIp() {
         const ip = document.getElementById('geoipInput').value.trim();
@@ -544,16 +582,16 @@
             tbody.innerHTML = '';
             (data.rules || []).forEach(function(rule) {
                 const icon = rule.allowed
-                    ? '<i class="green check circle icon"></i> Allow'
-                    : '<i class="red times circle icon"></i> Deny';
+                    ? '<span class="zx-badge zx-badge--ok"><i class="check circle icon"></i> ' + t("Allow") + '</span>'
+                    : '<span class="zx-badge zx-badge--danger"><i class="times circle icon"></i> ' + t("Deny") + '</span>';
                 tbody.innerHTML += `<tr>
-                    <td style="font-family: monospace; font-size: 0.85em;">${ZxUI.esc(rule.id)}</td>
-                    <td>${ZxUI.esc(rule.name)}</td>
-                    <td>${icon}</td>
+                    <td class="zx-mono zx-ellipsis" data-label="${t("Rule ID")}" title="${ZxUI.esc(rule.id)}">${ZxUI.esc(rule.id)}</td>
+                    <td data-label="${t("Rule name")}">${ZxUI.esc(rule.name)}</td>
+                    <td data-label="${t("Access")}">${icon}</td>
                 </tr>`;
             });
             if ((data.rules || []).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3">No access rules configured.</td></tr>';
+                tbody.innerHTML = '<tr><td class="zx-empty-cell" colspan="3">' + t("No access rules configured.") + '</td></tr>';
             }
             document.getElementById('geoipResult').style.display = 'block';
         }).fail(function(xhr) {
@@ -575,7 +613,7 @@
     //events handler
     //Both converters use the server side calculator (/api/tools/netcalc): IPv4 and IPv6, exact results and clear errors
     function showConvResult(sel, ok, lines){
-        const box = $(sel).empty().css("color", ok ? "" : "#b00020");
+        const box = $(sel).empty().removeClass("is-empty is-error").toggleClass("is-error", !ok);
         lines.forEach(function(line, i){
             if (i > 0){ box.append("<br>"); }
             box.append(document.createTextNode(line));
@@ -727,7 +765,14 @@
         Statistics Operations
     */
     function handleResetAllStats(){
-        if (confirm("Confirm remove ALL statistics from the system? This action is irreversible.")){
+        ZxUI.confirm({
+            title: t("Reset all statistics?"),
+            message: t("All collected traffic statistics are deleted. This cannot be undone."),
+            confirmLabel: t("Reset all statistics"),
+            danger: true,
+            typed: "reset"
+        }).then(function(ok){
+            if (!ok){ return; }
             $.cjax({
                 url: "/api/analytic/resetAll",
                 method: "POST",
@@ -738,8 +783,8 @@
                         msgbox("All Statistics Cleared");
                     }
                 }
-            })
-        }
+            });
+        });
     }
 
     /*
@@ -759,24 +804,27 @@
             container.empty();
 
             if (names.length === 0) {
-                container.html('<p style="color: grey;">No supporters listed yet.</p>');
+                container.html('<p class="zx-help">' + t("No supporters listed yet.") + '</p>');
                 return;
             }
 
-            var html = '<div style="display: flex; flex-wrap: wrap; gap: 0.6em; padding: 0.5em 0;">';
+            var html = '<div class="ut-supporters">';
+            var seen = {};
+            names = names.filter(function(name) {
+                var key = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                if (seen[key]) { return false; }
+                seen[key] = true; return true;
+            });
             names.forEach(function(name) {
-                html += '<div class="ui black label" style="font-size: 1em; padding: 0.6em 1em;">'
-                    + '<i class="heart red icon" style="color: #db2828 !important; background-color: transparent !important;"></i>'
-                    + $('<span>').text(name).html()
-                    + '</div>';
+                html += '<span class="zx-badge" data-i18n-skip>' + ZxUI.esc(name) + '</span>';
             });
             html += '</div>';
-            html += '<p style="margin-top: 1.2em; color: grey; font-size: 0.9em;">'
-                + names.length + ' generous supporter' + (names.length !== 1 ? 's' : '') + ' and counting &mdash; thank you!'
+            html += '<p class="zx-help" style="margin-top: var(--zx-space-4);">'
+                + (names.length !== 1 ? tf("{0} generous supporters and counting. Thank you!", names.length) : tf("{0} generous supporter and counting. Thank you!", names.length))
                 + '</p>';
             container.html(html);
         }).fail(function() {
-            $("#supportersList").html('<p style="color: grey;">Unable to load supporters list.</p>');
+            $("#supportersList").html('<p class="zx-help">' + t("Unable to load the supporters list.") + '</p>');
         });
     }
 

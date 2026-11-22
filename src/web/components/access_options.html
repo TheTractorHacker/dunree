@@ -1,30 +1,34 @@
-<h2>Rule options</h2>
-<p>Extra, optional settings of the selected access rule. Nothing here is active until you change it.</p>
-<div class="ui divider"></div>
+<section class="zx-card">
+    <div class="zx-card__head"><h3 class="zx-card__title">Order</h3><p class="zx-card__desc">The default rule is always listed first. The order is saved on the server.</p></div>
+    <div class="zx-card__body">
+        <div class="zx-btn-row" id="aoOrderBtns">
+            <button class="zx-btn zx-btn--secondary" id="aoUp"><i class="arrow up icon" aria-hidden="true"></i> Move up</button>
+            <button class="zx-btn zx-btn--secondary" id="aoDown"><i class="arrow down icon" aria-hidden="true"></i> Move down</button>
+            <button class="zx-btn zx-btn--secondary" id="aoSortName"><i class="sort alphabet down icon" aria-hidden="true"></i> Sort by name</button>
+            <button class="zx-btn zx-btn--secondary" id="aoDup"><i class="copy outline icon" aria-hidden="true"></i> Duplicate this rule</button>
+        </div>
+    </div>
+</section>
 
-<h4>Rule list</h4>
-<div class="ui small buttons" id="aoOrderBtns">
-    <button class="ui basic button" id="aoUp"><i class="arrow up icon"></i> Move up</button>
-    <button class="ui basic button" id="aoDown"><i class="arrow down icon"></i> Move down</button>
-    <button class="ui basic button" id="aoSortName"><i class="sort alphabet down icon"></i> Sort by name</button>
-</div>
-<button class="ui small basic button" id="aoDup"><i class="copy outline icon"></i> Duplicate this rule</button>
-<p><small>The default rule is always listed first. Order is saved on the server.</small></p>
-<div class="ui divider"></div>
+<section class="zx-card">
+    <div class="zx-card__head"><h3 class="zx-card__title">Blocked connections</h3><p class="zx-card__desc">What a blocked visitor sees.</p></div>
+    <div class="zx-card__body">
+        <div class="ui toggle checkbox"><input type="checkbox" id="aoDrop"><label>Close the connection without any response instead of showing the 403 page (blacklist and whitelist rejections)</label></div>
+    </div>
+</section>
 
-<h4>Close the connection of blocked clients</h4>
-<div class="ui toggle checkbox"><input type="checkbox" id="aoDrop"><label>Drop the TCP connection without any HTTP response instead of showing the 403 page (blacklist and whitelist rejections)</label></div>
-<div class="ui divider"></div>
-
-<h4>Challenge countries</h4>
-<p>Visitors from these countries must solve the CAPTCHA of the proxy rule instead of being blocked. Blacklisted IPs and countries are still blocked.
-    A CAPTCHA provider must be configured on the proxy rule, otherwise visitors from these countries are <b>blocked</b>.</p>
-<div id="aoWarn" class="ui warning message" style="display:none"></div>
-<div id="aoChallenge"></div>
-<div class="ui action input">
-    <input type="text" id="aoCc" maxlength="2" placeholder="Country code, e.g. cn" style="width:12em">
-    <button class="ui basic button" id="aoCcAdd"><i class="plus icon"></i> Add</button>
-</div>
+<section class="zx-card">
+    <div class="zx-card__head"><h3 class="zx-card__title">Challenge countries</h3>
+        <p class="zx-card__desc">Visitors from these countries must solve the CAPTCHA of the proxy rule instead of being blocked. Blacklisted IPs and countries are still blocked. Without a CAPTCHA provider on the proxy rule, these visitors are <b>blocked</b>.</p></div>
+    <div class="zx-card__body">
+        <div id="aoWarn" class="zx-callout zx-callout--warn" style="display:none"></div>
+        <div id="aoChallenge" class="aoTags"></div>
+        <div class="ui action input">
+            <input type="text" id="aoCc" maxlength="2" placeholder="Country code, e.g. cn" style="width:12em" aria-label="Country code">
+            <button class="ui basic button" id="aoCcAdd"><i class="plus icon"></i> Add</button>
+        </div>
+    </div>
+</section>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
@@ -62,7 +66,7 @@
             Object.keys(d.Countries || {}).sort().forEach(function (cc) {
                 h += '<a class="ui label">' + esc(cc.toUpperCase()) + ' <i class="delete icon aoCcDel" data-cc="' + esc(cc) + '"></i></a>';
             });
-            $("#aoChallenge").html(h || "<p><i>No challenge countries.</i></p>");
+            $("#aoChallenge").html(h || '<p class="zx-help">No challenge countries yet.</p>');
             var hw = d.HostsWithoutCaptcha || [];
             if (Object.keys(d.Countries || {}).length && hw.length) {
                 $("#aoWarn").html("No CAPTCHA configured on: <b>" + hw.map(esc).join(", ") + "</b>. Challenged visitors will be blocked there.").show();

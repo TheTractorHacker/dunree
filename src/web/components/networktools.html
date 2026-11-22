@@ -1,173 +1,274 @@
+<style>
+    /* Network Tools: tool cards inside the tab panels (kit tokens only) */
+    #networktool .ui.bottom.attached.tab.segment { width: 100% !important; max-width: 100%; }
+    #networktool .ntStack { display: flex; flex-direction: column; gap: var(--zx-space-4); }
+    #networktool .ntStack > .zx-card { margin: 0; }
+    #networktool .ntStack .ui.form .field > label { margin-bottom: 4px; }
+    #networktool .ntStack .ui.form .zx-form-grid { display: flex; flex-wrap: wrap; gap: var(--zx-space-3) var(--zx-space-4); align-items: flex-end; }
+    #networktool .ntStack .ui.form .zx-form-grid > .field { margin: 0; flex: 1 1 13rem; min-width: 0; }
+    #networktool .ntStack .ui.form .zx-form-grid > .field.ntAction { flex: 0 0 auto; }
+    #networktool .ntStack .ntAction .ui.button { margin: 0; }
+    #networktool .ntStack .zx-btn-row { margin-top: var(--zx-space-2); }
+    #networktool .ntStack .zx-btn-row .ui.button { margin: 0; }
+    #networktool .ntStack .ui.form { margin: 0; }
+    #networktool .ntStack .ntHint { margin: var(--zx-space-1) 0 0; }
+    #networktool .ntStack .ui.form .inline.fields, #networktool .ntStack .ntChecks { display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-5); margin: var(--zx-space-3) 0 0; }
+    #networktool .ntStack .ntChecks .field { margin: 0; }
+    #networktool .ntLaunch { list-style: none; margin: 0; padding: 0; }
+    #networktool .ntLaunch li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
+    #networktool .ntLaunch li:first-child { padding-top: 0; }
+    #networktool .ntLaunch li:last-child { border-bottom: 0; padding-bottom: 0; }
+    #networktool .ntLaunch__icon { flex: 0 0 auto; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--zx-radius-md); background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
+    #networktool .ntLaunch__icon i.icon { margin: 0; }
+    #networktool .ntLaunch__text { flex: 1 1 14rem; min-width: 0; }
+    #networktool .ntLaunch__title { display: block; font-weight: 600; color: var(--zx-text); }
+    #networktool .ntLaunch__desc { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #networktool .ntKeys { display: grid; grid-template-columns: auto 1fr; gap: var(--zx-space-1) var(--zx-space-4); margin: 0; font-size: var(--zx-fs-sm); }
+    #networktool .ntKeys dt { color: var(--zx-text); font-weight: 400; }
+    #networktool .ntKeys dd { margin: 0; text-align: right; }
+    #networktool kbd { font-family: var(--zx-font-mono); font-size: 0.9em; padding: 1px 6px; border: 1px solid var(--zx-border-strong); border-bottom-width: 2px; border-radius: var(--zx-radius-sm); background: var(--zx-surface-2); color: var(--zx-text); }
+    #networktool #traceroute_results { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); line-height: 1.5; background: var(--zx-surface-2) !important; border-color: var(--zx-border) !important; resize: none; min-height: 12rem; white-space: pre; overflow: auto; }
+    /* one control height for inputs and selects; joined input + button become input and button with a gap */
+    #networktool .ui.form select { height: var(--zx-control-h); }
+    #networktool .ui.form input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=search]) { height: var(--zx-control-h); padding-top: 0; padding-bottom: 0; }
+    #networktool .ui.action.input { display: flex; gap: var(--zx-space-2); }
+    #networktool .ui.action.input > input { flex: 1 1 auto; min-width: 0; border-radius: var(--zx-radius-md) !important; }
+    #networktool .ui.action.input > .button { flex: 0 0 auto; margin: 0 !important; border-radius: var(--zx-radius-md) !important; }
+    #networktool .ntStack .zx-empty--inline { padding: var(--zx-space-4); }
+    #networktool .ntStack .zx-empty--inline .zx-empty__text { margin-bottom: var(--zx-space-2); }
+    #networktool .ntStack .zx-card .zx-toggle-row { padding: 0 0 var(--zx-space-2); border: 0; }
+    #networktool .ntStack .zx-card .zx-disclosure { margin: 0; border-top: 0; }
+    #networktool .ntStack .zx-card .zx-disclosure > summary { padding-left: 0; }
+    #networktool .ntStack .ui.form .field.zx-field { margin: 0; }
+    #networktool .ntStack .zx-error { margin: var(--zx-space-1) 0 0; }
+    #networktool .ntResult { margin-top: var(--zx-space-3); }
+    #networktool .ntResult:empty, #networktool .zx-table-wrap:has(> table[style*="display: none"]) { display: none; }
+    #networktool .ntResult table.zx-table td:first-child { color: var(--zx-text-muted); white-space: nowrap; }
+    #networktool .ntResult table.zx-table td { overflow-wrap: anywhere; }
+    #networktool .ntBadge { font-weight: 400; }
+    #networktool #websshTool.ntOff { opacity: 0.6; pointer-events: none; user-select: none; }
+    @media (max-width: 748px) { #networktool .ntStack .zx-btn-row .ui.button, #networktool .ntStack .ui.form .zx-form-grid > .field.ntAction, #networktool .ntStack .ntAction .ui.button { width: 100%; flex: 1 1 100%; } }
+</style>
 <div class="standardContainer">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
-            <h2 class="zx-page-header__title">Network Tools</h2>
-            <p class="zx-page-header__sub">Find and reach devices on your network, run connection diagnostics, calculate subnets and answer local DNS names.</p>
+            <h2 class="zx-page-header__title">Network tools</h2>
+            <p class="zx-page-header__sub">Find devices, test connections, calculate subnets and answer local DNS names.</p>
         </div>
     </header>
 
-
     <div class="ui top attached tabular menu zx-tabscroll">
-        <a class="nettools item active bluefont" data-tab="tab1">Discovery &amp; Lookup</a>
-        <a class="nettools item bluefont" data-tab="tab2">Connection</a>
-        <a class="nettools item bluefont" data-tab="tab3">Diagnostics</a>
-        <a class="nettools item bluefont" data-tab="tab4">Calculators</a>
-        <a class="nettools item bluefont" data-tab="tab5">DNS Responder</a>
+        <a class="nettools item active bluefont" data-tab="tab1"><i class="search icon"></i>Discovery &amp; lookup</a>
+        <a class="nettools item bluefont" data-tab="tab2"><i class="plug icon"></i>Connection</a>
+        <a class="nettools item bluefont" data-tab="tab3"><i class="stethoscope icon"></i>Diagnostics</a>
+        <a class="nettools item bluefont" data-tab="tab4"><i class="calculator icon"></i>Calculators</a>
+        <a class="nettools item bluefont" data-tab="tab5"><i class="server icon"></i>DNS responder</a>
     </div>
 
     <div class="ui bottom attached tab segment nettoolstab active" data-tab="tab1">
-        <!-- MDNS Scanner-->
-        <h2>Multicast DNS (mDNS) Scanner</h2>
-        <p>Discover mDNS enabled service in this gateway forwarded network</p>
-        <button class="ui basic button" onclick="launchToolWithSize('./tools/mdns.html',1000, 640);">View Discovery</button>
-        <div class="ui divider"></div>
-        <div class="ui stackable grid">
-            <div class="eight wide column">
-                 <!-- IP Scanner-->
-                <h2>IP Scanner</h2>
-                <p>Discover local area network devices by pinging them one by one</p>
-                <button class="ui basic button" onclick="launchToolWithSize('./tools/ipscan.html',1000, 640);">Start Scanner</button>
-            </div>  
-            <div class="eight wide column">
-                 <!-- Port Scanner-->
-                <h2>Port Scanner</h2>
-                <p>Scan for open ports on a given IP address</p>
-                <button class="ui basic button" onclick="launchToolWithSize('./tools/portscan.html',1000, 640);">Start Scanner</button>
+      <div class="ntStack">
+        <section class="zx-card" aria-labelledby="ntScanTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntScanTitle">Network scanners</h3>
+                <p class="zx-card__desc">Each scanner opens in its own window.</p>
             </div>
-        </div>  
-       
-        <div class="ui divider"></div>
+            <div class="zx-card__body">
+                <ul class="ntLaunch">
+                    <li>
+                        <span class="ntLaunch__icon" aria-hidden="true"><i class="wifi icon"></i></span>
+                        <span class="ntLaunch__text"><span class="ntLaunch__title">mDNS scanner</span><span class="ntLaunch__desc">Find mDNS services on the network behind this gateway.</span></span>
+                        <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/mdns.html',1000, 640);">View discovery</button>
+                    </li>
+                    <li>
+                        <span class="ntLaunch__icon" aria-hidden="true"><i class="sitemap icon"></i></span>
+                        <span class="ntLaunch__text"><span class="ntLaunch__title">IP scanner</span><span class="ntLaunch__desc">Find devices on the local network by pinging each address.</span></span>
+                        <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/ipscan.html',1000, 640);">Start scanner</button>
+                    </li>
+                    <li>
+                        <span class="ntLaunch__icon" aria-hidden="true"><i class="crosshairs icon"></i></span>
+                        <span class="ntLaunch__text"><span class="ntLaunch__title">Port scanner</span><span class="ntLaunch__desc">Check which ports are open on an IP address.</span></span>
+                        <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/portscan.html',1000, 640);">Start scanner</button>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
         <!-- Traceroute-->
-        <h2>Traceroute / Ping</h2>
-        <p>Trace the network nodes that your packets hops through</p>
-        <div class="ui form">
-            <div class="two fields">
-                <div class="field">
-                    <label>Target domain or IP</label>
-                    <input type="text" id="traceroute_domain" placeholder="1.1.1.1" onkeypress="if(event.keyCode === 13) { traceroute(); }">
-                </div>
-                <div class="field">
-                  <label>Max Hops</label>
-                  <input type="number" min="1" step="1" id="traceroute_maxhops" placeholder="64" value="64">
+        <section class="zx-card" aria-labelledby="ntTraceTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntTraceTitle">Traceroute and ping</h3>
+                <p class="zx-card__desc">Trace the network hops your packets take, or check that a target answers.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field">
+                            <label for="traceroute_domain">Target domain or IP</label>
+                            <input type="text" id="traceroute_domain" placeholder="1.1.1.1" onkeypress="if(event.keyCode === 13) { traceroute(); }">
+                        </div>
+                        <div class="field">
+                            <label for="traceroute_maxhops">Max hops</label>
+                            <input type="number" min="1" step="1" id="traceroute_maxhops" placeholder="64" value="64">
+                        </div>
+                    </div>
+                    <div class="zx-btn-row">
+                        <button class="ui primary button" onclick="traceroute();"><i class="location arrow icon"></i> Start tracing</button>
+                        <button class="zx-btn zx-btn--secondary" onclick="ping();"><i class="circle outline icon"></i> Ping</button>
+                    </div>
+                    <div class="field" style="margin-top: var(--zx-space-4);">
+                        <label for="traceroute_results">Results</label>
+                        <textarea id="traceroute_results" rows="8" readonly aria-live="polite" placeholder="Results appear here after you start a trace or a ping."></textarea>
+                    </div>
                 </div>
             </div>
-            <button class="ui basic button" onclick="traceroute();"><i class="ui blue location arrow icon"></i> Start Tracing</button>
-            <button class="ui basic button" onclick="ping();"><i class="ui teal circle outline icon"></i> Ping</button>
-            <br><br>
-            <div class="field">
-                <label>Results</label>
-                <textarea id="traceroute_results" rows="10" readonly aria-live="polite"></textarea>
-            </div>
-            
-        </div>
-        <div class="ui divider"></div>
+        </section>
+
         <!-- Whois-->
-        <h2>Whois</h2>
-        <p>Check the owner and registration information of a given domain</p>
-        <div class="ui icon input">
-            <input id="whoisdomain" type="text" aria-label="Domain or IP" onkeypress="if(event.keyCode === 13) { performWhoisLookup(); }" placeholder="Domain or IP">
-            <i onclick="performWhoisLookup();" class="circular search link icon"></i>
-        </div><br>
-        <small>Lookup might take a few minutes to complete</small>
-        <br>
-        <div id="whois_table"></div>
+        <section class="zx-card" aria-labelledby="ntWhoisTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntWhoisTitle">Whois</h3>
+                <p class="zx-card__desc">Look up who owns and registered a domain or IP address.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="field">
+                        <label for="whoisdomain">Domain or IP</label>
+                        <div class="ui action fluid input">
+                            <input id="whoisdomain" type="text" onkeypress="if(event.keyCode === 13) { performWhoisLookup(); }" placeholder="example.com">
+                            <button class="ui primary button" type="button" onclick="performWhoisLookup();"><i class="search icon"></i> Look up</button>
+                        </div>
+                        <p class="zx-help ntHint">A lookup can take a few minutes to complete.</p>
+                    </div>
+                </div>
+                <div id="whois_table" class="ntResult zx-table-wrap zx-table-wrap--flush"></div>
+            </div>
+        </section>
+      </div>
     </div>
 
     <div class="ui bottom attached tab segment nettoolstab" data-tab="tab2">
-        <div id="websshTool" style="position: relative;">
-            <h2>Web SSH</h2>
-            <p>Connect to a network node within the local area network of the gateway</p>
-            <div class="ui form">
-                <div class="three fields">
-                    <div class="field">
-                        <label>Server Name or IP Address</label>
-                        <input type="text" id="ssh_server" placeholder="e.g. example.com or 192.168.1.1">
-                    </div>
-                    <div class="field">
-                        <label>Port Number</label>
-                        <input type="number" id="ssh_port" placeholder="e.g. 22 or 2022">
-                    </div>
-                    <div class="field">
-                        <label>Username</label>
-                        <input type="text" id="ssh_username" placeholder="root">
-                    </div>
-                </div>
+      <div class="ntStack">
+        <section class="zx-card" id="websshTool" aria-labelledby="ntSshTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntSshTitle">Web SSH</h3>
+                <p class="zx-card__desc">Open a terminal to a device on the local network of this gateway.</p>
             </div>
-            <button class="ui basic larger orange circular button" onclick="connectSSH();">Connect using SSH</button>
-            <div class="ui inverted message" style="display: block;">
-                Copy from Terminal <code style="float: right;">Ctrl + Insert</code><br>
-                Paste to Terminal <code style="float: right;">Shift + Insert</code>
-            </div>
-        </div>
-        <div class="ui divider"></div>
-        <h2>Forward Proxy</h2>
-        <p>Setup a basic HTTP forward proxy to access web server in another LAN<br>
-        To enable forward proxy in your domain, add a proxy rule to 127.0.0.1:{selected_port}</p>
-        <form class="ui form">
-            <div class="field">
-                <label>Listening Port</label>
-                <div class="ui action input">
-                    <input id="forwardProxyPort" type="number" placeholder="5587" step="1" min="1024" max="65535" value="5587">
-                    <button onclick="updateForwardProxyPort(); event.preventDefault();" class="ui basic button"><i class="ui green check icon"></i> Apply</button>
-                </div>
-            </div>
-            <div id="forwardProxyButtons" class="field">
-                <button onclick="toggleForwadProxy(true); event.preventDefault();" class="ui basic small green button startBtn"><i class="ui green arrow alternate circle up icon"></i>  Start</button>
-                <button onclick="toggleForwadProxy(false); event.preventDefault();" class="ui basic small red button stopBtn"><i class="ui red minus circle icon"></i>  Stop</button>
-            </div>
-        </form>
-        <div class="ui divider"></div>
-        <h2>Wake On LAN</h2>
-        <p>Wake up a remote server by WOL Magic Packet or an IoT device</p>
-        <div class="ui form">
-            <div class="two fields">
-                <div class="field">
-                  <input type="text" id="wol_servername" placeholder="Server Name">
-                </div>
-                <div class="field">
-                  <input type="text" id="wol_mac" placeholder="MAC Address">
-                </div>
-                <div class="field">
-                    <button class="ui basic right floated button" onclick="setWoLAddress();"><i class="ui blue add icon"></i> Add Address</button>
-                </div>
-            </div>
-        </div>
-        <div class="ui accordion">
-            <div class="title">
-                <i class="dropdown icon"></i>
-                Pick from mDNS scan results
-            </div>
-            <div class="content">
-                <div class="ui basic segment">
-                    <div class="ui selection fluid dropdown" id="mdnsWoL">
-                        <input type="hidden">
-                        <i class="dropdown icon"></i>
-                        <div class="default text">Select a server</div>
-                        <div class="menu" id="mdnsResultForWoL">
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field">
+                            <label for="ssh_server">Server name or IP address</label>
+                            <input type="text" id="ssh_server" placeholder="e.g. example.com or 192.168.1.1">
+                        </div>
+                        <div class="field">
+                            <label for="ssh_port">Port number</label>
+                            <input type="number" id="ssh_port" placeholder="e.g. 22 or 2022">
+                        </div>
+                        <div class="field">
+                            <label for="ssh_username">Username</label>
+                            <input type="text" id="ssh_username" placeholder="root">
                         </div>
                     </div>
-                    <br>
-                    <button class="ui basic button" onclick="updateMDNSListForWoL();"><i class="ui green refresh icon"></i> Refresh mDNS Results</button>
-                    <button class="ui basic button" onclick="selectMdnsResultForWol();"><i class="ui blue add icon"></i> Add from mDNS</button>
+                    <div class="zx-btn-row">
+                        <button class="ui primary button" onclick="connectSSH();"><i class="terminal icon"></i> Connect using SSH</button>
+                    </div>
+                </div>
+                <div class="zx-callout zx-callout--info" role="note" style="margin-top: var(--zx-space-4);">
+                    <div class="zx-callout__body">
+                        <span class="zx-callout__title">Terminal shortcuts</span>
+                        <dl class="ntKeys">
+                            <dt>Copy from terminal</dt><dd><kbd>Ctrl</kbd> + <kbd>Insert</kbd></dd>
+                            <dt>Paste to terminal</dt><dd><kbd>Shift</kbd> + <kbd>Insert</kbd></dd>
+                        </dl>
+                    </div>
                 </div>
             </div>
-        </div>
-       
-        
-        <table class="ui celled unstackable table">
-            <thead>
-                <tr><th>Server Name</th>
-                <th>MAC Address</th>
-                <th>Action</th>
-            </tr></thead>
-            <tbody id="wolAddressList">
-                <tr>
-                    <td colspan="3"><i class="ui green circle checkmark"></i> No stored MAC address</td>
-                </tr>
-            </tbody>
-        </table>
-        <button class="ui basic button" onclick="listWoL();"><i class="ui green refresh icon"></i> Refresh</button>
+        </section>
+
+        <section class="zx-card" aria-labelledby="ntFwdTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntFwdTitle">Forward proxy</h3>
+                <p class="zx-card__desc">A basic HTTP forward proxy to reach a web server in another network. To use it for a domain, add a proxy rule that points to <code>127.0.0.1:</code> and the port below.</p>
+            </div>
+            <div class="zx-card__body">
+                <form class="ui form" onsubmit="return false;">
+                    <div class="field" style="max-width: 24rem;">
+                        <label for="forwardProxyPort">Listening port</label>
+                        <div class="ui action fluid input">
+                            <input id="forwardProxyPort" type="number" placeholder="5587" step="1" min="1024" max="65535" value="5587">
+                            <button onclick="updateForwardProxyPort(); event.preventDefault();" class="zx-btn zx-btn--secondary"><i class="check icon"></i> Apply</button>
+                        </div>
+                        <p class="zx-help ntHint">A whole number from 1024 to 65535.</p>
+                    </div>
+                    <div id="forwardProxyButtons" class="zx-btn-row">
+                        <button onclick="toggleForwadProxy(true); event.preventDefault();" class="ui primary button startBtn"><i class="play icon"></i> Start</button>
+                        <button onclick="toggleForwadProxy(false); event.preventDefault();" class="ui basic red button stopBtn"><i class="stop icon"></i> Stop</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="zx-card" aria-labelledby="ntWolTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntWolTitle">Wake on LAN</h3>
+                <p class="zx-card__desc">Save devices and wake them up with a magic packet.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field">
+                            <label for="wol_servername">Server name</label>
+                            <input type="text" id="wol_servername" placeholder="e.g. nas">
+                        </div>
+                        <div class="field">
+                            <label for="wol_mac">MAC address</label>
+                            <input type="text" id="wol_mac" placeholder="aa:bb:cc:dd:ee:ff">
+                        </div>
+                        <div class="field ntAction">
+                            <button class="ui primary button" onclick="setWoLAddress();"><i class="add icon"></i> Add address</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui accordion">
+                    <div class="title">
+                        <i class="dropdown icon"></i>
+                        Pick from mDNS scan results
+                    </div>
+                    <div class="content">
+                        <div class="ui basic segment">
+                            <div class="ui selection fluid dropdown" id="mdnsWoL">
+                                <input type="hidden">
+                                <i class="dropdown icon"></i>
+                                <div class="default text">Select a server</div>
+                                <div class="menu" id="mdnsResultForWoL">
+                                </div>
+                            </div>
+                            <div class="zx-btn-row" style="margin-top: var(--zx-space-3);">
+                                <button class="zx-btn zx-btn--secondary" onclick="updateMDNSListForWoL();"><i class="refresh icon"></i> Refresh mDNS results</button>
+                                <button class="zx-btn zx-btn--secondary" onclick="selectMdnsResultForWol();"><i class="add icon"></i> Add from mDNS</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Saved Wake on LAN addresses" style="margin-top: var(--zx-space-3);">
+                    <table class="zx-table">
+                        <thead>
+                            <tr><th>Server name</th><th>MAC address</th><th class="zx-actions">Action</th></tr>
+                        </thead>
+                        <tbody id="wolAddressList">
+                            <tr>
+                                <td class="zx-empty-cell" colspan="3"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">No saved devices yet. Add a server name and its MAC address above.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="$('#wol_servername').trigger('focus');">Add a device</button></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="zx-btn-row" style="margin-top: var(--zx-space-3);">
+                    <button class="zx-btn zx-btn--secondary" onclick="listWoL();"><i class="refresh icon"></i> Refresh</button>
+                </div>
+            </div>
+        </section>
+      </div>
     </div>
 
     <!-- IPv4 / IPv6 calculators, see netcalc.html -->
@@ -184,66 +285,101 @@
 
     <!-- Diagnostics: DNS lookup, TLS certificate inspector, HTTP request tester -->
     <div class="ui bottom attached tab segment nettoolstab" data-tab="tab3">
-        <div class="ui basic message">
-            These tools make <b>Zoraxy</b> connect to the host you enter (admin only). Connections to cloud metadata and link-local addresses (<code>169.254.0.0/16</code>, <code>168.63.129.16</code>, <code>fd00:ec2::254</code>, <code>100.100.100.200</code>) are refused unless you tick the box below.
-            <div class="ui checkbox" style="margin-left: 1em;"><input type="checkbox" id="diagAllowMetadata"><label>Allow metadata / link-local addresses</label></div>
-        </div>
+      <div class="ntStack">
+        <section class="zx-card" aria-labelledby="ntSafeTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntSafeTitle">Allowed targets</h3>
+                <p class="zx-card__desc">These tools make Zoraxy connect to the host you enter (admin only). Connections to cloud metadata and link-local addresses are refused unless you allow them.</p>
+            </div>
+            <div class="zx-card__body">
+                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Allow metadata and link-local addresses</span><span class="zx-toggle-row__desc">Off by default. Turn it on only when you trust the target host.</span></span><input type="checkbox" class="zx-switch" role="switch" id="diagAllowMetadata"></label>
+                <details class="zx-disclosure">
+                    <summary>Which addresses are refused</summary>
+                    <div class="zx-disclosure__body"><code>169.254.0.0/16</code>, <code>168.63.129.16</code>, <code>fd00:ec2::254</code> and <code>100.100.100.200</code>.</div>
+                </details>
+            </div>
+        </section>
 
-        <h3 class="ui header">DNS Lookup</h3>
-        <div class="ui form">
-            <div class="fields">
-                <div class="six wide field"><label>Host</label><input type="text" id="diagDnsHost" placeholder="example.com" onkeypress="if(event.keyCode === 13) { diagDns(); }"></div>
-                <div class="six wide field"><label>DNS server (optional IP)</label><input type="text" id="diagDnsServer" placeholder="1.1.1.1"></div>
-                <div class="four wide field"><label>&nbsp;</label><button class="ui basic fluid button" onclick="diagDns();"><i class="search icon"></i> Lookup</button></div>
+        <section class="zx-card" aria-labelledby="ntDnsTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntDnsTitle">DNS lookup</h3>
+                <p class="zx-card__desc">See which records a DNS server returns for a host name.</p>
             </div>
-        </div>
-        <div style="overflow-x:auto;"><table class="ui celled unstackable compact table" id="diagDnsResult" style="display:none;"><thead><tr><th>Type</th><th>Records</th></tr></thead><tbody></tbody></table></div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field zx-field"><label for="diagDnsHost">Host</label><input type="text" id="diagDnsHost" placeholder="example.com" onkeypress="if(event.keyCode === 13) { diagDns(); }"></div>
+                        <div class="field zx-field"><label for="diagDnsServer">DNS server (optional IP)</label><input type="text" id="diagDnsServer" placeholder="1.1.1.1"></div>
+                        <div class="field ntAction"><button class="ui primary button" onclick="diagDns();"><i class="search icon"></i> Lookup</button></div>
+                    </div>
+                </div>
+                <div class="zx-table-wrap zx-table-wrap--flush ntResult" tabindex="0" role="region" aria-label="DNS lookup result"><table class="zx-table" id="diagDnsResult" style="display:none;"><thead><tr><th>Type</th><th>Records</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </section>
 
-        <div class="ui divider"></div>
-        <h3 class="ui header">TLS Certificate Inspector</h3>
-        <div class="ui form">
-            <div class="fields">
-                <div class="six wide field"><label>Host</label><input type="text" id="diagTlsHost" placeholder="example.com" onkeypress="if(event.keyCode === 13) { diagTls(); }"></div>
-                <div class="three wide field"><label>Port</label><input type="number" id="diagTlsPort" value="443" min="1" max="65535"></div>
-                <div class="four wide field"><label>SNI (optional)</label><input type="text" id="diagTlsSni" placeholder="same as host"></div>
-                <div class="three wide field"><label>&nbsp;</label><button class="ui basic fluid button" onclick="diagTls();"><i class="certificate icon"></i> Inspect</button></div>
+        <section class="zx-card" aria-labelledby="ntTlsTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntTlsTitle">TLS certificate inspector</h3>
+                <p class="zx-card__desc">Check the certificate a server presents and whether it is trusted.</p>
             </div>
-        </div>
-        <div id="diagTlsResult"></div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field zx-field"><label for="diagTlsHost">Host</label><input type="text" id="diagTlsHost" placeholder="example.com" onkeypress="if(event.keyCode === 13) { diagTls(); }"></div>
+                        <div class="field zx-field"><label for="diagTlsPort">Port</label><input type="number" id="diagTlsPort" value="443" min="1" max="65535"></div>
+                        <div class="field zx-field"><label for="diagTlsSni">SNI (optional)</label><input type="text" id="diagTlsSni" placeholder="same as host"></div>
+                        <div class="field ntAction"><button class="ui primary button" onclick="diagTls();"><i class="certificate icon"></i> Inspect</button></div>
+                    </div>
+                </div>
+                <div id="diagTlsResult" class="ntResult"></div>
+            </div>
+        </section>
 
-        <div class="ui divider"></div>
-        <h3 class="ui header">HTTP Request Tester</h3>
-        <div class="ui form">
-            <div class="fields">
-                <div class="nine wide field"><label>URL</label><input type="text" id="diagHttpUrl" placeholder="https://example.com/" onkeypress="if(event.keyCode === 13) { diagHttp(); }"></div>
-                <div class="three wide field"><label>Method</label><select id="diagHttpMethod" class="ui dropdown"><option>GET</option><option>HEAD</option><option>OPTIONS</option></select></div>
-                <div class="four wide field"><label>&nbsp;</label><button class="ui basic fluid button" onclick="diagHttp();"><i class="exchange icon"></i> Send</button></div>
+        <section class="zx-card" aria-labelledby="ntHttpTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="ntHttpTitle">HTTP request tester</h3>
+                <p class="zx-card__desc">Send one request and see the status and timing of every hop.</p>
             </div>
-            <div class="inline fields">
-                <div class="field"><div class="ui checkbox"><input type="checkbox" id="diagHttpFollow" checked><label>Follow redirects (max 10)</label></div></div>
-                <div class="field"><div class="ui checkbox"><input type="checkbox" id="diagHttpSkipVerify"><label>Ignore TLS certificate errors</label></div></div>
+            <div class="zx-card__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field zx-field"><label for="diagHttpUrl">URL</label><input type="text" id="diagHttpUrl" placeholder="https://example.com/" onkeypress="if(event.keyCode === 13) { diagHttp(); }"></div>
+                        <div class="field zx-field"><label for="diagHttpMethod">Method</label><select id="diagHttpMethod"><option>GET</option><option>HEAD</option><option>OPTIONS</option></select></div>
+                        <div class="field ntAction"><button class="ui primary button" onclick="diagHttp();"><i class="exchange icon"></i> Send</button></div>
+                    </div>
+                    <div class="ntChecks">
+                        <div class="field"><div class="ui checkbox"><input type="checkbox" id="diagHttpFollow" checked><label>Follow redirects (max 10)</label></div></div>
+                        <div class="field"><div class="ui checkbox"><input type="checkbox" id="diagHttpSkipVerify"><label>Ignore TLS certificate errors</label></div></div>
+                    </div>
+                </div>
+                <div class="zx-table-wrap zx-table-wrap--flush ntResult" tabindex="0" role="region" aria-label="HTTP request result"><table class="zx-table" id="diagHttpResult" style="display:none;"><thead><tr><th>#</th><th>URL</th><th>Status</th><th>Remote</th><th class="zx-num">DNS</th><th class="zx-num">Connect</th><th>TLS</th><th class="zx-num">First byte</th><th class="zx-num">Total</th></tr></thead><tbody></tbody></table></div>
             </div>
-        </div>
-        <div style="overflow-x:auto;"><table class="ui celled unstackable compact table" id="diagHttpResult" style="display:none;"><thead><tr><th>#</th><th>URL</th><th>Status</th><th>Remote</th><th>DNS</th><th>Connect</th><th>TLS</th><th>First byte</th><th>Total</th></tr></thead><tbody></tbody></table></div>
+        </section>
+      </div>
     </div>
 </div>
+
 
 <script>
     // Diagnostics tab (DNS lookup / TLS inspector / HTTP tester). All output is inserted with .text() (remote data is untrusted)
     //Empty required input: mark the field, focus it and say what is missing (no silent dead buttons)
     function ntRequire(inputSel, message){
         let el = $(inputSel);
+        let zxRow = el.closest(".zx-field");
         if (String(el.val()).trim() != ""){
             el.closest(".field, .ui.input").removeClass("error");
+            if (zxRow.length){ ZxUI.field(el).clearError(); }
             return true;
         }
         el.closest(".field, .ui.input").addClass("error");
         el.trigger("focus");
-        msgbox(message, false, 5000);
+        //fields of the diagnostics tab show the problem next to the field, the others use a toast
+        if (zxRow.length){ ZxUI.field(el).setError(message); } else { msgbox(message, false, 5000); }
         return false;
     }
     $(document).on("input", "#networktool .field.error input, #networktool .ui.input.error input", function(){
         $(this).closest(".field, .ui.input").removeClass("error");
+        if ($(this).closest(".zx-field").length){ ZxUI.field(this).clearError(); }
     });
 
     function diagCommon(){
@@ -268,7 +404,7 @@
             data.forEach(function(r){
                 let td = $("<td></td>");
                 if (r.Records.length == 0){
-                    td.append($("<span style='color:#999;'></span>").text(r.Error ? r.Error : "none"));
+                    td.append($("<span class='zx-help'></span>").text(r.Error ? r.Error : "none"));
                 }
                 r.Records.forEach(function(rec){ td.append($("<div></div>").append($("<code></code>").text(rec))); });
                 tbody.append($("<tr></tr>").append(diagCell(r.Type), td));
@@ -294,7 +430,7 @@
             if (!data.HostnameOK){ summary.append($("<div></div>").text("The certificate does not cover " + data.ServerName)); }
             box.append(summary);
             (data.Chain || []).forEach(function(c, i){
-                let t = $("<table class='ui definition compact unstackable table'></table>");
+                let t = $("<table class='zx-table zx-table--compact'></table>");
                 function row(k, v){ t.append($("<tr></tr>").append($("<td></td>").text(k), $("<td></td>").text(v))); }
                 row("Certificate " + (i + 1), c.Subject);
                 row("Issuer", c.Issuer + (c.SelfSigned ? " (self signed)" : ""));
@@ -304,7 +440,7 @@
                 row("Key / signature", c.KeyAlgorithm + " / " + c.SigAlgorithm);
                 row("Serial", c.SerialHex);
                 row("SHA-256", c.SHA256);
-                box.append($("<div style='overflow-x:auto;'></div>").append(t));
+                box.append($("<div class='zx-table-wrap zx-table-wrap--flush' style='margin-top:var(--zx-space-3);' tabindex='0' role='region' aria-label='Certificate details'></div>").append(t));
             });
         });
     }
@@ -320,8 +456,8 @@
             data.Hops.forEach(function(h, i){
                 let status = h.Error ? h.Error : (h.Status + (h.Location ? " -> " + h.Location : ""));
                 tbody.append($("<tr></tr>").append(diagCell(i + 1), diagCell(h.URL), diagCell(status), diagCell(h.RemoteAddr || ""),
-                    diagCell(h.DNSMS + " ms"), diagCell(h.ConnectMS + " ms"), diagCell(h.TLSVersion ? (h.TLSMS + " ms " + h.TLSVersion) : "-"),
-                    diagCell(h.TTFBMS + " ms"), diagCell(h.TotalMS + " ms")));
+                    diagCell(h.DNSMS + " ms").addClass("zx-num"), diagCell(h.ConnectMS + " ms").addClass("zx-num"), diagCell(h.TLSVersion ? (h.TLSMS + " ms " + h.TLSVersion) : "-"),
+                    diagCell(h.TTFBMS + " ms").addClass("zx-num"), diagCell(h.TotalMS + " ms").addClass("zx-num")));
             });
             $("#diagHttpResult").show();
         });
@@ -553,11 +689,13 @@ function listWoL(callback) {
             let thisMacAddr = data[i].MacAddr
             $("#wolAddressList").append(`
                 <tr class="wolmacentry" mac="${ZxUI.esc(thisMacAddr)}">
-                    <td>${ZxUI.esc(thisServerName)}</td>
-                    <td>${ZxUI.esc(thisMacAddr)}</td>
-                    <td>
-                        <button data-mac="${ZxUI.esc(thisMacAddr)}" onclick="wakeWoL(this.dataset.mac, this);" class="ui tiny basic button"><i class="green power icon"></i>Wake on LAN</button>
-                        <button data-mac="${ZxUI.esc(thisMacAddr)}" data-name="${ZxUI.esc(thisServerName)}" aria-label="Delete this record" onclick="delWoLAddr(this.dataset.mac, this.dataset.name);" class="ui tiny red basic icon button"><i class="red trash icon"></i></button>
+                    <td data-label="Server name">${ZxUI.esc(thisServerName)}</td>
+                    <td data-label="MAC address" class="zx-mono">${ZxUI.esc(thisMacAddr)}</td>
+                    <td class="zx-actions" data-label="Action">
+                        <div class="zx-row-actions">
+                        <button data-mac="${ZxUI.esc(thisMacAddr)}" onclick="wakeWoL(this.dataset.mac, this);" class="ui tiny basic button"><i class="power icon"></i>Wake on LAN</button>
+                        <button data-mac="${ZxUI.esc(thisMacAddr)}" data-name="${ZxUI.esc(thisServerName)}" aria-label="Delete this record" title="Delete" onclick="delWoLAddr(this.dataset.mac, this.dataset.name);" class="ui tiny red basic icon button"><i class="trash icon"></i></button>
+                        </div>
                     </td>
 
                 </tr>
@@ -566,7 +704,7 @@ function listWoL(callback) {
 
         if (data.length == 0){
             $("#wolAddressList").append(`<tr>
-                <td colspan="3"><i class="ui green circle check icon"></i> No stored MAC address for Wake On Lan (WoL)</td>
+                <td class="zx-empty-cell" colspan="3"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">No saved devices yet. Add a server name and its MAC address above.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="$('#wol_servername').trigger('focus');">Add a device</button></div></td>
             </tr>`);
         }   
 
@@ -684,7 +822,7 @@ function renderWhoisDomainTable(jsonData) {
         return date.toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    var table = $('<table>').addClass('ui definition table');
+    var table = $('<table>').addClass('zx-table');
 
     // Create table body
     var body = $('<tbody>');

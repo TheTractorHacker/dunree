@@ -1,34 +1,35 @@
-<h3>Admin accounts</h3>
-<p>Create additional accounts for the admin panel. <b>admin</b> accounts can change everything; <b>viewer</b> accounts are
-    read-only (every change is refused, and configuration export, account management and the web terminal are closed).
-    Changing a password, disabling, renaming or deleting an account ends its sessions. The last enabled admin cannot be
-    removed, disabled or demoted. Forgot everything? Start Zoraxy once with <code>-reset_ac</code>.</p>
 <div id="usrMsg" class="ui negative message" style="display:none"></div>
-<div style="overflow-x:auto">
-    <table class="ui unstackable celled table">
-        <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody id="usrRows"><tr><td colspan="4">Loading...</td></tr></tbody>
-    </table>
-</div>
-<h4>Add account</h4>
-<div class="ui form">
-    <div class="four fields">
-        <div class="field"><input type="text" id="usrNewName" placeholder="username" autocomplete="off"></div>
-        <div class="field"><input type="password" id="usrNewPw" placeholder="password (8+ characters)" autocomplete="new-password"></div>
-        <div class="field">
-            <select id="usrNewRole" class="ui dropdown"><option value="viewer">viewer (read-only)</option><option value="admin">admin</option></select>
-        </div>
-        <div class="field"><button class="ui basic green button" id="usrAdd"><i class="plus icon"></i> Add</button></div>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Admin accounts</h3>
+        <p class="zx-card__desc">Admins can change everything. Viewers are read-only. Changing a password, disabling, renaming or deleting an account signs it out.</p>
     </div>
-</div>
-<div class="ui divider"></div>
+    <div class="zx-card__body">
+        <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Admin accounts">
+            <table class="zx-table">
+                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th class="zx-actions">Actions</th></tr></thead>
+                <tbody id="usrRows"><tr><td colspan="4" class="zx-empty-cell">Loading...</td></tr></tbody>
+            </table>
+        </div>
+        <p class="zx-help">The last enabled admin cannot be removed, disabled or demoted. Locked out? Start Zoraxy once with the reset option (<code>-reset_ac</code>).</p>
+        <h4 class="zx-subhead">Add account</h4>
+        <div class="ui form">
+            <div class="zx-form-grid">
+                <div class="field zx-field"><label for="usrNewName">Username</label><input type="text" id="usrNewName" placeholder="username" autocomplete="off"></div>
+                <div class="field zx-field"><label for="usrNewPw">Password</label><input type="password" id="usrNewPw" placeholder="8 or more characters" autocomplete="new-password"></div>
+                <div class="field zx-field"><label for="usrNewRole">Role</label><select id="usrNewRole"><option value="viewer">viewer (read-only)</option><option value="admin">admin</option></select></div>
+                <div class="zx-field zx-field--btn"><button class="zx-btn zx-btn--primary" id="usrAdd"><i class="plus icon" aria-hidden="true"></i> Add</button></div>
+            </div>
+            <p class="zx-help" id="usrAddHint" style="display:none">Accounts are not available while the admin panel runs without a login.</p>
+        </div>
+    </div>
+</section>
 <section class="zx-card" id="sesCard" aria-labelledby="sesTitle" hidden>
-    <div class="zx-card__head"><h3 class="zx-card__title" id="sesTitle">Sign-in session</h3></div>
-    <p class="zx-card__desc">How long an admin stays signed in on this browser. A new value applies to every sign-in from now on, no restart needed.
-        <b>Accounts that are already signed in keep the expiry they got when they signed in.</b></p>
+    <div class="zx-card__head"><h3 class="zx-card__title" id="sesTitle">Sign-in session</h3>
+        <p class="zx-card__desc">How long an admin stays signed in. A new value applies to later sign-ins; accounts already signed in keep their expiry.</p></div>
     <div class="zx-card__body">
         <div class="ui form" id="sesForm">
-            <div class="two fields">
+            <div class="zx-form-grid">
                 <div class="field zx-field">
                     <label for="sesMin">Stay signed in for</label>
                     <div class="zx-inputgroup"><input type="number" id="sesMin" min="5" max="43200" step="1" inputmode="numeric"><span class="zx-inputgroup__unit">minutes</span></div>
@@ -40,20 +41,28 @@
                     <p class="zx-help" id="sesDaysHelp">1 to 365</p>
                 </div>
             </div>
-            <div class="inline field"><div class="ui checkbox"><input type="checkbox" id="sesSlide"><label for="sesSlide">Keep me signed in while I am active</label></div></div>
-            <p class="zx-help" style="margin-top:-.5em">Opening a page or changing something extends the session (checked every few minutes). A page left open that only refreshes its numbers does not count, so an idle admin is still signed out.</p>
+            <label class="zx-toggle-row" for="sesSlide">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Keep me signed in while I am active</span><span class="zx-toggle-row__desc">Opening a page or changing something extends the session. A page left open that only refreshes its numbers does not count.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="sesSlide">
+            </label>
         </div>
-        <p class="zx-help" id="sesNow" role="status" style="margin-top:1em"></p>
+        <p class="zx-help" id="sesNow" role="status"></p>
     </div>
 </section>
-<div class="ui divider"></div>
-<h4>Audit log (recent)</h4>
-<div style="overflow-x:auto">
-    <table class="ui unstackable very basic compact table">
-        <thead><tr><th>Time</th><th>User</th><th>Event</th><th>Target</th><th>From</th><th>Detail</th></tr></thead>
-        <tbody id="usrAudit"></tbody>
-    </table>
-</div>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Recent account activity</h3>
+        <p class="zx-card__desc">Sign-ins and account changes of the admin panel.</p>
+    </div>
+    <div class="zx-card__body">
+        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Recent account activity">
+            <table class="zx-table zx-table--compact">
+                <thead><tr><th>Time</th><th>User</th><th>Event</th><th>Target</th><th>From</th><th>Detail</th></tr></thead>
+                <tbody id="usrAudit"><tr><td colspan="6" class="zx-empty-cell">No account activity recorded yet.</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
@@ -64,20 +73,20 @@
             var h = "";
             (r.Users || []).forEach(function (u) {
                 var n = esc(u.Username);
-                h += "<tr><td>" + n + "</td><td>" + esc(u.Role) + "</td><td>" + (u.Disabled ? "disabled" : "active") + "</td><td>" +
+                h += '<tr><td data-label="' + esc(t("Username")) + '">' + n + '</td><td data-label="' + esc(t("Role")) + '">' + esc(u.Role) + '</td><td data-label="' + esc(t("Status")) + '">' + (u.Disabled ? '<span class="zx-badge">' + esc(t("disabled")) + "</span>" : '<span class="zx-badge zx-badge--ok">' + esc(t("active")) + "</span>") + '</td><td class="zx-actions"><div class="zx-row-actions">' +
                     '<button class="ui mini basic button usrA" data-a="setPassword" data-u="' + n + '">Set password</button> ' +
                     '<button class="ui mini basic button usrA" data-a="rename" data-u="' + n + '">Rename</button> ' +
                     '<button class="ui mini basic button usrA" data-a="setRole" data-r="' + (u.Role === "admin" ? "viewer" : "admin") + '" data-u="' + n + '">' + (u.Role === "admin" ? t("Make viewer") : t("Make admin")) + "</button> " +
                     '<button class="ui mini basic button usrA" data-a="' + (u.Disabled ? "enable" : "disable") + '" data-u="' + n + '">' + (u.Disabled ? "Enable" : "Disable") + "</button> " +
-                    '<button class="ui mini basic red button usrA" data-a="delete" data-u="' + n + '">Delete</button></td></tr>';
+                    '<button class="ui mini basic red button usrA" data-a="delete" data-u="' + n + '">Delete</button></div></td></tr>';
             });
-            $("#usrRows").html(h);
+            $("#usrRows").html(h || '<tr><td colspan="4" class="zx-empty-cell">No accounts yet.</td></tr>');
             var a = "";
             (r.Audit || []).forEach(function (e) {
-                a += "<tr><td>" + esc(new Date(e.Time * 1000).toLocaleString()) + "</td><td>" + esc(e.Actor) + "</td><td>" + esc(e.Event) + "</td><td>" + esc(e.Target) + "</td><td>" + esc(e.IP) + "</td><td>" + esc(e.Detail) + "</td></tr>";
+                a += '<tr><td data-label="' + esc(t("Time")) + '" style="white-space:nowrap">' + esc(new Date(e.Time * 1000).toLocaleString()) + '</td><td data-label="' + esc(t("User")) + '">' + esc(e.Actor) + '</td><td data-label="' + esc(t("Event")) + '">' + esc(e.Event) + '</td><td data-label="' + esc(t("Target")) + '">' + esc(e.Target) + '</td><td data-label="' + esc(t("From")) + '">' + esc(e.IP) + '</td><td data-label="' + esc(t("Detail")) + '" class="zx-cell-long"><div class="zx-longvalue" tabindex="0">' + esc(e.Detail) + "</div></td></tr>";
             });
-            $("#usrAudit").html(a);
-        }).fail(function (x) { err(x.status === 403 ? "Admin role required." : "Unable to load accounts."); $("#usrRows").html(""); });
+            $("#usrAudit").html(a || '<tr><td colspan="6" class="zx-empty-cell">No account activity recorded yet.</td></tr>');
+        }).fail(function (x) { err(x.status === 403 ? "Admin role required." : "Unable to load accounts."); $("#usrRows").html('<tr><td colspan="4" class="zx-empty-cell">' + esc(t("Accounts could not be loaded.")) + "</td></tr>"); });
     }
     function act(data) {
         $.cjax({ type: "POST", url: "/api/users/action", data: data, success: function (d) {
@@ -137,8 +146,8 @@
     });
     $.get("/api/auth/authEnabled", function (on) {
         if (on === false) {
-            $("#usrRows").html('<tr><td colspan="4">The admin panel runs without authentication (-noauth), so there are no accounts to manage.</td></tr>');
-            $("#usrAdd").prop("disabled", true);
+            $("#usrRows").html('<tr><td colspan="4" class="zx-empty-cell">The admin panel runs without a login, so there are no accounts to manage. Start Zoraxy with authentication to add accounts.</td></tr>');
+            $("#usrAdd").prop("disabled", true); $("#usrAddHint").show();
         } else { load(); }
     });
 })();

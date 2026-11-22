@@ -117,7 +117,7 @@ def certs_traffic_ui(pg, ctx):
         pg.fill("#pubkeyPasteContent", "garbage pem")
         pg.fill("#prikeyPasteContent", "garbage key")
         clear_toasts()
-        pg.dblclick("#certPasteArea .ui.button >> nth=0")
+        pg.dblclick("#certPasteArea .zx-btn >> nth=0")
         pg.wait_for_timeout(600)
         if len(posts) != before:
             fail("cert-upload", f"garbage input was posted to the server ({len(posts) - before} requests)")
@@ -134,7 +134,7 @@ def certs_traffic_ui(pg, ctx):
         pg.fill("#prikeyPasteContent", good_key)
         before = len(posts)
         clear_toasts()
-        pg.dblclick("#certPasteArea .ui.button >> nth=0")
+        pg.dblclick("#certPasteArea .zx-btn >> nth=0")
         pg.wait_for_function("$('#certUploadSuccMsg').is(':visible')", timeout=8000)
         pg.wait_for_timeout(500)
         if len(posts) - before != 2:

@@ -5,6 +5,7 @@
         <meta charset="utf-8">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
         <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <link rel="stylesheet" href="../ui/zxui.css">
         <script src="../script/i18n.js"></script>
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
@@ -20,6 +21,23 @@
             #hhPreview tr.skipped td{ opacity: 0.6; }
             .hhField{ margin-bottom: 0.9em; }
             .hhIndent{ margin-left: 1.6em; }
+            /* kit alignment (tokens only) */
+            html, body{ margin: 0 !important; padding: 0; }
+            body{ color: var(--zx-text); }
+            .ui.basic.segment{ margin: 0 !important; border: 0; box-shadow: none; background: transparent; }
+            .ui.checkbox label, .ui.checkbox label:hover{ color: var(--zx-text) !important; }
+            .ui.checkbox label small, small#hhHttpNote, .hhField > small{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; }
+            .hhField > small{ display: block; margin-top: var(--zx-space-1); }
+            .hhField > label{ font-weight: 600; }
+            #hhOptions.disabled{ opacity: 1; }
+            #hhOptions.disabled .ui.checkbox label, #hhOptions.disabled select, #hhOptions.disabled .hhField > label{ opacity: .6; }
+            select.ui.dropdown, select.ui.fluid.dropdown{ min-height: var(--zx-control-h); background: var(--zx-surface) !important; color: var(--zx-text) !important; border: 1px solid var(--zx-border-strong) !important; border-radius: var(--zx-radius-md) !important; padding: 6px 32px 6px 10px !important; }
+            #hhPreviewTable{ background: transparent; border-color: var(--zx-border); color: var(--zx-text); }
+            #hhPreviewTable th{ background: var(--zx-surface-2) !important; color: var(--zx-text-muted) !important; font-size: var(--zx-fs-xs); text-transform: uppercase; letter-spacing: .04em; }
+            #hhPreviewTable td{ border-color: var(--zx-border) !important; }
+            #hhPreview tr.skipped td{ opacity: 1; color: var(--zx-text-muted); }
+            .hhFoot{ display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: var(--zx-space-3) 0 var(--zx-space-3); padding-top: var(--zx-space-3); }
+            .hhHead{ margin: var(--zx-space-4) 0 var(--zx-space-2); font-weight: 700; color: var(--zx-text); }
         </style>
     </head>
     <body>
@@ -78,15 +96,15 @@
                 </div>
             </div>
 
-            <h5 class="ui header" style="margin-top: 1.2em;">Headers that will be sent</h5>
+            <p class="hhHead">Headers that will be sent</p>
             <table class="ui very compact unstackable table" id="hhPreviewTable">
                 <thead><tr><th>Header</th><th>Value</th><th>Result</th></tr></thead>
-                <tbody id="hhPreview"><tr><td colspan="3"><i class="ui loading spinner icon"></i></td></tr></tbody>
+                <tbody id="hhPreview"><tr><td colspan="3">Loading...</td></tr></tbody>
             </table>
             <small id="hhHttpNote" style="display:none;"></small>
-            <div style="margin-top: 0.8em;">
-                <button class="ui basic button" id="hhSave"><i class="green save icon"></i> Save</button>
-                <button class="ui basic button" id="hhRecommended" type="button">Fill in recommended values</button>
+            <div class="hhFoot">
+                <button class="zx-btn zx-btn--primary" id="hhSave"><i class="save icon"></i> Save</button>
+                <button class="zx-btn zx-btn--secondary" id="hhRecommended" type="button">Fill in recommended values</button>
             </div>
         </div>
 

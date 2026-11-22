@@ -169,7 +169,7 @@ body.darkTheme,
 /* ===================================================================================== page header */
 .zx-page-header { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--zx-space-3) var(--zx-space-4); margin: 0 0 var(--zx-space-4); color: var(--zx-text); }
 .zx-page-header__main { flex: 1 1 18rem; min-width: 0; }
-.zx-page-header__crumbs { margin-bottom: var(--zx-space-1); }
+.zx-page-header__crumbs { margin-bottom: var(--zx-space-2); min-height: 1.4em; }
 .zx-page-header__title { margin: 0; font-size: var(--zx-fs-2xl); line-height: 1.2; font-weight: 700; color: var(--zx-text); }
 .zx-page-header__sub { margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-md); max-width: 60rem; }
 .zx-page-header__actions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
@@ -188,6 +188,10 @@ body.darkTheme,
 .zx-card__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); padding: var(--zx-space-4) var(--zx-space-4) 0; }
 .zx-card__title { margin: 0; font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.3; flex: 1 1 12rem; min-width: 0; color: var(--zx-text); }
 .zx-card__desc { margin: var(--zx-space-1) 0 0; padding: 0 var(--zx-space-4); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+/* a description that sits inside the head or the body lines up with the title (no second inset) */
+.zx-card__head .zx-card__desc { flex: 1 0 100%; margin: 0; padding: 0; }
+.zx-card__body > .zx-card__desc:first-child { padding: 0; margin: 0 0 var(--zx-space-3); }
+.zx-card + .zx-card, .zx-card + .zx-callout { margin-top: 0; }
 .zx-card__body { padding: var(--zx-space-4); }
 .zx-card__foot { padding: var(--zx-space-3) var(--zx-space-4); border-top: 1px solid var(--zx-border); background: var(--zx-surface-2); border-radius: 0 0 var(--zx-radius-lg) var(--zx-radius-lg); display: flex; flex-wrap: wrap; gap: var(--zx-space-2); justify-content: flex-end; }
 .zx-card--flat { box-shadow: none; }
@@ -212,6 +216,12 @@ body.darkTheme,
     transition: border-color 0.12s;
 }
 .zx-textarea { min-height: 5.5em; resize: vertical; }
+/* one select look app-wide: the kit chevron (two token coloured gradients, so it follows the theme); also applied to native selects of legacy forms in zxpages.css */
+.zx-select {
+    appearance: none; -webkit-appearance: none; padding-right: 32px; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--zx-text-muted) 50%), linear-gradient(135deg, var(--zx-text-muted) 50%, transparent 50%);
+    background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
 .zx-input::placeholder, .zx-textarea::placeholder { color: var(--zx-text-faint); opacity: 1; }
 .zx-input:hover, .zx-select:hover, .zx-textarea:hover { border-color: var(--zx-text-muted); }
 .zx-input:focus-visible, .zx-select:focus-visible, .zx-textarea:focus-visible { outline: none; border-color: var(--zx-focus); box-shadow: var(--zx-focus-ring); }
@@ -220,10 +230,12 @@ body.darkTheme,
 
 /* "what is this?" button + popover */
 .zx-whatis {
-    display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border-radius: 50%; flex: 0 0 auto;
     border: 1px solid var(--zx-border-strong); background: var(--zx-surface); color: var(--zx-text-muted);
     font: 700 12px/1 var(--zx-font); cursor: pointer; position: relative;
 }
+/* the clickable area is larger than the 24px circle (40px) without changing the layout */
+.zx-whatis::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; }
 .zx-whatis:hover { color: var(--zx-primary); border-color: var(--zx-primary); }
 .zx-whatis[aria-expanded="true"] { background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); border-color: var(--zx-primary); }
 .zx-popover {
@@ -366,11 +378,13 @@ body.darkTheme,
 }
 
 /* ===================================================================================== tabs / segmented control */
-.zx-tabs { display: flex; gap: var(--zx-space-1); border-bottom: 1px solid var(--zx-border); overflow-x: auto; scrollbar-width: thin; margin: 0 0 var(--zx-space-4); }
+.zx-tabs { display: flex; flex-wrap: nowrap; gap: var(--zx-space-1); border-bottom: 1px solid var(--zx-border); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; max-width: 100%; margin: 0 0 var(--zx-space-4); }
 .zx-tab {
     flex: 0 0 auto; padding: 9px 14px; margin-bottom: -1px; font: inherit; font-weight: 600; color: var(--zx-text-muted);
     background: transparent; border: 0; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; min-height: 40px;
 }
+.zx-tab > i.icon, .zx-tab > .icon { margin: 0 0.45em 0 0; color: currentColor; opacity: 0.85; }
+.zx-tab .zx-badge { margin-left: 0.5em; }
 .zx-tab:hover { color: var(--zx-text); }
 .zx-tab[aria-selected="true"] { color: var(--zx-primary-soft-text); border-bottom-color: var(--zx-primary); }
 .zx-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--zx-focus); border-radius: var(--zx-radius-sm); }
@@ -479,6 +493,66 @@ body.zx-has-savebar .zx-toasts { bottom: 6.5rem; }
 @keyframes zx-shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .zx-skeleton { animation: none; } }
 
+
+/* ===================================================================================== disclosure (foundation pass) */
+/* "Advanced" / "How to" sections: <details class="zx-disclosure"><summary>Advanced options</summary><div class="zx-disclosure__body">..</div></details>.
+   No fill, no box: a hairline above, a 36px summary with a chevron. The legacy ".ui.accordion" of Fomantic is restyled to the same look in zxpages.css. */
+.zx-disclosure { border-top: 1px solid var(--zx-border); margin: var(--zx-space-4) 0; color: var(--zx-text); }
+.zx-disclosure > summary {
+    list-style: none; display: flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h); padding: 6px 0;
+    cursor: pointer; font-weight: 600; font-size: var(--zx-fs-md); color: var(--zx-text); user-select: none;
+}
+.zx-disclosure > summary::-webkit-details-marker { display: none; }
+.zx-disclosure > summary::before {
+    content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 4px 0 2px; border-right: 2px solid var(--zx-text-muted); border-bottom: 2px solid var(--zx-text-muted);
+    transform: rotate(-45deg); transition: transform 0.15s;
+}
+.zx-disclosure[open] > summary::before { transform: rotate(45deg); }
+.zx-disclosure > summary:hover { color: var(--zx-primary-soft-text); }
+.zx-disclosure > summary:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+.zx-disclosure__body { padding: var(--zx-space-1) 0 var(--zx-space-4); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+.zx-disclosure__body > :last-child { margin-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .zx-disclosure > summary::before { transition: none; } }
+
+/* ===================================================================================== long structured values in tables (foundation pass) */
+/* A cell that holds JSON, a user agent, a URL list or a log detail: wraps anywhere, never widens the table, shows 3 lines and scrolls.
+   <td class="zx-cell-long" data-label="Details"><div class="zx-longvalue" tabindex="0">...</div></td>  (or put the class on the td itself) */
+.zx-cell-long { min-width: 12em; max-width: 30em; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+.zx-longvalue {
+    max-height: 4.6em; overflow: auto; padding: 2px 6px; font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); line-height: 1.45;
+    white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; background: var(--zx-surface-2); color: var(--zx-text);
+    border: 1px solid var(--zx-border); border-radius: var(--zx-radius-sm); text-align: left;
+}
+.zx-longvalue:focus-visible, .zx-longvalue:hover { max-height: 16em; }
+.zx-longvalue:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+/* one line with an ellipsis, full text in the title attribute */
+.zx-ellipsis { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* key / value list for a structured value: <dl class="zx-kv"><dt>Source</dt><dd>10.0.0.5</dd></dl> */
+.zx-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px var(--zx-space-3); margin: 0; font-size: var(--zx-fs-sm); }
+.zx-kv dt { color: var(--zx-text-muted); font-weight: 600; }
+.zx-kv dd { margin: 0; overflow-wrap: anywhere; font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); }
+/* a table that sits flush in a card (no second border) */
+.zx-table-wrap--flush { border: 0; border-radius: 0; background: transparent; }
+.zx-card > .zx-table-wrap, .zx-card__body > .zx-table-wrap--flush { border-left: 0; border-right: 0; border-radius: 0; }
+.zx-table td.zx-empty-cell { text-align: center; color: var(--zx-text-muted); padding: var(--zx-space-5) var(--zx-space-4); }
+
+/* compact empty state for a table, a list or a small card (left aligned, one line + action) */
+.zx-empty--inline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); text-align: left; padding: var(--zx-space-4); }
+.zx-empty--inline .zx-empty__icon { font-size: 1.6rem; margin: 0; }
+.zx-empty--inline .zx-empty__text { margin: 0; flex: 1 1 14rem; max-width: none; }
+.zx-empty--inline .zx-empty__title { margin: 0; flex: 1 0 100%; }
+
+/* button groups never touch each other; the group wraps on phones (use instead of ad-hoc margins) */
+.zx-btn-row { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+
+/* form grid: fields side by side, one column on phones. <div class="zx-form-grid"> <div class="zx-field">..</div> .. </div> */
+.zx-form-grid { display: grid; gap: 0 var(--zx-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: start; }
+.zx-form-grid > .zx-field--wide { grid-column: 1 / -1; }
+/* vertical rhythm between sections of a page */
+.zx-section { margin: 0 0 var(--zx-space-5); }
+.zx-section__title { margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-xl); font-weight: 700; line-height: 1.3; color: var(--zx-text); }
+.zx-section__desc { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-md); }
+
 /* ===================================================================================== touch targets */
 @media (max-width: 748px), (pointer: coarse) {
     .zx-btn { min-height: var(--zx-touch); }
@@ -490,6 +564,9 @@ body.zx-has-savebar .zx-toasts { bottom: 6.5rem; }
     .zx-tab { min-height: var(--zx-touch); }
     .zx-segmented__item { min-height: 38px; }
     .zx-whatis { width: 32px; height: 32px; }
+    .zx-whatis::before { inset: -6px; }
+    .zx-disclosure > summary { min-height: var(--zx-touch); }
+    .zx-btn-row .zx-btn--block, .zx-btn-row--stack .zx-btn { flex: 1 1 100%; }
     .zx-check input { width: 22px; height: 22px; }
     .zx-switch { width: 48px; height: 28px; }
     .zx-switch::after { width: 22px; height: 22px; }
@@ -521,4 +598,52 @@ body.zx-has-savebar .zx-session-banner { bottom: calc(env(safe-area-inset-bottom
     flex: 0 0 auto; display: flex; align-items: center; padding: 0 var(--zx-space-3); white-space: nowrap;
     background: var(--zx-surface-2); color: var(--zx-text-muted); border: 1px solid var(--zx-border-strong); border-left: 0;
     border-radius: 0 var(--zx-radius-md) var(--zx-radius-md) 0; font-size: var(--zx-fs-md); font-weight: 600;
+}
+
+/* ===================================================================================== final consistency pass (shared kit additions) */
+/* mono code block with a Copy button: <div class="zx-codeblock"><pre>..</pre><button class="zx-btn zx-btn--sm zx-btn--secondary">Copy</button></div> */
+.zx-codeblock { position: relative; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-3) var(--zx-space-4); font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-x: auto; }
+.zx-codeblock pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.zx-codeblock > .zx-btn { position: absolute; top: var(--zx-space-2); right: var(--zx-space-2); }
+/* sub-heading inside a card body and a sub-section title on unframed pages */
+.zx-subhead, .zx-section__title--sub { margin: var(--zx-space-4) 0 var(--zx-space-2); font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.3; color: var(--zx-text); }
+/* group label inside a .zx-tabs strip */
+.zx-tabgroup { flex: 0 0 auto; align-self: center; padding: 0 var(--zx-space-2) 0 var(--zx-space-3); font-size: var(--zx-fs-xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--zx-text-faint); white-space: nowrap; }
+/* header actions line up with the title row */
+.zx-page-header__actions { align-self: flex-end; }
+/* card foot: centred, even buttons */
+.zx-card__foot { align-items: center; }
+.zx-card__foot > .zx-btn, .zx-card__foot > .ui.button { margin: 0; }
+.zx-card__foot > [tourstep] { display: flex; }
+/* one switch look: the off state is a light knob on a quiet track (light and dark) */
+.zx-switch::after { background: var(--zx-surface); box-shadow: 0 0 0 1px var(--zx-border-strong), var(--zx-shadow-1); }
+.zx-switch:checked::after { background: var(--zx-on-primary); box-shadow: none; }
+/* Fomantic toggle inside a toggle row keeps its width and shows a visible off track */
+.zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; }
+.zx-toggle-row > .ui.toggle.checkbox input:not(:checked) ~ label::before { background: var(--zx-surface-3) !important; box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
+/* search input inside a multi-select dropdown has no box of its own */
+.ui.multiple.search.selection.dropdown > input.search { border: 0 !important; background: transparent !important; box-shadow: none !important; min-height: 0; padding: 0; }
+/* native select and Fomantic dropdown borders in dark mode match the inputs */
+body.darkTheme .zx-field select, body.darkTheme .zx-field .ui.selection.dropdown, body.darkTheme .ui.form select { border: 1px solid var(--zx-border-strong); }
+/* empty-state table: no header over the empty message, compact padding */
+.zx-table:has(td.zx-empty-cell) thead { display: none; }
+.zx-table td.zx-empty-cell { padding: var(--zx-space-4); }
+/* table inside a card body keeps the card inset */
+.zx-card__body > .zx-table-wrap { width: 100%; }
+/* tabs: the active tab is scrolled into view by ZxUI.tabs; keep room at the edges */
+.zx-tabs { scroll-padding: 0 var(--zx-space-6, 32px); }
+@media (max-width: 480px) {
+    .zx-table tr:has(> td.zx-empty-cell) { border: 0; background: transparent; margin: 0; box-shadow: none; }
+    .zx-card .zx-table tbody tr { border-left: 0; border-right: 0; border-radius: 0; box-shadow: none; }
+    .zx-page-header__actions { max-width: 100%; margin-left: auto; }
+}
+@media (max-width: 748px), (pointer: coarse) {
+    .zx-whatis { width: 36px; height: 36px; }
+    .zx-segmented__item { min-height: 44px; }
+    .zx-btn--icon { min-width: var(--zx-touch); }
+}
+/* a cell with several mono lines (addresses): one per line on phones, never wrapped mid-address */
+@media (max-width: 480px) {
+    .zx-table td:has(> div.zx-mono) { flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+    .zx-table td > div.zx-mono { display: block; max-width: 100%; overflow-wrap: anywhere; }
 }

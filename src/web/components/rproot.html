@@ -1,98 +1,127 @@
-<div class="standardContainer">
-    <div class="ui basic segment" style="padding-left: 0; padding-right: 0;">
-        <h2>Default Site</h2>
-        <p>Default routing options for inbound traffic</p>
-        <div class="ui form">
-            <div class="grouped fields">
-                <label>What to show when Zoraxy is hit with an unknown Host?</label>
-                <div class="field">
-                    <div class="ui radio defaultsite checkbox">
-                        <input type="radio" name="defaultsiteOption" checked="checked" value="webserver">
-                        <label>Internal Static Web Server<br>
-                            <small>Check this if you prefer a more Apache / Nginx like experience</small>
-                        </label>
+<div class="standardContainer zxs-narrow" id="setrootPage">
+    <style>
+        #setrootPage { max-width: 1100px; }
+        #setrootPage .zxs-opts .field { margin: 0 0 var(--zx-space-3); }
+        #setrootPage .zxs-opts .ui.checkbox label small, #setrootPage .ui.checkbox label small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; margin-top: 2px; }
+        #setrootPage .zxs-detail { margin: var(--zx-space-2) 0 var(--zx-space-3) var(--zx-space-5); padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); }
+        #setrootPage .zxs-detail .field:last-child { margin-bottom: 0; }
+        #setrootPage .zxs-detail small, #setrootPage .zxs-detail .zx-help { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+        #setrootPage .defaultSiteError { color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 600; margin-top: var(--zx-space-1); }
+        @media (max-width: 748px) { #setrootPage .zxs-detail { margin-left: 0; } }
+        #setrootPage .zx-card__foot { align-items: center; }
+        #setrootPage .zx-card__foot .ui.button { margin: 0; }
+    </style>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Default Site</h2>
+            <p class="zx-page-header__sub">What Zoraxy answers when no site matches the address</p>
+        </div>
+    </header>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">When no site matches</h3>
+            <p class="zx-card__desc">Choose what visitors get when they reach Zoraxy with an address that none of your sites use.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="ui form zxs-opts">
+                <div class="grouped fields" role="radiogroup" aria-label="When no site matches">
+                    <div class="field">
+                        <div class="ui radio defaultsite checkbox">
+                            <input type="radio" name="defaultsiteOption" checked="checked" value="webserver">
+                            <label>Internal static web server<br>
+                                <small>Serve files from the built-in web server, like Apache or Nginx would</small>
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div class="field">
-                    <div class="ui radio defaultsite checkbox">
-                        <input type="radio" name="defaultsiteOption" value="proxy">
-                        <label>Reverse Proxy Target<br>
-                            <small>Proxy the request to a target IP / domain</small>
-                        </label>
+                    <div class="field">
+                        <div class="ui radio defaultsite checkbox">
+                            <input type="radio" name="defaultsiteOption" value="proxy">
+                            <label>Reverse proxy target<br>
+                                <small>Pass the request on to a server of your choice</small>
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div class="field">
-                    <div class="ui radio defaultsite checkbox">
-                        <input type="radio" name="defaultsiteOption" value="redirect">
-                        <label>Redirect<br>
-                            <small>Redirect the user to a new location</small>
-                        </label>
+                    <div class="field">
+                        <div class="ui radio defaultsite checkbox">
+                            <input type="radio" name="defaultsiteOption" value="redirect">
+                            <label>Redirect<br>
+                                <small>Send the visitor to another address</small>
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div class="field">
-                    <div class="ui radio defaultsite checkbox">
-                        <input type="radio" name="defaultsiteOption" value="notfound">
-                        <label>Show 404 NOT FOUND<br>
-                            <small>Respond to request with a 404 page</small>
-                        </label>
+                    <div class="field">
+                        <div class="ui radio defaultsite checkbox">
+                            <input type="radio" name="defaultsiteOption" value="notfound">
+                            <label>Show a 404 page<br>
+                                <small>Answer with a "not found" page</small>
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div class="field">
-                    <div class="ui radio defaultsite checkbox">
-                        <input type="radio" name="defaultsiteOption" value="closeresp">
-                        <label>Close Connection<br>
-                            <small>Close the connection without any response</small>
-                        </label>
+                    <div class="field">
+                        <div class="ui radio defaultsite checkbox">
+                            <input type="radio" name="defaultsiteOption" value="closeresp">
+                            <label>Close the connection<br>
+                                <small>Hang up without sending any answer</small>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Reverse Proxy as Default Site Options -->
-        <div id="defaultSiteProxyOptions" class="ui basic segment advanceoptions defaultSiteOptionDetails" style="display:none; ">
-            <div class="ui form">
-                <div class="field">
-                        <label>Reverse Proxy Target</label>
+            <!-- Reverse Proxy as Default Site Options -->
+            <div id="defaultSiteProxyOptions" class="zxs-detail advanceoptions defaultSiteOptionDetails" style="display:none; ">
+                <div class="ui form">
+                    <div class="field">
+                        <label for="proxyRoot">Reverse proxy target</label>
                         <input type="text" id="proxyRoot" onchange="checkRootRequireTLS(this.value);" aria-label="Reverse Proxy Target">
-                        <small>e.g. localhost:8080 / 192.168.0.100:80 / example.com</small>
-                </div>
-                <div class="field">
-                    <div class="ui checkbox">
-                        <input type="checkbox" id="rootReqTLS">
-                        <label>Reverse proxy target require TLS connection <br><small>Check this if your proxy target URL require connection with https://</small></label>
+                        <small>For example localhost:8080, 192.168.0.100:80 or example.com</small>
+                    </div>
+                    <div class="field">
+                        <div class="ui checkbox">
+                            <input type="checkbox" id="rootReqTLS">
+                            <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://</small></label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Redirect as default site Options-->
-        <div id="defaultSiteRedirectOptions" class="ui basic segment advanceoptions defaultSiteOptionDetails" style="display:none;"">
-            <div class="ui form">
-                <div class="field">
-                    <label>Redirect target domain</label>
-                    <div class="ui input">
-                        <input id="redirectDomain" type="text" placeholder="http://example.com" aria-label="Redirect target domain">
-                    </div>
-                    <small>Unset subdomain will be redirected to the link above. Remember to include the protocol (e.g. http:// or https://)</small>
-                </div>
-            </div>
-        </div>
 
-        <!-- Optional logging of default site requests (upstream #578) -->
-        <div class="ui form" style="margin-bottom: 1em;">
-            <div class="field">
-                <div class="ui toggle checkbox" id="logDefaultSiteBox">
-                    <input type="checkbox" id="logDefaultSite">
-                    <label>Log requests that hit the default site (unknown host, 404 page, secondary ports)<br>
-                        <small>Off by default. Log lines are rate limited (a short burst, then a few per second, with a count of skipped lines) so scanners cannot fill the disk. Applies immediately, no need to press Apply Changes.</small>
-                    </label>
+            <!-- Redirect as default site Options-->
+            <div id="defaultSiteRedirectOptions" class="zxs-detail advanceoptions defaultSiteOptionDetails" style="display:none;">
+                <div class="ui form">
+                    <div class="field">
+                        <label for="redirectDomain">Redirect to</label>
+                        <div class="ui input">
+                            <input id="redirectDomain" type="text" placeholder="http://example.com" aria-label="Redirect target domain">
+                        </div>
+                        <small>Visitors are sent to this address. Include the protocol, for example http:// or https://</small>
+                    </div>
                 </div>
             </div>
         </div>
-        <button class="ui basic button" onclick="setProxyRoot(this)"><i class="green checkmark icon" ></i> Apply Changes</button>
-        <button class="ui basic button" onclick="initRootInfo()"><i class="refresh icon" ></i> Reset</button>
-        <br>
-    </div>
+        <div class="zx-card__foot">
+            <button class="ui primary button" onclick="setProxyRoot(this)"><i class="checkmark icon"></i> Apply Changes</button>
+            <button class="ui basic button" onclick="initRootInfo()"><i class="undo icon"></i> Reset</button>
+        </div>
+    </section>
+
+    <!-- Optional logging of default site requests (upstream #578) -->
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Logging</h3>
+            <p class="zx-card__desc">This setting saves at once, you do not need to apply it.</p>
+        </div>
+        <div class="zx-card__body">
+            <label class="zx-toggle-row" id="logDefaultSiteBox" for="logDefaultSite">
+                <span class="zx-toggle-row__text">
+                    <span class="zx-toggle-row__title">Log requests that hit the default site</span>
+                    <span class="zx-toggle-row__desc">Covers unknown hosts, the 404 page and secondary ports. Off by default. Log lines are rate limited so scanners cannot fill the disk.</span>
+                </span>
+                <input type="checkbox" class="zx-switch" role="switch" id="logDefaultSite">
+            </label>
+        </div>
+    </section>
 </div>
 <script>
     var currentDefaultSiteOption = 0; //For enum see typedef.go
@@ -102,22 +131,20 @@
             $("#logDefaultSite").prop("checked", data.enabled);
         }
     });
-    $("#logDefaultSiteBox").checkbox({
-        onChange: function(){
-            let enabled = $("#logDefaultSite").is(":checked");
-            $.cjax({
-                url: "/api/proxy/defaultsite/logging",
-                method: "POST",
-                data: {enable: enabled},
-                success: function(data){
-                    if (data && data.error != undefined){
-                        msgbox(data.error, false, 5000);
-                    }else{
-                        msgbox("Default site logging " + (enabled ? "enabled" : "disabled"), true);
-                    }
+    $("#logDefaultSite").on("change", function(){
+        let enabled = $("#logDefaultSite").is(":checked");
+        $.cjax({
+            url: "/api/proxy/defaultsite/logging",
+            method: "POST",
+            data: {enable: enabled},
+            success: function(data){
+                if (data && data.error != undefined){
+                    msgbox(data.error, false, 5000);
+                }else{
+                    msgbox("Default site logging " + (enabled ? "enabled" : "disabled"), true);
                 }
-            });
-        }
+            }
+        });
     });
     $("#advanceRootSettings").accordion();
 
@@ -265,7 +292,7 @@
         if (message){
             field.addClass("error");
             input.attr("aria-invalid", "true");
-            field.append($('<div class="defaultSiteError" role="alert" style="color:#9f3a38; margin-top:0.4em;"></div>').text(message));
+            field.append($('<div class="defaultSiteError" role="alert"></div>').text(message));
         }
     }
 

@@ -2579,7 +2579,7 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     # ================= Tunnels (zrok) and ECH =================
     current["page"] = "netsys/zrok"
     go("zrok", 1200)
-    box = pg.evaluate("""() => { const p = document.querySelector('#zrokPanel').getBoundingClientRect(), c = document.querySelector('#zrokPanel .zkCard').getBoundingClientRect(),
+    box = pg.evaluate("""() => { const p = document.querySelector('#zrokPanel').getBoundingClientRect(), c = document.querySelector('#zrokPanel .zx-card').getBoundingClientRect(),
         pill = document.getElementById('zkPill').getBoundingClientRect(); return {gap: c.left - p.left, pillGap: p.right - pill.right} }""")
     if box["gap"] < 16 or box["pillGap"] < 16:
         fail("layout", f"zrok cards/pill are flush to the panel edge: {box}")
@@ -2627,7 +2627,7 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
             fail("zrok", "the 'Environment enabled' banner stays after the environment was disabled")
     current["page"] = "netsys/ech"
     go("ech", 1200)
-    box = pg.evaluate("""() => { const p = document.querySelector('#echPanel').getBoundingClientRect(), c = document.querySelector('#echPanel .echCard').getBoundingClientRect(),
+    box = pg.evaluate("""() => { const p = document.querySelector('#echPanel').getBoundingClientRect(), c = document.querySelector('#echPanel .zx-card').getBoundingClientRect(),
         pill = document.getElementById('echStatePill').getBoundingClientRect(); return {gap: c.left - p.left, pillGap: p.right - pill.right} }""")
     if box["gap"] < 16 or box["pillGap"] < 16:
         fail("layout", f"ECH cards/pill are flush to the panel edge: {box}")

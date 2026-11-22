@@ -581,7 +581,7 @@ body.darkTheme .ui.basic.small.icon.circular.button:hover {
 body.darkTheme .ui.checkbox input ~ .box,
 body.darkTheme .ui.checkbox input ~ label,
 body.darkTheme .ui.checkbox input ~ label:focus {
-    color: var(--text_color_secondary) !important;
+    color: var(--text_color) !important;   /* same colour checked and unchecked (a dimmed checked label looked disabled) */
 }
 
 body.darkTheme .ui.basic.advance.segment {
@@ -724,13 +724,11 @@ body.darkTheme #rules .field small {
 body.darkTheme #streamproxy {
     background-color: var(--theme_bg) !important;
     color: var(--text_color) !important;
-    border: 1px solid var(--divider_color) !important;
 }
 
 body.darkTheme #proxyTable {
     background-color: transparent !important;
     color: var(--text_color) !important;
-    border: 1px solid var(--divider_color) !important;
 }
 
 body.darkTheme #proxyTable thead th {
@@ -825,7 +823,7 @@ body.darkTheme #redirectset .ui.sortable.unstackable.celled.table tbody td .ui.r
 body.darkTheme #redirectset .ui.checkbox input:checked ~ label,
 body.darkTheme #redirectset .ui.checkbox input:checked ~ label small,
 body.darkTheme #redirectset .ui.checkbox input:checked ~ label a {
-    color: var(--text_color_secondary) !important;
+    color: var(--text_color) !important;   /* a checked box must not look disabled */
 }
 
 body.darkTheme .ui.message {

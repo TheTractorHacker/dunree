@@ -8,99 +8,106 @@
     Nothing here polls while the page is hidden; the Blocked tab refreshes every 10 s only while it is on screen.
 -->
 <style>
-    #statsPage{ --s-blue:#3b82f6; --s-green:#22a06b; --s-red:#e5484d; --s-amber:#f59e0b; --s-muted:var(--text_color_secondary); }
-    #statsPage .sHead{ display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:.6em 1em; margin-bottom:.4em; }
-    #statsPage .sHead h2{ margin:0; }
-    #statsPage .sHead p{ margin:.2em 0 0; color:var(--s-muted); }
-    #statsPage .sTabs{ display:flex; gap:.3em; border-bottom:1px solid var(--divider_color); margin:.8em 0 1em; overflow-x:auto; }
-    #statsPage .sTabs button{ background:none; border:0; border-bottom:3px solid transparent; padding:.55em .9em; cursor:pointer; color:var(--s-muted); font:inherit; font-weight:600; white-space:nowrap; }
-    #statsPage .sTabs button:hover{ color:var(--text_color); }
-    #statsPage .sTabs button.active{ color:var(--text_color); border-bottom-color:var(--s-blue); }
-    #statsPage .sTabs .sBadge{ display:inline-block; min-width:1.5em; padding:0 .45em; margin-left:.4em; border-radius:1em; font-size:.8em; background:rgba(245,158,11,.18); color:#b45309; text-align:center; }
-    body.darkTheme #statsPage .sTabs .sBadge{ color:#fbbf24; }
-    #statsPage .sBar{ display:flex; flex-wrap:wrap; align-items:center; gap:.6em .8em; margin-bottom:1em; }
-    #statsPage .sSeg{ display:inline-flex; border:1px solid var(--divider_color); border-radius:.5em; overflow:hidden; background:var(--theme_bg_primary); }
-    #statsPage .sSeg button{ border:0; background:none; padding:.5em .85em; font:inherit; cursor:pointer; color:var(--text_color); border-right:1px solid var(--divider_color); }
-    #statsPage .sSeg button:last-child{ border-right:0; }
-    #statsPage .sSeg button:hover{ background:rgba(128,128,128,.12); }
-    #statsPage .sSeg button.active{ background:var(--s-blue); color:#fff; }
+    #statsPage{ --s-blue:var(--zx-primary); --s-green:var(--zx-ok-text); --s-red:var(--zx-danger-text); --s-amber:var(--zx-warn-solid); --s-muted:var(--zx-text-muted); }
+    #statsPage .sTabs{ margin:0 0 var(--zx-space-4); }
+    #statsPage .sTabs button{ flex:0 0 auto; }
+    #statsPage .sBar{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--zx-space-2) var(--zx-space-3); margin-bottom:var(--zx-space-4); }
+    #statsPage .sSeg.zx-segmented{ flex-wrap:nowrap; }
+    #statsPage .sSeg .zx-segmented__item.active{ background:var(--zx-surface); color:var(--zx-text); box-shadow:var(--zx-shadow-1); }
     #statsPage .sBar select, #statsPage .sBar input[type=text], #statsPage .sBar input[type=search]{
-        padding:.5em .65em; border-radius:.4em; border:1px solid var(--divider_color); background:var(--theme_bg_primary); color:var(--text_color); font:inherit; max-width:100%; }
+        height:var(--zx-control-h); padding:0 var(--zx-space-3); border-radius:var(--zx-radius-md); border:1px solid var(--zx-border-strong); background:var(--zx-surface); color:var(--zx-text); font:inherit; font-size:var(--zx-fs-md); max-width:100%; }
+    #statsPage .sBar select{ width:auto; }
     #statsPage .sBar input.sDate{ width:9.5em; }
     #statsPage .sBar .sGrow{ flex:1 1 12em; min-width:9em; }
-    #statsPage .sCustom{ display:none; align-items:center; gap:.4em; }
+    #statsPage .sCustom{ display:none; align-items:center; gap:var(--zx-space-2); }
     #statsPage .sCustom.show{ display:inline-flex; flex-wrap:wrap; }
-    #statsPage .sKpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr)); gap:.8em; margin-bottom:1em; }
-    #statsPage .sKpi, #statsPage .sCard{ background:var(--theme_bg_primary); border:1px solid var(--divider_color); border-radius:.8em; }
-    #statsPage .sKpi{ padding:.8em 1em; position:relative; overflow:hidden; text-align:left; font:inherit; color:inherit; }
-    #statsPage .sKpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--k,#94a3b8); }
+    #statsPage .sKpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr)); gap:var(--zx-space-3); margin-bottom:var(--zx-space-4); }
+    #statsPage .sKpi{ background:var(--zx-surface); color:var(--zx-text); border:1px solid var(--zx-border); border-radius:var(--zx-radius-lg); padding:var(--zx-space-4); box-shadow:var(--zx-shadow-1); min-width:0; text-align:left; font:inherit; }
     #statsPage button.sKpi{ cursor:pointer; }
-    #statsPage button.sKpi:hover{ border-color:var(--k,#94a3b8); }
-    #statsPage .sKpi .l{ display:block; font-size:.82em; color:var(--s-muted); }
-    #statsPage .sKpi .v{ display:block; font-size:1.7em; font-weight:650; line-height:1.25; }
-    #statsPage .sKpi .u{ display:block; font-size:.78em; color:var(--s-muted); min-height:1.2em; }
-    #statsPage .sGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,21em),1fr)); gap:1em; margin-bottom:1em; }
-    #statsPage .sCard{ padding:1em 1.1em; min-width:0; }
-    #statsPage .sCard h4{ margin:0 0 .15em; font-size:1.02em; }
-    #statsPage .sCard .sub{ margin:0 0 .7em; font-size:.85em; color:var(--s-muted); }
+    #statsPage button.sKpi:hover{ border-color:var(--zx-primary); }
+    #statsPage button.sKpi:focus-visible{ outline:none; box-shadow:var(--zx-focus-ring); }
+    #statsPage .sKpi .l{ display:block; font-size:var(--zx-fs-sm); color:var(--zx-text-muted); }
+    #statsPage .sKpi .v{ display:block; font-size:var(--zx-fs-2xl); font-weight:700; line-height:1.25; overflow-wrap:anywhere; }
+    #statsPage .sKpi .u{ display:block; font-size:var(--zx-fs-sm); color:var(--zx-text-muted); min-height:1.2em; }
+    #statsPage .sGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,21em),1fr)); gap:var(--zx-space-4); margin-bottom:var(--zx-space-4); align-items:stretch; }
+    #statsPage .sCard{ background:var(--zx-surface); color:var(--zx-text); border:1px solid var(--zx-border); border-radius:var(--zx-radius-lg); box-shadow:var(--zx-shadow-1); padding:var(--zx-space-4); min-width:0; }
+    #statsPage .sCard h4{ margin:0 0 var(--zx-space-1); font-size:var(--zx-fs-lg); font-weight:700; line-height:1.3; }
+    #statsPage .sCard .sub{ margin:0 0 var(--zx-space-3); font-size:var(--zx-fs-sm); color:var(--zx-text-muted); }
     #statsPage .sCard.wide{ grid-column:1 / -1; }
-    #statsPage #sBlocked .sGrid{ align-items:start; }
+    #statsPage .sSection{ margin:var(--zx-space-5) 0 var(--zx-space-3); }
+    #statsPage .sSection .zx-section__title{ font-size:var(--zx-fs-sm); text-transform:uppercase; letter-spacing:.06em; color:var(--zx-text-muted); }
+    #statsPage .sSection .zx-section__title{ margin:0; }
+    #statsPage .sTwo{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,18em),1fr)); gap:var(--zx-space-4); }
+    #statsPage .sTwo h4{ margin-top:0 !important; }
+    #statsPage .sTabs{ background: linear-gradient(to right, var(--zx-bg) 30%, transparent) left center / 2em 100% no-repeat local, linear-gradient(to left, var(--zx-bg) 30%, transparent) right center / 2em 100% no-repeat local, linear-gradient(to right, var(--zx-border-strong), transparent) left center / .8em 100% no-repeat scroll, linear-gradient(to left, var(--zx-border-strong), transparent) right center / .8em 100% no-repeat scroll; }
     #statsPage .sChart{ position:relative; height:15em; }
-    #statsPage .sChart.tall{ height:18em; }
+    #statsPage .sChart.tall{ height:16em; }
+    #statsPage .sChart.sSingle{ height:auto; }
+    #statsPage .sSingleNote{ margin:0; font-size:var(--zx-fs-md); color:var(--zx-text); }
     #statsPage .sRank{ list-style:none; margin:0; padding:0; }
-    #statsPage .sRank li{ position:relative; display:flex; gap:.6em; align-items:baseline; padding:.28em .5em; border-radius:.35em; overflow:hidden; font-size:.92em; }
-    #statsPage .sRank li .bar{ position:absolute; left:0; top:0; bottom:0; background:rgba(59,130,246,.13); z-index:0; }
+    #statsPage .sRank li{ position:relative; display:flex; gap:var(--zx-space-2); align-items:baseline; padding:4px var(--zx-space-2); border-radius:var(--zx-radius-sm); overflow:hidden; font-size:var(--zx-fs-md); }
+    #statsPage .sRank li .bar{ position:absolute; left:0; top:0; bottom:0; background:var(--zx-primary-soft); z-index:0; }
     #statsPage .sRank li > span{ position:relative; z-index:1; }
     #statsPage .sRank li .k{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     #statsPage .sRank li .n{ flex:none; font-variant-numeric:tabular-nums; }
     #statsPage .sRank li.click{ cursor:pointer; }
-    #statsPage .sRank li.click:hover{ background:rgba(128,128,128,.12); }
-    #statsPage .sMore{ background:none; border:0; color:var(--s-blue); cursor:pointer; padding:.4em .5em 0; font:inherit; }
-    #statsPage .sEmpty{ text-align:center; padding:2.6em 1em; color:var(--s-muted); background:var(--theme_bg_primary); border:1px dashed var(--divider_color); border-radius:.8em; }
-    #statsPage .sEmpty i.icon{ font-size:2.6em; opacity:.45; display:block; margin:0 auto .3em; }
-    #statsPage .sEmpty b{ display:block; color:var(--text_color); font-size:1.1em; margin-bottom:.3em; }
+    #statsPage .sRank li.click:hover{ background:var(--zx-surface-2); }
+    #statsPage .sRank li.click:focus-visible{ outline:none; box-shadow:var(--zx-focus-ring); }
+    #statsPage .sMore{ background:none; border:0; color:var(--zx-link); cursor:pointer; padding:var(--zx-space-2) var(--zx-space-2) 0; min-height:28px; font:inherit; font-size:var(--zx-fs-sm); font-weight:600; }
+    #statsPage .sMore:hover{ text-decoration:underline; }
+    #statsPage .sEmpty{ text-align:center; padding:var(--zx-space-6) var(--zx-space-4); color:var(--zx-text-muted); background:var(--zx-surface); border:1px dashed var(--zx-border-strong); border-radius:var(--zx-radius-lg); margin-bottom:var(--zx-space-4); }
+    #statsPage .sEmpty i.icon{ font-size:2.2em; color:var(--zx-text-muted); display:block; margin:0 auto var(--zx-space-2); }
+    #statsPage .sEmpty b{ display:block; color:var(--zx-text); font-size:var(--zx-fs-lg); margin-bottom:var(--zx-space-1); }
     #statsPage .sTableWrap{ overflow-x:auto; }
-    #statsPage table.sTable{ width:100%; border-collapse:collapse; font-size:.9em; }
-    #statsPage table.sTable th{ text-align:left; padding:.5em .6em; border-bottom:2px solid var(--divider_color); white-space:nowrap; color:var(--text_color); }
-    #statsPage table.sTable td{ padding:.45em .6em; border-bottom:1px solid var(--divider_color); vertical-align:top; }
+    #statsPage table.sTable{ width:100%; border-collapse:separate; border-spacing:0; font-size:var(--zx-fs-sm); }
+    #statsPage table.sTable th{ text-align:left; padding:8px 12px; border-bottom:1px solid var(--zx-border); white-space:nowrap; color:var(--zx-text-muted); background:var(--zx-surface-2); font-size:var(--zx-fs-xs); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
+    #statsPage table.sTable td{ padding:8px 12px; border-bottom:1px solid var(--zx-border); vertical-align:middle; }
+    #statsPage table.sTable th.zx-num, #statsPage table.sTable td.zx-num{ text-align:right; font-variant-numeric:tabular-nums; }
+    #statsPage table.sTable tbody tr:last-child td{ border-bottom:0; }
     #statsPage table.sTable tbody tr.click{ cursor:pointer; }
-    #statsPage table.sTable tbody tr:hover{ background:rgba(128,128,128,.09); }
-    #statsPage .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.95em; }
+    #statsPage table.sTable tbody tr:hover td{ background:var(--zx-surface-2); }
+    #statsPage .mono{ font-family:var(--zx-font-mono); font-size:.95em; }
     #statsPage .nowrap{ white-space:nowrap; }
-    #statsPage .sInfo{ background:var(--theme_bg_primary); border:1px solid var(--divider_color); border-left:4px solid var(--s-blue); border-radius:.5em; padding:.7em 1em; margin-bottom:1em; font-size:.92em; }
+    #statsPage .sInfo{ margin-bottom:var(--zx-space-4); }
     #statsPage .sInfo summary{ cursor:pointer; font-weight:600; }
-    #statsPage .sInfo ul{ margin:.5em 0 0 1.1em; padding:0; }
-    #statsPage .chip{ display:inline-block; padding:.05em .6em; border-radius:1em; font-size:.8em; font-weight:650; white-space:nowrap; border:1px solid transparent; color:#fff; background:var(--c,#64748b); }
+    #statsPage .sInfo ul{ margin:var(--zx-space-2) 0 0 1.1em; padding:0; }
+    #statsPage .chip{ display:inline-block; padding:1px 8px; border-radius:var(--zx-radius-pill); font-size:var(--zx-fs-xs); font-weight:650; white-space:nowrap; border:1px solid transparent; color:var(--zx-on-solid); background:var(--c,#64748b); }
     #statsPage .chip.btn{ cursor:pointer; }
-    #statsPage .st2{ color:#1a9a3a; } #statsPage .st3{ color:#1f78c1; } #statsPage .st4{ color:#d9660a; } #statsPage .st5{ color:#c62828; }
-    body.darkTheme #statsPage .st2{ color:#4ade80; } body.darkTheme #statsPage .st3{ color:#60a5fa; }
-    body.darkTheme #statsPage .st4{ color:#fb923c; } body.darkTheme #statsPage .st5{ color:#f87171; }
-    #statsPage .sDetail{ display:block; font-size:.85em; color:var(--s-muted); word-break:break-word; }
-    #statsPage .sIpTag{ display:inline-flex; align-items:center; gap:.4em; padding:.25em .3em .25em .7em; border-radius:1em; border:1px solid var(--s-blue); color:var(--s-blue); font-size:.9em; }
-    #statsPage .sIpTag button{ border:0; background:none; cursor:pointer; color:inherit; font:inherit; padding:0 .3em; }
-    #statsPage .sLink{ color:var(--s-blue); cursor:pointer; background:none; border:0; padding:0; font:inherit; }
+    #statsPage .st2{ color:var(--zx-ok-text); } #statsPage .st3{ color:var(--zx-info-text); } #statsPage .st4{ color:var(--zx-warn-text); } #statsPage .st5{ color:var(--zx-danger-text); }
+    #statsPage .sDetail{ display:block; font-size:var(--zx-fs-sm); color:var(--zx-text-muted); word-break:break-word; }
+    #statsPage .sIpTag{ display:inline-flex; align-items:center; gap:var(--zx-space-1); padding:2px 4px 2px 12px; border-radius:var(--zx-radius-pill); border:1px solid var(--zx-primary); color:var(--zx-primary-soft-text); background:var(--zx-primary-soft); font-size:var(--zx-fs-sm); }
+    #statsPage .sIpTag button{ border:0; background:none; cursor:pointer; color:inherit; font:inherit; padding:0 6px; min-height:24px; }
+    #statsPage .sLink{ color:var(--zx-link); cursor:pointer; background:none; border:0; padding:0; font:inherit; }
     #statsPage .sLink:hover{ text-decoration:underline; }
-    #statsPage .sReasonRow{ display:grid; grid-template-columns:auto 1fr auto; gap:.2em .8em; align-items:center; padding:.45em .3em; border-bottom:1px solid var(--divider_color); }
+    #statsPage .sReasonRow{ display:grid; grid-template-columns:auto 1fr auto; gap:2px var(--zx-space-3); align-items:center; padding:var(--zx-space-2) var(--zx-space-1); border-bottom:1px solid var(--zx-border); }
     #statsPage .sReasonRow:last-child{ border-bottom:0; }
-    #statsPage .sReasonRow .meter{ grid-column:2; height:.5em; border-radius:.3em; background:rgba(128,128,128,.18); overflow:hidden; }
+    #statsPage .sReasonRow .meter{ grid-column:2; height:6px; border-radius:3px; background:var(--zx-surface-3); overflow:hidden; }
     #statsPage .sReasonRow .meter i{ display:block; height:100%; background:var(--c,#64748b); }
-    #statsPage .sReasonRow .why{ grid-column:1 / -1; font-size:.82em; color:var(--s-muted); }
-    #statsPage .sReasonRow.on{ background:rgba(59,130,246,.10); border-radius:.4em; }
-    #statsPage .sPager{ display:flex; gap:.6em; align-items:center; margin-top:.8em; flex-wrap:wrap; color:var(--s-muted); font-size:.9em; }
-    #statsPage .sBtn{ padding:.45em .9em; border-radius:.4em; border:1px solid var(--divider_color); background:var(--theme_bg_primary); color:var(--text_color); cursor:pointer; font:inherit; }
-    #statsPage .sBtn:hover{ border-color:var(--s-blue); }
-    #statsPage .sBtn.danger{ color:var(--s-red); }
-    #statsPage .sBtn[disabled]{ opacity:.5; cursor:default; }
-    #statsPage .sSkel{ height:1em; border-radius:.3em; background:rgba(128,128,128,.18); animation:sPulse 1.4s ease-in-out infinite; }
+    #statsPage .sReasonRow .why{ grid-column:1 / -1; font-size:var(--zx-fs-sm); color:var(--zx-text-muted); }
+    #statsPage .sReasonRow.on{ background:var(--zx-primary-soft); border-radius:var(--zx-radius-sm); }
+    #statsPage .sPager{ display:flex; gap:var(--zx-space-2); align-items:center; margin-top:var(--zx-space-3); flex-wrap:wrap; color:var(--zx-text-muted); font-size:var(--zx-fs-sm); }
+    #statsPage .sBtn{ display:inline-flex; align-items:center; justify-content:center; gap:var(--zx-space-2); min-height:var(--zx-control-h); padding:0 var(--zx-space-3); border-radius:var(--zx-radius-md); border:1px solid var(--zx-border-strong); background:var(--zx-surface); color:var(--zx-text); cursor:pointer; font:inherit; font-size:var(--zx-fs-md); font-weight:600; }
+    #statsPage .sBtn:hover{ background:var(--zx-surface-2); }
+    #statsPage .sBtn:focus-visible{ outline:none; box-shadow:var(--zx-focus-ring); }
+    #statsPage .sBtn.danger{ color:var(--zx-danger-text); border-color:var(--zx-danger-line); }
+    #statsPage .sBtn[disabled]{ color:var(--zx-text-faint); cursor:not-allowed; }
+    #statsPage .sSkel{ height:1em; border-radius:var(--zx-radius-sm); background:var(--zx-surface-3); animation:sPulse 1.4s ease-in-out infinite; }
     @keyframes sPulse{ 50%{ opacity:.45; } }
     @media (prefers-reduced-motion: reduce){ #statsPage .sSkel{ animation:none; } }
     /* Blocked: row drawer ("Why was this blocked?"), User-Agent column, search states */
     #statsPage #sbHost, #statsPage #sbReason{ max-width:min(16em, 100%); text-overflow:ellipsis; }   /* a very long hostname must not widen the filter bar */
     #statsPage table.sTable tbody tr.sbRow{ cursor:pointer; }
+    #statsPage .sBlockedScroll{ max-height:70vh; overflow:auto; }
+    #statsPage #sbTable thead th{ position:sticky; top:0; z-index:1; }
+    #statsPage #sbTable td.sbcReq{ min-width:11em; overflow-wrap:anywhere; word-break:normal; }
+    #statsPage td.sbcReason span.sDetail{ text-align:left; display:block; max-width:15em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:2px 0 0; }
+    #statsPage td.sbcReason .sDetail .sLink{ display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; text-align:left; white-space:nowrap; }
+    #statsPage td.sbcReason button.sDetail{ display:block; max-width:15em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; }
+    #statsPage td.sbcReason{ max-width:16em; }
     #statsPage .sbRef{ display:block; font-size:.8em; color:var(--s-muted); letter-spacing:.02em; }
     #statsPage .sbUa{ display:block; max-width:15em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--s-muted); font-size:.92em; }
     #statsPage .sbGo{ color:var(--s-muted); padding:.2em .35em; border-radius:.3em; }
-    #statsPage tr.sbRow:hover .sbGo, #statsPage .sbGo:focus-visible{ color:var(--text_color); }
+    #statsPage tr.sbRow:hover .sbGo, #statsPage .sbGo:focus-visible{ color:var(--zx-text); }
     #statsPage td.sbcReason .sDetail{ display:inline; margin-left:.45em; }
     #statsPage .sbNote{ color:var(--s-muted); font-size:.85em; }
     #statsPage .sRefTag{ display:inline-flex; align-items:center; gap:.4em; padding:.25em .3em .25em .7em; border-radius:1em; border:1px solid var(--s-blue); color:var(--s-blue); font-size:.9em; }
@@ -138,13 +145,18 @@
     .zx-drawer [hidden]{ display:none !important; }
     @media (max-width: 600px){
         #statsPage .sBar .sSeg{ width:100%; }
-        #statsPage .sBar .sSeg button{ flex:1 1 auto; padding:.5em .3em; }
+        #statsPage .sBar .sSeg button{ flex:1 1 auto; padding:0 var(--zx-space-1); min-height:44px; }
+        #statsPage .sBar select, #statsPage .sBar .sBtn{ min-height:44px; }
         #statsPage .sKpis{ grid-template-columns:repeat(2,1fr); }
+        #statsPage .sKpis > :last-child:nth-child(odd){ grid-column:1 / -1; }
         #statsPage .sChart{ height:13em; }
-        #statsPage #statsSitesTable td{ white-space:nowrap; }
+        #statsPage .sBlockedScroll{ max-height:none; overflow:visible; }
+        #statsPage #sbTable td.sbcReq{ min-width:0; }
+        #statsPage td.sbcReason{ max-width:none; }
+        #statsPage td.sbcReason span.sDetail, #statsPage td.sbcReason button.sDetail{ max-width:100%; }
         #statsPage #sbTable thead{ display:none; }
         #statsPage #sbTable, #statsPage #sbTable tbody{ display:block; }
-        #statsPage #sbTable tr{ display:block; padding:.55em 0; border-bottom:1px solid var(--divider_color); }
+        #statsPage #sbTable tr{ display:block; padding:.55em 0; border-bottom:1px solid var(--zx-border); }
         #statsPage #sbTable td{ display:inline-block; border:0; padding:.1em .6em .1em 0; vertical-align:middle; }
         #statsPage #sbTable td.sbcHost{ color:var(--s-muted); }
         #statsPage #sbTable td.sbcUa{ display:none; }
@@ -156,26 +168,27 @@
 </style>
 
 <div class="standardContainer" id="statsPage">
-    <div class="sHead">
-        <div>
-            <h2>Statistics</h2>
-            <p>Traffic of your proxy rules, and what was blocked and why.</p>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Statistics</h2>
+            <p class="zx-page-header__sub">Traffic of your sites, and what was blocked and why.</p>
         </div>
-    </div>
-    <div class="sTabs" role="tablist" aria-label="Statistics views">
-        <button type="button" role="tab" class="active" data-stab="overview" aria-selected="true">Overview</button>
-        <button type="button" role="tab" data-stab="blocked" aria-selected="false">Blocked <span class="sBadge" id="sBlockedBadge" style="display:none;"></span></button>
+    </header>
+    <div class="sTabs zx-tabs" role="tablist" aria-label="Statistics views">
+        <button type="button" role="tab" class="zx-tab active" data-stab="overview" aria-selected="true"><i class="chart bar icon" aria-hidden="true"></i> Overview</button>
+        <button type="button" role="tab" class="zx-tab" data-stab="blocked" aria-selected="false"><i class="ban icon" aria-hidden="true"></i> Blocked <span class="zx-badge zx-badge--warn" id="sBlockedBadge" style="display:none;"></span></button>
     </div>
 
     <!-- ===================== Overview ===================== -->
     <div id="sOverview">
         <div class="sBar">
-            <div class="sSeg" id="sRange" role="group" aria-label="Time range">
-                <button type="button" data-range="today" class="active">Today</button>
-                <button type="button" data-range="yesterday">Yesterday</button>
-                <button type="button" data-range="7">7 days</button>
-                <button type="button" data-range="30">30 days</button>
-                <button type="button" data-range="custom">Custom</button>
+            <div class="sSeg zx-segmented" id="sRange" role="group" aria-label="Time range">
+                <button type="button" data-range="today" class="zx-segmented__item active">Today</button>
+                <button type="button" class="zx-segmented__item" data-range="yesterday">Yesterday</button>
+                <button type="button" class="zx-segmented__item" data-range="7">7 days</button>
+                <button type="button" class="zx-segmented__item" data-range="30">30 days</button>
+                <button type="button" class="zx-segmented__item" data-range="custom">Custom</button>
             </div>
             <span class="sCustom" id="sCustom">
                 <input type="text" class="sDate" id="statsRangeStart" placeholder="From date" aria-label="From date" autocomplete="off">
@@ -183,7 +196,7 @@
                 <input type="text" class="sDate" id="statsRangeEnd" placeholder="End date (optional)" aria-label="End date" autocomplete="off">
                 <button type="button" class="sBtn" id="sApply">Apply</button>
             </span>
-            <select id="statsSiteSelect" aria-label="Site">
+            <select id="statsSiteSelect" class="zx-select" aria-label="Site">
                 <option value="">All sites</option>
             </select>
             <button type="button" class="sBtn" id="sFilters"><i class="filter icon"></i> Filters</button>
@@ -198,30 +211,31 @@
 
         <div id="statisticRenderElement">
             <div class="sKpis" id="sKpis">
-                <div class="sKpi" style="--k:#3b82f6"><span class="l">Requests</span><span class="v totalViewCount">-</span><span class="u" id="sKpiRange"></span></div>
-                <div class="sKpi" style="--k:#22a06b"><span class="l">Successful</span><span class="v totalSuccCount">-</span><span class="u" id="sKpiOkPct"></span></div>
-                <div class="sKpi" style="--k:#e5484d"><span class="l">Errors</span><span class="v totalErrorCount">-</span><span class="u" id="sKpiErrPct"></span></div>
-                <button type="button" class="sKpi" style="--k:#f59e0b" id="sKpiBlocked" title="Show what was blocked and why"><span class="l">Blocked</span><span class="v" id="sKpiBlockedVal">-</span><span class="u">see what and why &rsaquo;</span></button>
-                <div class="sKpi" style="--k:#8b5cf6"><span class="l">Client IPs</span><span class="v" id="sKpiIps">-</span><span class="u">distinct addresses</span></div>
+                <div class="sKpi"><span class="l">Requests</span><span class="v totalViewCount">-</span><span class="u" id="sKpiRange"></span></div>
+                <div class="sKpi"><span class="l">Successful</span><span class="v totalSuccCount">-</span><span class="u" id="sKpiOkPct"></span></div>
+                <div class="sKpi"><span class="l">Errors</span><span class="v totalErrorCount">-</span><span class="u" id="sKpiErrPct"></span></div>
+                <button type="button" class="sKpi" id="sKpiBlocked" title="Show what was blocked and why"><span class="l">Blocked</span><span class="v" id="sKpiBlockedVal">-</span><span class="u">see what and why &rsaquo;</span></button>
+                <div class="sKpi"><span class="l">Client IPs</span><span class="v" id="sKpiIps">-</span><span class="u">distinct addresses</span></div>
             </div>
 
-            <div class="sCard wide" id="trendGraphs" style="margin-bottom:1em;">
+            <div class="sCard wide" id="trendGraphs" style="margin-bottom:var(--zx-space-4);">
                 <h4>Requests over time</h4>
                 <p class="sub">Requests per day in the selected range.</p>
                 <div class="sChart tall"><canvas id="requestTrends" role="img" aria-label="Requests per day"></canvas></div>
             </div>
 
-            <div class="sCard wide" id="statsSitesSegment" style="margin-bottom:1em;">
+            <div class="sCard wide" id="statsSitesSegment" style="margin-bottom:var(--zx-space-4);">
                 <h4>Sites</h4>
-                <p class="sub">Per proxy rule traffic of the selected period. Select a row to filter everything on this page by that site.</p>
-                <div class="sTableWrap">
-                    <table class="sTable" id="statsSitesTable">
-                        <thead><tr><th>Site</th><th>Requests</th><th>Errors</th><th>Blocked</th><th>Visitors</th><th>Trend</th></tr></thead>
+                <p class="sub">Traffic per site in the selected period. Select a row to filter this page by that site.</p>
+                <div class="sTableWrap zx-table-wrap zx-table-wrap--tall" tabindex="0" role="region" aria-label="Sites">
+                    <table class="sTable zx-table zx-table--compact" id="statsSitesTable">
+                        <thead><tr><th>Site</th><th class="zx-num">Requests</th><th class="zx-num">Errors</th><th class="zx-num">Blocked</th><th class="zx-num">Visitors</th><th>Trend</th></tr></thead>
                         <tbody id="statsSitesBody"><tr><td colspan="6"><div class="sSkel"></div></td></tr></tbody>
                     </table>
                 </div>
             </div>
 
+            <div class="sSection"><h3 class="zx-section__title">Clients</h3></div>
             <div class="sGrid">
                 <div class="sCard">
                     <h4>Visitor countries</h4>
@@ -232,41 +246,6 @@
                     <h4>Top client IPs</h4>
                     <p class="sub">Most active addresses. Select one to look it up in Visitors.</p>
                     <ul class="sRank" id="stats_requestCountlist"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>Status codes</h4>
-                    <p class="sub">HTTP status returned to clients.</p>
-                    <ul class="sRank" id="stats_StatusTable"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>Top paths</h4>
-                    <p class="sub">Host and path; the query string depends on the <a href="#" id="sFiltersLink">Filters</a> setting.</p>
-                    <ul class="sRank" id="stats_PathTable"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>Requested hostnames</h4>
-                    <p class="sub">Hostnames clients asked for.</p>
-                    <ul class="sRank" id="stats_downstreamTable"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>Forwarded upstreams</h4>
-                    <p class="sub">Where requests were sent.</p>
-                    <ul class="sRank" id="stats_upstreamTable"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>Referring sites</h4>
-                    <p class="sub">Sources of traffic by Referer header.</p>
-                    <ul class="sRank" id="stats_RefererTable"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>User agents</h4>
-                    <p class="sub">Most common User-Agent headers.</p>
-                    <ul class="sRank" id="stats_UserAgentTable"></ul>
-                </div>
-                <div class="sCard">
-                    <h4>Forward traffic types</h4>
-                    <p class="sub">How requests were handled (proxy type, or the rule that answered them).</p>
-                    <ul class="sRank forwardTypeCounts"></ul>
                 </div>
                 <div class="sCard">
                     <h4>IP versions</h4>
@@ -294,19 +273,56 @@
                     <ul class="sRank" id="stats_OSVersionList"></ul>
                 </div>
                 <div class="sCard">
+                    <h4>User agents</h4>
+                    <p class="sub">Most common User-Agent headers.</p>
+                    <ul class="sRank" id="stats_UserAgentTable"></ul>
+                </div>
+            </div>
+            <div class="sSection"><h3 class="zx-section__title">Requests</h3></div>
+            <div class="sGrid">
+                <div class="sCard">
+                    <h4>Status codes</h4>
+                    <p class="sub">HTTP status returned to clients.</p>
+                    <ul class="sRank" id="stats_StatusTable"></ul>
+                </div>
+                <div class="sCard">
+                    <h4>Top paths</h4>
+                    <p class="sub">Host and path; the query string depends on the <a href="#" id="sFiltersLink">Filters</a> setting.</p>
+                    <ul class="sRank" id="stats_PathTable"></ul>
+                </div>
+                <div class="sCard">
+                    <h4>Requested hostnames</h4>
+                    <p class="sub">Hostnames clients asked for.</p>
+                    <ul class="sRank" id="stats_downstreamTable"></ul>
+                </div>
+                <div class="sCard">
+                    <h4>Forwarded upstreams</h4>
+                    <p class="sub">Where requests were sent.</p>
+                    <ul class="sRank" id="stats_upstreamTable"></ul>
+                </div>
+                <div class="sCard">
+                    <h4>Referring sites</h4>
+                    <p class="sub">Sources of traffic by Referer header.</p>
+                    <ul class="sRank" id="stats_RefererTable"></ul>
+                </div>
+                <div class="sCard">
+                    <h4>Forward traffic types</h4>
+                    <p class="sub">How requests were handled (proxy type, or the rule that answered them).</p>
+                    <ul class="sRank forwardTypeCounts"></ul>
+                </div>
+                <div class="sCard">
                     <h4>Request file types</h4>
                     <p class="sub">What kind of resources were requested.</p>
                     <div class="sChart"><canvas id="stats_filetype" role="img" aria-label="File types"></canvas></div>
                 </div>
             </div>
-            <button type="button" class="sBtn" id="sAdvanced" style="float:right;"><i class="external square alternate icon"></i> Advanced operations</button>
-            <div style="clear:both;"></div>
+            <div class="zx-btn-row" style="justify-content:flex-end;"><button type="button" class="sBtn" id="sAdvanced"><i class="external square alternate icon" aria-hidden="true"></i> Advanced operations</button></div>
         </div>
     </div>
 
     <!-- ===================== Blocked ===================== -->
     <div id="sBlocked" style="display:none;">
-        <details class="sInfo" id="sBlockedInfo">
+        <details class="sInfo zx-callout zx-callout--info" id="sBlockedInfo">
             <summary>What counts as blocked?</summary>
             <p style="margin:.5em 0 0;">A request is listed here when Zoraxy itself refused it before it reached your server:</p>
             <ul>
@@ -320,31 +336,31 @@
         </details>
 
         <div class="sBar">
-            <div class="sSeg" id="sbSince" role="group" aria-label="Time window">
-                <button type="button" data-h="1">1 h</button>
-                <button type="button" data-h="24" class="active">24 h</button>
-                <button type="button" data-h="168">7 days</button>
-                <button type="button" data-h="0">All kept</button>
+            <div class="sSeg zx-segmented" id="sbSince" role="group" aria-label="Time window">
+                <button type="button" class="zx-segmented__item" data-h="1">1 h</button>
+                <button type="button" data-h="24" class="zx-segmented__item active">24 h</button>
+                <button type="button" class="zx-segmented__item" data-h="168">7 days</button>
+                <button type="button" class="zx-segmented__item" data-h="0">All kept</button>
             </div>
-            <select id="sbReason" aria-label="Reason"><option value="">All reasons</option></select>
-            <select id="sbHost" aria-label="Host"><option value="">All hosts</option></select>
+            <select id="sbReason" class="zx-select" aria-label="Reason"><option value="">All reasons</option></select>
+            <select id="sbHost" class="zx-select" aria-label="Host"><option value="">All hosts</option></select>
             <input type="search" class="sGrow" id="sbSearch" maxlength="300" placeholder="Reference ID or IP, or host, path, rule..." aria-label="Search by Reference ID or IP, or filter by host, path or rule" autocomplete="off" spellcheck="false">
             <span class="sRefTag" id="sbRefTag" style="display:none;"><span class="mono" id="sbRefVal"></span><button type="button" id="sbRefClear" aria-label="Clear Reference ID filter">&times;</button></span>
             <span class="sIpTag" id="sbIpTag" style="display:none;"><span class="mono" id="sbIpVal"></span><button type="button" id="sbIpClear" aria-label="Clear IP filter">&times;</button></span>
             <button type="button" class="sBtn" id="sbReload" title="Reload"><i class="sync alternate icon"></i></button>
         </div>
 
-        <div id="sbRecordingOff" class="sInfo" role="note" style="display:none; border-left-color:var(--s-amber);"><b>Recording is switched off.</b> New blocked requests are not added to this list; it shows what was kept before. Switch it on again with "Record blocked requests" below.</div>
+        <div id="sbRecordingOff" class="sInfo zx-callout zx-callout--warn" role="note" style="display:none;"><b>Recording is switched off.</b> New blocked requests are not added to this list; it shows what was kept before. Switch it on again with "Record blocked requests" below.</div>
         <div id="sbEmpty" class="sEmpty" style="display:none;"></div>
         <div id="sbNotFound" class="sEmpty" role="status" style="display:none;"></div>
 
         <div id="sbData">
           <div id="sbMain">
             <div class="sKpis">
-                <div class="sKpi" style="--k:#f59e0b"><span class="l">Blocked in this view</span><span class="v" id="sbkTotal">-</span><span class="u" id="sbkTotalSub"></span></div>
-                <div class="sKpi" style="--k:#e5484d"><span class="l">Top reason</span><span class="v" id="sbkReason" style="font-size:1.25em;">-</span><span class="u" id="sbkReasonSub"></span></div>
-                <div class="sKpi" style="--k:#3b82f6"><span class="l">Distinct IPs</span><span class="v" id="sbkIps">-</span><span class="u" id="sbkIpsSub"></span></div>
-                <div class="sKpi" style="--k:#8b5cf6"><span class="l">Hosts hit</span><span class="v" id="sbkHosts">-</span><span class="u" id="sbkHostsSub"></span></div>
+                <div class="sKpi"><span class="l">Blocked in this view</span><span class="v" id="sbkTotal">-</span><span class="u" id="sbkTotalSub"></span></div>
+                <div class="sKpi"><span class="l">Top reason</span><span class="v" id="sbkReason" style="font-size:1.25em;">-</span><span class="u" id="sbkReasonSub"></span></div>
+                <div class="sKpi"><span class="l">Distinct IPs</span><span class="v" id="sbkIps">-</span><span class="u" id="sbkIpsSub"></span></div>
+                <div class="sKpi"><span class="l">Hosts hit</span><span class="v" id="sbkHosts">-</span><span class="u" id="sbkHostsSub"></span></div>
             </div>
 
             <div class="sGrid">
@@ -363,18 +379,20 @@
                     <p class="sub">Select an address to filter. The arrow opens it in Visitors.</p>
                     <ul class="sRank" id="sbTopIps"></ul>
                 </div>
-                <div class="sCard">
-                    <h4>Top hosts</h4>
-                    <ul class="sRank" id="sbTopHosts"></ul>
-                    <h4 style="margin-top:1em;">Top paths</h4>
-                    <ul class="sRank" id="sbTopPaths"></ul>
+                <div class="sCard wide">
+                  <div class="sTwo">
+                    <div><h4>Top hosts</h4>
+                    <ul class="sRank" id="sbTopHosts"></ul></div>
+                    <div><h4>Top paths</h4>
+                    <ul class="sRank" id="sbTopPaths"></ul></div>
+                  </div>
                 </div>
             </div>
 
             <div class="sCard wide">
                 <h4>Recent blocked requests</h4>
                 <p class="sub" id="sbListSub">Newest first.</p>
-                <div class="sTableWrap">
+                <div class="sTableWrap sBlockedScroll">
                     <table class="sTable" id="sbTable">
                         <thead><tr><th>Time</th><th>IP address</th><th>Host</th><th>Request</th><th class="sbcUa">User-Agent</th><th>Status</th><th>Reason</th><th class="sbcGo"><span class="zx-sr-only">Details</span></th></tr></thead>
                         <tbody id="sbBody"></tbody>
@@ -458,6 +476,15 @@
         var el = document.getElementById(id);
         if (!el || typeof Chart === "undefined") return;
         var th = chartTheme();
+        var holder = $(el).closest(".sChart");
+        holder.removeClass("sSingle").find(".sSingleNote").remove();
+        $(el).show();
+        if (entries.length === 1){
+            //one slice is a full ring that says nothing: show it as a sentence instead
+            $(el).hide();
+            holder.addClass("sSingle").append($('<p class="sSingleNote"></p>').text(entries[0][0] + ": " + num(entries[0][1]) + " (100%)"));
+            return;
+        }
         charts[id] = new Chart(el, {
             type: "doughnut",
             data: {labels: entries.map(function(e){ return e[0]; }), datasets: [{data: entries.map(function(e){ return e[1]; }),
@@ -473,7 +500,7 @@
         opts = opts || {};
         var el = $(sel).empty();
         var entries = Object.entries(map || {}).filter(function(e){ return e[1] > 0; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 100);
-        if (!entries.length){ el.html('<li style="color:var(--text_color_secondary)">No data</li>'); return; }
+        if (!entries.length){ el.html('<li style="color:var(--zx-text-muted)">No data</li>'); return; }
         var max = entries[0][1], total = entries.reduce(function(s, x){ return s + x[1]; }, 0);
         var limit = opts.limit || 8;
         function row(e, hidden){
@@ -521,7 +548,7 @@
                 scales: {x: {beginAtZero: true, grid: {color: th.grid}, border: {display: false}, ticks: {color: th.text, precision: 0, maxTicksLimit: 5}},
                          y: {grid: {display: false}, border: {display: false}, ticks: {color: th.text, font: {size: 11}}}}}
         });
-        if (!entries.length){ $(el).parent().html('<div style="color:var(--text_color_secondary)">No country data</div>'); }
+        if (!entries.length){ $(el).parent().html('<div style="color:var(--zx-text-muted)">No country data</div>'); }
     }
 
     function renderIPVersions(ips){
@@ -690,7 +717,7 @@
         var max = Math.max.apply(null, values); if (max <= 0) max = 1;
         var w = 90, h = 22;
         var pts = values.map(function(v, i){ return (i * w / (values.length - 1)).toFixed(1) + "," + (h - 2 - (v / max) * (h - 4)).toFixed(1); }).join(" ");
-        return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="traffic trend"><polyline fill="none" stroke="#3b82f6" stroke-width="1.5" points="' + pts + '"/></svg>';
+        return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="traffic trend"><polyline fill="none" style="stroke:var(--zx-primary)" stroke-width="1.5" points="' + pts + '"/></svg>';
     }
 
     function loadSites(r, seq){
@@ -707,16 +734,28 @@
             var sel = $("#statsSiteSelect"), current = sel.val();
             sel.find("option:not(:first)").remove();
             var sites = data.Sites || [];
-            if (!sites.length) body.html("<tr><td colspan='6' style='color:var(--text_color_secondary)'>No per-site data in this period</td></tr>");
-            sites.forEach(function(s){
+            var siteCap = 8;
+            $("#sSitesMore").remove();
+            if (!sites.length) body.html("<tr><td colspan='6' class='zx-empty-cell' style='color:var(--zx-text-muted)'>No per-site data in this period</td></tr>");
+            sites.forEach(function(s, i){
                 sel.append($("<option>").val(s.Site).text(s.Site));
                 var trend = (S.dates.length > 1) ? s.PerDay : s.Hourly;
                 var errRate = s.Total > 0 ? " (" + (s.Errors * 100 / s.Total).toFixed(1) + "%)" : "";
-                var row = $("<tr class='click'>").append($("<td>").text(s.Site), $("<td>").text(num(s.Total)), $("<td>").text(num(s.Errors) + errRate),
-                    $("<td>").text(num(s.Blocked)), $("<td>").text(num(s.Visitors)), $("<td>").html(sparkline(trend)));
+                var row = $("<tr class='click'>").append($("<td data-label='Site'>").text(s.Site), $("<td class='zx-num' data-label='Requests'>").text(num(s.Total)), $("<td class='zx-num' data-label='Errors'>").text(num(s.Errors) + errRate),
+                    $("<td class='zx-num' data-label='Blocked'>").text(num(s.Blocked)), $("<td class='zx-num' data-label='Visitors'>").text(num(s.Visitors)), $("<td data-label='Trend'>").html(sparkline(trend)));
+                if (i >= siteCap){ row.attr("data-extra", "1").hide(); }
                 row.on("click", function(){ $("#statsSiteSelect").val(s.Site); loadOverview(); });
                 body.append(row);
             });
+            if (sites.length > siteCap){
+                var more = $('<button type="button" class="sMore" id="sSitesMore">' + tf("Show all {0}", sites.length) + '</button>');
+                more.on("click", function(){
+                    var open = body.find("tr[data-extra]:visible").length > 0;
+                    body.find("tr[data-extra]").toggle(!open);
+                    more.text(open ? tf("Show all {0}", sites.length) : t("Show fewer"));
+                });
+                $("#statsSitesTable").closest(".sTableWrap").after(more);
+            }
             sel.val(current);
         });
     }
@@ -816,7 +855,7 @@
             } else {
                 var sd = splitDetail(e.detail);
                 var nm = sd.name ? (info.tab ? '<button type="button" class="sLink" data-rule="' + esc(e.reason) + '" title="' + esc(info.where || "") + '">' + esc(sd.name) + '</button>' : esc(sd.name)) : "";
-                out += '<span class="sDetail">' + nm + (sd.name && sd.note ? ' ' : '') + (sd.note ? '<span class="sbNote">' + esc(sd.note) + '</span>' : '') + '</span>';
+                out += '<span class="sDetail" title="' + esc(e.detail || "") + '">' + nm + (sd.name && sd.note ? ' ' : '') + (sd.note ? '<span class="sbNote">' + esc(sd.note) + '</span>' : '') + '</span>';
             }
         }
         return out + aiExplainButton(e);
@@ -827,9 +866,9 @@
         tr.append('<td class="nowrap" title="' + esc(new Date(e.t * 1000).toLocaleString()) + '"><span class="sbAgo">' + ago(e.t) + '</span>' + (e.ref ? '<span class="sbRef mono">' + esc(fmtRef(e.ref)) + '</span>' : '') + '</td>',
             '<td class="nowrap"><span class="mono sLink" data-ip="' + esc(e.ip) + '" title="Show only this address">' + esc(e.ip) + '</span>' +
                 ' <button type="button" class="sLink" data-visitor="' + esc(e.ip) + '" title="Open in Visitors" aria-label="Open ' + esc(e.ip) + ' in Visitors"><i class="external alternate icon"></i></button>' +
-                (e.country ? ' <small style="color:var(--text_color_secondary)">' + esc(LOCAL_RE.test(e.country) ? "LAN" : e.country) + '</small>' : '') + '</td>',
+                (e.country ? ' <small style="color:var(--zx-text-muted)">' + esc(LOCAL_RE.test(e.country) ? "LAN" : e.country) + '</small>' : '') + '</td>',
             '<td class="sbcHost">' + esc(e.host) + '</td>',
-            '<td class="sbcReq" style="word-break:break-all;"><b>' + esc(e.method) + '</b> <span class="mono">' + esc(dec(e.path)) + '</span></td>',
+            '<td class="sbcReq"><b>' + esc(e.method) + '</b> <span class="mono">' + esc(dec(e.path)) + '</span></td>',
             '<td class="sbcUa">' + (e.ua ? '<span class="sbUa" title="' + esc(e.ua) + '">' + esc(e.ua) + '</span>' : '<span class="sbUa">-</span>') + '</td>',
             '<td class="nowrap">' + statusCell(e.status) + '</td>',
             '<td class="sbcReason">' + reasonCell(e) + '</td>',

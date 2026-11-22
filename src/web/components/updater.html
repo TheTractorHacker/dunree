@@ -167,7 +167,7 @@
                 </details>
                 <div class="up-hero__actions" id="upActions">
                     <button type="button" class="zx-btn zx-btn--primary" id="upAppBtn" onclick="window.upConfirm('app');" style="display:none;"><i class="download icon" aria-hidden="true"></i> <span id="upAppBtnLabel">Update App</span></button>
-                    <button type="button" class="zx-btn zx-btn--secondary" id="upCheckBtn" onclick="window.upCheck(true);"><i class="refresh icon" aria-hidden="true"></i> Check for updates</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="upCheckBtn" onclick="window.upCheck(true);"><i class="refresh icon" aria-hidden="true"></i> <span id="upCheckLabel">Check for updates</span></button>
                 </div>
                 <div class="up-hero__why" id="upBtnReasons"></div>
             </div>
@@ -255,7 +255,7 @@
         <div class="zx-card__head"><h3 class="zx-card__title">Database and configuration</h3></div>
         <p class="zx-card__desc">Run the same migrations Zoraxy runs at start-up, for example after copying a configuration from an older version. Reports what changed. No restart.</p>
         <div class="zx-card__body">
-            <button type="button" class="zx-btn zx-btn--secondary" id="upDbBtn" onclick="window.upConfirm('db');"><i class="database icon" aria-hidden="true"></i> Update Database</button>
+            <button type="button" class="zx-btn zx-btn--secondary" id="upDbBtn" onclick="window.upConfirm('db');"><i class="database icon" aria-hidden="true"></i> Update database</button>
             <span class="up-reason" id="upDbReason"></span>
         </div>
     </section>
@@ -404,6 +404,7 @@
             }
         }
         $("#upAppBtn").toggle(canUpdate && !running);
+        $("#upCheckLabel").text(state.checkErr ? T("Try again") : T("Check for updates"));
         $("#upCheckBtn").toggle(!running);
         $("#upActions").toggle(!running);
     }
@@ -560,7 +561,7 @@
     }
 
     window.upCheck = function(force){
-        $("#upCheckBtn").addClass("loading is-loading");
+        $("#upCheckBtn").addClass("disabled").attr("aria-busy", "true").find("i.icon").attr("class", "circle notch loading icon");
         state.checking = true; renderHero();
         $.get("./api/updater/check" + (force ? "?force=true" : ""), function(data){
             renderCheck(data.result);
@@ -572,7 +573,7 @@
                     T("Zoraxy could not get the release list from GitHub. Check that this server can reach github.com, then try again.")};
             renderHero();
             msgbox(errText(xhr), false, 6000);
-        }).always(function(){ state.checking = false; $("#upCheckBtn").removeClass("loading is-loading"); });
+        }).always(function(){ state.checking = false; $("#upCheckBtn").removeClass("disabled").removeAttr("aria-busy").find("i.icon").attr("class", "refresh icon"); });
     };
 
     window.upSetToken = function(clear){

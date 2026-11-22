@@ -6,70 +6,51 @@
     an untrusted peer is ignored.
 -->
 <style>
-    #visitorsPage .vKpis{
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 0.8em;
-        margin: 1em 0;
-    }
-    #visitorsPage .vKpi{
-        background: var(--theme_bg_primary);
-        border: 1px solid var(--divider_color);
-        border-radius: 0.8em;
-        padding: 0.8em 1em;
-    }
-    #visitorsPage .vKpi .vKpiLabel{ font-size: 0.82em; color: var(--text_color_secondary); }
-    #visitorsPage .vKpi .vKpiValue{ font-size: 1.7em; font-weight: 600; line-height: 1.2; }
-    #visitorsPage .vKpi .vKpiSub{ font-size: 0.78em; color: var(--text_color_secondary); min-height: 1.2em; }
+    #visitorsPage .zx-statrow .zx-stat__hint { min-height: 1.2em; }
+    #visitorsPage .zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
+    #visitorsPage .zx-toggle-row > .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
     #visitorsPage .vToolbar{
-        display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center; margin: 0.8em 0;
+        display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin: 0 0 var(--zx-space-3);
     }
     #visitorsPage .vToolbar .ui.input{ flex: 1 1 14em; min-width: 10em; }
-    #visitorsPage .vToolbar select{
-        padding: 0.55em 0.6em; border-radius: 0.3em; border: 1px solid var(--divider_color);
-        background: var(--theme_bg_primary); color: var(--text_color); max-width: 13em; min-height: 2.6em; font: inherit;
-    }
+    #visitorsPage .vToolbar select, #visitorsPage .vPager select{ width: auto; flex: 0 1 9em; min-width: 0; max-width: 10em; padding-left: 10px; padding-right: 28px; }
+    #visitorsPage .vToolbar .ui.input{ flex: 1 1 12em; min-width: 9em; }
+    #visitorsPage .vToolbar .zx-btn-row{ margin-left: auto; flex-wrap: nowrap; }
+    @media (min-width: 1100px){ #visitorsPage .vToolbar .zx-btn-row .zx-btn:not(.zx-btn--icon){ padding-left: 10px; padding-right: 10px; } }
+    #visitorsPage .vToolbar .vSpacer{ display: none; }
+    #visitorsPage .vPager select{ flex: 0 0 auto; }
+    #visitorsPage .vToolbar .vSpacer{ flex: 1 1 0; }
     #visitorsPage .vTableWrap{ overflow-x: auto; }
-    #visitorsPage table.vTable{ width: 100%; border-collapse: collapse; font-size: 0.92em; }
-    #visitorsPage table.vTable th{
-        text-align: left; padding: 0.6em 0.7em; white-space: nowrap; user-select: none;
-        border-bottom: 2px solid var(--divider_color); color: var(--table_header_text_color, var(--text_color));
-    }
-    #visitorsPage table.vTable th.sortable{ cursor: pointer; }
-    #visitorsPage table.vTable th.sortable:hover{ text-decoration: underline; }
-    #visitorsPage table.vTable td{ padding: 0.5em 0.7em; border-bottom: 1px solid var(--divider_color); vertical-align: top; }
+    #visitorsPage .vTableWrap--scroll{ max-height: 70vh; overflow-y: auto; }
+    #visitorsPage table.vTable th.sortable{ cursor: pointer; user-select: none; white-space: nowrap; }
     #visitorsPage table.vTable td:nth-child(1), #visitorsPage table.vTable td:nth-child(2), #visitorsPage table.vTable td:nth-child(3), #visitorsPage table.vTable td:nth-child(4){ white-space: nowrap; }
     #visitorsPage table.vTable tbody tr{ cursor: pointer; }
-    #visitorsPage table.vTable tbody tr:hover{ background: rgba(128,128,128,0.10); }
-    #visitorsPage .vMono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.95em; }
-    #visitorsPage .vUA{ max-width: 22em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text_color_secondary); }
+    #visitorsPage .vMono{ font-family: var(--zx-font-mono); font-size: 0.95em; }
+    #visitorsPage .vUA{ max-width: 22em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text-muted); }
     #visitorsPage .vHosts{ max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #visitorsPage .vChip{
-        display: inline-block; padding: 0.05em 0.55em; border-radius: 1em; font-size: 0.8em; font-weight: 600;
-        border: 1px solid var(--divider_color); white-space: nowrap;
+    #visitorsPage .vChip, #visitorDrawer .vChip{
+        display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-xs); font-weight: 600; line-height: 1.5;
+        border: 1px solid var(--zx-neutral-line); background: var(--zx-neutral-bg); color: var(--zx-neutral-text); white-space: nowrap;
     }
-    #visitorsPage .vChip.cloudflare{ background: rgba(243,128,32,0.15); color: #d9660a; border-color: rgba(243,128,32,0.5); }
-    #visitorsPage .vChip.proxy{ background: rgba(33,133,208,0.14); color: #1f78c1; border-color: rgba(33,133,208,0.45); }
-    #visitorsPage .vChip.direct{ color: var(--text_color_secondary); }
-    #visitorsPage .vChip.new{ background: rgba(33,186,69,0.16); color: #1a9a3a; border-color: rgba(33,186,69,0.5); margin-left: 0.4em; }
-    #visitorsPage .vChip.blocked{ background: rgba(219,40,40,0.14); color: #c62828; border-color: rgba(219,40,40,0.5); }
-    #visitorsPage .vStatus2{ color: #1a9a3a; } #visitorsPage .vStatus3{ color: #1f78c1; }
-    #visitorsPage .vStatus4{ color: #d9660a; } #visitorsPage .vStatus5{ color: #c62828; }
+    #visitorsPage .vChip.cloudflare, #visitorDrawer .vChip.cloudflare{ background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #visitorsPage .vChip.proxy, #visitorDrawer .vChip.proxy{ background: var(--zx-info-bg); color: var(--zx-info-text); border-color: var(--zx-info-line); }
+    #visitorsPage .vChip.new{ background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); margin-left: var(--zx-space-2); }
+    #visitorsPage .vChip.blocked, #visitorDrawer .vChip.blocked{ background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
+    #visitorsPage .vStatus2, #visitorDrawer .vStatus2{ color: var(--zx-ok-text); } #visitorsPage .vStatus3, #visitorDrawer .vStatus3{ color: var(--zx-info-text); }
+    #visitorsPage .vStatus4, #visitorDrawer .vStatus4{ color: var(--zx-warn-text); } #visitorsPage .vStatus5, #visitorDrawer .vStatus5{ color: var(--zx-danger-text); }
     #visitorsPage .vPager{ display: flex; align-items: center; gap: 0.6em; margin-top: 0.8em; flex-wrap: wrap; }
-    #visitorsPage .vEmpty{ text-align: center; padding: 2.5em 1em; color: var(--text_color_secondary); }
-    #visitorsPage .vEmpty i.icon{ font-size: 2.4em; opacity: 0.5; display: block; margin: 0 auto 0.4em; }
-    #visitorsPage .vSkel td > div{ height: 0.9em; border-radius: 0.3em; background: rgba(128,128,128,0.18); animation: vPulse 1.4s ease-in-out infinite; }
+    #visitorsPage .vEmpty{ text-align: center; padding: var(--zx-space-6) var(--zx-space-4); color: var(--zx-text-muted); }
+    #visitorsPage .vEmpty i.icon{ font-size: 2.4em; color: var(--zx-text-muted); display: block; margin: 0 auto 0.4em; }
+    #visitorsPage .vSkel td > div{ height: 0.9em; border-radius: var(--zx-radius-sm); background: var(--zx-surface-3); animation: vPulse 1.4s ease-in-out infinite; }
     @keyframes vPulse{ 50%{ opacity: 0.45; } }
     @media (prefers-reduced-motion: reduce){ #visitorsPage .vSkel td > div{ animation: none; } }
     #visitorsPage .vPrivacy{ font-size: 0.9em; }
-    #visitorsPage .vTabs .item{ cursor: pointer; flex: 0 0 auto; white-space: nowrap; }
-    #visitorsPage .vTabs{ overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; scrollbar-width: thin;
-        /* soft edge: there are more tabs on that side */
-        background: linear-gradient(to right, var(--theme_bg_primary) 30%, transparent) left center / 2em 100% no-repeat local, linear-gradient(to left, var(--theme_bg_primary) 30%, transparent) right center / 2em 100% no-repeat local,
-            linear-gradient(to right, rgba(0,0,0,.22), transparent) left center / .9em 100% no-repeat scroll, linear-gradient(to left, rgba(0,0,0,.22), transparent) right center / .9em 100% no-repeat scroll; }
+    /* soft edge on the side that has more tabs (scroll affordance) */
+    #visitorsPage .vTabs{ background: linear-gradient(to right, var(--zx-bg) 30%, transparent) left center / 2em 100% no-repeat local, linear-gradient(to left, var(--zx-bg) 30%, transparent) right center / 2em 100% no-repeat local,
+            linear-gradient(to right, var(--zx-border-strong), transparent) left center / .8em 100% no-repeat scroll, linear-gradient(to left, var(--zx-border-strong), transparent) right center / .8em 100% no-repeat scroll; }
     #visitorsPage table.vTable td[colspan]{ white-space: normal; }
     @media (max-width: 748px){
-        #visitorsPage .vKpis > .vKpi:last-child:nth-child(odd){ grid-column: 1 / -1; }   /* no orphan tile */
+        #visitorsPage .vKpis > .zx-stat:last-child:nth-child(odd){ grid-column: 1 / -1; }   /* no orphan tile */
         #visitorsPage .vToolbar select{ flex: 1 1 calc(50% - .5em); max-width: none; min-width: 0; }
         #visitorsPage .vToolbar > span[style]{ display: none; }
         #visitorsPage .vToolbar > .button{ flex: 1 1 auto; margin: 0; }
@@ -109,50 +90,57 @@
 </style>
 
 <div class="standardContainer" id="visitorsPage">
-    <div class="ui basic segment">
-        <h2>Visitors</h2>
-        <p>Who visited your sites, when and from where. Traffic that arrives through Cloudflare or another trusted proxy is listed under the real visitor address.</p>
+    <div>
+        <header class="zx-page-header">
+            <div class="zx-page-header__main">
+                <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+                <h2 class="zx-page-header__title">Visitors</h2>
+                <p class="zx-page-header__sub">Who visited your sites, when and from where.</p>
+            </div>
+        </header>
 
-        <div class="vKpis" id="vKpis">
-            <div class="vKpi"><div class="vKpiLabel">Known IP addresses</div><div class="vKpiValue" id="vkIps">-</div><div class="vKpiSub" id="vkIpsSub"></div></div>
-            <div class="vKpi"><div class="vKpiLabel">Active, last 24 hours</div><div class="vKpiValue" id="vkActive">-</div><div class="vKpiSub"></div></div>
-            <div class="vKpi"><div class="vKpiLabel">New in the last hour</div><div class="vKpiValue" id="vkNew">-</div><div class="vKpiSub" id="vkNewSub"></div></div>
-            <div class="vKpi"><div class="vKpiLabel">With blocked requests</div><div class="vKpiValue" id="vkBlocked">-</div><div class="vKpiSub"></div></div>
-            <div class="vKpi"><div class="vKpiLabel">Through Cloudflare / proxies</div><div class="vKpiValue" id="vkVia">-</div><div class="vKpiSub" id="vkViaSub"></div></div>
+        <div class="zx-tabs vTabs" id="vTabs">
+            <button type="button" class="zx-tab item active" data-vtab="list" aria-selected="true"><i class="users icon" aria-hidden="true"></i> Visitors</button>
+            <button type="button" class="zx-tab item" data-vtab="recent" aria-selected="false"><i class="list icon" aria-hidden="true"></i> Recent visits</button>
+            <button type="button" class="zx-tab item" data-vtab="settings" aria-selected="false"><i class="cog icon" aria-hidden="true"></i> Settings &amp; privacy</button>
         </div>
 
-        <div class="ui top attached tabular menu vTabs" id="vTabs">
-            <a class="active item" data-vtab="list"><i class="users icon"></i> Visitors</a>
-            <a class="item" data-vtab="recent"><i class="list icon"></i> Recent visits</a>
-            <a class="item" data-vtab="settings"><i class="cog icon"></i> Settings &amp; privacy</a>
+        <div class="zx-statrow vKpis" id="vKpis">
+            <div class="zx-stat"><div class="zx-stat__label">Known IP addresses</div><div class="zx-stat__value" id="vkIps">-</div><div class="zx-stat__hint" id="vkIpsSub"></div></div>
+            <div class="zx-stat"><div class="zx-stat__label">Active, last 24 hours</div><div class="zx-stat__value" id="vkActive">-</div><div class="zx-stat__hint"></div></div>
+            <div class="zx-stat"><div class="zx-stat__label">New in the last hour</div><div class="zx-stat__value" id="vkNew">-</div><div class="zx-stat__hint" id="vkNewSub"></div></div>
+            <div class="zx-stat"><div class="zx-stat__label">With blocked requests</div><div class="zx-stat__value" id="vkBlocked">-</div><div class="zx-stat__hint"></div></div>
+            <div class="zx-stat"><div class="zx-stat__label">Through Cloudflare / proxies</div><div class="zx-stat__value" id="vkVia">-</div><div class="zx-stat__hint" id="vkViaSub"></div></div>
         </div>
 
         <!-- Visitors -->
-        <div class="ui bottom attached segment vPane" data-vpane="list">
+        <div class="vPane" data-vpane="list">
             <div class="vToolbar">
                 <div class="ui small icon input"><input type="search" id="vSearch" placeholder="Search IP, host, country, user agent" aria-label="Search visitors" autocomplete="off"><i class="search icon"></i></div>
-                <select id="vSince" aria-label="Time range">
+                <select id="vSince" class="zx-select" aria-label="Time range">
                     <option value="0">All time</option><option value="1">Last hour</option><option value="24" selected>Last 24 hours</option>
                     <option value="168">Last 7 days</option><option value="720">Last 30 days</option>
                 </select>
-                <select id="vHost" aria-label="Host"><option value="">All hosts</option></select>
-                <select id="vCountry" aria-label="Country"><option value="">All countries</option></select>
-                <select id="vVia" aria-label="Via"><option value="">Any route</option><option value="direct">Direct</option><option value="cloudflare">Cloudflare</option><option value="proxy">Other proxy</option></select>
+                <select id="vHost" class="zx-select" aria-label="Host"><option value="">All hosts</option></select>
+                <select id="vCountry" class="zx-select" aria-label="Country"><option value="">All countries</option></select>
+                <select id="vVia" class="zx-select" aria-label="Via"><option value="">Any route</option><option value="direct">Direct</option><option value="cloudflare">Cloudflare</option><option value="proxy">Other proxy</option></select>
                 <div class="ui checkbox" id="vBlockedBox"><input type="checkbox" id="vBlocked"><label>Blocked only</label></div>
-                <span style="flex:1"></span>
-                <button class="ui small basic icon button" id="vRefresh" title="Refresh"><i class="sync icon"></i></button>
-                <button class="ui small basic button" id="vExportCsv"><i class="download icon"></i> CSV</button>
-                <button class="ui small basic button" id="vExportJson"><i class="download icon"></i> JSON</button>
+                <span class="vSpacer"></span>
+                <div class="zx-btn-row">
+                    <button class="zx-btn zx-btn--secondary zx-btn--icon" id="vRefresh" title="Refresh" aria-label="Refresh"><i class="sync icon" aria-hidden="true"></i></button>
+                    <button class="zx-btn zx-btn--secondary" id="vExportCsv"><i class="download icon" aria-hidden="true"></i> CSV</button>
+                    <button class="zx-btn zx-btn--secondary" id="vExportJson"><i class="download icon" aria-hidden="true"></i> JSON</button>
+                </div>
             </div>
-            <div class="vTableWrap">
-                <table class="vTable" id="vTable">
+            <div class="zx-table-wrap vTableWrap" tabindex="0" role="region" aria-label="Visitors">
+                <table class="zx-table zx-table--compact vTable" id="vTable">
                     <thead><tr>
                         <th class="sortable" data-sort="ip">IP address</th>
                         <th class="sortable" data-sort="country">Country</th>
                         <th class="sortable" data-sort="first">First seen</th>
                         <th class="sortable" data-sort="last">Last seen</th>
-                        <th class="sortable" data-sort="hits">Hits</th>
-                        <th class="sortable" data-sort="blocked">Blocked</th>
+                        <th class="sortable zx-num" data-sort="hits">Hits</th>
+                        <th class="sortable zx-num" data-sort="blocked">Blocked</th>
                         <th class="sortable" data-sort="hosts">Hosts</th>
                         <th class="sortable" data-sort="via">Via</th>
                         <th>User agent</th>
@@ -161,60 +149,99 @@
                 </table>
             </div>
             <div class="vPager">
-                <button class="ui small basic button" id="vPrev"><i class="left chevron icon"></i> Previous</button>
+                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="vPrev"><i class="left chevron icon" aria-hidden="true"></i> Previous</button>
                 <span id="vPageInfo"></span>
-                <button class="ui small basic button" id="vNext">Next <i class="right chevron icon"></i></button>
-                <select id="vSize" aria-label="Rows per page"><option>25</option><option selected>50</option><option>100</option><option>200</option></select>
+                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="vNext">Next <i class="right chevron icon" aria-hidden="true"></i></button>
+                <select id="vSize" class="zx-select" aria-label="Rows per page"><option>25</option><option selected>50</option><option>100</option><option>200</option></select>
             </div>
         </div>
 
         <!-- Recent visits (live tail) -->
-        <div class="ui bottom attached segment vPane" data-vpane="recent" style="display:none;">
+        <div class="vPane" data-vpane="recent" style="display:none;">
             <div class="vToolbar">
                 <div class="ui small icon input"><input type="search" id="vrSearch" placeholder="Filter the live list (IP, host, path, user agent)" aria-label="Filter recent visits" autocomplete="off"><i class="search icon"></i></div>
                 <div class="ui checkbox"><input type="checkbox" id="vrBlocked"><label>Blocked only</label></div>
-                <span style="flex:1"></span>
-                <button class="ui small basic button" id="vrPause"><i class="pause icon"></i> Pause</button>
-                <button class="ui small basic button" id="vrExportCsv"><i class="download icon"></i> CSV</button>
-                <button class="ui small basic button" id="vrExportJson"><i class="download icon"></i> JSON</button>
+                <span class="vSpacer"></span>
+                <div class="zx-btn-row">
+                    <button class="zx-btn zx-btn--secondary" id="vrPause"><i class="pause icon" aria-hidden="true"></i> Pause</button>
+                    <button class="zx-btn zx-btn--secondary" id="vrExportCsv"><i class="download icon" aria-hidden="true"></i> CSV</button>
+                    <button class="zx-btn zx-btn--secondary" id="vrExportJson"><i class="download icon" aria-hidden="true"></i> JSON</button>
+                </div>
             </div>
-            <div class="vTableWrap">
-                <table class="vTable" id="vrTable">
+            <div class="zx-table-wrap vTableWrap vTableWrap--scroll" tabindex="0" role="region" aria-label="Recent visits">
+                <table class="zx-table zx-table--compact vTable" id="vrTable">
                     <thead><tr><th>Time</th><th>IP address</th><th>Country</th><th>Host</th><th>Request</th><th>Status</th><th>Via</th><th>User agent</th></tr></thead>
                     <tbody id="vrBody"></tbody>
                 </table>
             </div>
-            <small id="vrInfo" style="color: var(--text_color_secondary);">Updates every few seconds while this page is open.</small>
+            <p class="zx-help" id="vrInfo" style="margin-top: var(--zx-space-2);">Updates every few seconds while this page is open. The newest 200 visits are listed.</p>
         </div>
 
         <!-- Settings and privacy -->
-        <div class="ui bottom attached segment vPane" data-vpane="settings" style="display:none;">
-            <div class="ui info message vPrivacy">
-                <div class="header"><i class="shield alternate icon"></i> Privacy</div>
-                <p>IP addresses are personal data (for example under the GDPR). Only keep this list if you have a reason to, tell your visitors in your privacy policy, and keep the retention short.
-                    URL query strings are not stored unless you enable it below, requests from addresses on the
-                    <a href="#" onclick="showSideWrapper('snippet/statsFilters.html?t=' + Date.now()); return false;">statistics exclusion list</a> are not recorded,
-                    and every record can be deleted from here.</p>
+        <div class="vPane" data-vpane="settings" style="display:none;">
+            <div class="zx-callout zx-callout--info vPrivacy" role="note">
+                <span class="zx-callout__icon" aria-hidden="true"><i class="shield alternate icon"></i></span>
+                <div class="zx-callout__body"><span class="zx-callout__title">Privacy</span>
+                    IP addresses are personal data (for example under the GDPR). Keep this list only if you have a reason to, mention it in your privacy policy and keep the retention short.
+                    Addresses on the <a href="#" onclick="showSideWrapper('snippet/statsFilters.html?t=' + Date.now()); return false;">statistics exclusion list</a> are never recorded, and every record can be deleted here.</div>
             </div>
-            <div class="ui form" style="max-width: 36em;">
-                <div class="field"><div class="ui toggle checkbox" id="vsEnabledBox"><input type="checkbox" id="vsEnabled"><label>Record visitors</label></div></div>
-                <div class="three fields">
-                    <div class="field"><label for="vsAge">Keep for (days)</label><input type="number" id="vsAge" min="1" max="3650"></div>
-                    <div class="field"><label for="vsIps">Max. IP addresses</label><input type="number" id="vsIps" min="100" max="500000"></div>
-                    <div class="field"><label for="vsRing">Recent visits kept</label><input type="number" id="vsRing" min="100" max="200000"></div>
+            <div class="ui form">
+                <section class="zx-card">
+                    <div class="zx-card__head"><h3 class="zx-card__title">Recording</h3></div>
+                    <p class="zx-card__desc">Choose whether Zoraxy keeps a list of the visitors of your sites.</p>
+                    <div class="zx-card__body">
+                        <div class="zx-toggle-row">
+                            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Record visitors</span>
+                                <span class="zx-toggle-row__desc">Stores the IP address, country, hosts and counts of each visitor.</span></span>
+                            <div class="ui toggle checkbox" id="vsEnabledBox"><input type="checkbox" id="vsEnabled" aria-label="Record visitors"><label></label></div>
+                        </div>
+                        <div class="zx-toggle-row">
+                            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Keep URL query strings</span>
+                                <span class="zx-toggle-row__desc">They may contain tokens or personal data. Off by default.</span></span>
+                            <div class="ui toggle checkbox" id="vsQueryBox"><input type="checkbox" id="vsQuery" aria-label="Keep URL query strings"><label></label></div>
+                        </div>
+                    </div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head"><h3 class="zx-card__title">Retention</h3></div>
+                    <p class="zx-card__desc">How long and how much Zoraxy keeps. Older and surplus records are dropped first.</p>
+                    <div class="zx-card__body">
+                        <div class="zx-form-grid">
+                            <div class="zx-field field"><label class="zx-field__label" for="vsAge">Keep for (days)</label><input type="number" id="vsAge" class="zx-input" min="1" max="3650"><p class="zx-help">1 to 3650 days.</p></div>
+                            <div class="zx-field field"><label class="zx-field__label" for="vsIps">Max. IP addresses</label><input type="number" id="vsIps" class="zx-input" min="100" max="500000"><p class="zx-help">100 to 500000 addresses.</p></div>
+                            <div class="zx-field field"><label class="zx-field__label" for="vsRing">Recent visits kept</label><input type="number" id="vsRing" class="zx-input" min="100" max="200000"><p class="zx-help">100 to 200000 visits.</p></div>
+                        </div>
+                    </div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head"><h3 class="zx-card__title">Notifications</h3></div>
+                    <p class="zx-card__desc">Get told when someone shows up from a country you have not seen before.</p>
+                    <div class="zx-card__body">
+                        <div class="zx-toggle-row">
+                            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Notify about a new country</span>
+                                <span class="zx-toggle-row__desc">Also needs a subscription in the notification centre.</span></span>
+                            <div class="ui toggle checkbox" id="vsNotifyBox"><input type="checkbox" id="vsNotify" aria-label="Notify about a new country"><label></label></div>
+                        </div>
+                    </div>
+                    <div class="zx-card__foot">
+                        <span id="vsMsg" role="status" aria-live="polite"></span>
+                        <button class="zx-btn zx-btn--primary" id="vsSave"><i class="save icon" aria-hidden="true"></i> Save settings</button>
+                    </div>
+                </section>
+            </div>
+            <section class="zx-card zx-card--danger">
+                <div class="zx-card__head"><h3 class="zx-card__title">Delete visitor data</h3></div>
+                <p class="zx-card__desc">Removes every stored visitor and recent visit. This cannot be undone.</p>
+                <div class="zx-card__body">
+                    <p class="zx-help" id="vsStats"></p>
+                    <button class="zx-btn zx-btn--danger-outline" id="vsPurge"><i class="trash icon" aria-hidden="true"></i> Delete all visitor data</button>
+                    <span id="vsPurgeConfirm" style="display:none;">
+                        <span class="zx-btn-row">This erases every stored visitor.
+                        <button class="zx-btn zx-btn--danger" id="vsPurgeYes">Yes, delete everything</button>
+                        <button class="zx-btn zx-btn--secondary" id="vsPurgeNo">Cancel</button></span>
+                    </span>
                 </div>
-                <div class="field"><div class="ui checkbox" id="vsQueryBox"><input type="checkbox" id="vsQuery"><label>Keep URL query strings (may contain tokens or personal data)</label></div></div>
-                <div class="field"><div class="ui checkbox" id="vsNotifyBox"><input type="checkbox" id="vsNotify"><label>Send a notification when the first visitor from a new country shows up (event <code>visitor.new_country</code>, also needs a subscription in the notification centre)</label></div></div>
-                <button class="ui primary button" id="vsSave"><i class="save icon"></i> Save settings</button>
-                <span id="vsMsg" style="margin-left: 0.8em;"></span>
-            </div>
-            <div class="ui divider"></div>
-            <p id="vsStats" style="color: var(--text_color_secondary);"></p>
-            <button class="ui red basic button" id="vsPurge"><i class="trash icon"></i> Delete all visitor data</button>
-            <span id="vsPurgeConfirm" style="display:none; margin-left: 0.6em;">
-                This erases every stored visitor. <button class="ui red small button" id="vsPurgeYes">Yes, delete everything</button>
-                <button class="ui small basic button" id="vsPurgeNo">Cancel</button>
-            </span>
+            </section>
         </div>
     </div>
 </div>
@@ -346,14 +373,14 @@
                     var hosts = Object.keys(v.hosts || {});
                     hosts.sort(function(a, b){ return v.hosts[b] - v.hosts[a]; });
                     html += '<tr data-ip="' + esc(v.ip) + '">' +
-                        '<td class="vMono">' + esc(v.ip) + (now - v.first < 3600 ? '<span class="vChip new" title="First seen within the last hour">new</span>' : "") + "</td>" +
-                        "<td>" + country(v.country) + "</td>" +
-                        "<td>" + when(v.first) + "</td><td>" + when(v.last) + "</td>" +
-                        "<td>" + v.hits.toLocaleString() + "</td>" +
-                        "<td>" + (v.blocked ? '<span class="vChip blocked">' + v.blocked.toLocaleString() + "</span>" : "0") + "</td>" +
-                        '<td><div class="vHosts" title="' + esc(hosts.join(", ")) + '">' + (hosts.length > 1 ? "<b>" + hosts.length + "</b> " : "") + esc(hosts.slice(0, 2).join(", ")) + "</div></td>" +
-                        "<td>" + viaChip(v.via, v.viaHeader) + "</td>" +
-                        '<td><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
+                        '<td class="vMono" data-label="IP address">' + esc(v.ip) + (now - v.first < 3600 ? '<span class="vChip new" title="First seen within the last hour">new</span>' : "") + "</td>" +
+                        '<td data-label="Country">' + country(v.country) + "</td>" +
+                        '<td data-label="First seen">' + when(v.first) + '</td><td data-label="Last seen">' + when(v.last) + "</td>" +
+                        "<td class='zx-num' data-label='Hits'>" + v.hits.toLocaleString() + "</td>" +
+                        "<td class='zx-num' data-label='Blocked'>" + (v.blocked ? '<span class="vChip blocked">' + v.blocked.toLocaleString() + "</span>" : "0") + "</td>" +
+                        '<td data-label="Hosts"><div class="vHosts" title="' + esc(hosts.join(", ")) + '">' + (hosts.length > 1 ? "<b>" + hosts.length + "</b> " : "") + esc(hosts.slice(0, 2).join(", ")) + "</div></td>" +
+                        '<td data-label="Via">' + viaChip(v.via, v.viaHeader) + "</td>" +
+                        '<td data-label="User agent"><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
                 });
                 $("#vBody").html(html);
             }
@@ -373,10 +400,10 @@
 
     /* ---------- recent visits ---------- */
     function visitRow(v){
-        return '<tr data-ip="' + esc(v.ip) + '"><td>' + when(v.t) + '</td><td class="vMono">' + esc(v.ip) + (v.new ? '<span class="vChip new">new</span>' : "") + "</td><td>" + country(v.country) + "</td>" +
-            "<td>" + esc(v.host) + "</td><td class='vMono'>" + esc(v.method) + " " + esc(v.path) + "</td>" +
-            "<td class='" + statusCls(v.status) + "'>" + esc(v.status) + (v.blocked ? ' <span class="vChip blocked">blocked</span>' : "") + "</td>" +
-            "<td>" + viaChip(v.via, "") + '</td><td><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
+        return '<tr data-ip="' + esc(v.ip) + '"><td data-label="Time">' + when(v.t) + '</td><td class="vMono" data-label="IP address">' + esc(v.ip) + (v.new ? '<span class="vChip new">new</span>' : "") + '</td><td data-label="Country">' + country(v.country) + "</td>" +
+            '<td data-label="Host"><div class="vHosts" title="' + esc(v.host) + '">' + esc(v.host) + "</div></td><td class='vMono' data-label='Request'><div class='vHosts' title='" + esc(v.method + " " + v.path) + "'>" + esc(v.method) + " " + esc(v.path) + "</div></td>" +
+            "<td class='" + statusCls(v.status) + "' data-label='Status'>" + esc(v.status) + (v.blocked ? ' <span class="vChip blocked">blocked</span>' : "") + "</td>" +
+            '<td data-label="Via">' + viaChip(v.via, "") + '</td><td data-label="User agent"><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
     }
     function loadRecent(reset){
         if (V.paused && !reset) return;
@@ -387,7 +414,7 @@
             V.seq = d.Seq;
             var vs = d.Visits || [];
             if (vs.length) $("#vrBody").prepend(vs.map(visitRow).join(""));    // newest first
-            var extra = $("#vrBody tr").length - 500;                           // keep the DOM small
+            var extra = $("#vrBody tr").length - 200;                           // keep the DOM small
             if (extra > 0) $("#vrBody tr").slice(-extra).remove();
             if ($("#vrBody tr").length === 0){
                 $("#vrBody").html('<tr><td colspan="8"><div class="vEmpty"><i class="list icon"></i>No visits recorded yet. New requests appear here live.</div></td></tr>');
@@ -416,7 +443,7 @@
             (v.daily || []).forEach(function(x){ byDay[x.d] = x.n; if (x.n > max) max = x.n; });
             for (var i = 13; i >= 0; i--) bars.push(byDay[today - i] || 0);
             var spark = '<svg width="100%" height="48" viewBox="0 0 140 48" preserveAspectRatio="none" role="img" aria-label="hits per day, last 14 days">' +
-                bars.map(function(n, i){ var h = Math.max(n ? 3 : 1, 44 * n / max); return '<rect x="' + (i * 10 + 1) + '" y="' + (46 - h) + '" width="8" height="' + h + '" rx="1" fill="#2185d0" opacity="' + (n ? 0.9 : 0.25) + '"><title>' + n + " hits</title></rect>"; }).join("") + "</svg>";
+                bars.map(function(n, i){ var h = Math.max(n ? 3 : 1, 44 * n / max); return '<rect x="' + (i * 10 + 1) + '" y="' + (46 - h) + '" width="8" height="' + h + '" rx="1" style="fill:var(--zx-primary)" opacity="' + (n ? 0.9 : 0.25) + '"><title>' + n + " hits</title></rect>"; }).join("") + "</svg>";
             var html = '<div class="vdActions">' +
                 '<button class="ui small red basic button" data-act="blacklist"><i class="ban icon"></i> Blacklist</button>' +
                 '<button class="ui small green basic button" data-act="whitelist"><i class="check icon"></i> Whitelist</button>' +
@@ -534,23 +561,25 @@
     }
     function saveSettings(){
         var problem = validateSettings();
-        if (problem){ $("#vsMsg").css("color", "#c62828").text(problem); return; }
+        if (problem){ $("#vsMsg").css("color", "var(--zx-danger-text)").text(problem); return; }
         var body = {Enabled: $("#vsEnabled").prop("checked"), MaxAgeDays: parseInt($("#vsAge").val(), 10), MaxIPs: parseInt($("#vsIps").val(), 10),
                     MaxVisits: parseInt($("#vsRing").val(), 10), KeepQuery: $("#vsQuery").prop("checked"), NotifyNewCountry: $("#vsNotify").prop("checked")};
         $.cjax({url: "./api/visitors/settings", method: "POST", contentType: "application/json", data: JSON.stringify(body), dataType: "json", success: function(d){
-            if (d && d.error){ $("#vsMsg").css("color", "#c62828").text(d.error); return; }
+            if (d && d.error){ $("#vsMsg").css("color", "var(--zx-danger-text)").text(d.error); return; }
             var x = d.Settings;
             $("#vsAge").val(x.MaxAgeDays); $("#vsIps").val(x.MaxIPs); $("#vsRing").val(x.MaxVisits);
-            $("#vsMsg").css("color", "#1a9a3a").text("Saved");
+            $("#vsMsg").css("color", "var(--zx-ok-text)").text("Saved");
             setTimeout(function(){ $("#vsMsg").text(""); }, 3000);
             loadSummary();
-        }, error: function(x){ $("#vsMsg").css("color", "#c62828").text("Failed (HTTP " + x.status + ")"); }});
+        }, error: function(x){ $("#vsMsg").css("color", "var(--zx-danger-text)").text("Failed (HTTP " + x.status + ")"); }});
     }
 
     /* ---------- wiring ---------- */
     function setTab(t){
         V.tab = t;
-        $("#vTabs .item").removeClass("active").filter('[data-vtab="' + t + '"]').addClass("active");
+        $("#vTabs .item").removeClass("active").attr("aria-selected", "false").filter('[data-vtab="' + t + '"]').addClass("active").attr("aria-selected", "true");
+        try { var at = $("#vTabs .item.active")[0]; if (at && at.scrollIntoView) at.scrollIntoView({block: "nearest", inline: "nearest"}); } catch (e) {}
+        $("#vKpis").prop("hidden", t === "settings");
         $(P + ".vPane").hide().filter('[data-vpane="' + t + '"]').show();
         if (t === "list") loadList(true);
         if (t === "recent") loadRecent(true);
@@ -585,7 +614,7 @@
     $("#vrBlocked").on("change", function(){ loadRecent(true); });
     $("#vrPause").on("click", function(){
         V.paused = !V.paused;
-        $(this).html(V.paused ? '<i class="play icon"></i> Resume' : '<i class="pause icon"></i> Pause');
+        $(this).html(V.paused ? '<i class="play icon" aria-hidden="true"></i> Resume' : '<i class="pause icon" aria-hidden="true"></i> Pause');
         if (!V.paused) loadRecent(false);
     });
     $("#vBody, #vrBody").on("click", "tr[data-ip]", function(){ openDrawer($(this).attr("data-ip")); });

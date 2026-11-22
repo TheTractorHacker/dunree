@@ -7,6 +7,19 @@
 */
 (function () {
     "use strict";
+    /* "Related" row: the one-line explanation of each link becomes its tooltip (the row itself shows only the link names) */
+    function tipRelated() {
+        document.querySelectorAll(".zx-related li").forEach(function (li) {
+            var a = li.querySelector("a"), sp = li.querySelector("span");
+            if (a && sp && !a.title) { a.title = sp.textContent.replace(/\s+/g, " ").trim(); }
+        });
+    }
+    if (window.MutationObserver) {
+        var tipTimer = null;
+        new MutationObserver(function () { clearTimeout(tipTimer); tipTimer = setTimeout(tipRelated, 150); }).observe(document.body, { childList: true, subtree: true });
+    }
+    tipRelated();
+
     document.addEventListener("click", function (e) {
         var h = e.target.closest && e.target.closest("[data-zx-history]");
         if (h) {

@@ -1,22 +1,37 @@
 <style>
-    #currentEditingAccessRule {
-        background: var(--zx-surface-2);
-        color: var(--zx-text);
-        border: 1px solid var(--zx-border);
-        border-left: 4px solid var(--zx-primary);
-        border-radius: .6em;
-        font-weight: 600;
-        padding: .8em 1em;
-    }
-    /* the rule selector stays in view while the long pane on the right scrolls */
-    @media (min-width: 768px) { .standardContainer > .ui.stackable.grid > .four.wide.column { position: sticky; top: 4.5em; align-self: flex-start; } }
+    #currentEditingAccessRule { margin: 0 0 var(--zx-space-4); font-weight: 600; }
+    #currentEditingAccessRule span { font-weight: 400; color: var(--zx-text-muted); }
+    #accessPage .zx-section__title--sub, .standardContainer .zx-section__title--sub { margin: var(--zx-space-5) 0 var(--zx-space-1); font-size: var(--zx-fs-lg); }
+    html body .contentWindow .ui.form .ui.search.dropdown > input.search:not(#zxa):not(#zxb), html body .contentWindow .ui.multiple.search.selection.dropdown > input.search, html body .contentWindow .ui.search.selection.dropdown > input.search { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; min-height: 0 !important; height: auto !important; padding: 0 !important; }
+    .ui.ui.ui.search.dropdown > input.search, .ui.form .ui.search.dropdown > input.search, .ui.search.dropdown > input.search { border: 0 !important; background: transparent !important; box-shadow: none !important; min-height: 0 !important; height: auto !important; border-radius: 0 !important; }
+    .standardContainer p.zx-help { margin-bottom: var(--zx-space-3); }
+    .zx-quickban-refresh { float: right; margin: 0 0 var(--zx-space-2) var(--zx-space-3); }
+    .zx-section__desc { margin-top: 0; }
+    /* rule selector bar above the tabs */
+    .accessRuleBar { margin-bottom: var(--zx-space-4); padding: var(--zx-space-3) var(--zx-space-4); }
+    .accessRuleBar__row { display: flex; flex-wrap: wrap; gap: var(--zx-space-3); align-items: flex-end; }
+    .accessRuleBar__pick { flex: 1 1 16rem; max-width: 26rem; margin: 0; }
+    .accessRuleBar__desc { margin: var(--zx-space-2) 0 0 !important; }
+    .accessRuleBar__desc:empty { display: none; }
+    .accessMain .ui.bottom.attached.tab.segment { width: 100%; margin-left: 0; margin-right: 0; }
+    .accessMain__col { min-width: 0; }
+    .accessMain .zx-card + .zx-card { margin-top: var(--zx-space-4); }
+    .accessMain .zx-card__body .ui.form + .ui.table, .accessMain .zx-card__body .ui.form + .bulkImportContainer, .accessMain .zx-card__body > .ui.table { margin-top: var(--zx-space-3); }
+    .accessMain .zx-card__body > .toggleSucc { float: none !important; display: none; margin-top: var(--zx-space-2); }
+    .accessMain .zx-card__body .ui.basic.segment.advanceoptions { padding: 0; margin: var(--zx-space-3) 0 0; }
+    .accessMain .zx-card__body .ui.form .field .ui.button, .accessMain .zx-card__body .ui.form > .ui.button { margin-top: var(--zx-space-2); }
+    /* removing a row: the action column sits at the right edge */
+    .accessMain table.ui.table th:last-child, .accessMain table.ui.table td:last-child:not([colspan]) { text-align: right; }
+    .accessQbBar { margin-bottom: var(--zx-space-3); }
+    /* the search dropdown icon must not sit on the placeholder */
+    .ui.search.selection.dropdown > .default.text, .ui.search.selection.dropdown > .text { position: relative; }
 </style>
 <div class="standardContainer">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Access Rules</h2>
-            <p class="zx-page-header__sub">Choose who may reach your sites: block or allow visitors by IP address or country. To apply a rule to a site, create an access rule below and pick it in that site's settings in HTTP Proxy.</p>
+            <p class="zx-page-header__sub">Choose who may reach your sites</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Access rule"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -27,69 +42,60 @@
         <ul>
             <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>Auto-ban bans abusive addresses automatically (the automatic version of Quick Ban)</span></li>
             <li><a href="#trustproxy" data-nav-open="trustproxy">Trusted Proxies</a> <span>behind a CDN, address rules only work when the CDN is trusted</span></li>
-            <li><a href="#waf" data-nav-open="waf">WAF</a> <span>blocks attacks inside requests, not addresses</span></li>
-            <li><a href="#secoverview" data-nav-open="secoverview">Security Overview</a> <span>is your site protected?</span></li>
             <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>where an access rule is applied to a site</span></li>
         </ul>
     </aside>
-    <div id="currentEditingAccessRule" class="ui basic segment">
-        Select an access rule to start editing
-    </div>
-    <div class="ui stackable grid">
-        <div class="four wide column">
-            <h4>Select a rule to configure</h4>
-            <p>All proxy hosts uses the "default" access rule if no rule is set.</p>
-            <div class="ui selection fluid dropdown" id="accessRuleSelector">
-                <input type="hidden" name="targetAccessRule" value="default" onchange="handleSelectedAccessRuleChange(this.value);">
-                <i class="dropdown icon"></i>
-                <div class="default text"></div>
-                <div class="menu" id="accessRuleList">
-                  <div class="item" data-value="default"><i class="ui yellow star icon"></i> Default</div>
+    <span id="currentEditingAccessRule" class="zx-sr-only" role="status">Select an access rule to start editing</span>
+    <section class="zx-card accessRuleBar">
+        <div class="accessRuleBar__row">
+            <div class="zx-field accessRuleBar__pick">
+                <div class="zx-field__label-row"><label class="zx-field__label" id="accessRuleLabel">Access rule</label></div>
+                <div class="ui selection fluid dropdown" id="accessRuleSelector" aria-labelledby="accessRuleLabel">
+                    <input type="hidden" name="targetAccessRule" value="default" onchange="handleSelectedAccessRuleChange(this.value);">
+                    <i class="dropdown icon"></i>
+                    <div class="default text"></div>
+                    <div class="menu" id="accessRuleList">
+                      <div class="item" data-value="default"><i class="ui yellow star icon"></i> Default</div>
+                    </div>
                 </div>
             </div>
-            <div class="ui message">
-                <p id="accessRuleDesc"></p>
-            </div>
-            
-            <div class="ui divider"></div>
-            <div style="width: 100%;" align="center">
-                <button class="ui basic circular button" onclick="openAccessRuleEditor();" title="Edit Access Rules"><i class="ui edit icon"></i> Access Rule Editor</button>
-                <button class="ui basic circular icon button" onclick="reloadAccessRulesWithFeedback();"><i class="ui green refresh icon"></i></button>
+            <div class="zx-btn-row">
+                <button class="zx-btn zx-btn--secondary" onclick="openAccessRuleEditor();" title="Edit access rules"><i class="ui edit icon" aria-hidden="true"></i> Manage rules</button>
+                <button class="zx-btn zx-btn--secondary zx-btn--icon" onclick="reloadAccessRulesWithFeedback();" title="Reload rules" aria-label="Reload rules"><i class="ui refresh icon" aria-hidden="true"></i></button>
             </div>
         </div>
-        <div class="twelve wide column">
+        <p id="accessRuleDesc" class="zx-help accessRuleBar__desc"></p>
+    </section>
+    <div class="accessMain">
+        <div class="accessMain__col">
             <!-- Black / White list menu-->
             <div class="ui top attached tabular menu">
-                <a class="accesscontrol item active" data-tab="tab_blacklist"><i class="ui red circle times icon"></i> Blacklist</a>
-                <a class="accesscontrol item" data-tab="tab_whitelist"><i class="ui green check circle icon"></i> Whitelist</a>
-                <a class="accesscontrol item" data-tab="tab_quickban"><i class="ui red ban icon"></i> Quick Ban</a>
-                <a class="accesscontrol item" data-tab="tab_options"><i class="ui cog icon"></i> Options</a>
+                <a class="accesscontrol item active" data-tab="tab_blacklist">Blacklist</a>
+                <a class="accesscontrol item" data-tab="tab_whitelist">Whitelist</a>
+                <a class="accesscontrol item" data-tab="tab_quickban">Quick ban</a>
+                <a class="accesscontrol item" data-tab="tab_options">Options</a>
             </div>
 
             <!-- Blacklist Conguration Menu-->
             <div class="ui bottom attached tab segment active" data-tab="tab_blacklist">
-                <h2>Blacklist</h2>
-                <p>Limit access from the following country or IP address<br>
-                <small>Tips: If you only want a few regions to access your site, use whitelist instead.</small></p>
-                <div class="ui divider"></div>
+                <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Blacklist</h3><p class="zx-card__desc">Block visitors from chosen countries or IP addresses. If you only want a few regions to reach your site, use the whitelist instead.</p></div><div class="zx-card__body">
                 <div class="ui toggle checkbox">
                     <input type="checkbox" id="enableBlacklist">
-                    <label>Enable Blacklist</label>
+                    <label>Enable the blacklist</label>
                 </div>
-                <div class="toggleSucc" style="float: right; display:none; color: #2abd4d;" >
+                <div class="toggleSucc" style="float: right; display:none; color: var(--zx-ok-text);" >
                     <i class="ui green checkmark icon"></i> Setting Saved
                 </div>
-                <h4>Country Blacklist</h4>
-                    <p><i class="yellow exclamation triangle icon"></i>
-                    This will block all requests from the selected country. The requester's location is estimated from their IP address and may not be 100% accurate.</p>
+</div></section>
+<section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Countries</h3><p class="zx-card__desc">Blocks all requests from the selected countries. A visitor's location is estimated from their IP address and may not be 100% accurate.</p></div><div class="zx-card__body">
 
                 <div class="ui form">
                     <div class="field">
-                        <label>Select Country</label>
+                        <label>Country</label>
                         <div id="countrySelector" class="ui fluid search multiple selection dropdown">
                             <input type="hidden" name="country">
                             <i class="dropdown icon"></i>
-                            <div class="default text">Select Country</div>
+                            <div class="default text">Choose countries</div>
                             <div class="menu">
                             <div class="item" data-value="af"><i class="af flag"></i>Afghanistan</div>
                             <div class="item" data-value="ax"><i class="ax flag"></i>Aland Islands</div>
@@ -336,12 +342,12 @@
                         </div>
                         </div>
                     </div>
-                    <button class="ui basic red button" id="ban-btn" onclick="addCountryToBlacklist();"><i class="ui red ban icon"></i> Blacklist Country</button>
+                    <button class="ui button" id="ban-btn" onclick="addCountryToBlacklist();"><i class="ui ban icon"></i> Blacklist country</button>
                 </div>
-                <table class="ui unstackable basic celled table">
+                <table class="ui unstackable table">
                     <thead>
                         <tr>
-                            <th>ISO Code</th>
+                            <th>Country code</th>
                             <th>Remove</th>
                         </tr>
                     </thead>
@@ -350,30 +356,22 @@
                     </tbody>
                 </table>
 
-                <h4>IP Blacklist</h4>
-                <p>Block a certain IP or IP range</p>
+</div></section>
+<section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">IP addresses</h3><p class="zx-card__desc">Block one address, a wildcard like 172.16.*.* or a range like 10.0.0.0/8.</p></div><div class="zx-card__body">
                 <div class="ui form">
                     <div class="field">
-                    <label>IP Address</label>
-                    <input id="ipAddressInput" type="text" placeholder="IP Address">
+                    <label>IP address</label>
+                    <input id="ipAddressInput" type="text" placeholder="192.0.2.10">
                     </div>
-                    <button id="addIpButton" onclick="addIpBlacklist();" class="ui basic red icon button">
+                    <button id="addIpButton" onclick="addIpBlacklist();" class="ui button">
                     <i class="ban icon"></i> Blacklist IP
                     </button>
                 </div>
-                <div class="ui message">
-                    <i class="ui info circle icon"></i> IP Address support the following formats
-                    <div class="ui bulleted list">
-                        <div class="item">Fixed IP Address (e.g. 192.128.4.100 or fe80::210:5aff:feaa:20a2)</div>
-                        <div class="item">IP Wildcard (e.g. 172.164.*.*)</div>
-                        <div class="item">CIDR String (e.g. 128.32.0.1/16)</div>
-                    </div>
-                </div>
                 <div class="bulkImportContainer" data-list="blacklist"></div>
-                <table class="ui unstackable basic celled table">
+                <table class="ui unstackable table">
                     <thead>
                     <tr>
-                        <th>IP Address</th>
+                        <th>IP address</th>
                         <th>Remove</th>
                     </tr>
                     </thead>
@@ -381,17 +379,15 @@
 
                     </tbody>
                 </table>
+                </div></section>
             </div>
 
             <!-- Whitelist Config Menu-->
             <div class="ui bottom attached tab segment" data-tab="tab_whitelist">
-                <h2>Whitelist</h2>
-                <p>Enable access from the following countries or IP. <br>
-                    Whitelist has lower priority than blacklist if both whitelist and blacklist are enabled <br>
-                    <small>Tips: You can use blacklist to fine tune whitelist coverage</small></p>
-                <div class="ui info message" id="whitelistReservedRangeHelp">
-                    <div class="header">Why does the whitelist deny me (403)?</div>
-                    <ul class="list">
+                <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Whitelist</h3><p class="zx-card__desc">Allow only chosen countries or IP addresses. The blacklist wins when both lists match, so you can use it to fine-tune the whitelist.</p></div><div class="zx-card__body">
+                <details class="zx-disclosure" id="whitelistReservedRangeHelp">
+                    <summary>Why does the whitelist deny me (403)?</summary>
+                    <div class="zx-disclosure__body"><ul class="list">
                         <li><b>Which address is checked:</b> by default the address of the TCP connection that reached Zoraxy.
                             Behind Cloudflare, a Cloudflare Tunnel, WireGuard / Tailscale, a router that does NAT or another reverse proxy
                             that is the address of that device, not of the visitor. To check the visitor instead, turn on
@@ -401,21 +397,20 @@
                             loopback, link-local and similar ranges have no country.</li>
                         <li><i>Enable LAN and Loopback</i> (below) covers the private, loopback and link-local ranges
                             but <b>not 100.64.0.0/10</b>. Add that range (or the exact address) to the IP whitelist if you need it.</li>
-                    </ul>
-                </div>
-                <div class="ui divider"></div>
+                    </ul></div>
+                </details>
                 <div class="ui toggle checkbox">
                     <input type="checkbox" id="enableWhitelist">
-                    <label>Enable Whitelist</label>
+                    <label>Enable the whitelist</label>
                 </div>
-                <div class="toggleSucc" style="float: right; display:none; color: #2abd4d;" >
+                <div class="toggleSucc" style="float: right; display:none; color: var(--zx-ok-text);" >
                     <i class="ui green checkmark icon"></i> Setting Saved
                 </div>
                 <div class="ui basic segment advanceoptions">
                     <div id="accessAdvanceSettings" class="ui accordion advanceSettings">
                         <div class="title">
                           <i class="dropdown icon"></i>
-                            Advanced Settings
+                            Advanced settings
                         </div>
                         <div class="content">
                             <div class="ui toggle checkbox">
@@ -426,17 +421,16 @@
                         </div>
                     </div>  
                 </div>
-                <h4>Country Whitelist</h4>
-                    <p><i class="yellow exclamation triangle icon"></i>
-                    This will allow all requests from the selected country. The requester's location is estimated from their IP address and may not be 100% accurate.</p>
+</div></section>
+<section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Countries</h3><p class="zx-card__desc">Allows all requests from the selected countries. A visitor's location is estimated from their IP address and may not be 100% accurate.</p></div><div class="zx-card__body">
 
                 <div class="ui form">
                     <div class="field">
-                        <label>Select Country</label>
+                        <label>Country</label>
                         <div id="countrySelectorWhitelist" class="ui fluid search multiple selection dropdown">
                             <input type="hidden" name="country">
                             <i class="dropdown icon"></i>
-                            <div class="default text">Select Country</div>
+                            <div class="default text">Choose countries</div>
                             <div class="menu">
                             <div class="item" data-value="af"><i class="af flag"></i>Afghanistan</div>
                             <div class="item" data-value="ax"><i class="ax flag"></i>Aland Islands</div>
@@ -683,12 +677,12 @@
                         </div>
                         </div>
                     </div>
-                    <button class="ui basic green button" id="whitelist-btn" onclick="addCountryToWhitelist();"><i class="ui green add icon"></i> Whitelist Country</button>
+                    <button class="ui button" id="whitelist-btn" onclick="addCountryToWhitelist();"><i class="ui add icon"></i> Whitelist country</button>
                 </div>
-                <table class="ui unstackable basic celled table">
+                <table class="ui unstackable table">
                     <thead>
                         <tr>
-                            <th>ISO Code</th>
+                            <th>Country code</th>
                             <th>Remove</th>
                         </tr>
                     </thead>
@@ -697,34 +691,26 @@
                     </tbody>
                 </table>
 
-                <h4>IP Whitelist</h4>
-                <p>Whitelist a certain IP or IP range</p>
+                </div></section>
+<section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">IP addresses</h3><p class="zx-card__desc">Allow one address, a wildcard like 172.16.*.* or a range like 10.0.0.0/8.</p></div><div class="zx-card__body">
                 <div class="ui form">
                     <div class="field">
-                        <label>IP Address</label>
-                        <input id="ipAddressInputWhitelist" type="text" placeholder="IP Address">
+                        <label>IP address</label>
+                        <input id="ipAddressInputWhitelist" type="text" placeholder="192.0.2.10">
                     </div>
                     <div class="field">
                         <label>Remarks (Optional)</label>
                         <input id="ipAddressCommentsWhitelist" type="text" placeholder="Comments or remarks for this IP range">
                     </div>
-                    <button id="addIpButton" onclick="addIpWhitelist();" class="ui basic green button">
-                        <i class="green add icon"></i> Whitelist IP
+                    <button id="addIpButton" onclick="addIpWhitelist();" class="ui button">
+                        <i class="add icon"></i> Whitelist IP
                     </button>
                 </div>
-                <div class="ui message">
-                    <i class="ui info circle icon"></i> IP Address support the following formats
-                    <div class="ui bulleted list">
-                        <div class="item">Fixed IP Address (e.g. 192.128.4.100 or fe80::210:5aff:feaa:20a2)</div>
-                        <div class="item">IP Wildcard (e.g. 172.164.*.*)</div>
-                        <div class="item">CIDR String (e.g. 128.32.0.1/16)</div>
-                    </div>
-                </div>
                 <div class="bulkImportContainer" data-list="whitelist"></div>
-                <table class="ui unstackable basic celled table">
+                <table class="ui unstackable table">
                     <thead>
                     <tr>
-                        <th>IP Address</th>
+                        <th>IP address</th>
                         <th>Remarks</th>
                         <th>Remove</th>
                     </tr>
@@ -733,32 +719,31 @@
 
                     </tbody>
                 </table>
+                </div></section>
             </div>
             <!-- Quick ban list-->
             <div class="ui bottom attached tab segment" data-tab="tab_quickban">
-                <h3>Quick Ban List</h3>
-                <button style="margin-top: -1em;" onclick="initBlacklistQuickBanTable();" aria-label="Refresh the Quick Ban list" class="ui green small right floated circular basic icon button"><i class="ui refresh icon"></i></button>
+                <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Quick ban</h3><p class="zx-card__desc">Ban an address with one click when you see unusual traffic. The blacklist must be turned on for this to work.</p></div><div class="zx-card__body">
+                <div class="zx-btn-row accessQbBar"><button onclick="initBlacklistQuickBanTable();" aria-label="Refresh the Quick Ban list" title="Refresh" class="zx-btn zx-btn--secondary"><i class="ui refresh icon" aria-hidden="true"></i> Refresh list</button></div>
                 <p class="zx-sub" style="margin-bottom:.6em">Want addresses banned automatically after repeated abuse? Use <a href="#seccenter" data-nav-open="seccenter">Auto-ban in the Security Center</a>.</p>
-                <p>You can perform one-click IP ban on the list below if you observe unusual traffic from an unknown origin<br>
-                Blacklist must be enabled in order to use this feature.</p>
-                <div class="ui divider"></div>
-                <table class="ui celled unstackable very compact table" id="ipTable">
+                <table class="ui unstackable very compact table" id="ipTable">
                     <thead>
                         <tr>
                         <th>IP</th>
-                        <th>Access Count</th>
-                        <th>Country of Origin</th>
-                        <th>Blacklist</th>
+                        <th>Requests today</th>
+                        <th>Country</th>
+                        <th>Ban</th>
                         </tr>
                     </thead>
                     <tbody>
                     </tbody>
                 </table>
                 <div class="pagination"></div>
+                </div></section>
             </div>
             <!-- Optional rule settings: ordering, duplicate, drop connection, challenge countries -->
             <div class="ui bottom attached tab segment" data-tab="tab_options" id="accessOptionsPane"></div>
-        </div>  
+        </div>
     </div>
 </div>
 <script>
@@ -849,7 +834,7 @@
         for (var i = 0; i < currentListOfAccessRules.length; i++){
             let thisAccessRule = currentListOfAccessRules[i];
             if (thisAccessRule.ID == "default"){
-                $("#currentEditingAccessRule").html(`Editing Access Rule: ${ZxUI.esc(thisAccessRule.Name)} <span style="font-weight: 300;">[${ZxUI.esc(thisAccessRule.ID)}]</span>`);
+                $("#currentEditingAccessRule").html(`Editing access rule: ${ZxUI.esc(thisAccessRule.Name)}`);
                 $("#accessRuleDesc").text(thisAccessRule.Desc);
                 break;
             }
@@ -871,7 +856,7 @@
                 break;
             }
         }
-        $("#currentEditingAccessRule").html(`Editing Access Rule: ${ZxUI.esc(name)} <span style="font-weight: 300;">[${ZxUI.esc(newRuleUUID)}]</span>`);
+        $("#currentEditingAccessRule").html(`Editing access rule: ${ZxUI.esc(name)}`);
         $("#accessRuleDesc").text(desc);
 
         initBlackWhitelistTables();
@@ -936,9 +921,8 @@
             if (data.length === 0) {
                 $('#banned-list').append(`
                     <tr>
-                        <td colspan="2">
-                            <i class="green check circle icon"></i>
-                            There are no blacklisted countries
+                        <td colspan="2" class="zx-empty-cell">
+                            There are no blacklisted countries yet. Pick a country above.
                         </td>
                     </tr>
                 `);
@@ -954,7 +938,7 @@
             if (data.length === 0) {
                 $('#blacklistIpTable').append(`
                 <tr>
-                    <td colspan="2"><i class="green check circle icon"></i>There are no blacklisted IP addresses</td>
+                    <td colspan="2" class="zx-empty-cell">There are no blacklisted IP addresses</td>
                 </tr>
                 `);
             } else {
@@ -1052,9 +1036,8 @@
             if (data.length === 0) {
                 $('#whitelistCountryList').append(`
                     <tr>
-                        <td colspan="2">
-                            <i class="green check circle icon"></i>
-                            There are no whitelisted countries
+                        <td colspan="2" class="zx-empty-cell">
+                            There are no whitelisted countries yet. Pick a country above.
                         </td>
                     </tr>
                 `);
@@ -1071,7 +1054,7 @@
             if (data.length === 0) {
                 $('#whitelistIpTable').append(`
                 <tr>
-                    <td colspan="3"><i class="green check circle icon"></i>There are no whitelisted IP addresses</td>
+                    <td colspan="3" class="zx-empty-cell">There are no whitelisted IP addresses</td>
                 </tr>
                 `);
             } else {
@@ -1685,20 +1668,20 @@
 
             slicedEntries.forEach(function([ip, accessCount]) {
                 var row = $("<tr>").appendTo(tableBody);
-                $("<td>").text(ip).appendTo(row);
-                $("<td>").text(accessCount).appendTo(row);
-                $("<td>").text(getCountryISOFromQuickBan(ip)).appendTo(row);
+                $("<td data-label='IP'>").text(ip).appendTo(row);
+                $("<td data-label='Requests today'>").text(accessCount).appendTo(row);
+                $("<td data-label='Country'>").text(getCountryISOFromQuickBan(ip)).appendTo(row);
                 if (ipInBlacklist(ip)){
-                    $("<td>").html(`<button class="ui basic green tiny icon button" title"Unban IP" onclick="handleUnban('${ip}');"><i class="green check icon"></i></button>`).appendTo(row);
+                    $("<td>").html(`<button class="ui basic green tiny icon button" title="Unban IP" aria-label="Unban IP" onclick="handleUnban('${ip}');"><i class="green check icon"></i></button>`).appendTo(row);
                 }else{
-                    $("<td>").html(`<button class="ui basic red tiny icon button" title"Ban IP" onclick="handleBanIp('${ip}');"><i class="red ban icon"></i></button>`).appendTo(row);
+                    $("<td>").html(`<button class="ui basic red tiny icon button" title="Ban IP" aria-label="Ban IP" onclick="handleBanIp('${ip}');"><i class="red ban icon"></i></button>`).appendTo(row);
                 }
             });
 
             if (slicedEntries.length == 0){
                 var row = $("<tr>").appendTo(tableBody);
-                $("<td colspan='4'>").html(`
-                    <i class="ui green circle check icon"></i> There are no HTTP requests recorded today     
+                $("<td colspan='4' class='zx-empty-cell'>").html(`
+                    No requests were recorded today, so there is nothing to ban yet. Addresses show up here as traffic arrives; use Refresh list to check again.
                 `).appendTo(row);
                 
             }

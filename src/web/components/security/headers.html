@@ -1,20 +1,40 @@
-<h3>Header access rules</h3>
-<p>Require a request header (for example a secret set by your CDN or a client) on a proxy rule, otherwise deny, drop the
-    connection or answer 404. All rules of a proxy rule must pass; a rule passes if <b>any</b> of its values matches, so you can
-    rotate secrets by adding the new value, deploying it, then removing the old one. Secrets are compared in constant time, never
-    logged and never shown again after saving (leave a secret field empty to keep the stored one). Off unless rules are added.</p>
-<div class="ui form">
-    <div class="field"><label>Proxy rule</label><select id="hrEp" class="ui dropdown"></select></div>
-    <div id="hrMsg" class="ui negative message" style="display:none"></div>
-    <div style="overflow-x:auto">
-        <table class="ui very basic unstackable table">
-            <thead><tr><th>Header</th><th>Match</th><th>Values (one per line)</th><th>Only below path</th><th>Otherwise</th><th></th></tr></thead>
-            <tbody id="hrRows"></tbody>
-        </table>
-    </div>
-    <button class="ui mini basic button" id="hrAdd"><i class="plus icon"></i> Add rule</button>
-    <button class="ui basic green button" id="hrSave"><i class="save icon"></i> Save</button>
+<div class="ui form" id="hrForm">
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Header access rules</h3>
+            <p class="zx-card__desc">Require a request header, such as a secret set by your CDN, on a proxy rule. Requests without it are denied. Nothing happens until you add a rule.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-form-grid"><div class="field zx-field"><label for="hrEp">Proxy rule</label><select id="hrEp"></select></div></div>
+            <div id="hrMsg" class="ui negative message" style="display:none"></div>
+            <p class="zx-help zx-help--block">A request must pass every rule of the proxy rule. A rule passes if any of its values matches, so you can rotate a secret by adding the new value first and removing the old one later. Secrets are never logged or shown again; leave a secret field empty to keep the stored one.</p>
+        </div>
+    </section>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Rules for this proxy rule</h3>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="hrAdd"><i class="plus icon" aria-hidden="true"></i> Add rule</button>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Header rules">
+                <table class="zx-table">
+                    <thead><tr><th>Header</th><th>Match</th><th>Values (one per line)</th><th>Only below path</th><th>If it fails</th><th class="zx-actions"><span class="zx-sr-only">Remove</span></th></tr></thead>
+                    <tbody id="hrRows"></tbody>
+                    <tfoot class="hrEmptyFoot"><tr><td colspan="6" class="zx-empty-cell">No header rules for this proxy rule. Add one to require a header on every request.</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+        <div class="zx-card__foot"><button class="ui primary button" id="hrSave"><i class="save icon"></i> Save</button></div>
+    </section>
 </div>
+<style>
+    #hrRows:has(tr) + .hrEmptyFoot { display: none; }
+    #hrForm .zx-table td { vertical-align: top; }
+    #hrForm .zx-table td input, #hrForm .zx-table td textarea { width: 100%; min-width: 7rem; }
+    #hrForm .zx-table td select { min-width: 7rem; }
+    #hrForm .zx-table .hv { min-width: 12rem; }
+    #hrForm .zx-help--block { margin: var(--zx-space-3) 0 0; }
+</style>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
@@ -24,12 +44,12 @@
         var secret = r.Match === "equals" || r.Match === "";
         var vals = secret ? (r.Values || []).map(function (v, i) { return ""; }).join("\n") : (r.Values || []).join("\n");
         var ph = secret && (r.Values || []).length ? (r.Values.length + " stored secret(s): leave empty to keep, one line each") : "";
-        return '<tr class="hrRow" data-n="' + (r.Values || []).length + '"><td><input class="hn" value="' + esc(r.Name) + '" placeholder="X-Edge-Key"></td>' +
-            '<td><select class="hm"><option' + (r.Match === "equals" || r.Match === "" ? " selected" : "") + '>equals</option><option' + (r.Match === "regex" ? " selected" : "") + '>regex</option><option' + (r.Match === "present" ? " selected" : "") + '>present</option></select></td>' +
-            '<td><textarea class="hv" rows="2" placeholder="' + esc(ph) + '" autocomplete="off">' + esc(vals) + '</textarea></td>' +
-            '<td><input class="hp" value="' + esc(r.PathPrefix) + '" placeholder="/admin"></td>' +
-            '<td><select class="ha"><option' + (r.Action === "deny" || !r.Action ? " selected" : "") + '>deny</option><option' + (r.Action === "drop" ? " selected" : "") + '>drop</option><option' + (r.Action === "notfound" ? " selected" : "") + '>notfound</option></select></td>' +
-            '<td><i class="trash icon hrDel" style="cursor:pointer"></i></td></tr>';
+        return '<tr class="hrRow" data-n="' + (r.Values || []).length + '"><td data-label="Header"><input class="hn" aria-label="Header name" value="' + esc(r.Name) + '" placeholder="X-Edge-Key"></td>' +
+            '<td data-label="Match"><select class="hm" aria-label="Match type"><option' + (r.Match === "equals" || r.Match === "" ? " selected" : "") + '>equals</option><option' + (r.Match === "regex" ? " selected" : "") + '>regex</option><option' + (r.Match === "present" ? " selected" : "") + '>present</option></select></td>' +
+            '<td data-label="Values"><textarea class="hv" aria-label="Values, one per line" rows="2" placeholder="' + esc(ph) + '" autocomplete="off">' + esc(vals) + '</textarea></td>' +
+            '<td data-label="Only below path"><input class="hp" aria-label="Only below path" value="' + esc(r.PathPrefix) + '" placeholder="/admin"></td>' +
+            '<td data-label="If it fails"><select class="ha" aria-label="If the header check fails"><option' + (r.Action === "deny" || !r.Action ? " selected" : "") + '>deny</option><option' + (r.Action === "drop" ? " selected" : "") + '>drop</option><option' + (r.Action === "notfound" ? " selected" : "") + '>notfound</option></select></td>' +
+            '<td class="zx-actions"><button type="button" class="ui mini basic icon button hrDel" aria-label="Remove rule" title="Remove rule"><i class="trash icon"></i></button></td></tr>';
     }
     function loadRules() {
         var ep = $("#hrEp").val(); if (!ep) { $("#hrRows").html(""); return; }
@@ -41,7 +61,7 @@
     }
     $.cjax({ type: "POST", url: "/api/proxy/list", data: { type: "host" }, success: function (list) {
         var h = (list || []).map(function (e) { return "<option>" + esc(e.RootOrMatchingDomain) + "</option>"; }).join("");
-        $("#hrEp").html(h || "<option value=''>(no proxy rules)</option>");
+        $("#hrEp").html(h || "<option value=''>No proxy rules yet</option>");
         loadRules();
     } });
     $("#hrEp").on("change", loadRules);

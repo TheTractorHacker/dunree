@@ -21,7 +21,7 @@
                     <div class="sub header">Painless migration with one click</div>
                 </div>
             </div>
-            <h3>Backup Current Configs</h3>
+            <h3>Back up the current configuration</h3>
             <p>This will download all your configuration on zoraxy in a zip file. This includes all the proxy configs and certificates. Please keep it somewhere safe and after migration, delete this if possible.</p>
             <p>A shareable archive always carries a <code>manifest.json</code> (versions, mode, size and SHA-256 of each file) so a restore can verify it. For the other modes it is optional, because a Zoraxy that predates the manifest cannot restore an archive that has one.</p>
             <div class="ui form">
@@ -56,19 +56,21 @@
                 </div>
               </div>
             </div>
-            <button class="ui basic button" onclick="downloadConfig();"><i class="ui blue download icon"></i> Download</button>
+            <button class="ui primary button" onclick="downloadConfig();"><i class="download icon"></i> Download</button>
             <div class="ui divider"></div>
 
-            <h3>Restore from Config</h3>
-            <p>You can restore your previous settings and database from a zip file config backup. 
-            <br><b style="color: rgba(255, 0, 0, 0.644);">RESTORE FULL SYSTEM SNAPSHOT WILL CAUSE THE SYSTEM TO SHUTDOWN AFTER COMPLETED. Make sure your Zoraxy is configured to work with systemd to automatic restart Zoraxy after system restore completed.
-            </b></p>
+            <h3>Restore from a backup</h3>
+            <p>You can restore your previous settings and database from a zip file config backup.</p>
+            <div class="ui negative message">
+                <div class="header">Restoring a full system snapshot shuts Zoraxy down</div>
+                <p>Zoraxy exits when the restore completes. Make sure it is set up to restart automatically (for example with systemd) so it comes back with the restored configuration.</p>
+            </div>
             <p><b>Check file</b> validates the archive and shows what would be added, replaced and removed without changing anything.</p>
             <form class="ui form" id="uploadForm" action="/api/conf/import" method="POST" enctype="multipart/form-data">
               <input type="file" name="file" id="fileInput" accept=".zip">
               <div style="margin-top: 0.6em;">
-                <button class="ui basic button" type="button" id="checkBtn"><i class="ui blue search icon"></i> Check file (dry run)</button>
-                <button class="ui basic button" type="submit" id="restoreBtn" disabled><i class="ui green upload icon"></i> Restore &amp; Exit</button>
+                <button class="ui basic button" type="button" id="checkBtn"><i class="search icon"></i> Check file (dry run)</button>
+                <button class="ui red button" type="submit" id="restoreBtn" disabled><i class="upload icon"></i> Restore &amp; Exit</button>
               </div>
             </form>
             <div id="checkReport" style="display:none; margin-top:1em;"></div>

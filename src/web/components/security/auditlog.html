@@ -1,77 +1,123 @@
-<h3>Security audit log</h3>
-<p>Who changed a security setting, from which address, and what. It records the deployment role, trusted proxies, access lists, the admin
-    allow-list, upstream certificate trust, API tokens, WAF, auto-ban and rate limit settings, and configuration import, export and restore.
-    Passwords, tokens, cookies and private keys are never written; other secret-looking values show as <code>[redacted]</code>.
-    Sign-ins and admin accounts are in the Admin accounts section. The file is <code>conf/security_audit.log</code>, kept as 5 files of 5 MiB,
-    not included in configuration exports, and the addresses shown are the direct connection, not forwarded headers.</p>
 <div id="salWarn" class="ui warning message" style="display:none"></div>
-<div class="ui form">
-    <div class="three fields">
-        <div class="field">
-            <label for="salEvent">Show</label>
-            <select id="salEvent" class="ui dropdown">
-                <option value="">Everything</option>
-                <option value="deployrole.*">Deployment role</option>
-                <option value="crowdsec.*">CrowdSec</option>
-                <option value="trustedproxy.*">Trusted proxies</option>
-                <option value="access.*">Access rules</option>
-                <option value="blacklist.*">Blacklist</option>
-                <option value="whitelist.*">Whitelist</option>
-                <option value="adminallow.*">Admin allow-list</option>
-                <option value="destguard.*">Destination restriction</option>
-                <option value="upstream.tls.*">Upstream certificate trust</option>
-                <option value="apitoken.*">API tokens</option>
-                <option value="waf.*">WAF</option>
-                <option value="abuse.*">Auto-ban</option>
-                <option value="ratelimit.*">Rate limits</option>
-                <option value="config.*">Configuration import, export, restore</option>
-                <option value="restapi.*">Changes through the REST API</option>
-            </select>
-        </div>
-        <div class="field">
-            <label for="salActor">Who</label>
-            <input type="text" id="salActor" placeholder="user name or token name" autocomplete="off">
-        </div>
-        <div class="field">
-            <label>&nbsp;</label>
-            <button class="ui basic button" id="salRefresh" type="button"><i class="refresh icon"></i> Refresh</button>
-            <button class="ui basic button" id="salVerify" type="button"><i class="check icon"></i> Check log integrity</button>
-        </div>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Security audit log</h3>
+        <p class="zx-card__desc">Who changed a security setting, from which address, and what. Passwords, tokens, cookies and private keys are never written.</p>
     </div>
-</div>
-<div id="salVerifyMsg" class="ui message" style="display:none"></div>
-<div style="overflow-x:auto">
-    <table class="ui unstackable celled table">
-        <thead><tr><th>Time</th><th>Who</th><th>From</th><th>Event</th><th>Target</th><th>Result</th><th>Details</th></tr></thead>
-        <tbody id="salRows"><tr><td colspan="7">Loading...</td></tr></tbody>
-    </table>
-</div>
-<button class="ui basic button" id="salMore" type="button" style="display:none">Load older entries</button>
+    <div class="zx-card__body">
+        <div class="ui form">
+            <div class="zx-form-grid">
+                <div class="field zx-field">
+                    <label for="salEvent">Show</label>
+                    <select id="salEvent">
+                        <option value="">Everything</option>
+                        <option value="deployrole.*">Deployment role</option>
+                        <option value="crowdsec.*">CrowdSec</option>
+                        <option value="trustedproxy.*">Trusted proxies</option>
+                        <option value="access.*">Access rules</option>
+                        <option value="blacklist.*">Blacklist</option>
+                        <option value="whitelist.*">Whitelist</option>
+                        <option value="adminallow.*">Admin allow-list</option>
+                        <option value="destguard.*">Destination restriction</option>
+                        <option value="upstream.tls.*">Upstream certificate trust</option>
+                        <option value="apitoken.*">API tokens</option>
+                        <option value="waf.*">WAF</option>
+                        <option value="abuse.*">Auto-ban</option>
+                        <option value="ratelimit.*">Rate limits</option>
+                        <option value="config.*">Configuration import, export, restore</option>
+                        <option value="restapi.*">Changes through the REST API</option>
+                    </select>
+                </div>
+                <div class="field zx-field">
+                    <label for="salActor">Who</label>
+                    <input type="text" id="salActor" placeholder="user name or token name" autocomplete="off">
+                </div>
+                <div class="zx-field zx-field--btn zx-btn-row">
+                    <button class="zx-btn zx-btn--secondary" id="salRefresh" type="button"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
+                    <button class="zx-btn zx-btn--secondary" id="salVerify" type="button"><i class="check icon" aria-hidden="true"></i> Check log integrity</button>
+                </div>
+            </div>
+        </div>
+        <div id="salVerifyMsg" class="ui message" style="display:none"></div>
+        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Security audit log">
+            <table class="zx-table zx-table--compact">
+                <thead><tr><th>Time</th><th>Who</th><th>From</th><th>Event</th><th>Target</th><th>Result</th><th>Details</th></tr></thead>
+                <tbody id="salRows"><tr><td colspan="7" class="zx-empty-cell">Loading...</td></tr></tbody>
+            </table>
+        </div>
+        <p class="zx-help">Kept in conf/security_audit.log (5 files of 5 MiB), not part of configuration exports. Addresses are the direct connection, not forwarded headers. Sign-ins and accounts are listed under Admin accounts.</p>
+    </div>
+    <div class="zx-card__foot" id="salFoot" style="display:none"><button class="zx-btn zx-btn--secondary" id="salMore" type="button" style="display:none">Load older entries</button></div>
+</section>
+<style>
+    #salRows td { vertical-align: top; }
+    #salRows .sal-time { white-space: nowrap; }
+    #salRows details.sal-detail summary { cursor: pointer; display: block; max-width: 32rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text); }
+    #salRows details.sal-detail[open] summary { white-space: normal; margin-bottom: var(--zx-space-2); color: var(--zx-text-muted); }
+    #salRows details.sal-detail pre { margin: 0; padding: var(--zx-space-2) var(--zx-space-3); max-height: 16rem; overflow: auto; background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--zx-text); }
+    #salRows details.sal-detail summary::before { content: "\25B8  "; color: var(--zx-text-muted); }
+    #salRows details.sal-detail[open] summary::before { content: "\25BE  "; }
+    #salRows .sal-ctx { display: none; }
+    @media (max-width: 480px) {
+        #salRows td.sal-c { display: none; }
+        #salRows .sal-ctx { display: block; }
+        #salRows .sal-plain:not(:empty) + .sal-ctx { margin-top: var(--zx-space-1); }
+        #salRows td { padding: 4px 12px; }
+        #salRows td.zx-cell-long { display: block; text-align: left; }
+        #salRows td.zx-cell-long::before { content: none; }
+        #salRows details.sal-detail summary { max-width: 100%; }
+    }
+    #salVerifyMsg { margin-bottom: var(--zx-space-3); }
+</style>
 <script>
 (function () {
     var next = 0;
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    var AREAS = { deployrole: "Deployment role", crowdsec: "CrowdSec", trustedproxy: "Trusted proxies", access: "Access rules", blacklist: "Blacklist", whitelist: "Whitelist", adminallow: "Admin allow-list", destguard: "Destination restriction", upstream: "Upstream certificate trust", apitoken: "API tokens", waf: "WAF", abuse: "Auto-ban", ratelimit: "Rate limits", config: "Configuration", restapi: "REST API", proxy: "Proxy rule" };
+    function tr(s) { return typeof window.t === "function" ? window.t(s) : s; }
+    function nice(ev) {   // "waf.endpoint.set" -> "WAF: endpoint set" (the raw name stays in the tooltip)
+        var p = String(ev || "").split(".");
+        var area = AREAS[p[0]] ? tr(AREAS[p[0]]) : p[0];
+        return p.length > 1 ? area + ": " + p.slice(1).join(" ").replace(/_/g, " ") : area;
+    }
+    function pretty(v) {
+        if (typeof v === "string" && /^\s*[\[{]/.test(v)) { try { return JSON.stringify(JSON.parse(v), null, 2); } catch (e) { return v; } }
+        if (v !== null && typeof v === "object") { return JSON.stringify(v, null, 2); }
+        return String(v);
+    }
+    function plain(v) { return typeof v === "object" && v !== null ? JSON.stringify(v) : String(v); }
     function row(e) {
         var d = e.detail || {}, keys = Object.keys(d).filter(function (k) { return k.charAt(0) !== "@"; });
-        var det = keys.map(function (k) { return "<b>" + esc(k) + "</b>=" + esc(d[k]); }).join("<br>");
-        var cls = e.outcome === "ok" ? "" : (e.outcome === "denied" ? "negative" : "warning");
-        return '<tr class="' + cls + '"><td>' + esc(new Date(e.ts * 1000).toLocaleString()) + "</td><td>" + esc(e.actor) + "</td><td>" + esc(e.ip) +
-            "</td><td><code>" + esc(e.event) + "</code></td><td>" + esc(e.target) + "</td><td>" + esc(e.outcome) +
-            '</td><td style="word-break:break-word;max-width:28em">' + (det || "-") + "</td></tr>";
+        var line = keys.map(function (k) { return k + "=" + plain(d[k]); }).join(", ");
+        var ctx = tr("Who") + ": " + (e.actor || "-") + "\n" + tr("From") + ": " + (e.ip || "-") + "\n" + tr("Target") + ": " + (e.target || "-");
+        var det = "-", short = line.length <= 48 && !keys.some(function (k) { return /^\s*[\[{]/.test(plain(d[k])); });
+        if (keys.length && short) { det = esc(line); }
+        else if (keys.length) {
+            var names = keys.slice(0, 3).join(", ") + (keys.length > 3 ? ", ..." : "");
+            var full = ctx + "\n\n" + keys.map(function (k) { return k + ": " + pretty(d[k]); }).join("\n");
+            det = '<details class="sal-detail"><summary title="' + esc(line) + '">' + esc(names) + "</summary><pre>" + esc(full) + "</pre></details>";
+        }
+        if (!keys.length || short) {   // phones hide Who, From and Target: keep them one tap away
+            det = '<span class="sal-plain">' + det + '</span><details class="sal-detail sal-ctx"><summary>' + esc(tr("More")) + "</summary><pre>" + esc(ctx) + "</pre></details>";
+        }
+        var badge = e.outcome === "ok" ? "zx-badge--ok" : (e.outcome === "denied" ? "zx-badge--danger" : "zx-badge--warn");
+        return "<tr><td class=\"sal-time\" data-label=\"" + esc(tr("Time")) + "\">" + esc(new Date(e.ts * 1000).toLocaleString()) + "</td><td class=\"sal-c\" data-label=\"" + esc(tr("Who")) + "\">" + esc(e.actor) + "</td><td class=\"sal-c\" data-label=\"" + esc(tr("From")) + "\">" + esc(e.ip) +
+            "</td><td data-label=\"" + esc(tr("Event")) + "\" title=\"" + esc(e.event) + "\">" + esc(nice(e.event)) + "</td><td class=\"sal-c\" data-label=\"" + esc(tr("Target")) + "\">" + esc(e.target) + "</td><td data-label=\"" + esc(tr("Result")) + "\"><span class=\"zx-badge " + badge + "\">" + esc(e.outcome) +
+            "</span></td><td class=\"zx-cell-long\" data-label=\"" + esc(tr("Details")) + "\">" + det + "</td></tr>";
     }
     function load(append) {
-        var q = { event: $("#salEvent").val(), actor: $.trim($("#salActor").val()), limit: 50 };
+        var q = { event: $("#salEvent").val(), actor: $.trim($("#salActor").val()), limit: (window.matchMedia && window.matchMedia("(max-width: 480px)").matches) ? 20 : 50 };
         if (append && next) { q.before = next; }
         $.get("./api/security/audit/list", q, function (d) {
-            if (d && d.error) { $("#salRows").html('<tr><td colspan="7">' + esc(d.error) + "</td></tr>"); return; }
+            if (d && d.error) { $("#salRows").html('<tr><td colspan="7" class="zx-empty-cell">' + esc(tr("The log could not be read. Try Refresh.")) + "</td></tr>"); return; }
             var st = d.stats || {};
-            if (!d.available) { $("#salWarn").text("The audit log could not be opened; nothing is being recorded. See the system log.").show(); }
+            if (!d.available) { $("#salWarn").text(tr("The audit log could not be opened; nothing is being recorded. See the system log.")).show(); }
             else if (st.queued || st.dropped) { $("#salWarn").text("The log file cannot be written right now: " + (st.queued || 0) + " entries are waiting in memory" + (st.dropped ? ", " + st.dropped + " were lost." : ".")).show(); }
             else { $("#salWarn").hide(); }
             var html = (d.entries || []).map(row).join("");
-            if (append) { $("#salRows").append(html); } else { $("#salRows").html(html || '<tr><td colspan="7">No entries.</td></tr>'); }
+            if (append) { $("#salRows").append(html); } else { $("#salRows").html(html || '<tr><td colspan="7" class="zx-empty-cell">No entries yet. Security changes you make will be listed here.</td></tr>'); }
             next = d.next || 0;
-            $("#salMore").toggle(!!next);
+            $("#salMore").toggle(!!next); $("#salFoot").toggle(!!next);
         });
     }
     $("#salRefresh, #salEvent").on("click change", function (e) { if (e.type === "change" || this.id === "salRefresh") { load(false); } });

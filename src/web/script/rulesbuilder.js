@@ -248,7 +248,7 @@
                 h("div", { class: "zx-empty__icon", "aria-hidden": "true" }, h("i", { class: "shield alternate icon" })),
                 h("h3", { class: "zx-empty__title" }, t("No rules in this scope yet")),
                 h("p", { class: "zx-empty__text" }, t("A rule says WHEN a request looks a certain way, THEN do something. New rules start in log-only mode so you can watch what they would do before they act. Start from a template below or build one from scratch.")),
-                h("button", { type: "button", class: "zx-btn zx-btn--primary", onclick: function () { RB.openEditor({ site: S.site }); } }, t("Create a rule"))));
+                h("button", { type: "button", class: "zx-btn zx-btn--secondary", onclick: function () { RB.openEditor({ site: S.site }); } }, t("Create a rule"))));
             return;
         }
         if (!rows.length) {

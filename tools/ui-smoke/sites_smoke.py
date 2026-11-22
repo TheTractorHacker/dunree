@@ -154,8 +154,8 @@ def sites_ui(pg, ctx):
     if n != 1:
         fail("redirect", f"a double click created {n} rules")
     # labels
-    if "Forward Pathname" not in js("document.querySelector('#redirectset table thead').innerText"):
-        fail("text", "the Redirection column should be called Forward Pathname")
+    if "keep the path" not in js("document.querySelector('#redirectset table thead').innerText").lower():
+        fail("text", "the Redirection column should be called Keep the path")
     if js("[...document.querySelectorAll('#redirectionRuleList button')].filter(b => !b.getAttribute('aria-label')).length"):
         fail("a11y", "a Redirection row button has no aria-label")
     if js("[...document.querySelectorAll('#redirectset input[type=text]')].filter(i => !i.getAttribute('aria-label') && !i.labels.length).length"):

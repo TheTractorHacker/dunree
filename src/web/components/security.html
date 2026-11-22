@@ -4,7 +4,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Security Center</h2>
-            <p class="zx-page-header__sub">Ban abusive clients automatically, block bots, add or check logins, and see who signed in to the admin panel. Every feature here is off (or empty) until you configure it.</p>
+            <p class="zx-page-header__sub">Ban abusive clients, block bots, protect logins and review security events.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" id="secHistoryBtn" data-zx-history="Auto-ban"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -20,41 +20,112 @@
             <li><a href="#trustproxy" data-nav-open="trustproxy">Trusted Proxies</a> <span>needed for correct client addresses behind a CDN</span></li>
         </ul>
     </aside>
-    <div class="ui top attached tabular menu" id="secTabs">
-        <a class="item active" data-sec="abuse"><i class="ban icon"></i> Auto-ban</a>
-        <a class="item" data-sec="bots"><i class="bug icon"></i> Bot rules</a>
-        <a class="item" data-sec="headers"><i class="code icon"></i> Header rules</a>
-        <a class="item" data-sec="basicauth"><i class="key icon"></i> Basic auth</a>
-        <a class="item" data-sec="authaudit"><i class="clipboard check icon"></i> Auth audit</a>
-        <a class="item" data-sec="users"><i class="users icon"></i> Admin accounts</a>
-        <a class="item" data-sec="crowdsec"><i class="shield icon"></i> CrowdSec</a>
-        <a class="item" data-sec="deployment"><i class="sitemap icon"></i> Deployment</a>
-        <a class="item" data-sec="exposure"><i class="shield alternate icon"></i> Network exposure</a>
-        <a class="item" data-sec="overview"><i class="tachometer alternate icon"></i> Overview</a>
-        <a class="item" data-sec="netplan"><i class="network wired icon"></i> Network plan</a>
-        <a class="item" data-sec="auditlog"><i class="history icon"></i> Audit log</a>
+    <div class="zx-tabs" id="secTabs" aria-label="Security sections">
+        <div class="zx-tabset" role="presentation">
+            <span class="zx-tabgroup" aria-hidden="true">Abuse</span>
+            <button type="button" class="zx-tab item active" data-sec="abuse"><i class="ban icon" aria-hidden="true"></i> Auto-ban</button>
+            <button type="button" class="zx-tab item" data-sec="bots"><i class="bug icon" aria-hidden="true"></i> Bot rules</button>
+            <button type="button" class="zx-tab item" data-sec="headers"><i class="code icon" aria-hidden="true"></i> Header rules</button>
+            <button type="button" class="zx-tab item" data-sec="crowdsec"><i class="crosshairs icon" aria-hidden="true"></i> CrowdSec</button>
+        </div>
+        <div class="zx-tabset" role="presentation">
+            <span class="zx-tabgroup" aria-hidden="true">Access</span>
+            <button type="button" class="zx-tab item" data-sec="basicauth"><i class="key icon" aria-hidden="true"></i> Basic auth</button>
+            <button type="button" class="zx-tab item" data-sec="users"><i class="users icon" aria-hidden="true"></i> Admin accounts</button>
+            <button type="button" class="zx-tab item" data-sec="authaudit"><i class="clipboard check icon" aria-hidden="true"></i> Auth audit</button>
+            <button type="button" class="zx-tab item" data-sec="auditlog"><i class="list icon" aria-hidden="true"></i> Audit log</button>
+        </div>
+        <div class="zx-tabset" role="presentation">
+            <span class="zx-tabgroup" aria-hidden="true">Network</span>
+            <button type="button" class="zx-tab item" data-sec="deployment"><i class="sitemap icon" aria-hidden="true"></i> Deployment</button>
+            <button type="button" class="zx-tab item" data-sec="exposure"><i class="shield alternate icon" aria-hidden="true"></i> Network exposure</button>
+            <button type="button" class="zx-tab item" data-sec="netplan"><i class="road icon" aria-hidden="true"></i> Network plan</button>
+        </div>
+        <div class="zx-tabset" role="presentation">
+            <span class="zx-tabgroup" aria-hidden="true">Summary</span>
+            <button type="button" class="zx-tab item" data-sec="overview"><i class="tachometer alternate icon" aria-hidden="true"></i> Overview</button>
+        </div>
     </div>
-    <div class="ui bottom attached segment" id="secPane">
-        <div class="ui active centered inline loader"></div>
-    </div>
+    <div id="secPane" role="tabpanel" aria-live="polite"><div class="ui active centered inline loader"></div></div>
 </div>
+<style>
+    /* tabs: desktop wraps the groups into rows (nothing is ever cut off); phones scroll with an edge fade (uxkit.js) */
+    #secCenterPage .zx-tabs { margin-bottom: var(--zx-space-5); display: flex; flex-wrap: wrap; gap: 0 var(--zx-space-4); overflow: visible; border-bottom: 0; align-items: flex-end; }
+    #secCenterPage .zx-tabset { flex: 1 1 auto; display: flex; flex-wrap: nowrap; align-items: stretch; gap: var(--zx-space-1); border-bottom: 1px solid var(--zx-border); min-width: 0; }
+    #secCenterPage .zx-tabgroup {
+        flex: 0 0 auto; display: inline-flex; align-items: center; padding: 0 var(--zx-space-2) 0 0;
+        font-size: var(--zx-fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--zx-text-muted);
+    }
+    @media (max-width: 748px) {
+        #secCenterPage .zx-tabs { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--zx-border); gap: 0 var(--zx-space-3); }
+        #secCenterPage .zx-tabset { flex: 0 0 auto; border-bottom: 0; }
+    }
+    #secCenterPage .zx-tabs .zx-tab.item.active { color: var(--zx-primary-soft-text); border-bottom-color: var(--zx-primary); }
+    #secCenterPage .zx-tabs .zx-tab.item { border-radius: 0; }
+    #secCenterPage #secHistoryBtn[hidden] { display: inline-flex; visibility: hidden; }
+    @media (max-width: 748px) { #secCenterPage #secHistoryBtn[hidden] { display: none; } #secPane .zx-savefoot { position: static; } }
+    #secCenterPage #secPane { padding: 0; background: transparent; border: 0; }
+    #secCenterPage .zx-related { margin-bottom: var(--zx-space-4); }
+    /* Fomantic .ui.form select resets the chevron of the kit select: restore it (shared request for zxpages.css) */
+    html body .contentWindow #secPane .ui.form select:not([multiple]) {
+        appearance: none; -webkit-appearance: none; padding: 6px 32px 6px 10px; min-height: 38px; cursor: pointer;
+        background-image: linear-gradient(45deg, transparent 50%, var(--zx-text-muted) 50%), linear-gradient(135deg, var(--zx-text-muted) 50%, transparent 50%) !important;
+        background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50% !important; background-size: 5px 5px, 5px 5px !important; background-repeat: no-repeat !important;
+    }
+    /* shared by the section snippets */
+    #secPane .zx-card__head { align-items: center; }
+    #secPane .zx-subhead { margin: var(--zx-space-5) 0 var(--zx-space-3); font-size: var(--zx-fs-lg); font-weight: 700; color: var(--zx-text); }
+    #secPane .zx-card__body > .zx-subhead:first-child { margin-top: 0; }
+    #secPane .zx-form-grid { align-items: start; }
+    #secPane .zx-field--btn { display: flex; flex-direction: column; align-items: flex-start; }
+    #secPane .zx-field--btn::before { content: "\00a0"; display: block; margin-bottom: 4px; font-weight: 600; line-height: 1.4; }
+    #secPane .zx-card__head .zx-card__title { flex: 1 1 12rem; }
+    #secPane .zx-card__body > p.zx-help:first-child { margin-top: 0; }
+    #secPane .zx-codeblock { display: flex; align-items: flex-start; gap: var(--zx-space-3); padding: var(--zx-space-3); margin: 0 0 var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); }
+    #secPane .zx-codeblock code, #secPane pre.zx-codeblock { flex: 1 1 auto; min-width: 0; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); color: var(--zx-text); background: transparent; border: 0; padding: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    #secPane pre.zx-codeblock { display: block; margin: 0 0 var(--zx-space-3); }
+    #secPane .zx-savefoot { position: sticky; bottom: var(--zx-space-3); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-4); padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); box-shadow: var(--zx-shadow-2); }
+    #secPane .zx-savefoot .zx-help { margin: 0; }
+    #secPane .zx-tokenstate { margin: 0 0 var(--zx-space-3); color: var(--zx-text); font-weight: 600; }
+    #secPane .zx-table input[type="number"] { width: 100%; max-width: 8rem; }
+    #secPane input.zx-switch, #secPane .ui.form input.zx-switch[type="checkbox"] { width: 42px; height: 24px; min-width: 42px; }
+    @media (max-width: 748px) { #secPane input.zx-switch, #secPane .ui.form input.zx-switch[type="checkbox"] { width: 48px; height: 28px; min-width: 48px; } }
+    #secPane .zx-table--det th:nth-child(1) { width: 6rem; }
+    #secPane .zx-table--det th:nth-child(3), #secPane .zx-table--det th:nth-child(4) { width: 11rem; }
+    #secPane .zx-table--det td { vertical-align: middle; }
+    @media (max-width: 480px) { #secPane .zx-table input[type="number"] { width: 8em; } #secPane .zx-codeblock { flex-direction: column; } }
+</style>
 <script>
     (function () {
         var HISTORY_OBJECT = { abuse: "Auto-ban", bots: "Bot rules", headers: "Header rules", basicauth: "Basic auth", authaudit: "", users: "", crowdsec: "", deployment: "", exposure: "", overview: "", netplan: "Network plan", auditlog: "" };
+        var current = "abuse";
+        function syncTabs(name) {
+            $("#secTabs .item").each(function () {
+                var on = $(this).attr("data-sec") === name;
+                $(this).toggleClass("active", on).attr({ "aria-selected": on ? "true" : "false", tabindex: on ? "0" : "-1" });
+            });
+        }
         function loadSecTab(name) {
-            $("#secTabs .item").removeClass("active");
-            var tabEl = $("#secTabs .item[data-sec='" + name + "']").addClass("active")[0];
+            current = name;
+            syncTabs(name);
+            var tabEl = $("#secTabs .item[data-sec='" + name + "']")[0];
             if (tabEl) {   // keep the chosen section visible in the scrolling tab bar
                 var bar = document.getElementById("secTabs");
                 var left = tabEl.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft;
                 bar.scrollLeft = Math.max(0, left - (bar.clientWidth - tabEl.offsetWidth) / 2);
             }
-            $("#secHistoryBtn").attr("data-zx-history", HISTORY_OBJECT[name] || "");
-            $("#secPane").html('<div class="ui active centered inline loader"></div>');
+            $("#secHistoryBtn").attr("data-zx-history", HISTORY_OBJECT[name] || "").prop("hidden", !HISTORY_OBJECT[name]);
+            var pane = $("#secPane").empty()[0];
+            var stopSkeleton = window.ZxUI && ZxUI.skeleton ? ZxUI.skeleton(pane, { title: true, lines: 4, block: true }) : null;
             $.get("./components/security/" + name + ".html", function (html) {
+                if (current !== name) { return; }
+                if (typeof stopSkeleton === "function") { stopSkeleton(); }
                 $("#secPane").html(html);
             }).fail(function () {
-                $("#secPane").html('<div class="ui negative message">Unable to load this section.</div>');
+                if (current !== name) { return; }
+                if (typeof stopSkeleton === "function") { stopSkeleton(); }
+                $("#secPane").html('<div class="zx-callout zx-callout--danger" role="alert"><div><strong>This section could not be loaded.</strong> Check your connection and try again. <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="secRetry">Retry</button></div></div>');
+                $("#secRetry").on("click", function () { loadSecTab(name); });
             });
         }
         // a section with a save bar must not lose unsaved edits silently when another section is opened
@@ -69,12 +140,29 @@
             if (bar) { bar.destroy(); window.zxSecBar = null; }
             loadSecTab(name);
         }
-        $("#secTabs").on("click", ".item", function () {
-            switchSecTab($(this).attr("data-sec"));
+        // "Copy" buttons of the sections: data-zx-copy = selector of the element whose text is copied
+        $("#secPane").on("click", "[data-zx-copy]", function () {
+            var btn = this, txt = $($(btn).attr("data-zx-copy")).first().text().trim(), old = $(btn).text();
+            function done() { $(btn).text(typeof window.t === "function" ? window.t("Copied") : "Copied"); setTimeout(function () { $(btn).text(old); }, 1500); }
+            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(done, function () {}); return; }
+            var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select();
+            try { document.execCommand("copy"); done(); } catch (e) {} document.body.removeChild(ta);
         });
-        // keyboard: the section links are focusable and open with Enter / Space
-        $("#secTabs .item").attr({ tabindex: "0", role: "button" }).on("keydown", function (e) {
-            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $(this).trigger("click"); }
+        $("#secTabs").on("click", ".item", function () {
+            var name = $(this).attr("data-sec");
+            switchSecTab(name);
+        });
+        // roving tabindex: arrow keys move between sections, Enter / Space (native button) open them
+        $("#secTabs").attr("role", "tablist");
+        $("#secTabs .item").attr("role", "tab");
+        $("#secTabs").on("keydown", ".item", function (e) {
+            var items = $("#secTabs .item").toArray(), i = items.indexOf(this), n = items.length, next = -1;
+            if (e.key === "ArrowRight") { next = (i + 1) % n; } else if (e.key === "ArrowLeft") { next = (i - 1 + n) % n; }
+            else if (e.key === "Home") { next = 0; } else if (e.key === "End") { next = n - 1; }
+            if (next < 0) { return; }
+            e.preventDefault();
+            items[next].focus();
+            $(items[next]).trigger("click");
         });
         loadSecTab("abuse");
     })();

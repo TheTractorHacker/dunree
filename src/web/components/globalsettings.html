@@ -1,14 +1,17 @@
 <style>
     #globalsettings #redirect.disabled{
-        opacity: 0.7;
+        opacity: 0.75;
         pointer-events: none;
         user-select: none;
     }
+    /* the hint under a disabled switch says which switch has to be on first */
+    #listenersPage .lsNeeds{ display: none; margin-top: 2px; color: var(--zx-warn-text); font-size: var(--zx-fs-sm); }
+    #listenersPage #redirect.disabled .lsNeeds{ display: block; }
 
     /* Advance settings groups */
     #globalsettings .ingressSettingGroup{
         padding: 1.2em 0;
-        border-bottom: 1px solid var(--divider_color);
+        border-bottom: 1px solid var(--zx-border);
     }
 
     #globalsettings .ingressSettingGroup:first-child{
@@ -25,7 +28,7 @@
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text_color_secondary);
+        color: var(--zx-text-muted);
         margin-bottom: 0.9em;
     }
 
@@ -33,7 +36,7 @@
         display: block;
         margin-top: -0.6em;
         margin-bottom: 0.9em;
-        opacity: 0.8;
+        color: var(--zx-text-muted);
     }
 
     #globalsettings .ingressFieldLabel{
@@ -44,13 +47,13 @@
 
     #globalsettings .ingressFieldHint{
         display: block;
-        opacity: 0.8;
+        color: var(--zx-text-muted);
     }
 
     /* TLS version segmented selector */
     #globalsettings .ingressSettingGroup.disabled,
     #globalsettings #tlsMinVer.disabled{
-        opacity: 0.45;
+        opacity: 0.55;
         pointer-events: none;
         user-select: none;
     }
@@ -61,8 +64,9 @@
         max-width: 360px;
         margin: 0.7em 0 0.4em 0;
         padding: 3px;
-        border: 1px solid var(--divider_color);
+        border: 1px solid var(--zx-border-strong);
         border-radius: 999px;
+        background: var(--zx-surface);
     }
 
     #globalsettings .tlsVersionThumb{
@@ -72,7 +76,7 @@
         left: 3px;
         width: calc((100% - 6px) / 4);
         border-radius: 999px;
-        background: #2185d0;
+        background: var(--zx-primary);
         opacity: 0;
         transition: transform 0.25s ease, opacity 0.2s ease;
     }
@@ -89,7 +93,7 @@
         border: none;
         border-radius: 999px;
         background: transparent;
-        color: var(--text_color_secondary);
+        color: var(--zx-text-muted);
         font-family: inherit;
         font-size: 0.95em;
         cursor: pointer;
@@ -97,12 +101,12 @@
     }
 
     #globalsettings .tlsVersionSlider button.active{
-        color: #ffffff;
+        color: var(--zx-on-primary);
         font-weight: 600;
     }
 
     #globalsettings .tlsVersionSlider button:focus-visible{
-        outline: 2px solid #2185d0;
+        outline: 2px solid var(--zx-focus);
         outline-offset: 2px;
     }
 
@@ -116,6 +120,21 @@
     #globalsettings .ingressTimeoutGrid .ui.input > input{
         width: 8em;
     }
+
+    /* toggles: title, then the description on its own muted line; rows spaced evenly */
+    #listenersPage .ui.toggle.checkbox{ display: block; margin: 0 0 var(--zx-space-4); }
+    #listenersPage .ui.toggle.checkbox:last-child{ margin-bottom: 0; }
+    #listenersPage .ui.toggle.checkbox > label{ font-weight: 600; }
+    #listenersPage .ui.toggle.checkbox > label small{ display: block; font-weight: 400; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
+    #listenersPage .lsGrid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--zx-space-4); align-items: start; }
+    #listenersPage .lsField{ max-width: none; margin: 0; min-width: 0; }
+    #listenersPage .lsGrid .lsField .ui.input{ margin-top: 0 !important; }
+    #listenersPage .lsAdvanced .ui.accordion{ border-top: 0; margin-top: 0; }
+    #listenersPage .lsAdvanced .advanceoptions.ui.basic.segment{ border: 0; }
+    #listenersPage .zx-card + .zx-card{ margin-top: var(--zx-space-4); }
+    #listenersPage .advanceoptions.ui.basic.segment{ margin: 0; padding: 0; }
+    #listenersPage .advanceoptions .ui.accordion > .title{ padding-top: 0; padding-bottom: 0; }
+    #listenersPage .zx-card__head .zx-btn{ margin-left: auto; }
 </style>
 <!-- Listeners (tag globalsettings; menu label renamed from "Ingress", ids unchanged) -->
 <div class="standardContainer" id="listenersPage">
@@ -123,27 +142,51 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Listeners</h2>
-            <p class="zx-page-header__sub">Where Zoraxy accepts visitors: ports, HTTPS and protocol options (previously named Ingress). Port, listener address and timeouts are applied with the Save bar; the switches apply immediately.</p>
+            <p class="zx-page-header__sub">Where Zoraxy accepts visitors.</p>
         </div>
     </header>
     <div id="gsloopbackWarning" class="zx-callout zx-callout--warn" role="note" style="display:none;">
         <span class="zx-callout__icon" aria-hidden="true"><i class="warning icon"></i></span>
-        <div class="zx-callout__body"><span class="zx-callout__title">Loopback Routing Warning</span>
+        <div class="zx-callout__body"><span class="zx-callout__title">Loopback routing warning</span>
         This management interface is a loopback proxied service. <br>Some listener settings are disabled to prevent accidentally cutting off access to this management interface.</div>
     </div>
-    <div class="zx-card"><div class="zx-card__body">
-    <label class="zx-field__label" for="incomingPort" data-zx-label="Listening port">Inbound / Proxy Listening Port</label>
-    <div class="ui fluid notloopbackOnly input" tourstep="incomingPort" style="margin-top: 0.3em;">
-        <input type="text" id="incomingPort" placeholder="Incoming Port" value="443" inputmode="numeric">
+    <section class="zx-card" aria-labelledby="lsPortsTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="lsPortsTitle">Ports</h3>
+            <p class="zx-card__desc">The port the proxy listens on and the address of the plain HTTP listener. Changes are applied with Save changes.</p>
+        </div>
+        <div class="zx-card__body lsGrid">
+    <div class="lsField zx-field">
+        <label class="zx-field__label" for="incomingPort" data-zx-label="Listening port">Proxy listening port</label>
+        <div class="ui fluid notloopbackOnly input" tourstep="incomingPort" style="margin-top: 0.3em;">
+            <input type="text" id="incomingPort" placeholder="443" value="443" inputmode="numeric">
+        </div>
+        <p class="zx-help">The port visitors connect to, normally 443 for HTTPS or 80 for HTTP.</p>
     </div>
-    <br>
+    <div id="httpListenAddrBox" class="lsField zx-field notloopbackOnly tlsEnabledOnly">
+        <label class="zx-field__label" for="httpListenAddrInput" data-zx-label="HTTP listener address">HTTP listener address</label>
+        <div class="ui fluid input" style="margin-top: 0.3em;">
+            <input type="text" id="httpListenAddrInput" placeholder=":80" value=":80">
+        </div>
+        <p id="httpListenAddrErr" class="zx-error" role="alert"></p>
+        <p class="zx-help">As <code>:port</code> or <code>ip:port</code> (default <code>:80</code>), for example <code>:8080</code> behind a port forward. It cannot be the management interface port or the proxy (HTTPS) port. Applying restarts the proxy service. Let's Encrypt HTTP-01 validation still needs it reachable from the internet on public port 80.</p>
+        <div id="httpListenAddrRuntime" style="display:none;"><small></small></div>
+    </div>
+        </div>
+    </section>
+
+    <section class="zx-card" aria-labelledby="lsHttpsTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="lsHttpsTitle">HTTPS and redirects</h3>
+            <p class="zx-card__desc">These switches apply immediately.</p>
+        </div>
+        <div class="zx-card__body">
     <div id="tls" class="ui toggle notloopbackOnly checkbox">
         <input type="checkbox">
         <label>Use TLS to serve proxy request<br>
         <small>Also known as HTTPS mode</small></label>
     </div>
-    <br>
-    <div id="listenP80" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox" style="margin-top: 0.4em;" >
+    <div id="listenP80" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox">
         <input type="checkbox">
         <label>Enable HTTP server on port 80<br>
         <small>Accept HTTP requests even if you are using HTTPS mode</small></label>
@@ -152,37 +195,37 @@
         <i class="warning icon"></i>
         Port 80 is occupied by another service and might not be working properly
     </div>
-    <div id="httpListenAddrBox" class="zx-field notloopbackOnly tlsEnabledOnly" style="margin: 0.5em 0 0.8em 0;">
-        <label class="zx-field__label" for="httpListenAddrInput" data-zx-label="HTTP listener address">HTTP listener address</label>
-        <div class="ui fluid input" style="max-width: 360px; margin-top: 0.3em;">
-            <input type="text" id="httpListenAddrInput" placeholder=":80" value=":80">
-        </div>
-        <p id="httpListenAddrErr" class="zx-error" role="alert"></p>
-        <small>Address of the plain HTTP listener, as <code>:port</code> or <code>ip:port</code> (default <code>:80</code>). Useful when port 80 is taken or you sit behind a port forward (e.g. <code>:8080</code>). Cannot be the management interface port or the proxy (HTTPS) port. Applying restarts the proxy service. Let's Encrypt HTTP-01 validation still requires this to be reachable from the internet on public port 80.</small>
-        <div id="httpListenAddrRuntime" style="display:none;"><small></small></div>
-    </div>
-    <br>
-    <div tourstep="forceHttpsRedirect" style="display: inline-block;">
-        <div id="redirect" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox" style="margin-top: 0.4em;">
+    <div tourstep="forceHttpsRedirect">
+        <div id="redirect" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox">
             <input type="checkbox">
             <label>Force redirect HTTP request to HTTPS<br>
-            <small>Redirect web traffic from port 80 to 443, require enabling HTTP server on port 80</small></label>
+            <small>Redirect web traffic from port 80 to 443, require enabling HTTP server on port 80</small>
+            <small class="lsNeeds">Available once HTTPS mode and the port 80 server are on.</small></label>
         </div>
     </div>
+        </div>
+    </section>
+
+    <section class="zx-card lsAdvanced" aria-labelledby="lsAdvTitle">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title" id="lsAdvTitle">Advanced settings</h3>
+        <p class="zx-card__desc">TLS version, protocols, timeouts, client IP headers and development options. Most setups do not need to change them.</p>
+    </div>
+    <div class="zx-card__body">
     <div class="ui basic segment advanceoptions">
         <div id="statusAdvanceSettings" class="ui accordion advanceSettings">
             <div class="title">
               <i class="dropdown icon"></i>
-                Advanced Settings
+                Show advanced options
             </div>
             <div class="content">
                 <!-- TLS -->
                 <div class="ingressSettingGroup">
                     <div class="ingressGroupTitle">TLS <span class="zx-badge zx-badge--info ingressLiveBadge">Applies immediately</span></div>
                     <div id="tlsMinVer" class="notloopbackOnly tlsEnabledOnly">
-                        <span class="ingressFieldLabel">Minimum TLS Version</span>
+                        <span class="ingressFieldLabel">Minimum TLS version</span>
                         <small class="ingressFieldHint">Clients that only support older versions will be rejected</small>
-                        <div id="tlsVersionSlider" class="tlsVersionSlider" role="radiogroup" aria-label="Minimum TLS Version">
+                        <div id="tlsVersionSlider" class="tlsVersionSlider" role="radiogroup" aria-label="Minimum TLS version">
                             <span class="tlsVersionThumb"></span>
                             <button type="button" role="radio" aria-checked="false" data-version="1.0">1.0</button>
                             <button type="button" role="radio" aria-checked="false" data-version="1.1">1.1</button>
@@ -198,7 +241,7 @@
                             <option value="modern">Modern (Mozilla)</option>
                         </select>
                         <label for="tlsCipherProfileSelect" style="margin: 0;">
-                            TLS Cipher Profile<br>
+                            TLS cipher profile<br>
                             <small>(Intermediate/modern remove legacy CBC ciphers flagged by SSL scanners; modern requires TLS v1.3)</small>
                         </label>
                     </div>
@@ -210,7 +253,7 @@
                     <small class="ingressGroupNote">PROXY protocol and HTTP/3 are mutually exclusive. Enabling one turns off the other.</small>
                     <div id="proxyProtocol" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox">
                         <input type="checkbox">
-                        <label>PROXY Protocol<br>
+                        <label>PROXY protocol<br>
                         <small>Accept PROXY protocol v1/v2 headers on the TLS listener</small></label>
                     </div>
                     <br>
@@ -299,7 +342,7 @@
                     <div class="ingressGroupTitle">Development <span class="zx-badge zx-badge--info ingressLiveBadge">Applies immediately</span></div>
                     <div id="developmentMode" class="ui toggle checkbox">
                         <input type="checkbox">
-                        <label>Development Mode<br>
+                        <label>Development mode<br>
                         <small>Send Cache-Control: no-store so browsers always fetch fresh content. Turn off in production.</small></label>
                     </div>
                 </div>
@@ -307,31 +350,34 @@
         </div>
     </div>
 
-    </div></div>
-    <div class="zx-card"><div class="zx-card__body">
-    <h4>Secondary Listening Ports</h4>
-    <p>Additional ports configured for specific proxy rules</p>
-    <div id="secondaryListenersContainer">
-        <table class="ui unstackable basic celled table">
+    </div></section>
+
+    <section class="zx-card" aria-labelledby="lsSecTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="lsSecTitle">Secondary listening ports</h3>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="loadSecondaryListeners();" aria-label="Refresh the list"><i class="sync icon"></i> Refresh</button>
+            <p class="zx-card__desc">Extra ports that single proxy rules listen on.</p>
+        </div>
+        <div class="zx-card__body">
+    <div id="secondaryListenersContainer" class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Secondary listening ports">
+        <table class="zx-table">
             <thead>
                 <tr>
-                    <th>Listening Address</th>
-                    <th>Domains / Hostnames</th>
+                    <th>Listening address</th>
+                    <th>Domains / hostnames</th>
                 </tr>
             </thead>
             <tbody id="secondaryListenersTable">
                 <tr>
-                    <td colspan="2" style="text-align: center;">
+                    <td class="zx-empty-cell" colspan="2">
                         <i class="ui loading circle notch icon"></i> Loading...
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
-    <br>
-    <button class="ui right floated basic button" onclick="loadSecondaryListeners();"><i class="green refresh icon"></i> Refresh</button>
-    <br><br>
-    </div></div>
+        </div>
+    </section>
 </div>
 <script>
     let currentListeningPort = 80;
@@ -873,8 +919,8 @@
             $("#secondaryListenersTable").html("");
             if (!data || data.length === 0){
                 $("#secondaryListenersTable").append(`<tr>
-                    <td colspan="2" style="text-align: center;">
-                        <i class="ui grey info circle icon"></i> No secondary listening ports configured
+                    <td class="zx-empty-cell" colspan="2">
+                        No extra ports yet. Set a port on a proxy rule to see it here.
                     </td>
                 </tr>`);
             } else {
@@ -885,21 +931,21 @@
                             `<span class="ui tiny label">${ZxUI.esc(domain)}</span>`
                         ).join(" ");
                     } else {
-                        domainsHTML = '<i style="opacity: 0.5;">No domains</i>';
+                        domainsHTML = '<span class="zx-help">No domains</span>';
                     }
 
                     $("#secondaryListenersTable").append(`<tr>
-                        <td style="white-space: nowrap;">
-                            <i class="angle double right blue icon"></i> <b>${ZxUI.esc(listener.address)}</b>
+                        <td data-label="Listening address" class="zx-mono" style="white-space: nowrap;">
+                            <b>${ZxUI.esc(listener.address)}</b>
                         </td>
-                        <td>${domainsHTML}</td>
+                        <td data-label="Domains / hostnames">${domainsHTML}</td>
                     </tr>`);
                 });
             }
         }).fail(function(){
             $("#secondaryListenersTable").html(`<tr>
-                <td colspan="2" style="text-align: center;">
-                    <i class="ui red exclamation triangle icon"></i> Failed to load secondary listeners
+                <td class="zx-empty-cell" colspan="2">
+                    The list could not be loaded. Press Refresh to try again.
                 </td>
             </tr>`);
         });

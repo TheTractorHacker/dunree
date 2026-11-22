@@ -4,10 +4,17 @@
         <meta charset="utf-8">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
         <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <link rel="stylesheet" href="../ui/zxui.css">
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
         <style>
+            body{ background: var(--theme_bg_primary, var(--zx-surface)); color: var(--zx-text); padding: 0 0 var(--zx-space-3); }
+            .zxs-wrap{ width: 100%; }
+            .zxs-wrap .zx-table-wrap{ max-height: none; margin-bottom: var(--zx-space-4); }
+            .zxs-wrap .ui.form .field{ margin-bottom: var(--zx-space-3); }
+            .zxs-wrap .ui.horizontal.divider{ color: var(--zx-text-muted); }
+            .zxs-wrap small{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
             .ui.circular.label.tag-color{
                 min-width: 5px !important;
                 min-height: 5px !important;
@@ -19,15 +26,13 @@
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
-        <br>
-        <div class="ui container">
-            <p>Tags currently applied to this host name / proxy rule</p>
-            <div>
-                <table class="ui compact basic unstackable celled table">
+        <div class="zxs-wrap">
+            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Tags of this site">
+                <table class="zx-table zx-table--compact">
                     <thead>
                         <tr>
-                            <th>Tag Name</th>
-                            <th>Action</th>
+                            <th>Tag</th>
+                            <th class="zx-actions">Action</th>
                         </tr>
                     </thead>
                     <tbody id="tagsTableBody">
@@ -35,33 +40,30 @@
                     </tbody>
                 </table>
             </div>
-            <div class="ui divider"></div>
-            <h4>Add New Tags</h4>
-            <p>Create new tag or add this proxy rule to an existing tag</p>
+            <p class="zx-help" style="margin-bottom: var(--zx-space-3);">Create a new tag, or add this site to an existing one.</p>
             <div class="ui form">
                 <div class="field">
-                    <label>New Tags</label>
+                    <label>New tags</label>
                     <input type="text" id="tagsInput" placeholder="e.g. mediaserver, management">
                 </div>
-                <button class="ui basic button" onclick="addSelectedTags();"><i class="ui blue plus icon"></i> Add tag</button>
+                <button class="zx-btn zx-btn--primary" onclick="addSelectedTags();"><i class="plus icon"></i> Add tag</button>
                 <div class="ui horizontal divider">
                 Or
                 </div>
                 <div class="field">
-                    <label>Join Existing Tag Groups</label>
+                    <label>Join existing tags</label>
                     <div class="ui fluid multiple search selection dropdown" id="existingTagsDropdown">
                         <input type="hidden" id="existingTagsInput">
                         <i class="dropdown icon"></i>
-                        <div class="default text">Select Tags</div>
+                        <div class="default text">Select tags</div>
                         <div class="menu" id="existingTagsMenu">
                             <!-- Options will be dynamically added here -->
                         </div>
                     </div>
-                    <small id="notagwarning" style="display:none;"><i class="ui green circle check icon"></i> All tags has already been included in this host</small>
+                    <small id="notagwarning" style="display:none;">All tags are already on this site</small>
                 </div>
-                <button class="ui basic button" onclick="joinSelectedTagGroups();"><i class="ui blue plus icon"></i> Join tag group(s)</button>
+                <button class="zx-btn zx-btn--secondary" onclick="joinSelectedTagGroups();"><i class="plus icon"></i> Join tags</button>
             </div>
-            <br><br>
         </div>
         <script>
             let editingEndpoint = {};
@@ -100,7 +102,7 @@
 
             //Append or remove a notice to the table when no tags are applied
             function appendNoTagNotice(){
-                $("#tagsTableBody").append(`<tr class="notagNotice" style="opacity: 0.5; pointer-events: none; user-select: none;"><td colspan="2"><i class="ui green circle check icon"></i> No tags applied to this host</td></tr>`);
+                $("#tagsTableBody").append(`<tr class="notagNotice"><td colspan="2" class="zx-empty-cell">No tags on this site yet</td></tr>`);
             }
 
             function removeNoTagNotice(){
@@ -206,7 +208,7 @@
                 const row = $('<tr class="tagEntry"></tr>').attr('value', tag);
                 const first = $('<td></td>').append($('<div class="ui circular label tag-color"></div>').css('background-color', getTagColorByName(tag)))
                     .append(document.createTextNode(' ' + tag));
-                const del = $('<button class="ui circular mini basic button"><i class="red trash icon"></i> Delete</button>').attr('title', 'Delete Tag')
+                const del = $('<button class="zx-btn zx-btn--danger-outline zx-btn--sm"><i class="trash icon"></i> Delete</button>').attr('title', 'Delete Tag')
                     .on('click', function(){ removeTag(tag); });
                 row.append(first).append($('<td></td>').append(del));
                 $("#tagsTableBody").append(row);

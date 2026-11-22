@@ -8,10 +8,22 @@
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
-            <h2 class="zx-page-header__title">Security rules</h2>
-            <p class="zx-page-header__sub">Decide what happens to a request: <b>when</b> it looks a certain way, <b>then</b> block it, redirect it, challenge it and more. New rules start in log-only mode, so you see what they would do before they act.</p>
+            <h2 class="zx-page-header__title">Rules</h2>
+            <p class="zx-page-header__sub">Decide what happens to a request: block it, redirect it or challenge it</p>
+        </div>
+        <div class="zx-page-header__actions rb-headactions">
+            <button type="button" class="zx-btn zx-btn--secondary" id="rbToggleTpl" aria-expanded="false" aria-controls="rbTemplatesCard">Templates</button>
+            <button type="button" class="zx-btn zx-btn--primary" id="rbNew"><i class="plus icon" aria-hidden="true"></i>New rule</button>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#waf" data-nav-open="waf">WAF</a> <span>inspects requests for known attacks</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>block by address or country</span></li>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>where a site's rules apply</span></li>
+        </ul>
+    </aside>
 
     <div id="rbMain">
         <div class="zx-tabs" id="rbTabs" aria-label="Security rules sections">
@@ -32,8 +44,6 @@
                     <input id="rbSearch" class="zx-input" type="search" autocomplete="off" placeholder="Name, description or expression">
                 </div>
                 <div class="rb-toolbtns">
-                    <button type="button" class="zx-btn zx-btn--primary" id="rbNew"><i class="plus icon" aria-hidden="true"></i>New rule</button>
-                    <button type="button" class="zx-btn zx-btn--secondary" id="rbToggleTpl" aria-expanded="false" aria-controls="rbTemplatesCard">Templates</button>
                     <button type="button" class="zx-btn zx-btn--ghost zx-btn--icon" id="rbRefresh" aria-label="Refresh" title="Refresh"><i class="sync alternate icon" aria-hidden="true"></i></button>
                 </div>
             </div>
@@ -95,6 +105,7 @@
 </div>
 
 <style>
+    #rbPage:has(#rbEditor:not([hidden])) .rb-headactions { display: none; }
     #rbPage .rb-toolbar { display: flex; flex-wrap: wrap; gap: var(--zx-space-3); align-items: flex-end; margin-bottom: var(--zx-space-3); }
     #rbPage .rb-toolbar .zx-field { margin: 0; }
     #rbPage .rb-search { flex: 1 1 14rem; max-width: 26rem; }
@@ -116,7 +127,8 @@
     #rbPage .rb-spark { color: var(--zx-primary); display: block; }
     #rbPage .rb-sparkbox { margin-top: 2px; }
     #rbPage .rb-more { text-align: center; margin: var(--zx-space-3) 0; }
-    #rbPage .rb-tpls { display: grid; gap: var(--zx-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+    #rbPage .rb-tpls { display: grid; gap: var(--zx-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: stretch; }
+    #rbPage .rb-tpl { height: 100%; }
     #rbPage .rb-tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); color: var(--zx-text);
         border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); font: inherit; cursor: pointer; }
     #rbPage .rb-tpl:hover { background: var(--zx-surface-2); }

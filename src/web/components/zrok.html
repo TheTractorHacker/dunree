@@ -1,198 +1,224 @@
 <!-- Tunnels (zrok) page. API: /api/zrok/* (src/zrokapi.go). Opt-in: needs -allow_external_tools and an installed zrok binary. -->
 <style>
-    #zrokPanel { overflow-x: hidden; color: var(--text_color); }
-    #zrokPanel .zkMuted { color: var(--text_color_secondary); font-size: .92em; }
-    #zrokPanel .zkHero { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .8em 1.5em; }
-    #zrokPanel .zkHero h2 { margin: 0 0 .35em; }
-    #zrokPanel .zkLead { max-width: 60em; margin: 0; line-height: 1.55; color: var(--text_color_secondary); }
-    #zrokPanel .zkPill { display: inline-flex; align-items: center; gap: .5em; padding: .45em .95em; border-radius: 999px; font-weight: 600; border: 1px solid var(--divider_color); white-space: nowrap; }
+    #zrokPanel { overflow-x: hidden; color: var(--zx-text); }
+    #zrokPanel .zkMuted { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #zrokPanel .zkPill { display: inline-flex; align-items: center; gap: .4em; padding: 3px 12px; border-radius: var(--zx-radius-pill); font-weight: 600; font-size: var(--zx-fs-sm); border: 1px solid var(--zx-neutral-line); background: var(--zx-neutral-bg); color: var(--zx-neutral-text); white-space: nowrap; }
     #zrokPanel .zkPill i.icon { margin: 0; }
-    #zrokPanel .zkPill.on { background: rgba(33,186,69,.14); border-color: rgba(33,186,69,.55); }
-    #zrokPanel .zkPill.off { background: rgba(128,128,128,.14); }
-    #zrokPanel .zkPill.warn { background: rgba(242,113,28,.14); border-color: rgba(242,113,28,.6); }
-    #zrokPanel .zkPill.bad { background: rgba(219,40,40,.14); border-color: rgba(219,40,40,.6); }
-    #zrokPanel .zkCard { background: var(--theme_bg_primary); border: 1px solid var(--divider_color); border-radius: 10px; padding: 1em 1.2em 1.1em; margin: 1em 0; }
-    #zrokPanel .zkCard > h4 { margin: 0 0 .2em; display: flex; align-items: center; gap: .55em; flex-wrap: wrap; }
-    #zrokPanel .zkStep { display: inline-flex; align-items: center; justify-content: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: #2185d0; color: #fff; font-size: .85em; font-weight: 700; flex: 0 0 auto; }
-    #zrokPanel .zkStep.done { background: #21ba45; }
-    #zrokPanel .zkFacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .7em; margin-top: .8em; }
-    #zrokPanel .zkFact { border-left: 4px solid var(--divider_color); padding: .25em .8em; min-width: 0; }
-    #zrokPanel .zkFact .l { text-transform: uppercase; letter-spacing: .04em; font-size: .72em; color: var(--text_color_secondary); }
-    #zrokPanel .zkFact .v { font-size: 1.05em; font-weight: 600; overflow-wrap: break-word; }
-    #zrokPanel .zkFact.good { border-left-color: #21ba45; }
-    #zrokPanel .zkFact.warn { border-left-color: #f2711c; }
-    #zrokPanel .zkFact.bad { border-left-color: #db2828; }
-    #zrokPanel .zkBanner { border-radius: 8px; padding: .8em 1em; margin: 1em 0; border: 1px solid; display: flex; gap: .8em; align-items: flex-start; }
-    #zrokPanel .zkBanner > i.icon { margin: .15em 0 0; font-size: 1.3em; flex: 0 0 auto; }
+    #zrokPanel .zkPill.on { background: var(--zx-ok-bg); border-color: var(--zx-ok-line); color: var(--zx-ok-text); }
+    #zrokPanel .zkPill.warn { background: var(--zx-warn-bg); border-color: var(--zx-warn-line); color: var(--zx-warn-text); }
+    #zrokPanel .zkPill.bad { background: var(--zx-danger-bg); border-color: var(--zx-danger-line); color: var(--zx-danger-text); }
+    #zrokPanel .zkStack { display: flex; flex-direction: column; gap: var(--zx-space-4); }
+    #zrokPanel .zkStack > .zx-card { margin: 0; }
+    #zrokPanel .zx-card__head .zkStep { margin-right: var(--zx-space-1); }
+    #zrokPanel .zkStep { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--zx-primary); color: var(--zx-on-primary); font-size: var(--zx-fs-sm); font-weight: 700; flex: 0 0 auto; }
+    #zrokPanel .zkStep.done { background: var(--zx-ok-solid); color: var(--zx-on-solid); }
+    #zrokPanel .zkFacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--zx-space-3); }
+    #zrokPanel .zkFact { background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-2) var(--zx-space-3); min-width: 0; }
+    #zrokPanel .zkFact .l { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #zrokPanel .zkFact .v { font-size: var(--zx-fs-md); font-weight: 600; overflow-wrap: break-word; }
+    #zrokPanel .zkFact.good .v { color: var(--zx-ok-text); }
+    #zrokPanel .zkFact.warn .v { color: var(--zx-warn-text); }
+    #zrokPanel .zkFact.bad .v { color: var(--zx-danger-text); }
+    #zrokPanel .zkBanner { border-radius: var(--zx-radius-md); padding: var(--zx-space-3); margin: 0 0 var(--zx-space-4); border: 1px solid var(--zx-info-line); background: var(--zx-info-bg); color: var(--zx-info-text); display: flex; gap: var(--zx-space-3); align-items: flex-start; }
+    #zrokPanel .zkBanner > i.icon { margin: .15em 0 0; font-size: 1.2em; flex: 0 0 auto; }
     #zrokPanel .zkBanner .t { min-width: 0; flex: 1 1 auto; }
-    #zrokPanel .zkBanner .t > b:first-child { display: block; margin-bottom: .15em; }
-    #zrokPanel .zkBanner.bad { background: rgba(219,40,40,.12); border-color: rgba(219,40,40,.6); }
-    #zrokPanel .zkBanner.warn { background: rgba(242,113,28,.12); border-color: rgba(242,113,28,.6); }
-    #zrokPanel .zkBanner.good { background: rgba(33,186,69,.12); border-color: rgba(33,186,69,.55); }
-    #zrokPanel .zkBanner.info { background: rgba(33,133,208,.1); border-color: rgba(33,133,208,.5); }
-    #zrokPanel .zkBtns { display: flex; flex-wrap: wrap; gap: .5em; margin-top: .8em; }
-    #zrokPanel .zkBtns .ui.button { margin: 0; min-height: 32px; }
-    #zrokPanel .ui.form .field > label { color: var(--text_color); }
-    #zrokPanel .ui.form .field small { color: var(--text_color_secondary); display: block; margin-top: .3em; }
-    #zrokPanel #zkDisable.ui.basic.orange.button { color: #a14a00 !important; box-shadow: 0 0 0 1px #a14a00 inset !important; }
-    body.darkTheme #zrokPanel #zkDisable.ui.basic.orange.button { color: #ffa860 !important; box-shadow: 0 0 0 1px #ffa860 inset !important; }
-    #zrokPanel .ui.form input { box-sizing: border-box; max-width: 100%; }
-    #zrokPanel .ui.form input, #zrokPanel .ui.form textarea, #zrokPanel .ui.form select { background: var(--theme_bg_primary); color: var(--text_color); border-color: var(--divider_color); }
-    #zrokPanel details { border: 1px solid var(--divider_color); border-radius: 8px; padding: .55em .9em; margin: .7em 0; }
-    #zrokPanel details > summary { cursor: pointer; font-weight: 600; min-height: 24px; }
-    #zrokPanel details[open] > summary { margin-bottom: .5em; }
-    #zrokPanel .zkKinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .7em; margin: .5em 0 1em; }
-    #zrokPanel .zkKind { border: 2px solid var(--divider_color); border-radius: 8px; padding: .7em .9em; cursor: pointer; background: transparent; color: var(--text_color); text-align: left; font: inherit; }
-    #zrokPanel .zkKind:hover { border-color: rgba(128,128,128,.8); }
-    #zrokPanel .zkKind:focus-visible { outline: 2px solid #2185d0; outline-offset: 2px; }
-    #zrokPanel .zkKind.sel { border-color: #2185d0; background: rgba(33,133,208,.12); }
+    #zrokPanel .zkBanner .t > b:first-child { display: block; margin-bottom: 2px; }
+    #zrokPanel .zkBanner.bad { background: var(--zx-danger-bg); border-color: var(--zx-danger-line); color: var(--zx-danger-text); }
+    #zrokPanel .zkBanner.warn { background: var(--zx-warn-bg); border-color: var(--zx-warn-line); color: var(--zx-warn-text); }
+    #zrokPanel .zkBanner.good { background: var(--zx-ok-bg); border-color: var(--zx-ok-line); color: var(--zx-ok-text); }
+    #zrokPanel .zkBanner a { color: inherit; text-decoration: underline; }
+    #zrokPanel .zkBtns { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-3); }
+    #zrokPanel .zkBtns .ui.button { margin: 0; }
+    #zrokPanel .ui.form .zx-form-grid { display: grid; gap: 0 var(--zx-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); align-items: start; }
+    #zrokPanel .ui.form .zx-form-grid > .field { margin: 0 0 var(--zx-space-4); min-width: 0; }
+    #zrokPanel .ui.form .zx-form-grid > .field.zx-field--wide { grid-column: 1 / -1; }
+    #zrokPanel .ui.form .field > label .zx-whatis { margin-left: var(--zx-space-2); vertical-align: middle; }
+    #zrokPanel .zkHelp { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: var(--zx-space-1) 0 0; display: block; }
+    #zrokPanel .ui.form input, #zrokPanel .ui.form select { max-width: 100%; }
+    /* one control height for inputs and selects */
+    #zrokPanel .ui.form select { height: var(--zx-control-h); }
+    #zrokPanel .ui.form input:not([type=checkbox]):not([type=radio]):not([type=hidden]) { height: var(--zx-control-h); padding-top: 0; padding-bottom: 0; }
+    #zrokPanel #zkAdvanced { border-top: 0; }
+    #zrokPanel #zkAdvanced > summary { padding-left: 0; }
+    #zrokPanel code { overflow-wrap: anywhere; }
+    #zrokPanel .zkKinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--zx-space-3); margin: var(--zx-space-2) 0 var(--zx-space-4); }
+    #zrokPanel .zkKind { border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); padding: var(--zx-space-3); cursor: pointer; background: var(--zx-surface); color: var(--zx-text); text-align: left; font: inherit; }
+    #zrokPanel .zkKind:hover { border-color: var(--zx-primary); }
+    #zrokPanel .zkKind:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #zrokPanel .zkKind.sel { border-color: var(--zx-primary); box-shadow: inset 0 0 0 1px var(--zx-primary); background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
     #zrokPanel .zkKind b { display: flex; align-items: center; gap: .4em; }
-    #zrokPanel .zkKind span { display: block; margin-top: .2em; color: var(--text_color_secondary); font-size: .9em; }
-    #zrokPanel .zkTunnels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: .9em; margin-top: .8em; }
-    #zrokPanel .zkTunnel { border: 1px solid var(--divider_color); border-left: 5px solid var(--divider_color); border-radius: 8px; padding: .8em 1em; min-width: 0; background: var(--theme_bg_primary); }
-    #zrokPanel .zkTunnel.running { border-left-color: #21ba45; }
-    #zrokPanel .zkTunnel.failed { border-left-color: #db2828; }
-    #zrokPanel .zkTunnel.starting, #zrokPanel .zkTunnel.backoff { border-left-color: #f2711c; }
-    #zrokPanel .zkTunnel h5 { margin: 0 0 .3em; display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
-    #zrokPanel .zkTunnel dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .15em .8em; margin: .4em 0; }
-    #zrokPanel .zkTunnel dt { color: var(--text_color_secondary); }
+    #zrokPanel .zkKind span { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #zrokPanel .zkKind.sel span { color: var(--zx-primary-soft-text); }
+    #zrokPanel .zkTunnels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: var(--zx-space-3); }
+    #zrokPanel .zkTunnels:empty { display: none; }
+    #zrokPanel .zkTunnel { border: 1px solid var(--zx-border); border-left: 4px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); padding: var(--zx-space-3); min-width: 0; background: var(--zx-surface); }
+    #zrokPanel .zkTunnel.running { border-left-color: var(--zx-ok-solid); }
+    #zrokPanel .zkTunnel.failed { border-left-color: var(--zx-danger-solid); }
+    #zrokPanel .zkTunnel.starting, #zrokPanel .zkTunnel.backoff { border-left-color: var(--zx-warn-solid); }
+    #zrokPanel .zkTunnel h5 { margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-lg); display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); }
+    #zrokPanel .zkTunnel dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px var(--zx-space-3); margin: var(--zx-space-2) 0; }
+    #zrokPanel .zkTunnel dt { color: var(--zx-text-muted); }
     #zrokPanel .zkTunnel dd { margin: 0; overflow-wrap: anywhere; }
-    #zrokPanel .zkState { display: inline-block; padding: .05em .65em; border-radius: 999px; font-size: .82em; font-weight: 600; background: rgba(128,128,128,.2); }
-    #zrokPanel .zkState.running { background: rgba(33,186,69,.2); }
-    #zrokPanel .zkState.failed { background: rgba(219,40,40,.2); }
-    #zrokPanel .zkState.starting, #zrokPanel .zkState.backoff { background: rgba(242,113,28,.2); }
-    #zrokPanel .zkLog { margin-top: .6em; }
-    #zrokPanel .zkLog pre { max-height: 14em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .82em; padding: .6em .8em; border-radius: 6px; background: rgba(128,128,128,.14); color: var(--text_color); margin: .4em 0; }
-    #zrokPanel .zkEmpty { text-align: center; padding: 1.4em 1em; color: var(--text_color_secondary); border: 1px dashed var(--divider_color); border-radius: 8px; }
-    #zrokPanel .zkEmpty i.icon { font-size: 2em; display: block; margin: 0 auto .3em; opacity: .6; }
-    #zrokPanel code.zkCode { background: rgba(128,128,128,.16); padding: .05em .4em; border-radius: 4px; overflow-wrap: anywhere; }
-    @media (max-width: 600px) { #zrokPanel .zkCard { padding: .8em .8em 1em; } #zrokPanel .zkPill { white-space: normal; } }
+    #zrokPanel .zkState { display: inline-block; padding: 1px 10px; border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-sm); font-weight: 600; background: var(--zx-neutral-bg); color: var(--zx-neutral-text); border: 1px solid var(--zx-neutral-line); }
+    #zrokPanel .zkState.running { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
+    #zrokPanel .zkState.failed { background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
+    #zrokPanel .zkState.starting, #zrokPanel .zkState.backoff { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #zrokPanel .zkLog { margin-top: var(--zx-space-3); }
+    #zrokPanel .zkLog pre { max-height: 14em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--zx-fs-sm); padding: var(--zx-space-2) var(--zx-space-3); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); margin: var(--zx-space-2) 0; }
+    #zrokPanel code.zkCode { background: var(--zx-surface-2); padding: 1px 6px; border-radius: var(--zx-radius-sm); overflow-wrap: anywhere; }
+    #zrokPanel .zx-card__head .zkHeadText { flex: 1 1 auto; min-width: 0; }
+    @media (max-width: 748px) { #zrokPanel .zkBtns .ui.button { flex: 1 1 100%; } #zrokPanel .zkTunnel .zkBtns .ui.button { flex: 1 1 auto; } }
 </style>
 <div id="zrokPanel" class="standardContainer">
-    <div class="zkHero">
-        <div style="min-width:0; flex:1 1 30em">
-            <h2 class="ui header" style="margin-bottom:.35em"><i class="plug icon"></i><div class="content">Tunnels (zrok)</div></h2>
-            <p class="zkLead">Share a service through an openziti based <a href="https://zrok.io" target="_blank" rel="noopener">zrok</a> tunnel without opening a port, or reach a private share from this host.
-                Zoraxy supervises the external <code>zrok</code> program: install it, enable an environment with your account token, then create shares.</p>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Tunnels</h2>
+            <p class="zx-page-header__sub">Share a service without opening a port, using zrok.</p>
         </div>
-        <div><span class="zkPill off" id="zkPill" role="status"><i class="circle outline icon"></i><span>Loading...</span></span></div>
-    </div>
+        <div class="zx-page-header__actions"><span class="zkPill off" id="zkPill" role="status"><i class="circle outline icon"></i><span>Loading...</span></span></div>
+    </header>
 
     <div id="zkErrorBox" class="zkBanner bad" style="display:none" role="alert"><i class="exclamation triangle icon"></i><div class="t"><b>Tunnels are not available</b><span id="zkErrorText"></span></div></div>
     <div class="zkBanner warn" id="zkNotAllowed" style="display:none" role="alert"><i class="lock icon"></i><div class="t"><b>External tools are disabled</b>
         This page runs the external <code>zrok</code> program, which is a privilege, so it is off by default. Start Zoraxy with <code>-allow_external_tools</code>
         (docker: add it to the command line) and reload. Nothing is executed until you do.</div></div>
 
+  <div class="zkStack">
     <!-- state -->
-    <div class="zkCard">
-        <h4><i class="info circle icon"></i> Current state</h4>
-        <div class="zkFacts" id="zkFacts"></div>
-    </div>
+    <section class="zx-card" aria-labelledby="zkStateTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="zkStateTitle">Current state</h3>
+            <p class="zx-card__desc">Zoraxy runs the external <a href="https://zrok.io" target="_blank" rel="noopener">zrok</a> program for you. Set it up in the three steps below.</p>
+        </div>
+        <div class="zx-card__body"><div class="zkFacts" id="zkFacts"></div></div>
+    </section>
 
     <!-- step 1 -->
-    <div class="zkCard">
-        <h4><span class="zkStep" id="zkStep1">1</span> Install zrok</h4>
-        <div id="zkInstallOk" style="display:none" class="zkMuted"></div>
-        <div id="zkInstall" style="display:none">
-            <div class="zkBanner info" style="margin:.6em 0"><i class="download icon"></i><div class="t"><b>zrok was not found on this machine</b>
-                <span id="zkBinErr"></span>
-                <ol style="margin:.5em 0 0; padding-left:1.2em; line-height:1.55">
-                    <li>Download the release for this machine from <a href="https://github.com/openziti/zrok/releases" target="_blank" rel="noopener">github.com/openziti/zrok/releases</a> (binary <code>zrok</code> for 1.x, <code>zrok2</code> for 2.x).</li>
-                    <li>Put it on the <code>PATH</code> of the user running Zoraxy (for example <code>/usr/local/bin</code>), or enter its full path below. The file name must start with <code>zrok</code>.</li>
-                    <li>Press <b>Check again</b>. In a container the binary must exist inside the container.</li>
-                </ol></div></div>
+    <section class="zx-card" aria-labelledby="zkS1Title">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="zkS1Title"><span class="zkStep" id="zkStep1">1</span> Install zrok</h3>
+            <p class="zx-card__desc">Zoraxy needs the zrok program on this machine.</p>
         </div>
-        <details id="zkAdvanced"><summary>Binary, command line generation and self-hosted endpoint</summary>
-            <div class="ui form">
-                <div class="three fields">
-                    <div class="field"><label for="zkBin">zrok binary (optional)</label><input type="text" id="zkBin" placeholder="empty = zrok2 or zrok from PATH"></div>
-                    <div class="field"><label for="zkFlavor">Command line generation</label>
-                        <select id="zkFlavor"><option value="auto">auto (zrok2 = v2, otherwise v1)</option><option value="v1">v1 (zrok 1.x)</option><option value="v2">v2 (zrok2 2.x)</option></select></div>
-                    <div class="field"><label for="zkApi">API endpoint (self-hosted zrok only)</label><input type="text" id="zkApi" placeholder="empty = zrok.io default"></div>
-                </div>
+        <div class="zx-card__body">
+            <div id="zkInstallOk" style="display:none" class="zkMuted"></div>
+            <div id="zkInstall" style="display:none">
+                <div class="zkBanner info"><i class="download icon"></i><div class="t"><b>zrok is not installed on this machine</b>
+                    <ol style="margin:.5em 0 0; padding-left:1.2em; line-height:1.55">
+                        <li>Download the release for this machine from <a href="https://github.com/openziti/zrok/releases" target="_blank" rel="noopener">github.com/openziti/zrok/releases</a> (binary <code>zrok</code> for 1.x, <code>zrok2</code> for 2.x).</li>
+                        <li>Put it on the <code>PATH</code> of the user running Zoraxy (for example <code>/usr/local/bin</code>), or enter its full path below. The file name must start with <code>zrok</code>.</li>
+                        <li>Press <b>Check again</b>. In a container the binary must exist inside the container.</li>
+                    </ol>
+                    <details class="zx-disclosure" id="zkBinErrBox" style="margin: var(--zx-space-2) 0 0; border-top-color: currentColor;"><summary>Technical details</summary><div class="zx-disclosure__body" style="color: inherit;"><span id="zkBinErr"></span></div></details>
+                </div></div>
             </div>
-        </details>
-        <div class="zkBtns">
-            <button class="ui basic button" id="zkSaveSettings"><i class="save icon"></i> Save binary settings</button>
-            <button class="ui basic button" id="zkRefresh"><i class="sync icon"></i> Check again</button>
+            <details id="zkAdvanced" class="zx-disclosure" style="margin-top:0"><summary>Binary location, command line version and self-hosted endpoint</summary>
+                <div class="zx-disclosure__body">
+                <div class="ui form">
+                    <div class="zx-form-grid">
+                        <div class="field"><label for="zkBin">zrok binary (optional)</label><input type="text" id="zkBin" placeholder="empty = zrok2 or zrok from PATH"></div>
+                        <div class="field"><label for="zkFlavor">Command line version</label>
+                            <select id="zkFlavor"><option value="auto">auto (zrok2 = v2, otherwise v1)</option><option value="v1">v1 (zrok 1.x)</option><option value="v2">v2 (zrok2 2.x)</option></select></div>
+                        <div class="field"><label for="zkApi">API endpoint (self-hosted zrok only)</label><input type="text" id="zkApi" placeholder="empty = zrok.io default"></div>
+                    </div>
+                </div>
+                </div>
+            </details>
+            <div class="zkBtns">
+                <button class="ui basic button" id="zkRefresh"><i class="sync icon"></i> Check again</button>
+                <button class="ui basic button" id="zkSaveSettings"><i class="save icon"></i> Save binary settings</button>
+            </div>
         </div>
-    </div>
+    </section>
 
     <!-- step 2 -->
-    <div class="zkCard">
-        <h4><span class="zkStep" id="zkStep2">2</span> Enable the environment with your account token</h4>
-        <div class="zkMuted">Create a free account at <a href="https://zrok.io" target="_blank" rel="noopener">zrok.io</a> (or use your own zrok service), copy the <b>account token</b>, paste it here and press Enable.
-            Zoraxy does not learn your account name from zrok: it only knows whether a token is stored and whether <code>zrok enable</code> succeeded.</div>
-        <div class="ui form" style="margin-top:.8em">
-            <div class="field" style="max-width:34em"><label for="zkToken">Account token</label>
+    <section class="zx-card" aria-labelledby="zkS2Title">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="zkS2Title"><span class="zkStep" id="zkStep2">2</span> Enable the environment</h3>
+            <p class="zx-card__desc">Paste the account token of your free account at <a href="https://zrok.io" target="_blank" rel="noopener">zrok.io</a> (or of your own zrok service).</p>
+        </div>
+        <div class="zx-card__body">
+        <div class="ui form">
+            <div class="field" style="max-width:36em"><label for="zkToken">Account token
+                <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="zkTokenWhat" aria-label="How is the token stored?">?</button></label>
                 <input type="password" id="zkToken" autocomplete="off" placeholder="">
-                <small>Stored in <code>conf/zrok/token</code> (0600), never shown again and removed from logs. zrok only accepts the token as a command line argument of <code>zrok enable</code>, so it is visible in the process list for the few seconds that command runs.</small></div>
+                <span class="zkHelp">Stored on this machine and never shown again.</span>
+                <div class="zx-popover" id="zkTokenWhat" role="note" hidden>The token is saved in <code>conf/zrok/token</code> (file mode 0600) and removed from logs. zrok only accepts it as a command line argument of <code>zrok enable</code>, so it is visible in the process list for the few seconds that command runs. Zoraxy does not learn your account name from zrok: it only knows whether a token is stored and whether <code>zrok enable</code> succeeded.</div></div>
         </div>
         <div class="zkBtns">
-            <button class="ui green button" id="zkEnable"><i class="power off icon"></i> Save token and enable</button>
-            <button class="ui basic orange button" id="zkDisable"><i class="stop icon"></i> Disable environment</button>
+            <button class="ui primary button" id="zkEnable"><i class="power off icon"></i> Save token and enable</button>
+            <button class="ui basic button" id="zkDisable"><i class="stop icon"></i> Disable environment</button>
             <button class="ui basic red button" id="zkClearToken"><i class="eraser icon"></i> Forget token</button>
         </div>
-        <div id="zkConfirm" class="zkBanner warn" style="display:none" role="alert"><i class="question circle icon"></i>
+        <div id="zkConfirm" class="zkBanner warn" style="display:none; margin-top: var(--zx-space-3);" role="alert"><i class="question circle icon"></i>
             <div class="t"><b id="zkConfirmTitle"></b><span id="zkConfirmText"></span>
-                <div class="zkBtns"><button class="ui orange button" id="zkConfirmYes">Confirm</button><button class="ui basic button" id="zkConfirmNo">Cancel</button></div></div></div>
-        <div id="zkEnableResult" style="display:none"></div>
-    </div>
+                <div class="zkBtns"><button class="ui red button" id="zkConfirmYes">Confirm</button><button class="ui basic button" id="zkConfirmNo">Cancel</button></div></div></div>
+        <div id="zkEnableResult" style="display:none; margin-top: var(--zx-space-3);"></div>
+        </div>
+    </section>
 
     <!-- step 3 -->
-    <div class="zkCard" id="zkEditor">
-        <h4><span class="zkStep" id="zkStep3">3</span> <span id="zkEditorTitle">Create a share</span></h4>
+    <section class="zx-card" id="zkEditor" aria-labelledby="zkEditorTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title"><span class="zkStep" id="zkStep3">3</span> <span id="zkEditorTitle">Create a share</span></h3>
+            <p class="zx-card__desc">Saving only stores the tunnel. Press <b>Start</b> on its card below to open it, unless it starts automatically.</p>
+        </div>
+        <div class="zx-card__body">
         <div class="ui form">
             <input type="hidden" id="zkId">
-            <div class="zkMuted">What do you want to do?</div>
+            <div class="zkMuted" style="margin-bottom: var(--zx-space-1);">What do you want to do?</div>
             <div class="zkKinds" role="radiogroup" aria-label="Tunnel kind">
                 <button type="button" class="zkKind" data-kind="share-public" role="radio"><b><i class="globe icon"></i> Public share</b><span>A zrok URL on the internet that anyone can open.</span></button>
                 <button type="button" class="zkKind" data-kind="share-private" role="radio"><b><i class="lock icon"></i> Private share</b><span>Reachable only with <code>zrok access</code> and the share token.</span></button>
                 <button type="button" class="zkKind" data-kind="access" role="radio"><b><i class="plug icon"></i> Access a private share</b><span>Bind a remote private share to a local address on this host.</span></button>
             </div>
-            <div class="two fields">
+            <div class="zx-form-grid">
                 <div class="field"><label for="zkName">Name</label><input type="text" id="zkName" placeholder="blog"></div>
-                <div class="field"><label>&nbsp;</label><div class="ui checkbox" id="zkAutoWrap"><input type="checkbox" id="zkAuto"><label for="zkAuto">Start automatically with Zoraxy</label></div></div>
             </div>
             <div class="shareField">
-                <div class="two fields">
+                <div class="zx-form-grid">
                     <div class="field"><label for="zkTarget">Target (what to expose)</label><input type="text" id="zkTarget" placeholder="127.0.0.1:8080 or http://127.0.0.1:8080">
-                        <small>host:port or http(s)://host:port[/path]. Credentials, query strings and file paths are refused.</small></div>
+                        <span class="zkHelp">host:port or http(s)://host:port[/path]. Credentials, query strings and file paths are refused.</span></div>
                     <div class="field"><label for="zkQuick">Quick fill</label><select id="zkQuick"><option value="">choose...</option></select></div>
                 </div>
-                <details><summary>More options</summary>
-                    <div class="three fields">
+                <details class="zx-disclosure" style="margin-top:0"><summary>More options</summary>
+                    <div class="zx-disclosure__body">
+                    <div class="zx-form-grid">
                         <div class="field"><label for="zkMode">Backend mode</label><select id="zkMode"><option value="proxy">proxy (HTTP)</option><option value="tcpTunnel">tcpTunnel (private only)</option><option value="udpTunnel">udpTunnel (private only)</option></select></div>
                         <div class="field publicOnly"><label for="zkFront">Frontend / name selection (optional)</label><input type="text" id="zkFront" placeholder="public"></div>
                         <div class="field v1Only"><label for="zkUnique">Reserved name (zrok 1.x, optional)</label><input type="text" id="zkUnique" placeholder="my-site"></div>
                     </div>
-                    <div class="field"><div class="ui checkbox"><input type="checkbox" id="zkInsecure"><label for="zkInsecure">Do not verify the backend's TLS certificate (self-signed upstream)</label></div></div>
+                    <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Do not verify the backend's TLS certificate</span><span class="zx-toggle-row__desc">For a self-signed upstream.</span></span><input type="checkbox" class="zx-switch" role="switch" id="zkInsecure"></label>
+                    </div>
                 </details>
             </div>
             <div class="accessField" style="display:none">
-                <div class="two fields">
+                <div class="zx-form-grid">
                     <div class="field"><label for="zkShareToken">Share token</label><input type="text" id="zkShareToken" placeholder="token of the private share"></div>
                     <div class="field"><label for="zkBind">Bind address</label><input type="text" id="zkBind" placeholder="127.0.0.1:9191"></div>
                 </div>
             </div>
+            <label class="zx-toggle-row" style="border-top: 1px solid var(--zx-border); border-bottom: 0;"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Start automatically with Zoraxy</span><span class="zx-toggle-row__desc">Open this tunnel every time Zoraxy starts.</span></span><input type="checkbox" class="zx-switch" role="switch" id="zkAuto"></label>
             <div class="zkBtns">
                 <button class="ui primary button" id="zkTunnelSave"><i class="save icon"></i> Save tunnel</button>
                 <button class="ui basic button" id="zkTunnelReset">Clear form</button>
             </div>
-            <div class="zkMuted" style="margin-top:.6em">Saving only stores the tunnel. Press <b>Start</b> on its card below to open it, unless it starts automatically.</div>
         </div>
-    </div>
+        </div>
+    </section>
 
     <!-- tunnels -->
-    <div class="zkCard">
-        <h4><i class="sitemap icon"></i> Your tunnels</h4>
-        <div class="zkMuted">Traffic counters are not available: zrok does not report them to Zoraxy. Uptime is measured since the last (re)start by Zoraxy.</div>
-        <div id="zkTunnels" class="zkTunnels"></div>
-    </div>
+    <section class="zx-card" aria-labelledby="zkListTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="zkListTitle">Your tunnels</h3>
+            <p class="zx-card__desc">Traffic counters are not available: zrok does not report them to Zoraxy. Uptime is measured since the last (re)start by Zoraxy.</p>
+        </div>
+        <div class="zx-card__body"><div id="zkTunnels" class="zkTunnels"></div></div>
+    </section>
 
-    <div class="zkBanner info"><i class="info circle icon"></i><div class="t"><b>Not verified against a live zrok service</b>
-        The command lines are built from the zrok 1.1 and 2.0 sources and exercised with a fake zrok program; report differences you find with your zrok version.
-        Child processes get a minimal environment with their own <code>HOME</code> in <code>conf/zrok/home</code>, are restarted with exponential backoff (and stopped after repeated immediate failures) and receive SIGTERM when Zoraxy shuts down.</div></div>
+    <details class="zx-disclosure" style="margin: 0;"><summary>About this feature</summary>
+        <div class="zx-disclosure__body">The command lines follow the zrok 1.1 and 2.0 sources and were tested with a stand-in zrok program, not against a live zrok service. Please report differences you find with your zrok version. Tunnel programs run with their own home folder, are restarted automatically after a failure and are stopped when Zoraxy shuts down.</div></details>
+  </div>
 </div>
 <script>
 (function(){
@@ -342,7 +368,7 @@
         var s = d.Settings, haveBin = !!d.Binary;
         flavor = d.Flavor || "v1";
         $id("zkErrorBox").hide();
-        $id("zrokNotAllowed").toggle(!d.Allowed);
+        $id("zkNotAllowed").toggle(!d.Allowed);
         $id("zkBin").val(s.BinaryPath); $id("zkFlavor").val(s.Flavor || "auto"); $id("zkApi").val(s.ApiEndpoint);
         //Nothing to disable or forget: keep the buttons off until there is something to act on
         $id("zkDisable").prop("disabled", !s.EnabledEnv);
@@ -362,7 +388,7 @@
         var f = $id("zkFacts").empty();
         f.append(fact("External tools", d.Allowed ? "Allowed" : "Disabled (-allow_external_tools)", d.Allowed ? "good" : "bad"));
         f.append(fact("zrok binary", haveBin ? d.Binary : "not found", haveBin ? "good" : "bad"));
-        f.append(fact("Version", haveBin ? (d.Version || (d.Allowed ? "unknown" : "not queried")) + " [" + flavor + "]" : "-", haveBin && d.Version ? "good" : ""));
+        if (haveBin) { f.append(fact("Version", (d.Version || (d.Allowed ? "unknown" : "not queried")) + " [" + flavor + "]", d.Version ? "good" : "")); }
         f.append(fact("Account token", d.TokenSet ? "stored" : "not set", d.TokenSet ? "good" : "warn"));
         f.append(fact("Environment", s.EnabledEnv ? "enabled" : "not enabled", s.EnabledEnv ? "good" : "warn"));
         f.append(fact("Tunnels", tunnels.length + " saved, " + running + " running", running ? "good" : ""));
@@ -372,14 +398,14 @@
         $id("zkStep2").toggleClass("done", !!s.EnabledEnv).text(s.EnabledEnv ? "✓" : "2");
         $id("zkStep3").toggleClass("done", tunnels.length > 0).text(tunnels.length ? "✓" : "3");
         $id("zkInstall").toggle(!haveBin);
-        $id("zkBinErr").text(d.BinaryError ? " " + d.BinaryError : "");
+        $id("zkBinErr").text(d.BinaryError || ""); $id("zkBinErrBox").toggle(!!d.BinaryError);
         $id("zkInstallOk").toggle(haveBin).text(haveBin ? "Found " + d.Binary + (d.Version ? ", version " + d.Version : "") + "." : "");
         if (!haveBin) { $id("zkAdvanced").attr("open", "open"); }
         setKind(kind());
 
         var list = $id("zkTunnels").empty();
         if (!tunnels.length) {
-            list.append($("<div class='zkEmpty'>").css("grid-column", "1 / -1").append("<i class='plug icon'></i>").append($("<div>").text(
+            list.append($("<div class='zx-empty zx-empty--inline'>").css("grid-column", "1 / -1").append("<div class='zx-empty__icon' aria-hidden='true'><i class='plug icon'></i></div>").append($("<p class='zx-empty__text' style='margin-bottom:0'>").text(
                 !haveBin ? "No tunnels yet. Install zrok first (step 1)." : (!s.EnabledEnv ? "No tunnels yet. Enable the environment first (step 2)." : "No tunnels yet. Create your first share in step 3."))));
         } else { tunnels.forEach(function(t){ list.append(renderTunnel(t)); }); }
         schedule(tunnels);
@@ -448,7 +474,6 @@
         (list || []).forEach(function(x){ $id("zkQuick").append($("<option>").val(x.Value).text(x.Label + " - " + x.Value)); });
     });
     $id("zkQuick").on("change", function(){ if ($(this).val()) { $id("zkTarget").val($(this).val()); } });
-    $id("zrokPanel").find(".checkbox").checkbox();
-    resetForm(); load();
+        resetForm(); load();
 })();
 </script>

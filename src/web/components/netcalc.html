@@ -1,21 +1,48 @@
 <!-- IPv4 / IPv6 subnet calculators. Loaded into the Network Tools "Calculators" tab. API: GET /api/tools/netcalc?q= -->
-<div id="netcalcPanel">
-    <div class="ui basic message">
-        Calculate subnets locally on this node (no outbound traffic). Accepts <code>192.168.1.10/24</code>, <code>10.0.0.1 255.255.255.0</code>,
-        <code>2001:db8::/32</code>, a single address, or a range such as <code>10.0.0.5 - 10.0.3.200</code> (converted into the shortest list of CIDR blocks).
-    </div>
-    <div class="ui action fluid input">
-        <input type="text" id="netcalcInput" maxlength="200" placeholder="192.168.1.10/24 or 2001:db8::1/64 or 10.0.0.1 - 10.0.0.99">
-        <button class="ui basic button" id="netcalcBtn"><i class="calculator icon"></i> Calculate</button>
-    </div>
-    <div class="ui red message" id="netcalcError" style="display:none;"></div>
-    <div style="overflow-x:auto;">
-        <table class="ui definition compact unstackable table" id="netcalcResult" style="display:none;"><tbody></tbody></table>
-    </div>
-    <div id="netcalcList" style="display:none;">
-        <h4 class="ui header">CIDR blocks</h4>
-        <pre id="netcalcListPre" style="overflow-x:auto;"></pre>
-    </div>
+<style>
+    #netcalcPanel .ui.action.input { display: flex; gap: var(--zx-space-2); }
+    #netcalcPanel .ui.action.input > input { flex: 1 1 auto; min-width: 0; height: var(--zx-control-h); padding-top: 0; padding-bottom: 0; border-radius: var(--zx-radius-md) !important; }
+    #netcalcPanel .ui.action.input > .zx-btn { flex: 0 0 auto; }
+    @media (max-width: 748px) { #netcalcPanel .ui.action.input > .zx-btn { flex: 1 1 100%; } }
+    @media (max-width: 748px) { #netcalcPanel .ui.action.input { flex-wrap: wrap; gap: var(--zx-space-2); } #netcalcPanel .ui.action.input > input { flex: 1 1 100% !important; border-radius: var(--zx-radius-md) !important; } #netcalcPanel .ui.action.input > .button { flex: 1 1 100%; margin: 0 !important; } }
+</style>
+<div id="netcalcPanel" style="display:flex; flex-direction:column; gap:var(--zx-space-4);">
+    <section class="zx-card" aria-labelledby="ncTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="ncTitle">Subnet calculator</h3>
+            <p class="zx-card__desc">Work out the network, mask and usable hosts of an address block. Everything is calculated on this node and nothing is sent out.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="ui form">
+                <div class="field">
+                    <label for="netcalcInput">Address, subnet or range</label>
+                    <div class="ui action fluid input">
+                        <input type="text" id="netcalcInput" maxlength="200" placeholder="e.g. 192.168.1.10/24">
+                        <button class="zx-btn zx-btn--primary" id="netcalcBtn"><i class="calculator icon"></i> Calculate</button>
+                    </div>
+                    <p class="zx-help" style="margin-top:var(--zx-space-1);">Try <code>192.168.1.10/24</code>, <code>10.0.0.1 255.255.255.0</code>, <code>2001:db8::/32</code>, a single address, or a range such as <code>10.0.0.5 - 10.0.3.200</code> (converted into the shortest list of CIDR blocks).</p>
+                </div>
+            </div>
+            <div class="ui red message" id="netcalcError" style="display:none;" role="alert"></div>
+            <div class="zx-empty zx-empty--inline" id="netcalcEmpty">
+                <div class="zx-empty__icon"><i class="calculator icon"></i></div>
+                <p class="zx-empty__text">Enter an address to see its subnet details here.</p>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="netcalcExample">Try an example</button>
+            </div>
+            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Subnet details" id="netcalcWrap" style="display:none;">
+                <table class="zx-table" id="netcalcResult"><tbody></tbody></table>
+            </div>
+        </div>
+    </section>
+    <section class="zx-card" id="netcalcList" style="display:none;" aria-labelledby="ncListTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="ncListTitle">CIDR blocks</h3>
+            <p class="zx-card__desc">The shortest list of blocks that covers the range.</p>
+        </div>
+        <div class="zx-card__body">
+            <pre id="netcalcListPre" class="zx-mono" style="overflow-x:auto; margin:0;"></pre>
+        </div>
+    </section>
 </div>
 <script>
 (function(){
@@ -35,12 +62,12 @@
     function netcalcRun(){
         var q = $("#netcalcInput").val().trim();
         $("#netcalcError").hide();
-        if (q == ""){ return; }
+        if (q == ""){ $("#netcalcInput").trigger("focus"); return; }
         $.get("/api/tools/netcalc", {q: q}, function(data){
             var tb = $("#netcalcResult tbody").empty();
             $("#netcalcList").hide();
             if (data.error != undefined){
-                $("#netcalcResult").hide();
+                $("#netcalcWrap").hide(); $("#netcalcEmpty").show();
                 $("#netcalcError").text(data.error).show();
                 return;
             }
@@ -50,11 +77,11 @@
                 if (r[1] == "kind") v = kindNames[v] || v;
                 if (r[1] == "private") v = v ? "yes" : "no";
                 var tr = $("<tr></tr>");
-                tr.append($("<td></td>").text(r[0]));
-                tr.append($("<td></td>").css("word-break", "break-all").text(String(v)));
+                tr.append($("<td></td>").css({"color": "var(--zx-text-muted)", "white-space": "nowrap"}).text(r[0]));
+                tr.append($("<td></td>").addClass("zx-mono").css("word-break", "break-all").text(String(v)));
                 tb.append(tr);
             });
-            $("#netcalcResult").show();
+            $("#netcalcEmpty").hide(); $("#netcalcWrap").show();
             if (data.cidrList && data.cidrList.length){
                 $("#netcalcListPre").text(data.cidrList.join("\n"));
                 $("#netcalcList").show();
@@ -62,6 +89,7 @@
         });
     }
     $("#netcalcBtn").on("click", netcalcRun);
+    $("#netcalcExample").on("click", function(){ $("#netcalcInput").val("192.168.1.10/24"); netcalcRun(); });
     $("#netcalcInput").on("keydown", function(e){ if (e.key == "Enter"){ netcalcRun(); } });
 })();
 </script>

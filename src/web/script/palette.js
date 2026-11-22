@@ -81,10 +81,10 @@
         { label: N_("Check for updates"), page: "updater", at: "#upCheckBtn", kw: "upgrade version" },
         { label: N_("Update channel"), page: "updater", at: "#upChannel", kw: "stable beta release" },
         { label: N_("Create an API token"), page: "apitokens", at: "#atName", kw: "api key automation" },
-        { label: N_("Change admin password"), page: "utils", text: "Change Password", kw: "login credentials" },
+        { label: N_("Change admin password"), page: "utils", text: "Change password", kw: "login credentials" },
         { label: N_("Log rotation"), page: "utils", at: "#logRotationEnabled", kw: "logs size backups compress" },
         { label: N_("GeoIP database update"), page: "utils", at: "#geodbUpdateNowBtn", kw: "country database maxmind" },
-        { label: N_("Backup and restore"), page: "utils", text: "System Backup & Restore", kw: "export import config" },
+        { label: N_("Backup and restore"), page: "utils", text: "System backup & restore", kw: "export import config" },
         { label: N_("Cluster primary URL"), page: "cluster", at: "#clPrimaryUrl", kw: "follower ha high availability" },
         { label: N_("Cluster secret"), page: "cluster", at: "#clGenBtn", kw: "ha shared key generate" },
         // Security > Rules (RULES-BUILDER)

@@ -95,136 +95,132 @@
      the right, even when the plugin name is long enough to wrap onto two lines.
      Without this, Semantic UI's "img.image + .content" rule makes .content an
      inline-block that drops below the icon once the name gets too wide. */
-  #pluginTable td[data-label="PluginName"] .ui.header {
+  #pluginTable td[data-label="Plugin"] .ui.header {
     display: flex;
     align-items: flex-start;
   }
-  #pluginTable td[data-label="PluginName"] .ui.header > img.image {
+  #pluginTable td[data-label="Plugin"] .ui.header > img.image {
     flex-shrink: 0;
     margin-top: 0.15em;
   }
-  #pluginTable td[data-label="PluginName"] .ui.header > .content {
+  #pluginTable td[data-label="Plugin"] .ui.header > .content {
     flex: 1;
     min-width: 0;
     display: block !important;
     width: auto !important;
   }
 
-  .pluginAddRemoveButtons{
-    border-left: 1px solid var(--divider_color); 
-    border-right: 1px solid var(--divider_color);
-    display: flex !important; 
-    align-items: center !important; 
-    justify-content: center !important;
-  }
-
-  .pluginAddRemoveButtons .mobileViewOnly{
-      display: none;
-  }
-
+  /* Plugin map: two quiet wells with the move buttons between them (no hairline dividers, no boxes in boxes) */
+  #pluginsPage .pm-map { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--zx-space-4); align-items: start; }
+  #pluginsPage .pm-actions { display: flex; flex-direction: column; gap: var(--zx-space-2); align-self: center; }
+  #pluginsPage .pm-actions .mobileViewOnly { display: none; }
+  #pluginsPage .pm-tagpick { display: flex; gap: var(--zx-space-2); margin-bottom: var(--zx-space-2); }
+  #pluginsPage .pm-tagpick .ui.dropdown { flex: 1 1 auto; min-width: 0; min-height: var(--zx-control-h); }
+  #pluginsPage .pm-tagpick .ui.icon.button { height: auto; align-self: stretch; margin: 0; }
+  #pluginsPage .pm-list { background: var(--zx-surface-2); border-radius: var(--zx-radius-md); }
+  #pluginsPage .pm-list.ui.list { margin: 0; }
+  #pluginsPage .pm-list .item + .item { border-top: 1px solid var(--zx-border); }
+  #pluginsPage .pm-empty { display: flex; align-items: center; gap: var(--zx-space-2); pointer-events: none; user-select: none; color: var(--zx-text-muted); }
+  #pluginsPage .zx-empty.zx-empty--inline { padding: var(--zx-space-4) 0; }
+  #pluginsPage .zx-page-header__actions { align-self: flex-end; }
+  #pluginsPage .pm-dev-grid { max-width: 22rem; }
   #selectablePluginList > .item, #selectedTagPluginList > .item { display: block !important; }
   #selectablePluginList > .item p { margin: 0 0 .3em; }
   .selectColTitle{
     font-weight: bold;
     margin-bottom: 0.4em;
-    text-align: center;
+    text-align: left;
     width: 100%;
   }
 
   @media (max-width: 780px) {
-    .pluginAddRemoveButtons {
-      border-left: none;
-      border-right: none;
-      border-top: 1px solid var(--divider_color);
-      border-bottom:  1px solid var(--divider_color);
-    }
-
-    .pluginAddRemoveButtons .mobileViewOnly{
-      display: block;
-    }
-
-    .pluginAddRemoveButtons .wideViewOnly{
-      display: none;
-    }
+    #pluginsPage .pm-map { grid-template-columns: minmax(0, 1fr); }
+    #pluginsPage .pm-actions { flex-direction: row; justify-content: center; }
+    #pluginsPage .pm-actions .mobileViewOnly { display: flex; gap: var(--zx-space-2); }
+    #pluginsPage .pm-actions .wideViewOnly { display: none; }
   }
 </style>
-<div class="standardContainer">
-    <div class="ui basic segment">
-        <h2>Plugins</h2>
-        <p>Add custom features to your Zoraxy!</p>
+<div class="standardContainer" id="pluginsPage">
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Plugin Manager</h2>
+            <p class="zx-page-header__sub">Add custom features to Zoraxy.</p>
+        </div>
+        <div class="zx-page-header__actions zx-btn-row">
+            <button type="button" class="ui primary button" onclick="openPluginStore();"><i class="shopping bag icon"></i> Open App Store</button>
+        </div>
+    </header>
+    <div class="zx-callout zx-callout--warn" role="note">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">Experimental feature</div>Plugins may not work as expected. Use with caution.</div>
     </div>
-    <div class="ui yellow message">
-      <div class="header">Experimental Feature</div>
-      <p>This feature is experimental and may not work as expected. Use with caution.</p>
-    </div>
-    <h4 class="ui header">
-      Plugin Map
-     <div class="sub header">Assigning a plugin to a tag will make the plugin available to the HTTP Proxy rule with the same tag.</div>
-    </h4>
-    <br>
-    <div class="ui stackable grid">
-      <div class="seven wide column">
-        <!-- Selectable plugin list -->
-        <div class="selectColTitle">Unassigned Plugins</div>
-        <div id="selectablePluginList" class="ui relaxed divided list" style="border: 1px solid var(--divider_color);">
-          <div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
-            <i class="ui grey info circle icon"></i> No selected tag
+    <section class="zx-card">
+      <div class="zx-card__head">
+        <h3 class="zx-card__title">Plugin map</h3>
+        <p class="zx-card__desc">Assigning a plugin to a tag makes it available to the HTTP Proxy rules with the same tag.</p>
+      </div>
+      <div class="zx-card__body">
+    <div class="pm-map">
+      <div>
+        <div class="selectColTitle">Unassigned plugins</div>
+        <div id="selectablePluginList" class="ui relaxed list pm-list">
+          <div class="item pm-empty">
+            <i class="info circle icon"></i> No selected tag
           </div>
         </div>
       </div>
-      <div class="two wide column pluginAddRemoveButtons">
-        <!-- Add and Remove button -->
-        <div>
-          <div class="wideViewOnly">
-            <button class="ui basic red icon button removeSelectedPluginFromTagBtn" title="Remove selected plugin from tag">
-              <i class="left arrow icon"></i>
-            </button>
-            <br>
-            <button class="ui basic green icon button addSelectedPluginTotagBtn" title="Add selected plugin to tag" style="margin-top: 0.4em;">
-              <i class="right arrow icon"></i>
-            </button>
-          </div>
-          <div class="mobileViewOnly">
-            <button class="ui basic red icon button removeSelectedPluginFromTagBtn" title="Remove selected plugin from tag">
-              <i class="up arrow icon"></i>
-            </button>
-            <br>
-            <button class="ui basic green icon button addSelectedPluginTotagBtn" title="Add selected plugin to tag" style="margin-top: 0.4em;">
-              <i class="down arrow icon"></i>
-            </button>
-          </div>
+      <div class="pm-actions">
+        <div class="wideViewOnly">
+          <button class="ui basic icon button removeSelectedPluginFromTagBtn" title="Remove selected plugin from tag" aria-label="Remove selected plugin from tag">
+            <i class="left arrow icon"></i>
+          </button>
+          <button class="ui basic icon button addSelectedPluginTotagBtn" title="Add selected plugin to tag" aria-label="Add selected plugin to tag" style="margin-top: 0.4em;">
+            <i class="right arrow icon"></i>
+          </button>
+        </div>
+        <div class="mobileViewOnly">
+          <button class="ui basic icon button removeSelectedPluginFromTagBtn" title="Remove selected plugin from tag" aria-label="Remove selected plugin from tag">
+            <i class="up arrow icon"></i>
+          </button>
+          <button class="ui basic icon button addSelectedPluginTotagBtn" title="Add selected plugin to tag" aria-label="Add selected plugin to tag">
+            <i class="down arrow icon"></i>
+          </button>
         </div>
       </div>
-      <div class="seven wide column">
-        <!-- Tag / Plugin List -->
-        <div class="selectColTitle">Assigned Plugins</div>
-        <div class="ui fluid selection dropdown" id="pluginTagList">
-          <input type="hidden" name="tag">
-          <i class="dropdown icon"></i>
-          <div class="default text">Select Tag</div>
-          <div class="menu">
-            <!-- <div class="item" data-value="tag1">Tag 1</div> -->
+      <div>
+        <div class="selectColTitle">Assigned plugins</div>
+        <div class="pm-tagpick">
+          <div class="ui fluid selection dropdown" id="pluginTagList">
+            <input type="hidden" name="tag">
+            <i class="dropdown icon"></i>
+            <div class="default text">Select a tag</div>
+            <div class="menu">
+            </div>
           </div>
+          <button class="ui basic icon button" onclick="loadTags();" title="Refresh tag list" aria-label="Refresh tag list"><i class="sync icon"></i></button>
         </div>
-        <button class="ui basic fluid button" onclick="loadTags();" style="margin-top: 0.4em; margin-bottom: 0.8em;"><i class="ui green refresh icon"></i> Refresh Tag List</button>
-        <div id="selectedTagPluginList" class="ui relaxed divided list" style="border: 1px solid var(--divider_color);">
-            <div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
+        <div id="selectedTagPluginList" class="ui relaxed list pm-list">
+            <div class="item pm-empty">
             <i class="ui arrow up icon"></i> Select a tag to view assigned plugins
             </div>
         </div>
       </div>
     </div>
-    <br>
-    <div class="ui divider"></div>
-    <h4 class="ui header">
-       Plugin List
-      <div class="sub header">A list of installed plugins and their enable state</div>
-    </h4>
-    <table class="ui basic celled table">
+      </div>
+    </section>
+    <section class="zx-card">
+      <div class="zx-card__head">
+        <h3 class="zx-card__title">Plugin list</h3>
+        <p class="zx-card__desc">Installed plugins and whether they are running.</p>
+      </div>
+      <div class="zx-card__body">
+    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Installed plugins">
+    <table class="zx-table">
         <thead>
           <tr>
-            <th>Plugin Name</th>
-            <th>Descriptions</th>
+            <th>Plugin name</th>
+            <th>Description</th>
             <th>Category</th>
             <th>Action</th>
         </tr></thead>
@@ -232,36 +228,28 @@
           
         </tbody>
       </table>
-      <div class="ui basic segment advanceoptions">
-          <div id="pluginDeveloperSettings" class="ui accordion advanceSettings">
-              <div class="title">
-                <i class="dropdown icon"></i>
-                  Developer Settings
-              </div>
-              <div class="content ui form">
-                <div class="ui inverted message" style="margin-top: 0.6em;">
-                  <div class="header">Developer Only</div>
-                  <p>These functions are intended for developers only. Enabling them may add latency to plugin loading & routing. Proceed with caution.<br>
-                  <b>Tips: You can start zoraxy with -dev=true to enable auto-reload when start</b></p>
-                </div>
-                <br>
-                <div id="enablePluginAutoReload" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox" style="margin-top: 0.6em;">
-                    <input id="enable_plugin_auto_reload" type="checkbox">
-                    <label>Enable Plugin Auto Reload<br>
-                    <small>Automatic reload plugin when the plugin binary changed</small></label>
-                </div>
-                <br><br>
-                <div class="field" style="max-width: 50%;margin-bottom: 0px;">
-                  <label>Check Interval</label>
-                  <input type="number" id="autoreload-interval" placeholder="Check Interval" min="1" max="60" step="1" value="1">
-                </div>
-                <small>Specify the interval (in seconds) for checking plugin changes. <br>Minimum is 1 second, maximum is 60 seconds.</small>
-              </div>
-          </div>
+    </div>
       </div>
-
-      <br>
-      <button class="ui basic violet button" onclick="openPluginStore();"><i class="shopping bag icon"></i>Open App Store</button>
+    </section>
+      <details class="zx-disclosure" id="pluginDeveloperSettings">
+        <summary>Developer settings</summary>
+        <div class="zx-disclosure__body ui form">
+          <div class="zx-callout zx-callout--warn" role="note">
+            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+            <div class="zx-callout__body"><div class="zx-callout__title">For developers only</div>These functions are intended for developers only. Enabling them may add latency to plugin loading &amp; routing. Proceed with caution. Tip: start Zoraxy with -dev=true to enable auto-reload at start.</div>
+          </div>
+          <div id="enablePluginAutoReload" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox" style="margin-top: var(--zx-space-3);">
+            <input id="enable_plugin_auto_reload" type="checkbox">
+            <label>Enable plugin auto reload<br>
+            <small>Automatically reload a plugin when its binary changes</small></label>
+          </div>
+          <div class="field pm-dev-grid" style="margin-top: var(--zx-space-3);">
+            <label for="autoreload-interval">Check interval (seconds)</label>
+            <input type="number" id="autoreload-interval" placeholder="Check interval" min="1" max="60" step="1" value="1">
+            <p class="zx-help">How often to check for plugin changes, from 1 to 60 seconds.</p>
+          </div>
+        </div>
+      </details>
 </div>
 
 <script>
@@ -298,7 +286,7 @@ function loadPluginsForTag(tag) {
 
     if (data.length == 0){
       $("#selectedTagPluginList").append(`
-        <div class="item"  style="pointer-events: none; user-select: none; opacity: 0.6;">
+        <div class="item"  style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
           <i class="ui green circle check icon"></i> No plugins assigned to this tag
         </div>
       `);
@@ -331,8 +319,8 @@ function loadPluginsForTag(tag) {
 
     if (selectablePluginCount == 0){
       $("#selectablePluginList").append(`
-        <div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
-          <i class="ui grey info circle icon"></i> No plugins available to assign
+        <div class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
+          <i class="info circle icon"></i> No plugins available to assign
         </div>
       `);
     }
@@ -362,8 +350,8 @@ loadTags();
 
 //This is used as a dummy function to initialize the selectable plugin list
 function initSelectablePluginList(){
-  $("#selectablePluginList").html(`<div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
-            <i class="ui grey info circle icon"></i> No selected tag
+  $("#selectablePluginList").html(`<div class="item pm-empty">
+            <i class="info circle icon"></i> No selected tag
           </div>`);
   $.get(`/api/plugins/list`, function(data){
       data.forEach(plugin => {
@@ -372,7 +360,7 @@ function initSelectablePluginList(){
         return;
       }
       $("#selectablePluginList").append(`
-        <div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
+        <div class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
           <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${plugin.Spec.id}">
           <div class="content">
             <a class="header">${ZxUI.esc(plugin.Spec.name)}</a>
@@ -385,8 +373,8 @@ function initSelectablePluginList(){
 
     if (data.length == 0){
       $("#selectablePluginList").append(`
-        <div class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
-          <p><i class="ui grey info circle icon"></i> No plugins available to assign</p>
+        <div class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
+          <p><i class="info circle icon"></i> No plugins available to assign</p>
           <p>Plugins can be installed to Zoraxy by placing the plugin files in the plugins directory.</p>
         </div>
       `);
@@ -494,7 +482,7 @@ function initPluginSideMenu(){
     });
     if (enabledPluginCount == 0){
       $("#pluginMenu").append(`
-         <a class="item" style="pointer-events: none; user-select: none; opacity: 0.6;">
+         <a class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
             <i class="grey info circle icon"></i> No Plugins Installed
         </a>
       `);
@@ -594,7 +582,7 @@ function initiatePluginList(){
       let versionString = `v${plugin.Spec.version_major}.${plugin.Spec.version_minor}.${plugin.Spec.version_patch}`;
       const row = `
         <tr>
-          <td data-label="PluginName">
+          <td data-label="Plugin">
             <h4 class="ui header">
               <img src="/api/plugins/icon?plugin_id=${plugin.Spec.id}" class="ui image">
               <div class="content">
@@ -603,7 +591,7 @@ function initiatePluginList(){
               </div>
             </h4>
             </td>
-          <td data-label="Descriptions">${ZxUI.esc(plugin.Spec.description)}<br>
+          <td data-label="Description">${ZxUI.esc(plugin.Spec.description)}<br>
           <a href="${ZxUI.esc(/^https?:\/\//i.test(plugin.Spec.url || "") ? plugin.Spec.url : "#")}" target="_blank" rel="noopener">${ZxUI.esc(plugin.Spec.url)}</a>
           ${pluginHookControls(plugin)}</td>
           <td data-label="Category">${plugin.Spec.type==0?"Router":"Utilities"}</td>
@@ -615,10 +603,10 @@ function initiatePluginList(){
               <i class="info circle icon"></i>
             </button>
             <button onclick="stopPlugin('${plugin.Spec.id}', this);" class="ui basic button pluginEnableButton" pluginid="${plugin.Spec.id}" ${plugin.Enabled ? '' : 'style="display:none;"'}>
-              <i class="red stop circle icon"></i> Stop
+              <i class="stop circle icon"></i> Stop
             </button>
             <button onclick="startPlugin('${plugin.Spec.id}', this);" class="ui basic button pluginDisableButton" pluginid="${plugin.Spec.id}" ${plugin.Enabled ? 'style="display:none;"' : ''}>
-              <i class="green play circle icon"></i> Start
+              <i class="play circle icon"></i> Start
             </button>
             ${plugin.SupportHotRebuild ? `<button onclick="rebuildPlugin('${plugin.Spec.id}', this);" class="ui basic button pluginRebuildButton" pluginid="${plugin.Spec.id}">
               <i class="wrench icon"></i> Rebuild
@@ -632,7 +620,7 @@ function initiatePluginList(){
     if (data.length == 0){
       $("#pluginTable").append(`
         <tr>
-          <td colspan="4" style="text-align: center;"><i class="ui grey info circle icon"></i> No plugins installed</td>
+          <td class="zx-empty-cell" colspan="4"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">${t("No plugins installed. Browse the App Store to add one.")}</p></div></td>
         </tr>
       `);
     }
@@ -869,7 +857,7 @@ function uninstallPlugin(pluginId, pluginName, btn=undefined) {
   initDeveloperSettings();
   // Scope to this page's accordion only; .advanceSettings is reused by
   // other webmin components loaded dynamically via ajax.
-  $("#pluginDeveloperSettings").accordion();
+
 </script>
 
 

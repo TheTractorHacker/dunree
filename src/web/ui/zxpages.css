@@ -58,3 +58,287 @@
 .zx-steps .zx-steps__text { flex: 1 1 14em; min-width: 0; }
 
 .zx-callout[hidden], .zx-card[hidden], .zx-empty[hidden], .zx-related[hidden], .zx-statrow[hidden] { display: none !important; }
+
+/* =====================================================================================================
+   Foundation pass: one look for the legacy (Fomantic) controls and the page frame.
+   Everything below restyles the classes the unmigrated pages ALREADY use, inside .contentWindow only (the top bar,
+   the menu and the dialogs are untouched), with kit tokens only, so both themes follow. Pages that use the zx-*
+   components are not affected (":not(.zx-btn)" etc.).  Opt-out: put "zx-legacy-off" on any ancestor.
+   The specificity is deliberately high (the dark theme rules in darktheme.css are "!important" and specific).
+   ===================================================================================================== */
+
+/* ---- page frame: one surface. The panel behind the pages has no fill of its own, so zx cards and tables are the only boxes (no box in a box) */
+.contentWindow { background-color: transparent; border-radius: 0; }
+.standardContainer { padding-bottom: var(--zx-space-6); }
+body.darkTheme .contentWindow { background-color: transparent; }
+
+/* ---- "Related" row: quiet, one line, links like links. The explanation of each link is its tooltip (set by zxpage.js) and stays readable for screen readers */
+.zx-related { background: transparent; border: 0; border-radius: 0; padding: 0; margin: var(--zx-space-3) 0 var(--zx-space-4); font-size: var(--zx-fs-sm); display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--zx-space-2); }
+.zx-related__title { display: inline; margin: 0; font-weight: 400; }
+.zx-related__title::after { content: ":"; }
+.zx-related ul { display: inline-flex; flex: 1 1 auto; min-width: 0; gap: 0 var(--zx-space-4); }
+.zx-related a { font-weight: 500; text-decoration: none; }
+.zx-related a:hover { text-decoration: underline; }
+.zx-related li span {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---- breadcrumbs, titles: the same y on every page ---- */
+.zx-crumbstrip { padding-top: 2em; }
+.zx-crumbstrip:not([hidden]) ~ .functiontab > .standardContainer { padding-top: var(--zx-space-2); }
+.zx-crumbstrip:not([hidden]) ~ .functiontab > .standardContainer > .ui.basic.segment:first-child { padding-top: 0; margin-top: 0; }
+@media (max-width: 748px) {
+    .zx-crumbstrip { padding-top: 0.6em; }
+    .zx-crumbstrip:not([hidden]) ~ .functiontab > .standardContainer { padding-top: 0.3em; }
+}
+/* the segment that holds a legacy page title + subtitle has no padding or margin of its own (the container provides the page gutter) */
+.functiontab > .standardContainer > .ui.basic.segment:first-child { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
+/* legacy page title (the first h2 of a page that has no .zx-page-header) = the kit page title */
+.functiontab > .standardContainer > .ui.basic.segment:first-child > h2:first-child,
+.functiontab > .standardContainer > h2.ui.header:first-child,
+.functiontab > .standardContainer > h2:first-child:not(.zx-page-header__title) {
+    margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-2xl); line-height: 1.2; font-weight: 700; color: var(--zx-text);
+}
+.functiontab > .standardContainer > .ui.basic.segment:first-child > h2:first-child + p,
+.functiontab > .standardContainer > h2:first-child + p {
+    margin: var(--zx-space-1) 0 var(--zx-space-4); color: var(--zx-text-muted); font-size: var(--zx-fs-md); max-width: 60rem;
+}
+
+/* ---- section headings: h3 = section (20px), h4 = sub-section (16px); one scale for every legacy page ---- */
+.functiontab :is(h3, h4):not(.zx-card__title):not(.zx-empty__title):not(.zx-dialog__title):not(.zx-section__title):not(.ui.modal *):not(.ui.message *):not(.ui.card *):not(.ui.accordion *):not(.sub):not(.zx-legacy-off *) {
+    font-weight: 700; line-height: 1.3; color: var(--zx-text); margin: var(--zx-space-4) 0 var(--zx-space-2);
+}
+.functiontab h3:not(:first-child):not(.zx-card__title):not(.zx-empty__title):not(.zx-dialog__title):not(.zx-section__title):not(.ui.modal *):not(.ui.message *):not(.ui.card *):not(.ui.accordion *):not(.sub):not(.zx-legacy-off *) { margin-top: var(--zx-space-5); }
+.functiontab :is(h3, h4):first-child:not(.zx-card__title):not(.ui.modal *):not(.ui.message *):not(.ui.card *):not(.ui.accordion *):not(.sub) { margin-top: 0; }
+.functiontab h3:not(.zx-card__title):not(.zx-empty__title):not(.zx-dialog__title):not(.zx-section__title):not(.ui.modal *):not(.ui.message *):not(.ui.card *):not(.ui.accordion *):not(.sub):not(.zx-legacy-off *) { font-size: var(--zx-fs-xl); }
+.functiontab h4:not(.zx-card__title):not(.zx-empty__title):not(.zx-dialog__title):not(.zx-section__title):not(.ui.modal *):not(.ui.message *):not(.ui.card *):not(.ui.accordion *):not(.sub):not(.zx-legacy-off *) { font-size: var(--zx-fs-lg); }
+.nettoolstab h2 { font-size: var(--zx-fs-xl); font-weight: 700; }
+/* a horizontal rule between sections of a legacy page: one colour, one rhythm */
+.contentWindow .ui.divider:not(.vertical):not(.horizontal):not(.hidden) { border-top: 1px solid var(--zx-border); border-bottom: 0; margin: var(--zx-space-5) 0; }
+
+/* ---- tab strips (Fomantic "ui tabular menu" = .zx-tabs look); also the sibling page tabs ---- */
+.zx-pagetabs a { color: var(--zx-text-muted); }
+.zx-pagetabs a:hover { color: var(--zx-text); }
+.zx-pagetabs { scrollbar-width: thin; }
+html body .contentWindow .ui.tabular.menu:not(.zx-legacy-off *) {
+    display: flex; flex-wrap: nowrap; gap: var(--zx-space-1); min-height: 0; margin: 0 0 var(--zx-space-4) !important; padding: 0;
+    background: transparent !important; box-shadow: none !important; border: 0 !important; border-bottom: 1px solid var(--zx-border) !important; border-radius: 0 !important;
+    overflow-x: auto; overflow-y: hidden; max-width: 100%; scrollbar-width: thin;
+}
+html body .contentWindow .ui.tabular.menu > .item {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.1em; margin: 0 0 -1px !important; padding: 9px 14px !important; min-height: 40px; white-space: nowrap;
+    font-weight: 600; font-size: var(--zx-fs-md); color: var(--zx-text-muted) !important; background: transparent !important;
+    border: 0 !important; border-bottom: 3px solid transparent !important; border-radius: 0 !important; box-shadow: none !important; cursor: pointer;
+}
+html body .contentWindow .ui.tabular.menu > .item:hover { color: var(--zx-text) !important; background: transparent !important; }
+html body .contentWindow .ui.tabular.menu > .item.active,
+html body .contentWindow .ui.tabular.menu > .item.active:hover {
+    color: var(--zx-primary-soft-text) !important; border-bottom-color: var(--zx-primary) !important; font-weight: 600; background: transparent !important;
+}
+html body .contentWindow .ui.tabular.menu > .item:focus-visible { outline: none !important; box-shadow: inset 0 0 0 2px var(--zx-focus) !important; border-radius: var(--zx-radius-sm) !important; }
+/* tab icons: one weight, one colour (the text colour), whatever colour class the markup carries */
+html body .contentWindow .ui.tabular.menu > .item > i.icon { color: currentColor !important; opacity: 0.85; margin: 0 0.5em 0 0 !important; }
+html body .contentWindow .ui.tabular.menu > .item .ui.label { margin-left: 0.5em; }
+/* the soft edge of the old scroll cue is replaced by the mask cue of uxkit.js (fade on the side that has more) */
+html body .contentWindow .ui.tabular.menu.zx-tabscroll, html body .contentWindow #secTabs.ui.tabular.menu { background: transparent !important; }
+.zx-tabs.zx-scroll-end:not(.zx-scroll-start), .ui.tabular.menu.zx-scroll-end:not(.zx-scroll-start) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent); }
+.zx-tabs.zx-scroll-start:not(.zx-scroll-end), .ui.tabular.menu.zx-scroll-start:not(.zx-scroll-end) { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 2rem), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 2rem), transparent); }
+/* the panels under a tab strip are plain content: no border, no box, no inset (they line up with the title) */
+html body .contentWindow .ui.tabular.menu ~ .ui.bottom.attached.segment,
+html body .contentWindow .ui.bottom.attached.tab.segment {
+    width: 100% !important; max-width: 100% !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; padding: var(--zx-space-1) 0 0 !important;
+}
+@media (max-width: 748px), (pointer: coarse) { html body .contentWindow .ui.tabular.menu > .item { min-height: var(--zx-touch); } }
+
+/* ---- buttons: every Fomantic .ui.button looks like a kit button ----
+   filled blue / green / teal / primary = primary, filled red = danger, filled orange / yellow = warning, everything else (default, basic, grey) = secondary,
+   basic red = danger outline.  Icons take the text colour.  Not touched: .zx-btn, .inverted, button groups (.ui.buttons), .dropdown buttons. */
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.zx-legacy-off *) {
+    --_bg: var(--zx-surface); --_fg: var(--zx-text); --_bd: var(--zx-border-strong); --_hv: var(--zx-surface-2);
+    background: var(--_bg) !important; color: var(--_fg) !important; border: 1px solid var(--_bd) !important; box-shadow: none !important;
+    font-family: inherit; font-weight: 600; text-shadow: none; transition: background 0.12s, border-color 0.12s; margin: 0 var(--zx-space-2) var(--zx-space-2) 0;
+}
+html body .contentWindow :is(td, th, .ui.input, .ui.action.input, .ui.buttons, .ui.labeled.input, .zx-row-actions, .zx-page-header__actions, .zx-card__foot, .zx-card__head) > .ui.button.button.button:not(.zx-btn) { margin: 0 var(--zx-space-1) 0 0; }
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):hover,
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):focus { background: var(--_hv) !important; color: var(--_fg) !important; border-color: var(--_bd) !important; }
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):focus-visible { outline: none !important; box-shadow: var(--zx-focus-ring) !important; }
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):active { background: var(--zx-surface-3) !important; }
+/* geometry of text buttons (icon-only, labeled, circular, fluid and dropdown buttons keep Fomantic's own geometry) */
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.icon):not(.labeled):not(.circular):not(.dropdown):not(.fluid):not(.basic.mini.circular) {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; min-height: var(--zx-control-h); padding: 0 var(--zx-space-4); line-height: 1.2; border-radius: var(--zx-radius-md); white-space: nowrap; vertical-align: middle;
+}
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.circular) { border-radius: var(--zx-radius-md); }
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.icon):not(.labeled):not(.circular):not(.dropdown):not(.fluid).mini,
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.icon):not(.labeled):not(.circular):not(.dropdown):not(.fluid).tiny { min-height: 28px; padding: 0 var(--zx-space-3); font-size: var(--zx-fs-sm); }
+html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.icon):not(.labeled):not(.circular):not(.dropdown):not(.fluid).small { min-height: 32px; padding: 0 var(--zx-space-3); font-size: var(--zx-fs-sm); }
+html body .contentWindow .ui.button:not(.zx-btn):not(.inverted) > i.icon,
+html body .contentWindow .ui.button:not(.zx-btn):not(.inverted) > .icon { color: currentColor !important; opacity: 1; margin: 0 !important; }
+html body .contentWindow .ui.labeled.icon.button:not(.zx-btn) > .icon { margin: 0 !important; background: transparent; }
+/* variants: filled colour = which kit button */
+html body .contentWindow .ui.button.button.button:is(.blue, .primary, .green, .teal, .violet, .purple, .olive, .pink, .brown, .positive):not(.basic):not(.zx-btn):not(.inverted) { --_bg: var(--zx-primary); --_fg: var(--zx-on-primary); --_bd: var(--zx-primary); --_hv: var(--zx-primary-hover); }
+html body .contentWindow .ui.button.button.button:is(.red, .negative):not(.basic):not(.zx-btn):not(.inverted) { --_bg: var(--zx-danger-solid); --_fg: var(--zx-on-solid); --_bd: var(--zx-danger-solid); --_hv: var(--zx-danger-solid); }
+html body .contentWindow .ui.button.button.button:is(.red, .negative):not(.basic):not(.zx-btn):not(.inverted):hover { filter: brightness(0.92); }
+html body .contentWindow .ui.button.button.button:is(.orange, .yellow):not(.basic):not(.zx-btn):not(.inverted) { --_bg: var(--zx-warn-solid); --_fg: var(--zx-on-solid); --_bd: var(--zx-warn-solid); --_hv: var(--zx-warn-solid); }
+html body .contentWindow .ui.button.button.button:is(.orange, .yellow):not(.basic):not(.zx-btn):not(.inverted):hover { filter: brightness(0.92); }
+html body .contentWindow .ui.basic.button.button.button.red:not(.zx-btn):not(.inverted), html body .contentWindow .ui.basic.button.button.button.negative:not(.zx-btn):not(.inverted) { --_bg: var(--zx-surface); --_fg: var(--zx-danger-text); --_bd: var(--zx-danger-line); --_hv: var(--zx-danger-bg); }
+html body .contentWindow .ui.button.button.button.disabled:not(.zx-btn), html body .contentWindow .ui.button.button.button:disabled:not(.zx-btn) { opacity: 0.55; pointer-events: none; }
+/* loading spinner colour follows the text */
+html body .contentWindow .ui.loading.button:not(.zx-btn)::after { border-color: var(--zx-text-muted) transparent transparent; }
+@media (max-width: 748px), (pointer: coarse) {
+    html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.icon):not(.labeled):not(.circular):not(.dropdown):not(.fluid) { min-height: var(--zx-touch); }
+    html body .contentWindow .ui.button.button.button:not(.zx-btn):not(.inverted):not(.icon):not(.labeled):not(.circular):not(.dropdown):not(.fluid):is(.mini, .tiny, .small) { min-height: 36px; }
+    html body .contentWindow .ui.icon.button:not(.zx-btn):not(.circular) { min-width: 36px; min-height: 36px; }
+}
+
+/* ---- form controls: inputs, textareas, selects, dropdowns ---- */
+html body .contentWindow :is(.ui.form, .ui.input) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]):not(.zx-legacy-off *),
+html body .contentWindow .ui.form textarea, html body .contentWindow .ui.form select {
+    background-color: var(--zx-surface) !important; color: var(--zx-text) !important; border: 1px solid var(--zx-border-strong) !important; border-radius: var(--zx-radius-md); box-shadow: none; font-family: inherit;
+}
+html body .contentWindow .ui.form input::placeholder, html body .contentWindow .ui.input input::placeholder, html body .contentWindow .ui.form textarea::placeholder { color: var(--zx-text-faint) !important; opacity: 1; }
+html body .contentWindow :is(.ui.form, .ui.input) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):focus,
+html body .contentWindow .ui.form textarea:focus, html body .contentWindow .ui.form select:focus { border-color: var(--zx-focus) !important; box-shadow: var(--zx-focus-ring) !important; outline: none; }
+html body .contentWindow .ui.form .field.error input, html body .contentWindow .ui.form .field.error textarea, html body .contentWindow .ui.form .field.error select { border-color: var(--zx-danger-solid) !important; background: var(--zx-danger-bg) !important; }
+html body .contentWindow .ui.form input:disabled, html body .contentWindow .ui.disabled.input input, html body .contentWindow .ui.form .disabled.field input { background: var(--zx-surface-2) !important; color: var(--zx-text-faint) !important; opacity: 1; }
+html body .contentWindow .ui.form .field > label, html body .contentWindow .ui.form .grouped.fields > label { color: var(--zx-text); font-weight: 600; font-size: var(--zx-fs-md); }
+/* native selects: the kit chevron */
+html body .contentWindow select:not([multiple]):not([size]):not(.zx-select):not(.i18n-picker):not(.zx-legacy-off *) {
+    appearance: none; -webkit-appearance: none; padding: 6px 32px 6px 10px; min-height: var(--zx-control-h); font: inherit; color: var(--zx-text); cursor: pointer;
+    background-color: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md);
+    background-image: linear-gradient(45deg, transparent 50%, var(--zx-text-muted) 50%), linear-gradient(135deg, var(--zx-text-muted) 50%, transparent 50%);
+    background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
+html body .contentWindow select:not([multiple]):not([size]):not(.zx-select):not(.i18n-picker):focus { border-color: var(--zx-focus); box-shadow: var(--zx-focus-ring); outline: none; }
+html body .contentWindow select:disabled { background-color: var(--zx-surface-2); color: var(--zx-text-faint); cursor: not-allowed; }
+html body .contentWindow table select:not(.zx-select) { min-height: 30px; padding-top: 3px; padding-bottom: 3px; }
+/* Fomantic dropdowns */
+html body .contentWindow .ui.selection.dropdown, html body .contentWindow .ui.search.selection.dropdown > input.search {
+    background: var(--zx-surface) !important; color: var(--zx-text) !important; border: 1px solid var(--zx-border-strong) !important; border-radius: var(--zx-radius-md) !important; box-shadow: none !important; min-height: var(--zx-control-h);
+}
+html body .contentWindow .ui.selection.dropdown > .text, html body .contentWindow .ui.selection.dropdown > .dropdown.icon { color: var(--zx-text) !important; }
+html body .contentWindow .ui.selection.dropdown > .default.text { color: var(--zx-text-faint) !important; }
+html body .contentWindow .ui.selection.dropdown:hover { border-color: var(--zx-text-muted) !important; }
+html body .contentWindow .ui.selection.dropdown:focus, html body .contentWindow .ui.selection.active.dropdown, html body .contentWindow .ui.selection.dropdown.visible { border-color: var(--zx-focus) !important; }
+html body .contentWindow .ui.selection.dropdown .menu { background: var(--zx-surface) !important; border: 1px solid var(--zx-border-strong) !important; border-radius: var(--zx-radius-md) !important; box-shadow: var(--zx-shadow-2) !important; margin-top: 2px; }
+html body .contentWindow .ui.selection.dropdown .menu > .item { color: var(--zx-text) !important; border-top: 1px solid var(--zx-border) !important; }
+html body .contentWindow .ui.selection.dropdown .menu > .item:first-child { border-top: 0 !important; }
+html body .contentWindow .ui.selection.dropdown .menu > .item:hover, html body .contentWindow .ui.selection.dropdown .menu > .item.selected { background: var(--zx-surface-2) !important; }
+html body .contentWindow .ui.selection.dropdown .menu > .item.active { background: var(--zx-primary-soft) !important; color: var(--zx-primary-soft-text) !important; font-weight: 600; }
+@media (max-width: 748px), (pointer: coarse) {
+    html body .contentWindow :is(.ui.form, .ui.input) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+    html body .contentWindow select:not([multiple]):not([size]):not(.zx-select):not(table select), html body .contentWindow .ui.selection.dropdown { min-height: var(--zx-touch); }
+}
+
+/* ---- checkboxes and radios: token coloured, the label never changes colour when the box is checked ---- */
+html body .contentWindow .ui.checkbox:not(.toggle):not(.slider) input[type="checkbox"], html body .contentWindow .ui.radio.checkbox input[type="radio"] { opacity: 0 !important; }
+html body .contentWindow .ui.checkbox label, html body .contentWindow .ui.checkbox + label,
+html body .contentWindow .ui.checkbox input:checked ~ label, html body .contentWindow .ui.checkbox input:focus ~ label, html body .contentWindow .ui.checkbox input:active ~ label,
+html body .contentWindow .ui.checkbox.checked label, html body .contentWindow .ui.checkbox label:hover, html body .contentWindow .ui.checkbox:not(.toggle) input:checked:focus ~ label { color: var(--zx-text) !important; }
+html body .contentWindow .ui.checkbox:not(.toggle):not(.slider) label::before {
+    background: var(--zx-surface) !important; border: 1px solid var(--zx-border-strong) !important; border-radius: var(--zx-radius-sm); box-shadow: none;
+}
+html body .contentWindow .ui.checkbox:not(.toggle):not(.slider) label:hover::before { border-color: var(--zx-text) !important; }
+html body .contentWindow .ui.checkbox:not(.toggle):not(.slider) input:checked ~ label::before, html body .contentWindow .ui.checkbox:not(.toggle):not(.slider) input:checked:focus ~ label::before {
+    background: var(--zx-primary) !important; border-color: var(--zx-primary) !important;
+}
+html body .contentWindow .ui.checkbox:not(.toggle):not(.slider):not(.radio) input:checked ~ label::after, html body .contentWindow .ui.checkbox:not(.toggle):not(.slider):not(.radio) input:checked:focus ~ label::after { color: var(--zx-on-primary) !important; }
+html body .contentWindow .ui.radio.checkbox label::before { border-radius: 50% !important; }
+html body .contentWindow .ui.radio.checkbox:not(.toggle):not(.slider) input:checked ~ label::before, html body .contentWindow .ui.radio.checkbox:not(.toggle):not(.slider) input:checked:focus ~ label::before { background: var(--zx-surface) !important; border-color: var(--zx-primary) !important; }
+html body .contentWindow .ui.radio.checkbox input:checked ~ label::after, html body .contentWindow .ui.radio.checkbox input:checked:focus ~ label::after { background-color: var(--zx-primary) !important; color: var(--zx-primary) !important; }
+html body .contentWindow .ui.checkbox input:focus-visible ~ label::before { box-shadow: var(--zx-focus-ring) !important; }
+html body .contentWindow .ui.checkbox.disabled, html body .contentWindow .ui.disabled.checkbox { opacity: 0.6; }
+/* raw checkboxes / radios (tables, plain forms): same box, readable in both themes */
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *),
+html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):not(.zx-legacy-off *) {
+    appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 18px; height: 18px; margin: 0 0.4em 0 0; vertical-align: middle; cursor: pointer;
+    background: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-sm); position: relative;
+}
+html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden) { border-radius: 50%; }
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):checked { background: var(--zx-primary); border-color: var(--zx-primary); }
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):checked::after {
+    content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid var(--zx-on-primary); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):checked { border-color: var(--zx-primary); background: radial-gradient(circle, var(--zx-primary) 0 4px, transparent 5px), var(--zx-surface); }
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):focus-visible, html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):disabled, html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 748px), (pointer: coarse) {
+    html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(table *), html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):not(table *) { width: 22px; height: 22px; }
+    html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(table *):checked::after { left: 7px; top: 2px; width: 6px; height: 12px; }
+}
+
+/* ---- messages = callouts ---- */
+html body .contentWindow .ui.message:not(.zx-legacy-off *) {
+    --_bg: var(--zx-neutral-bg); --_fg: var(--zx-neutral-text); --_ln: var(--zx-neutral-line);
+    background: var(--_bg) !important; color: var(--_fg) !important; border: 1px solid var(--_ln) !important; border-left-width: 4px !important; border-radius: var(--zx-radius-md) !important; box-shadow: none !important;
+    padding: var(--zx-space-3) var(--zx-space-4); line-height: var(--zx-lh);
+}
+html body .contentWindow .ui.message:is(.info, .blue, .teal, .violet, .purple) { --_bg: var(--zx-info-bg); --_fg: var(--zx-info-text); --_ln: var(--zx-info-line); }
+html body .contentWindow .ui.message:is(.warning, .orange, .yellow) { --_bg: var(--zx-warn-bg); --_fg: var(--zx-warn-text); --_ln: var(--zx-warn-line); }
+html body .contentWindow .ui.message:is(.negative, .error, .red) { --_bg: var(--zx-danger-bg); --_fg: var(--zx-danger-text); --_ln: var(--zx-danger-line); }
+html body .contentWindow .ui.message:is(.positive, .success, .green) { --_bg: var(--zx-ok-bg); --_fg: var(--zx-ok-text); --_ln: var(--zx-ok-line); }
+html body .contentWindow .ui.message .header, html body .contentWindow .ui.message p, html body .contentWindow .ui.message li, html body .contentWindow .ui.message > i.icon { color: inherit !important; }
+html body .contentWindow .ui.message a { color: inherit; text-decoration: underline; }
+html body .contentWindow .ui.message > .close.icon { color: inherit; }
+
+/* ---- labels = badges (colour only; shape of the legacy label is kept) ---- */
+html body .contentWindow .ui.label:not(.zx-badge):not(.button *):not(.ribbon):not(.zx-legacy-off *) {
+    --_bg: var(--zx-neutral-bg); --_fg: var(--zx-neutral-text); --_ln: var(--zx-neutral-line);
+    background: var(--_bg) !important; color: var(--_fg) !important; border: 1px solid var(--_ln) !important; box-shadow: none;
+}
+html body .contentWindow .ui.label:is(.green, .teal, .olive):not(.button *) { --_bg: var(--zx-ok-bg); --_fg: var(--zx-ok-text); --_ln: var(--zx-ok-line); }
+html body .contentWindow .ui.label:is(.red):not(.button *) { --_bg: var(--zx-danger-bg); --_fg: var(--zx-danger-text); --_ln: var(--zx-danger-line); }
+html body .contentWindow .ui.label:is(.orange, .yellow):not(.button *) { --_bg: var(--zx-warn-bg); --_fg: var(--zx-warn-text); --_ln: var(--zx-warn-line); }
+html body .contentWindow .ui.label:is(.blue, .violet, .purple, .primary):not(.button *) { --_bg: var(--zx-info-bg); --_fg: var(--zx-info-text); --_ln: var(--zx-info-line); }
+html body .contentWindow .ui.label .detail, html body .contentWindow .ui.label > i.icon { color: inherit !important; }
+
+/* ---- tables: the legacy ".ui.table" = the kit data table ---- */
+html body .contentWindow table.ui.table:not(.zx-table):not(.zx-legacy-off *) {
+    background: var(--zx-surface) !important; color: var(--zx-text) !important; border: 1px solid var(--zx-border) !important; border-radius: var(--zx-radius-md); border-collapse: separate; border-spacing: 0; box-shadow: none;
+}
+html body .contentWindow table.ui.table:not(.zx-table) thead th {
+    background: var(--zx-surface-2) !important; color: var(--zx-text-muted) !important; font-size: var(--zx-fs-xs); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+    padding: 10px 14px; border-bottom: 1px solid var(--zx-border) !important; border-left-color: var(--zx-border) !important;
+}
+html body .contentWindow table.ui.table:not(.zx-table) thead th:first-child { border-top-left-radius: calc(var(--zx-radius-md) - 1px); }
+html body .contentWindow table.ui.table:not(.zx-table) thead th:last-child { border-top-right-radius: calc(var(--zx-radius-md) - 1px); }
+html body .contentWindow table.ui.table:not(.zx-table) tbody td, html body .contentWindow table.ui.table:not(.zx-table) tfoot td {
+    color: var(--zx-text) !important; padding: 10px 14px; border-top: 1px solid var(--zx-border) !important; border-left-color: var(--zx-border) !important; vertical-align: middle;
+}
+html body .contentWindow table.ui.table:not(.zx-table) tbody tr:first-child td { border-top: 0 !important; }
+html body .contentWindow table.ui.table:not(.zx-table) tfoot th, html body .contentWindow table.ui.table:not(.zx-table) tfoot td { background: var(--zx-surface-2) !important; }
+html body .contentWindow table.ui.table:not(.zx-table) tbody tr:hover td { background: var(--zx-surface-2); }
+html body .contentWindow table.ui.table.compact:not(.zx-table) :is(th, td) { padding: 6px 10px; }
+html body .contentWindow table.ui.basic.table:not(.zx-table), html body .contentWindow table.ui.very.basic.table:not(.zx-table) { border: 0 !important; background: transparent !important; }
+html body .contentWindow table.ui.table:not(.zx-table) tr.negative td, html body .contentWindow table.ui.table:not(.zx-table) td.negative { background: var(--zx-danger-bg) !important; color: var(--zx-danger-text) !important; }
+html body .contentWindow table.ui.table:not(.zx-table) tr.warning td, html body .contentWindow table.ui.table:not(.zx-table) td.warning { background: var(--zx-warn-bg) !important; color: var(--zx-warn-text) !important; }
+html body .contentWindow table.ui.table:not(.zx-table) tr.positive td, html body .contentWindow table.ui.table:not(.zx-table) td.positive { background: var(--zx-ok-bg) !important; color: var(--zx-ok-text) !important; }
+
+/* ---- accordions: "Advanced settings" / "How to" = the kit disclosure (no fill, hairline above, 36px title) ---- */
+html body .contentWindow .basic.segment.advanceoptions, html body .contentWindow .ui.segment.advanceoptions {
+    background: transparent !important; border: 0 !important; border-top: 1px solid var(--zx-border) !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; margin: var(--zx-space-4) 0;
+}
+html body .contentWindow .ui.accordion:not(.styled) > .title:not(.ui) {
+    display: flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h); padding: 6px 0 !important; font-size: var(--zx-fs-md); font-weight: 600; color: var(--zx-text) !important; background: transparent !important; border: 0 !important;
+}
+html body .contentWindow .ui.accordion:not(.styled) > .title:not(.ui):hover { color: var(--zx-primary-soft-text) !important; }
+html body .contentWindow .ui.accordion:not(.styled) > .title:not(.ui) > i.dropdown.icon { margin: 0 !important; color: var(--zx-text-muted); font-size: 1em; width: auto; }
+html body .contentWindow .ui.accordion:not(.styled) > .content:not(.ui) { padding: var(--zx-space-1) 0 var(--zx-space-4) !important; color: var(--zx-text); }
+
+/* ---- sidebar: the "No Plugins Installed" entry is muted text (no opacity), a stable placeholder ---- */
+#pluginMenu > a.item[style*="opacity"] { opacity: 1 !important; color: var(--zx-text-muted) !important; }
+#pluginMenu > a.item[style*="opacity"] > i.icon { color: var(--zx-text-muted) !important; opacity: 0.8; }
+
+/* ---- footer ---- */
+.ui.container.zx-footer-text { padding-bottom: var(--zx-space-5); }
+
+/* ---- final consistency pass ---- */
+/* inputs in a Fomantic form share the kit control height */
+html body .contentWindow .ui.form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.search):not(.zx-legacy-off *) { min-height: var(--zx-control-h); box-sizing: border-box; padding-top: 0; padding-bottom: 0; }
+html body .contentWindow .ui.action.input > .ui.button { margin: 0 !important; }
+/* search input inside a multiple search dropdown: no box of its own */
+html body .contentWindow .ui.multiple.search.selection.dropdown > input.search { border: 0 !important; background: transparent !important; min-height: 0 !important; padding: 0 !important; box-shadow: none !important; }
+/* the legacy page-switch strips look like the kit tabs */
+.zx-pagetabs a { font-weight: 600; }
+html body .contentWindow .zx-pagetabs a:not([aria-current="page"]) { color: var(--zx-text-muted) !important; }
+html body .contentWindow .zx-pagetabs a:not([aria-current="page"]):hover { color: var(--zx-text) !important; }
+html body .contentWindow .zx-pagetabs a[aria-current="page"] { color: var(--zx-primary-soft-text) !important; }

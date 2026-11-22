@@ -392,6 +392,19 @@
         }, true);
         window.addEventListener("resize", later);
         new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
+        // the chosen tab is brought fully into view (a tab that was half cut off by the edge is no longer a trap on phones)
+        document.addEventListener("click", function (e) {
+            var tab = e.target.closest && e.target.closest(".ui.tabular.menu > .item, .zx-tabs > .zx-tab");
+            if (!tab) { return; }
+            var strip = tab.parentNode;
+            setTimeout(function () {
+                if (strip.scrollWidth <= strip.clientWidth + 2) { return; }
+                var tr = tab.getBoundingClientRect(), sr = strip.getBoundingClientRect(), left = tr.left - sr.left + strip.scrollLeft, right = left + tr.width, pad = 40;
+                if (left - pad < strip.scrollLeft) { strip.scrollLeft = Math.max(0, left - pad); }
+                else if (right + pad > strip.scrollLeft + strip.clientWidth) { strip.scrollLeft = right + pad - strip.clientWidth; }
+                updateScrollCue(strip);
+            }, 30);
+        });
         scan();
     }
 

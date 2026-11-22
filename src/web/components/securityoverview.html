@@ -1,143 +1,154 @@
 <style>
-    /* Security overview. Self-contained: every rule is scoped to #secOvPage / #secOvDlg so the page can be restyled later. */
-    #secOvPage { --ok: #21ba45; --warn: #f2711c; --bad: #db2828; --unk: #8a8f98; --line: rgba(128,128,128,.35); --soft: rgba(128,128,128,.07); }
-    #secOvPage .soMuted { opacity: .75; font-size: .92em; }
-    #secOvPage .soHero { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .8em 1.5em; }
-    #secOvPage .soHero h2 { margin: 0 0 .35em; }
-    #secOvPage .soLead { max-width: 60em; margin: 0; opacity: .85; line-height: 1.55; }
-    #secOvPage .soBar { display: flex; flex-wrap: wrap; align-items: center; gap: .5em .9em; }
-    #secOvPage .soScore { display: grid; grid-template-columns: auto 1fr; gap: 1.2em 1.8em; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 1.1em 1.3em; background: var(--soft); }
-    #secOvPage .soRing { position: relative; width: 150px; height: 150px; flex: 0 0 auto; }
+    /* Security overview. Scoped to #secOvPage / #secOvDlg; colours come from the kit tokens only. */
+    #secOvPage .soMuted { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #secOvPage .soScore { display: grid; grid-template-columns: auto 1fr; gap: var(--zx-space-4) var(--zx-space-5); align-items: center; background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
+    #secOvPage .soRing { position: relative; width: 140px; height: 140px; flex: 0 0 auto; }
     #secOvPage .soRing svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-    #secOvPage .soRing .track { fill: none; stroke: rgba(128,128,128,.25); stroke-width: 12; }
+    #secOvPage .soRing .track { fill: none; stroke: var(--zx-surface-3); stroke-width: 12; }
     #secOvPage .soRing .arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray .5s; }
     #secOvPage .soRing .num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
-    #secOvPage .soRing .num b { font-size: 2.6em; font-weight: 700; }
-    #secOvPage .soRing .num span { font-size: .85em; opacity: .75; margin-top: .15em; }
-    #secOvPage .soScoreSide h3 { margin: 0 0 .15em; font-size: 1.5em; }
-    #secOvPage .soTiles { display: flex; flex-wrap: wrap; gap: .5em; margin: .8em 0 .2em; }
-    #secOvPage .soTile { border: 1px solid var(--line); border-left-width: 4px; border-radius: 6px; padding: .3em .8em; min-width: 5.5em; background: rgba(128,128,128,.05); }
-    #secOvPage .soTile b { display: block; font-size: 1.35em; line-height: 1.2; }
-    #secOvPage .soTile small { opacity: .75; text-transform: uppercase; letter-spacing: .04em; font-size: .72em; }
-    #secOvPage .soTile.t-ok { border-left-color: var(--ok); } #secOvPage .soTile.t-warn { border-left-color: var(--warn); }
-    #secOvPage .soTile.t-fail { border-left-color: var(--bad); } #secOvPage .soTile.t-unknown { border-left-color: var(--unk); }
-    #secOvPage .soTile.t-na { border-left-color: rgba(128,128,128,.4); }
-    #secOvPage .soNote { border-left: 4px solid #2185d0; background: rgba(33,133,208,.1); padding: .55em .9em; border-radius: 0 4px 4px 0; margin: .7em 0 0; }
-    #secOvPage .soNote.warn { border-left-color: var(--warn); background: rgba(242,113,28,.1); }
-    #secOvPage details.soWhy { margin-top: .8em; }
+    #secOvPage .soRing .num b { font-size: var(--zx-fs-2xl); font-weight: 700; }
+    #secOvPage .soRing .num span { font-size: var(--zx-fs-xs); color: var(--zx-text-muted); margin-top: 2px; }
+    #secOvPage .soScoreSide h3 { margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-xl); }
+    #secOvPage .soTiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: var(--zx-space-2); margin: var(--zx-space-3) 0 var(--zx-space-2); }
+    #secOvPage .soTile { background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-2) var(--zx-space-3); }
+    #secOvPage .soTile b { display: block; font-size: var(--zx-fs-xl); line-height: 1.2; font-variant-numeric: tabular-nums; }
+    #secOvPage .soTile small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); }
+    #secOvPage .soTile.t-ok b { color: var(--zx-ok-text); } #secOvPage .soTile.t-warn b { color: var(--zx-warn-text); } #secOvPage .soTile.t-fail b { color: var(--zx-danger-text); }
+    #secOvPage .soNote { background: var(--zx-info-bg); color: var(--zx-info-text); border: 1px solid var(--zx-info-line); padding: var(--zx-space-3); border-radius: var(--zx-radius-md); margin: var(--zx-space-3) 0 0; }
+    #secOvPage .soNote.warn { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #secOvPage #soBanner .soNote { margin: 0 0 var(--zx-space-4); }
+    #secOvPage details.soWhy { margin-top: var(--zx-space-3); }
     #secOvPage details.soWhy summary { cursor: pointer; font-weight: 600; }
-    #secOvPage .soLoss { display: grid; grid-template-columns: 1fr auto; gap: .15em 1em; margin: .5em 0; font-size: .95em; }
+    #secOvPage .soLoss { display: grid; grid-template-columns: 1fr auto; gap: var(--zx-space-1) var(--zx-space-4); margin: var(--zx-space-2) 0; font-size: var(--zx-fs-sm); }
     #secOvPage .soLoss span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
-    #secOvPage .soFormula { opacity: .8; font-size: .92em; line-height: 1.5; margin: .4em 0 0; }
-    #secOvPage .soRec { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .7em 1.5em; border: 1px solid var(--line); border-radius: 10px; padding: .9em 1.2em; margin: 1em 0; }
+    #secOvPage .soFormula { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: var(--zx-space-2) 0 0; }
+    #secOvPage .soRec { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
     #secOvPage .soRec .txt { flex: 1 1 26em; min-width: 0; }
-    #secOvPage .soRec .txt p { margin: .2em 0 0; opacity: .85; }
-    #secOvPage h3.soH { margin: 1.4em 0 .5em; }
-    #secOvPage .soFirst .soItem { display: flex; flex-wrap: wrap; align-items: center; gap: .4em 1em; border: 1px solid var(--line); border-left-width: 5px; border-radius: 6px; padding: .6em .9em; margin: 0 0 .5em; background: rgba(128,128,128,.04); }
-    #secOvPage .soItem.s-fail { border-left-color: var(--bad); } #secOvPage .soItem.s-warn { border-left-color: var(--warn); } #secOvPage .soItem.s-unknown { border-left-color: var(--unk); }
+    #secOvPage .soRec .txt h4 { margin: 0; font-size: var(--zx-fs-lg); }
+    #secOvPage .soRec .txt p { margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); }
+    #secOvPage .soHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-5) 0 var(--zx-space-1); }
+    #secOvPage .soHead h3.soH { margin: 0; }
+    #secOvPage .soSub { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-md); }
+    #secOvPage .soFirst .soItem { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-3) var(--zx-space-4); margin: 0 0 var(--zx-space-3); }
     #secOvPage .soItem .txt { flex: 1 1 22em; min-width: 0; overflow-wrap: anywhere; }
-    #secOvPage .soItem .txt small { display: block; opacity: .8; margin-top: .15em; }
-    #secOvPage .soItem .acts { display: flex; flex-wrap: wrap; gap: .4em; }
+    #secOvPage .soItem .txt small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
+    #secOvPage h3.soH { font-size: var(--zx-fs-lg); font-weight: 700; margin: 0; }
+    #secOvPage .soItem .acts .button { min-width: 12rem; justify-content: center; }
+    #secOvPage .soItem .txt code { font-size: var(--zx-fs-xs); }
+    #secOvPage .soFirst { margin-top: var(--zx-space-2); }
+    #secOvPage .soItem .acts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
     #secOvPage .soItem .acts .button { margin: 0; }
-    #secOvPage .soCat { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 .8em; overflow: hidden; }
-    #secOvPage .soCatHead { display: flex; flex-wrap: wrap; align-items: center; gap: .3em .9em; padding: .65em 1em; cursor: pointer; background: var(--soft); user-select: none; }
-    #secOvPage .soCatHead:focus-visible { outline: 2px solid #2185d0; outline-offset: -2px; }
-    #secOvPage .soCatHead b { font-size: 1.05em; }
-    #secOvPage .soCatHead .sum { margin-left: auto; display: flex; gap: .35em; flex-wrap: wrap; }
-    #secOvPage .soCatBody { display: none; }
+    #secOvPage .soCat { background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-3); overflow: hidden; }
+    #secOvPage .soCatHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: var(--zx-space-3) var(--zx-space-4); cursor: pointer; user-select: none; }
+    #secOvPage .soCatHead:focus-visible, #secOvPage .soRowHead:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--zx-focus); }
+    #secOvPage .soCatHead b { font-size: var(--zx-fs-lg); }
+    #secOvPage .soCatHead .sum { margin-left: auto; display: flex; gap: var(--zx-space-1); flex-wrap: wrap; }
+    #secOvPage .soCatBody { display: none; border-top: 1px solid var(--zx-border); }
     #secOvPage .soCat.open .soCatBody { display: block; }
-    #secOvPage .soCat .chev { transition: transform .15s; } #secOvPage .soCat.open .chev { transform: rotate(90deg); }
-    #secOvPage .soRow { border-top: 1px solid rgba(128,128,128,.22); }
-    #secOvPage .soRowHead { display: flex; flex-wrap: wrap; align-items: center; gap: .25em .8em; padding: .55em 1em; cursor: pointer; }
-    #secOvPage .soRowHead:hover { background: rgba(128,128,128,.07); }
-    #secOvPage .soRowHead:focus-visible { outline: 2px solid #2185d0; outline-offset: -2px; }
+    #secOvPage .soCat .chev { transition: transform .15s; margin: 0; } #secOvPage .soCat.open .chev { transform: rotate(90deg); }
+    #secOvPage .soRow { border-top: 1px solid var(--zx-border); }
+    #secOvPage .soRow:first-child { border-top: 0; }
+    #secOvPage .soRowHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: var(--zx-space-2) var(--zx-space-4); cursor: pointer; }
+    #secOvPage .soRowHead:hover { background: var(--zx-surface-2); }
     #secOvPage .soRowHead .ttl { flex: 1 1 16em; min-width: 0; overflow-wrap: anywhere; }
-    #secOvPage .soRowBody { display: none; padding: .2em 1em .9em 2.6em; }
+    #secOvPage .soRowBody { display: none; padding: var(--zx-space-1) var(--zx-space-4) var(--zx-space-4) calc(var(--zx-space-4) + 1.9em); }
     #secOvPage .soRow.open .soRowBody { display: block; }
-    #secOvPage .soRowBody ul { margin: .2em 0 .6em 1.1em; padding: 0; }
-    #secOvPage .soRowBody li { margin: .15em 0; overflow-wrap: anywhere; }
-    #secOvPage .soRowBody .acts { display: flex; flex-wrap: wrap; gap: .4em; margin-top: .5em; }
+    #secOvPage .soRowBody ul { margin: var(--zx-space-1) 0 var(--zx-space-2) 1.1em; padding: 0; }
+    #secOvPage .soRowBody li { margin: 2px 0; overflow-wrap: anywhere; }
+    #secOvPage .soRowBody .acts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-2); }
     #secOvPage .soRowBody .acts .button { margin: 0; }
-    #secOvPage .soRowBody .lbl { text-transform: uppercase; letter-spacing: .04em; font-size: .74em; opacity: .7; margin-top: .6em; }
-    #secOvPage .soDot { flex: 0 0 auto; width: 1.15em; height: 1.15em; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: .75em; font-weight: 700; }
-    #secOvPage .soDot.s-ok { background: var(--ok); } #secOvPage .soDot.s-warn { background: var(--warn); } #secOvPage .soDot.s-fail { background: var(--bad); }
-    #secOvPage .soDot.s-unknown { background: var(--unk); } #secOvPage .soDot.s-not-applicable { background: transparent; border: 2px solid rgba(128,128,128,.5); color: transparent; }
-    /* status dots: kit tokens so the mark is at least 4.5:1 against the dot in both themes */
-    #secOvPage .soDot { color: var(--zx-on-solid); font-size: .8em; }
+    #secOvPage .soRowBody .lbl { text-transform: uppercase; letter-spacing: .04em; font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); margin-top: var(--zx-space-3); }
+    #secOvPage #soCats.hide-na .soRow.na, #secOvPage #soCats.hide-na .soCat.allna { display: none; }
+    #secOvPage .soDot { flex: 0 0 auto; width: 1.4em; height: 1.4em; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .8em; font-weight: 700; color: var(--zx-on-solid); }
     #secOvPage .soDot.s-ok { background: var(--zx-ok-solid); } #secOvPage .soDot.s-warn { background: var(--zx-warn-solid); } #secOvPage .soDot.s-fail { background: var(--zx-danger-solid); }
     #secOvPage .soDot.s-unknown { background: var(--zx-text-muted); color: var(--zx-bg); }
-    #secOvPage .soDot.s-not-applicable { color: transparent; }
-    #secOvPage .soPill { display: inline-block; padding: 0 .55em; border-radius: 999px; font-size: .78em; font-weight: 700; line-height: 1.8; white-space: nowrap; background: rgba(128,128,128,.2); }
-    #secOvPage .soPill.s-ok { background: #21ba4533; color: #1a7a32; } #secOvPage .soPill.s-warn { background: #f2711c33; color: #a14a0a; }
-    #secOvPage .soPill.s-fail { background: #db282833; color: #b01e1e; } #secOvPage .soPill.s-unknown { background: rgba(138,143,152,.25); }
-    body.darkTheme #secOvPage .soPill.s-ok { color: #6fe08a; } body.darkTheme #secOvPage .soPill.s-warn { color: #ffa86b; } body.darkTheme #secOvPage .soPill.s-fail { color: #ff8a8a; }
-    #secOvPage .soSev { font-size: .74em; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
-    #secOvPage .soHeur { font-size: .74em; border: 1px dashed var(--line); border-radius: 4px; padding: 0 .4em; opacity: .85; }
-    #secOvPage .soLost { font-variant-numeric: tabular-nums; font-size: .88em; opacity: .85; min-width: 4em; text-align: right; }
-    #secOvPage .soEmpty { text-align: center; padding: 2em 1em; opacity: .85; }
-    #secOvPage .soSkel { height: 150px; border-radius: 10px; background: linear-gradient(90deg, rgba(128,128,128,.1), rgba(128,128,128,.2), rgba(128,128,128,.1)); background-size: 200% 100%; animation: soSk 1.2s infinite; }
+    #secOvPage .soDot.s-not-applicable { background: transparent; border: 2px solid var(--zx-border-strong); color: transparent; }
+    #secOvPage .soPill { display: inline-flex; align-items: center; padding: 1px 10px; border: 1px solid var(--zx-neutral-line); border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-xs); font-weight: 700; white-space: nowrap; background: var(--zx-neutral-bg); color: var(--zx-neutral-text); }
+    #secOvPage .soPill.s-ok { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
+    #secOvPage .soPill.s-warn { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #secOvPage .soPill.s-fail { background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
+    #secOvPage .soSev { font-size: var(--zx-fs-xs); color: var(--zx-text-muted); text-transform: capitalize; }
+    #secOvPage .soHeur { font-size: var(--zx-fs-xs); border: 1px dashed var(--zx-border-strong); border-radius: var(--zx-radius-sm); padding: 0 .4em; color: var(--zx-text-muted); }
+    #secOvPage .soLost { font-variant-numeric: tabular-nums; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); min-width: 3.5em; text-align: right; }
+    #secOvPage .soEmpty { text-align: center; padding: var(--zx-space-5) var(--zx-space-4); color: var(--zx-text-muted); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
+    #secOvPage .soEmpty b { color: var(--zx-text); }
+    #secOvPage .soSkel { height: 150px; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: soSk 1.2s infinite; }
     @keyframes soSk { from { background-position: 0 0; } to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { #secOvPage .soSkel { animation: none; } }
     @media (max-width: 560px) {
         #secOvPage .soScore { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-        #secOvPage .soTiles { justify-content: center; }
-        #secOvPage .soRowBody { padding-left: 1em; }
-        #secOvPage .soLoss { grid-template-columns: 1fr auto; text-align: left; }
+        #secOvPage .soRowBody { padding-left: var(--zx-space-4); }
+        #secOvPage .soLoss { text-align: left; }
+        #secOvPage .soSev { flex: 1 0 100%; order: 5; }
     }
     /* preview dialog */
-    #secOvDlgBg { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; padding: 1em; }
-    #secOvDlg { width: min(720px, 100%); max-height: calc(100vh - 2em); overflow-y: auto; padding: 1.2em 1.4em; border-radius: 8px; background: #fff; color: #222; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
-    body.darkTheme #secOvDlg { background: #1b1c1d; color: #ddd; }
+    #secOvDlgBg { position: fixed; inset: 0; z-index: 1100; background: var(--zx-overlay); display: none; align-items: center; justify-content: center; padding: var(--zx-space-3); }
+    #secOvDlg { width: min(720px, 100%); max-height: calc(100vh - 2em); overflow-y: auto; padding: var(--zx-space-4) var(--zx-space-5); border-radius: var(--zx-radius-lg); background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); box-shadow: var(--zx-shadow-3); }
     #secOvDlg h3 { margin-top: 0; }
-    #secOvDlg .sdAct { border: 1px solid rgba(128,128,128,.4); border-radius: 6px; padding: .6em .9em; margin: 0 0 .7em; }
-    #secOvDlg .sdAct.refused { opacity: .75; }
-    #secOvDlg .sdAct label { font-weight: 700; cursor: pointer; display: flex; gap: .55em; align-items: baseline; }
+    #secOvDlg .soMuted { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #secOvDlg .sdAct { border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
+    #secOvDlg .sdAct.refused { background: var(--zx-surface-2); }
+    #secOvDlg .sdAct label { font-weight: 700; cursor: pointer; display: flex; gap: var(--zx-space-2); align-items: baseline; }
     #secOvDlg .sdAct label input { flex: 0 0 auto; }
-    #secOvDlg .sdAct p { margin: .3em 0 .3em 1.7em; opacity: .85; font-size: .94em; }
-    #secOvDlg table { width: 100%; border-collapse: collapse; margin: .3em 0 .2em 1.7em; width: calc(100% - 1.7em); font-size: .92em; }
-    #secOvDlg th, #secOvDlg td { text-align: left; padding: .2em .5em; border-bottom: 1px solid rgba(128,128,128,.25); vertical-align: top; overflow-wrap: anywhere; }
-    #secOvDlg .sdBadge { display: inline-block; padding: 0 .55em; border-radius: 999px; font-size: .78em; font-weight: 700; line-height: 1.8; margin-left: .3em; white-space: nowrap; }
-    #secOvDlg .sdBadge.safe { background: #21ba4533; color: #1a7a32; } #secOvDlg .sdBadge.risk { background: #db282833; color: #b01e1e; } #secOvDlg .sdBadge.sticky { background: #f2711c33; color: #a14a0a; }
-    body.darkTheme #secOvDlg .sdBadge.safe { color: #6fe08a; } body.darkTheme #secOvDlg .sdBadge.risk { color: #ff8a8a; } body.darkTheme #secOvDlg .sdBadge.sticky { color: #ffa86b; }
-    #secOvDlg .sdWarn { border-left: 4px solid #db2828; background: rgba(219,40,40,.1); padding: .4em .7em; margin: .4em 0 .3em 1.7em; border-radius: 3px; font-size: .92em; }
-    #secOvDlg .sdNote { border-left: 4px solid #2185d0; background: rgba(33,133,208,.1); padding: .4em .7em; margin: .4em 0 .3em 1.7em; border-radius: 3px; font-size: .92em; }
-    #secOvDlg .sdBtns { display: flex; flex-wrap: wrap; gap: .5em; justify-content: flex-end; margin-top: 1em; }
-    #secOvDlg .sdRes { padding: .35em 0; border-bottom: 1px solid rgba(128,128,128,.25); }
+    #secOvDlg .sdAct p { margin: var(--zx-space-1) 0 var(--zx-space-1) 1.7em; color: var(--zx-text-muted); }
+    #secOvDlg table { border-collapse: collapse; margin: var(--zx-space-1) 0 0 1.7em; width: calc(100% - 1.7em); font-size: var(--zx-fs-sm); }
+    #secOvDlg th, #secOvDlg td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--zx-border); vertical-align: top; overflow-wrap: anywhere; }
+    #secOvDlg .sdBadge { display: inline-block; padding: 1px 10px; border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-xs); font-weight: 700; margin-left: var(--zx-space-2); white-space: nowrap; border: 1px solid transparent; }
+    #secOvDlg .sdBadge.safe { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); } #secOvDlg .sdBadge.risk { background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); } #secOvDlg .sdBadge.sticky { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #secOvDlg .sdWarn { background: var(--zx-danger-bg); color: var(--zx-danger-text); border: 1px solid var(--zx-danger-line); padding: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-2) 0 0 1.7em; border-radius: var(--zx-radius-md); font-size: var(--zx-fs-sm); }
+    #secOvDlg .sdNote { background: var(--zx-info-bg); color: var(--zx-info-text); border: 1px solid var(--zx-info-line); padding: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-2) 0 0 1.7em; border-radius: var(--zx-radius-md); font-size: var(--zx-fs-sm); }
+    #secOvDlg .sdBtns { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); justify-content: flex-end; margin-top: var(--zx-space-4); }
+    #secOvDlg .sdRes { padding: var(--zx-space-2) 0; border-bottom: 1px solid var(--zx-border); }
+    #secOvDlg .soDot { display: inline-flex; width: 1.4em; height: 1.4em; border-radius: 50%; align-items: center; justify-content: center; font-size: .8em; font-weight: 700; color: var(--zx-on-solid); }
+    #secOvDlg .soDot.s-ok { background: var(--zx-ok-solid); } #secOvDlg .soDot.s-fail { background: var(--zx-danger-solid); }
 </style>
 
 <div class="standardContainer" id="secOvPage">
-    <div class="ui basic segment">
-        <div class="soHero">
-            <div style="flex:1 1 30em; min-width:0">
-                <h2><i class="shield alternate icon"></i> Security overview</h2>
-                <p class="soLead">How well this Zoraxy is protected, based on what it is configured to do. Each finding shows the facts it looked at, why it matters and where to fix it.
-                    Nothing here changes by itself: every fix is previewed first and only runs when you confirm it.</p>
-            </div>
-            <div class="soBar">
-                <span class="soMuted" id="soChecked" aria-live="polite"></span>
-                <button class="ui small basic button" id="soRecheck"><i class="sync alternate icon"></i> Re-check</button>
-            </div>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Security Overview</h2>
+            <p class="zx-page-header__sub">How well this Zoraxy is protected and what to fix first.</p>
         </div>
-    </div>
+        <div class="zx-page-header__actions">
+            <button type="button" class="zx-btn zx-btn--secondary" id="soRecheck"><i class="sync alternate icon" aria-hidden="true"></i> Re-check</button>
+        </div>
+    </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>ban abusive clients, block bots, review events</span></li>
+            <li><a href="#waf" data-nav-open="waf">WAF</a> <span>blocks attacks inside requests</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>blocklists, allowlists and countries</span></li>
+        </ul>
+    </aside>
 
-    <div style="margin: 0 1em">
+    <div>
         <div id="soScoreBox"><div class="soSkel"></div></div>
         <div id="soBanner"></div>
         <div id="soRec"></div>
         <div id="soFirstBox"></div>
-        <h3 class="soH">All checks</h3>
-        <div id="soCats"></div>
-        <div class="ui segment" style="margin-top:1.2em">
-            <div class="ui checkbox" id="soNotifyBox">
-                <input type="checkbox" id="soNotify"><label for="soNotify">Tell me through the notification centre when the score drops by 10 points or a check starts failing (at most one message per 6 hours)</label>
-            </div>
-            <div class="soMuted" style="margin-top:.4em">Needs a channel in <a href="snippet/notifications.html" target="_blank">Notifications</a>. Off by default.</div>
+        <div class="soHead">
+            <h3 class="soH zx-section__title">All checks</h3>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="soToggleNa" aria-pressed="false" hidden></button>
         </div>
-        <p class="soMuted" id="soDisclaimer" style="margin:1em 0 2em"></p>
+        <p class="soSub">Every check with the facts it looked at, why it matters and how to fix it. Nothing here changes by itself: every fix is previewed first and only runs when you confirm it.</p>
+        <div id="soCats" class="hide-na"></div>
+        <section class="zx-card" style="margin-top:var(--zx-space-4)">
+            <div class="zx-card__head"><h3 class="zx-card__title">Notifications</h3></div>
+            <div class="zx-card__body">
+                <label class="zx-toggle-row" for="soNotify" id="soNotifyBox">
+                    <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Notify me when the score drops</span><span class="zx-toggle-row__desc">Tells you through the notification centre when the score drops by 10 points or a check starts failing, at most once every 6 hours. Needs a channel in <a href="snippet/notifications.html" target="_blank">Notifications</a>. Off by default.</span></span>
+                    <input type="checkbox" class="zx-switch" role="switch" id="soNotify">
+                </label>
+            </div>
+        </section>
+        <p class="soMuted" id="soDisclaimer" style="margin:var(--zx-space-3) 0 var(--zx-space-5)"></p>
     </div>
 
     <div id="secOvDlgBg" role="dialog" aria-modal="true" aria-labelledby="sdTitle"><div id="secOvDlg"></div></div>
 </div>
-
 <script>
 (function(){
     var S = { data: null, openCats: null, openRows: {}, loading: false };
@@ -145,7 +156,8 @@
     function plural(n, a, b){ return n === 1 ? a : b; }
     var ICON = { ok: "&#10003;", warn: "!", fail: "&#10005;", unknown: "?", "not-applicable": "-" };
     var STATUS_TXT = { ok: "OK", warn: "Warning", fail: "Failing", unknown: "Unknown", "not-applicable": "Not applicable" };
-    var COLORS = { A: "#21ba45", B: "#6cc24a", C: "#f2b01e", D: "#f2711c", F: "#db2828", "?": "#8a8f98" };
+    var COLORS = { A: "var(--zx-ok-solid)", B: "var(--zx-ok-solid)", C: "var(--zx-warn-solid)", D: "var(--zx-warn-solid)", F: "var(--zx-danger-solid)", "?": "var(--zx-text-muted)" };
+    function tr(s){ return typeof window.t === "function" ? window.t(s) : s; }
 
     function dot(st){ return '<span class="soDot s-' + st + '" aria-hidden="true">' + ICON[st] + '</span>'; }
     function pill(st){ return '<span class="soPill s-' + st + '">' + STATUS_TXT[st] + '</span>'; }
@@ -155,7 +167,7 @@
         var C = 2 * Math.PI * 54, v = Math.max(0, Math.min(100, sc.value)), col = COLORS[sc.grade] || COLORS["?"];
         return '<div class="soRing" role="img" aria-label="Security score ' + v + ' out of 100, ' + esc(sc.label) + '">' +
             '<svg viewBox="0 0 120 120"><circle class="track" cx="60" cy="60" r="54"></circle>' +
-            '<circle class="arc" cx="60" cy="60" r="54" stroke="' + col + '" stroke-dasharray="' + (C * v / 100).toFixed(1) + ' ' + C.toFixed(1) + '"></circle></svg>' +
+            '<circle class="arc" cx="60" cy="60" r="54" style="stroke:' + col + '" stroke-dasharray="' + (C * v / 100).toFixed(1) + ' ' + C.toFixed(1) + '"></circle></svg>' +
             '<div class="num"><b>' + v + '</b><span>out of 100</span></div></div>';
     }
 
@@ -163,7 +175,7 @@
         var sc = d.score, c = sc.counts || {};
         var tiles = [["ok", "Passed", c.ok], ["warn", "Warnings", c.warn], ["fail", "Failing", c.fail], ["unknown", "Unknown", c.unknown], ["na", "Not applicable", c["not-applicable"]]];
         var h = '<div class="soScore">' + ring(sc) + '<div class="soScoreSide"><h3>' + esc(sc.label) + (sc.grade && sc.grade !== "?" ? ' <span class="soMuted">(grade ' + esc(sc.grade) + ')</span>' : '') + '</h3>';
-        h += '<div class="soMuted">' + (sc.lost > 0 ? esc(sc.lost) + ' points lost' : 'No points lost') + ' &middot; ' + sc.applicableWeight + ' points of weight are in scope</div>';
+        h += '<div class="soMuted" id="soChecked" aria-live="polite"></div><div class="soMuted">' + (sc.lost > 0 ? esc(sc.lost) + ' points lost' : 'No points lost') + ' &middot; ' + sc.applicableWeight + ' points of weight are in scope</div>';
         h += '<div class="soTiles">' + tiles.map(function(t){ return '<div class="soTile t-' + t[0] + '"><b>' + (t[2] || 0) + '</b><small>' + t[1] + '</small></div>'; }).join("") + '</div>';
         if (sc.provisional && sc.applicableWeight > 0) h += '<div class="soNote warn"><b>Incomplete.</b> ' + sc.unknownShare + '% of the checks could not be determined, so this score is capped and has no grade. Open the "Unknown" checks to see what is missing.</div>';
         else if (sc.capped) h += '<div class="soNote warn">' + esc(sc.capReason) + '.</div>';
@@ -206,13 +218,15 @@
         return h;
     }
 
+    function flagCode(h){ return h.replace(/(^|[\s(])(-(?:noauth|webui_tls|webui_tls=auto)\b)/g, "$1<code>$2</code>"); }   // command line flags read as code, not as a stray minus sign
+
     function renderFirst(d){
         var bad = d.checks.filter(function(c){ return c.status === "fail" || c.status === "warn" || c.status === "unknown"; })
             .sort(function(a, b){ return (b.lostPoints - a.lostPoints) || (b.weight - a.weight); }).slice(0, 5);
         if (!bad.length) { $("#soFirstBox").html('<div class="soEmpty"><i class="big green check circle icon"></i><div><b>Nothing needs your attention.</b></div><div class="soMuted">Every check that applies to your setup passed.</div></div>'); return; }
-        var h = '<h3 class="soH">Fix these first</h3><div class="soFirst">' + bad.map(function(c){
+        var h = '<h3 class="soH zx-section__title">Fix these first</h3><div class="soFirst">' + bad.map(function(c){
             return '<div class="soItem s-' + c.status + '"><div class="txt">' + dot(c.status) + ' <b>' + esc(c.title) + '</b> <span class="soMuted">' + pts(c.lostPoints) + ' points</span>' +
-                '<small>' + esc((c.evidence || [])[0] || "") + '</small></div><div class="acts">' + rowActions(c) + '</div></div>';
+                '<small>' + flagCode(esc((c.evidence || [])[0] || "")) + '</small></div><div class="acts">' + rowActions(c) + '</div></div>';
         }).join("") + '</div>';
         $("#soFirstBox").html(h);
     }
@@ -227,12 +241,12 @@
             var n = {}; list.forEach(function(c){ n[c.status] = (n[c.status] || 0) + 1; });
             var sum = ["fail", "warn", "unknown", "ok"].filter(function(s){ return n[s]; }).map(function(s){ return '<span class="soPill s-' + s + '">' + n[s] + ' ' + STATUS_TXT[s].toLowerCase() + '</span>'; }).join("");
             var open = S.openCats[name];
-            return '<div class="soCat' + (open ? " open" : "") + '" data-cat="' + esc(name) + '"><div class="soCatHead" tabindex="0" role="button" aria-expanded="' + !!open + '"><i class="angle right icon chev"></i><b>' + esc(name) + '</b><span class="sum">' + sum + '</span></div>' +
+            return '<div class="soCat' + (open ? " open" : "") + (list.every(function(c){ return c.status === "not-applicable"; }) ? " allna" : "") + '" data-cat="' + esc(name) + '"><div class="soCatHead" tabindex="0" role="button" aria-expanded="' + !!open + '"><i class="angle right icon chev"></i><b>' + esc(name) + '</b><span class="sum">' + sum + '</span></div>' +
                 '<div class="soCatBody">' + list.map(function(c){
                     var ro = !!S.openRows[c.id];
-                    return '<div class="soRow' + (ro ? " open" : "") + '" data-id="' + esc(c.id) + '"><div class="soRowHead" tabindex="0" role="button" aria-expanded="' + ro + '">' + dot(c.status) + '<span class="ttl">' + esc(c.title) +
+                    return '<div class="soRow' + (c.status === "not-applicable" ? " na" : "") + (ro ? " open" : "") + '" data-id="' + esc(c.id) + '"><div class="soRowHead" tabindex="0" role="button" aria-expanded="' + ro + '">' + dot(c.status) + '<span class="ttl">' + esc(c.title) +
                         (c.heuristic ? ' <span class="soHeur" title="A guess from the host name, not an inspection of the application">heuristic</span>' : '') + '</span>' +
-                        '<span class="soSev">' + esc(c.severity) + ' &middot; weight ' + c.weight + '</span>' + pill(c.status) + '<span class="soLost">' + pts(c.lostPoints) + '</span></div>' +
+                        '<span class="soSev">' + esc(c.severity) + '</span>' + pill(c.status) + '<span class="soLost">' + pts(c.lostPoints) + '</span></div>' +
                         '<div class="soRowBody"><div class="lbl">What was checked</div><ul>' + (c.evidence || []).map(function(e){ return '<li>' + esc(e) + '</li>'; }).join("") + '</ul>' +
                         '<div class="lbl">Why it matters</div><div>' + esc(c.why) + '</div>' +
                         (c.remediation && c.remediation.hint ? '<div class="lbl">How to fix</div><div>' + esc(c.remediation.hint) + '</div>' : '') +
@@ -244,11 +258,19 @@
     function render(d){
         S.data = d;
         renderScore(d); renderBanner(d); renderRec(d); renderFirst(d); renderCats(d);
-        $("#soChecked").text("Checked " + new Date(d.generated).toLocaleTimeString());
+        $("#soChecked").text(tr("Checked") + " " + new Date(d.generated).toLocaleTimeString());
+        var nNa = d.checks.filter(function(c){ return c.status === "not-applicable"; }).length;
+        $("#soToggleNa").prop("hidden", !nNa).data("n", nNa); setNaLabel();
         $("#soNotify").prop("checked", !!(d.settings && d.settings.notify));
         $("#soDisclaimer").text(d.disclaimer || "");
         try { window.postureLast = { value: d.score.value, label: d.score.label, grade: d.score.grade, provisional: d.score.provisional }; } catch (e) {}
     }
+
+    function setNaLabel(){
+        var hidden = $("#soCats").hasClass("hide-na"), n = $("#soToggleNa").data("n") || 0;
+        $("#soToggleNa").text(hidden ? tr("Show not applicable ({0})").replace("{0}", n) : tr("Hide not applicable")).attr("aria-pressed", !hidden);
+    }
+    $("#secOvPage").on("click", "#soToggleNa", function(){ $("#soCats").toggleClass("hide-na"); setNaLabel(); });
 
     function load(refresh, done){
         if (S.loading) return; S.loading = true;

@@ -1,12 +1,13 @@
 <!-- Security Center > Overview: one page, one request (GET /api/security/overview), refreshed every 10 s while it is visible -->
 <style>
     #ovPage .ov-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
-    #ovPage .ov-bar h3 { margin: 0; flex: 1 1 12rem; }
-    #ovPage .ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); align-items: stretch; }
-    #ovPage .ov-card { margin: 0; min-width: 0; }
-    #ovPage .ov-card.wide { grid-column: 1 / -1; }
-    #ovPage .zx-card__head { padding: var(--zx-space-3) var(--zx-space-3) 0; }
-    #ovPage .zx-card__body { padding: var(--zx-space-3); }
+    /* masonry: cards of different height pack into columns, no empty stretched areas */
+    #ovPage .ov-grid { display: block; column-width: 19rem; column-gap: var(--zx-space-3); }
+    #ovPage .ov-grid[hidden] { display: none; }
+    #ovPage .ov-card { margin: 0 0 var(--zx-space-3); min-width: 0; break-inside: avoid; }
+    #ovPage .ov-card.wide { column-span: all; }
+    #ovPage .ov-card .zx-card__body > .zx-sub { margin-top: var(--zx-space-2); }
+    #ovPage .ov-warn .ov-ev { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     #ovPage .zx-card__title { font-size: var(--zx-fs-md); }
     #ovPage .ov-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: var(--zx-space-2); margin: 0 0 var(--zx-space-2); }
     #ovPage .ov-tiles .zx-stat { padding: var(--zx-space-2) var(--zx-space-3); box-shadow: none; }
@@ -34,8 +35,14 @@
     #ovPage .ov-skel > div { height: 9rem; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: ovsk 1.4s linear infinite; }
     @keyframes ovsk { from { background-position: 0 0; } to { background-position: -200% 0; } }
     #ovPage .bl-card { margin: 0 0 var(--zx-space-3); }
+    #ovPage .zx-subhead { margin: var(--zx-space-4) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 600; color: var(--zx-text-muted); }
+    #ovPage .zx-card__body > .zx-subhead:first-child { margin-top: 0; }
+    #ovPage .bl-more { margin-top: var(--zx-space-1); }
+    #ovPage .bl-more > summary { cursor: pointer; color: var(--zx-link); font-size: var(--zx-fs-sm); width: fit-content; }
+    #ovPage .bl-more > .bl-why { margin-top: var(--zx-space-1); }
+    #ovPage .bl-list li > span:first-child { padding-top: 1px; }
     #ovPage .bl-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); }
-    #ovPage .bl-head h4 { margin: 0; flex: 1 1 12rem; min-width: 0; }
+    #ovPage .bl-head h3 { margin: 0; flex: 1 1 12rem; min-width: 0; }
     #ovPage .bl-list { list-style: none; margin: var(--zx-space-2) 0 0; padding: 0; }
     #ovPage .bl-list li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 2px var(--zx-space-3); padding: var(--zx-space-2) 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); align-items: start; }
     #ovPage .bl-list li:first-child { border-top: 0; }
@@ -49,9 +56,6 @@
     .bl-prev .bl-vals { display: block; margin-top: 2px; }
     .bl-prev .bl-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
     @media (max-width: 748px) {
-        #secPane.ui.segment { padding-left: .6em; padding-right: .6em; }
-        #ovPage .zx-card__head { padding: var(--zx-space-2) var(--zx-space-2) 0; }
-        #ovPage .zx-card__body { padding: var(--zx-space-2); }
         #ovPage .ov-warn .grow { flex: 1 1 10rem; }
         /* chip left, text and the fix link in one column to its right (the link used to drop to the left edge) */
         #ovPage .ov-list li.ov-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; column-gap: var(--zx-space-2); }
@@ -64,11 +68,10 @@
 </style>
 <div id="ovPage">
     <div class="ov-bar">
-        <h3>Overview</h3>
-        <span class="zx-sub" id="ovStamp" role="status" aria-live="polite"></span>
+        <p class="zx-help" id="ovStampLead" style="flex:1 1 12rem;margin:0">Everything here comes from this Zoraxy itself; no outside service is contacted. It refreshes every 10 seconds while you look at it.</p>
+        <span class="zx-help" id="ovStamp" role="status" aria-live="polite"></span>
         <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ovRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
     </div>
-    <p class="zx-sub" style="margin:0 0 var(--zx-space-3)">Everything on this page comes from this Zoraxy itself, no outside service is contacted. It refreshes every 10 seconds while you look at it. The cards link to the page where each thing is changed.</p>
     <section id="blCard" tabindex="-1" class="zx-card bl-card" aria-labelledby="blTitle" aria-busy="true"></section>
     <div id="ovError" class="zx-callout zx-callout--danger" role="alert" hidden>
         <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
@@ -101,7 +104,7 @@
         return '<a href="#" class="ov-go" data-page="' + esc(page) + '" data-anchor="' + esc(anchor || "") + '">' + esc(label) + "</a>";
     }
     function card(title, icon, body, foot, wide) {
-        return '<section class="zx-card ov-card' + (wide ? " wide" : "") + '"><div class="zx-card__head"><h4 class="zx-card__title"><i class="' + icon + ' icon" aria-hidden="true"></i> ' + esc(title) + "</h4></div>" +
+        return '<section class="zx-card ov-card' + (wide ? " wide" : "") + '"><div class="zx-card__head"><h3 class="zx-card__title"><i class="' + icon + ' icon" aria-hidden="true"></i> ' + esc(title) + "</h3></div>" +
             '<div class="zx-card__body">' + body + (foot ? '<div class="ov-foot">' + foot + "</div>" : "") + "</div></section>";
     }
     function empty(text) { return '<p class="ov-muted" style="margin:0">' + esc(text) + "</p>"; }
@@ -139,7 +142,7 @@
                 (x.page ? go(x.page, x.anchor, t("Fix: {0}").replace("{0}", t(x.fix))) : '<span class="ov-muted">' + esc(x.fix) + "</span>") + "</li>";
         }).join("");
         var more = items.length > 6 ? '<button type="button" class="zx-btn zx-btn--ghost zx-btn--sm ov-more" id="ovWarnToggle">' + esc(showAllWarn ? t("Show fewer") : t("Show all {0}").replace("{0}", items.length + (w.more || 0))) + "</button>" : "";
-        return card(t("Configuration warnings"), "exclamation triangle", head + '<ul class="ov-list">' + li + "</ul>" + more, "", true);
+        return card(t("Configuration warnings"), "exclamation triangle", head + '<ul class="ov-list">' + li + "</ul>" + more, go("secoverview", "", t("All checks with explanations in Security Overview")), true);
     }
 
     function cStatus(d) {
@@ -167,9 +170,9 @@
         else if (!b.total) { body = empty(t("No upstream is monitored yet.")); }
         else {
             body = '<div class="ov-tiles">' + stat(t("Up"), (b.total - b.down), "ok") + stat(t("Down"), b.down, b.down ? "danger" : "") + stat(t("Monitored"), b.total) + "</div>" +
-                '<ul class="ov-list">' + items.map(function (u) {
+                '<ul class="ov-list">' + items.slice(0, 5).map(function (u) {
                     return "<li>" + badge(u.online ? "ok" : "danger", u.online ? t("Up") : t("Down")) + '<span class="grow">' + esc(u.name) + '</span><span class="muted">' + (u.online ? esc(u.latencyMs) + " ms" : esc(u.status || "")) + "</span></li>";
-                }).join("") + "</ul>" + (b.total > items.length ? '<div class="zx-sub">' + esc(t("Worst first. {0} more are up.").replace("{0}", b.total - items.length)) + "</div>" : "");
+                }).join("") + "</ul>" + (b.total > items.length ? '<div class="zx-sub">' + esc(t("Worst first. {0} more are up.").replace("{0}", b.total - items.length)) + "</div>" : "") + (items.length > 5 ? '<div class="zx-sub">' + esc(t("Showing the worst 5 of {0}.").replace("{0}", b.total)) + "</div>" : "");
         }
         return card(t("Backend health"), "heartbeat", body, go("utm", "", t("Uptime monitor")));
     }
@@ -233,12 +236,12 @@
     function cTraffic(d) {
         var t0 = d.traffic || {}, bl = t0.blockLog;
         var body = '<div class="ov-tiles">' + stat(t("Allowed today"), num(t0.allowedToday)) + stat(t("Blocked today"), num(t0.blockedToday), t0.blockedToday ? "warn" : "") + stat(t("Requests / min"), t0.requestsPerMin) + "</div>";
-        var any = (t0.series || []).some(function (v) { return v > 0; });
+        var any = (t0.series || []).filter(function (v) { return v > 0; }).length >= 2;   // one lone bar is a sliver, not a chart
         if (any) {
             body += bars(t0.series, t0.blockedSeries, t("Requests per minute over the last 30 minutes, blocked ones in red")) +
                 '<div class="ov-legend"><span><i style="background:var(--zx-info-solid)"></i>' + esc(t("Allowed")) + '</span><span><i style="background:var(--zx-danger-solid)"></i>' + esc(t("Blocked")) + "</span><span>" + esc(t("last 30 minutes")) + "</span></div>";
-        } else { body += empty(t("No traffic in the last 30 minutes.")); }
-        if (bl && bl.enabled && (bl.hourly || []).some(function (v) { return v > 0; })) {
+        } else { body += empty(t("Not enough traffic in the last 30 minutes to draw a chart yet.")); }
+        if (bl && bl.enabled && (bl.hourly || []).filter(function (v) { return v > 0; }).length >= 2) {
             body += onlyBlocked(bl.hourly, t("Blocked requests per hour over the last 24 hours")) + '<div class="ov-legend"><span>' + esc(t("blocked per hour, last 24 hours")) + "</span></div>";
             body += '<span class="zx-chips">' + (bl.reasons || []).map(function (x) { return badge("info", x.key + " " + x.n); }).join("") + "</span>";
         } else if (bl && !bl.enabled) { body += '<div class="zx-sub">' + esc(t("The blocked request log is switched off.")) + "</div>"; }
@@ -247,11 +250,11 @@
 
     function cEvents(d) {
         var e = d.events || {}, a = e.audit || [], b = e.blocked || [];
-        var body = '<h5 style="margin:0 0 4px">' + esc(t("Configuration changes")) + "</h5>";
+        var body = '<h4 class="zx-subhead">' + esc(t("Configuration changes")) + "</h4>";
         if (!e.auditAvailable) { body += empty(t("The security audit log is not available.")); }
         else if (!a.length) { body += empty(t("No security-relevant change recorded yet.")); }
         else { body += '<ul class="ov-list">' + a.map(function (x) { return '<li><span class="muted">' + esc(rel(x.time)) + '</span><span class="grow"><b>' + esc(x.event) + "</b> " + esc(x.target) + '</span><span class="muted">' + esc(x.actor) + (x.outcome && x.outcome !== "ok" ? " (" + esc(x.outcome) + ")" : "") + "</span></li>"; }).join("") + "</ul>"; }
-        body += '<h5 style="margin:var(--zx-space-3) 0 4px">' + esc(t("Latest blocked requests")) + "</h5>";
+        body += '<h4 class="zx-subhead">' + esc(t("Latest blocked requests")) + "</h4>";
         if (!b.length) { body += empty(t("Nothing was blocked recently.")); }
         else { body += '<ul class="ov-list">' + b.map(function (x) { return '<li><span class="muted">' + esc(rel(x.time)) + '</span><span class="grow">' + esc(x.ip) + " &rarr; " + esc(x.host) + "</span>" + badge("info", x.reason) + "</li>"; }).join("") + "</ul>"; }
         return card(t("Recent security events"), "history", body, go("seccenter", "auditlog", t("Audit log")) + " &middot; " + go("status", "", t("Blocked requests on Status")), true);
@@ -358,7 +361,7 @@
         var on = changeable.filter(function (i) { return i.status === "on"; }).length;
         var allOn = changeable.length > 0 && on === changeable.length;
         var notApplied = changeable.filter(function (i) { return i.status === "skipped"; }).length;
-        var h = '<div class="zx-card__head"><div class="bl-head"><h4 class="zx-card__title" id="blTitle"><i class="shield alternate icon" aria-hidden="true"></i> ' + esc(t("Enterprise baseline")) + "</h4>" +
+        var h = '<div class="zx-card__head"><div class="bl-head"><h3 class="zx-card__title" id="blTitle"><i class="shield alternate icon" aria-hidden="true"></i> ' + esc(t("Enterprise baseline")) + "</h3>" +
             badge(allOn ? "ok" : (d.pending ? "warn" : "info"), allOn ? t("All applicable settings are on") : t("{0} of {1} settings on").replace("{0}", on).replace("{1}", changeable.length)) + "</div></div>";
         h += '<div class="zx-card__body"><p class="zx-sub" style="margin:0">' + esc(t("A short list of safe security settings. Nothing in it blocks traffic, limits who can log in or changes a site you already have. Everything can be undone.")) + "</p>";
         (d.warnings || []).forEach(function (w) {
@@ -369,7 +372,8 @@
             var eff = '<span class="bl-why">' + esc(t(it.effect)) + "</span>";
             var reason = (it.status === "skipped" && it.reason) ? '<span class="bl-why"><b>' + esc(t("Why not applied:")) + "</b> " + esc(t(it.reason)) + "</span>" : "";
             var label = it.info && it.current === "not configured" ? t("Configure") : t("Open");
-            return "<li><span>" + chip(it) + '</span><span class="bl-txt"><b>' + esc(t(it.title)) + "</b>" + openLink(it, label) + why + eff + reason + "</span></li>";
+            var more = '<details class="bl-more"><summary>' + esc(t("Learn more")) + "</summary>" + eff + "</details>";
+            return "<li><span>" + chip(it) + '</span><span class="bl-txt"><b>' + esc(t(it.title)) + "</b>" + openLink(it, label) + why + reason + more + "</span></li>";
         }).join("") + "</ul>";
         var st = d.state || {};
         var note = "";
@@ -385,7 +389,9 @@
         h += '<div class="bl-actions"><button type="button" class="zx-btn zx-btn--primary" id="blApply"' + (d.pending ? "" : " disabled") + '><i class="check icon" aria-hidden="true"></i> ' + esc(t("Apply enterprise baseline")) + "</button>";
         if (d.canUndo) { h += '<button type="button" class="zx-btn zx-btn--secondary" id="blUndo"><i class="undo icon" aria-hidden="true"></i> ' + esc(t("Undo")) + "</button>"; }
         h += '<span class="bl-note" role="status">' + esc(note) + "</span></div></div>";
+        var openIdx = $(root).find(".bl-more").map(function (i, el) { return el.open ? i : null; }).get();   // keep "Learn more" open across the 10 s refresh
         $(root).html(h);
+        openIdx.forEach(function (i) { var el = $(root).find(".bl-more")[i]; if (el) { el.open = true; } });
     }
 
     function load() {

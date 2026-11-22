@@ -1,19 +1,31 @@
-<h3>Authentication audit</h3>
-<p>Every proxy rule with its effective authentication provider, and what weakens it (exception rules that skip the check, a basic
-    auth scope that leaves part of the host open, exceptions trusting forwarded headers). Reporting only; nothing changes unless you press
-    <b>Tag by auth provider</b>, which replaces the <code>auth:*</code> tags of the rules (other tags are kept).</p>
-<div class="ui toggle checkbox"><input type="checkbox" id="aaReq"><label>Warn about rules without authentication (report only, never blocks)</label></div>
-<div id="aaWarn" class="ui warning message" style="display:none"></div>
-<div style="margin:1em 0">
-    <button class="ui basic button" id="aaTag"><i class="tags icon"></i> Tag by auth provider</button>
-    <button class="ui basic icon button" id="aaRefresh" title="Refresh"><i class="refresh icon"></i></button>
-</div>
-<div style="overflow-x:auto">
-    <table class="ui unstackable celled table">
-        <thead><tr><th>Proxy rule</th><th>Provider</th><th>Weakened by</th><th>Tags</th></tr></thead>
-        <tbody id="aaRows"><tr><td colspan="4">Loading...</td></tr></tbody>
-    </table>
-</div>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Authentication audit</h3>
+        <p class="zx-card__desc">Which login protects each proxy rule, and what weakens it. This only reports; nothing changes unless you tag the rules.</p>
+    </div>
+    <div class="zx-card__body">
+        <label class="zx-toggle-row" for="aaReq">
+            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Warn about rules without authentication</span><span class="zx-toggle-row__desc">Report only, it never blocks a request. Saved as soon as you switch it.</span></span>
+            <input type="checkbox" class="zx-switch" role="switch" id="aaReq">
+        </label>
+        <div id="aaWarn" class="zx-callout zx-callout--warn" role="note" style="display:none"></div>
+    </div>
+</section>
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Proxy rules</h3>
+        <button class="ui basic icon button" id="aaRefresh" title="Refresh" aria-label="Refresh"><i class="refresh icon"></i></button>
+        <button class="zx-btn zx-btn--secondary zx-btn--sm" id="aaTag" title="Replaces the auth:* tags of the rules; other tags are kept"><i class="tags icon" aria-hidden="true"></i> Tag by auth provider</button>
+    </div>
+    <div class="zx-card__body">
+        <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Authentication per proxy rule">
+            <table class="zx-table">
+                <thead><tr><th>Proxy rule</th><th>Provider</th><th>Weakened by</th><th>Tags</th></tr></thead>
+                <tbody id="aaRows"><tr><td colspan="4" class="zx-empty-cell">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</section>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
@@ -22,12 +34,13 @@
         $.get("/api/authaudit/get", function (d) {
             $("#aaReq").prop("checked", d.RequireAll);
             var v = d.Violations || [];
-            if (v.length) { $("#aaWarn").html("<b>" + v.length + " proxy rule(s) have no authentication:</b> " + v.map(esc).join(", ")).show(); } else { $("#aaWarn").hide(); }
+            if (v.length) { $("#aaWarn").html("<div><b>" + esc(v.length === 1 ? t("1 proxy rule has no authentication:") : tf("{0} proxy rules have no authentication:", v.length)) + "</b> " + v.map(esc).join(", ") + "</div>").show(); } else { $("#aaWarn").hide(); }
             $("#aaRows").html((d.Rows || []).map(function (r) {
-                var color = r.Method === "none" ? "negative" : (r.Weaknesses && r.Weaknesses.length ? "warning" : "");
-                return '<tr class="' + color + '"><td>' + esc(r.Name) + (r.Disabled ? " <i>(disabled)</i>" : "") + "</td><td>" + esc(r.Method) + "</td><td>" +
-                    ((r.Weaknesses || []).map(esc).join("<br>") || "-") + "</td><td>" + ((r.Tags || []).map(function (t) { return '<span class="ui mini label">' + esc(t) + "</span>"; }).join(" ")) + "</td></tr>";
-            }).join("") || '<tr><td colspan="4">No proxy rules.</td></tr>');
+                var none = r.Method === "none", weak = r.Weaknesses && r.Weaknesses.length;
+                var prov = none ? '<span class="zx-badge zx-badge--danger">' + esc(t("None")) + "</span>" : '<span class="zx-badge' + (weak ? " zx-badge--warn" : " zx-badge--ok") + '">' + esc(r.Method) + "</span>";
+                return '<tr><td data-label="' + esc(t("Proxy rule")) + '">' + esc(r.Name) + (r.Disabled ? ' <span class="zx-badge">' + esc(t("disabled")) + "</span>" : "") + '</td><td data-label="' + esc(t("Provider")) + '">' + prov + '</td><td data-label="' + esc(t("Weakened by")) + '">' +
+                    ((r.Weaknesses || []).map(esc).join("<br>") || "-") + '</td><td data-label="' + esc(t("Tags")) + '">' + ((r.Tags || []).map(function (g) { return '<span class="zx-badge">' + esc(g) + "</span>"; }).join(" ")) + "</td></tr>";
+            }).join("") || '<tr><td colspan="4" class="zx-empty-cell">No proxy rules yet. Add one on the HTTP Proxy page.</td></tr>');
         });
     }
     $("#aaRefresh").on("click", load);

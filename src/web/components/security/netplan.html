@@ -4,9 +4,6 @@
     #npPage .np-zone .field { margin: 0; }
     #npPage .np-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-3); }
     #npPage .np-grid2 .field { margin: 0; }
-    #npPage .zx-card { margin-bottom: var(--zx-space-3); }
-    #npPage .zx-card__head { padding: var(--zx-space-3) var(--zx-space-3) 0; }
-    #npPage .zx-card__body { padding: var(--zx-space-3); }
     #npPage .np-list { list-style: none; margin: 0; padding: 0; }
     #npPage .np-list li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px var(--zx-space-2); padding: 5px 0; border-top: 1px solid var(--zx-border); }
     #npPage .np-list li:first-child { border-top: 0; }
@@ -19,57 +16,50 @@
     @media (max-width: 600px) { #npPage .np-zone { grid-template-columns: 1fr; } }
 </style>
 <div id="npPage">
-    <h3>Network plan</h3>
-    <div class="zx-callout zx-callout--warn" role="note" id="npDisclaimer" style="margin-bottom:var(--zx-space-3)">
+    <div class="zx-callout zx-callout--warn" role="note" id="npDisclaimer" style="margin-bottom:var(--zx-space-4)">
         <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
-        <div class="zx-callout__body"><span class="zx-callout__title">Zoraxy applies nothing to any firewall</span>
-            This page is a document. It does not configure your UDM Pro, Proxmox or any other firewall, and Zoraxy cannot see whether your rules exist.
-            It compares what you write here with this Zoraxy's own configuration, and it can write down firewall recommendations for you to review and apply yourself.</div>
+        <div class="zx-callout__body"><span class="zx-callout__title">Zoraxy does not change your firewall</span>
+            This page is a planning document. It compares the networks you write down with this Zoraxy's own settings and can write firewall recommendations for you to review and apply yourself. Nothing is compared or changed until you save a plan.</div>
     </div>
-    <p class="zx-sub" style="margin:0 0 var(--zx-space-3)">Off until you fill it in: with no plan saved, nothing is compared and nothing changes. Saving a plan changes no setting of this Zoraxy. <a href="#" data-zx-history="Network plan">View history</a></p>
 
     <div class="ui form" id="npForm">
-        <section class="zx-card"><div class="zx-card__head"><h4 class="zx-card__title">1. Your networks</h4></div><div class="zx-card__body">
+        <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Your networks</h3><p class="zx-card__desc">Name the network segments (VLANs) Zoraxy and your servers live in.</p></div><div class="zx-card__body">
             <div class="np-zone">
-                <div class="field zx-field"><label for="npProxyName">Proxy VLAN name</label><input type="text" id="npProxyName" maxlength="48" placeholder="Proxy DMZ" autocomplete="off"></div>
-                <div class="field zx-field"><label for="npProxyCidrs">Proxy VLAN networks (one per line)</label><textarea id="npProxyCidrs" rows="2" placeholder="10.0.1.0/24" spellcheck="false"></textarea></div>
+                <div class="field zx-field"><label for="npProxyName">Proxy VLAN name</label><input type="text" id="npProxyName" maxlength="48" placeholder="Example: Proxy DMZ" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npProxyCidrs">Proxy VLAN networks </label><textarea id="npProxyCidrs" rows="2" placeholder="10.0.1.0/24" spellcheck="false"></textarea></div>
             </div>
             <div class="np-zone">
-                <div class="field zx-field"><label for="npMgmtName">Management VLAN name</label><input type="text" id="npMgmtName" maxlength="48" placeholder="Management" autocomplete="off"></div>
-                <div class="field zx-field"><label for="npMgmtCidrs">Management VLAN networks (one per line)</label><textarea id="npMgmtCidrs" rows="2" placeholder="10.0.9.0/24" spellcheck="false"></textarea></div>
+                <div class="field zx-field"><label for="npMgmtName">Management VLAN name</label><input type="text" id="npMgmtName" maxlength="48" placeholder="Example: Management" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npMgmtCidrs">Management VLAN networks </label><textarea id="npMgmtCidrs" rows="2" placeholder="10.0.9.0/24" spellcheck="false"></textarea></div>
             </div>
             <div class="np-zone">
-                <div class="field zx-field"><label for="npAppName">Application VLAN name</label><input type="text" id="npAppName" maxlength="48" placeholder="Servers" autocomplete="off"></div>
-                <div class="field zx-field"><label for="npAppCidrs">Application VLAN networks (one per line)</label><textarea id="npAppCidrs" rows="2" placeholder="10.0.2.0/24" spellcheck="false"></textarea></div>
+                <div class="field zx-field"><label for="npAppName">Application VLAN name</label><input type="text" id="npAppName" maxlength="48" placeholder="Example: Servers" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npAppCidrs">Application VLAN networks </label><textarea id="npAppCidrs" rows="2" placeholder="10.0.2.0/24" spellcheck="false"></textarea></div>
             </div>
-            <p class="zx-help" style="margin:0">Names may use letters, digits, spaces and . _ - ( ). Networks are CIDR (10.0.2.0/24) or a single address; "everything" (0.0.0.0/0) is refused.</p>
+            <p class="zx-help" style="margin:0">One network per line. Names may use letters, digits, spaces and . _ - ( ). Networks are CIDR (10.0.2.0/24) or a single address; "everything" (0.0.0.0/0) is refused.</p>
         </div></section>
 
-        <section class="zx-card"><div class="zx-card__head"><h4 class="zx-card__title">2. Who talks to whom</h4></div><div class="zx-card__body">
+        <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Who talks to whom</h3><p class="zx-card__desc">The proxies in front of this one, the servers behind it and who may administer it.</p></div><div class="zx-card__body">
             <div class="np-grid2">
-                <div class="field zx-field"><label for="npUpstream">Trusted upstream proxies (one per line)</label><textarea id="npUpstream" rows="3" placeholder="10.0.1.5" spellcheck="false"></textarea>
+                <div class="field zx-field"><label for="npUpstream">Trusted upstream proxies </label><textarea id="npUpstream" rows="3" placeholder="10.0.1.5" spellcheck="false"></textarea>
                     <p class="zx-help">The proxies in front of this one (an internal proxy lists the external proxy). They should be inside the proxy VLAN and listed under <a href="#trustproxy" data-nav-open="trustproxy">Trusted Proxies</a>.</p></div>
-                <div class="field zx-field"><label for="npBackends">Allowed backend destinations (one per line)</label><textarea id="npBackends" rows="3" placeholder="10.0.3.5 443&#10;10.0.3.0/24 8000-8100" spellcheck="false"></textarea>
+                <div class="field zx-field"><label for="npBackends">Allowed backend destinations </label><textarea id="npBackends" rows="3" placeholder="10.0.3.5 443&#10;10.0.3.0/24 8000-8100" spellcheck="false"></textarea>
                     <p class="zx-help">Single servers outside (or narrower than) the application VLAN. Same format as the list in <a href="#" class="np-go" data-page="seccenter" data-anchor="exposure">Network exposure</a>.</p></div>
                 <div class="field zx-field"><label for="npPorts">Permitted application ports</label><input type="text" id="npPorts" placeholder="443, 8000-8100" autocomplete="off">
                     <p class="zx-help">Comma separated ports or ranges. A proxy rule that uses another port is reported.</p></div>
-                <div class="field zx-field"><label for="npAdmin">Extra administrative access (one per line)</label><textarea id="npAdmin" rows="3" placeholder="192.168.77.5" spellcheck="false"></textarea>
+                <div class="field zx-field"><label for="npAdmin">Extra administrative access </label><textarea id="npAdmin" rows="3" placeholder="192.168.77.5" spellcheck="false"></textarea>
                     <p class="zx-help">Addresses besides the management VLAN that may reach the admin panel, for example a jump host.</p></div>
             </div>
         </div></section>
         <div id="npMsg" class="ui negative message" style="display:none" role="alert"></div>
     </div>
 
-    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h4 class="zx-card__title">3. Does the real configuration match?</h4>
+    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h3 class="zx-card__title">Does the real configuration match?</h3>
             <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="npRecheck"><i class="sync icon" aria-hidden="true"></i> Check again</button></div>
         <div class="zx-card__body" id="npResult" aria-live="polite"><div class="zx-skeleton zx-skeleton--block" style="height:5rem"></div></div></section>
 
-    <section class="zx-card"><div class="zx-card__head"><h4 class="zx-card__title">4. Firewall recommendations</h4></div><div class="zx-card__body">
-        <div class="zx-callout zx-callout--danger" role="note" style="margin-bottom:var(--zx-space-2)">
-            <span class="zx-callout__icon"><i class="ban icon"></i></span>
-            <div class="zx-callout__body"><span class="zx-callout__title">Not applied. Review before you use them.</span>
-                Zoraxy has not applied, changed or checked any firewall rule. The text below is generated from the saved plan for UniFi (UDM Pro zone-based firewall) and Proxmox. Nobody has tested it against your network.</div></div>
-        <p class="zx-sub" style="margin:0">The export uses the saved plan (save your edits first). It contains your networks and the backend addresses of your proxy rules, no passwords, keys or paths.</p>
+    <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Firewall recommendations</h3><p class="zx-card__desc">Written from the saved plan for UniFi (zone-based firewall) and Proxmox. Not applied and not tested against your network: review before you use them.</p></div><div class="zx-card__body">
+        <p class="zx-help" style="margin:0">The export uses the saved plan (save your edits first). It contains your networks and the backend addresses of your proxy rules, no passwords, keys or paths.</p>
         <div class="np-actions">
             <button type="button" class="zx-btn zx-btn--primary" id="npGen"><i class="file alternate outline icon" aria-hidden="true"></i> Export policy recommendations</button>
             <button type="button" class="zx-btn zx-btn--secondary" id="npDl" disabled><i class="download icon" aria-hidden="true"></i> Download .md</button>
@@ -128,9 +118,9 @@
         if (na.length) { h += '<details style="margin-top:var(--zx-space-1)"><summary>' + esc(t("{0} checks do not apply yet").replace("{0}", na.length)) + '</summary><ul class="np-list">' + na.map(function (x) {
             return "<li><span class=\"grow\"><b>" + esc(t(x.title)) + '</b><span class="np-ev">' + esc((x.evidence || [])[0] || "") + "</span></span></li>"; }).join("") + "</ul></details>"; }
         var rel = (v.related || []).filter(function (x) { return x.status !== "ok" && x.status !== "not-applicable"; });
-        h += '<h5 style="margin:var(--zx-space-3) 0 4px">' + esc(t("Already covered by the Security Overview")) + "</h5>" +
-            '<p class="zx-sub" style="margin:0 0 4px">' + esc(t("These checks exist elsewhere and are not repeated here: upstream certificate verification, a proxy rule that points at the admin panel, the allowed backend list.")) + "</p>";
-        h += rel.length ? '<ul class="np-list">' + rel.map(row).join("") + "</ul>" : '<p class="zx-sub" style="margin:0">' + esc(t("None of them reports a problem.")) + "</p>";
+        h += '<h4 class="zx-subhead">' + esc(t("Already covered by the Security Overview")) + "</h4>" +
+            '<p class="zx-help" style="margin:0 0 4px">' + esc(t("These checks exist elsewhere and are not repeated here: upstream certificate verification, a proxy rule that points at the admin panel, the allowed backend list.")) + "</p>";
+        h += rel.length ? '<ul class="np-list">' + rel.map(row).join("") + "</ul>" : '<p class="zx-help" style="margin:0">' + esc(t("None of them reports a problem.")) + "</p>";
         $("#npResult").html(h);
     }
     function load(keepForm) {

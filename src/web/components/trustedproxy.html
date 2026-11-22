@@ -1,10 +1,31 @@
-
+<style>
+    #trustedProxyCard .tpTools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
+    #trustedProxyCard .tpTools .ui.input { flex: 1 1 16rem; max-width: 24rem; }
+    #trustedProxyCard .tpCount { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #trustedProxyCard .zx-table-wrap { --zx-table-max: min(34rem, 70vh); }
+    #trustedProxyCard td.proxy-ip-cell { white-space: nowrap; font-family: var(--zx-font-mono); font-size: 0.93em; }
+    #trustedProxyCard .proxy-ip-edit, #trustedProxyCard .proxy-desc-edit { min-width: 9rem; }
+    #trustedProxyCard td.zx-empty-cell { white-space: normal; }
+    #trustedProxyCard #trustedProxyTextArea { width: 100%; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); line-height: 1.5; resize: vertical; }
+    #trustedProxyCard .tpTextBar { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-3); }
+    #trustedProxyCard .tpTextBar .tpReset { margin-left: auto; }
+    /* phone: the page scrolls (no nested scroll box); row actions share the first line of each entry card */
+    @media (max-width: 480px) {
+        #trustedProxyCard .zx-table-wrap { max-height: none; overflow: visible; }
+        #trustedProxyCard .zx-table td { padding-top: 4px; padding-bottom: 4px; }
+        #trustedProxyCard .zx-table tr.trustedProxyItem { position: relative; }
+        #trustedProxyCard .zx-table tr.trustedProxyItem td.zx-actions { position: absolute; top: 2px; right: 6px; width: auto; padding: 0; }
+        #trustedProxyCard .zx-table tr.trustedProxyItem td.proxy-ip-cell { padding-right: 96px; min-height: 36px; }
+        #trustedProxyCard .zx-card__head #toggleTextEditBtn { flex: 1 0 100%; margin-left: 0 !important; }
+    }
+    @media (max-width: 748px) { #trustedProxyCard .tpTextBar .tpReset { margin-left: 0; } #trustedProxyCard .tpTools .ui.input { max-width: none; } }
+</style>
 <div class="standardContainer">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
-            <h2 class="zx-page-header__title">Trusted Proxies</h2>
-            <p class="zx-page-header__sub">Tell Zoraxy which proxies in front of it (a CDN or another reverse proxy) it may believe about the visitor's real address.</p>
+            <h2 class="zx-page-header__title">Trusted proxies</h2>
+            <p class="zx-page-header__sub">Which proxies in front of Zoraxy it may believe about the visitor's real address.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Trusted proxies"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -16,82 +37,93 @@
             <li><a href="#access" data-nav-open="access">Access Rules</a> <span>address rules and bans use the real client address</span></li>
             <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>trusted proxies are never auto-banned</span></li>
             <li><a href="#globalsettings" data-nav-open="globalsettings">Listeners</a> <span>client IP header and PROXY protocol options</span></li>
-            <li><a href="#secoverview" data-nav-open="secoverview">Security Overview</a> <span>checks that a CDN is not spoofable</span></li>
         </ul>
     </aside>
-    <div class="zx-field__label-row"><strong>What is trusted proxy gating?</strong>
-        <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="tpWhat" aria-label="What is trusted proxy gating?">?</button></div>
-    <div class="zx-popover" id="tpWhat" role="note" hidden>Headers such as <code>X-Forwarded-For</code> can be forged by anyone. With gating on, Zoraxy only reads the real client IP from them when the connection comes from an address on this list; otherwise the header is ignored. Only add proxies you control or that are run by a service you trust, for example the published address ranges of your CDN.</div>
-    <div class="ui divider"></div>
-    <div class="ui basic segment">
-        <!-- Trusted proxy table -->
-        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5em;">
-            <h3 style="margin:0;">Trusted proxy list</h3>
-            <button id="toggleTextEditBtn" class="ui basic small button" onclick="window.toggleTrustedProxyTextEdit();">
-                <i class="edit icon"></i> Edit as Text
-            </button>
-        </div>
-        <br>
 
-        <!-- Table view (default) -->
-        <div id="trustedProxyTableView">
-            <table class="ui unstackable basic celled table">
-                <thead>
-                    <tr>
-                        <th>IP / CIDR</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="trustedProxyTable">
-                </tbody>
-            </table>
-            <button id="refreshProxyListBtn" class="ui basic button" onclick="window.initTrustedProxyTable();"><i class="ui green refresh icon"></i> Refresh</button>
+    <section class="zx-card" id="trustedProxyCard" aria-labelledby="tpListTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="tpListTitle">Trusted proxy list</h3>
+            <span class="zx-badge" id="tpCountBadge" hidden></span>
+            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="tpWhat" aria-label="What is trusted proxy gating?">?</button>
+            <button id="toggleTextEditBtn" class="ui basic small button" style="margin-left:auto;" onclick="window.toggleTrustedProxyTextEdit();">
+                <i class="edit icon"></i> Edit as text
+            </button>
+            <p class="zx-card__desc">Zoraxy reads the visitor's real address from headers such as <code>X-Forwarded-For</code> only when the connection comes from an address on this list.</p>
+            <div class="zx-popover" id="tpWhat" role="note" hidden>Headers such as <code>X-Forwarded-For</code> can be forged by anyone. With gating on, Zoraxy only reads the real client IP from them when the connection comes from an address on this list; otherwise the header is ignored. Only add proxies you control or that are run by a service you trust, for example the published address ranges of your CDN.</div>
         </div>
-
-        <!-- Text edit view (hidden by default) -->
-        <div id="trustedProxyTextView" style="display:none;">
-            <p style="color: grey;"><i class="info circle icon"></i>One entry per line. Format: <code>ip/cidr, description</code>. Lines starting with <code>#</code> are ignored.</p>
-            <div id="trustedProxyTextError" class="zx-callout zx-callout--danger" role="alert" hidden></div>
-            <label for="trustedProxyTextArea" class="zx-sr-only">Trusted proxy list, one entry per line</label>
-            <textarea id="trustedProxyTextArea" class="ui fluid" rows="14" aria-describedby="trustedProxyTextError"
-                style="width:100%; font-family:monospace; font-size:0.95em; padding:0.75em; border:1px solid rgba(34,36,38,.15); border-radius:0.28571429rem; resize:vertical;"></textarea>
-            <br><br>
-            <button class="ui basic green button" onclick="window.saveBulkTrustedProxies();">
-                <i class="save icon"></i> Save
-            </button>
-            <button class="ui basic button" onclick="window.cancelBulkTrustedProxies();">
-                <i class="times icon"></i> Cancel
-            </button>
-            <button class="ui basic red button" onclick="window.resetDefaultTrustedProxies();" style="float:right;">
-                <i class="redo icon"></i> Reset to Default
-            </button>
-        </div>
-    </div>
-    <div class="ui divider"></div>
-     <div id="trustedProxyAddForm" class="ui basic segment">
-        <!-- Add new trusted proxy form -->
-        <h3>Add Trusted Proxy</h3>
-        <div class="ui form">
-            <div class="two fields">
-                <div class="field zx-field">
-                    <label for="trustedProxyIpInput">IP Address / CIDR</label>
-                    <input type="text" id="trustedProxyIpInput" placeholder="e.g. 103.21.244.0/22 or 192.168.1.1">
-                    <small>Supports single IP addresses and CIDR notation (e.g. 192.168.1.0/24 or 192.168.1.1). A range that matches every address (/0) is refused.</small>
-                    <p class="zx-error" id="trustedProxyIpError" role="alert"></p>
+        <div class="zx-card__body">
+            <!-- Table view (default) -->
+            <div id="trustedProxyTableView">
+                <div class="tpTools">
+                    <div class="ui icon input">
+                        <input type="search" id="trustedProxyFilter" placeholder="Filter by address or description" aria-label="Filter the list">
+                        <i class="search icon"></i>
+                    </div>
+                    <button id="refreshProxyListBtn" class="ui basic button" onclick="window.initTrustedProxyTable();"><i class="refresh icon"></i> Refresh</button>
                 </div>
-                <div class="field">
-                    <label for="trustedProxyDescInput">Description</label>
-                    <input type="text" id="trustedProxyDescInput" placeholder="e.g. Cloudflare">
+                <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Trusted proxies">
+                    <table class="zx-table zx-table--compact">
+                        <thead>
+                            <tr>
+                                <th>IP / CIDR</th>
+                                <th>Description</th>
+                                <th class="zx-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trustedProxyTable">
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <button class="ui basic green button" onclick="window.addTrustedProxy();">
-                <i class="ui green add icon"></i> Add Trusted Proxy
-            </button>
+
+            <!-- Text edit view (hidden by default) -->
+            <div id="trustedProxyTextView" style="display:none;">
+                <p class="zx-help" style="margin: 0 0 var(--zx-space-3);">One entry per line. Format: <code>ip/cidr, description</code>. Lines starting with <code>#</code> are ignored.</p>
+                <div id="trustedProxyTextError" class="zx-callout zx-callout--danger" role="alert" hidden></div>
+                <label for="trustedProxyTextArea" class="zx-sr-only">Trusted proxy list, one entry per line</label>
+                <textarea id="trustedProxyTextArea" class="zx-textarea" rows="14" aria-describedby="trustedProxyTextError"></textarea>
+                <div class="tpTextBar">
+                    <button class="ui primary button" onclick="window.saveBulkTrustedProxies();">
+                        <i class="save icon"></i> Save
+                    </button>
+                    <button class="ui basic button" onclick="window.cancelBulkTrustedProxies();">
+                        <i class="times icon"></i> Cancel
+                    </button>
+                    <button class="ui basic red button tpReset" onclick="window.resetDefaultTrustedProxies();">
+                        <i class="redo icon"></i> Reset to default
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
-    <br>
-    <br>
+    </section>
+
+    <section id="trustedProxyAddForm" class="zx-card" aria-labelledby="tpAddTitle" style="margin-top: var(--zx-space-4);">
+        <!-- Add new trusted proxy form -->
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="tpAddTitle">Add a trusted proxy</h3>
+            <p class="zx-card__desc">Only add proxies you control or a service you trust, such as the address ranges of your CDN.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="ui form">
+                <div class="zx-form-grid">
+                    <div class="field zx-field">
+                        <label for="trustedProxyIpInput">IP address or CIDR range</label>
+                        <input type="text" id="trustedProxyIpInput" placeholder="e.g. 103.21.244.0/22 or 192.168.1.1">
+                        <p class="zx-help">A single address or a CIDR range such as 192.168.1.0/24. A range that matches every address (/0) is refused.</p>
+                        <p class="zx-error" id="trustedProxyIpError" role="alert"></p>
+                    </div>
+                    <div class="field zx-field">
+                        <label for="trustedProxyDescInput">Description (optional)</label>
+                        <input type="text" id="trustedProxyDescInput" placeholder="e.g. Cloudflare">
+                        <p class="zx-help">A note to remind you what this proxy is.</p>
+                    </div>
+                </div>
+                <button class="ui primary button" onclick="window.addTrustedProxy();">
+                    <i class="add icon"></i> Add proxy
+                </button>
+            </div>
+        </div>
+    </section>
 </div>
 <script>
 (function(){
@@ -153,47 +185,46 @@
             if (!data || data.length === 0) {
                 $('#trustedProxyTable').append(`
                 <tr>
-                    <td colspan="3"><div class="zx-empty"><div class="zx-empty__title">No trusted proxies configured</div>
+                    <td class="zx-empty-cell" colspan="3"><div class="zx-empty zx-empty--inline"><div class="zx-empty__title">No trusted proxies configured</div>
                     <p class="zx-empty__text">Zoraxy ignores forwarded address headers from every source. If your sites are behind a CDN or another proxy, add its address ranges below.</p>
                     <button type="button" class="zx-btn zx-btn--primary" onclick="$('#trustedProxyIpInput').focus();">Add a trusted proxy</button></div></td>
                 </tr>
                 `);
+                updateCount(0);
             } else {
                 data = data.slice().sort(function(a, b){ var x = ipSortKey(a.IP), y = ipSortKey(b.IP); return x < y ? -1 : (x > y ? 1 : 0); });
                 $.each(data, function(index, proxy) {
                     let ipRaw = proxy.IP;
                     let ip = esc(proxy.IP);
                     let desc = esc(proxy.Desc || '');
-                    let icon = ipRaw.includes('/') ? "shield alternate green icon" : "shield alternate blue icon";
                     $('#trustedProxyTable').append(`
                         <tr class="trustedProxyItem" data-ip="${encodeURIComponent(ipRaw)}">
-                            <td class="proxy-ip-cell">
-                                <i class="${icon} proxy-icon"></i>
+                            <td class="proxy-ip-cell" data-label="IP / CIDR">
                                 <span class="proxy-ip-display">${ip}</span>
                                 <div class="ui mini fluid input proxy-ip-edit" style="display:none;">
                                     <input type="text" value="${ip}">
                                 </div>
                             </td>
-                            <td class="proxy-desc-cell">
+                            <td class="proxy-desc-cell" data-label="Description">
                                 <span class="proxy-desc-display">${desc}</span>
                                 <div class="ui mini fluid input proxy-desc-edit" style="display:none;">
                                     <input type="text" value="${desc}">
                                 </div>
                             </td>
-                            <td>
-                                <div class="proxy-actions-display">
-                                    <button class="ui icon basic mini circular button" onclick="window.editTrustedProxyRow(this);" title="Edit">
+                            <td class="zx-actions" data-label="Actions">
+                                <div class="proxy-actions-display zx-row-actions">
+                                    <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon" onclick="window.editTrustedProxyRow(this);" title="Edit" aria-label="Edit ${ip}">
                                         <i class="edit icon"></i>
                                     </button>
-                                    <button class="ui icon basic mini circular red button" onclick="window.removeTrustedProxy('${ip}');" title="Delete">
+                                    <button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" onclick="window.removeTrustedProxy('${ip}');" title="Delete" aria-label="Delete ${ip}">
                                         <i class="trash alternate icon"></i>
                                     </button>
                                 </div>
-                                <div class="proxy-actions-edit" style="display:none;">
-                                    <button class="ui icon basic mini green button" onclick="window.saveTrustedProxyRow(this, '${ip}');" title="Save">
+                                <div class="proxy-actions-edit zx-row-actions" style="display:none;">
+                                    <button type="button" class="zx-btn zx-btn--primary zx-btn--sm zx-btn--icon" onclick="window.saveTrustedProxyRow(this, '${ip}');" title="Save" aria-label="Save ${ip}">
                                         <i class="check icon"></i>
                                     </button>
-                                    <button class="ui icon basic mini grey button" onclick="window.cancelTrustedProxyEdit(this);" title="Cancel">
+                                    <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon" onclick="window.cancelTrustedProxyEdit(this);" title="Cancel" aria-label="Cancel editing ${ip}">
                                         <i class="times icon"></i>
                                     </button>
                                 </div>
@@ -201,9 +232,30 @@
                         </tr>
                     `);
                 });
+                updateCount(data.length);
+                applyFilter();
             }
         });
     }
+
+    function updateCount(n){
+        var b = $('#tpCountBadge');
+        if (n > 0) { b.text(n + (n === 1 ? ' entry' : ' entries')).prop('hidden', false); } else { b.prop('hidden', true); }
+    }
+    //Client-side filter of the rows already on screen (nothing is sent to the server)
+    function applyFilter(){
+        var q = ($('#trustedProxyFilter').val() || '').toLowerCase().trim();
+        var rows = $('#trustedProxyTable tr.trustedProxyItem'), shown = 0;
+        rows.each(function(){
+            var hit = q === '' || $(this).text().toLowerCase().indexOf(q) >= 0 || decodeURIComponent($(this).attr('data-ip') || '').toLowerCase().indexOf(q) >= 0;
+            $(this).toggle(hit); if (hit) shown++;
+        });
+        $('#trustedProxyTable tr.tpNoMatch').remove();
+        if (rows.length && shown === 0) {
+            $('#trustedProxyTable').append('<tr class="tpNoMatch"><td class="zx-empty-cell" colspan="3">No entry matches this filter.</td></tr>');
+        }
+    }
+    $(document).off('input.tpFilter').on('input.tpFilter', '#trustedProxyFilter', applyFilter);
 
     var _inTextEditMode = false;
 
@@ -215,7 +267,7 @@
             $('#trustedProxyTableView').show();
             $('#trustedProxyAddForm').show();
             $('#trustedProxyTextView').hide();
-            $('#toggleTextEditBtn').html('<i class="edit icon"></i> Edit as Text');
+            $('#toggleTextEditBtn').html('<i class="edit icon"></i> Edit as text');
             initTrustedProxyTable();
         } else {
             // Switch to text-edit mode: populate textarea then show it
@@ -225,7 +277,7 @@
                 $('#trustedProxyTableView').hide();
                 $('#trustedProxyAddForm').hide();
                 $('#trustedProxyTextView').show();
-                $('#toggleTextEditBtn').html('<i class="table icon"></i> View as Table');
+                $('#toggleTextEditBtn').html('<i class="table icon"></i> View as table');
             });
         }
     }
@@ -258,7 +310,7 @@
                 $('#trustedProxyTableView').show();
                 $('#trustedProxyAddForm').show();
                 $('#trustedProxyTextView').hide();
-                $('#toggleTextEditBtn').html('<i class="edit icon"></i> Edit as Text');
+                $('#toggleTextEditBtn').html('<i class="edit icon"></i> Edit as text');
                 initTrustedProxyTable();
             }
         });
@@ -271,7 +323,7 @@
         $('#trustedProxyTableView').show();
         $('#trustedProxyAddForm').show();
         $('#trustedProxyTextView').hide();
-        $('#toggleTextEditBtn').html('<i class="edit icon"></i> Edit as Text');
+        $('#toggleTextEditBtn').html('<i class="edit icon"></i> Edit as text');
         initTrustedProxyTable();
     }
 
@@ -349,7 +401,7 @@
 
     function editTrustedProxyRow(btn){
         var row = $(btn).closest('tr');
-        row.find('.proxy-icon, .proxy-ip-display, .proxy-desc-display, .proxy-actions-display').hide();
+        row.find('.proxy-ip-display, .proxy-desc-display, .proxy-actions-display').hide();
         row.find('.proxy-ip-edit, .proxy-desc-edit, .proxy-actions-edit').show();
         row.find('.proxy-ip-edit input').focus();
     }
@@ -358,7 +410,7 @@
         var row = $(btn).closest('tr');
         row.find('.proxy-ip-edit input').val(row.find('.proxy-ip-display').text());
         row.find('.proxy-desc-edit input').val(row.find('.proxy-desc-display').text());
-        row.find('.proxy-icon, .proxy-ip-display, .proxy-desc-display, .proxy-actions-display').show();
+        row.find('.proxy-ip-display, .proxy-desc-display').show(); row.find('.proxy-actions-display').css('display', '');
         row.find('.proxy-ip-edit, .proxy-desc-edit, .proxy-actions-edit').hide();
     }
 

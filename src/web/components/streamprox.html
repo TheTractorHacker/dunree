@@ -1,118 +1,159 @@
-<div class="standardContainer">
-    <div class="ui basic segment">
-        <h2>Stream Proxy</h2>
-        <p>Proxy traffic flow on layer 3 via TCP or UDP</p>
-    </div>
-    <div class="ui divider"></div>
-    <div class="ui basic segment" style="margin-top: 0;">
-        <h3>TCP / UDP Proxy Rules</h3>
-        <p>A list of TCP / UDP proxy rules created on this host.</p>
-        <div class="zx-scrollx zx-scrollx--sticky-last">
-            <table id="proxyTable" class="ui celled basic unstackable table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Listening Address</th>
-                        <th>Target Address</th>
-                        <th>Mode</th>
-                        <th>Timeout (s)</th>
-                        <th>Enable Logging</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                </tbody>
-            </table>
+<div class="standardContainer" id="streamProxyPage">
+    <style>
+        #streamProxyPage { max-width: 1100px; }
+        /* empty list: no box inside the card, no header row above the message */
+        #streamProxyPage .zx-table:has(td.zx-empty-cell) thead { display: none; }
+        #streamProxyPage .zx-table, body.darkTheme #streamProxyPage .zx-table { border: 0 !important; }
+        #streamProxyPage td.zx-empty-cell { padding: var(--zx-space-4); }
+        #streamProxyPage td.zx-empty-cell .zx-empty { padding: var(--zx-space-3) 0; }
+        @media (max-width: 480px) { #streamProxyPage .zx-table tr:has(> td.zx-empty-cell) { border: 0; background: transparent; margin: 0; border-radius: 0; } #streamProxyPage .zx-table td.zx-empty-cell { padding: var(--zx-space-3) 0; } }
+        #streamProxyPage .zx-table-wrap { --zx-table-max: 28rem; }
+        /* the dark theme draws a frame around this whole page; the cards are the only boxes */
+        body.darkTheme #streamproxy:has(> #streamProxyPage) { border: 0 !important; }
+        #streamProxyPage .zx-btn.disabled { opacity: .55; pointer-events: none; }
+        #streamProxyPage .zxs-toggles { display: grid; gap: var(--zx-space-3) var(--zx-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); margin: var(--zx-space-4) 0; }
+        #streamProxyPage .zxs-toggles .field { margin: 0; }
+        #streamProxyPage .ui.checkbox label small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; margin-top: 2px; }
+        #streamProxyPage .zx-form-grid small, #streamProxyPage .zxs-field small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+        #streamProxyPage .zx-card__foot { align-items: center; }
+        #streamProxyPage .zx-card__foot .ui.button { margin: 0; }
+        #streamProxyPage .zx-card__foot > [tourstep] { display: flex !important; }
+        #streamProxyPage .zxs-narrowfield { max-width: none; }
+        #streamProxyPage .zxs-cell-name { font-weight: 600; }
+        #streamProxyPage .zxs-cell-name .statusText { margin-top: 4px; }
+        #streamProxyPage td.zxs-addr { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); word-break: break-all; }
+        #streamProxyPage .zx-callout { margin: var(--zx-space-2) 0 0; }
+    </style>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Stream Proxy</h2>
+            <p class="zx-page-header__sub">Forward raw TCP and UDP ports to a server</p>
         </div>
-        <br>
-        <button class="ui basic right floated button" onclick="initProxyConfigList();" title="Refresh List"><i class="ui green refresh icon"></i>Refresh</button>
-        <br><br>
-    </div>
-    <div class="ui divider"></div>
-    <div class="ui basic segment" id="addproxyConfig">
-        <h3>Add or Edit Stream Proxy</h3>
-        <p>Create or edit a new stream proxy instance</p>
+    </header>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Stream proxy rules</h3>
+            <button class="zx-btn zx-btn--secondary zx-btn--sm" type="button" onclick="initProxyConfigList();" title="Refresh list"><i class="refresh icon"></i> Refresh</button>
+            <p class="zx-card__desc">Each rule listens on a port of this host and passes the traffic on to a target server.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Stream proxy rules">
+                <table id="proxyTable" class="zx-table zx-table--compact">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Listens on</th>
+                            <th>Forwards to</th>
+                            <th>Mode</th>
+                            <th class="zx-num">Timeout (s)</th>
+                            <th>Logging</th>
+                            <th class="zx-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="zx-card" id="addproxyConfig">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="streamFormTitle">Add a rule</h3>
+            <p class="zx-card__desc" id="streamFormDesc">Choose the port to listen on and where the traffic goes.</p>
+        </div>
         <form id="streamProxyForm" class="ui form">
+          <div class="zx-card__body">
             <div class="field" style="display:none;">
                 <label>UUID</label>
                 <input type="text" name="uuid">
             </div>
-            <div class="field">
-                <label>Name</label>
-                <input type="text" name="name" placeholder="Config Name" aria-label="Name">
-            </div>
-            <div class="field">
-                <label>Listening Address with Port</label>
-                <input type="text" name="listenAddr" placeholder="" aria-label="Listening Address with Port">
-                <small>Address to listen on this host. e.g. :25565 or 127.0.0.1:25565. <br>
-                    If you are using Docker, you will also need to expose this port to host network.</small>
-            </div>
-            <div class="field">
-                <label>Proxy Target Address with Port</label>
-                <input type="text" name="proxyAddr" placeholder="" aria-label="Proxy Target Address with Port">
-                <small>Server address to forward TCP / UDP package. e.g. 192.168.1.100:25565</small>
-            </div>
-            <div class="field">
-                <label>Timeout (s)</label>
-                <input type="text" name="timeout" placeholder="" value="10" aria-label="Timeout (s)">
-                <small>Connection timeout in seconds</small>
-            </div>
-            <Br>
-            <div class="field">
-                <div class="ui toggle checkbox">
-                    <input type="checkbox" tabindex="0" name="useTCP" class="hidden">
-                    <label>Enable TCP<br>
-                        <small>Forward TCP request on this listening socket</small>
-                    </label>
+            <div class="zx-form-grid">
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="spName">Name</label>
+                    <input type="text" id="spName" name="name" placeholder="Minecraft server" aria-label="Name">
+                    <small>Optional. A name is generated when this is empty.</small>
+                </div>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="spListen">Listen on</label>
+                    <input type="text" id="spListen" name="listenAddr" placeholder=":25565" aria-label="Listen on">
+                    <small>The address and port on this host, for example :25565 or 127.0.0.1:25565. With Docker, also publish this port.</small>
+                </div>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="spTarget">Forward to</label>
+                    <input type="text" id="spTarget" name="proxyAddr" placeholder="192.168.1.100:25565" aria-label="Forward to">
+                    <small>The server that receives the traffic, with its port</small>
+                </div>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="spTimeout">Timeout (seconds)</label>
+                    <input type="text" id="spTimeout" name="timeout" placeholder="10" value="10" aria-label="Timeout (s)" class="zxs-narrowfield">
+                    <small>How long to wait for a connection</small>
                 </div>
             </div>
-            <div class="field">
-                <div class="ui toggle checkbox">
-                    <input type="checkbox" tabindex="0" name="useUDP" class="hidden">
-                    <label>Enable UDP<br>
-                    <small>Forward UDP request on this listening socket</small></label>
-                </div>
-            </div>
-            <div class="field">
-                <div class="ui toggle checkbox">
-                    <input type="checkbox" tabindex="0" name="enableLogging" class="hidden">
-                    <label>Enable Logging<br>
-                        <small>Enable logging of connection status and errors for this rule</small>
-                    </label>
-                </div>
-            </div>
-            <div class="field">
-                <label>Proxy Protocol</label>
-                <select name="proxyProtocolVersion" class="ui dropdown">
-                    <option value="0">Disabled</option>
-                    <option value="1">Proxy Protocol V1</option>
-                    <option value="2">Proxy Protocol V2</option>
-                </select>
-                <small>Select Proxy Protocol v1 / v2 to use (if any)</small>
-                    <div id="proxyProtocolUdpWarning" style="display:none; color:#bd7100; margin-top:0.5em;">
-                        <i class="exclamation triangle icon"></i> Proxy Protocol V1 is not supported for UDP. The proxy protocol header will not be included in UDP packets if selected.
-                    </div>
-            </div>
-            <div class="field">
-                <label>Access Rule</label>
-                <div class="ui fluid selection dropdown" id="streamProxyAccessRuleDropdown">
-                    <input type="hidden" name="accessRuleUUID" value="default">
-                    <i class="dropdown icon"></i>
-                    <div class="default text">Default</div>
-                    <div class="menu" id="streamProxyAccessRuleList">
-                        <div class="item" data-value="default"><i class="ui yellow star icon"></i> Default</div>
+            <div class="zxs-toggles">
+                <div class="field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" tabindex="0" name="useTCP" class="hidden">
+                        <label>Forward TCP<br>
+                            <small>Pass on TCP connections</small>
+                        </label>
                     </div>
                 </div>
-                <small>Select which access rule (blacklist / whitelist) applies to connections on this proxy rule. Uses "Default" if the selected rule is removed.</small>
+                <div class="field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" tabindex="0" name="useUDP" class="hidden">
+                        <label>Forward UDP<br>
+                        <small>Pass on UDP packets</small></label>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" tabindex="0" name="enableLogging" class="hidden">
+                        <label>Log connections<br>
+                            <small>Write connection status and errors to the log</small>
+                        </label>
+                    </div>
+                </div>
             </div>
+            <div class="zx-form-grid">
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="spProxyProto">Proxy protocol</label>
+                    <select id="spProxyProto" name="proxyProtocolVersion" class="ui dropdown">
+                        <option value="0">Disabled</option>
+                        <option value="1">Proxy protocol v1</option>
+                        <option value="2">Proxy protocol v2</option>
+                    </select>
+                    <small>Tell the target the visitor's real address (v1 or v2), if it supports it</small>
+                    <div id="proxyProtocolUdpWarning" class="zx-callout zx-callout--warn" style="display:none;" role="note">
+                        <div class="zx-callout__body"><i class="exclamation triangle icon"></i> Proxy protocol v1 does not work with UDP. UDP packets are sent without the header.</div>
+                    </div>
+                </div>
+                <div class="field zx-field">
+                    <label class="zx-field__label">Access rule</label>
+                    <div class="ui fluid selection dropdown" id="streamProxyAccessRuleDropdown">
+                        <input type="hidden" name="accessRuleUUID" value="default">
+                        <i class="dropdown icon"></i>
+                        <div class="default text">Default</div>
+                        <div class="menu" id="streamProxyAccessRuleList">
+                            <div class="item" data-value="default"><i class="ui yellow star icon"></i> Default</div>
+                        </div>
+                    </div>
+                    <small>Which access rule (block list or allow list) applies to this rule. "Default" is used if the chosen rule is removed.</small>
+                </div>
+            </div>
+          </div>
+          <div class="zx-card__foot">
+            <button class="ui basic button" id="cancelStreamProxyButton" onclick="event.preventDefault(); cancelStreamProxyEdit(event);" style="display:none;">Cancel</button>
             <div tourstep="create_stream_proxy_btn" style="display:inline-block;">
-                <button id="addStreamProxyButton" class="ui basic button" type="submit"><i class="ui green add icon"></i> Create</button>  
+                <button id="addStreamProxyButton" class="ui primary button" type="submit"><i class="plus icon"></i> Add rule</button>
             </div>
-            <button id="editStreamProxyButton" class="ui basic button" onclick="confirmEditTCPProxyConfig(event, this);" style="display:none;"><i class="ui green check icon"></i> Update</button>  
-            <button class="ui basic red button" onclick="event.preventDefault(); cancelStreamProxyEdit(event);"><i class="ui red remove icon"></i> Cancel</button>  
+            <button id="editStreamProxyButton" class="ui primary button" onclick="confirmEditTCPProxyConfig(event, this);" style="display:none;"><i class="check icon"></i> Save changes</button>
+          </div>
         </form>
-    </div>
+    </section>
 </div>
     <script>
         let editingStreamProxyConfigUUID = ""; //The current editing TCP Proxy config UUID
@@ -201,7 +242,7 @@
                         msgbox(response.error, false, 6000);
                         return;
                     }
-                    msgbox("Config Added");
+                    msgbox("Rule added");
                     clearStreamProxyAddEditForm();
                     initProxyConfigList();
                 },
@@ -224,6 +265,8 @@
             clearStreamProxyAddEditForm();
             $("#addStreamProxyButton").show();
             $("#editStreamProxyButton").hide();
+            $("#cancelStreamProxyButton").hide();
+            $("#streamFormTitle").text(t("Add a rule"));
         }
 
         function validateTCPProxyConfig(form){
@@ -262,17 +305,22 @@
             var tableBody = $('#proxyTable tbody');
             tableBody.empty();
             if (proxyConfigs.length === 0) {
-            var noResultsRow = $('<tr><td colspan="7"><i class="grey info circle icon"></i>No Proxy Configs yet. Use the form below to add one.</td></tr>');
+            var noResultsRow = $('<tr><td colspan="7" class="zx-empty-cell"><div class="zx-empty"><div class="zx-empty__icon"><i class="exchange icon" aria-hidden="true"></i></div><p class="zx-empty__title">No stream proxy rules yet</p><p class="zx-empty__text">Add a rule in the form below to forward a TCP or UDP port.</p><button type="button" class="zx-btn zx-btn--secondary"><i class="plus icon"></i> Add a rule</button></div></td></tr>');
+                noResultsRow.find("button").on("click", function(){
+                    var f = document.getElementById("addproxyConfig");
+                    if (f && f.scrollIntoView){ f.scrollIntoView({behavior: "smooth", block: "start"}); }
+                    $("#streamProxyForm input[name=name]").trigger("focus");
+                });
                 tableBody.append(noResultsRow);
             } else {
                
                 proxyConfigs.forEach(function(config) {
                     var runningLogo = 'Stopped';
                     var runningClass = "stopped";
-                    var startButton = `<button onclick="startStreamProx('${config.UUID}');" class="ui basic mini circular icon button" title="Start Proxy" aria-label="Start Proxy"><i class="green play icon"></i></button>`;
+                    var startButton = `<button onclick="startStreamProx('${config.UUID}');" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon" title="Start Proxy" aria-label="Start Proxy"><i class="play icon"></i></button>`;
                     if (config.Running){
                         runningLogo = 'Running';
-                        startButton = `<button onclick="stopStreamProx('${config.UUID}');" class="ui basic mini circular icon button" title="Stop Proxy" aria-label="Stop Proxy"><i class="red stop icon"></i></button>`;
+                        startButton = `<button onclick="stopStreamProx('${config.UUID}');" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon" title="Stop Proxy" aria-label="Stop Proxy"><i class="stop icon"></i></button>`;
                         runningClass = "running"
                     }
 
@@ -286,31 +334,33 @@
                     }
 
                     if (config.ProxyProtocolVersion === 1) {
-                        modeText.push("ProxyProtocol V1");
+                        modeText.push("Proxy protocol v1");
                     } else if (config.ProxyProtocolVersion === 2) {
-                        modeText.push("ProxyProtocol V2");
+                        modeText.push("Proxy protocol v2");
                     }
 
-                    modeText = modeText.join(" & ") || "No protocol enabled"
+                    modeText = modeText.join(" & ") || "No protocol on"
 
                     var thisConfig = encodeURIComponent(JSON.stringify(config));
 
                     var row = $(`<tr class="streamproxConfig ${runningClass}" uuid="${ZxUI.esc(config.UUID)}" config="${thisConfig}">`);
-                    row.append($('<td>').html(`
+                    row.append($('<td class="zxs-cell-name" data-label="Name">').html(`
                         ${ZxUI.esc(config.Name)}
-                        <div class="statusText">${runningLogo}</div>`));
-                    row.append($('<td>').text(config.ListeningAddress));
-                    row.append($('<td>').text(config.ProxyTargetAddr));
-                    row.append($('<td>').text(modeText));
-                    row.append($('<td>').text(config.Timeout));
-                    row.append($('<td>').html(config.EnableLogging ? 
-                        '<i class="green check icon" title="Logging Enabled"></i>' : 
-                        '<i class="red times icon" title="Logging Disabled"></i>'
+                        <div><span class="statusText zx-badge ${config.Running ? "zx-badge--ok" : ""}">${runningLogo}</span></div>`));
+                    row.append($('<td class="zxs-addr" data-label="Listens on">').text(config.ListeningAddress));
+                    row.append($('<td class="zxs-addr" data-label="Forwards to">').text(config.ProxyTargetAddr));
+                    row.append($('<td data-label="Mode">').text(modeText));
+                    row.append($('<td class="zx-num" data-label="Timeout (s)">').text(config.Timeout));
+                    row.append($('<td data-label="Logging">').html(config.EnableLogging ? 
+                        '<span class="zx-badge zx-badge--ok">On</span>' : 
+                        '<span class="zx-badge">Off</span>'
                     ));
-                    row.append($('<td>').html(`
+                    row.append($('<td class="zx-actions">').html(`
+                        <span class="zx-row-actions">
                         ${startButton}
-                        <button onclick="editTCPProxyConfig('${config.UUID}');" class="ui circular basic mini icon button" title="Edit Config" aria-label="Edit Config"><i class="edit icon"></i></button>
-                        <button onclick="deleteTCPProxyConfig('${config.UUID}');" class="ui circular red basic mini icon button" title="Delete Config" aria-label="Delete Config"><i class="trash icon"></i></button>
+                        <button onclick="editTCPProxyConfig('${config.UUID}');" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon" title="Edit Config" aria-label="Edit Config"><i class="edit icon"></i></button>
+                        <button onclick="deleteTCPProxyConfig('${config.UUID}');" class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" title="Delete Config" aria-label="Delete Config"><i class="trash icon"></i></button>
+                        </span>
                     `));
                     tableBody.append(row);
                 });
@@ -334,6 +384,8 @@
             if (targetConfig != null){
                 $("#addStreamProxyButton").hide();
                 $("#editStreamProxyButton").show();
+                $("#cancelStreamProxyButton").show();
+                $("#streamFormTitle").text(t("Edit rule"));
                $.each(targetConfig, function(key, value) {
                     var field;
                     if (key == "UseTCP"){
@@ -401,7 +453,7 @@
             event.stopImmediatePropagation();
             var form = $("#streamProxyForm");
             let originalButtonHTML = $(btn).html();
-            $(btn).html(`<i class="ui loading spinner icon"></i> Updating`);
+            $(btn).html(`<i class="ui loading spinner icon"></i> Saving`);
             $(btn).addClass("disabled");
 
             var formValid = validateTCPProxyConfig(form);
@@ -435,7 +487,7 @@
                         msgbox(response.error, false, 6000);
                         return;
                     }
-                    msgbox("Config Updated");
+                    msgbox("Rule updated");
                     initProxyConfigList();
                     cancelStreamProxyEdit();
                     clearStreamProxyAddEditForm();

@@ -1,43 +1,41 @@
-<h3>Network exposure</h3>
-<p>Two optional limits that keep this Zoraxy from being used to reach, or be reached from, places it should not.
-    Both are off until you configure them: nothing changes for an existing setup. This does not configure your firewall; keep your firewall rules, this is a second layer.</p>
-
 <div class="ui form" id="dgForm">
-    <h4>Destination restriction</h4>
-    <div class="inline field">
-        <div class="ui toggle checkbox"><input type="checkbox" id="dgRestrict"><label for="dgRestrict">Restrict diagnostic tools to allowed destinations</label></div>
-        <p class="zx-help">Applies to the upstream test, port and IP scan, uptime monitor checks, the web terminal and the HTTP forward proxy.
-            They then refuse loopback, link-local, cloud metadata (169.254.169.254, fd00:ec2::254), multicast and unspecified addresses, including their IPv6 transition forms,
-            and, when the list below is not empty, every address outside it. The name is resolved once and the checked address is the one that is dialled.
-            Note that uptime checks of an upstream on 127.0.0.1 or outside the list will fail while this is on: list those upstreams below first (the warning box shows what would be refused now).</p>
-    </div>
-    <div class="field"><label for="dgAllowed">Allowed backend destinations (one per line)</label>
-        <textarea id="dgAllowed" rows="5" placeholder="10.20.0.0/24&#10;10.20.1.5 443,8000-8100&#10;127.0.0.1:8080"></textarea>
-        <p class="zx-help">A network or address (CIDR or IP), optionally followed by a space and ports (443 or 8000-8100, comma separated), or written as 10.0.0.5:443.
-            When this list is not empty, a proxy rule, upstream, virtual directory or default site target outside it is refused when it is saved,
-            even with the switch above off. Names in a target are resolved at save time. An empty list means no restriction.
-            Loopback is only reachable when listed here. Metadata and link-local addresses are never allowed.</p></div>
-    <div id="dgWarn"></div>
-    <div id="dgMsg" class="ui negative message" style="display:none"></div>
-    <button class="ui basic green button" id="dgSave"><i class="save icon"></i> Save</button>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Destination restriction</h3>
+            <p class="zx-card__desc">Stops this Zoraxy from being used to reach places it should not. Off until you configure it; nothing changes for an existing setup.</p>
+        </div>
+        <div class="zx-card__body">
+            <label class="zx-toggle-row" for="dgRestrict">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Restrict diagnostic tools to allowed destinations</span><span class="zx-toggle-row__desc">Covers the upstream test, port and IP scan, uptime checks, the web terminal and the HTTP forward proxy. They refuse local, link-local, cloud metadata and multicast addresses and, when the list below is not empty, everything outside it. Uptime checks of an upstream on 127.0.0.1 fail while this is on unless you list it below.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="dgRestrict">
+            </label>
+            <div class="field zx-field"><label for="dgAllowed">Allowed backend destinations</label>
+                <textarea id="dgAllowed" rows="5" placeholder="10.20.0.0/24&#10;10.20.1.5 443,8000-8100&#10;127.0.0.1:8080"></textarea>
+                <p class="zx-help">One per line: a network or address, optionally followed by ports (443 or 8000-8100), or written as 10.0.0.5:443. While the list is not empty, a proxy rule, upstream, path route or default site outside it is refused when saved, even with the switch off. Empty means no restriction. Local addresses are only reachable when listed; metadata and link-local addresses never are.</p></div>
+            <div id="dgWarn"></div>
+            <div id="dgMsg" class="ui negative message" style="display:none"></div>
+        </div>
+        <div class="zx-card__foot"><button class="ui primary button" id="dgSave"><i class="save icon"></i> Save</button></div>
+    </section>
 </div>
-
-<div class="ui divider"></div>
 
 <div class="ui form" id="aaForm">
-    <h4>Admin panel allow-list</h4>
-    <p>Only these networks may connect to the admin port (<span id="aaListen"></span>). Everything else gets "403 Forbidden". Empty = no limit (default).
-        The API, plugin and Fleet or cluster endpoints on the admin port are covered too, so list the hosts that use them.
-        Requests that a proxy rule of this Zoraxy forwards to the admin port are refused while a list is set.
-        Plugins that use the loopback port of an HTTPS admin panel are not affected.</p>
-    <div class="field"><label for="aaCidrs">Networks that may reach the admin panel (one CIDR or IP per line)</label>
-        <textarea id="aaCidrs" rows="4" placeholder="192.168.10.0/24"></textarea>
-        <p class="zx-help">Your address, <b id="aaYou"></b>, must be in the list: a list without it is not saved, so you cannot lock yourself out from here.
-            If you are locked out anyway, stop Zoraxy and start it once with <code>-reset_admin_allowlist</code>, then remove the flag. 0.0.0.0/0 is refused.</p></div>
-    <div id="aaMsg" class="ui negative message" style="display:none"></div>
-    <p class="zx-sub" id="aaStatus"></p>
-    <button class="ui basic green button" id="aaSave"><i class="save icon"></i> Save</button>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Admin panel allow-list</h3>
+            <p class="zx-card__desc">Only these networks may connect to the admin port (<span id="aaListen"></span>); everyone else gets "403 Forbidden". Empty means no limit.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="field zx-field"><label for="aaCidrs">Networks that may reach the admin panel</label>
+                <textarea id="aaCidrs" rows="4" placeholder="192.168.10.0/24"></textarea>
+                <p class="zx-help">One IP address or range (CIDR) per line. Your address, <b id="aaYou"></b>, must be in the list, so you cannot lock yourself out from here. 0.0.0.0/0 is refused.</p></div>
+            <p class="zx-help">The API, plugin and Fleet or cluster endpoints on the admin port are covered too, so list the hosts that use them. Requests that a proxy rule forwards to the admin port are refused while a list is set. If you are locked out anyway, stop Zoraxy and start it once with <code>-reset_admin_allowlist</code>.</p>
+            <div id="aaMsg" class="ui negative message" style="display:none"></div>
+        </div>
+        <div class="zx-card__foot" style="display:flex;align-items:center;gap:var(--zx-space-4);flex-wrap:wrap"><button class="ui primary button" id="aaSave"><i class="save icon"></i> Save</button><span class="zx-help" id="aaStatus" style="margin:0"></span></div>
+    </section>
 </div>
+<p class="zx-help">This page does not change your firewall. Keep your firewall rules; these limits are a second layer.</p>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
@@ -48,7 +46,7 @@
             $("#dgRestrict").prop("checked", !!d.restrictTools);
             $("#dgAllowed").val((d.allowedBackends || []).join("\n"));
             var w = (d.warnings || []).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("");
-            $("#dgWarn").html(w ? '<div class="ui warning message"><div class="header">' + esc(t("With these settings, this would be refused for existing rules")) + '</div><ul class="list">' + w + "</ul></div>" : "");
+            $("#dgWarn").html(w ? '<div class="zx-callout zx-callout--warn" role="note"><div><strong>' + esc(t("With these settings, this would be refused for existing rules")) + '</strong><ul class="list">' + w + "</ul></div></div>" : "");
         });
     }
     function loadAa() {

@@ -3,37 +3,41 @@
     #captchaPage .cpGrid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.2em; align-items: start; }
     #captchaPage .cpPreviewCol { position: sticky; top: 0.6em; }
     @media (max-width: 1100px) { #captchaPage .cpGrid { grid-template-columns: minmax(0, 1fr); } #captchaPage .cpPreviewCol { position: static; } }
-    #captchaPage .cpFrameWrap { background: repeating-conic-gradient(#8881 0% 25%, transparent 0% 50%) 0 0 / 16px 16px; border: 1px solid rgba(128,128,128,.35); border-radius: 6px; padding: 0; text-align: center; overflow: hidden; }
+    #captchaPage .cpFrameWrap { background: repeating-conic-gradient(#8881 0% 25%, transparent 0% 50%) 0 0 / 16px 16px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: 0; text-align: center; overflow: hidden; }
     #captchaPage .cpFrameWrap iframe { border: 0; width: 100%; height: 560px; background: #fff; display: block; margin: 0 auto; transition: width .15s; }
     #captchaPage .cpFrameWrap.mobile iframe { width: 390px; max-width: 100%; }
-    body.darkTheme #captchaPage .ui.basic.buttons .button:not(.active) { color: #e6e6e6 !important; }
-    #captchaPage .ui.basic.buttons .button.active { background: #1e6fb8 !important; color: #fff !important; }
+    #captchaPage .ui.basic.buttons .button:not(.active) { color: var(--zx-text) !important; }
+    #captchaPage .ui.basic.buttons .button.active { background: var(--zx-primary) !important; color: var(--zx-on-primary) !important; }
     #captchaPage #cpPageBtns { display: inline-flex; flex-wrap: wrap; }
-    #captchaPage .cpHelp { opacity: .75; font-size: .9em; }
+    #captchaPage .cpHelp { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #captchaPage .cpSubTitle { margin: var(--zx-space-4) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; }
+    #captchaPage .zx-card__head { padding-bottom: var(--zx-space-3); }
+    #captchaPage .cpToolbar { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin-top: var(--zx-space-2); }
+    #captchaPage .cpFilterBox { flex: 1 1 16rem; max-width: 26rem; }
+    #captchaPage .cpKey { word-break: break-all; font-size: var(--zx-fs-sm); }
+    #captchaPage .cpKeys summary { cursor: pointer; }
     #captchaPage .cpFieldGroup { margin-bottom: 1em; }
     #captchaPage code.cpvar { cursor: pointer; }
-    #captchaPage .cpTag { display: inline-block; padding: 0 .55em; border-radius: 3px; font-size: .85em; line-height: 1.7; background: rgba(128,128,128,.18); }
-    #captchaPage .cpTag.on { background: #21ba4533; color: #1a8a34; }
-    body.darkTheme #captchaPage .cpTag.on { color: #5fdc7e; }
-    #captchaPage .cpTag.off { background: rgba(128,128,128,.18); }
-    #captchaPage .cpTag.warn { background: #fbbd0833; color: #8a6500; }
-    body.darkTheme #captchaPage .cpTag.warn { color: #f5cd4b; }
+    #captchaPage .cpTag { display: inline-flex; align-items: center; gap: .35em; padding: 1px 8px; border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-xs); font-weight: 600; line-height: 1.6; background: var(--zx-neutral-bg); color: var(--zx-neutral-text); border: 1px solid var(--zx-neutral-line); white-space: nowrap; }
+    #captchaPage .cpTag.on { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
+    #captchaPage .cpTag.warn { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #captchaPage .cpEdit { min-width: 5.5rem; justify-content: center; }
+    #captchaPage select, #captchaPage .ui.form select { color: var(--zx-text); }
+    #captchaPage .cpCentralFoot { margin-top: var(--zx-space-4); padding-top: var(--zx-space-3); border-top: 1px solid var(--zx-border); }
+    #captchaPage .cpCentralFoot .cpSubTitle { margin-top: 0; font-size: var(--zx-fs-sm); }
+    @media (max-width: 480px) { #captchaPage #cpTable td.cpNa { display: none; } #captchaPage .cpEdit { min-width: 0; } }
     #captchaPage .cpDirty { display: none; }
     #captchaPage.dirty .cpDirty { display: inline-block; }
     #captchaPage table td { vertical-align: middle; }
     #captchaPage .cpSwatch { display: inline-block; width: 1em; height: 1em; border-radius: 3px; border: 1px solid rgba(128,128,128,.5); vertical-align: -0.15em; margin-right: .3em; }
-    #captchaPage .cpSticky { position: sticky; bottom: 0; z-index: 5; padding: .7em 0; background: var(--cp-bg, #fff); border-top: 1px solid rgba(128,128,128,.3); }
-    body.darkTheme #captchaPage .cpSticky { --cp-bg: #1b1c1d; }
+    #captchaPage .cpSticky { position: sticky; bottom: 0; z-index: 5; padding: .7em 0; background: var(--zx-surface); border-top: 1px solid var(--zx-border); }
 </style>
 <div class="standardContainer" id="captchaPage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">CAPTCHA / Bot check</h2>
-            <p class="zx-page-header__sub">Make visitors prove they are human before they reach a proxy rule. Pick a provider (Cloudflare Turnstile, Google reCAPTCHA, Friendly Captcha or the
-                self-hosted Altcha), then customise how the challenge, failure and blocked pages look. The challenge also backs the
-                <b>Challenge</b> action of the Security Center bot rules and the country challenge. Previews use the provider's public test
-                keys and verify nothing.</p>
+            <p class="zx-page-header__sub">Make visitors prove they are human</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="CAPTCHA"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -45,16 +49,16 @@
             <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>bot rules can answer with a challenge</span></li>
             <li><a href="#access" data-nav-open="access">Access Rules</a> <span>challenge visitors from chosen countries</span></li>
             <li><a href="#waf" data-nav-open="waf">WAF</a> <span>the WAF can challenge borderline requests</span></li>
-            <li><a href="#secoverview" data-nav-open="secoverview">Security Overview</a></li>
         </ul>
     </aside>
 
     <!-- ===== Central provider ===== -->
-    <section class="ui segment" id="cpCentral" aria-labelledby="cpCentralTitle">
-        <h3 class="ui header" id="cpCentralTitle"><i class="shield alternate icon"></i> Central provider</h3>
-        <p class="cpHelp">Set the CAPTCHA provider, keys and session length once for the whole node. A proxy rule that picks <b>Use central provider</b> in its CAPTCHA settings uses
-            these values, so you can change a key here and every such rule follows without a save per site. Each rule keeps its own protected paths, exceptions and page look.
-            Bot check is already central: switch it on in <a href="#seccenter" data-nav-open="seccenter">Security Center</a> and choose the policy per site.</p>
+    <section class="zx-card" id="cpCentral" aria-labelledby="cpCentralTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="cpCentralTitle">Central provider</h3>
+            <p class="zx-card__desc">Set the provider, keys and session length once for the whole node. Proxy rules that pick <b>Use central provider</b> follow these values. The same provider backs the Challenge action of the Security Center bot rules and the country challenge; previews use the provider's public test keys and verify nothing.</p>
+        </div>
+        <div class="zx-card__body">
         <div class="zx-callout zx-callout--warn" role="note" id="cpCentralWarn" hidden>
             <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
             <div class="zx-callout__body">No usable central provider is saved, but <b id="cpCentralWarnN">0</b> site(s) are set to use it. Those sites block every request that needs a CAPTCHA until you save one here.</div>
@@ -99,6 +103,7 @@
                     <input type="number" id="ccAltchaMax" name="captchaAltchaMaxNumber" min="0" value="0"></div>
             </div>
             <div class="ccOpt ccTurnstile">
+              <details class="zx-disclosure"><summary>Widget appearance (Turnstile, optional)</summary><div class="zx-disclosure__body">
                 <div class="two fields">
                     <div class="field"><label for="ccTsMode">Turnstile widget mode</label>
                         <select id="ccTsMode" name="turnstileMode" class="ui fluid dropdown"><option value="">Managed (default)</option><option value="managed">Managed</option><option value="non-interactive">Non-interactive</option><option value="invisible">Invisible</option></select></div>
@@ -113,50 +118,61 @@
                 </div>
                 <div class="two fields">
                     <div class="field"><label for="ccTsAction">Action (optional)</label><input type="text" id="ccTsAction" name="turnstileAction" maxlength="32"></div>
-                    <div class="field"><label for="ccTsCData">cData (optional)</label><input type="text" id="ccTsCData" name="turnstileCData" maxlength="255"></div>
+                    <div class="field"><label for="ccTsCData">Custom data, cData (optional)</label><input type="text" id="ccTsCData" name="turnstileCData" maxlength="255"></div>
                 </div>
+              </div></details>
             </div>
             <div class="field"><div class="ui checkbox"><input type="checkbox" id="ccVerifyHost" name="captchaVerifyHostname"><label for="ccVerifyHost">Reject tokens whose hostname differs from the requested host</label></div></div>
         </div>
-        <h4 class="ui header" id="ccSitesTitle" style="margin-top:1.2em">Sites using the central provider</h4>
+        <div class="zx-btn-row" style="margin-top:var(--zx-space-3)">
+            <button type="button" class="zx-btn zx-btn--primary" id="ccSaveBtn"><i class="save icon" aria-hidden="true"></i> Save central provider</button>
+            <span class="zx-help">Changes apply to every site that uses the central provider.</span>
+        </div>
+        <div class="cpCentralFoot">
+        <h4 id="ccSitesTitle" class="cpSubTitle">Sites using the central provider</h4>
         <div id="ccSites" class="cpHelp">Loading...</div>
+        </div>
+        </div>
     </section>
 
     <!-- ===== Overview ===== -->
     <div id="cpOverview">
-        <div class="ui basic segment" style="padding-top:0">
-            <div class="ui stackable grid">
-                <div class="eight wide column">
-                    <div class="ui small icon fluid input"><input type="text" id="cpFilter" placeholder="Filter rules by name or provider" aria-label="Filter proxy rules"><i class="search icon"></i></div>
-                </div>
-                <div class="eight wide column" style="text-align:right">
-                    <button class="ui small basic button" id="cpGlobalBtn"><i class="paint brush icon"></i> Global default branding</button>
-                    <button class="ui small basic icon button" id="cpRefreshBtn" title="Reload" aria-label="Reload"><i class="sync alternate icon"></i></button>
+        <section class="zx-card" aria-labelledby="cpSitesCardTitle">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title" id="cpSitesCardTitle">Sites</h3>
+                <p class="zx-card__desc">Turn the CAPTCHA on for a proxy rule and customize the pages its visitors see.</p>
+                <div class="cpToolbar">
+                    <div class="ui small icon input cpFilterBox"><input type="text" id="cpFilter" placeholder="Filter rules by name or provider" aria-label="Filter proxy rules"><i class="search icon"></i></div>
+                    <button class="zx-btn zx-btn--secondary" id="cpGlobalBtn"><i class="paint brush icon" aria-hidden="true"></i> Global default branding</button>
+                    <button class="zx-btn zx-btn--secondary zx-btn--icon" id="cpRefreshBtn" title="Reload" aria-label="Reload"><i class="sync alternate icon" aria-hidden="true"></i></button>
                 </div>
             </div>
-            <div style="overflow-x:auto; margin-top: 1em;">
-                <table class="ui celled unstackable table" id="cpTable">
-                    <thead><tr><th style="width:1%">Actions</th><th>Proxy rule</th><th>CAPTCHA</th><th>Provider</th><th>Session</th><th>Page branding</th></tr></thead>
-                    <tbody id="cpRows"><tr><td colspan="6"><div class="ui active centered inline loader"></div></td></tr></tbody>
+            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Proxy rules and their CAPTCHA">
+                <table class="zx-table" id="cpTable">
+                    <thead><tr><th>Proxy rule</th><th>CAPTCHA</th><th>Provider</th><th>Session</th><th>Page branding</th><th class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
+                    <tbody id="cpRows"><tr><td colspan="6" class="zx-empty-cell"><div class="ui active centered inline loader"></div></td></tr></tbody>
                 </table>
             </div>
-            <div class="cpHelp" id="cpGlobalNote"></div>
-        </div>
-        <div class="ui basic segment">
-            <h4><i class="flask icon"></i> Testing with the providers' published test keys</h4>
-            <div style="overflow-x:auto">
-                <table class="ui very basic compact unstackable table">
-                    <thead><tr><th>Provider</th><th>Site key</th><th>Secret key</th><th>Result</th></tr></thead>
-                    <tbody>
-                        <tr><td>Turnstile</td><td><code>1x00000000000000000000AA</code></td><td><code>1x0000000000000000000000000000000AA</code></td><td>always passes</td></tr>
-                        <tr><td>Turnstile</td><td><code>2x00000000000000000000AB</code></td><td><code>2x0000000000000000000000000000000AA</code></td><td>always blocks</td></tr>
-                        <tr><td>Turnstile</td><td><code>3x00000000000000000000FF</code></td><td><code>1x0000000000000000000000000000000AA</code></td><td>forces an interactive challenge</td></tr>
-                        <tr><td>reCAPTCHA v2</td><td><code>6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI</code></td><td><code>6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe</code></td><td>always passes (shows a warning banner)</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <p class="cpHelp">Use them on a throw-away rule to see the real flow end to end; never in production, they accept every bot. Altcha needs no external account: the secret key is
-                your HMAC key and the site key is unused. The editor has a <b>Use test keys</b> button that fills them in.</p>
+            <div class="zx-card__foot cpHelp" id="cpGlobalNote"></div>
+        </section>
+        <div class="cpKeysWrap">
+            <details class="zx-disclosure cpKeys">
+                <summary id="cpKeysTitle">Test keys for trying a provider</summary>
+                <div class="zx-disclosure__body">
+                    <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Published test keys">
+                        <table class="zx-table zx-table--compact">
+                            <thead><tr><th>Provider</th><th>Site key</th><th>Secret key</th><th>Result</th></tr></thead>
+                            <tbody>
+                                <tr><td data-label="Provider">Turnstile</td><td data-label="Site key"><code class="cpKey">1x00000000000000000000AA</code></td><td data-label="Secret key"><code class="cpKey">1x0000000000000000000000000000000AA</code></td><td data-label="Result">always passes</td></tr>
+                                <tr><td data-label="Provider">Turnstile</td><td data-label="Site key"><code class="cpKey">2x00000000000000000000AB</code></td><td data-label="Secret key"><code class="cpKey">2x0000000000000000000000000000000AA</code></td><td data-label="Result">always blocks</td></tr>
+                                <tr><td data-label="Provider">Turnstile</td><td data-label="Site key"><code class="cpKey">3x00000000000000000000FF</code></td><td data-label="Secret key"><code class="cpKey">1x0000000000000000000000000000000AA</code></td><td data-label="Result">forces an interactive challenge</td></tr>
+                                <tr><td data-label="Provider">reCAPTCHA v2</td><td data-label="Site key"><code class="cpKey">6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI</code></td><td data-label="Secret key"><code class="cpKey">6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe</code></td><td data-label="Result">always passes (shows a warning banner)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="zx-help">Use them on a throw-away rule to see the real flow end to end; never in production, they accept every bot. Altcha needs no external account: the secret key is your HMAC key and the site key is unused. The editor has a <b>Use test keys</b> button that fills them in.</p>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -271,7 +287,7 @@
                             <a class="cqLogoClear" style="cursor:pointer; display:none">remove logo</a>
                         </div>
                         <div class="three fields">
-                            <div class="field"><label>Accent colour</label><input type="color" class="cqAccent" value="#2c7cb0"><input type="hidden" data-cp="captchaAccent"></div>
+                            <div class="field"><label>Accent color</label><input type="color" class="cqAccent" value="#2c7cb0"><input type="hidden" data-cp="captchaAccent"></div>
                             <div class="field"><label>Background colour</label><input type="color" class="cqBackground" value="#ffffff"><input type="hidden" data-cp="captchaBackground"></div>
                             <div class="field"><label>Theme</label>
                                 <select data-cp="captchaTheme" class="ui fluid dropdown"><option value="">Auto (follow browser)</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
@@ -430,7 +446,7 @@
         if (s % 60 === 0) { return (s / 60) + (s === 60 ? " minute" : " minutes"); }
         return s + " seconds";
     }
-    function brandingCustomised(cfg) {
+    function brandingCustomized(cfg) {
         var b = cfg && cfg.Branding;
         if (!b) { return false; }
         for (var k in b) { if (b[k]) { return true; } }
@@ -500,6 +516,11 @@
         }).fail(function () { ccFill(null); }).always(function () { ccRenderSites(); renderOverview(); });
     }
     $("#ccProvider").on("change", ccUpdateUI);
+    $(document).on("click", "#ccSaveBtn", function () {
+        if (!centralBar) { return; }
+        if (!centralBar.isDirty()) { if (window.ZxUI && ZxUI.toast) { ZxUI.toast(t("No changes to save")); } return; }
+        centralBar.save();
+    });
     $(document).on("click", "#cpCentral .ccSiteLink", function (e) {
         e.preventDefault();
         if (typeof openTabById === "function") { openTabById("httprp"); }
@@ -531,7 +552,7 @@
                 renderOverview();
                 loadCentral();
             }).fail(function () {
-                $("#cpRows").html('<tr><td colspan="6"><div class="ui negative message">Unable to load the proxy rules.</div></td></tr>');
+                $("#cpRows").html('<tr><td colspan="6" class="zx-empty-cell">Could not load the proxy rules. Reload the page to try again.</td></tr>');
             });
         });
     }
@@ -557,26 +578,26 @@
             if (r.RequireCaptcha) { on++; }
             var name = r.RootOrMatchingDomain;
             if (q && (name + " " + prov).toLowerCase().indexOf(q) < 0) { return; }
-            var brand = brandingCustomised(cfg);
-            var brandCell = brand ? '<span class="cpTag on">customised</span>' : (globalBranding ? '<span class="cpTag">global default</span>' : '<span class="cpTag off">stock</span>');
-            if (brand && cfg.Branding.AccentColor) { brandCell = '<span class="cpSwatch" style="background:' + esc(cfg.Branding.AccentColor) + '"></span>' + brandCell; }
+            var brand = brandingCustomized(cfg);
+            var brandCell = brand ? '<span class="cpTag on">Customized</span>' : (globalBranding ? '<span class="cpTag">Global default</span>' : '<span class="cpTag off">Stock</span>');
+            if (brand && cfg.Branding.AccentColor) { brandCell = brandCell.replace('<span class="cpTag on">', '<span class="cpTag on" title="' + esc(tf("Accent color {0}", cfg.Branding.AccentColor)) + '">'); }
             var keyless = cfg && r.RequireCaptcha && (usesCentral ? !(centralInfo && centralInfo.Configured) : cfg.Provider == 2 ? !cfg.SecretKey : (!cfg.SiteKey || !cfg.SecretKey));
             html += '<tr data-ep="' + esc(name) + '">' +
-                '<td style="white-space:nowrap">' +
+                '<td data-label="' + esc(t("Proxy rule")) + '"><b>' + esc(name) + '</b></td>' +
+                '<td data-label="CAPTCHA">' + (r.RequireCaptcha ? '<span class="cpTag on">Enabled</span>' : '<span class="cpTag off">Off</span>') + (keyless ? ' <span class="cpTag warn" title="Site or secret key missing">Keys missing</span>' : '') + '</td>' +
+                '<td data-label="' + esc(t("Provider")) + '"' + (prov ? '' : ' class="cpNa"') + '>' + (prov ? esc(prov) : '<span class="cpHelp">-</span>') + '</td>' +
+                '<td data-label="' + esc(t("Session")) + '"' + (cfg && r.RequireCaptcha ? '' : ' class="cpNa"') + '>' + (cfg && r.RequireCaptcha ? esc(humanSeconds(cfg.SessionDuration || 3600)) : '<span class="cpHelp">-</span>') + '</td>' +
+                '<td data-label="' + esc(t("Page branding")) + '"' + (brand ? '' : ' class="cpNa"') + '>' + brandCell + '</td>' +
+                '<td class="zx-actions"><div class="zx-row-actions">' +
                 (r.RequireCaptcha
-                    ? '<button class="ui mini primary button cpEdit"><i class="paint brush icon"></i> Customise</button>'
-                    : '<button class="ui mini basic button cpEdit" data-enable="1"><i class="plus icon"></i> Set up</button>') +
-                '</td>' +
-                '<td><b>' + esc(name) + '</b></td>' +
-                '<td>' + (r.RequireCaptcha ? '<span class="cpTag on">enabled</span>' : '<span class="cpTag off">off</span>') + (keyless ? ' <span class="cpTag warn" title="Site or secret key missing">keys missing</span>' : '') + '</td>' +
-                '<td>' + (prov ? esc(prov) : '<span class="cpHelp">-</span>') + '</td>' +
-                '<td>' + (cfg && r.RequireCaptcha ? esc(humanSeconds(cfg.SessionDuration || 3600)) : '<span class="cpHelp">-</span>') + '</td>' +
-                '<td>' + brandCell + '</td>' +
+                    ? '<button class="zx-btn zx-btn--secondary zx-btn--sm cpEdit">Edit</button>'
+                    : '<button class="zx-btn zx-btn--secondary zx-btn--sm cpEdit" data-enable="1">Set up</button>') +
+                '</div></td>' +
                 '</tr>';
         });
         if (!html) {
-            html = '<tr><td colspan="6" style="text-align:center; padding:2em" class="cpHelp">' +
-                (rules.length ? "No rule matches the filter." : "No proxy rules yet. Create one under Reverse Proxy, then come back to protect it.") + "</td></tr>";
+            html = '<tr><td colspan="6" class="zx-empty-cell">' +
+                (rules.length ? "No rule matches the filter." : "No proxy rules yet. Create one under HTTP Proxy, then come back to protect it.") + "</td></tr>";
         }
         $("#cpRows").html(html);
         $("#cpGlobalNote").html(on + " of " + rules.length + " proxy rules require a CAPTCHA. " +

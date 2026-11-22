@@ -1,36 +1,43 @@
-<h3>CrowdSec</h3>
 <style>
-    #csMatches th, #csMatches td, #csDecisions th, #csDecisions td { padding: .5em .8em !important; }
-    #csMatches, #csDecisions { margin-top: .4em !important; }
     #csForm .zx-select { width: 100%; }
-    #csSetup { border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface); margin: 0 0 1em; padding: 0; }
-    #csSetup > summary { cursor: pointer; padding: var(--zx-space-3) var(--zx-space-4); font-weight: 600; color: var(--zx-text); }
-    #csSetup .cs-body { padding: 0 var(--zx-space-4) var(--zx-space-3); color: var(--zx-text); }
-    #csSetup .cs-body h5 { margin: var(--zx-space-4) 0 var(--zx-space-1); }
+    #csSetup { padding: 0; }
+    #csSetup > summary { cursor: pointer; padding: var(--zx-space-4); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
+    #csSetup .cs-body { padding: 0 var(--zx-space-4) var(--zx-space-4); color: var(--zx-text); }
+    #csSetup .cs-body h5 { margin: var(--zx-space-4) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; }
     #csSetup .cs-cmd { position: relative; margin: var(--zx-space-1) 0 var(--zx-space-2); }
-    #csSetup .cs-cmd pre { margin: 0; padding: var(--zx-space-3); padding-right: 5.5rem; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-sm); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--zx-fs-sm); }
-    #csSetup .cs-cmd button { position: absolute; top: var(--zx-space-1); right: var(--zx-space-1); }
-    @media (max-width: 560px) { #csSetup .cs-cmd pre { padding-right: var(--zx-space-3); } #csSetup .cs-cmd button { position: static; margin-top: var(--zx-space-1); } }
+    #csSetup .cs-cmd pre, #csMgConnect .cs-cmd pre { margin: 0; padding: var(--zx-space-3); padding-right: 6rem; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
+    #csSetup .cs-cmd button, #csMgConnect .cs-cmd button { position: absolute; top: var(--zx-space-1); right: var(--zx-space-1); }
+    #csMgConnect .cs-cmd { position: relative; margin: var(--zx-space-1) 0 var(--zx-space-3); }
+    @media (max-width: 560px) { #csSetup .cs-cmd pre, #csMgConnect .cs-cmd pre { padding-right: var(--zx-space-3); } #csSetup .cs-cmd button, #csMgConnect .cs-cmd button { position: static; margin-top: var(--zx-space-1); } }
     #csSetup .cs-foot { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); overflow-wrap: anywhere; }
-    #csSetup ol.cs-steps { padding-left: 1.3em; }
+    #csSetup ol.cs-steps, #csMgConnect ol.cs-steps { padding-left: 1.3em; margin: 0 0 var(--zx-space-3); }
+    #csSetup details.zx-disclosure { margin-top: var(--zx-space-4); }
+    #csStatusCard .zx-card__body > div { margin: 0; }
+    #csStatus .zx-sub { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+    #csStatus .zx-sub.is-error { color: var(--zx-danger-text); }
+    #csPanelTools { display: flex; align-items: center; gap: var(--zx-space-3); flex-wrap: wrap; margin-bottom: var(--zx-space-3); }
+    .cs-filter { max-width: 24rem; margin: 0 0 var(--zx-space-3); }
+    #csForm .zx-card__foot { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
 </style>
-<p>Use a <a href="https://docs.crowdsec.net/" target="_blank" rel="noopener noreferrer">CrowdSec</a> Local API (LAPI) that you run as a block list for this proxy.
-    Zoraxy keeps the ban decisions in memory (stream mode) and checks every visitor address against them. Off until you switch it on, and it
-    starts in <b>Log only</b> mode: matches are counted and logged, nobody is blocked. With two Zoraxy instances, point both at the same LAPI.
-    Detection (feeding CrowdSec your logs) and reporting alerts back to CrowdSec are not part of this; see the CrowdSec guide.</p>
-<details id="csSetup" open>
+
+<section class="zx-card" id="csStatusCard">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Status</h3>
+        <p class="zx-card__desc">Zoraxy uses a <a href="https://docs.crowdsec.net/" target="_blank" rel="noopener noreferrer">CrowdSec</a> server you run as a block list. Off until you switch it on, and it starts in log-only mode: matches are counted, nobody is blocked.</p>
+    </div>
+    <div class="zx-card__body"><div id="csStatus" aria-live="polite"></div></div>
+</section>
+
+<details id="csSetup" class="zx-card">
 <summary>Set up CrowdSec (not installed yet?)</summary>
 <div class="cs-body">
-<p>Zoraxy does <b>not</b> install CrowdSec and never runs installers from this page. It is only the <b>bouncer</b>: it asks a CrowdSec Local API (LAPI)
-    for the addresses to refuse. CrowdSec itself runs on a server of your choice. Three steps:</p>
+<p>Zoraxy only <b>asks</b> a CrowdSec server (its Local API) which addresses to refuse. It does not install or run CrowdSec for you. Three steps:</p>
 <ol class="cs-steps">
-    <li><b>Install CrowdSec</b> on a server (below). It can be this machine or another one.</li>
+    <li><b>Install CrowdSec</b> on a server (see 1a and 1b). It can be this machine or another one.</li>
     <li><b>Create a bouncer key</b> for this Zoraxy on that server.</li>
     <li><b>Paste the address and the key</b> in the form below, press <b>Test connection</b>, and start in <b>Log only</b> mode.</li>
 </ol>
-<p class="zx-help">Use one bouncer key per Zoraxy instance. The LAPI address must be reachable from Zoraxy (check firewalls and where the port is published). The commands below come from the CrowdSec documentation and were not run by Zoraxy; read them before you run them.</p>
-<p class="zx-help" id="csShipped">Each Zoraxy release also ships a helper script <code>crowdsec-setup.sh</code> (Debian/Ubuntu, asks before every change, has <code>--dry-run</code>), a Docker file <code>crowdsec-docker-compose.yml</code> and <code>CROWDSEC-README.md</code>.
-    Download them from the <a id="csRelLink" href="https://github.com/TheTractorHacker/zoraxy/releases" target="_blank" rel="noopener noreferrer">release page of the version you are running</a> and run them yourself on the CrowdSec machine; Zoraxy never runs them.</p>
+<p class="zx-help">Use one key per Zoraxy instance, and make sure Zoraxy can reach the server address. The commands come from the CrowdSec documentation; read them before you run them. Every release also ships a helper script, a Docker file and a README (<a id="csRelLink" href="https://github.com/TheTractorHacker/zoraxy/releases" target="_blank" rel="noopener noreferrer">release page of your version</a>); Zoraxy never runs them.</p>
 <h5>1a. Install on Debian or Ubuntu</h5>
 <p class="zx-help"><b>Careful:</b> the first command downloads a script from the internet and runs it as root (<code>curl | sh</code>). Read it first if you can: open <code>https://install.crowdsec.net</code> in a browser, or add the repository by hand as the CrowdSec documentation describes.</p>
 <div class="cs-cmd"><pre id="csCmdDeb">curl -s https://install.crowdsec.net | sudo sh
@@ -61,9 +68,10 @@ volumes:
 <p class="zx-help">Prints the key once; copy it at once. Run it where CrowdSec runs (inside the container for Docker; the documentation page for Docker does not show the exact command for that, so it is not given here). Use a different name for each Zoraxy instance.</p>
 <h5>3. Paste address and key</h5>
 <p>In the form below enter the LAPI address (the documentation examples use <code>http://127.0.0.1:8080</code>) and the key, press <b>Test connection</b>, then save. Leave the mode on <b>Log only</b> until the recent matches look right.</p>
-<h5>4. Let CrowdSec read Zoraxy's request logs (optional)</h5>
+<details class="zx-disclosure"><summary>Optional: let CrowdSec read Zoraxy's request logs</summary><div class="zx-disclosure__body">
+
 <p class="zx-help"><b>This step is optional.</b> CrowdSec has no built-in parser for the log type <code>zoraxy</code>, so without a parser of your own (see the CrowdSec guide) the lines are read but not understood and no scenario fires. The <b>community blocklist</b> and every other decision your LAPI holds work in Zoraxy without this step. Zoraxy writes one file per month named <code>zr_&lt;year&gt;-&lt;month&gt;.log</code> (for example <code>zr_2026-9.log</code>, no leading zero) in its log folder.</p>
-<h5>4a. CrowdSec installed from packages</h5>
+<h5>Option A. CrowdSec installed from packages</h5>
 <div class="cs-cmd"><pre id="csCmdAcq">sudo mkdir -p /etc/crowdsec/acquis.d
 sudo tee /etc/crowdsec/acquis.d/zoraxy.yaml &gt;/dev/null &lt;&lt;'EOF'
 filenames:
@@ -73,114 +81,166 @@ labels:
 EOF
 sudo crowdsec -t &amp;&amp; sudo systemctl restart crowdsec</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdAcq"><i class="copy icon"></i> Copy</button></div>
 <p class="zx-help">Replace <code>/path/to/your-zoraxy-log-folder</code> with your Zoraxy log folder (default <code>./log</code> next to the Zoraxy program; use its full path). The last line checks the configuration and restarts CrowdSec, as in the documentation.</p>
-<h5>4b. CrowdSec in Docker</h5>
+<h5>Option B. CrowdSec in Docker</h5>
 <div class="cs-cmd"><pre id="csCmdAcqDocker"># ./crowdsec/acquis.yaml   (mounted at /etc/crowdsec/acquis.yaml by the compose file above)
 filenames:
   - /var/log/zoraxy/zr_*.log
 labels:
   type: zoraxy</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdAcqDocker"><i class="copy icon"></i> Copy</button></div>
 <p class="zx-help">The path in this file is the one <b>inside the container</b> (where the compose file mounts your log folder), not the path on the host. Then run <code>docker compose up -d</code> (recreates the container).</p>
-<p class="cs-foot">Not offered: a "Detect" button for a local CrowdSec. The documentation does not list a public health or version address on the Local API, so Zoraxy has nothing it may call without a key. Use <b>Test connection</b>.<br>
-Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux" target="_blank" rel="noopener noreferrer">install on Linux</a> &middot;
+</div></details>
+<p class="cs-foot">Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux" target="_blank" rel="noopener noreferrer">install on Linux</a> &middot;
 <a href="https://docs.crowdsec.net/u/getting_started/installation/docker" target="_blank" rel="noopener noreferrer">Docker</a> &middot;
 <a href="https://docs.crowdsec.net/docs/local_api/bouncers" target="_blank" rel="noopener noreferrer">bouncers (cscli bouncers add)</a> &middot;
 <a href="https://docs.crowdsec.net/u/getting_started/post_installation/acquisition_new" target="_blank" rel="noopener noreferrer">add new log sources</a> &middot;
 <a href="https://docs.crowdsec.net/docs/log_processor/data_sources/intro" target="_blank" rel="noopener noreferrer">data sources</a></p>
+
 </div>
 </details>
-<div id="csStatus" aria-live="polite" style="margin:0 0 1em"></div>
+
+
 <div class="ui form" id="csForm">
-    <div class="inline field">
-        <div class="ui toggle checkbox"><input type="checkbox" id="csEnabled"><label for="csEnabled">Use CrowdSec decisions</label></div>
-    </div>
-    <div class="two fields">
-        <div class="field"><label for="csUrl">LAPI address</label>
-            <input type="text" id="csUrl" placeholder="http://127.0.0.1:8080" autocomplete="off" spellcheck="false">
-            <p class="zx-help">Cloud metadata and link-local addresses are always refused; loopback and private addresses are fine. Use https when the LAPI is not on this machine.</p></div>
-        <div class="field"><label for="csKey">Bouncer API key <span id="csKeyBadge" class="ui mini label" style="display:none">Key set</span></label>
-            <input type="password" id="csKey" autocomplete="new-password" spellcheck="false" placeholder="">
-            <p class="zx-help">Create it with <code>cscli bouncers add zoraxy</code>. It is stored encrypted, never shown again and left out of exports. Leave empty to keep the stored key.</p>
-            <div class="ui checkbox"><input type="checkbox" id="csClearKey"><label for="csClearKey">Remove the stored key (only while CrowdSec is switched off)</label></div></div>
-    </div>
-    <div class="three fields">
-        <div class="field"><label for="csMode">What to do with a match</label>
-            <select id="csMode" class="zx-select">
-                <option value="log">Log only (nobody is blocked)</option>
-                <option value="enforce">Enforce (block banned addresses)</option>
-            </select></div>
-        <div class="field"><label for="csBan">Banned visitor gets</label>
-            <select id="csBan" class="zx-select">
-                <option value="page">The 403 page</option>
-                <option value="drop">No answer (connection closed)</option>
-            </select></div>
-        <div class="field"><label for="csCaptcha">Captcha decisions</label>
-            <select id="csCaptcha" class="zx-select">
-                <option value="log">Only logged</option>
-                <option value="challenge">Show the site CAPTCHA (sites without one: logged)</option>
-            </select></div>
-    </div>
-    <div class="four fields">
-        <div class="field"><label for="csPoll">Pull every (seconds)</label><input type="number" id="csPoll" min="5" max="3600"></div>
-        <div class="field"><label for="csMax">Cache size (decisions)</label><input type="number" id="csMax" min="100" max="500000"></div>
-        <div class="field"><label for="csTtl">Longest decision lifetime (hours)</label><input type="number" id="csTtl" min="1" max="720"></div>
-        <div class="field"><label for="csGrace">LAPI unreachable after (seconds)</label><input type="number" id="csGrace" min="10" max="86400"></div>
-    </div>
-    <div class="inline field">
-        <div class="ui toggle checkbox"><input type="checkbox" id="csClosed"><label for="csClosed">Fail closed: refuse every visitor while the LAPI is unreachable</label></div>
-        <p class="zx-help">Default is fail open: if the LAPI cannot be reached for longer than the time above, traffic is allowed and only the decisions already in memory apply.
-            Fail closed only has an effect in Enforce mode, and a LAPI outage then takes your sites offline.</p>
-    </div>
-    <div class="field"><label for="csExempt">Sites that never ask CrowdSec (one rule host name per line)</label>
-        <textarea id="csExempt" rows="2" placeholder="status.example.com"></textarea></div>
-    <div class="ui accordion"><div class="title"><i class="dropdown icon"></i> Trust for an https LAPI (private CA, pin)</div>
-        <div class="content">
-            <div class="field"><label for="csCA">CA certificates (PEM)</label><textarea id="csCA" rows="4" spellcheck="false"></textarea>
-                <p class="zx-help">Replaces the system roots for the LAPI connection. There is no option to skip certificate verification.</p></div>
-            <div class="field"><label for="csPins">Public key pins (SHA-256, one per line)</label><textarea id="csPins" rows="2" spellcheck="false"></textarea></div>
-        </div></div>
-    <div id="csMsg" class="ui negative message" style="display:none"></div>
-    <div id="csTestMsg" class="ui message" style="display:none"></div>
-    <button class="ui basic button" id="csTest"><i class="plug icon"></i> Test connection</button>
-    <button class="ui basic green button" id="csSave"><i class="save icon"></i> Save</button>
-</div>
-<h4 class="ui header" id="csManageHead">Manage CrowdSec</h4>
-<p class="zx-help">CrowdSec has no web page of its own on the server; its web interface is the free online Console at app.crowdsec.net. This panel lets you manage the local CrowdSec directly from here: see what is banned, ban or unban an address, and read the alerts (what was detected and why). It needs a separate login of a CrowdSec "machine", created once on the CrowdSec host. Zoraxy stores it encrypted, only sends it to the LAPI address it was entered for, and records every change in the security audit log.</p>
-<div id="csMgConnect" style="display:none">
-    <p class="zx-help">1. Run this on the CrowdSec host. It prints a machine id and password once. 2. Paste them below.</p>
-    <div class="cs-cmd"><pre id="csCmdMachine">sudo cscli machines add zoraxy-admin --auto -f -</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdMachine"><i class="copy icon"></i> Copy</button></div>
-    <div class="ui form"><div class="two fields">
-        <div class="field"><label for="csMgId">Machine id (the "login" line)</label><input type="text" id="csMgId" autocomplete="off" spellcheck="false"></div>
-        <div class="field"><label for="csMgPw">Password</label><input type="password" id="csMgPw" autocomplete="new-password" spellcheck="false"></div>
-    </div>
-    <div id="csMgMsg" class="ui negative message" style="display:none"></div>
-    <button class="ui basic green button" id="csMgSave"><i class="plug icon"></i> Connect</button></div>
-    <p class="zx-help">Save the LAPI address above first. The machine can ban and unban any address, so use one machine just for Zoraxy; remove it on the CrowdSec host with <code>sudo cscli machines delete zoraxy-admin</code> to revoke access.</p>
-</div>
-<div id="csMgPanel" style="display:none">
-    <p><span class="ui green label"><i class="check icon"></i> <span id="csMgWho"></span></span> <button class="ui mini basic button" id="csMgRemove">Remove the login</button></p>
-    <div class="ui form" id="csBanForm">
-        <div class="four fields">
-            <div class="field"><label for="csBanTarget">Address or range to ban</label><input type="text" id="csBanTarget" placeholder="203.0.113.7 or 203.0.113.0/24" autocomplete="off" spellcheck="false"></div>
-            <div class="field"><label for="csBanDur">For</label>
-                <select id="csBanDur" class="zx-select"><option value="1h">1 hour</option><option value="4h" selected>4 hours</option><option value="24h">1 day</option><option value="7d">7 days</option><option value="30d">30 days</option></select></div>
-            <div class="field"><label for="csBanReason">Reason (optional)</label><input type="text" id="csBanReason" maxlength="200" autocomplete="off"></div>
-            <div class="field"><label>&nbsp;</label><button class="ui basic red button" id="csBanGo"><i class="ban icon"></i> Ban</button></div>
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Connection</h3>
+            <p class="zx-card__desc">Where your CrowdSec server is and the key Zoraxy uses to ask it for banned addresses.</p>
         </div>
-        <div id="csBanMsg" class="ui message" style="display:none"></div>
+        <div class="zx-card__body">
+            <label class="zx-toggle-row" for="csEnabled">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Use CrowdSec decisions</span><span class="zx-toggle-row__desc">Checks every visitor address against the ban list pulled from your CrowdSec server.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="csEnabled">
+            </label>
+            <div class="zx-form-grid">
+                <div class="field zx-field"><label for="csUrl">Server address</label>
+                    <input type="text" id="csUrl" placeholder="http://127.0.0.1:8080" autocomplete="off" spellcheck="false">
+                    <p class="zx-help">Use https when the server is not on this machine. Cloud metadata and link-local addresses are always refused.</p></div>
+                <div class="field zx-field"><label for="csKey">Bouncer API key <span id="csKeyBadge" class="zx-badge zx-badge--ok" style="display:none">Key set</span></label>
+                    <input type="password" id="csKey" autocomplete="new-password" spellcheck="false" placeholder="">
+                    <p class="zx-help">Stored encrypted, never shown again and left out of exports. Leave empty to keep the stored key.</p>
+                    <label class="zx-toggle-row" for="csClearKey"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Remove the stored key</span><span class="zx-toggle-row__desc">Only possible while CrowdSec is switched off.</span></span><input type="checkbox" class="zx-switch" role="switch" id="csClearKey"></label></div>
+            </div>
+            <div class="ui accordion"><div class="title"><i class="dropdown icon"></i> Trust for an https server (private CA, pin)</div>
+                <div class="content">
+                    <div class="field zx-field"><label for="csCA">CA certificates (PEM)</label><textarea id="csCA" rows="4" spellcheck="false"></textarea>
+                        <p class="zx-help">Replaces the system roots for this connection. There is no option to skip certificate verification.</p></div>
+                    <div class="field zx-field"><label for="csPins">Public key pins (SHA-256)</label><textarea id="csPins" rows="2" spellcheck="false"></textarea><p class="zx-help">One per line.</p></div>
+                </div></div>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">What happens on a match</h3>
+            <p class="zx-card__desc">Start with log only and check the recent matches before you enforce.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-form-grid">
+                <div class="field zx-field"><label for="csMode">When an address is banned</label>
+                    <select id="csMode" class="zx-select">
+                        <option value="log">Log only (nobody is blocked)</option>
+                        <option value="enforce">Enforce (block banned addresses)</option>
+                    </select></div>
+                <div class="field zx-field"><label for="csBan">Banned visitor gets</label>
+                    <select id="csBan" class="zx-select">
+                        <option value="page">The 403 page</option>
+                        <option value="drop">No answer (connection closed)</option>
+                    </select></div>
+                <div class="field zx-field"><label for="csCaptcha">Captcha decisions</label>
+                    <select id="csCaptcha" class="zx-select">
+                        <option value="log">Only logged</option>
+                        <option value="challenge">Show the site CAPTCHA (sites without one: logged)</option>
+                    </select></div>
+            </div>
+            <label class="zx-toggle-row" for="csClosed">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Fail closed: refuse every visitor while the server is unreachable</span><span class="zx-toggle-row__desc">Default is fail open: traffic is allowed and only the decisions already in memory apply. Fail closed only works in Enforce mode, and an outage then takes your sites offline.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="csClosed">
+            </label>
+            <div class="field zx-field"><label for="csExempt">Sites that never ask CrowdSec</label>
+                <textarea id="csExempt" rows="2" placeholder="status.example.com"></textarea><p class="zx-help">One proxy rule host name per line.</p></div>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Tuning</h3>
+            <p class="zx-card__desc">How often Zoraxy pulls the ban list and how much it keeps in memory. The defaults suit most setups.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-form-grid">
+                <div class="field zx-field"><label for="csPoll">Pull every (seconds)</label><input type="number" id="csPoll" min="5" max="3600"></div>
+                <div class="field zx-field"><label for="csMax">Cache size (decisions)</label><input type="number" id="csMax" min="100" max="500000"></div>
+                <div class="field zx-field"><label for="csTtl">Longest decision lifetime (hours)</label><input type="number" id="csTtl" min="1" max="720"></div>
+                <div class="field zx-field"><label for="csGrace">Server counts as unreachable after (seconds)</label><input type="number" id="csGrace" min="10" max="86400"></div>
+            </div>
+            <div id="csMsg" class="ui negative message" style="display:none"></div>
+            <div id="csTestMsg" class="ui message" style="display:none"></div>
+        </div>
+    </section>
+    <div class="zx-savefoot">
+        <button type="button" class="zx-btn zx-btn--secondary" id="csTest"><i class="plug icon" aria-hidden="true"></i> Test connection</button>
+        <button type="button" class="zx-btn zx-btn--primary" id="csSave"><i class="save icon" aria-hidden="true"></i> Save</button>
+        <span class="zx-help">Saves the connection, match and tuning settings above.</span>
     </div>
-    <h5 class="ui header">Active bans in CrowdSec</h5>
-    <div class="ui small icon input" style="margin-bottom:.5em"><input type="text" id="csMgFilter" placeholder="Filter by address, reason or origin" aria-label="Filter"><i class="search icon"></i></div>
-    <div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMgDecisions"><thead><tr><th>Type</th><th>Value</th><th>Origin</th><th>Reason</th><th>Left</th><th></th></tr></thead><tbody></tbody></table></div>
-    <h5 class="ui header">Alerts (what CrowdSec detected)</h5>
-    <div class="ui small icon input" style="margin-bottom:.5em"><input type="text" id="csMgAlertIp" placeholder="Only this address" aria-label="Alert address filter"><i class="search icon"></i></div>
-    <div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMgAlerts"><thead><tr><th>Time</th><th>Address</th><th>Country</th><th>Scenario</th><th>Events</th><th>Decision</th></tr></thead><tbody></tbody></table></div>
 </div>
-<h4 class="ui header">Recent matches</h4>
-<p class="zx-help">Up to 100 visitors that matched a decision (what was blocked, or would have been in log only mode).</p>
-<div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMatches"><thead><tr><th>Time</th><th>Address</th><th>Site</th><th>Result</th><th>Decision</th><th>Hits</th></tr></thead><tbody></tbody></table></div>
-<h4 class="ui header">Recent decisions from the LAPI</h4>
-<p class="zx-help">The newest 100 ban and captcha decisions received. Decisions for other scopes (country, AS ...) or types (throttle ...) are counted above and not enforced.</p>
-<div style="overflow-x:auto"><table class="ui very basic compact small table" id="csDecisions"><thead><tr><th>Received</th><th>Type</th><th>Scope</th><th>Value</th><th>Origin</th><th>Scenario</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
+
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title" id="csManageHead">Manage CrowdSec</h3>
+        <p class="zx-card__desc">See what is banned, ban or unban an address and read the alerts without leaving Zoraxy. Needs a separate machine login created once on the CrowdSec host.</p>
+    </div>
+    <div class="zx-card__body">
+        <div id="csMgConnect" style="display:none">
+            <ol class="cs-steps"><li>Run this on the CrowdSec host. It prints a machine id and a password once.</li><li>Paste them below.</li></ol>
+            <div class="cs-cmd"><pre id="csCmdMachine">sudo cscli machines add zoraxy-admin --auto -f -</pre><button type="button" class="zx-btn zx-btn--ghost zx-btn--sm cs-copy" data-for="csCmdMachine"><i class="copy icon" aria-hidden="true"></i> Copy</button></div>
+            <div class="ui form"><div class="zx-form-grid">
+                <div class="field zx-field"><label for="csMgId">Machine id (the "login" line)</label><input type="text" id="csMgId" autocomplete="off" spellcheck="false"></div>
+                <div class="field zx-field"><label for="csMgPw">Password</label><input type="password" id="csMgPw" autocomplete="new-password" spellcheck="false"></div>
+            </div>
+            <div id="csMgMsg" class="ui negative message" style="display:none"></div>
+            <button type="button" class="zx-btn zx-btn--primary" id="csMgSave"><i class="plug icon" aria-hidden="true"></i> Connect</button></div>
+            <p class="zx-help">Save the server address above first. Zoraxy stores the login encrypted, sends it only to that address and records every change in the security audit log. The machine can ban and unban any address, so use one just for Zoraxy; revoke it with <code>sudo cscli machines delete zoraxy-admin</code>.</p>
+        </div>
+        <div id="csMgPanel" style="display:none">
+            <p id="csPanelTools"><span class="zx-badge zx-badge--ok"><i class="check icon" aria-hidden="true"></i> <span id="csMgWho"></span></span> <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="csMgRemove">Remove the login</button></p>
+            <div class="ui form" id="csBanForm">
+                <div class="zx-form-grid">
+                    <div class="field zx-field"><label for="csBanTarget">Address or range to ban</label><input type="text" id="csBanTarget" placeholder="203.0.113.7 or 203.0.113.0/24" autocomplete="off" spellcheck="false"></div>
+                    <div class="field zx-field"><label for="csBanDur">For</label>
+                        <select id="csBanDur" class="zx-select"><option value="1h">1 hour</option><option value="4h" selected>4 hours</option><option value="24h">1 day</option><option value="7d">7 days</option><option value="30d">30 days</option></select></div>
+                    <div class="field zx-field"><label for="csBanReason">Reason (optional)</label><input type="text" id="csBanReason" maxlength="200" autocomplete="off"></div>
+                    <div class="zx-field zx-field--btn"><button type="button" class="zx-btn zx-btn--danger" id="csBanGo"><i class="ban icon" aria-hidden="true"></i> Ban</button></div>
+                </div>
+                <div id="csBanMsg" class="ui message" style="display:none"></div>
+            </div>
+            <h4 class="zx-subhead">Active bans in CrowdSec</h4>
+            <div class="cs-filter"><input type="text" id="csMgFilter" placeholder="Filter by address, reason or origin" aria-label="Filter"></div>
+            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Active bans in CrowdSec"><table class="zx-table zx-table--compact" id="csMgDecisions"><thead><tr><th>Type</th><th>Value</th><th>Origin</th><th>Reason</th><th>Left</th><th class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead><tbody></tbody></table></div>
+            <h4 class="zx-subhead">Alerts (what CrowdSec detected)</h4>
+            <div class="cs-filter"><input type="text" id="csMgAlertIp" placeholder="Only this address" aria-label="Alert address filter"></div>
+            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Alerts"><table class="zx-table zx-table--compact" id="csMgAlerts"><thead><tr><th>Time</th><th>Address</th><th>Country</th><th>Scenario</th><th class="zx-num">Events</th><th>Decision</th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
+</section>
+
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Recent matches</h3>
+        <p class="zx-card__desc">Up to 100 visitors that matched a decision: blocked, or would have been in log-only mode.</p>
+    </div>
+    <div class="zx-card__body">
+        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Recent matches"><table class="zx-table zx-table--compact" id="csMatches"><thead><tr><th>Time</th><th>Address</th><th>Site</th><th>Result</th><th>Decision</th><th class="zx-num">Hits</th></tr></thead><tbody></tbody></table></div>
+    </div>
+</section>
+
+<section class="zx-card">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Recent decisions from the server</h3>
+        <p class="zx-card__desc">The newest 100 ban and captcha decisions received. Decisions for other scopes (country, AS) or types (throttle) are counted in the status and not enforced.</p>
+    </div>
+    <div class="zx-card__body">
+        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Recent decisions"><table class="zx-table zx-table--compact" id="csDecisions"><thead><tr><th>Received</th><th>Type</th><th>Scope</th><th>Value</th><th>Origin</th><th>Scenario</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
+    </div>
+</section>
 <script>
 (function () {
     var setupDecided = false;
@@ -198,7 +258,7 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
     function loadSettings() {
         $.get("/api/crowdsec/get", function (d) {
             $("#csEnabled").prop("checked", !!d.enabled); enabledWas = !!d.enabled;
-            if (!setupDecided) { setupDecided = true; $("#csSetup").prop("open", !d.lapiUrl); }
+            if (!setupDecided) { setupDecided = true; $("#csSetup").prop("open", false); }
             $("#csUrl").val(d.lapiUrl || ""); $("#csMode").val(d.mode || "log"); modeWas = d.mode || "log";
             $("#csBan").val(d.banResponse || "page"); $("#csCaptcha").val(d.captchaAction || "log");
             $("#csPoll").val(d.pollSeconds); $("#csMax").val(d.maxEntries); $("#csTtl").val(Math.round(d.maxTtlSeconds / 3600)); $("#csGrace").val(d.graceSeconds);
@@ -210,11 +270,11 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
         });
     }
     var STATE = { off: N_("Off"), starting: N_("Starting"), ok: N_("OK"), degraded: N_("Degraded"), down: N_("Down") };
-    var COLOR = { off: "grey", starting: "blue", ok: "green", degraded: "orange", down: "red" };
+    var COLOR = { off: "", starting: "zx-badge--info", ok: "zx-badge--ok", degraded: "zx-badge--warn", down: "zx-badge--danger" };
     function N_(s) { return s; }
     function loadStatus() {
         $.get("/api/crowdsec/status", function (s) {
-            var h = '<span class="ui ' + (COLOR[s.state] || "grey") + ' label">' + esc(t(STATE[s.state] || s.state)) + "</span> ";
+            var h = '<span class="zx-badge ' + (COLOR[s.state] || "") + '">' + esc(t(STATE[s.state] || s.state)) + "</span> ";
             if (s.enabled) {
                 h += esc(t("Mode: {0}").replace("{0}", s.mode === "enforce" ? t("Enforce") : t("Log only")));
                 h += '<div class="zx-sub">' + esc(t("Last successful pull: {0}").replace("{0}", fmt(s.lastSuccess))) + " &middot; " +
@@ -227,9 +287,9 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
                 $.each(s.ignoredScopes || {}, function (k, v) { ign.push(k + ": " + v); });
                 $.each(s.ignoredTypes || {}, function (k, v) { ign.push(k + ": " + v); });
                 if (ign.length) { h += '<div class="zx-sub">' + esc(t("Ignored decisions (scope or type not enforced): {0}").replace("{0}", ign.join(", "))) + "</div>"; }
-                if (s.lastError) { h += '<div class="zx-sub" style="color:#b03030">' + esc(t("Last error: {0}").replace("{0}", s.lastError)) + "</div>"; }
+                if (s.lastError) { h += '<div class="zx-sub is-error">' + esc(t("Last error: {0}").replace("{0}", s.lastError)) + "</div>"; }
                 if ((s.warnings || []).length) {
-                    h += '<div class="ui warning message"><ul class="list">' + s.warnings.map(function (w) { return "<li>" + esc(t(w)) + "</li>"; }).join("") + "</ul></div>";
+                    h += '<div class="zx-callout zx-callout--warn" role="note"><ul class="list">' + s.warnings.map(function (w) { return "<li>" + esc(t(w)) + "</li>"; }).join("") + "</ul></div>";
                 }
             } else {
                 h += esc(t("CrowdSec is switched off. Nothing is checked."));
@@ -239,15 +299,15 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
         $.get("/api/crowdsec/decisions", function (d) {
             var m = (d.matches || []).map(function (x) {
                 var res = x.enforced ? t("blocked") : (x.action === "captcha" ? t("captcha, logged only") : t("would block (log only)"));
-                return "<tr><td>" + esc(fmt(x.time)) + "</td><td>" + esc(x.ip) + "</td><td>" + esc(x.site) + "</td><td>" + esc(res) + "</td><td>" +
-                    esc((x.type || x.action) + (x.scenario ? " " + x.scenario : "")) + "</td><td>" + esc(x.count) + "</td></tr>";
+                return '<tr><td data-label="' + esc(t("Time")) + '">' + esc(fmt(x.time)) + '</td><td data-label="' + esc(t("Address")) + '">' + esc(x.ip) + '</td><td data-label="' + esc(t("Site")) + '">' + esc(x.site) + '</td><td data-label="' + esc(t("Result")) + '">' + esc(res) + '</td><td data-label="' + esc(t("Decision")) + '">' +
+                    esc((x.type || x.action) + (x.scenario ? " " + x.scenario : "")) + '</td><td class="zx-num" data-label="' + esc(t("Hits")) + '">' + esc(x.count) + "</td></tr>";
             }).join("");
-            $("#csMatches tbody").html(m || '<tr><td colspan="6">' + esc(t("None yet.")) + "</td></tr>");
+            $("#csMatches tbody").html(m || '<tr><td colspan="6" class="zx-empty-cell">' + esc(t("None yet.")) + "</td></tr>");
             var r = (d.decisions || []).map(function (x) {
-                return "<tr><td>" + esc(fmt(x.added)) + "</td><td>" + esc(x.type) + "</td><td>" + esc(x.scope) + "</td><td>" + esc(x.value) + "</td><td>" +
-                    esc(x.origin) + "</td><td>" + esc(x.scenario) + "</td><td>" + esc(fmt(x.expires)) + "</td></tr>";
+                return '<tr><td data-label="' + esc(t("Received")) + '">' + esc(fmt(x.added)) + '</td><td data-label="' + esc(t("Type")) + '">' + esc(x.type) + '</td><td data-label="' + esc(t("Scope")) + '">' + esc(x.scope) + '</td><td data-label="' + esc(t("Value")) + '">' + esc(x.value) + '</td><td data-label="' + esc(t("Origin")) + '">' +
+                    esc(x.origin) + '</td><td data-label="' + esc(t("Scenario")) + '">' + esc(x.scenario) + '</td><td data-label="' + esc(t("Expires")) + '">' + esc(fmt(x.expires)) + "</td></tr>";
             }).join("");
-            $("#csDecisions tbody").html(r || '<tr><td colspan="7">' + esc(t("None yet.")) + "</td></tr>");
+            $("#csDecisions tbody").html(r || '<tr><td colspan="7" class="zx-empty-cell">' + esc(t("None yet.")) + "</td></tr>");
         });
     }
     function save(confirmClosed) {
@@ -320,23 +380,23 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
     function mgDecisions() {
         $.get("/api/crowdsec/manage/decisions", { q: $("#csMgFilter").val() }, function (d) {
             var body = $("#csMgDecisions tbody");
-            if (mgErr(d)) { body.html('<tr><td colspan="6">' + esc(mgErr(d)) + "</td></tr>"); return; }
+            if (mgErr(d)) { body.html('<tr><td colspan="6" class="zx-empty-cell">' + esc(mgErr(d)) + "</td></tr>"); return; }
             var rows = (d || []).map(function (x) {
-                return "<tr><td>" + esc(x.type) + "</td><td>" + esc(x.value) + "</td><td>" + esc(x.origin) + "</td><td>" + esc(x.scenario) + "</td><td>" + esc(x.duration) +
-                    '</td><td><button class="ui mini basic button cs-unban" data-id="' + esc(x.id) + '" data-value="' + esc(x.value) + '">' + esc(t("Remove ban")) + "</button></td></tr>";
+                return '<tr><td data-label="' + esc(t("Type")) + '">' + esc(x.type) + '</td><td data-label="' + esc(t("Value")) + '">' + esc(x.value) + '</td><td data-label="' + esc(t("Origin")) + '">' + esc(x.origin) + '</td><td data-label="' + esc(t("Reason")) + '">' + esc(x.scenario) + '</td><td data-label="' + esc(t("Left")) + '">' + esc(x.duration) +
+                    '</td><td class="zx-actions"><div class="zx-row-actions"><button class="ui mini basic button cs-unban" data-id="' + esc(x.id) + '" data-value="' + esc(x.value) + '">' + esc(t("Remove ban")) + "</button></div></td></tr>";
             }).join("");
-            body.html(rows || '<tr><td colspan="6">' + esc(t("No active bans.")) + "</td></tr>");
+            body.html(rows || '<tr><td colspan="6" class="zx-empty-cell">' + esc(t("No active bans.")) + "</td></tr>");
         });
     }
     function mgAlerts() {
         $.get("/api/crowdsec/manage/alerts", { ip: $("#csMgAlertIp").val().trim(), limit: 50 }, function (d) {
             var body = $("#csMgAlerts tbody");
-            if (mgErr(d)) { body.html('<tr><td colspan="6">' + esc(mgErr(d)) + "</td></tr>"); return; }
+            if (mgErr(d)) { body.html('<tr><td colspan="6" class="zx-empty-cell">' + esc(mgErr(d)) + "</td></tr>"); return; }
             var rows = (d || []).map(function (a) {
                 var dec = (a.decisions || []).map(function (x) { return x.type + " " + x.duration; }).join(", ");
-                return "<tr><td>" + esc(fmt(a.time)) + "</td><td>" + esc(a.value) + "</td><td>" + esc(a.country) + "</td><td>" + esc(a.scenario) + "</td><td>" + esc(a.events) + "</td><td>" + esc(dec) + "</td></tr>";
+                return '<tr><td data-label="' + esc(t("Time")) + '">' + esc(fmt(a.time)) + '</td><td data-label="' + esc(t("Address")) + '">' + esc(a.value) + '</td><td data-label="' + esc(t("Country")) + '">' + esc(a.country) + '</td><td data-label="' + esc(t("Scenario")) + '">' + esc(a.scenario) + '</td><td class="zx-num" data-label="' + esc(t("Events")) + '">' + esc(a.events) + '</td><td data-label="' + esc(t("Decision")) + '">' + esc(dec) + "</td></tr>";
             }).join("");
-            body.html(rows || '<tr><td colspan="6">' + esc(t("No alerts.")) + "</td></tr>");
+            body.html(rows || '<tr><td colspan="6" class="zx-empty-cell">' + esc(t("No alerts.")) + "</td></tr>");
         });
     }
     $("#csMgSave").on("click", function () {
