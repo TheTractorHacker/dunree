@@ -5,6 +5,9 @@ Newest first within each area. Each item names the page and what a user notices;
 ## Status: realtime network charts
 * The two **Realtime Network Input / Output** charts have a fixed height (220px). They used to stretch to the height of the traffic map column, which grows with the number of proxy rules, so on a server with many sites each chart became several hundred pixels tall and the samples drew as a few thin vertical lines.
 
+## Status: Tune panel (per-rule rates)
+* Each rule is one compact row: name, average, peak, then the busiest client with its rate against the limit, a short coloured "N% headroom" tag and a thin bar. The long explanation (peak time, per-minute rate, the suggested limit) moved into the row's tooltip and is only written out in the row when it matters (requests were limited, dry run, no headroom). The repeated "Open the rate limit settings" text link is now a small settings button at the end of the row. Rows highlight on hover.
+
 ## Login screen
 * New look: frosted card, five layers of waves that swell and cross and follow the pointer a little, drifting light, and a sky that matches the time of day (stars at night). It pauses when the tab is hidden and shows one still picture when the system asks for reduced motion.
 * **Password manager fix**: the card no longer has a fixed height with its own scrollbar and no longer plays an entrance animation on the fields, and the form no longer toggles field state while typing, so autofilling the username and password does not move the fields. Autofill keeps the field colours.

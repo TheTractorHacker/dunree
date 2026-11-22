@@ -446,18 +446,37 @@
     #status .tuneWin button[aria-pressed="true"]{ background: var(--theme_highlight, #4b75ff); color: #fff; }
     #status .tuneWin button:focus-visible{ outline: 2px solid var(--theme_highlight, #4b75ff); outline-offset: -2px; }
     #status .tuneTable{ margin-top: 0.6em; }
-    #status .tuneRow{ display: grid; grid-template-columns: minmax(0, 1.2fr) 5em 8.5em minmax(0, 2.8fr); gap: 0.3em 1em; padding: 0.55em 0; border-top: 1px solid var(--divider_color); font-size: 0.93em; align-items: start; }
-    #status .tuneRow.tuneHead{ border-top: 0; padding: 0.2em 0; font-size: 0.8em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text_color_secondary); }
+    #status .tuneRow{ display: grid; grid-template-columns: minmax(0, 1.3fr) 5.5em 7.5em minmax(0, 3fr) 2.2em; gap: 0.3em 1.1em; padding: 0.7em 0.5em; margin: 0 -0.5em; border-top: 1px solid var(--divider_color); font-size: 0.93em; align-items: center; border-radius: 8px; }
+    #status .tuneRow:not(.tuneHead):hover{ background: rgba(120,130,150,.08); }
+    #status .tuneRow.tuneHead{ border-top: 0; padding: 0.2em 0.5em; font-size: 0.78em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text_color_secondary); }
+    #status .tuneRow.tuneHead:hover{ background: none; }
     #status .tuneRow .tuneName{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-    #status .tuneRow .tuneNum{ font-variant-numeric: tabular-nums; }
-    #status .tuneBarTrack{ height: 6px; border-radius: 3px; background: var(--divider_color); margin: 0.3em 0; overflow: hidden; }
+    #status .tuneRow .tuneNum{ font-variant-numeric: tabular-nums; line-height: 1.3; }
+    #status .tuneRow .tuneNum .tuneMuted{ font-size: 0.82em; }
+    #status .tuneClient{ min-width: 0; }
+    #status .tuneLimitLine{ font-size: 0.82em; }
+    #status .tuneDry{ color: #a14a00; }
+    body.darkTheme #status .tuneDry{ color: #ffa860; }
+    #status .tuneBusy{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1em 0.7em; margin-top: 0.15em; }
+    #status .tuneIp{ font-variant-numeric: tabular-nums; }
+    #status .tuneOf{ color: var(--text_color_secondary); font-variant-numeric: tabular-nums; font-size: 0.92em; }
+    #status .tunePill{ display: inline-block; padding: 0 0.6em; border-radius: 999px; font-size: 0.78em; font-weight: 700; line-height: 1.7; border: 1px solid transparent; }
+    #status .tunePill.ok{ background: rgba(33,186,69,.14); border-color: rgba(33,186,69,.4); color: #166b2d; }
+    #status .tunePill.warn{ background: rgba(242,113,28,.14); border-color: rgba(242,113,28,.45); color: #9a4a00; }
+    #status .tunePill.bad{ background: rgba(219,40,40,.12); border-color: rgba(219,40,40,.45); color: #a11b1b; }
+    body.darkTheme #status .tunePill.ok{ color: #7be39a; }
+    body.darkTheme #status .tunePill.warn{ color: #ffb878; }
+    body.darkTheme #status .tunePill.bad{ color: #ff9a9a; }
+    #status .tuneBarTrack{ height: 5px; border-radius: 3px; background: var(--divider_color); margin: 0.4em 0 0.1em; overflow: hidden; }
     #status .tuneBarFill{ height: 100%; border-radius: 3px; background: #21ba45; }
     #status .tuneBarFill.warn{ background: #f2711c; }
     #status .tuneBarFill.bad{ background: #db2828; }
-    #status .tuneHint{ margin-top: 0.2em; font-size: 0.9em; color: var(--text_color_secondary); }
-    #status .tuneLink{ background: none; border: 0; padding: 0; font: inherit; color: #2f5fe0; cursor: pointer; text-decoration: underline; }
-    body.darkTheme #status .tuneLink{ color: #8fb0ff; }
-    #status .tuneLink:focus-visible{ outline: 2px solid currentColor; outline-offset: 2px; border-radius: 2px; }
+    #status .tuneHint{ margin-top: 0.25em; font-size: 0.86em; color: var(--text_color_secondary); line-height: 1.4; }
+    #status .tuneAct{ display: flex; justify-content: flex-end; }
+    #status .tuneEdit{ width: 32px; height: 32px; padding: 0; margin: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--divider_color); border-radius: 8px; background: transparent; color: var(--text_color_secondary); cursor: pointer; }
+    #status .tuneEdit:hover{ color: var(--text_color); border-color: var(--text_color_secondary); background: rgba(120,130,150,.1); }
+    #status .tuneEdit:focus-visible{ outline: 2px solid var(--theme_highlight, #4b75ff); outline-offset: 2px; }
+    #status .tuneEdit i.icon{ margin: 0; }
     #status .tuneFoot{ margin-top: 0.6em; }
     #status .healthGrid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1em; }
     #status .healthList{ margin-top: 0.3em; }
@@ -487,9 +506,11 @@
         #serverstatus .poweroptions{ position: static; display: flex; gap: 0.5em; justify-content: flex-end; margin-bottom: 0.8em; }
         #status .diagramTools .ui.button span{ display: none; }
         /* one card per rule: name on top, then the numbers, then the client */
-        #status .tuneRow{ grid-template-columns: 1fr 1fr; }
+        #status .tuneRow{ grid-template-columns: 1fr 1fr; align-items: start; }
         #status .tuneRow.tuneHead{ display: none; }
         #status .tuneRow .tuneName, #status .tuneRow .tuneClient{ grid-column: 1 / -1; }
+        #status .tuneRow .tuneAct{ grid-column: 1 / -1; }
+        #status .tuneEdit{ width: 44px; height: 44px; }
         #status .tuneRow .tuneNum::before{ content: attr(data-label) ": "; color: var(--text_color_secondary); }
     }
     @media (prefers-reduced-motion: reduce){
@@ -1978,38 +1999,46 @@
             return c;
         }
         var lim = l.rate, b = l.busiest;
-        var head = el("div", "");
-        head.appendChild(el("span", "tuneMuted", tf("Limit {0} req/s per client", lim) + (l.burst > 0 && l.burst !== lim ? ", " + tf("burst {0}", l.burst) : "")));
-        if (l.dryRun) { var dr = el("span", "tuneMuted", " \u00b7 "); var db = el("b", "", t("Dry run: nothing is blocked")); dr.appendChild(db); head.appendChild(dr); }
+        var head = el("div", "tuneMuted tuneLimitLine");
+        head.textContent = tf("Limit {0} req/s per client", lim) + (l.burst > 0 && l.burst !== lim ? ", " + tf("burst {0}", l.burst) : "");
+        if (l.dryRun) { head.appendChild(document.createTextNode(" \u00b7 ")); head.appendChild(el("b", "tuneDry", t("Dry run: nothing is blocked"))); }
         c.appendChild(head);
         if (!b) {
             c.appendChild(el("div", "tuneHint", t("No client made requests in this window.")));
             return c;
         }
-        var line = el("div", "");
-        var ip = el("b", "", b.ip || t("a client")); line.appendChild(ip);
-        line.appendChild(document.createTextNode(" " + tf("{0} of {1} req/s", fmtR(b.rps), lim) + " (" + tf("{0} per minute", Math.round(b.perMinute)) + ")"));
-        line.title = tf("The busiest 5 second stretch in this window, at {0}", clock(b.at));
-        c.appendChild(line);
-        var pct = lim > 0 ? Math.min(100, b.rps / lim * 100) : 0;
-        var tr = el("div", "tuneBarTrack"), fill = el("div", "tuneBarFill" + (pct >= 90 ? " bad" : pct >= 60 ? " warn" : ""));
-        fill.style.width = Math.max(2, pct) + "%"; tr.appendChild(fill); c.appendChild(tr);
+        var pct = lim > 0 ? Math.min(100, b.rps / lim * 100) : 0, level = pct >= 90 ? "bad" : pct >= 60 ? "warn" : "ok";
         var headroom = lim > 0 ? Math.max(0, Math.round((lim - b.rps) / lim * 100)) : 0;
+        var line = el("div", "tuneBusy");
+        line.appendChild(el("b", "tuneIp", b.ip || t("a client")));
+        line.appendChild(el("span", "tuneOf", tf("{0} of {1} req/s", fmtR(b.rps), lim)));
+        line.appendChild(el("span", "tunePill " + level, b.rps >= lim ? t("no headroom") : tf("{0}% headroom", headroom)));
+        c.appendChild(line);
+        var tr = el("div", "tuneBarTrack"), fill = el("div", "tuneBarFill" + (level === "ok" ? "" : " " + level));
+        fill.style.width = Math.max(2, pct) + "%"; tr.appendChild(fill); c.appendChild(tr);
         var hint = l.dryRun ? (l.denied > 0 ? tf("{0} requests would have been rate-limited in this window (none was blocked). Your busiest client reached {1} of {2} req/s.", l.denied, fmtR(b.rps), lim)
                 : tf("No request would have been rate-limited in this window. Your busiest client reached {0} of {1} req/s.", fmtR(b.rps), lim))
             : l.denied > 0 ? tf("{0} requests were rate-limited in this window. Your busiest client reached {1} of {2} req/s.", l.denied, fmtR(b.rps), lim)
             : b.rps >= lim ? tf("Your busiest client reached {0} of {1} req/s: no headroom left.", fmtR(b.rps), lim)
             : tf("Your busiest client reached {0} of {1} req/s: a limit of {1} req/s leaves {2}% headroom.", fmtR(b.rps), lim, headroom);
-        c.appendChild(el("div", "tuneHint", hint));
+        var tip = tf("The busiest 5 second stretch in this window, at {0}", clock(b.at)) + " (" + tf("{0} per minute", Math.round(b.perMinute)) + "). " + hint;
         if (l.suggestedRate > 0 && l.suggestedRate !== lim) {
-            var sg = el("div", "tuneHint");
-            sg.appendChild(document.createTextNode(tf("A limit of {0} req/s would leave about twice the busiest client's rate (a hint only, nothing is changed). ", l.suggestedRate)));
-            c.appendChild(sg);
+            tip += " " + tf("A limit of {0} req/s would leave about twice the busiest client's rate (a hint only, nothing is changed). ", l.suggestedRate);
         }
-        var lk = el("button", "tuneLink", t("Open the rate limit settings")); lk.type = "button";
-        lk.addEventListener("click", function(){ openRateLimitEditor(r.domain); });
-        var wrap = el("div", "tuneHint"); wrap.appendChild(lk); c.appendChild(wrap);
+        c.title = tip;
+        // the sentence is only written out when it matters; otherwise it is in the tooltip
+        if (l.dryRun || l.denied > 0 || b.rps >= lim) { c.appendChild(el("div", "tuneHint", hint)); }
         return c;
+    }
+    function tuneEditCell(r){
+        var cell = el("div", "tuneAct"), l = r.limiter || {};
+        var lk = el("button", "tuneEdit"); lk.type = "button";
+        var label = t("Open the rate limit settings");
+        lk.title = label; lk.setAttribute("aria-label", label + ": " + r.domain);
+        var ic = document.createElement("i"); ic.className = "sliders horizontal icon"; ic.setAttribute("aria-hidden", "true"); lk.appendChild(ic);
+        lk.addEventListener("click", function(){ openRateLimitEditor(r.domain); });
+        cell.appendChild(lk);
+        return cell;
     }
     function renderTune(d){
         var P = document.getElementById("tunePanel");
@@ -2039,7 +2068,7 @@
         if (!rules.length) { tbl.appendChild(el("div", "tuneMuted", t("No proxy rules yet."))); }
         else {
             var hd = el("div", "tuneRow tuneHead");
-            [t("Rule"), t("Average"), t("Peak"), t("Busiest client vs limit")].forEach(function(h){ hd.appendChild(el("div", "", h)); });
+            [t("Rule"), t("Average"), t("Peak"), t("Busiest client vs limit"), ""].forEach(function(h){ hd.appendChild(el("div", "", h)); });
             tbl.appendChild(hd);
         }
         var anyNoLimit = false;
@@ -2052,6 +2081,7 @@
             row.appendChild(pk);
             if (!(r.limiter && r.limiter.enabled)) anyNoLimit = true;
             row.appendChild(tuneClientCell(r));
+            row.appendChild(tuneEditCell(r));
             tbl.appendChild(row);
         });
         P.appendChild(tbl);
