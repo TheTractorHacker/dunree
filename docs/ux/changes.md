@@ -2,6 +2,9 @@
 
 Newest first within each area. Each item names the page and what a user notices; design background is in [audit-2026-11.md](audit-2026-11.md), the components in [components.md](components.md).
 
+## Status: realtime network charts
+* The two **Realtime Network Input / Output** charts have a fixed height (220px). They used to stretch to the height of the traffic map column, which grows with the number of proxy rules, so on a server with many sites each chart became several hundred pixels tall and the samples drew as a few thin vertical lines.
+
 ## Login screen
 * New look: frosted card, five layers of waves that swell and cross and follow the pointer a little, drifting light, and a sky that matches the time of day (stars at night). It pauses when the tab is hidden and shows one still picture when the system asks for reduced motion.
 * **Password manager fix**: the card no longer has a fixed height with its own scrollbar and no longer plays an entrance animation on the fields, and the form no longer toggles field state while typing, so autofilling the username and password does not move the fields. Autofill keeps the field colours.

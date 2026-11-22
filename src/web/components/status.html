@@ -130,25 +130,28 @@
         border-radius: 1em;
     }
 
+    /* The charts have a fixed height. They used to stretch to the height of the traffic map column, which grows with the
+       number of proxy rules, and a very tall chart turns a few samples into a handful of vertical lines. */
     #status .statusNetCol{
         flex: 1 1 38%;
         min-width: 0;
         display: flex;
         flex-direction: column;
+        align-self: flex-start;
         gap: 1em;
     }
 
     #status .statusNetCol .dashboard-card{
-        flex: 1;
+        flex: none;
         display: flex;
         flex-direction: column;
         min-height: 0;
     }
 
     #status .statusNetCol .realtimeChartWrapper{
-        flex: 1;
-        height: auto;
-        min-height: 150px;
+        flex: none;
+        height: 220px;
+        min-height: 0;
     }
 
     /* Realtime network card header (icon badge + title + value) */
