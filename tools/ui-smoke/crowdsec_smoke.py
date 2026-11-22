@@ -442,6 +442,10 @@ def crowdsec_ui(pg, ctx):
         # ---------------------------------------------------------------- hardened headers: card in the site editor, header really sent
         current["page"] = "crowdsec-hardened"
         _hardened(pg, js, get, post, shot, hit, wait_for)
+
+        # ---------------------------------------------------------------- manage CrowdSec: machine login, ban, unban, alerts
+        current["page"] = "crowdsec-manage"
+        _manage(pg, js, get, post, shot, wait_for, open_tab, confirm, audit_text, base + 4)
     finally:
         try:
             if ok_setup:
@@ -569,3 +573,163 @@ def _hardened(pg, js, get, post, shot, hit, wait_for):
     js("""() => { const b = document.querySelector('#httprpEditModal .httpProxyEditClosePC'); if (b) b.click(); }""")
     pg.wait_for_timeout(500)
     js("""() => { const d = document.querySelector('.zx-dialog [data-zx-ok]'); if (d) d.click(); }""")
+
+
+class FakeWatcher:
+    """Documented watcher endpoints: POST /v1/watchers/login, GET/POST /v1/alerts (Bearer), DELETE /v1/decisions/<id>"""
+
+    def __init__(self, port, mid, pw):
+        self.mid, self.pw, self.token = mid, pw, "jwt-" + secrets.token_hex(8)
+        self.lock = threading.Lock()
+        self.decisions, self.next_id, self.posted, self.deleted = {}, 100, [], []
+        outer = self
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def _send(self, code, obj=None):
+                raw = json.dumps(obj).encode() if obj is not None else b""
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+            def _body(self):
+                n = int(self.headers.get("Content-Length") or 0)
+                return json.loads(self.rfile.read(n) or b"null")
+
+            def _authed(self):
+                return self.headers.get("Authorization") == "Bearer " + outer.token
+
+            def do_POST(self):
+                path = self.path.partition("?")[0]
+                b = self._body()
+                if path == "/v1/watchers/login":
+                    if b.get("machine_id") == outer.mid and b.get("password") == outer.pw:
+                        return self._send(200, {"code": 200, "expire": "2099-01-01T00:00:00Z", "token": outer.token})
+                    return self._send(403, {"message": "bad login"})
+                if not self._authed():
+                    return self._send(401)
+                if path == "/v1/alerts":
+                    with outer.lock:
+                        for a in b:
+                            for d in a.get("decisions", []):
+                                outer.next_id += 1
+                                d = dict(d, id=outer.next_id)
+                                outer.decisions[d["id"]] = (a, d)
+                            outer.posted.append(a)
+                    return self._send(201, ["1"])
+                self._send(404)
+
+            def do_GET(self):
+                path = self.path.partition("?")[0]
+                if not self._authed():
+                    return self._send(401)
+                if path == "/v1/alerts":
+                    with outer.lock:
+                        out = [{"id": i, "created_at": "2026-11-22T10:00:00Z", "scenario": a["scenario"], "message": a["message"], "events_count": 1,
+                                "source": a["source"], "decisions": [d]} for i, (a, d) in outer.decisions.items()]
+                    return self._send(200, out or None)
+                self._send(404)
+
+            def do_DELETE(self):
+                if not self._authed():
+                    return self._send(401)
+                i = int(self.path.rsplit("/", 1)[1])
+                with outer.lock:
+                    if i not in outer.decisions:
+                        return self._send(404, {"message": "not found"})
+                    del outer.decisions[i]
+                    outer.deleted.append(i)
+                self._send(200, {"nbDeleted": "1"})
+
+        class S(socketserver.ThreadingMixIn, http.server.HTTPServer):
+            daemon_threads = True
+            allow_reuse_address = True
+
+        self.srv = S(("127.0.0.1", port), H)
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+
+    def stop(self):
+        try:
+            self.srv.shutdown()
+            self.srv.server_close()
+        except Exception:
+            pass
+
+
+def _manage(pg, js, get, post, shot, wait_for, open_tab, confirm, audit_text, port):
+    mid, pw = "smoke-admin", "pw-" + secrets.token_hex(10)
+    w = FakeWatcher(port, mid, pw)
+    try:
+        r = post("/api/crowdsec/set", {"config": json.dumps({"enabled": False, "lapiUrl": "http://127.0.0.1:%d" % port, "mode": "log"}), "apikey": "csk-unused-0123456789"})
+        if isinstance(r, dict) and r.get("error"):
+            fail("crowdsec-manage", f"could not save the LAPI address: {r}")
+            return
+        pg.reload()
+        pg.wait_for_timeout(1500)
+        open_tab()
+        pg.wait_for_selector("#csMgConnect", state="attached", timeout=8000)
+        pg.wait_for_function("document.getElementById('csMgConnect').style.display !== 'none'", timeout=8000)
+        if js("getComputedStyle(document.getElementById('csMgPanel')).display") != "none":
+            fail("crowdsec-manage", "the management panel is visible before a machine login exists")
+        # wrong password is refused with a message that does not echo it
+        pg.fill("#csMgId", mid)
+        pg.fill("#csMgPw", "wrong-password-xyz")
+        pg.click("#csMgSave")
+        pg.wait_for_function("document.getElementById('csMgMsg').style.display !== 'none'", timeout=8000)
+        if "wrong-password-xyz" in js("document.getElementById('csMgMsg').innerText"):
+            fail("crowdsec-manage", "the error message echoes the password")
+        # right password
+        pg.fill("#csMgPw", pw)
+        pg.click("#csMgSave")
+        pg.wait_for_function("getComputedStyle(document.getElementById('csMgPanel')).display !== 'none'", timeout=10000)
+        if mid not in js("document.getElementById('csMgWho').innerText"):
+            fail("crowdsec-manage", "the connected machine is not shown")
+        if js("p => document.documentElement.outerHTML.indexOf(p) >= 0", pw):
+            fail("crowdsec-manage", "the machine password is still in the page after connecting")
+        # refused targets
+        pg.fill("#csBanTarget", "127.0.0.1")
+        pg.click("#csBanGo")
+        confirm(True)
+        pg.wait_for_function("document.getElementById('csBanMsg').style.display !== 'none' && /loopback/i.test(document.getElementById('csBanMsg').innerText)", timeout=8000)
+        if w.posted:
+            fail("crowdsec-manage", "a refused ban reached the LAPI")
+        # a real ban shows up in the list
+        pg.fill("#csBanTarget", "203.0.113.44")
+        pg.fill("#csBanReason", "smoke test")
+        pg.click("#csBanGo")
+        confirm(True)
+        pg.wait_for_function("document.querySelector('#csMgDecisions tbody').innerText.indexOf('203.0.113.44') >= 0", timeout=10000)
+        if len(w.posted) != 1 or w.posted[0]["decisions"][0]["value"] != "203.0.113.44":
+            fail("crowdsec-manage", f"unexpected ban payload: {w.posted}")
+        pg.wait_for_function("document.querySelector('#csMgAlerts tbody').innerText.indexOf('203.0.113.44') >= 0", timeout=10000)
+        shot("crowdsec-manage.png")
+        # remove it
+        pg.click("#csMgDecisions .cs-unban")
+        confirm(True)
+        pg.wait_for_function("document.querySelector('#csMgDecisions tbody').innerText.indexOf('203.0.113.44') < 0", timeout=10000)
+        if len(w.deleted) != 1:
+            fail("crowdsec-manage", "the ban was not deleted on the LAPI")
+        check_horizontal(pg, "crowdsec manage")
+        # audit log has the change and no password
+        a = audit_text()
+        if pw in a:
+            fail("crowdsec-manage", "the machine password is in the security audit log")
+        if "manage" not in a:
+            fail("crowdsec-manage", "the ban and unban are not in the security audit log")
+        # remove the login
+        pg.click("#csMgRemove")
+        confirm(True)
+        pg.wait_for_function("getComputedStyle(document.getElementById('csMgPanel')).display === 'none'", timeout=8000)
+        if get("/api/crowdsec/manage/status").get("set"):
+            fail("crowdsec-manage", "the login was not removed")
+    finally:
+        try:
+            post("/api/crowdsec/manage/login", {"clear": "true"})
+            post("/api/crowdsec/set", {"config": json.dumps({"enabled": False, "lapiUrl": "", "mode": "log"}), "clearkey": "true"})
+        except Exception as e:
+            print("  (manage cleanup problem: %s)" % e)
+        w.stop()

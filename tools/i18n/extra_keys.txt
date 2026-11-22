@@ -399,3 +399,19 @@ waiting
 {0} min ago
 {0} of {1} downloaded
 {0} to review
+Connected as {0}
+No active bans.
+Remove ban
+No alerts.
+Connected to CrowdSec
+Enter an address or range.
+Banned. It can take up to the pull interval before Zoraxy enforces it.
+Ban removed
+Remove the login?
+Zoraxy forgets the machine login. Bans stay as they are. To revoke the machine on the CrowdSec host too, run cscli machines delete.
+Remove
+Ban this address?
+CrowdSec will refuse {0} everywhere it is enforced (Zoraxy in enforce mode, firewall bouncers, other proxies) until the ban ends or is removed.
+Ban
+Remove this ban?
+The ban on {0} is lifted in CrowdSec.

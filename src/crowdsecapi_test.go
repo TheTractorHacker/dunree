@@ -184,3 +184,101 @@ func TestCrowdSecViewerDeniedAndAudited(t *testing.T) {
 		t.Fatalf("audit events: %v", got)
 	}
 }
+
+func TestCrowdSecManageAPI(t *testing.T) {
+	crowdsecTestSetup(t)
+	const mpw = "mach-PASSWORD-77665544"
+	var posted []string
+	lapi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/watchers/login":
+			if r.Method == http.MethodPost {
+				b := new(strings.Builder)
+				buf := make([]byte, 512)
+				n, _ := r.Body.Read(buf)
+				b.Write(buf[:n])
+				if !strings.Contains(b.String(), mpw) {
+					w.WriteHeader(401)
+					return
+				}
+			}
+			w.Write([]byte(`{"code":200,"expire":"2099-01-01T00:00:00Z","token":"tok"}`))
+		case r.Header.Get("Authorization") != "Bearer tok":
+			w.WriteHeader(401)
+		case r.URL.Path == "/v1/alerts" && r.Method == http.MethodPost:
+			posted = append(posted, "post")
+			w.Write([]byte(`["1"]`))
+		case r.URL.Path == "/v1/alerts":
+			w.Write([]byte(`[{"id":1,"scenario":"s","message":"m","source":{"scope":"Ip","value":"203.0.113.9"},"decisions":[{"id":5,"type":"ban","scope":"Ip","value":"203.0.113.9","duration":"1h","origin":"cscli","scenario":"s"}]}]`))
+		case strings.HasPrefix(r.URL.Path, "/v1/decisions/"):
+			posted = append(posted, "del")
+			w.Write([]byte(`{"nbDeleted":"1"}`))
+		default:
+			w.WriteHeader(404)
+		}
+	}))
+	defer lapi.Close()
+	// no LAPI configured yet: the login is refused with a clear message
+	if w := csPost(HandleCrowdSecManageLogin, url.Values{"machineid": {"m1"}, "password": {mpw}}); !strings.Contains(w.Body.String(), "LAPI address") {
+		t.Fatalf("%s", w.Body.String())
+	}
+	cfg := `{"enabled":false,"lapiUrl":"` + lapi.URL + `"}`
+	if w := csPost(HandleCrowdSecSet, url.Values{"config": {cfg}, "apikey": {csAPIKey}}); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	for _, h := range []http.HandlerFunc{HandleCrowdSecManageLogin, HandleCrowdSecManageBan, HandleCrowdSecManageUnban} {
+		w := httptest.NewRecorder()
+		h(w, httptest.NewRequest(http.MethodGet, "/x", nil))
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("a write endpoint accepted GET")
+		}
+	}
+	if w := csPost(HandleCrowdSecManageLogin, url.Values{"machineid": {"m1"}, "password": {"nope"}}); !strings.Contains(w.Body.String(), "error") || strings.Contains(w.Body.String(), "nope") {
+		t.Fatalf("wrong login accepted: %s", w.Body.String())
+	}
+	if !strings.Contains(csGet(HandleCrowdSecManageStatus), `"set":false`) {
+		t.Fatal("status")
+	}
+	if w := csPost(HandleCrowdSecManageBan, url.Values{"target": {"203.0.113.9"}, "duration": {"1h"}}); !strings.Contains(w.Body.String(), "machine login") {
+		t.Fatalf("ban without a login: %s", w.Body.String())
+	}
+	if w := csPost(HandleCrowdSecManageLogin, url.Values{"machineid": {"m1"}, "password": {mpw}}); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	outs := []string{csGet(HandleCrowdSecManageStatus), csGet(HandleCrowdSecManageDecisions), csGet(HandleCrowdSecManageAlerts)}
+	if !strings.Contains(outs[0], `"set":true`) || !strings.Contains(outs[0], `"machine":"m1"`) || !strings.Contains(outs[1], `"id":5`) || !strings.Contains(outs[2], "203.0.113.9") {
+		t.Fatalf("%v", outs)
+	}
+	for _, bad := range []url.Values{{"target": {"127.0.0.1"}, "duration": {"1h"}}, {"target": {"203.0.113.9"}, "duration": {"5s"}}, {"target": {"10.0.0.0/8"}, "duration": {"1h"}}} {
+		if w := csPost(HandleCrowdSecManageBan, bad); !strings.Contains(w.Body.String(), "error") {
+			t.Fatalf("accepted %v", bad)
+		}
+	}
+	if len(posted) != 0 {
+		t.Fatalf("a refused ban reached the LAPI")
+	}
+	if w := csPost(HandleCrowdSecManageBan, url.Values{"target": {"203.0.113.9"}, "duration": {"1h"}, "reason": {"test"}}); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	if w := csPost(HandleCrowdSecManageUnban, url.Values{"id": {"x"}}); !strings.Contains(w.Body.String(), "error") {
+		t.Fatal("bad id accepted")
+	}
+	if w := csPost(HandleCrowdSecManageUnban, url.Values{"id": {"5"}}); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	if len(posted) != 2 {
+		t.Fatalf("%v", posted)
+	}
+	for _, o := range append(outs, csGet(HandleCrowdSecGet)) {
+		if strings.Contains(o, mpw) || strings.Contains(o, "tok\"") {
+			t.Fatalf("secret in output: %s", o)
+		}
+	}
+	if w := csPost(HandleCrowdSecManageLogin, url.Values{"clear": {"true"}}); strings.Contains(w.Body.String(), "error") || crowdsecMgr.MachineSet() {
+		t.Fatal("not cleared")
+	}
+	// the audit log redacts the password field
+	if !secaudit.IsSecretName("password") {
+		t.Fatal("password not redacted by the audit log")
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -21,11 +22,14 @@ import (
 */
 
 const (
-	DirName        = "crowdsec"
-	keyFileName    = "crowdsec.key"
-	sealedFileName = "apikey.sealed"
-	bindFileName   = "apikey.bind"
-	sealAAD        = "zoraxy-crowdsec-apikey-v1"
+	DirName         = "crowdsec"
+	keyFileName     = "crowdsec.key"
+	sealedFileName  = "apikey.sealed"
+	bindFileName    = "apikey.bind"
+	machineFileName = "machine.sealed"
+	machineAAD      = "zoraxy-crowdsec-machine-v1"
+	machineBindFile = "machine.bind"
+	sealAAD         = "zoraxy-crowdsec-apikey-v1"
 )
 
 // ErrTampered is returned when the sealed key cannot be authenticated
@@ -34,7 +38,7 @@ var ErrTampered = errors.New("the stored CrowdSec API key cannot be decrypted (f
 // IsSecretFile tells the configuration backup which files under the conf folder are never exported (rel is relative to conf)
 func IsSecretFile(rel string) bool {
 	rel = strings.TrimPrefix(filepath.ToSlash(rel), "./")
-	return rel == DirName+"/"+keyFileName || rel == DirName+"/"+sealedFileName
+	return rel == DirName+"/"+keyFileName || rel == DirName+"/"+sealedFileName || rel == DirName+"/"+machineFileName
 }
 
 // Vault holds the sealed API key
@@ -215,4 +219,117 @@ func BindingOf(lapiURL string) string {
 	}
 	sum := sha256.Sum256([]byte(u.Scheme + "://" + strings.ToLower(u.Hostname()) + ":" + port))
 	return hex.EncodeToString(sum[:])
+}
+
+// Machine credentials (the LAPI "watcher" login used by the management panel). Sealed exactly like the API key, in
+// their own file, under the same master key. They are never returned by an API.
+
+// MachineCreds is a LAPI machine login
+type MachineCreds struct {
+	ID       string `json:"id"`
+	Password string `json:"password"`
+}
+
+// ValidMachine checks a machine id and password (printable, no whitespace, bounded)
+func ValidMachine(id, pw string) error {
+	if id == "" || len(id) > 128 || pw == "" || len(pw) > 512 {
+		return errors.New("invalid machine login (the id and the password are both required)")
+	}
+	for _, r := range id + pw {
+		if r <= ' ' || r == 0x7f {
+			return errors.New("invalid machine login (it must not contain spaces or control characters)")
+		}
+	}
+	return nil
+}
+
+// SetMachine seals and stores the machine login
+func (v *Vault) SetMachine(c MachineCreds) error {
+	c.ID, c.Password = strings.TrimSpace(c.ID), strings.TrimSpace(c.Password)
+	if err := ValidMachine(c.ID, c.Password); err != nil {
+		return err
+	}
+	raw, _ := json.Marshal(c)
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	mk, err := v.masterKey(true)
+	if err != nil {
+		return err
+	}
+	g, err := gcmFor(mk)
+	if err != nil {
+		return err
+	}
+	nonce := make([]byte, g.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return err
+	}
+	blob := g.Seal(nonce, nonce, raw, []byte(machineAAD))
+	return writeFileAtomic(filepath.Join(v.dir, machineFileName), []byte(base64.StdEncoding.EncodeToString(blob)), 0o600)
+}
+
+// ClearMachine removes the stored machine login
+func (v *Vault) ClearMachine() error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	_ = os.Remove(filepath.Join(v.dir, machineBindFile))
+	err := os.Remove(filepath.Join(v.dir, machineFileName))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
+// MachineSet reports whether a machine login is stored (without decrypting it)
+func (v *Vault) MachineSet() bool {
+	_, err := os.Stat(filepath.Join(v.dir, machineFileName))
+	return err == nil
+}
+
+// Machine returns the stored login; ok is false when none is stored. Callers must never log or return it.
+func (v *Vault) Machine() (c MachineCreds, ok bool, err error) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	raw, err := os.ReadFile(filepath.Join(v.dir, machineFileName))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return c, false, nil
+		}
+		return c, false, err
+	}
+	blob, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(raw)))
+	if err != nil {
+		return c, true, ErrTampered
+	}
+	mk, err := v.masterKey(false)
+	if err != nil {
+		return c, true, ErrTampered
+	}
+	g, err := gcmFor(mk)
+	if err != nil || len(blob) < g.NonceSize()+g.Overhead() {
+		return c, true, ErrTampered
+	}
+	pt, err := g.Open(nil, blob[:g.NonceSize()], blob[g.NonceSize():], []byte(machineAAD))
+	if err != nil || json.Unmarshal(pt, &c) != nil {
+		return MachineCreds{}, true, ErrTampered
+	}
+	return c, true, nil
+}
+
+// SetMachineBinding records the LAPI endpoint the machine login was entered for
+func (v *Vault) SetMachineBinding(b string) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return writeFileAtomic(filepath.Join(v.dir, machineBindFile), []byte(b+"\n"), 0o600)
+}
+
+// MachineBinding returns it; ok is false when none is recorded
+func (v *Vault) MachineBinding() (string, bool) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	b, err := os.ReadFile(filepath.Join(v.dir, machineBindFile))
+	if err != nil {
+		return "", false
+	}
+	return strings.TrimSpace(string(b)), true
 }

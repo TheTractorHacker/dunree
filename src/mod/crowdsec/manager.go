@@ -93,6 +93,7 @@ const (
 type Manager struct {
 	kv    KV
 	vault *Vault
+	adm   adminState
 
 	// Protect, if set, reports addresses that must never be acted on (this server, trusted proxies)
 	Protect func(netip.Addr) bool

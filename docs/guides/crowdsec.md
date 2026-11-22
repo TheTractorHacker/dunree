@@ -114,6 +114,22 @@ How it works (CrowdSec documentation: <https://docs.crowdsec.net/docs/local_api/
 * Not done: reporting alerts back to CrowdSec (use the log acquisition above for detection), TLS client-certificate authentication to the LAPI,
   the optional origin and type stream filters (only `scopes=Ip,Range` is sent). Not tested against a real CrowdSec, only against a fake LAPI that follows the documentation.
 
+## Managing CrowdSec from Zoraxy (Security Center > CrowdSec > Manage CrowdSec)
+
+CrowdSec has no local web interface (the old Metabase dashboard was removed in 1.6; the free Console at app.crowdsec.net is the only web UI and runs in the cloud). `cscli` on the CrowdSec host remains the full tool. Zoraxy adds a small panel for the daily work, so you do not need a terminal for it:
+
+* **Active bans**: everything CrowdSec currently bans (all origins: your scenarios, the community list, manual bans), with a filter and a **Remove ban** button.
+* **Ban an address or range**: duration 1 hour to 30 days, optional reason. Recorded in CrowdSec as scenario `zoraxy/manual-ban`, origin `cscli`, so every other bouncer you run (firewall, other proxies) enforces it too.
+* **Alerts**: what CrowdSec detected and why (scenario, address, country, number of events), filterable by address.
+
+It needs a **machine login**, because the bouncer key can only read decisions. Create it once on the CrowdSec host: `sudo cscli machines add zoraxy-admin --auto -f -` prints an id and a password once; paste them in the panel. Revoke at any time with `sudo cscli machines delete zoraxy-admin`.
+
+How the login is handled: tested against the saved LAPI address before it is kept; stored encrypted in `conf/crowdsec/machine.sealed` (same scheme as the bouncer key); never returned by any endpoint, never logged, never part of a configuration export; only ever sent to the LAPI address it was entered for (changing the address asks for it again); closed for viewer accounts. Every ban, unban and login change is written to the security audit log with the actor (the password field is redacted).
+
+Safety limits: loopback, unspecified and multicast addresses cannot be banned; ranges are limited to /16 (IPv4) and /48 (IPv6); the server's own address, a trusted proxy and **the address you are browsing from** cannot be banned; at most 20 changes per minute; every ban and unban asks for confirmation.
+
+Known limits: the panel works on the local API only (no multi-server view; use the Console for that); decisions are listed through the alerts API like `cscli decisions list`, so very old alerts beyond the newest 200 to 500 are not shown; Zoraxy enforces a new ban after its next pull (default 10 seconds); tested against a stand-in for the documented API and the published OpenAPI specification, **not yet against a real CrowdSec server**.
+
 ## Other ways to enforce decisions
 
 CrowdSec's Nginx/Traefik bouncers do not apply. Besides the built-in bouncer above:

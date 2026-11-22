@@ -143,6 +143,38 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
     <button class="ui basic button" id="csTest"><i class="plug icon"></i> Test connection</button>
     <button class="ui basic green button" id="csSave"><i class="save icon"></i> Save</button>
 </div>
+<h4 class="ui header" id="csManageHead">Manage CrowdSec</h4>
+<p class="zx-help">CrowdSec has no web page of its own on the server; its web interface is the free online Console at app.crowdsec.net. This panel lets you manage the local CrowdSec directly from here: see what is banned, ban or unban an address, and read the alerts (what was detected and why). It needs a separate login of a CrowdSec "machine", created once on the CrowdSec host. Zoraxy stores it encrypted, only sends it to the LAPI address it was entered for, and records every change in the security audit log.</p>
+<div id="csMgConnect" style="display:none">
+    <p class="zx-help">1. Run this on the CrowdSec host. It prints a machine id and password once. 2. Paste them below.</p>
+    <div class="cs-cmd"><pre id="csCmdMachine">sudo cscli machines add zoraxy-admin --auto -f -</pre><button type="button" class="ui mini basic button cs-copy" data-for="csCmdMachine"><i class="copy icon"></i> Copy</button></div>
+    <div class="ui form"><div class="two fields">
+        <div class="field"><label for="csMgId">Machine id (the "login" line)</label><input type="text" id="csMgId" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="csMgPw">Password</label><input type="password" id="csMgPw" autocomplete="new-password" spellcheck="false"></div>
+    </div>
+    <div id="csMgMsg" class="ui negative message" style="display:none"></div>
+    <button class="ui basic green button" id="csMgSave"><i class="plug icon"></i> Connect</button></div>
+    <p class="zx-help">Save the LAPI address above first. The machine can ban and unban any address, so use one machine just for Zoraxy; remove it on the CrowdSec host with <code>sudo cscli machines delete zoraxy-admin</code> to revoke access.</p>
+</div>
+<div id="csMgPanel" style="display:none">
+    <p><span class="ui green label"><i class="check icon"></i> <span id="csMgWho"></span></span> <button class="ui mini basic button" id="csMgRemove">Remove the login</button></p>
+    <div class="ui form" id="csBanForm">
+        <div class="four fields">
+            <div class="field"><label for="csBanTarget">Address or range to ban</label><input type="text" id="csBanTarget" placeholder="203.0.113.7 or 203.0.113.0/24" autocomplete="off" spellcheck="false"></div>
+            <div class="field"><label for="csBanDur">For</label>
+                <select id="csBanDur" class="zx-select"><option value="1h">1 hour</option><option value="4h" selected>4 hours</option><option value="24h">1 day</option><option value="7d">7 days</option><option value="30d">30 days</option></select></div>
+            <div class="field"><label for="csBanReason">Reason (optional)</label><input type="text" id="csBanReason" maxlength="200" autocomplete="off"></div>
+            <div class="field"><label>&nbsp;</label><button class="ui basic red button" id="csBanGo"><i class="ban icon"></i> Ban</button></div>
+        </div>
+        <div id="csBanMsg" class="ui message" style="display:none"></div>
+    </div>
+    <h5 class="ui header">Active bans in CrowdSec</h5>
+    <div class="ui small icon input" style="margin-bottom:.5em"><input type="text" id="csMgFilter" placeholder="Filter by address, reason or origin" aria-label="Filter"><i class="search icon"></i></div>
+    <div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMgDecisions"><thead><tr><th>Type</th><th>Value</th><th>Origin</th><th>Reason</th><th>Left</th><th></th></tr></thead><tbody></tbody></table></div>
+    <h5 class="ui header">Alerts (what CrowdSec detected)</h5>
+    <div class="ui small icon input" style="margin-bottom:.5em"><input type="text" id="csMgAlertIp" placeholder="Only this address" aria-label="Alert address filter"><i class="search icon"></i></div>
+    <div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMgAlerts"><thead><tr><th>Time</th><th>Address</th><th>Country</th><th>Scenario</th><th>Events</th><th>Decision</th></tr></thead><tbody></tbody></table></div>
+</div>
 <h4 class="ui header">Recent matches</h4>
 <p class="zx-help">Up to 100 visitors that matched a decision (what was blocked, or would have been in log only mode).</p>
 <div style="overflow-x:auto"><table class="ui very basic compact small table" id="csMatches"><thead><tr><th>Time</th><th>Address</th><th>Site</th><th>Result</th><th>Decision</th><th>Hits</th></tr></thead><tbody></tbody></table></div>
@@ -273,6 +305,89 @@ Sources: <a href="https://docs.crowdsec.net/u/getting_started/installation/linux
             }
         } catch (e) { }
     });
+
+    // ---- Manage CrowdSec (machine login) ----
+    var mgOn = false;
+    function mgErr(d) { return d && d.error ? d.error : ""; }
+    function mgLoad() {
+        $.get("/api/crowdsec/manage/status", function (s) {
+            mgOn = !!(s && s.set);
+            $("#csMgConnect").toggle(!mgOn); $("#csMgPanel").toggle(mgOn);
+            $("#csMgWho").text(t("Connected as {0}").replace("{0}", s.machine || ""));
+            if (mgOn) { mgDecisions(); mgAlerts(); }
+        });
+    }
+    function mgDecisions() {
+        $.get("/api/crowdsec/manage/decisions", { q: $("#csMgFilter").val() }, function (d) {
+            var body = $("#csMgDecisions tbody");
+            if (mgErr(d)) { body.html('<tr><td colspan="6">' + esc(mgErr(d)) + "</td></tr>"); return; }
+            var rows = (d || []).map(function (x) {
+                return "<tr><td>" + esc(x.type) + "</td><td>" + esc(x.value) + "</td><td>" + esc(x.origin) + "</td><td>" + esc(x.scenario) + "</td><td>" + esc(x.duration) +
+                    '</td><td><button class="ui mini basic button cs-unban" data-id="' + esc(x.id) + '" data-value="' + esc(x.value) + '">' + esc(t("Remove ban")) + "</button></td></tr>";
+            }).join("");
+            body.html(rows || '<tr><td colspan="6">' + esc(t("No active bans.")) + "</td></tr>");
+        });
+    }
+    function mgAlerts() {
+        $.get("/api/crowdsec/manage/alerts", { ip: $("#csMgAlertIp").val().trim(), limit: 50 }, function (d) {
+            var body = $("#csMgAlerts tbody");
+            if (mgErr(d)) { body.html('<tr><td colspan="6">' + esc(mgErr(d)) + "</td></tr>"); return; }
+            var rows = (d || []).map(function (a) {
+                var dec = (a.decisions || []).map(function (x) { return x.type + " " + x.duration; }).join(", ");
+                return "<tr><td>" + esc(fmt(a.time)) + "</td><td>" + esc(a.value) + "</td><td>" + esc(a.country) + "</td><td>" + esc(a.scenario) + "</td><td>" + esc(a.events) + "</td><td>" + esc(dec) + "</td></tr>";
+            }).join("");
+            body.html(rows || '<tr><td colspan="6">' + esc(t("No alerts.")) + "</td></tr>");
+        });
+    }
+    $("#csMgSave").on("click", function () {
+        $("#csMgMsg").hide();
+        $.cjax({ type: "POST", url: "/api/crowdsec/manage/login", data: { machineid: $("#csMgId").val().trim(), password: $("#csMgPw").val().trim() }, success: function (d) {
+            if (mgErr(d)) { $("#csMgMsg").text(mgErr(d)).show(); return; }
+            $("#csMgId").val(""); $("#csMgPw").val("");
+            toast(t("Connected to CrowdSec"), true); mgLoad();
+        } });
+    });
+    $("#csMgRemove").on("click", function () {
+        ZxUI.confirm({ title: "Remove the login?", message: "Zoraxy forgets the machine login. Bans stay as they are. To revoke the machine on the CrowdSec host too, run cscli machines delete.", confirmLabel: "Remove", danger: true }).then(function (ok) {
+            if (!ok) { return; }
+            $.cjax({ type: "POST", url: "/api/crowdsec/manage/login", data: { clear: "true" }, success: function (d) {
+                if (mgErr(d)) { toast(mgErr(d), false); return; }
+                mgLoad();
+            } });
+        });
+    });
+    $("#csBanGo").on("click", function () {
+        var target = $("#csBanTarget").val().trim();
+        if (!target) { $("#csBanMsg").removeClass("positive").addClass("negative").text(t("Enter an address or range.")).show(); return; }
+        ZxUI.confirm({ title: "Ban this address?", message: t("CrowdSec will refuse {0} everywhere it is enforced (Zoraxy in enforce mode, firewall bouncers, other proxies) until the ban ends or is removed.").replace("{0}", target), confirmLabel: "Ban", danger: true }).then(function (ok) {
+            if (!ok) { return; }
+            $.cjax({ type: "POST", url: "/api/crowdsec/manage/ban", data: { target: target, duration: $("#csBanDur").val(), reason: $("#csBanReason").val().trim() }, success: function (d) {
+                var box = $("#csBanMsg");
+                if (mgErr(d)) { box.removeClass("positive").addClass("negative").text(mgErr(d)).show(); return; }
+                box.removeClass("negative").addClass("positive").text(t("Banned. It can take up to the pull interval before Zoraxy enforces it.")).show();
+                $("#csBanTarget").val(""); $("#csBanReason").val("");
+                mgDecisions(); mgAlerts();
+            } });
+        });
+    });
+    $("#csMgDecisions").on("click", ".cs-unban", function () {
+        var id = $(this).data("id"), val = $(this).data("value");
+        ZxUI.confirm({ title: "Remove this ban?", message: t("The ban on {0} is lifted in CrowdSec.").replace("{0}", val), confirmLabel: "Remove ban" }).then(function (ok) {
+            if (!ok) { return; }
+            $.cjax({ type: "POST", url: "/api/crowdsec/manage/unban", data: { id: id }, success: function (d) {
+                if (mgErr(d)) { toast(mgErr(d), false); return; }
+                toast(t("Ban removed"), true); mgDecisions();
+            } });
+        });
+    });
+    var mgT1, mgT2;
+    $("#csMgFilter").on("input", function () { clearTimeout(mgT1); mgT1 = setTimeout(mgDecisions, 300); });
+    $("#csMgAlertIp").on("input", function () { clearTimeout(mgT2); mgT2 = setTimeout(mgAlerts, 300); });
+    $("#csMgConnect").on("click", ".cs-copy", function () {
+        var el = document.getElementById($(this).data("for"));
+        if (navigator.clipboard && navigator.clipboard.writeText && el) { navigator.clipboard.writeText(el.textContent).then(function () { toast(t("Copied. Read the command before you run it."), true); }); }
+    });
+    mgLoad();
     loadSettings(); loadStatus();
     var timer = setInterval(function () { if (!document.getElementById("csStatus")) { clearInterval(timer); return; } loadStatus(); }, 10000);
 })();
