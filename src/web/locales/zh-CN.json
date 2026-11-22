@@ -3,8 +3,8 @@
   "language": "Simplified Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 51.9,
-  "coreCoverage": 52.3
+  "coverage": 51.8,
+  "coreCoverage": 52.2
  },
  "strings": {
   "\"Add Redirection Rule\"": "“添加重定向规则”",
@@ -2813,7 +2813,6 @@
   "Sync status": "同步状态",
   "Syria": "叙利亚",
   "System": "系统",
-  "System Backup & Restore": "系统备份与恢复",
   "system resolver": "系统解析器",
   "Tag by auth provider": "按认证提供方打标签",
   "Tags": "标签",
