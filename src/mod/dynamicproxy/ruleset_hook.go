@@ -123,8 +123,10 @@ func (router *Router) handleRuleset(w http.ResponseWriter, r *http.Request, sep 
 				run.Stop()
 			}
 		case ruleset.ActSetReqH:
+			keepStatSource(r, a.Name)
 			r.Header.Set(a.Name, a.Value)
 		case ruleset.ActDelReqH:
+			keepStatSource(r, a.Name)
 			r.Header.Del(a.Name)
 		case ruleset.ActSetRespH:
 			st := rulesStateFor(r)

@@ -1,6 +1,7 @@
 package analytic
 
 import (
+	"strings"
 	"testing"
 
 	"imuslab.com/zoraxy/mod/statistic"
@@ -53,5 +54,36 @@ func TestSiteViewAndRows(t *testing.T) {
 	if len(res.Sites) != 2 || res.Sites[0].Site != "a" || res.Sites[0].Total != 15 || res.Sites[0].Visitors != 2 ||
 		res.Sites[0].PerDay[0] != 10 || res.Sites[0].PerDay[1] != 5 || res.Sites[1].PerDay[1] != 0 {
 		t.Fatalf("%+v", res)
+	}
+}
+
+// The CSV export writes the classification keys as text and never an empty field for requests without a Referer
+func TestRefererLabelsForExport(t *testing.T) {
+	got := refererLabels(map[string]int{
+		"": 3, "~direct": 2, "~hidden-policy": 1, "~non-browser": 5, "~same-site": 1, "~unknown": 1, "~invalid": 1,
+		"~origin:https://shop.example": 1, "https://news.example/a": 4,
+	})
+	want := []string{
+		"Direct visit (typed / bookmark / app)",
+		"Hidden by the referring site's policy",
+		"Non-browser client (bot / API / script)",
+		"Not sent (reason unknown)",
+		"Same site",
+		"Unknown (recorded before this version)",
+		"Unreadable referrer (markup only)",
+		"https://news.example/a",
+		"https://shop.example (from the Origin header)",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %q", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("row %d: got %q, want %q", i, got[i], want[i])
+		}
+		//The export joins the list with "," in one cell: a name with a comma would split into two entries
+		if strings.Contains(got[i], ",") {
+			t.Fatalf("row %d: %q holds a comma", i, got[i])
+		}
 	}
 }

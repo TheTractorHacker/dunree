@@ -543,3 +543,68 @@ A real redesign of the admin screens on a new shared shell (`docs/ux/design-v2.m
 
 ### Known limits
 Not tested: Firefox/Safari, a real password manager, limits as root on a real install. Uptime and Statistics 7/30-day views depend on saved days only (backend). Plugin systemd binding was run only in a user manager.
+
+## Statistics: referring sites without a referrer are sorted by reason
+
+Statistics > Referring sites showed one line "Unknown or hidden" for every request that came without a `Referer` header.
+That line is gone. Zoraxy still stores the header as it is sent (markup removed, cut at 256 bytes), and now also records **why**
+it is missing, read from other headers of the same request (`mod/statistic/referer.go`, always on, no setting):
+
+| Shown as | Stored key | When |
+|---|---|---|
+| a referring site | the `Referer` header | the header was sent (markup removed, cut at 256 bytes; a value that then starts with `~` is stored with `%7E`) |
+| a referring site with the tag "Origin header" | `~origin:https://host` | no `Referer`, but an `Origin` header that names another site |
+| Direct and apps | `~direct` | `Sec-Fetch-Site: none`: typed address, bookmark, link opened from an app |
+| Hidden by policy | `~hidden-policy` | `Sec-Fetch-Site: cross-site`: came from another site that withholds its address |
+| Same site | `~same-site` | `Sec-Fetch-Site: same-origin` / `same-site`, or an `Origin` equal to the requested host |
+| Bots and scripts | `~non-browser` | no `Sec-Fetch-*` header at all and a User-Agent that is empty, a bot or a library |
+| Not sent (reason unknown) | `~unknown` | none of the above |
+| Unreadable referrer | `~invalid` | a `Referer` was sent, but nothing is left once markup is removed (e.g. `<script>x</script>`) |
+| Unknown (recorded before this version) | empty key | days saved by older versions |
+
+The card lists real sites first, then the reasons with their count and share of all requests, and a note on why a
+browser may send no referrer. The CSV export writes the same readable names instead of an empty field.
+
+Also fixed: a rule (`set` / `remove request header`) or a request script that changed `Referer`, `Origin`,
+`User-Agent` or a `Sec-Fetch-*` header on the way to the upstream also changed what the statistics recorded. The
+statistics now use what the client sent (`mod/dynamicproxy/statsource.go`).
+
+A `Referer` header cannot pose as one of these keys. Markup is removed first and the check runs on what is left
+(`StoredRefererKey`, called by `RecordRequest`): a value that starts with `~` is kept only when the removal changed
+nothing and it is exactly a key the classifier produces (for `~origin:` the rest must pass the Origin checks). So
+`<b></b>~direct` is listed as the referrer "~direct", not counted as a direct visit, and
+`<i></i>~origin:javascript:...` is not listed with the "Origin header" tag.
+
+### Known limits
+* The card is not a full log: requests that match no proxy rule and rules with statistics off are not counted, the
+  per-day cap on distinct values drops rare referrers, and the card lists the top 100.
+* "Bots and scripts" is decided by the User-Agent, only when no `Sec-Fetch-*` header was sent. "bot" counts at the end
+  of a word (`Googlebot/2.1`, `bingbot;`), so a CUBOT phone is not taken for a bot. The other marks (`scan`, `node`,
+  `feed`, `probe`, `preview` and so on) are plain substrings; a device or app whose User-Agent holds one of them is
+  counted as a bot when it sends no `Sec-Fetch-*` header (plain HTTP).
+* CSV export: the readable names hold no comma (`Direct visit (typed / bookmark / app)`), because the referrers of a
+  day are joined with `,` in one cell. A real referrer URL that itself holds a comma still splits (unchanged).
+* A header that was never sent cannot be recovered. "Hidden by policy" says that a visitor came from another website;
+  which one is known only to that website and the visitor's browser.
+* Browsers send `Sec-Fetch-*` headers only over HTTPS (and Safari only since 16.4). Browser requests over plain HTTP
+  without a referrer therefore show as "Not sent (reason unknown)". A bot that imitates a browser User-Agent lands there too;
+  over HTTPS that row is mostly such bots, and the row text says so.
+* New data stored: for requests without a `Referer`, the scheme and host of the `Origin` header (no path, no query, no
+  client address). Values that are not a plain http(s) origin are not stored.
+* Old days keep the empty key; they are not re-classified. Today's summary can hold both until the day ends.
+* The row names are English until the locale files are updated.
+* Not changed here: requests that match no proxy rule (and rules with statistics switched off) are not counted at all.
+* Changed with it: a request whose upstream was down was counted twice (once as the error, once more as a success with
+  status 502) in the statistics and the access log. It is counted once now, so the totals of sites with a failing
+  upstream are lower than before and the success share is no longer inflated.
+* Tests: `mod/statistic/referer_test.go`, `mod/dynamicproxy/statsource_test.go`, `mod/statistic/analytic/sites_test.go`
+  (CSV names), UI: `tools/ui-smoke/certs_traffic_smoke.py` (Statistics part), 1366 px light and dark and 390 px.
+
+## Site editor fixes, Upstreams panel redesign, referrer classification (fork.30)
+
+* **Hostname card**: input, "Save name" and "Discard" are one aligned control (enabled only when the name changed). New kit pattern `.zx-field-actions`; the same fix for extra listening ports, request limits and Overwrite Host Header.
+* **Side-panel header** of the site editor sub views: real header row (Back button, plain title, site name as muted line). Focus moves into the view and the editor behind is inert; Esc and Back return focus. The Close button no longer covers content on phones.
+* **Headers card**: header names and values are shown as text (a header named with markup used to run script).
+* **HTTP Proxy list**: a long upstream or alias no longer widens the table past its card.
+* **Upstreams panel** (Upstreams, Add Upstream, Load Balancing): rebuilt as rows with state badges, grouped cards with advanced settings folded, algorithm cards and a live policy summary. Add now also offers PROXY protocol, client certificate and CA/pin trust.
+* **Statistics > Referring sites**: requests without a Referer are split by reason (direct, hidden by policy, bots and scripts, same site, not sent) instead of one "Unknown or hidden" line; the stats record the Referer the client sent even when a rule removes it for the upstream; a request to a dead upstream is counted once, not twice (totals for such sites go down). Details and limits in the "Referrer" section above.

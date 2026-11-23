@@ -152,6 +152,29 @@
 </div>`, function (pane) {
     });
 
+    ex("field-actions", "Field with actions", "One input and the buttons that act on it alone (rename, add an entry), on one line and all the same height. The buttons are separate controls with the kit gap, never glued to the input; the first is the action (primary only when it is the main action of the card), Discard is secondary. Both stay disabled until the value differs from the saved one. On phones the input takes the row and the buttons share the next one. A unit after a number is the input group below, not a button.",
+`<div class="zx-field">
+  <div class="zx-field__label-row"><label class="zx-field__label" for="fa-host">Hostname</label></div>
+  <div class="zx-field-actions">
+    <input class="zx-input" id="fa-host" value="app.example.com" autocomplete="off" spellcheck="false">
+    <button type="button" class="zx-btn zx-btn--primary" disabled><i class="save icon" aria-hidden="true"></i> Save name</button>
+    <button type="button" class="zx-btn zx-btn--secondary" disabled>Discard</button>
+  </div>
+</div>
+<div class="zx-field">
+  <div class="zx-field__label-row"><label class="zx-field__label" for="fa-mib">Largest upload</label></div>
+  <div class="zx-inputgroup" style="max-width: 12rem;">
+    <input class="zx-input" id="fa-mib" type="number" value="0" min="0">
+    <span class="zx-inputgroup__unit">MiB</span>
+  </div>
+</div>`, function (pane) {
+        var $in = $(pane).find(".zx-field-actions .zx-input"), $btn = $(pane).find(".zx-field-actions .zx-btn"), saved = $in.val();
+        function sync() { $btn.prop("disabled", $in.val().trim() === saved); }
+        $in.on("input", sync);
+        $btn.eq(0).on("click", function () { saved = $in.val().trim(); sync(); ZxUI.toast("Saved (demo)"); });
+        $btn.eq(1).on("click", function () { $in.val(saved); sync(); });
+    });
+
     ex("toggle-row", "Toggle row", "A switch with a title and a plain-language description; the whole row is the click target. Use for settings that are on or off. Say in the description what happens when it is on.",
 `<div>
   <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">HTTP/3 (QUIC)</span><span class="zx-toggle-row__desc">Serve HTTP/3 over UDP on the same port.</span></span><input type="checkbox" class="zx-switch" role="switch" checked></label>

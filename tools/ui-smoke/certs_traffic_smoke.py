@@ -70,6 +70,24 @@ def certs_traffic_ui(pg, ctx):
                     break
                 except Exception:
                     pass
+    # Referring sites: one request per reason a Referer can be missing, plus a real referrer and a hostile Origin (stats check below)
+    chrome = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+    for extra in ({"Referer": "https://news.smoke.example/story"}, {"Referer": "https://news.smoke.example/story"},
+                  {"Sec-Fetch-Site": "none", "Sec-Fetch-Mode": "navigate"}, {"Sec-Fetch-Site": "cross-site"}, {"Sec-Fetch-Site": "same-origin"},
+                  {"Origin": "https://shop.smoke.example"}, {"Origin": 'https://x.smoke.example"><script>window.__refxss=1</script>'},
+                  # Referer headers that turn into a classification key once markup is removed: must stay ordinary rows
+                  {"Referer": "<b></b>~direct"}, {"Referer": "<i></i>~origin:https://fake.smoke.example"},
+                  {"Referer": "<script>window.__refxss=1</script>"}):
+        for mk in (lambda: http.client.HTTPSConnection("127.0.0.1", inbound, timeout=5, context=ssl._create_unverified_context()),
+                   lambda: http.client.HTTPConnection("127.0.0.1", inbound, timeout=5)):
+            try:
+                c = mk()
+                c.request("GET", "/x", headers=dict({"Host": host, "User-Agent": chrome}, **extra))
+                c.getresponse().read()
+                c.close()
+                break
+            except Exception:
+                pass
     posts = []
     pg.on("request", lambda r: posts.append(r.url) if "/api/cert/upload" in r.url else None)
     warnings = []
@@ -333,6 +351,77 @@ def certs_traffic_ui(pg, ctx):
             fail("stats", "no share bar was drawn for the generated traffic (Devices)")
         if js("[...document.querySelectorAll('#statsPage .sShare__legend .k')].some(e => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow !== 'ellipsis')"):
             fail("stats", "a share bar legend label is clipped without an ellipsis")
+        # Referring sites: real sites first, then every request without a Referer header sorted by the reason, each with its share.
+        # Nothing is lumped into one "Unknown or hidden" line any more; only days saved by older versions show as "Unknown (recorded before this version)".
+        try:
+            pg.wait_for_function("document.querySelectorAll('#stats_RefererWhy li').length >= 5", timeout=8000)
+        except Exception:
+            fail("stats", "the Referring sites card does not list the reasons for a missing referrer")
+        ref = js("""() => { const q = s => [...document.querySelectorAll(s)];
+            return {sites: q('#stats_RefererTable li').map(e => e.innerText.replace(/\\s+/g, ' ').trim()),
+                    why: Object.fromEntries(q('#stats_RefererWhy li').map(li => [li.dataset.ref, {name: li.querySelector('.k b').innerText.trim(), sub: (li.querySelector('.k small') || {innerText: ''}).innerText.trim(),
+                        n: li.querySelector('.n b').innerText.trim(), pct: li.querySelector('.n small').innerText.trim()}])),
+                    share: document.getElementById('sRefWhyShare').innerText, note: document.getElementById('sRefNote').innerText,
+                    noteShown: document.getElementById('sRefNote').getClientRects().length > 0,
+                    page: document.getElementById('statsPage').innerText, xss: !!window.__refxss,
+                    wide: q('#stats_RefererWhy li, #stats_RefererTable li').some(li => li.scrollWidth > li.clientWidth + 1) || q('#stats_RefererTable .sVia').some(e => e.scrollWidth > e.clientWidth + 1)}; }""")
+        want = {"~direct": "Direct and apps", "~hidden-policy": "Hidden by policy", "~non-browser": "Bots and scripts", "~same-site": "Same site", "~unknown": "Not sent (reason unknown)", "~invalid": "Unreadable referrer"}
+        for key, name in want.items():
+            row = ref["why"].get(key)
+            if not row or row["name"] != name:
+                fail("stats", f"Referring sites: no '{name}' row for requests stored as {key}: {ref['why']}")
+            elif not row["sub"] or not re.match(r"^(<)?[\d.]+%$", row["pct"]) or not re.match(r"^[\d.,\u00a0\u202f ]+$", row["n"]):
+                fail("stats", f"Referring sites: the '{name}' row lacks its explanation, count or share: {row}")
+        if "Unknown or hidden" in ref["page"]:
+            fail("stats", "the Statistics page still shows the single 'Unknown or hidden' line")
+        if "legacy" in ref["why"]:
+            fail("stats", "new requests are still stored under the empty referrer key")
+        if not ref["sites"] or "news.smoke.example" not in ref["sites"][0]:
+            fail("stats", f"Referring sites: the real referring site is not listed first: {ref['sites']}")
+        if not any("shop.smoke.example" in x and "Origin header" in x for x in ref["sites"]):
+            fail("stats", f"Referring sites: a source known from the Origin header is not listed with its marker: {ref['sites']}")
+        if ref["xss"] or any("script" in x for x in ref["sites"]) or "x.smoke.example" in ref["page"]:
+            fail("stats", "Referring sites: a hostile Origin header was stored or run")
+        if not re.search(r"\d.* requests, .*% of all", ref["share"]):
+            fail("stats", f"Referring sites: the share of requests without a referrer is not stated: {ref['share']!r}")
+        if not any(x.startswith("~direct") for x in ref["sites"]) or not any(x.startswith("~origin:https://fake.smoke.example") for x in ref["sites"]):
+            fail("stats", f"Referring sites: a Referer header that imitates a classification key is not listed as an ordinary referrer: {ref['sites']}")
+        if any("fake.smoke.example" in x and "Origin header" in x for x in ref["sites"]):
+            fail("stats", f"Referring sites: a Referer header was listed as a source taken from the Origin header: {ref['sites']}")
+        if "A client that presents itself as a browser" not in ref["why"].get("~unknown", {}).get("sub", ""):
+            fail("stats", "Referring sites: the 'Not sent (reason unknown)' row still claims the client was a browser")
+        if not ref["noteShown"] or "does not hide a referrer itself" not in ref["note"] or "every request" in ref["note"]:
+            fail("stats", "Referring sites: the note on why a referrer can be missing is not shown")
+        if ref["wide"]:
+            fail("stats", "Referring sites: a row is wider than its card")
+        # a day saved by an older version (empty key) is named as such, below the classified rows
+        def legacy_day(route):
+            resp = route.fetch()
+            body = resp.json()
+            if isinstance(body, dict) and isinstance(body.get("Referer"), dict):
+                body["Referer"][""] = 7
+            route.fulfill(response=resp, json=body)
+        pg.route("**/api/analytic/load?*", legacy_day)
+        js("document.querySelector('#sRange button[data-range=today]').click()")
+        try:
+            pg.wait_for_function("(() => { const li = document.querySelector('#stats_RefererWhy li[data-ref=legacy]'); return !!li && li.querySelector('.k b').innerText.trim() === 'Unknown (recorded before this version)' && li.querySelector('.n b').innerText.trim() === '7' && !li.nextElementSibling; })()", timeout=8000)
+        except Exception:
+            fail("stats", "requests of older days (empty referrer key) are not shown as 'Unknown (recorded before this version)'")
+        js("document.getElementById('stats_RefererTable').closest('.zx-card').scrollIntoView({block: 'center'})")
+        pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers.png"))
+        theme(True)
+        pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers-dark.png"))
+        shot("ct-stats-dark.png")
+        theme(False)
+        shot("ct-stats.png")
+        pg.unroute("**/api/analytic/load?*")
+        # phone width: the card must not make the page scroll sideways
+        pg.set_viewport_size({"width": 390, "height": 800})
+        pg.wait_for_timeout(300)
+        check_horizontal(pg, "stats 390")
+        pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers-390.png"))
+        pg.set_viewport_size({"width": 1366, "height": 900})
+        pg.wait_for_timeout(300)
         # Blocked tab: recording off is stated on the page, the search box has a length limit
         js("document.querySelector('#statsPage .sTabs button[data-stab=blocked]').click()")
         pg.wait_for_timeout(800)

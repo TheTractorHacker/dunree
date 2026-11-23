@@ -146,7 +146,7 @@ func (d *DataLoader) HandleRangeExport(w http.ResponseWriter, r *http.Request) {
 				strings.Join(mapToStringSlice(item.ForwardTypes), ","),
 				strings.Join(mapToStringSlice(item.RequestOrigin), ","),
 				strings.Join(mapToStringSlice(item.RequestClientIp), ","),
-				strings.Join(mapToStringSlice(item.Referer), ","),
+				strings.Join(refererLabels(item.Referer), ","),
 				strings.Join(mapToStringSlice(item.UserAgent), ","),
 				strings.Join(mapToStringSlice(item.RequestURL), ","),
 			}

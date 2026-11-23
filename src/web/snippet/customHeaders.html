@@ -191,10 +191,10 @@
                                 <p class="zxs-h">Overwrite Host Header</p>
                                 <p>Manual override the automatic "Host" header rewrite logic. Leave empty for automatic.<br>
                                 For HTTPS upstreams, this hostname is also used as the TLS SNI and the name the upstream certificate is verified against. Set this if your upstream is addressed by a name its certificate does not cover, such as a Docker service name.</p>
-                                <div class="ui fluid action input">
-                                    <input type="text" id="manualHostOverwrite" placeholder="Overwrite Host name">
-                                    <button onclick="updateManualHostOverwrite();" class="ui basic icon button" title="Save" aria-label="Save"><i class="save icon"></i></button>
-                                    <button onclick="clearManualHostOverwrite();" class="ui basic icon button" title="Clear" aria-label="Clear"><i class="remove icon"></i></button>
+                                <div class="zx-field-actions">
+                                    <input type="text" class="zx-input" id="manualHostOverwrite" placeholder="Overwrite Host name" aria-label="Host header sent to the upstream" autocomplete="off" spellcheck="false">
+                                    <button type="button" onclick="updateManualHostOverwrite();" class="zx-btn zx-btn--secondary" id="manualHostOverwriteSave" disabled><i class="save icon" aria-hidden="true"></i> Save host</button>
+                                    <button type="button" onclick="clearManualHostOverwrite();" class="zx-btn zx-btn--secondary" id="manualHostOverwriteClear" disabled>Clear</button>
                                 </div>
                                 
                                 
@@ -416,19 +416,19 @@
                         }else{
                             $("#headerTable").html("");
                             data.forEach(header => {
-                                let editModeIcon = header.IsRemove?`<i class="ui red times circle icon"></i>`:`<i class="ui green add circle icon"></i>`;
-                                let direction = (header.Direction==0)?`<i class="angle double right blue icon"></i>`:`<i class="angle double left orange icon"></i>`;
-                                let valueField = header.Value;
+                                //the name and the value are whatever the API accepted: always inserted as text, never as markup
+                                let row = $("<tr>");
+                                let nameCell = $("<td>").addClass("headerNameCell").html((header.Direction==0)?`<i class="angle double right blue icon" aria-hidden="true"></i> `:`<i class="angle double left orange icon" aria-hidden="true"></i> `);
+                                nameCell.append($("<span>").text(header.Key));
+                                let valueCell = $("<div>").addClass("headerValueCell").html(header.IsRemove?`<i class="ui red times circle icon" aria-hidden="true"></i>`:`<i class="ui green add circle icon" aria-hidden="true"></i>`);
                                 if (header.IsRemove){
-                                    valueField = "<small style='color: grey;'>(Field Removed)</small>";
+                                    valueCell.append($("<small>").css("color", "var(--zx-text-muted)").text("(Field Removed)"));
+                                }else{
+                                    valueCell.append($("<span>").text(header.Value));
                                 }
-                                $("#headerTable").append(`
-                                <tr>
-                                    <td>${direction} ${header.Key}</td>
-                                    <td><div class="headerValueCell">${editModeIcon}<span>${valueField}</span></div></td>
-                                    <td class="zx-actions"><button class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" aria-label="Remove header" title="Remove header" onclick="deleteCustomHeader('${header.Key}');"><i class="trash icon"></i></button></td>
-                                </tr>
-                                `);
+                                let removeBtn = $(`<button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon removeHeaderBtn" aria-label="Remove header" title="Remove header"><i class="trash icon" aria-hidden="true"></i></button>`).data("key", header.Key);
+                                row.append(nameCell, $("<td>").append(valueCell), $("<td>").addClass("zx-actions").append(removeBtn));
+                                $("#headerTable").append(row);
                             });
 
                             if (data.length == 0){
@@ -441,6 +441,9 @@
                     
                 });
             }
+            $("#headerTable").on("click", ".removeHeaderBtn", function(){
+                deleteCustomHeader($(this).data("key"));
+            });
             listCustomHeaders();
 
             //Start HSTS state
@@ -701,10 +704,21 @@
                     if (data.error != undefined){
                         parent.msgbox(data.error, false);
                     }else{
-                        $("#manualHostOverwrite").val(data);
+                        manualHostSaved = String(data || "");
+                        $("#manualHostOverwrite").val(manualHostSaved);
+                        syncManualHostButtons();
                     }
                 });
             }
+            //Save switches on once the name differs from the saved one, Clear while an overwrite is saved
+            var manualHostSaved = "";
+            function syncManualHostButtons(){
+                $("#manualHostOverwriteSave").prop("disabled", $("#manualHostOverwrite").val().trim() == manualHostSaved);
+                $("#manualHostOverwriteClear").prop("disabled", manualHostSaved == "");
+            }
+            $("#manualHostOverwrite").on("input", syncManualHostButtons).on("keydown", function(e){
+                if (e.key === "Enter"){ e.preventDefault(); if (!$("#manualHostOverwriteSave").prop("disabled")){ updateManualHostOverwrite(); } }
+            });
             initManualHostOverwriteValue();
 
             /* Hop-by-hop headers */

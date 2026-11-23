@@ -8,6 +8,20 @@
 })();
 
 /*
+    Side view of the site editor: a snippet that is opened in the frame of ".editor_side_wrapper" (components/httprp.html)
+    gets the shared side view layout (ui/sideview.css: one gutter, no second page title under the header row).
+    Decided here, in <head>, so the page never paints once without it.
+*/
+(function () {
+    try {
+        var frame = window.frameElement;
+        if (!frame || !frame.parentElement || !frame.parentElement.classList.contains("editor_side_wrapper") || !document.currentScript) return;
+        document.documentElement.classList.add("zx-sideview");
+        document.write('<link rel="stylesheet" href="' + document.currentScript.src.replace(/script\/utils\.js(\?.*)?$/, "ui/sideview.css") + '">');
+    } catch (e) { /* cross origin parent: not the side view */ }
+})();
+
+/*
     Utils.js
 
     This script holds utilities function that is commonly use

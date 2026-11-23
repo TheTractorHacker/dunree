@@ -1,0 +1,26 @@
+/*
+    Side view of the site editor (Edit site > Path rules, Upstreams, Tags, ...).
+
+    A snippet opened in the side view is shown under the header row of the editor, which already names the view and the
+    site. script/utils.js adds the class "zx-sideview" to <html> and loads this file when the document is that frame, so:
+      - every side view has the same gutter (the left edge lines up with the Back button of the header row),
+      - the snippet's own page title (class "zx-sideview-title") is not repeated under the header,
+      - the content is a left-aligned column, not a centred Fomantic container.
+    The snippets that do not load zxui.css have no kit tokens: every token has its literal value as the fallback.
+*/
+html.zx-sideview body { margin: 0; padding: 0 0 var(--zx-space-5, 24px); }
+html.zx-sideview body > br { display: none; }
+/* the gutter is on the content block, so a sticky tab bar inside it (Upstreams) keeps its own top edge */
+html.zx-sideview body > .ui.container { width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 var(--zx-space-4, 16px); }
+html.zx-sideview body > br + .ui.container, html.zx-sideview body > .zxs-wrap { padding: var(--zx-space-4, 16px) var(--zx-space-4, 16px) 0; }
+html.zx-sideview .zx-sideview-title { display: none; }
+html.zx-sideview .zx-sideview-title + p { margin-top: 0; }
+/* the first block starts at the gutter, whatever margin its own page gives it */
+html.zx-sideview body > br + .ui.container > :first-child { margin-top: 0; }
+/* running text keeps a readable measure when the panel is wide */
+html.zx-sideview body > br + .ui.container > p { max-width: 60rem; }
+/* dark theme: a Fomantic dropdown is a field like the inputs beside it (the theme removes the border of every dropdown, so
+   "Prefix (whole path segments)" or "Deny (403)" read as plain text next to bordered inputs) */
+html.zx-sideview body.darkTheme > br + .ui.container .ui.selection.dropdown { border-color: var(--button_border_color, #555) !important; background-color: var(--theme_bg_active, #202024) !important; }
+html.zx-sideview body.darkTheme > br + .ui.container .ui.selection.dropdown:focus,
+html.zx-sideview body.darkTheme > br + .ui.container .ui.selection.active.dropdown { border-color: var(--theme_highlight, #5583ee) !important; }

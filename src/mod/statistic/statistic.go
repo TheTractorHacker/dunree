@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/microcosm-cc/bluemonday"
 	"imuslab.com/zoraxy/mod/database"
 )
 
@@ -54,7 +53,7 @@ type RequestInfo struct {
 	StatusCode                    int    //HTTP status code of the request
 	ForwardType                   string //Forward type of the request, usually the proxy type (e.g. host-http, subdomain-websocket or vdir-http or any of the combination)
 	RequestMethod                 string //HTTP method of the downstream request (e.g. GET, POST)
-	Referer                       string //Referer of the downstream request
+	Referer                       string //Referer of the downstream request, or the key from ClassifyReferer when none was sent
 	UserAgent                     string //UserAgent of the downstream request
 	RequestURL                    string //Request URL
 	Target                        string //Target domain or hostname
@@ -329,10 +328,10 @@ func (c *Collector) RecordRequest(ri RequestInfo) {
 		}
 
 		//Record the referer
-		p := bluemonday.StripTagsPolicy()
-		filteredReferer := p.Sanitize(
-			ri.Referer,
-		)
+		//A request without one is counted under a key that says why (referer.go), never under "".
+		//Markup is removed and only then is the value checked against the classification keys,
+		//so a header such as "<b></b>~direct" cannot be counted as one of them
+		filteredReferer := StoredRefererKey(ri.Referer)
 		c.incr(ds.Referer, ds.bounded.Referer, truncateStatKey(filteredReferer))
 
 		//Record the UserAgent

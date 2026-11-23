@@ -67,6 +67,21 @@
     #statsPage .sRank li.click:hover{ background:var(--zx-surface-2); }
     #statsPage .sRank li.click:focus-visible{ outline:none; box-shadow:var(--zx-focus-ring); }
     #statsPage .sRank li.sNone{ color:var(--zx-text-muted); padding-left:0; }
+    /* Referring sites: requests without a Referer header, one row per reason with a sentence under the name */
+    #statsPage .sSubhead{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--zx-space-3); margin:var(--zx-space-4) 0 var(--zx-space-2); padding-top:var(--zx-space-3); border-top:1px solid var(--zx-border); font-size:var(--zx-fs-sm); font-weight:700; color:var(--zx-text); }
+    #statsPage .sSubhead small{ font-size:var(--zx-fs-xs); font-weight:400; color:var(--zx-text-muted); text-align:right; }
+    #statsPage .sRank--why li{ align-items:flex-start; padding:6px 0 9px; border-radius:0; }
+    #statsPage .sRank--why li + li{ margin-top:var(--zx-space-2); }
+    #statsPage .sRank--why li::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:4px; border-radius:var(--zx-radius-pill); background:var(--zx-surface-3); }
+    #statsPage .sRank--why li .bar{ top:auto; height:4px; border-radius:var(--zx-radius-pill); background:var(--zx-primary); z-index:1; }
+    #statsPage .sRank--why li .k{ white-space:normal; overflow:visible; }
+    #statsPage .sRank--why li .k b{ display:block; font-weight:600; color:var(--zx-text); }
+    #statsPage .sRank--why li .k small{ display:block; margin-top:1px; font-size:var(--zx-fs-xs); line-height:1.4; color:var(--zx-text-muted); }
+    #statsPage .sRank--why li .n{ text-align:right; white-space:nowrap; }
+    #statsPage .sRank--why li .n b{ display:block; font-weight:600; color:var(--zx-text); }
+    #statsPage .sRank--why li .n small{ display:block; font-size:var(--zx-fs-xs); }
+    #statsPage .sRank li .sVia{ flex:none; padding:0 6px; border:1px solid var(--zx-border); border-radius:var(--zx-radius-pill); font-size:var(--zx-fs-xs); color:var(--zx-text-muted); background:var(--zx-surface); white-space:nowrap; }
+    #statsPage .sRefNote{ margin:var(--zx-space-4) 0 0; font-size:var(--zx-fs-xs); line-height:1.5; color:var(--zx-text-muted); }
     #statsPage .sMore{ background:none; border:0; color:var(--zx-link); cursor:pointer; padding:var(--zx-space-2) var(--zx-space-2) 0; min-height:28px; font:inherit; font-size:var(--zx-fs-sm); font-weight:700; }
     #statsPage .sMore:hover{ text-decoration:underline; }
     #statsPage .sMore:focus-visible{ outline:none; box-shadow:var(--zx-focus-ring); border-radius:var(--zx-radius-sm); }
@@ -294,7 +309,14 @@
                 <section class="zx-card sCard">
                     <div class="zx-card__head"><h4 class="zx-card__title">Referring sites</h4></div>
                     <p class="zx-card__desc">Where visitors followed a link from (Referer header).</p>
-                    <div class="zx-card__body"><ul class="sRank" id="stats_RefererTable"></ul></div>
+                    <div class="zx-card__body">
+                        <ul class="sRank" id="stats_RefererTable" aria-label="Referring sites"></ul>
+                        <div id="sRefWhyBox" hidden>
+                            <h5 class="sSubhead"><span>Without a referrer</span><small id="sRefWhyShare"></small></h5>
+                            <ul class="sRank sRank--why" id="stats_RefererWhy" aria-label="Requests without a referrer, by reason"></ul>
+                        </div>
+                        <p class="sRefNote" id="sRefNote">Zoraxy shows the Referer header as the browser sent it, with markup removed and cut at 256 characters. It does not hide a referrer itself. Browsers leave it out for typed addresses, bookmarks and apps, when the linking site asks them to, and in private modes. Bots and scripts rarely send one.</p>
+                    </div>
                 </section>
             </div>
 
@@ -545,15 +567,17 @@
     function renderRank(sel, map, opts){
         opts = opts || {};
         var el = $(sel).empty();
+        el.next(".sMore").remove();
         var entries = Object.entries(map || {}).filter(function(e){ return e[1] > 0; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 100);
-        if (!entries.length){ el.html('<li class="sNone">' + esc(t("Nothing recorded in this period")) + '</li>'); return; }
-        var max = entries[0][1], total = entries.reduce(function(s, x){ return s + x[1]; }, 0);
+        if (!entries.length){ el.html('<li class="sNone">' + esc(opts.none || t("Nothing recorded in this period")) + '</li>'); return; }
+        var max = entries[0][1], total = opts.total || entries.reduce(function(s, x){ return s + x[1]; }, 0);
         var limit = opts.limit || 8;
         function row(e, hidden){
-            var label = opts.label ? opts.label(e[0]) : (e[0] === "" ? '<i class="eye slash outline icon"></i> Unknown or hidden' : esc(opts.raw ? e[0] : dec(e[0]).replace(/<[^>]+>/g, "")));
+            var label = opts.label ? opts.label(e[0]) : (e[0] === "" ? esc(t("(empty)")) : esc(opts.raw ? e[0] : dec(e[0]).replace(/<[^>]+>/g, "")));
             var li = $('<li' + (opts.click ? ' class="click" tabindex="0"' : '') + (hidden ? ' style="display:none" data-extra="1"' : '') + '></li>');
             li.append('<span class="bar" style="width:' + Math.max(2, Math.round(100 * e[1] / max)) + '%"></span>',
-                      '<span class="k" title="' + esc(opts.raw ? e[0] : dec(e[0])) + '">' + label + '</span>',
+                      '<span class="k" title="' + esc(opts.title ? opts.title(e[0]) : (opts.raw ? e[0] : dec(e[0]))) + '">' + label + '</span>',
+                      opts.tag ? opts.tag(e[0]) : '',
                       '<span class="n" title="' + (100 * e[1] / total).toFixed(1) + '%">' + num(e[1]) + '</span>');
             if (opts.click) li.on("click keydown", function(ev){ if (ev.type === "click" || ev.key === "Enter") opts.click(e[0]); });
             return li;
@@ -569,6 +593,54 @@
             el.next(".sMore").remove();
             el.after(more);
         }
+    }
+
+    /* Referring sites. A request with a Referer header is stored under that header. One without is stored under a key
+       that starts with "~" and says why it is missing (mod/statistic/referer.go); days saved by older versions hold the
+       empty key instead. Real sites come first, the reasons follow with their share of all requests of the period. */
+    function refWhy(){ return [
+        ["~direct", t("Direct and apps"), t("Typed address, bookmark, or a link opened from an app or an email. The browser reported that no page linked here.")],
+        ["~hidden-policy", t("Hidden by policy"), t("Came from another website, but that site or the visitor's browser withholds the address (Referrer-Policy, privacy settings).")],
+        ["~non-browser", t("Bots and scripts"), t("Crawlers, API calls, scripts, monitoring and apps. They do not follow links, so there is no referrer to send.")],
+        ["~same-site", t("Same site"), t("Requests made by your own pages (forms, scripts) with the referrer left out.")],
+        ["~unknown", t("Not sent (reason unknown)"), t("A client that presents itself as a browser sent no referrer and nothing that explains why: plain HTTP, an older browser, a privacy tool, or a bot that imitates a browser.")],
+        ["~invalid", t("Unreadable referrer"), t("A Referer header was sent, but it held only markup and no address. Zoraxy removes markup before it stores the value.")],
+        ["", t("Unknown (recorded before this version)"), t("Saved before Zoraxy recorded why a referrer is missing. Newer requests are sorted into the rows above.")]
+    ]; }
+    function renderReferrers(map){
+        map = map || {};
+        var sites = {}, why = {}, total = 0, whyTotal = 0;
+        Object.keys(map).forEach(function(k){
+            var n = map[k] || 0;
+            if (n <= 0) return;
+            total += n;
+            if (k === "" || (k.charAt(0) === "~" && k.indexOf("~origin:") !== 0)){ why[k] = n; whyTotal += n; }
+            else sites[k] = n;
+        });
+        function refText(k){ return k.indexOf("~origin:") === 0 ? k.slice(8) : dec(k).replace(/<[^>]+>/g, ""); }
+        renderRank("#stats_RefererTable", sites, {limit: 8, total: total,
+            none: total ? t("No request in this period named a referring site.") : "",
+            title: function(k){ return k.indexOf("~origin:") === 0 ? tf("{0}: no Referer header, the source is taken from the Origin header", k.slice(8)) : dec(k); },
+            label: function(k){ return esc(refText(k)); },
+            tag: function(k){ return k.indexOf("~origin:") === 0 ? '<span class="sVia" title="' + esc(t("No Referer header was sent. The source is taken from the Origin header.")) + '">' + esc(t("Origin header")) + '</span>' : ''; }});
+        var box = $("#sRefWhyBox"), ul = $("#stats_RefererWhy").empty();
+        box.prop("hidden", whyTotal === 0);
+        if (!whyTotal) return;
+        function pct(n){ var p = 100 * n / total; return p >= 99.95 ? "100%" : p < 0.1 ? "<0.1%" : p.toFixed(1) + "%"; }
+        $("#sRefWhyShare").text(tf("{0} requests, {1} of all", num(whyTotal), pct(whyTotal)));
+        var known = {};
+        var rows = refWhy();
+        rows.forEach(function(w){ known[w[0]] = 1; });
+        Object.keys(why).forEach(function(k){ if (!known[k]) rows.push([k, k, ""]); });   // a key written by a newer version
+        rows.forEach(function(w){
+            var n = why[w[0]];
+            if (!n) return;
+            var li = $('<li></li>').attr("data-ref", w[0] === "" ? "legacy" : w[0]);
+            li.append($('<span class="bar"></span>').css("width", Math.max(2, Math.round(100 * n / total)) + "%"),
+                $('<span class="k"></span>').append($("<b></b>").text(w[1]), w[2] ? $("<small></small>").text(w[2]) : null),
+                $('<span class="n"></span>').append($("<b></b>").text(num(n)), $("<small></small>").text(pct(n))));
+            ul.append(li);
+        });
     }
 
     /* ---------- Overview ---------- */
@@ -667,7 +739,7 @@
         renderIPVersions(d.RequestClientIp);
         renderUA(d.UserAgent);
         renderFileTypes(d.RequestURL);
-        renderRank("#stats_RefererTable", d.Referer, {limit: 8});
+        renderReferrers(d.Referer);
         renderRank("#stats_PathTable", d.RequestURL, {limit: 10});
         renderRank("#stats_StatusTable", d.StatusCodes, {raw: true, limit: 12, label: function(c){ return '<b class="st' + esc(String(c).charAt(0)) + '">' + esc(c) + '</b>'; }});
         renderRank("#stats_downstreamTable", d.Downstreams, {limit: 8});

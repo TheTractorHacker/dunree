@@ -124,7 +124,6 @@
         });
         $("#hrpShowAdv").on("click", function () { setMode("advanced", true); $m().find(".hrpedit_menu_item.active").trigger("focus"); });
         $("#hrpPresetBtn").on("click", function () { if (window.ZxPresets) { ZxPresets.openForRule(st.subd, { dirty: isDirty() }); } });
-        $root.find(".editor_back_button").on("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.click(); } });
         $("#hrpAdvNoteList").on("click", "button[data-sec]", function () { setMode("advanced", true); showSection($(this).attr("data-sec")); });
 
         // Protection (Easy) mirrors the WAF source select of the Security section, the single source of truth
@@ -570,6 +569,7 @@
         if (e.key !== "Tab" || otherDialogOpen()) { return; }
         var items = $(root).find("a[href], button, input, select, textarea, iframe, [tabindex]").filter(function () {
             if (this.disabled || this.tabIndex < 0 || this.type === "hidden") { return false; }
+            if ($(this).closest("[inert]").length) { return false; } //the editor behind an open side view
             if ($(this).closest(".editor_side_wrapper").length && !$(root).find(".editor_side_wrapper").is(":visible")) { return false; }
             return this.offsetParent !== null || this === document.activeElement;
         }).toArray();

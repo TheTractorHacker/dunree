@@ -3030,6 +3030,8 @@ def main():
             return
         if args.certs_traffic_only:
             certs_traffic_ui(pg, ctx)
+            b.close()
+            return
         if args.overview_only:
             overview_ui(pg, ctx)
             b.close()
@@ -3054,6 +3056,8 @@ def main():
         if args.site_editor_only:
             current["page"] = "site-editor"
             site_editor_ui(pg, ctx)
+            b.close()
+            return
         if args.rules_only:
             rules_scenario(pg, ctx)
             b.close()

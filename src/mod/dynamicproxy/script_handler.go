@@ -171,9 +171,11 @@ func (h *ProxyHandler) handleScript(w http.ResponseWriter, r *http.Request, sep 
 	}
 	if sc.Mode == ScriptModeHook && !res.Responded {
 		for _, kv := range res.ReqSet {
+			keepStatSource(r, kv[0])
 			r.Header.Set(kv[0], kv[1])
 		}
 		for _, n := range res.ReqDel {
+			keepStatSource(r, n)
 			r.Header.Del(n)
 		}
 		return false

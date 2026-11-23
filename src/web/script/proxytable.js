@@ -205,8 +205,9 @@
         } else {
             var u = ups[0], addr = u.OriginIpOrDomain;
             var lk = u.RequireTLS ? (u.SkipCertValidations ? '<i class="lock open icon" title="' + esc(tr("TLS to the upstream, certificate not verified")) + '"></i>' : '<i class="lock icon" title="' + esc(tr("TLS to the upstream")) + '"></i>') : "";
-            upHtml = '<span class="zxs-arrow" aria-hidden="true">&rarr;</span>' + (/^unix:/i.test(addr) ? '<span class="ptUp" title="' + esc(addr) + '">' + esc(addr) + '</span>'
-                : '<a class="ptUp" href="' + esc((u.RequireTLS ? "https://" : "http://") + addr) + '" target="_blank" rel="noopener" title="' + esc(addr + "\n" + tr("Open the upstream directly")) + '">' + esc(addr) + '</a>') + lk;
+            // .ptLead keeps the arrow, the address and the lock on one line (the address is cut with an ellipsis); "+n more" may wrap under it
+            upHtml = '<span class="ptLead"><span class="zxs-arrow" aria-hidden="true">&rarr;</span>' + (/^unix:/i.test(addr) ? '<span class="ptUp" title="' + esc(addr) + '">' + esc(addr) + '</span>'
+                : '<a class="ptUp" href="' + esc((u.RequireTLS ? "https://" : "http://") + addr) + '" target="_blank" rel="noopener" title="' + esc(addr + "\n" + tr("Open the upstream directly")) + '">' + esc(addr) + '</a>') + lk + '</span>';
             if (ups.length > 1) {
                 upHtml += ' <a href="#" class="ptMoreUp" data-ep="' + e + '" title="' + esc(ups.slice(1).map(function (x) { return x.OriginIpOrDomain; }).join("\n")) + '">' + esc(fmt("+{0} more", ups.length - 1)) + '</a>';
             }
@@ -215,7 +216,7 @@
         if (r.MatchingDomainAlias && r.MatchingDomainAlias.length) {
             // the first alias, then "+n more aliases" (the full list is the tooltip; the click opens the editor, where they are managed)
             var al0 = r.MatchingDomainAlias[0], alMore = r.MatchingDomainAlias.length - 1;
-            sub.push('<span class="ptAlias">' + esc(tr("also")) + '&nbsp;<a class="ptAliasName" href="' + esc(hostLink(r, al0)) + '" target="_blank" rel="noopener" title="' + esc(al0) + '">' + esc(al0) + '</a>' +
+            sub.push('<span class="ptAlias"><span class="ptLead">' + esc(tr("also")) + '&nbsp;<a class="ptAliasName" href="' + esc(hostLink(r, al0)) + '" target="_blank" rel="noopener" title="' + esc(al0) + '">' + esc(al0) + '</a></span>' +
                 (alMore > 0 ? '<a href="#" class="ptMoreUp ptMoreAlias" data-ep="' + e + '" title="' + esc(r.MatchingDomainAlias.slice(1).join("\n")) + '">' + esc(alMore === 1 ? tr("+1 more alias") : fmt("+{0} more aliases", alMore)) + '</a>' : "") + '</span>');
         }
         if (r.ListeningPorts && r.ListeningPorts.length) { sub.push('<span title="' + esc(tr("Alternative listening ports")) + '"><i class="plug icon" aria-hidden="true"></i>' + r.ListeningPorts.map(esc).join(", ") + '</span>'); }

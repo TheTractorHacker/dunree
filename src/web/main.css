@@ -211,6 +211,22 @@ body{
     border: 0px solid transparent;
 }
 
+/* Phones: the panel is too narrow for the Close button to sit beside the title of a snippet (it covered titles and the
+   first field). The button gets a header strip of its own and the frame starts below it. Wider panels are unchanged. */
+@media screen and (max-width: 560px) {
+    .sideWrapper .content{
+        background-color: var(--zx-surface, white); /* the strip follows the theme */
+    }
+    .sideWrapper .sideWrapperClose{
+        top: 11px;
+    }
+    .sideWrapper iframe{
+        margin-top: 46px;
+        height: calc(100% - 55px - 47px);
+        border-top: 1px solid var(--zx-border, rgba(34,36,38,.15));
+    }
+}
+
 .sideWrapper .fadingBackground{
     position: fixed;
     top: 52px;

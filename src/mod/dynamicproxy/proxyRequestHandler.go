@@ -290,6 +290,7 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 			serveProxyRequestError(w, r, 521, h.Parent, ErrorTemplateRPError)
 			h.Parent.logRequest(r, false, 521, "host-http", reqHostname, upstreamHostname, target)
 		}
+		return //already logged as an error; falling through counted every failed request a second time, as a success
 	}
 
 	h.Parent.logRequest(r, true, statusCode, "host-http", reqHostname, upstreamHostname, target)
@@ -469,6 +470,7 @@ func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, targe
 			//log.Println(err.Error())
 			h.Parent.logRequest(r, false, 521, "vdir-http", reqHostname, target.Domain, target.parent)
 		}
+		return //already logged as an error, see hostRequest
 	}
 	h.Parent.logRequest(r, true, statusCode, "vdir-http", reqHostname, target.Domain, target.parent)
 
@@ -538,7 +540,13 @@ func (router *Router) logRequestRule(r *http.Request, succ bool, statusCode int,
 	if keepQuery && r.URL.RawQuery != "" {
 		pathForVisitor += "?" + r.URL.RawQuery
 	}
-	method, ua, referer := r.Method, r.UserAgent(), r.Referer()
+	// Referer and User-Agent as the client sent them, even when a rule or a script rewrote the header on the way
+	// to the upstream. A missing Referer is recorded with the reason the other headers give (statistic/referer.go).
+	src := statSourceOf(r)
+	if originalHostname != "" {
+		src.Host = originalHostname //r.Host may already point at the upstream
+	}
+	method, ua, referer := r.Method, src.UserAgent, statistic.ClassifyReferer(src)
 	statURL := ""
 	if collector != nil {
 		statURL = statistic.BuildStatURL(r.Host, r.URL.EscapedPath(), r.URL.RawQuery, collector.QueryMode())

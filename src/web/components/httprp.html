@@ -23,16 +23,23 @@
         #httprpPage table.ptTable .ptSel input[type="checkbox"]{ width:24px; height:24px; min-height:24px; }   /* main.css sets every checkbox in a table to 1.1em */
         table.ptTable .ptName{ min-width:13rem; }
         table.ptTable .ptNameBody{ min-width:0; }
-        table.ptTable .ptSub .ptUp, table.ptTable .ptSub .ptAliasName{ display:inline-block; max-width:min(22rem, 100%); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
-        table.ptTable .ptSub .ptUps, table.ptTable .ptSub .ptAlias{ max-width:100%; min-width:0; white-space:nowrap; }
+        table.ptTable .ptHost{ overflow-wrap:anywhere; }   /* a long name (63-character labels) breaks inside the two-line clamp */
+        /* the upstream and the first alias: one line each, cut with an ellipsis (the full value is the tooltip) */
+        table.ptTable .ptSub .ptUp, table.ptTable .ptSub .ptAliasName{ display:block; flex:0 1 auto; min-width:0; max-width:22rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        /* the arrow / "also", the value and the lock stay together and the value gives way; "+n more" goes under them when the cell is narrow */
+        table.ptTable .ptSub .ptUps, table.ptTable .ptSub .ptAlias{ display:inline-flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; max-width:100%; min-width:0; white-space:nowrap; }
+        table.ptTable .ptSub .ptLead{ display:inline-flex; align-items:baseline; flex:0 1 auto; min-width:0; max-width:100%; white-space:pre; }
+        table.ptTable .ptSub .ptLead > :not(.ptUp):not(.ptAliasName), table.ptTable .ptSub .ptMoreUp{ flex:0 0 auto; }
         /* the facts under a host wrap as whole items; the dot belongs to the item it introduces, so a wrapped line never ends in a lone dot */
-        table.ptTable .ptSub{ display:flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; min-width:0; }
+        /* width 0 + min-width 100%: the line fills the cell but never sets how wide the column must be. Without it one long upstream or
+           alias (they do not wrap) made the Host column, and so the table, wider than the card and the Edit buttons were cut off */
+        table.ptTable .ptSub{ display:flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; width:0; min-width:100%; }
         table.ptTable .ptSub > *{ min-width:0; }
         table.ptTable .ptSub > .zxs-dotsep{ display:none; }
         table.ptTable .ptSub > :not(.zxs-dotsep):not(:first-child)::before{ content:"\00b7"; margin-right:6px; color:var(--zx-text-faint); }
-        table.ptTable .ptSub .ptAlias{ display:inline-flex; align-items:baseline; }
-        table.ptTable .ptSub .ptAliasName{ flex:0 1 auto; min-width:0; }
-        table.ptTable .ptSub .ptMoreAlias{ margin-left:6px; flex:0 0 auto; }
+        /* an item that is a wrapping row itself (alias): its dot sits in the lead part, or it would be left alone on a line */
+        table.ptTable .ptSub > .ptAlias:not(:first-child)::before, table.ptTable .ptSub > .ptUps:not(:first-child)::before{ content:none; }
+        table.ptTable .ptSub > :not(:first-child) > .ptLead::before{ content:"\00b7"; margin-right:6px; color:var(--zx-text-faint); }
         table.ptTable .ptThProt .zx-whatis{ margin-left:6px; width:18px; height:18px; font-size:11px; vertical-align:1px; }
         #ptProtWhat{ width:max-content; white-space:normal; }
         table.ptTable .ptAct{ min-width:6.5rem; }
@@ -286,21 +293,12 @@
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-host">Hostname</h3></div>
 <p class="zx-card__desc">The address visitors type. Rename it here; aliases are other names for the same site.</p>
 <div class="zx-card__body">
-                            <div class="hrp-hostline">
-                                <button class="ui right floated small icon circular basic button downstream_primary_hostname_edit_btn">
-                                    <i class="ui edit icon"></i>
-                                </button>
-                                <span class="downstream_primary_hostname"></span>
+                            <div class="zx-field-actions downstream_primary_hostname_edit_input">
+                                <input type="text" class="zx-input" placeholder="new.example.com" aria-labelledby="hrpc-host" autocomplete="off" autocapitalize="off" spellcheck="false">
+                                <button type="button" class="zx-btn zx-btn--primary saveDownstreamHostnameBtn" disabled><i class="save icon" aria-hidden="true"></i> Save name</button>
+                                <button type="button" class="zx-btn zx-btn--secondary cancelDownstreamHostnameBtn" disabled>Discard</button>
                             </div>
-                            <div class="ui action small fluid input downstream_primary_hostname_edit_input" style="margin-bottom: 0.4em;">
-                                <input type="text" placeholder="new.example.com">
-                                <button class="ui green basic icon button saveDownstreamHostnameBtn">
-                                    <i class="ui save icon"></i>
-                                </button>
-                                <button class="ui basic icon button cancelDownstreamHostnameBtn">
-                                    <i class="times icon"></i>
-                                </button>
-                            </div>
+                            <p class="zx-help hrp-hostopen"><a class="downstream_primary_hostname" target="_blank" rel="noopener noreferrer"><i class="external alternate icon" aria-hidden="true"></i><span>Open the site in a new tab</span></a></p>
                             <div class="downstream_alias_hostname">
 
                             </div>
@@ -424,17 +422,13 @@
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-ports">Extra listening ports</h3></div>
 <p class="zx-card__desc">Also answer on these ports, for example :8080 or 192.168.1.1:8080. Added and removed at once.</p>
 <div class="zx-card__body">
-                            <p style="margin-top: 0.4em;"><small>Define additional ports this proxy rule should listen on (e.g., :8080, 192.168.1.1:8080)</small></p>
                             <div class="listening_ports_list" style="margin-top:0.4em;">
                                 <!-- Listening ports will be populated here -->
                             </div>
-                            <div class="ui action small fluid input" style="margin-top: 0.4em;">
-                                <input type="text" class="new_listening_port_input" placeholder=":8080 or 192.168.1.1:8080">
-                                <button class="ui green basic icon button addListeningPortBtn">
-                                    <i class="ui plus icon"></i>
-                                </button>
+                            <div class="zx-field-actions hrp-portadd">
+                                <input type="text" class="zx-input new_listening_port_input" placeholder=":8080 or 192.168.1.1:8080" aria-label="New listening port" autocomplete="off" spellcheck="false">
+                                <button type="button" class="zx-btn zx-btn--secondary addListeningPortBtn" disabled><i class="plus icon" aria-hidden="true"></i> Add port</button>
                             </div>
-                           
 </div>
 </section>
 </div>
@@ -1130,23 +1124,30 @@
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-limits">Request limits and timeouts</h3></div>
 <p class="zx-card__desc">Cap upload size and waiting time for this site. 0 means no limit (the default).</p>
 <div class="zx-card__body">
-                            <div class="ui labeled input" style="margin-top: 0.4em; max-width: 18em;">
-                                <input type="number" class="MaxRequestBodyMB" min="0" step="any" value="0" placeholder="0" aria-label="Maximum request body in MiB">
-                                <div class="ui basic label">MiB</div>
+                            <div class="zx-field hrp-limit">
+                                <div class="zx-field__label-row"><label class="zx-field__label" for="hrpLimBody">Largest request body</label></div>
+                                <div class="zx-inputgroup">
+                                    <input type="number" class="zx-input MaxRequestBodyMB" id="hrpLimBody" min="0" step="any" value="0" placeholder="0" aria-describedby="hrpLimBodyUnit hrpLimBodyHelp">
+                                    <span class="zx-inputgroup__unit" id="hrpLimBodyUnit">MiB</span>
+                                </div>
+                                <p class="zx-help" id="hrpLimBodyHelp">Largest request body accepted. A bigger upload is refused with 413 Request Entity Too Large, before it reaches the upstream when the size is announced. 0 = unlimited.</p>
                             </div>
-                            <br><small>Largest request body accepted. A bigger upload is refused with 413 Request Entity Too Large, before it reaches the upstream when the size is announced. 0 = unlimited.</small>
-                            <br>
-                            <div class="ui labeled input" style="margin-top: 0.8em; max-width: 18em;">
-                                <input type="number" class="RequestTimeout" min="0" max="86400" step="1" value="0" placeholder="0" aria-label="Request timeout in seconds">
-                                <div class="ui basic label">sec</div>
+                            <div class="zx-field hrp-limit">
+                                <div class="zx-field__label-row"><label class="zx-field__label" for="hrpLimRequest">Request timeout</label></div>
+                                <div class="zx-inputgroup">
+                                    <input type="number" class="zx-input RequestTimeout" id="hrpLimRequest" min="0" max="86400" step="1" value="0" placeholder="0" aria-describedby="hrpLimRequestUnit hrpLimRequestHelp">
+                                    <span class="zx-inputgroup__unit" id="hrpLimRequestUnit">sec</span>
+                                </div>
+                                <p class="zx-help" id="hrpLimRequestHelp">Total time one request may take, including a slow upstream. Exceeded gives 504 Gateway Timeout. Cuts long downloads and streams too, WebSocket and upgrade connections are not affected. 0 = no limit.</p>
                             </div>
-                            <br><small>Total time one request may take, including a slow upstream. Exceeded gives 504 Gateway Timeout. Cuts long downloads and streams too, WebSocket and upgrade connections are not affected. 0 = no limit.</small>
-                            <br>
-                            <div class="ui labeled input" style="margin-top: 0.8em; max-width: 18em;">
-                                <input type="number" class="UpstreamDialTimeout" min="0" max="86400" step="1" value="0" placeholder="0" aria-label="Upstream connect timeout in seconds">
-                                <div class="ui basic label">sec</div>
+                            <div class="zx-field hrp-limit">
+                                <div class="zx-field__label-row"><label class="zx-field__label" for="hrpLimDial">Upstream connect timeout</label></div>
+                                <div class="zx-inputgroup">
+                                    <input type="number" class="zx-input UpstreamDialTimeout" id="hrpLimDial" min="0" max="86400" step="1" value="0" placeholder="0" aria-describedby="hrpLimDialUnit hrpLimDialHelp">
+                                    <span class="zx-inputgroup__unit" id="hrpLimDialUnit">sec</span>
+                                </div>
+                                <p class="zx-help" id="hrpLimDialHelp">Time allowed to open a connection to the upstream. 0 = built-in 30 seconds.</p>
                             </div>
-                            <br><small>Time allowed to open a connection to the upstream. 0 = built-in 30 seconds.</small>
 </div>
 </section>
 <section class="zx-card hrp-card" data-hrp-card="forwarding" rpcfg="downstream" data-hrp-nd="forwarding" aria-labelledby="hrpc-forwarding">
@@ -1210,10 +1211,10 @@
         </div>
         <!-- Editor Side Wrapper -->
         <div class="editor_side_wrapper" style="display:none;">
-            <a class="editor_back_button" role="button" tabindex="0" aria-label="Back to the site settings">
-                <i class="chevron circle left icon" style="margin-top: 22px;"></i>
-                <span class="editor_side_title" aria-live="polite"></span>
-            </a>
+            <header class="hrp-sidehead">
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--icon editor_back_button" aria-label="Back to the site settings"><i class="arrow left icon" aria-hidden="true"></i></button>
+                <h3 class="hrp-sidehead__text editor_side_title" aria-live="polite"><span class="hrp-sidehead__name"></span><span class="hrp-sidehead__host"></span></h3>
+            </header>
             <iframe src="snippet/placeholder.html" class="wrapper_frame" title="Details">
 
             </iframe>
@@ -1906,21 +1907,14 @@
         if (ports.length == 0) {
             html = '<small style="color:var(--zx-text-muted);">No alternative listening ports configured</small>';
         } else {
-            html = '<div class="ui list">';
+            html = '<ul class="hrp-portlist">';
             ports.forEach(function(port, index){
-                html += `<div class="item">
-                    <i class="angle double right blue icon"></i>
-                    <div class="content">
-                        <div class="description">
-                            ${hrpEsc(port)}
-                            <button class="ui mini red basic icon button removeListeningPortBtn" style="float: right; margin-left: 0.5em;" data-port="${hrpEsc(port)}" aria-label="Remove port">
-                                <i class="trash icon"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
+                html += `<li class="hrp-portlist__item">
+                    <code class="hrp-portlist__port">${hrpEsc(port)}</code>
+                    <button type="button" class="zx-btn zx-btn--danger-outline zx-btn--icon zx-btn--sm removeListeningPortBtn" data-port="${hrpEsc(port)}" aria-label="Remove port"><i class="trash icon" aria-hidden="true"></i></button>
+                </li>`;
             });
-            html += '</div>';
+            html += '</ul>';
         }
         editor.find(".listening_ports_list").html(html);
         
@@ -2114,11 +2108,13 @@
         /* ------------ Downstream ------------ */
         let editor = $("#httprpEditModalWrapper");
         
-        //Check if the domain is wildcard domain, if yes do not render as a link
+        //"Open the site" link under the hostname field; a wildcard name has no address to open
         if (subd.RootOrMatchingDomain.indexOf("*") > -1){
-            editor.find(".downstream_primary_hostname").text(subd.RootOrMatchingDomain);
+            editor.find(".hrp-hostopen").attr("hidden", "");
+            editor.find(".downstream_primary_hostname").removeAttr("href");
         }else{
-            editor.find(".downstream_primary_hostname").empty().append($("<a>").attr({"href": "//" + subd.RootOrMatchingDomain, "target": "_blank", "rel": "noopener noreferrer"}).text(subd.RootOrMatchingDomain));
+            editor.find(".hrp-hostopen").removeAttr("hidden");
+            editor.find(".downstream_primary_hostname").attr("href", "//" + subd.RootOrMatchingDomain);
         }
         editor.find(".BypassGlobalTLS").off('change');
         editor.find(".BypassGlobalTLS").prop("checked", subd.BypassGlobalTLS);
@@ -2176,51 +2172,54 @@
         }, 100);
       
         
-        //Bind the edit button
-        editor.find(".downstream_primary_hostname_edit_btn").off("click").on("click", function(){
-            editor.find(".downstream_primary_hostname_edit_btn").parent().hide();
-            editor.find(".downstream_primary_hostname_edit_input input").val(subd.RootOrMatchingDomain)
-            editor.find(".downstream_primary_hostname_edit_input").show();
-        });
-        editor.find(".cancelDownstreamHostnameBtn").off("click").on("click", function(){
-            editor.find(".downstream_primary_hostname_edit_input").hide();
-            editor.find(".downstream_primary_hostname_edit_btn").parent().show();
-        });
-        editor.find(".saveDownstreamHostnameBtn").off("click").on("click", function(){
-            let newHostname = editor.find(".downstream_primary_hostname_edit_input input").val().trim();
-            if (newHostname.length == 0){
-                msgbox("Hostname cannot be empty", false);
-                return;
-            }
-
-            if (newHostname == subd.RootOrMatchingDomain){
-                //No need to update
-                editor.find(".downstream_primary_hostname_edit_input").hide();
-                editor.find(".downstream_primary_hostname_edit_btn").parent().show();
-                return;
-            }
-            $.cjax({
-                url: "/api/proxy/setHostname",
-                method: "POST",
-                data: {
-                    "oldHostname":subd.RootOrMatchingDomain,
-                    "newHostname":newHostname,
-                },
-                success: function(data){
-                    if (data.error != undefined){
-                        msgbox(data.error, false);
-                    }else{
-                        //Update the current editing hostname to DOM
-                        $("#httprpEditModal").attr("editing-host", encodeURIComponent(newHostname));
-                        //Grab the new hostname from server
-                        resyncProxyEditorConfig();
-                    }
+        //Hostname: the field always shows the current name; Save name / Discard switch on once it differs
+        (function(){
+            let hostInput = editor.find(".downstream_primary_hostname_edit_input input");
+            let hostSave = editor.find(".saveDownstreamHostnameBtn");
+            let hostDiscard = editor.find(".cancelDownstreamHostnameBtn");
+            function hostChanged(){ return hostInput.val().trim() != subd.RootOrMatchingDomain; }
+            function hostSync(){ let c = hostChanged(); hostSave.prop("disabled", !c); hostDiscard.prop("disabled", !c); }
+            function hostReset(){ hostInput.val(subd.RootOrMatchingDomain); hostSync(); }
+            function hostSaveNow(){
+                let newHostname = hostInput.val().trim();
+                if (newHostname.length == 0){
+                    msgbox("Hostname cannot be empty", false);
+                    return;
                 }
+                if (!hostChanged()){
+                    hostReset();
+                    return;
+                }
+                hostSave.addClass("is-loading");
+                $.cjax({
+                    url: "/api/proxy/setHostname",
+                    method: "POST",
+                    data: {
+                        "oldHostname":subd.RootOrMatchingDomain,
+                        "newHostname":newHostname,
+                    },
+                    success: function(data){
+                        if (data.error != undefined){
+                            msgbox(data.error, false);
+                        }else{
+                            //Update the current editing hostname to DOM
+                            $("#httprpEditModal").attr("editing-host", encodeURIComponent(newHostname));
+                            //Grab the new hostname from server
+                            resyncProxyEditorConfig();
+                        }
+                    },
+                    complete: function(){ hostSave.removeClass("is-loading"); }
+                });
+            }
+            hostInput.off("input.hrphost keydown.hrphost").on("input.hrphost", hostSync).on("keydown.hrphost", function(e){
+                if (e.key === "Enter"){ e.preventDefault(); if (hostChanged()){ hostSaveNow(); } }
+                else if (e.key === "Escape" && hostChanged()){ e.preventDefault(); e.stopPropagation(); hostReset(); } //Esc first undoes the typing, the next one closes the editor
             });
-        });
-        editor.find(".downstream_primary_hostname_edit_input").hide();
-        editor.find(".downstream_primary_hostname_edit_btn").parent().show();
-        
+            hostDiscard.off("click").on("click", function(){ hostReset(); hostInput.trigger("focus"); });
+            hostSave.off("click").on("click", hostSaveNow);
+            hostReset();
+        })();
+
         //Build the alias hostname list
         let aliasHTML = "";
         (subd.MatchingDomainAlias || []).forEach(alias => {
@@ -2240,7 +2239,13 @@
         let listeningPorts = subd.ListeningPorts || [];
         renderListeningPorts(uuid, listeningPorts);
         
-        // Bind add listening port button
+        // Bind add listening port button (on once something is typed; Enter adds too)
+        editor.find(".new_listening_port_input").off("input.hrpport keydown.hrpport").on("input.hrpport", function(){
+            editor.find(".addListeningPortBtn").prop("disabled", $(this).val().trim() == "");
+        }).on("keydown.hrpport", function(e){
+            if (e.key === "Enter"){ e.preventDefault(); if ($(this).val().trim() != ""){ editor.find(".addListeningPortBtn").trigger("click"); } }
+        }).val("");
+        editor.find(".addListeningPortBtn").prop("disabled", true);
         editor.find(".addListeningPortBtn").off("click").on("click", function(){
             let newPort = editor.find(".new_listening_port_input").val().trim();
             if (newPort == "") {
@@ -2267,6 +2272,7 @@
             saveListeningPorts(uuid, listeningPorts, function(){
                 renderListeningPorts(uuid, listeningPorts);
                 editor.find(".new_listening_port_input").val("");
+                editor.find(".addListeningPortBtn").prop("disabled", true);
                 msgbox("Listening port added");
             });
         });
@@ -3125,6 +3131,20 @@
                     e.preventDefault();
                     e.stopPropagation();
                     hideEditorSideWrapperViaBtn();
+                    return;
+                }
+                //Tab past the last (or before the first) control of the view goes to the Back button, not to the page behind the editor
+                if (e.key === "Tab" && !e.defaultPrevented){
+                    let items = Array.prototype.filter.call(doc.querySelectorAll("a[href], button, input, select, textarea, [tabindex]"), function(el){
+                        return !el.disabled && el.tabIndex >= 0 && el.type !== "hidden" && el.getClientRects().length > 0 && !el.closest("[inert]");
+                    });
+                    let active = doc.activeElement;
+                    if (!items.length || (e.shiftKey ? active === items[0] : active === items[items.length - 1]) || active === doc.body){
+                        if (!items.length || active !== doc.body || e.shiftKey){
+                            e.preventDefault();
+                            $("#httprpEditModal .editor_back_button").trigger("focus");
+                        }
+                    }
                 }
             }, true);
         } catch (err) { /* cross origin frame: nothing to bind */ }
@@ -3143,13 +3163,32 @@
         "ssoExceptionEditor": "SSO exceptions", "tagEditor": "Tags", "upstreams": "Upstreams", "zorxAuthExceptionEditor": "ZorxAuth exceptions"
     };
 
+    //Focus of the side view: it opens over the editor, so the editor behind it must not take part in the Tab order,
+    //and going back returns to the button that opened it
+    var sideViewOpener = null;
+    function sideViewLock(on){
+        //everything of the dialog except the side view itself (the tab strip, the cards, the close buttons)
+        $("#httprpEditModal").children().not(".editor_side_wrapper").each(function(){
+            if (on){ this.setAttribute("inert", ""); } else { this.removeAttribute("inert"); }
+        });
+    }
+
     function showEditorSideWrapper(url){
         let viewName = (String(url).match(/snippet\/([A-Za-z]+)\.html/) || [])[1];
         let title = SIDE_VIEW_TITLES[viewName] || "";
         let host = decodeURIComponent($("#httprpEditModal").attr("editing-host") || "");
-        $("#httprpEditModal .editor_side_title").text(title ? (window.t ? window.t(title) : title) + (host ? " - " + host : "") : "");
-        $("#httprpEditModal .editor_side_wrapper .wrapper_frame").attr('src', url);
-        $("#httprpEditModal .editor_side_wrapper").fadeIn("fast");
+        let wrapper = $("#httprpEditModal .editor_side_wrapper");
+        //the name of the view, and under it the site it belongs to (one line each; a long host name is cut with an ellipsis, the full name is the tooltip)
+        $("#httprpEditModal .hrp-sidehead__name").text(title ? (window.t ? window.t(title) : title) : "");
+        $("#httprpEditModal .hrp-sidehead__host").text(host).attr("title", host).prop("hidden", !host);
+        wrapper.find(".wrapper_frame").attr('src', url).attr("title", title ? (window.t ? window.t(title) : title) : "Details");
+        if (!wrapper.is(":visible") || !sideViewOpener){
+            let active = document.activeElement;
+            sideViewOpener = (active && active !== document.body && $("#httprpEditModal")[0].contains(active) && !wrapper[0].contains(active)) ? active : null;
+        }
+        wrapper.stop(true, true).fadeIn("fast");
+        sideViewLock(true);
+        wrapper.find(".editor_back_button").trigger("focus");
     }
 
     function hideEditorSideWrapperViaBtn(){
@@ -3158,7 +3197,21 @@
     }
 
     function hideEditorSideWrapper(){
-        $("#httprpEditModal .editor_side_wrapper").fadeOut("fast", function(){
+        let wrapper = $("#httprpEditModal .editor_side_wrapper");
+        let wasOpen = wrapper.is(":visible");
+        sideViewLock(false);
+        if (wasOpen){
+            //back to the button that opened the view (it may be gone after a section change: then the current section tab)
+            let target = (sideViewOpener && document.contains(sideViewOpener) && $(sideViewOpener).is(":visible")) ? sideViewOpener : $("#httprpEditModal .hrpedit_menu_item.active:visible")[0];
+            if (target){ try { target.focus({ preventScroll: true }); } catch (err) { target.focus(); } }
+        }
+        sideViewOpener = null;
+        if (!wasOpen){
+            //not on screen (the editor itself is closed or the view was never opened): no animation to wait for
+            if (wrapper.css("display") != "none"){ wrapper.stop(true, true).hide(); wrapper.find(".wrapper_frame").attr('src', 'snippet/placeholder.html'); }
+            return;
+        }
+        wrapper.stop(true, true).fadeOut("fast", function(){
             // Reset the side wrapper frame URL to prevent stale content
             $("#httprpEditModal .editor_side_wrapper .wrapper_frame").attr('src', 'snippet/placeholder.html');
         });

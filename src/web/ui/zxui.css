@@ -594,10 +594,23 @@ body.zx-has-savebar .zx-session-banner { bottom: calc(env(safe-area-inset-bottom
 /* number input with a unit after it (Sign-in session card) */
 .zx-inputgroup { display: flex; align-items: stretch; max-width: 100%; }
 .ui.form .zx-inputgroup input[type="number"] { flex: 1 1 auto; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.zx-inputgroup > .zx-input { flex: 1 1 auto; width: auto; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.zx-inputgroup > .zx-input:focus-visible { position: relative; z-index: 1; } /* the focus ring is not cut by the unit */
 .zx-inputgroup__unit {
     flex: 0 0 auto; display: flex; align-items: center; padding: 0 var(--zx-space-3); white-space: nowrap;
     background: var(--zx-surface-2); color: var(--zx-text-muted); border: 1px solid var(--zx-border-strong); border-left: 0;
     border-radius: 0 var(--zx-radius-md) var(--zx-radius-md) 0; font-size: var(--zx-fs-md); font-weight: 700;
+}
+
+/* field with its own actions: one input and the buttons that act on it, on one line, all the same height.
+   <div class="zx-field-actions"><input class="zx-input"><button class="zx-btn zx-btn--primary" disabled>Save name</button><button class="zx-btn zx-btn--secondary" disabled>Discard</button></div>
+   Separate controls with the kit gap (never glued together); the buttons stay disabled until the value differs. Phones: the input takes the row, the buttons share the next one. */
+.zx-field-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--zx-space-2); max-width: 100%; }
+.zx-field-actions > .zx-input, .zx-field-actions > .zx-select { flex: 1 1 14rem; width: auto; min-width: 0; max-width: 40rem; margin: 0; }
+.zx-field-actions > .zx-btn { flex: 0 0 auto; margin: 0; }
+@media (max-width: 560px) {
+    .zx-field-actions > .zx-input, .zx-field-actions > .zx-select { flex-basis: 100%; }
+    .zx-field-actions > .zx-btn { flex: 1 1 0; }
 }
 
 /* ===================================================================================== final consistency pass (shared kit additions) */

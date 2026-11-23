@@ -89,8 +89,17 @@
 #httprpEditModal .hrp-btnrow { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
 #httprpEditModal .hrp-btnrow .ui.button { margin: 0; }
 #httprpEditModal .hrp-tablewrap { overflow-x: auto; margin-bottom: var(--zx-space-3); }
-#httprpEditModal .hrp-hostline { display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-2); font-size: var(--zx-fs-lg); font-weight: 700; }
-#httprpEditModal .hrp-hostline .downstream_primary_hostname { min-width: 0; overflow-wrap: anywhere; }
+#httprpEditModal .hrp-hostopen { margin-top: var(--zx-space-2); }
+#httprpEditModal .hrp-hostopen a { display: inline-flex; align-items: center; gap: var(--zx-space-1); color: var(--zx-link); text-decoration: none; }
+#httprpEditModal .hrp-hostopen a:hover { text-decoration: underline; }
+#httprpEditModal .hrp-hostopen a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+#httprpEditModal .hrp-hostopen i.icon { margin: 0; height: auto; }
+#httprpEditModal .hrp-limit:last-child { margin-bottom: 0; }
+#httprpEditModal .hrp-limit .zx-inputgroup { max-width: 12rem; }
+#httprpEditModal .hrp-portlist { list-style: none; margin: 0; padding: 0; max-width: 40rem; }
+#httprpEditModal .hrp-portlist__item { display: flex; align-items: center; justify-content: space-between; gap: var(--zx-space-3); padding: var(--zx-space-2) 0; border-bottom: 1px solid var(--zx-border); }
+#httprpEditModal .hrp-portlist__port { min-width: 0; overflow-wrap: anywhere; font-family: var(--zx-font-mono); font-size: var(--zx-fs-md); color: var(--zx-text); background: none; padding: 0; }
+#httprpEditModal .hrp-portadd { margin-top: var(--zx-space-3); }
 #httprpEditModal .downstream_alias_hostname { margin-top: var(--zx-space-2); }
 /* alias chips: readable size and contrast */
 #httprpEditModal .downstream_alias_hostname .ui.label { font-size: var(--zx-fs-sm); font-weight: 600; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border-strong); }
@@ -105,12 +114,18 @@
 #httprpEditModal .hrp-main .ui.message { color: inherit; }
 
 /* ---- side editors (path rules, upstreams, ...) open over the whole dialog ---- */
-#httprpEditModal .editor_side_wrapper { position: absolute; top: 0; right: 0; height: 100%; width: 100%; background: var(--zx-bg); z-index: 3; }
-#httprpEditModal .editor_side_wrapper .wrapper_frame { width: 100%; height: calc(100% - 52px); border: 0; border-top: 1px solid var(--zx-border); }
-#httprpEditModal .editor_back_button { display: inline-block; border: none; background: transparent; box-shadow: none; color: var(--zx-text); font-size: 2.2em; cursor: pointer; padding: 0 var(--zx-space-3); line-height: 1; }
-#httprpEditModal .editor_back_button .editor_side_title { font-size: var(--zx-fs-lg); font-weight: 600; margin-left: var(--zx-space-2); vertical-align: middle; color: var(--zx-text); }
-#httprpEditModal .editor_back_button:hover { opacity: 0.6; }
-#httprpEditModal .editor_back_button:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+/* a column: the header row (back button, name of the view, site) and the frame that takes the rest; nothing is positioned by hand */
+#httprpEditModal .editor_side_wrapper { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--zx-bg); z-index: 3; }
+#httprpEditModal .editor_side_wrapper .wrapper_frame { flex: 1 1 auto; min-height: 0; width: 100%; border: 0; }
+#httprpEditModal .hrp-sidehead {
+    flex: 0 0 auto; display: flex; align-items: center; gap: var(--zx-space-3); min-width: 0;
+    padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); border-bottom: 1px solid var(--zx-border);
+}
+#httprpEditModal .hrp-sidehead .editor_back_button { flex: 0 0 auto; }
+#httprpEditModal .hrp-sidehead__text { flex: 1 1 auto; min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; font: inherit; }
+#httprpEditModal .hrp-sidehead__name { font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.25; color: var(--zx-text); }
+#httprpEditModal .hrp-sidehead__host { font-size: var(--zx-fs-sm); font-weight: 400; line-height: 1.3; color: var(--zx-text-muted); }
+#httprpEditModal .hrp-sidehead__name, #httprpEditModal .hrp-sidehead__host { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* close buttons: text on wide screens, icon on narrow ones */
 #httprpEditModal .httpProxyEditCloseMobile { display: none !important; }

@@ -5,6 +5,8 @@
         <meta charset="utf-8">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
         <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <link rel="stylesheet" href="../ui/zxui.css">
+        <script src="../script/i18n.js"></script>
         <script>
 /* HTML-escape for anything that came from the configuration (host names, aliases, upstreams, tags, rule names) */
 function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
@@ -12,6 +14,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
 <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
+        <script src="../script/zxui.js"></script>
         <style>
             /* The drawer content fills the frame: one shared inset for menu, rows and info box */
             body{ padding: 0 0 1.5em; }
@@ -24,74 +27,203 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
             .ui.tab[data-tab="loadbalance"] .ui.message{ padding: .6em .9em; font-size: 13px; }
             body.darkTheme .ui.checkbox label, body.darkTheme .ui.checkbox label small{ color: var(--text_color, #ddd) !important; opacity: 1 !important; }
 
-            .upstreamActions{
-                position: absolute;
-                top: 0.6em;
-                right: 0.6em;
-            }
+        </style>
+        <style id="upstreamsV2">
+            /* ===== Upstreams, Add upstream, Load balancing: design v2 (kit tokens only, light and dark) ===== */
+            /* the tokens live on body: its background also paints the canvas (html has none) */
+            body, body.darkTheme{ background: var(--zx-bg) !important; }
+            body{ color: var(--zx-text); font-size: var(--zx-fs-md); line-height: var(--zx-lh); }
+            .ui.container > .ui.pointing.secondary.menu{ background: var(--zx-bg); }
+            .ui.tab.basic.segment{ padding-top: var(--zx-space-5); background: transparent; }
+            /* the column fills the panel like the tab bar above it; text measures are capped per element */
+            .up-col{ max-width: none; }
+            .up-col [hidden]{ display: none !important; }
+            /* darktheme.css colours every p and span; it is loaded in a cascade layer (see the body), so the kit classes win,
+               and text without a colour of its own inherits again instead of turning plain white */
+            :where(body.darkTheme) :where(p, span){ color: inherit; }
+            .up-col p{ line-height: var(--zx-lh); }
 
-            .upstreamLink{
-                display: inline-block;
-                max-width: 100%;
-                overflow-wrap: anywhere;
-            }
+            /* ---- list of upstreams ---- */
+            .up-summary{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); margin: 0 0 var(--zx-space-3); min-height: 28px; }
+            .up-summary__text{ flex: 1 1 14rem; min-width: 0; margin: 0; color: var(--zx-text-muted); }
+            .up-summary__text b{ color: var(--zx-text); }
+            .up-summary__bad{ color: var(--zx-danger-text); font-weight: 700; }
+            .up-list{ background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-4); }
+            .up-list:empty{ display: none; }
+            .up-row + .up-row{ border-top: 1px solid var(--zx-border); }
+            .up-row__main{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3) var(--zx-space-4); padding: 14px var(--zx-card-pad); }
+            .up-row__id{ flex: 1 1 15rem; min-width: 0; }
+            .up-row__title{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--zx-space-2); }
+            .up-row__addr{ font-size: 1.071rem; font-weight: 700; line-height: 1.35; color: var(--zx-text); overflow-wrap: anywhere; min-width: 0;
+                display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+            .up-row.inactive .up-row__addr{ color: var(--zx-text-muted); }
+            .up-row__meta{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--zx-space-2); margin-top: 6px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+            .up-row__meta .zx-badge{ font-weight: 400; }
+            .up-row__live{ font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+            .up-row__live:empty{ display: none; }
+            .up-row__ctl{ display: flex; align-items: center; gap: var(--zx-space-2); flex: 0 0 auto; margin-left: auto; }
+            .up-row__ctl .zx-switch{ margin: 0 var(--zx-space-1); }
+            .up-row__ctl .zx-btn--icon{ color: var(--zx-text-muted); }
+            .up-row__ctl .zx-btn--icon:hover, .up-row__ctl .zx-btn--icon[aria-expanded="true"]{ color: var(--zx-text); background: var(--zx-surface-2); }
+            .up-row__ctl .zx-btn:focus-visible, .up-col .zx-btn:focus-visible{ outline: none; box-shadow: var(--zx-focus-ring); }
 
-            .upstreamEntry .ui.toggle.checkbox input:checked ~ label::before{
-                background-color: #00ca52 !important;
-            }
+            .up-stepper{ display: inline-flex; align-items: center; height: 30px; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); background: var(--zx-surface); }
+            .up-stepper button{ width: 28px; height: 28px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--zx-text); font: inherit; font-weight: 700; line-height: 1; cursor: pointer; }
+            .up-stepper button:hover{ background: var(--zx-surface-2); }
+            .up-stepper button:focus-visible{ outline: none; box-shadow: var(--zx-focus-ring); }
+            .ui.tabular.menu .item:focus-visible, .ui.secondary.menu .item:focus-visible{ outline: none; box-shadow: var(--zx-focus-ring); }
+            .up-stepper button:disabled{ color: var(--zx-text-faint); background: transparent; cursor: not-allowed; }
+            .up-stepper__val{ padding: 0 6px; min-width: 5.2em; text-align: center; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+            .up-stepper__val b{ color: var(--zx-text); }
 
-            #activateNewUpstream.ui.toggle.checkbox input:checked ~ label::before{
-                background-color: #00ca52 !important;
-            }
+            .up-menu{ position: relative; }
+            .up-menu__list{ position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 14rem; padding: 4px; background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-2); }
+            .up-menu__item{ white-space: nowrap; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--zx-text); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+            .up-menu__item i.icon{ margin: 0; width: 1.1em; color: var(--zx-text-muted); }
+            .up-menu__item:hover, .up-menu__item:focus-visible{ background: var(--zx-surface-2); color: var(--zx-text); outline: none; }
+            .up-menu__item--danger, .up-menu__item--danger i.icon{ color: var(--zx-danger-text); }
+            .up-menu__item--danger:hover, .up-menu__item--danger:focus-visible{ background: var(--zx-danger-bg); color: var(--zx-danger-text); }
+            .up-menu__sep{ height: 1px; margin: 4px 0; background: var(--zx-border); }
 
-            /* the list grows with the page (the drawer scrolls); no nested scroll box */
-            #upstreamTable{
-                padding: 0;
-            }
+            /* a row being edited: the form opens in place, the other rows step back */
+            .upstreamEntry:not(.is-editing) .advanceOptions{ display: none; }
+            .up-list.is-editing .up-stepper, .up-list.is-editing .editbtn, .up-list.is-editing .up-menu, .up-list.is-editing .enableState{ display: none; }
+            .up-list.is-editing .up-row:not(.is-editing) .up-row__main{ opacity: 0.55; }
+            .up-edit{ border-top: 1px solid var(--zx-border); padding: var(--zx-space-4) var(--zx-card-pad) 0; }
+            .up-edit__foot{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin: 0 calc(-1 * var(--zx-card-pad)); padding: var(--zx-space-3) var(--zx-card-pad); border-top: 1px solid var(--zx-border); background: var(--zx-surface-2); }
+            .up-row:last-child .up-edit__foot{ border-radius: 0 0 var(--zx-radius-lg) var(--zx-radius-lg); }
+            .up-spacer{ flex: 1 1 auto; }
+            .up-callout-action{ margin-top: var(--zx-space-2); }
+            .up-lbhint .zx-callout__body b{ font-weight: 700; }
 
-            .upstreamEntry.inactive{
-                background-color: var(--theme_advance, #f3f3f3) !important;
-            }
+            /* ---- the upstream form (cards in the Add tab, flat sections inside a row) ---- */
+            .up-group{ margin: 0 0 var(--zx-space-4); }
+            .up-group__title{ margin: 0; font-size: 1.071rem; font-weight: 700; line-height: 1.3; color: var(--zx-text); }
+            .up-group__desc{ margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+            .up-group__head{ margin: 0 0 var(--zx-space-4); }
+            .up-card, .up-form--cards .up-group{ background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: 18px var(--zx-card-pad) var(--zx-card-pad); margin: 0 0 var(--zx-space-4); }
+            .up-form--flat .up-group{ padding-bottom: var(--zx-space-4); margin: 0; }
+            .up-form--flat .up-group + .up-group{ border-top: 1px solid var(--zx-border); padding-top: var(--zx-space-4); }
+            .up-col .zx-field{ margin-bottom: var(--zx-space-4); }
+            .up-col .zx-field:last-child{ margin-bottom: 0; }
+            .up-col .zx-field__label{ display: inline-block; }
+            .up-col .zx-help{ max-width: 46rem; }
+            .up-col .zx-help code, .up-col .zx-toggle-row__desc code{ font-family: var(--zx-font-mono); font-size: 0.92em; padding: 0 3px; border-radius: var(--zx-radius-sm); background: var(--zx-surface-2); color: inherit; }
+            .up-grid{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--zx-space-5); }
+            .up-grid > .zx-field{ margin-bottom: var(--zx-space-4); }
+            .up-grid--3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .up-col .zx-input.up-num{ max-width: 11rem; }
+            .up-unit{ display: flex; max-width: 11rem; }
+            .up-unit > .zx-input{ min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+            .up-unit__u{ flex: 0 0 auto; display: flex; align-items: center; padding: 0 var(--zx-space-3); background: var(--zx-surface-2); color: var(--zx-text-muted); border: 1px solid var(--zx-border-strong); border-left: 0; border-radius: 0 var(--zx-radius-md) var(--zx-radius-md) 0; font-size: var(--zx-fs-sm); white-space: nowrap; }
+            .up-range{ display: flex; align-items: center; gap: var(--zx-space-2); max-width: 14rem; color: var(--zx-text-muted); }
+            .up-range > .zx-input{ min-width: 0; }
+            .up-origin{ display: flex; max-width: 40rem; }
+            .up-origin__scheme{ flex: 0 0 auto; display: flex; align-items: center; min-width: 4.9em; padding: 0 var(--zx-space-3); background: var(--zx-surface-2); color: var(--zx-text-muted); border: 1px solid var(--zx-border-strong); border-right: 0; border-radius: var(--zx-radius-md) 0 0 var(--zx-radius-md); font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
+            .up-origin > .zx-input{ min-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+            .up-col .zx-textarea.zx-mono{ font-size: 12.5px; line-height: 1.5; max-width: 46rem; }
+            .up-col .zx-select{ max-width: 20rem; }
+            .up-toggles{ border-top: 1px solid var(--zx-border); margin-top: var(--zx-space-1); }
+            .up-toggles--first{ border-top: 0; margin-top: calc(-1 * var(--zx-space-3)); }
+            .up-toggles > .zx-toggle-row:last-child{ padding-bottom: 0; }
+            .up-toggles > .zx-toggle-row:has(+ [hidden]):nth-last-child(2){ border-bottom: 0; padding-bottom: 0; }
+            .up-col .zx-toggle-row__desc{ max-width: 44rem; }
+            .up-inline-warn{ margin: var(--zx-space-3) 0 0; }
+            .up-needtls{ margin: 0 0 var(--zx-space-4); color: var(--zx-warn-text); font-size: var(--zx-fs-sm); }
+            .up-needtls i.icon{ margin-right: 4px; }
+            .up-subhead{ margin: var(--zx-space-5) 0 var(--zx-space-1); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
+            .up-subdesc{ margin: 0 0 var(--zx-space-4); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); max-width: 46rem; }
 
-            .upstreamEntry.ui.basic.segment{
-                border-radius: 0.4em !important;
-                border: 1px solid var(--divider_color, rgb(233, 233, 233)) !important;
-                margin: 0 0 0.8em;
-                padding: 0.8em 1em;
-            }
-            .upstreamEntry h4.ui.header{ margin: 0; }
-            /* keep the status line clear of the absolutely positioned action buttons */
-            .upstreamEntry h4.ui.header .content{ padding-right: 7.5em; min-width: 0; }
-            .upstreamEntry .sub.header{ overflow-wrap: anywhere; }
-            .upstreamEntry .advanceOptions{ margin-top: 1em; }
-            .ui.tab[data-tab="upstreamlist"] > .ui.message{ margin: 0.2em 0 0; }
+            /* folded group: the summary is the group head */
+            details.up-adv > summary{ list-style: none; display: flex; align-items: center; gap: var(--zx-space-3); cursor: pointer; border-radius: var(--zx-radius-sm); }
+            details.up-adv > summary::-webkit-details-marker{ display: none; }
+            details.up-adv > summary::after{ content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin: 0 6px 4px; border-right: 2px solid var(--zx-text-muted); border-bottom: 2px solid var(--zx-text-muted); transform: rotate(45deg); transition: transform var(--zx-dur, .14s); }
+            details.up-adv[open] > summary::after{ transform: rotate(-135deg); margin-bottom: -4px; }
+            details.up-adv > summary:focus-visible{ outline: none; box-shadow: var(--zx-focus-ring); }
+            details.up-adv > summary:hover .up-group__title{ color: var(--zx-primary-soft-text); }
+            .up-adv__head{ flex: 1 1 auto; min-width: 0; }
+            .up-adv__set{ display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 0 1 auto; justify-content: flex-end; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); white-space: nowrap; }
+            .up-adv__body{ margin-top: var(--zx-space-4); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
 
-            @media (max-width: 499px) {
-                .ui.container{ padding: 0 0.9em; }
-                .upstreamEntry h4.ui.header .content{ padding-right: 0; }
-                .upstreamActions{
-                    position: relative;
-                    top: auto;
-                    right: auto;
-                    margin-top: 0.7em;
-                    margin-left: 0;
-                }
-            }
+            .upstreamTrustResult{ margin-top: var(--zx-space-3); padding: var(--zx-space-3) var(--zx-space-4); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; max-width: 46rem; }
+            .upstreamTrustResult:empty{ display: none; }
+            .up-res{ display: flex; gap: var(--zx-space-2); align-items: flex-start; }
+            .up-res > i.icon{ flex: 0 0 auto; margin: 1px 0 0; }
+            .up-res__body{ flex: 1 1 auto; min-width: 0; }
+            .up-res--ok > i.icon{ color: var(--zx-ok-text) !important; }
+            .up-res--bad > i.icon{ color: var(--zx-danger-text) !important; }
+            .up-cert{ margin: 0 0 var(--zx-space-3); }
+            .up-cert:last-child{ margin-bottom: 0; }
+            .up-cert__name{ font-weight: 700; }
+            .up-cert__note{ color: var(--zx-warn-text); }
+            .up-cert__line{ color: var(--zx-text-muted); }
+            .up-cert__line span{ font-family: var(--zx-font-mono); color: var(--zx-text); }
 
-            .advanceUpstreamOptions{
-                padding: 0.6em;
-                background-color: var(--theme_advance); 
-                width: 100%;
-                border-radius: 0.4em;
-            }
+            /* sticky action row of a tab */
+            .up-actionbar{ position: sticky; bottom: var(--zx-space-3); z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-4); padding: var(--zx-space-3) var(--zx-card-pad); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-3); }
+            .up-actionbar__note{ flex: 1 1 12rem; min-width: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+            .up-actionbar__note b{ color: var(--zx-text); }
 
-            .advanceUpstreamOptions.ui.accordion .content{
-                padding: 1em !important;
+            /* ---- load balancing ---- */
+            .up-card__headrow{ display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); }
+            .up-card__headrow .up-group__title{ flex: 1 1 auto; }
+            .up-policy{ margin: 0; display: grid; gap: 10px; }
+            .up-policy__row{ display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--zx-space-3); align-items: baseline; margin: 0; }
+            .up-policy__row dt{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; }
+            .up-policy__row dd{ margin: 0; overflow-wrap: anywhere; }
+            .up-policy__row dd .zx-badge{ margin-right: 6px; vertical-align: 1px; }
+            .up-policy__warn{ color: var(--zx-warn-text); }
+            .up-algos__label{ margin: var(--zx-space-4) 0 var(--zx-space-2); font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); }
+            .up-algos__label:first-child{ margin-top: 0; }
+            .up-algos__grid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zx-space-2); }
+            .up-algo{ position: relative; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; width: 100%; min-height: 100%; padding: 10px 12px 11px 38px; text-align: left; font: inherit; color: var(--zx-text); background: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); cursor: pointer; transition: border-color var(--zx-dur, .14s), background var(--zx-dur, .14s); }
+            .up-algo::before{ content: ""; position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 1px solid var(--zx-border-strong); background: var(--zx-surface); }
+            .up-algo:hover{ border-color: var(--zx-text-muted); }
+            .up-algo[aria-checked="true"]{ border-color: var(--zx-primary); background: var(--zx-primary-soft); box-shadow: inset 0 0 0 1px var(--zx-primary); }
+            .up-algo[aria-checked="true"]::before{ border: 5px solid var(--zx-primary); background: var(--zx-on-primary); }
+            .up-algo:focus-visible{ outline: none; box-shadow: var(--zx-focus-ring); }
+            .up-algo__name{ display: block; font-weight: 700; line-height: 1.3; }
+            .up-algo__desc{ display: block; margin-top: 3px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.4; }
+            .up-algo[aria-checked="true"] .up-algo__desc{ color: var(--zx-text); }
+            .up-algonote{ margin-top: var(--zx-space-4); }
+            .up-hashkey{ margin-top: var(--zx-space-4); }
+            .up-feature + .up-feature{ border-top: 1px solid var(--zx-border); }
+            .up-feature > .zx-toggle-row{ border-bottom: 0; }
+            .up-feature:first-child > .zx-toggle-row{ padding-top: 0; }
+            .up-feature:last-child > .zx-toggle-row:last-child{ padding-bottom: 0; }
+            .up-sub{ padding: var(--zx-space-1) 0 var(--zx-space-4); }
+            .up-feature:last-child > .up-sub{ padding-bottom: 0; }
+
+            @media (max-width: 640px){
+                .up-algos__grid{ grid-template-columns: minmax(0, 1fr); }
+                .up-grid, .up-grid--3{ grid-template-columns: minmax(0, 1fr); }
+                .up-policy__row{ grid-template-columns: minmax(0, 1fr); gap: 2px; }
+                .up-row__ctl{ flex: 1 1 100%; margin-left: 0; justify-content: flex-start; }
+                .up-row__ctl .up-menu{ margin-left: auto; }
+                .up-stepper{ height: 38px; }
+                .up-stepper button{ width: 36px; height: 36px; }
+                .up-row__ctl .zx-btn--icon.zx-btn--sm{ width: 38px; min-height: 38px; }
+                .up-adv__set{ display: none; }
+                .up-actionbar{ padding: var(--zx-space-3) var(--zx-space-4); }
+                .up-actionbar .zx-btn--primary{ flex: 1 1 auto; }
+                .up-edit__foot .up-spacer{ display: none; }
+            }
+            @media (max-width: 499px){
+                .up-card, .up-form--cards .up-group{ padding: var(--zx-space-4); }
+                .up-row__main{ padding: var(--zx-space-3) var(--zx-space-4); }
+                .up-edit{ padding: var(--zx-space-4) var(--zx-space-4) 0; }
+                .up-edit__foot{ margin: 0 calc(-1 * var(--zx-space-4)); padding: var(--zx-space-3) var(--zx-space-4); }
+                .up-actionbar__note{ display: none; }
+            }
+            @media (prefers-reduced-motion: reduce){
+                .up-algo, details.up-adv > summary::after{ transition: none; }
             }
         </style>
     </head>
     <body>
-        <link rel="stylesheet" href="../darktheme.css">
+        <!-- The legacy dark theme sits in a cascade layer: its element rules (body.darkTheme p, span, a) must not
+             outrank the colours of the kit classes used in this view -->
+        <style>@import url("../darktheme.css") layer(legacy);</style>
         <script src="../script/darktheme.js"></script>
         <div class="ui container">
             <div class="ui small pointing secondary menu">
@@ -100,190 +232,462 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 <a class="item narrowpadding" data-tab="loadbalance">Load Balancing</a>
             </div>
             <div class="ui tab basic segment active" data-tab="upstreamlist">
-                <!-- A list of current existing upstream on this reverse proxy-->
-                <div id="upstreamTable">
-                    <div class="ui segment">
-                        <a><i class="ui loading spinner icon"></i> Loading</a>
+                <div class="up-col">
+                    <!-- The upstreams of this proxy rule: one row each, filled by initOriginList() -->
+                    <div class="up-summary">
+                        <p class="up-summary__text" id="upstreamSummary" role="status">Loading the upstreams of this site</p>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="upstreamAddShortcut" onclick="showUpstreamTab('newupstream', true);"><i class="plus icon" aria-hidden="true"></i> Add upstream</button>
+                    </div>
+                    <div id="upstreamNotice"></div>
+                    <div id="upstreamTable" class="up-list"></div>
+                    <div class="zx-callout zx-callout--info up-lbhint" role="note">
+                        <span class="zx-callout__icon" aria-hidden="true"><i class="balance scale icon"></i></span>
+                        <div class="zx-callout__body">
+                            <span class="zx-callout__title"><span>Requests are spread by:</span> <span id="algorithmSummary">Weighted random</span></span>
+                            A higher weight gets a larger share. Weight 0 means fallback only: used when no other upstream is available. The status refreshes every 5 seconds.
+                            <div class="up-callout-action"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showUpstreamTab('loadbalance');">Algorithm, health checks and retries</button></div>
+                        </div>
                     </div>
                 </div>
-                <div class="ui message">
-                    <i class="ui blue info circle icon"></i> <span id="algorithmSummary">Weighted random</span> is used for load-balancing. Set weight to 0 for fallback only.
-                    Status is refreshed every 5 seconds. Change the algorithm, health checks and retries in the <b>Load Balancing</b> tab.
-                 </div>
             </div>
             <div class="ui tab basic segment" data-tab="newupstream">
-                <!-- Web Form to create a new upstream -->
-                <h4 class="ui header">
-                    <i class="green add icon"></i>
-                    <div class="content">
-                        Add Upstream Server
-                        <div class="sub header">Create new load balance or fallback upstream origin</div>
-                    </div>
-                </h4>
-                <p style="margin-bottom: 0.4em;">Target IP address with port</p>
-                <div class="ui fluid small input">
-                    <input type="text" id="originURL" onchange="cleanProxyTargetValue(this);"><br>
-                </div>
-                <small>E.g. 192.168.0.101:8000 or example.com</small>
-                <br><br>
-                <div id="activateNewUpstream" class="ui toggle checkbox" style="display:inline-block;">
-                    <input type="checkbox" id="activateNewUpstreamCheckbox" style="margin-top: 0.4em;" checked>
-                    <label>Activate<br>
-                    <small>Enable this upstream for load balancing</small></label>
-                </div><br>
-                <div class="ui checkbox" style="margin-top: 1.2em;">
-                    <input type="checkbox" id="requireTLS">
-                    <label>Require TLS<br>
-                        <small>Proxy target require HTTPS connection</small></label>
-                </div><br>
-                <div class="ui checkbox" style="margin-top: 0.6em;">
-                    <input type="checkbox" id="skipTlsVerification">
-                     <label>Skip Verification<br>
-                        <small>Check this if proxy target is using self signed certificates</small></label>
-                </div><br>
-                 <div class="ui checkbox" style="margin-top: 0.4em;">
-                    <input type="checkbox" id="SkipWebSocketOriginCheck" checked>
-                    <label>Skip WebSocket Origin Check<br>
-                    <small>Check this to allow cross-origin websocket requests</small></label>
-                </div>
-                <div class="ui advanceUpstreamOptions advanceoptions accordion" style="margin-top:0.6em;">
-                    <div class="title">
-                        <i class="dropdown icon"></i>
-                        Advanced Options
-                    </div>
-                    <div class="content">
-                        <p>Max Concurrent Connections</p>
-                        <div class="ui mini fluid input" style="margin-top: -0.6em;">
-                            <input type="number" min="0" id="maxConn" value="0">
-                        </div>
-                        <small>Set to 0 for automatic</small>
-                        <br><br>
-                        <p>Response Timeout</p>
-                        <div class="ui mini right labeled fluid input" style="margin-top: -0.6em;">
-                            <input type="number" min="0" id="respTimeout" value="0">
-                            <div class="ui basic label">
-                                Seconds
-                            </div>
-                        </div>
-                        <small>Maximum waiting time for server header response, set to 0 for default</small>
-                        <br>
-                        <div class="ui checkbox" style="margin-top: 0.8em;">
-                            <input type="checkbox" id="useH2C">
-                            <label>HTTP/2 cleartext (h2c)<br><small>Speak HTTP/2 without TLS to this upstream. Needed for gRPC backends that listen on plain HTTP/2 (e.g. NetBird). Only applies when "Require TLS" is off. Leave off for ordinary web servers.</small></label>
-                        </div>
-                        <br>
-                        <div class="ui checkbox" style="margin-top: 0.8em;">
-                            <input type="checkbox" id="disableKeepAlive">
-                            <label>Disable connection reuse (keep-alive)<br><small>Open a new connection for every request. Use for upstreams that close the connection after each response (intermittent 502 / 521). Slower; leave off otherwise.</small></label>
-                        </div>
-                        <br>
+                <div class="up-col">
+                    <!-- The form is built by upstreamFormHTML(): the same groups as the edit view of a row -->
+                    <div id="newUpstreamForm"></div>
+                    <div class="up-actionbar">
+                        <button type="button" class="zx-btn zx-btn--primary" id="addUpstreamBtn" onclick="addNewUpstream();"><i class="plus icon" aria-hidden="true"></i> Add upstream</button>
+                        <button type="button" class="zx-btn zx-btn--ghost" onclick="resetNewUpstreamForm(true);">Clear form</button>
+                        <span class="up-actionbar__note" id="addUpstreamNote" aria-live="polite"></span>
                     </div>
                 </div>
-                <button class="ui basic button" style="margin-top:1.2em;" onclick="addNewUpstream();"><i class="ui green circle add icon"></i> Create</button>
             </div>
             <div class="ui tab basic segment" data-tab="loadbalance">
-                <h4 class="ui header">
-                    <i class="blue balance scale icon"></i>
-                    <div class="content">
-                        Load Balancing
-                        <div class="sub header">Applies to all upstreams of this proxy rule. Unchanged defaults keep the classic weighted random behavior.</div>
-                    </div>
-                </h4>
-                <p style="margin-bottom: 0.4em;">Algorithm</p>
-                <select class="ui fluid dropdown" id="lbAlgorithm" onchange="updateLbFieldVisibility();">
-                    <option value="random">Weighted random (default)</option>
-                    <option value="round_robin">Round robin</option>
-                    <option value="weighted_round_robin">Weighted round robin (smooth)</option>
-                    <option value="least_connections">Least connections</option>
-                    <option value="least_response_time">Least response time</option>
-                    <option value="power_of_two_choices">Power of two choices</option>
-                    <option value="ip_hash">IP hash (client IP stays on one upstream)</option>
-                    <option value="header_hash">Header hash (consistent)</option>
-                    <option value="cookie_hash">Cookie hash (consistent)</option>
-                </select>
-                <small id="lbAlgorithmHint" style="display:block; margin-top:0.4em;"></small>
-                <div id="lbHashKeyField" style="display:none; margin-top: 0.8em;">
-                    <p style="margin-bottom: 0.4em;">Header or cookie name</p>
-                    <div class="ui small fluid input"><input type="text" id="lbHashKey" placeholder="e.g. X-Tenant-Id or session_id"></div>
-                    <small>Requests without this header / cookie are spread randomly. Adding or removing an upstream only moves a small share of the keys.</small>
-                </div>
-                <div class="ui message" style="margin-top:1em;">
-                    <small>Sticky sessions (if enabled on the rule) always take precedence. Upstreams with weight 0 are only used when no other upstream is available.</small>
-                </div>
+                <div class="up-col" id="lbForm">
+                    <section class="up-card" aria-labelledby="lbPolicyTitle">
+                        <div class="up-group__head">
+                            <div class="up-card__headrow">
+                                <h3 class="up-group__title" id="lbPolicyTitle">What happens to a request</h3>
+                                <span class="zx-badge zx-badge--warn" id="lbDirtyBadge" hidden>Not saved yet</span>
+                            </div>
+                            <p class="up-group__desc">The policy for all upstreams of this site, as the settings below describe it right now.</p>
+                        </div>
+                        <dl class="up-policy" id="lbPolicy" aria-live="polite"></dl>
+                    </section>
 
-                <div class="ui divider"></div>
-                <div class="ui checkbox"><input type="checkbox" id="lbActiveEnabled" onchange="updateLbFieldVisibility();">
-                    <label>Active health checks<br><small>Zoraxy probes every upstream in the background and stops sending traffic to failing ones</small></label></div>
-                <div id="lbActiveFields" style="display:none; margin-top:0.8em;" class="ui form">
-                    <div class="two fields">
-                        <div class="field"><label>Mode</label>
-                            <select class="ui dropdown" id="lbAhcMode"><option value="http">HTTP request</option><option value="tcp">TCP connect only</option></select></div>
-                        <div class="field"><label>Method</label>
-                            <select class="ui dropdown" id="lbAhcMethod"><option>GET</option><option>HEAD</option><option>OPTIONS</option></select></div>
-                    </div>
-                    <div class="field"><label>Path</label><input type="text" id="lbAhcPath" placeholder="/"><small>Sent to every upstream, e.g. /healthz. TLS settings of the upstream are used.</small></div>
-                    <div class="three fields">
-                        <div class="field"><label>Interval (s)</label><input type="number" min="1" id="lbAhcInterval" placeholder="10"></div>
-                        <div class="field"><label>Timeout (s)</label><input type="number" min="1" id="lbAhcTimeout" placeholder="5"></div>
-                        <div class="field"><label>Expected status</label>
-                            <div class="two fields" style="margin:0;"><input type="number" id="lbAhcStatusMin" placeholder="200" style="width:50%;"><input type="number" id="lbAhcStatusMax" placeholder="399" style="width:50%;"></div></div>
-                    </div>
-                    <div class="field"><label>Response must contain (optional)</label><input type="text" id="lbAhcBody"></div>
-                    <div class="two fields">
-                        <div class="field"><label>Healthy after (rise)</label><input type="number" min="1" id="lbAhcRise" placeholder="2"><small>consecutive successes</small></div>
-                        <div class="field"><label>Unhealthy after (fall)</label><input type="number" min="1" id="lbAhcFall" placeholder="3"><small>consecutive failures</small></div>
-                    </div>
-                </div>
+                    <section class="up-card" aria-labelledby="lbAlgoTitle">
+                        <div class="up-group__head">
+                            <h3 class="up-group__title" id="lbAlgoTitle">Algorithm</h3>
+                            <p class="up-group__desc">How an upstream is picked for each request. The default, weighted random, suits most sites.</p>
+                        </div>
+                        <select id="lbAlgorithm" hidden aria-hidden="true" tabindex="-1" onchange="updateLbFieldVisibility();">
+                            <option value="random">Weighted random</option>
+                            <option value="round_robin">Round robin</option>
+                            <option value="weighted_round_robin">Weighted round robin</option>
+                            <option value="least_connections">Least connections</option>
+                            <option value="least_response_time">Least response time</option>
+                            <option value="power_of_two_choices">Power of two choices</option>
+                            <option value="ip_hash">IP hash</option>
+                            <option value="header_hash">Header hash</option>
+                            <option value="cookie_hash">Cookie hash</option>
+                        </select>
+                        <div class="up-algos" id="lbAlgoCards" role="radiogroup" aria-labelledby="lbAlgoTitle">
+                            <div class="up-algos__label">Spread evenly</div>
+                            <div class="up-algos__grid">
+                                <button type="button" class="up-algo" role="radio" aria-checked="true" data-value="random"><span class="up-algo__name">Weighted random</span><span class="up-algo__desc">A random pick, in proportion to the weights. The default.</span></button>
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="round_robin"><span class="up-algo__name">Round robin</span><span class="up-algo__desc">One upstream after the other, in order.</span></button>
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="weighted_round_robin"><span class="up-algo__name">Weighted round robin</span><span class="up-algo__desc">In order, a higher weight comes up more often.</span></button>
+                            </div>
+                            <div class="up-algos__label">Follow the load</div>
+                            <div class="up-algos__grid">
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="least_connections"><span class="up-algo__name">Least connections</span><span class="up-algo__desc">Fewest requests in progress. Good for long requests.</span></button>
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="least_response_time"><span class="up-algo__name">Least response time</span><span class="up-algo__desc">The fastest upstream that is the least busy.</span></button>
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="power_of_two_choices"><span class="up-algo__name">Power of two choices</span><span class="up-algo__desc">Two random picks, the less busy one wins.</span></button>
+                            </div>
+                            <div class="up-algos__label">Keep a client on one upstream</div>
+                            <div class="up-algos__grid">
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="ip_hash"><span class="up-algo__name">IP hash</span><span class="up-algo__desc">The same client IP always reaches the same upstream.</span></button>
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="header_hash"><span class="up-algo__name">Header hash</span><span class="up-algo__desc">The same header value always reaches the same upstream.</span></button>
+                                <button type="button" class="up-algo" role="radio" aria-checked="false" tabindex="-1" data-value="cookie_hash"><span class="up-algo__name">Cookie hash</span><span class="up-algo__desc">The same cookie value always reaches the same upstream.</span></button>
+                            </div>
+                        </div>
+                        <div id="lbHashKeyField" class="zx-field up-hashkey" style="display:none;">
+                            <div class="zx-field__label-row"><label class="zx-field__label" for="lbHashKey" id="lbHashKeyLabel">Header or cookie name</label></div>
+                            <input type="text" class="zx-input zx-mono" id="lbHashKey" placeholder="X-Tenant-Id" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="lbHashKeyHelp lbHashKeyErr" style="max-width: 24rem;">
+                            <p class="zx-error" id="lbHashKeyErr">Enter the name of the header or cookie to hash.</p>
+                            <p class="zx-help" id="lbHashKeyHelp">Requests without it are spread at random. Adding or removing an upstream only moves a small share of the keys.</p>
+                        </div>
+                        <p class="zx-help up-algonote">Sticky sessions, when enabled for the site, always take precedence. An upstream with weight 0 is only used when no other upstream is available.</p>
+                    </section>
 
-                <div class="ui divider"></div>
-                <div class="ui checkbox"><input type="checkbox" id="lbPassiveEnabled" onchange="updateLbFieldVisibility();">
-                    <label>Passive health checks<br><small>Temporarily remove an upstream that fails real requests (connection errors, timeouts, bad gateway)</small></label></div>
-                <div id="lbPassiveFields" style="display:none; margin-top:0.8em;" class="ui form">
-                    <div class="two fields">
-                        <div class="field"><label>Eject after failures</label><input type="number" min="1" id="lbPhcThreshold" placeholder="3"><small>consecutive</small></div>
-                        <div class="field"><label>Cooldown (s)</label><input type="number" min="1" id="lbPhcCooldown" placeholder="30"></div>
-                    </div>
-                    <div class="field"><label>Response codes counted as failure</label><input type="text" id="lbPhcStatuses" placeholder="502,503,504"></div>
-                </div>
+                    <section class="up-card" aria-labelledby="lbHealthTitle">
+                        <div class="up-group__head">
+                            <h3 class="up-group__title" id="lbHealthTitle">Health checks</h3>
+                            <p class="up-group__desc">Stop sending requests to an upstream that is down, and bring it back when it recovers. Both are off by default.</p>
+                        </div>
+                        <div class="up-feature">
+                            <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Active health checks</span><span class="zx-toggle-row__desc">Zoraxy probes every upstream in the background and stops sending traffic to failing ones.</span></span><input type="checkbox" class="zx-switch" role="switch" id="lbActiveEnabled" onchange="updateLbFieldVisibility();"></label>
+                            <div id="lbActiveFields" class="up-sub" style="display:none;">
+                                <div class="up-grid">
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcMode">Probe</label></div>
+                                        <select class="zx-select" id="lbAhcMode" onchange="updateLbFieldVisibility();"><option value="http">HTTP request</option><option value="tcp">TCP connect only</option></select></div>
+                                    <div class="zx-field lbHttpOnly"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcMethod">Method</label></div>
+                                        <select class="zx-select" id="lbAhcMethod"><option>GET</option><option>HEAD</option><option>OPTIONS</option></select></div>
+                                </div>
+                                <div class="zx-field lbHttpOnly"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcPath">Path</label></div>
+                                    <input type="text" class="zx-input zx-mono" id="lbAhcPath" placeholder="/" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="lbAhcPathHelp" style="max-width: 24rem;">
+                                    <p class="zx-help" id="lbAhcPathHelp">Requested from every upstream, for example /healthz. The TLS settings of the upstream are used.</p></div>
+                                <div class="up-grid">
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcInterval">Interval</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbAhcInterval" placeholder="10" inputmode="numeric"><span class="up-unit__u">seconds</span></div>
+                                        <p class="zx-help">Time between two probes of an upstream.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcTimeout">Timeout</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbAhcTimeout" placeholder="5" inputmode="numeric"><span class="up-unit__u">seconds</span></div>
+                                        <p class="zx-help">A probe without an answer after this time counts as failed.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcFall">Unhealthy after</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbAhcFall" placeholder="3" inputmode="numeric"><span class="up-unit__u">failures</span></div>
+                                        <p class="zx-help">Failed probes in a row before the upstream is taken out.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcRise">Healthy after</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbAhcRise" placeholder="2" inputmode="numeric"><span class="up-unit__u">passes</span></div>
+                                        <p class="zx-help">Successful probes in a row before it gets traffic again.</p></div>
+                                </div>
+                                <div class="up-grid lbHttpOnly">
+                                    <div class="zx-field" id="lbAhcStatusField"><div class="zx-field__label-row"><span class="zx-field__label" id="lbAhcStatusLabel">Expected status</span></div>
+                                        <div class="up-range" role="group" aria-labelledby="lbAhcStatusLabel"><input type="number" class="zx-input" id="lbAhcStatusMin" placeholder="200" aria-label="Lowest accepted status code" inputmode="numeric"><span aria-hidden="true">to</span><input type="number" class="zx-input" id="lbAhcStatusMax" placeholder="399" aria-label="Highest accepted status code" inputmode="numeric"></div>
+                                        <p class="zx-error">The lowest status must not be above the highest.</p>
+                                        <p class="zx-help">Any status code in this range passes.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcBody">Response must contain</label> <span class="zx-field__optional">optional</span></div>
+                                        <input type="text" class="zx-input" id="lbAhcBody" autocomplete="off" spellcheck="false">
+                                        <p class="zx-help">Text that has to be in the response body.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="up-feature">
+                            <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Passive health checks</span><span class="zx-toggle-row__desc">Temporarily remove an upstream that fails real requests (connection errors, timeouts, bad gateway).</span></span><input type="checkbox" class="zx-switch" role="switch" id="lbPassiveEnabled" onchange="updateLbFieldVisibility();"></label>
+                            <div id="lbPassiveFields" class="up-sub" style="display:none;">
+                                <div class="up-grid">
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbPhcThreshold">Eject after</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbPhcThreshold" placeholder="3" inputmode="numeric"><span class="up-unit__u">failures</span></div>
+                                        <p class="zx-help">Failed requests in a row.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbPhcCooldown">Cooldown</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbPhcCooldown" placeholder="30" inputmode="numeric"><span class="up-unit__u">seconds</span></div>
+                                        <p class="zx-help">How long an ejected upstream stays out.</p></div>
+                                </div>
+                                <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbPhcStatuses">Response codes counted as a failure</label></div>
+                                    <input type="text" class="zx-input zx-mono" id="lbPhcStatuses" placeholder="502,503,504" autocomplete="off" spellcheck="false" style="max-width: 24rem;">
+                                    <p class="zx-help">Comma separated. Connection errors and timeouts always count.</p></div>
+                            </div>
+                        </div>
+                        <div class="up-feature" id="lbSlowStartField" style="display:none;">
+                            <div class="up-sub" style="padding-top: var(--zx-space-4);">
+                                <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbSlowStart">Slow start</label></div>
+                                    <div class="up-unit"><input type="number" min="0" class="zx-input" id="lbSlowStart" placeholder="30" inputmode="numeric"><span class="up-unit__u">seconds</span></div>
+                                    <p class="zx-help">A recovered upstream gets its traffic share back gradually over this time. 0 = immediately.</p></div>
+                            </div>
+                        </div>
+                    </section>
 
-                <div id="lbSlowStartField" style="display:none; margin-top:1em;" class="ui form">
-                    <div class="field"><label>Slow start (s)</label><input type="number" min="0" id="lbSlowStart" placeholder="30">
-                        <small>A recovered upstream gets its traffic share back gradually over this time. 0 = immediately.</small></div>
-                </div>
+                    <section class="up-card" aria-labelledby="lbRetryTitle">
+                        <div class="up-group__head">
+                            <h3 class="up-group__title" id="lbRetryTitle">Retries</h3>
+                            <p class="up-group__desc">Give a failed request a second chance on another upstream instead of showing the error. Off by default.</p>
+                        </div>
+                        <div class="up-feature">
+                            <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Retry on another upstream</span><span class="zx-toggle-row__desc">Only when nothing was sent to the client yet. GET, HEAD and OPTIONS only unless you add methods below.</span></span><input type="checkbox" class="zx-switch" role="switch" id="lbRetryEnabled" onchange="updateLbFieldVisibility();"></label>
+                            <div id="lbRetryFields" class="up-sub" style="display:none;">
+                                <div class="up-grid">
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbRetryMax">Retries per request</label></div>
+                                        <input type="number" min="1" max="10" class="zx-input up-num" id="lbRetryMax" placeholder="1" inputmode="numeric">
+                                        <p class="zx-help">1 to 10.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbRetryBody">Largest buffered body</label></div>
+                                        <div class="up-unit"><input type="number" min="1" class="zx-input" id="lbRetryBody" placeholder="1024" inputmode="numeric"><span class="up-unit__u">KB</span></div>
+                                        <p class="zx-help">Larger or streamed bodies are never retried.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbRetryStatuses">Also retry on response codes</label></div>
+                                        <input type="text" class="zx-input zx-mono" id="lbRetryStatuses" placeholder="502,503" autocomplete="off" spellcheck="false">
+                                        <p class="zx-help">Empty = only connection errors and timeouts.</p></div>
+                                    <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbRetryMethods">Also retry these methods</label></div>
+                                        <input type="text" class="zx-input zx-mono" id="lbRetryMethods" placeholder="POST" autocomplete="off" spellcheck="false">
+                                        <p class="zx-help">Only for requests that are safe to run twice.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-                <div class="ui divider"></div>
-                <div class="ui form">
-                    <div class="field">
-                        <label>Client rules (route clients to upstream groups)</label>
-                        <textarea id="lbClientRules" rows="4" style="font-family:monospace;" placeholder="office | 10.0.0.0/8, 192.168.0.0/16 | | 10.0.0.5:8080 | deny&#10;eu | | DE, FR, NL | eu1.internal:8080, eu2.internal:8080 | any"></textarea>
-                        <small>One rule per line, first match wins: <code>name | client CIDRs | countries (GeoIP) | upstream addresses | fallback</code>. The algorithm above then runs inside the group. Fallback <code>any</code> (default) uses all upstreams if the group is down, <code>deny</code> fails the request. Clients matching no rule use all upstreams.</small>
+                    <details class="up-card up-adv" id="lbClientRulesBox">
+                        <summary>
+                            <span class="up-adv__head">
+                                <span class="up-group__title" style="display:block;">Client rules</span>
+                                <span class="up-group__desc" style="display:block;">Advanced: send clients from certain networks or countries to a group of upstreams.</span>
+                            </span>
+                            <span class="up-adv__set" id="lbClientRulesSet"></span>
+                        </summary>
+                        <div class="up-adv__body">
+                            <div class="zx-field">
+                                <div class="zx-field__label-row"><label class="zx-field__label" for="lbClientRules">Rules, one per line</label></div>
+                                <textarea id="lbClientRules" class="zx-textarea zx-mono" rows="5" spellcheck="false" aria-describedby="lbClientRulesHelp" placeholder="office | 10.0.0.0/8, 192.168.0.0/16 | | 10.0.0.5:8080 | deny&#10;eu | | DE, FR, NL | eu1.internal:8080, eu2.internal:8080 | any"></textarea>
+                                <p class="zx-help" id="lbClientRulesHelp">The first matching line wins: <code>name | client CIDRs | countries (GeoIP) | upstream addresses | fallback</code>. The algorithm above then runs inside the group. Fallback <code>any</code> (default) uses all upstreams if the group is down, <code>deny</code> fails the request. Clients matching no rule use all upstreams.</p>
+                            </div>
+                        </div>
+                    </details>
+
+                    <div class="up-actionbar">
+                        <button type="button" class="zx-btn zx-btn--primary" id="lbSaveBtn" onclick="saveLoadBalanceSettings();">Save load balancing</button>
+                        <button type="button" class="zx-btn zx-btn--ghost" id="lbDiscardBtn" onclick="loadLoadBalanceSettings();" disabled>Discard changes</button>
+                        <span class="up-actionbar__note" id="lbSaveNote" aria-live="polite"></span>
                     </div>
                 </div>
-                <div class="ui divider"></div>
-                <div class="ui checkbox"><input type="checkbox" id="lbRetryEnabled" onchange="updateLbFieldVisibility();">
-                    <label>Retry on another upstream<br><small>Only when nothing was sent to the client yet. GET, HEAD and OPTIONS only unless you add methods below.</small></label></div>
-                <div id="lbRetryFields" style="display:none; margin-top:0.8em;" class="ui form">
-                    <div class="two fields">
-                        <div class="field"><label>Max retries</label><input type="number" min="1" max="10" id="lbRetryMax" placeholder="1"></div>
-                        <div class="field"><label>Max buffered body (KB)</label><input type="number" min="1" id="lbRetryBody" placeholder="1024"><small>Larger or streamed bodies are never retried</small></div>
-                    </div>
-                    <div class="field"><label>Also retry on response codes</label><input type="text" id="lbRetryStatuses" placeholder="e.g. 502,503"><small>Empty = only connection errors and timeouts</small></div>
-                    <div class="field"><label>Also retry these methods</label><input type="text" id="lbRetryMethods" placeholder="e.g. POST"><small>Only enable for requests that are safe to run twice</small></div>
-                </div>
-
-                <br><br>
-                <button class="ui basic button" onclick="saveLoadBalanceSettings();"><i class="ui green save icon"></i> Save</button>
             </div>
-        </div>
-        <br><br><br><br>
-
         </div>
         <script>
             let origins = [];
             let editingEndpoint = {};
             let upstreamStates = {};
-            $('.menu .item').tab();
-           
+            let lastUpstreamList = {ActiveOrigins: [], InactiveOrigins: []};
+
+            // i18n.js provides the globals t() and tf(); plain English when it is not loaded
+            if (typeof window.t !== "function"){ window.t = function(s){ return s; }; }
+            if (typeof window.tf !== "function"){
+                window.tf = function(s){
+                    let args = Array.prototype.slice.call(arguments, 1);
+                    return String(s).replace(/\{(\d+)\}/g, function(m, n){ return args[+n] !== undefined ? args[+n] : m; });
+                };
+            }
+            const esc = zxEsc;
+
+            //Message of the admin page (toast); the kit toast when this view is opened on its own
+            function notify(message, ok){
+                try{
+                    if (window.parent !== window && typeof window.parent.msgbox === "function"){
+                        window.parent.msgbox(message, ok !== false);
+                        return;
+                    }
+                }catch(ex){ /* not inside the admin page */ }
+                if (window.ZxUI && ZxUI.toast){
+                    ZxUI.toast(message, {type: ok === false ? "error" : "success"});
+                }
+            }
+
+            function setBusy(btn, on){
+                if (btn && window.ZxUI && ZxUI.setLoading){ ZxUI.setLoading(btn, on); }
+            }
+
+            /* Tabs: Fomantic switches them; the items are made reachable by keyboard here */
+            function syncUpstreamTabState(){
+                $('.ui.menu .item[data-tab]').each(function(){
+                    this.setAttribute("aria-selected", this.classList.contains("active") ? "true" : "false");
+                });
+            }
+            $('.menu .item').tab({onVisible: syncUpstreamTabState});
+            $('.ui.pointing.secondary.menu').attr("role", "tablist");
+            $('.ui.tab[data-tab]').attr("role", "tabpanel");
+            $('.ui.menu .item[data-tab]').attr({role: "tab", tabindex: "0"}).on("keydown", function(ev){
+                if (ev.key === "Enter" || ev.key === " "){
+                    ev.preventDefault();
+                    $(this).trigger("click");
+                }
+            });
+            $('.ui.menu .item[data-tab]').on("click", function(){ setTimeout(syncUpstreamTabState, 0); });
+            syncUpstreamTabState();
+
+            function showUpstreamTab(name, focusAddress){
+                $('.ui.menu .item[data-tab="' + name + '"]').trigger("click");
+                window.scrollTo(0, 0);
+                if (focusAddress){
+                    setTimeout(function(){ $("#originURL").trigger("focus"); }, 60);
+                }
+            }
+
+            /*
+                The upstream form: the same three groups in the Add tab (cards, fixed ids) and inside a row that is
+                being edited (flat sections). Every control keeps the class the save code reads.
+            */
+            const ADD_IDS = {origin: "originURL", tls: "requireTLS", skip: "skipTlsVerification", ws: "SkipWebSocketOriginCheck",
+                active: "activateNewUpstreamCheckbox", maxConn: "maxConn", respTimeout: "respTimeout", h2c: "useH2C", keepalive: "disableKeepAlive"};
+
+            function upstreamFormHTML(u, uid, isNew){
+                u = u || {};
+                const id = function(n){ return (isNew && ADD_IDS[n]) ? ADD_IDS[n] : "up-" + uid + "-" + n; };
+                const toggle = function(n, cls, on, title, desc, rowCls){
+                    return `<label class="zx-toggle-row ${rowCls || ""}"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">${esc(title)}</span><span class="zx-toggle-row__desc">${esc(desc)}</span></span><input type="checkbox" class="zx-switch ${cls}" role="switch" id="${id(n)}" ${on ? "checked" : ""}></label>`;
+                };
+                const num = function(n, cls, value, label, help, unit){
+                    let input = `<input type="number" min="0" inputmode="numeric" class="zx-input ${unit ? "" : "up-num"} ${cls}" id="${id(n)}" value="${esc(value)}" aria-describedby="${id(n)}-help">`;
+                    if (unit){ input = `<div class="up-unit">${input}<span class="up-unit__u">${esc(unit)}</span></div>`; }
+                    return `<div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="${id(n)}">${esc(label)}</label></div>${input}<p class="zx-help" id="${id(n)}-help">${esc(help)}</p></div>`;
+                };
+                let weight = (u.Weight === undefined || u.Weight === null) ? 1 : u.Weight;
+                let pp = parseInt(u.ProxyProtocol) || 0;
+
+                return `<div class="up-form ${isNew ? "up-form--cards" : "up-form--flat"}" data-formid="${uid}">
+                    <section class="up-group">
+                        <div class="up-group__head">
+                            <h3 class="up-group__title">${esc(t("Where to send traffic"))}</h3>
+                            <p class="up-group__desc">${esc(t("The server that answers for this site. Zoraxy forwards the requests of visitors to this address."))}</p>
+                        </div>
+                        <div class="zx-field upstreamOriginField">
+                            <div class="zx-field__label-row"><label class="zx-field__label" for="${id("origin")}">${esc(t("Address"))}</label></div>
+                            <div class="up-origin"><span class="up-origin__scheme" aria-hidden="true" data-i18n-skip>http://</span><input type="text" class="zx-input zx-mono newOrigin" id="${id("origin")}" value="${esc(u.OriginIpOrDomain || "")}" placeholder="192.168.0.101:8000" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="${id("origin")}-help ${id("origin")}-err" data-i18n-skip></div>
+                            <p class="zx-error" id="${id("origin")}-err">${esc(t("Enter the address of the upstream, for example 192.168.0.101:8000."))}</p>
+                            <p class="zx-help" id="${id("origin")}-help">${esc(t("IP address or host name, with the port. Paste a full URL and TLS is set from http:// or https://."))}</p>
+                        </div>
+                        <div class="up-toggles">
+                            ${toggle("tls", "reqTLSCheckbox", u.RequireTLS, t("Require TLS"), t("Connect to this upstream with HTTPS. Detected when you leave the address field."))}
+                            ${toggle("skip", "skipVerificationCheckbox", u.SkipCertValidations, t("Skip certificate verification"), t("Not recommended: any certificate is accepted, also a forged one. Ignored while a CA bundle or a pin is set."), "up-tlsonly")}
+                        </div>
+                        <div class="zx-callout zx-callout--warn up-inline-warn up-skipwarn" role="note" hidden>
+                            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                            <div class="zx-callout__body">${esc(t("Certificate checking is off for this upstream. For a self-signed or private certificate, paste its CA or pin its key under Advanced connection instead: the connection stays verified."))}</div>
+                        </div>
+                    </section>
+                    <section class="up-group">
+                        <div class="up-group__head">
+                            <h3 class="up-group__title">${esc(t("Behaviour"))}</h3>
+                            <p class="up-group__desc">${esc(t("How much traffic this upstream gets, and its limits. The defaults suit most servers."))}</p>
+                        </div>
+                        <div class="up-grid">
+                            ${num("weight", "upWeight", weight, t("Weight"), t("Share of the traffic compared with the other upstreams. 0 = fallback only."))}
+                            ${num("maxInFlight", "maxInFlight", u.MaxInFlight || 0, t("Max in-flight requests"), t("No new requests while this many are being served; clients get 503 when all upstreams are full. 0 = unlimited."))}
+                            ${num("maxConn", "maxConn", u.MaxConn || 0, t("Max concurrent connections"), t("0 = automatic."))}
+                            ${num("respTimeout", "respTimeout", (u.RespTimeout || 0) / 1000, t("Response timeout"), t("How long to wait for the response headers. 0 = default."), t("seconds"))}
+                        </div>
+                        <div class="up-toggles">
+                            ${isNew ? toggle("active", "activateCheckbox", true, t("Send traffic right away"), t("Off: the upstream is saved, but gets no requests until you switch it on in the list.")) : ""}
+                            ${toggle("draining", "drainingCheckbox", u.Draining, t("Draining"), t("No new requests or sticky sessions; requests in flight finish normally. Use before maintenance."))}
+                            ${toggle("ws", "SkipWebSocketOriginCheck", isNew ? true : u.SkipWebSocketOriginCheck, t("Skip WebSocket origin check"), t("Allow WebSocket connections that come from another origin."))}
+                            ${toggle("h2c", "h2cCheckbox", u.H2C, t("HTTP/2 without TLS (h2c)"), t("For gRPC backends on plain HTTP/2, such as NetBird. Only applies while TLS is off. Leave off for ordinary web servers."))}
+                            ${toggle("keepalive", "disableKeepAliveCheckbox", u.DisableKeepAlive, t("Disable connection reuse"), t("A new connection for every request. For upstreams that close the connection after each response (intermittent 502 or 521). Slower."))}
+                        </div>
+                    </section>
+                    <details class="up-group up-adv advanceUpstreamOptions">
+                        <summary class="title">
+                            <span class="up-adv__head">
+                                <span class="up-group__title" style="display:block;">${esc(t("Advanced connection"))}</span>
+                                <span class="up-group__desc" style="display:block;">${esc(t("PROXY protocol, a client certificate (mTLS) and trust for a private CA. Most upstreams need none of it."))}</span>
+                            </span>
+                            <span class="up-adv__set"></span>
+                        </summary>
+                        <div class="up-adv__body content">
+                            <div class="zx-field">
+                                <div class="zx-field__label-row"><label class="zx-field__label" for="${id("pp")}">${esc(t("PROXY protocol"))}</label></div>
+                                <select class="zx-select proxyProtocolSelect" id="${id("pp")}" aria-describedby="${id("pp")}-help">
+                                    <option value="0" ${pp == 0 ? "selected" : ""}>${esc(t("Off"))}</option>
+                                    <option value="1" ${pp == 1 ? "selected" : ""}>${esc(t("Version 1 (text)"))}</option>
+                                    <option value="2" ${pp == 2 ? "selected" : ""}>${esc(t("Version 2 (binary)"))}</option>
+                                </select>
+                                <p class="zx-help" id="${id("pp")}-help">${esc(t("Sends a PROXY header with the address of the connecting client at the start of every connection (HAProxy, nginx accept-proxy, Traefik). Needs a new connection per request, so it is slower. Not used for WebSocket upgrades."))}</p>
+                            </div>
+                            <p class="up-needtls" hidden><i class="lock icon" aria-hidden="true"></i>${esc(t("The settings below only apply with TLS: switch on \"Require TLS\" first."))}</p>
+                            <div class="zx-field">
+                                <div class="zx-field__label-row"><label class="zx-field__label" for="${id("cc")}">${esc(t("Client certificate (mTLS)"))}</label> <span class="zx-field__optional">${esc(t("optional"))}</span></div>
+                                <input type="text" class="zx-input upstreamClientCert" id="${id("cc")}" style="max-width: 24rem;" placeholder="${esc(t("name of a certificate in the certificate store"))}" value="${esc(u.ClientCertName || "")}" autocomplete="off" spellcheck="false" aria-describedby="${id("cc")}-help">
+                                <p class="zx-help" id="${id("cc")}-help">${esc(t("Presented when this HTTPS upstream asks for a client certificate. The name of a certificate pair (name.pem and name.key) from the TLS / SSL certificates page."))}</p>
+                            </div>
+                            <div class="upstreamTrustBox">
+                                <h4 class="up-subhead">${esc(t("Upstream certificate trust"))}</h4>
+                                <p class="up-subdesc">${esc(t("For an upstream with a private or self-signed certificate: the safe alternative to skipping verification. The certificate chain and the host name are still checked."))}</p>
+                                <div class="zx-field">
+                                    <div class="zx-field__label-row"><label class="zx-field__label" for="${id("ca")}">${esc(t("CA certificates (PEM)"))}</label></div>
+                                    <textarea class="zx-textarea zx-mono upstreamCABundle" id="${id("ca")}" rows="4" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----" aria-describedby="${id("ca")}-help">${esc(u.TLSCABundlePEM || "")}</textarea>
+                                    <p class="zx-help" id="${id("ca")}-help">${esc(t("The CA that signed the certificate of this upstream. It replaces the system CAs for this upstream only."))}</p>
+                                </div>
+                                <div class="zx-field">
+                                    <div class="zx-field__label-row"><label class="zx-field__label" for="${id("pins")}">${esc(t("Public key pins (SHA-256)"))}</label> <span class="zx-field__optional">${esc(t("optional"))}</span></div>
+                                    <textarea class="zx-textarea zx-mono upstreamPins" id="${id("pins")}" rows="2" spellcheck="false" style="min-height: 3.6em;" placeholder="${esc(t("One per line, hex or base64"))}" aria-describedby="${id("pins")}-help">${esc((u.TLSPinsSHA256 || []).join("\n"))}</textarea>
+                                    <p class="zx-help" id="${id("pins")}-help">${esc(t("A pin must match the public key of one certificate in the verified chain (the server certificate or its CA). It adds to the chain check, it never replaces it."))}</p>
+                                </div>
+                                <div class="zx-btn-row">
+                                    <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="inspectUpstreamTrust(this);"><i class="search icon" aria-hidden="true"></i> ${esc(t("Check and show fingerprints"))}</button>
+                                    <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="testUpstreamTrust(this);"><i class="plug icon" aria-hidden="true"></i> ${esc(t("Test connection with these settings"))}</button>
+                                </div>
+                                <div class="upstreamTrustResult" role="status"></div>
+                            </div>
+                        </div>
+                    </details>
+                </div>`;
+            }
+
+            //What a form shows depends on its own values: scheme prefix, TLS-only rows, the "what is set" line of the folded group
+            function syncUpstreamForm(form){
+                form = $(form);
+                if (form.length == 0){
+                    return;
+                }
+                let tls = form.find(".reqTLSCheckbox")[0].checked;
+                let skip = form.find(".skipVerificationCheckbox")[0].checked;
+                form.find(".up-origin__scheme").text(tls ? "https://" : "http://");
+                form.find(".up-tlsonly").prop("hidden", !tls);
+                form.find(".up-skipwarn").prop("hidden", !(tls && skip));
+                let pp = parseInt(form.find(".proxyProtocolSelect").val()) || 0;
+                let hasCert = form.find(".upstreamClientCert").val().trim() != "";
+                let hasCA = form.find(".upstreamCABundle").val().trim() != "";
+                let pins = splitTrustPins(form.find(".upstreamPins").val()).length;
+                form.find(".up-needtls").prop("hidden", tls || !(hasCert || hasCA || pins));
+                let set = [];
+                if (pp){ set.push(tf("PROXY v{0}", pp)); }
+                if (hasCert){ set.push(t("Client certificate")); }
+                if (hasCA){ set.push(t("Private CA")); }
+                if (pins){ set.push(pins == 1 ? t("1 pinned key") : tf("{0} pinned keys", pins)); }
+                form.find(".up-adv__set").html(set.length ? set.map(function(s){ return `<span class="zx-badge zx-badge--info">${esc(s)}</span>`; }).join("") : esc(t("Nothing set")));
+                if (form.closest("#newUpstreamForm").length){
+                    updateAddUpstreamNote();
+                }
+            }
+
+            $(document).on("input change", ".up-form :input", function(){
+                if ($(this).hasClass("newOrigin")){
+                    $(this).closest(".zx-field").removeClass("is-invalid");
+                    $(this).removeAttr("aria-invalid");
+                }
+                syncUpstreamForm($(this).closest(".up-form"));
+            });
+            //Require TLS set by hand wins over the detection, until the address is typed again
+            $(document).on("input", ".up-form .newOrigin", function(){
+                $(this).closest(".up-form").data("tlsUserSet", false);
+            });
+            $(document).on("change", ".up-form .reqTLSCheckbox", function(){
+                $(this).closest(".up-form").data("tlsUserSet", true);
+            });
+            $(document).on("change", ".up-form .newOrigin", function(){
+                cleanProxyTargetValue(this);
+            });
+
+            function markOriginInvalid(form){
+                let input = $(form).find(".newOrigin");
+                input.attr("aria-invalid", "true").closest(".zx-field").addClass("is-invalid");
+                input.trigger("focus");
+            }
+
+            /* The list */
+            function showUpstreamListError(message){
+                $("#upstreamTable").empty();
+                $(".up-summary, .up-lbhint").prop("hidden", true);
+                $("#upstreamNotice").html(`<div class="zx-callout zx-callout--danger" role="alert">
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="times circle icon"></i></span>
+                    <div class="zx-callout__body"><span class="zx-callout__title">${esc(t("The upstreams of this site could not be loaded"))}</span><span data-i18n-skip>${esc(message || "")}</span>
+                        <div class="up-callout-action"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="initOriginList();">${esc(t("Try again"))}</button></div>
+                    </div></div>`);
+            }
+
+            function updateUpstreamSummary(){
+                let active = lastUpstreamList.ActiveOrigins || [], inactive = lastUpstreamList.InactiveOrigins || [];
+                let total = active.length + inactive.length;
+                if (total == 0){
+                    $("#upstreamSummary").text(t("No upstreams"));
+                    return;
+                }
+                let healthy = 0, bad = 0;
+                active.forEach(function(u){
+                    let st = upstreamStates[u.OriginIpOrDomain];
+                    if (!st){ return; }
+                    if (st.State == "healthy" || st.State == "slow_start"){ healthy++; }
+                    else if (st.State == "unhealthy" || st.State == "ejected"){ bad++; }
+                });
+                let parts = [`<b>${esc(total == 1 ? t("1 upstream") : tf("{0} upstreams", total))}</b>`];
+                parts.push(esc(tf("{0} active", active.length)));
+                if (healthy + bad > 0){ parts.push(esc(tf("{0} healthy", healthy))); }
+                if (bad > 0){ parts.push(`<span class="up-summary__bad">${esc(tf("{0} not healthy", bad))}</span>`); }
+                if (inactive.length > 0){ parts.push(esc(tf("{0} switched off", inactive.length))); }
+                $("#upstreamSummary").html(parts.join(" &middot; "));
+            }
 
             function initOriginList(){
                 $.ajax({
@@ -293,24 +697,39 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         "type":"host",
                         "ep": editingEndpoint.ep
                     },
+                    error: function(){
+                        showUpstreamListError(t("The server did not answer. Check the connection and try again."));
+                    },
                     success: function(data){
                         if (data.error != undefined){
                             //This endpoint not exists?
-                            alert(data.error);
+                            showUpstreamListError(data.error);
                             return;
                         }else{
+                            data.ActiveOrigins = data.ActiveOrigins || [];
+                            data.InactiveOrigins = data.InactiveOrigins || [];
+                            lastUpstreamList = data;
                             upstreamStates = data.States || {};
-                            $("#upstreamTable").html("");
+                            $("#upstreamTable").html("").removeClass("is-editing");
+                            $("#upstreamNotice").html("");
+                            let totalUpstreams = data.ActiveOrigins.length + data.InactiveOrigins.length;
 
-                            if (data.ActiveOrigins.length == 0){
-                                //There is no upstream for this proxy rule
-                                $("#upstreamTable").append(`<tr>
-                                    <td colspan="2"><b><i class="ui yellow exclamation triangle icon"></i> No Active Upstream Origin</b><br>
-                                        This HTTP proxy rule will always return Error 521 when requested. To fix this, add or enable a upstream origin to this proxy endpoint.
-                                        <div class="ui divider"></div>
-                                    </td>
-                                </tr>`);
+                            if (totalUpstreams == 0){
+                                //Nothing to send traffic to: say what an upstream is and offer the way out
+                                $("#upstreamNotice").html(`<div class="up-card"><div class="zx-empty">
+                                    <div class="zx-empty__icon" aria-hidden="true"><i class="server icon"></i></div>
+                                    <h3 class="zx-empty__title">${esc(t("No upstream yet"))}</h3>
+                                    <p class="zx-empty__text">${esc(t("An upstream is the server that answers for this site. Until you add one, visitors get error 521. Add a second one later to share the load or as a fallback."))}</p>
+                                    <button type="button" class="zx-btn zx-btn--primary" onclick="showUpstreamTab('newupstream', true);"><i class="plus icon" aria-hidden="true"></i> ${esc(t("Add an upstream"))}</button>
+                                </div></div>`);
+                            }else if (data.ActiveOrigins.length == 0){
+                                //There is no active upstream for this proxy rule
+                                $("#upstreamNotice").html(`<div class="zx-callout zx-callout--danger" role="alert">
+                                    <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                                    <div class="zx-callout__body"><span class="zx-callout__title">${esc(t("No active upstream"))}</span>${esc(t("Visitors of this site get error 521. Switch an upstream on below, or add a new one."))}</div></div>`);
                             }
+                            //The empty state speaks for itself: no summary line, no shortcut, no balancing hint
+                            $(".up-summary, .up-lbhint").prop("hidden", totalUpstreams == 0);
 
                             data.ActiveOrigins.forEach(upstream => {
                                 renderUpstreamEntryToTable(upstream, true);
@@ -320,12 +739,17 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                                 renderUpstreamEntryToTable(upstream, false);
                             });
 
-                            $(".advanceUpstreamOptions.accordion").accordion();
+                            $("#upstreamTable .up-form").each(function(){ syncUpstreamForm(this); });
 
-                            let totalUpstreams = data.ActiveOrigins.length + data.InactiveOrigins.length;
                             if (totalUpstreams == 1){
-                                $(".lowPriorityButton").addClass('disabled');
+                                //The only upstream cannot become a fallback
+                                $(".lowPriorityButton").each(function(){
+                                    if (parseInt($(this).attr("data-weight")) <= 1){
+                                        $(this).prop("disabled", true).attr("title", t("Add a second upstream before making this one a fallback"));
+                                    }
+                                });
                             }
+                            updateUpstreamSummary();
 
                             if (parent && parent.document.getElementById("httpProxyList") != null){
                                 //Also update the parent display
@@ -351,165 +775,159 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                                 }
                                 $(element).html(upstreams);
                             }
-
-                            $(".ui.checkbox").checkbox();
                         }
                     }
                 })
             }
-            
+
+            //The quiet facts of an upstream, as badges under its address
+            function upstreamChipsHTML(upstream, isActive, st){
+                let chips = [];
+                let chip = function(text, kind, icon){
+                    chips.push(`<span class="zx-badge ${kind ? "zx-badge--" + kind : ""}">${icon ? `<i class="${icon} icon" aria-hidden="true"></i>` : ""}${esc(text)}</span>`);
+                };
+                let trusted = (upstream.TLSCABundlePEM || "") != "" || (upstream.TLSPinsSHA256 || []).length > 0;
+                if (isActive && upstream.Weight == 0){ chip(t("Fallback only"), "info"); }
+                if (upstream.Draining && !(isActive && st && st.State == "draining")){ chip(t("Draining"), "warn"); }
+                if (upstream.RequireTLS){
+                    if (upstream.SkipCertValidations && !trusted){ chip(t("TLS, not verified"), "warn", "lock open"); }
+                    else { chip(t("TLS"), "", "lock"); }
+                }
+                if (trusted){ chip((upstream.TLSCABundlePEM || "") != "" ? t("Private CA") : t("Pinned key")); }
+                if (upstream.ClientCertName){ chip(t("mTLS")); }
+                if (upstream.H2C && !upstream.RequireTLS){ chip(t("h2c")); }
+                if (upstream.ProxyProtocol){ chip(tf("PROXY v{0}", upstream.ProxyProtocol)); }
+                if (upstream.MaxInFlight > 0){ chip(tf("Max {0} in flight", upstream.MaxInFlight)); }
+                if (upstream.DisableKeepAlive){ chip(t("No keep-alive")); }
+                return chips.join("");
+            }
+
             function renderUpstreamEntryToTable(upstream, isActive){
                 function newUID(){return"00000000-0000-4000-8000-000000000000".replace(/0/g,function(){return(0|Math.random()*16).toString(16)})};
-                let tlsIcon = "";
-                if (upstream.RequireTLS){
-                    tlsIcon = `<i class="green lock icon" title="TLS Mode"></i>`;
-                    if (upstream.SkipCertValidations){
-                        tlsIcon = `<i class="yellow lock icon" title="TLS/SSL mode without verification"></i>`
-                    }
-                }
-
-                //Priority Arrows 
-                let downArrowClass = "";
-                if (upstream.Weight == 0 ){
-                    //Cannot go any lower
-                    downArrowClass = "disabled";
-                }
                 let url = `${upstream.RequireTLS?"https://":"http://"}${upstream.OriginIpOrDomain}`
                 let payload = encodeURIComponent(JSON.stringify(upstream));
                 let domUID = newUID();
+                let name = upstream.OriginIpOrDomain;
+                let weight = parseInt(upstream.Weight) || 0;
+                let st = upstreamStates[upstream.OriginIpOrDomain];
+                let stateHTML = isActive
+                    ? `<span class="upstreamState" data-origin="${encodeURIComponent(name)}">${renderUpstreamStateHTML(st)}</span>`
+                    : `<span class="zx-badge zx-badge--dot">${esc(t("Off"))}</span>`;
+                let liveHTML = isActive
+                    ? `<span class="up-row__live upstreamLive" data-origin="${encodeURIComponent(name)}">${renderUpstreamLiveHTML(st)}</span>`
+                    : `<span class="up-row__live">${esc(t("Gets no requests"))}</span>`;
 
                 //Timeout values are stored as ms in the backend
-                $("#upstreamTable").append(`<div class="ui upstreamEntry ${isActive?"":"inactive"} basic segment" data-domid="${domUID}" data-payload="${payload}" data-priority="${upstream.Priority}">
-                    <h4 class="ui header">
-                        <div class="ui toggle checkbox" style="display:inline-block;">
-                            <input type="checkbox" class="enableState" name="enabled" style="margin-top: 0.4em;" onchange="saveUpstreamUpdate('${domUID}');" ${isActive?"checked":""}>
-                            <label></label>
+                $("#upstreamTable").append(`<article class="upstreamEntry up-row ${isActive?"":"inactive"}" data-domid="${domUID}" data-payload="${payload}" data-priority="${esc(upstream.Priority)}">
+                    <div class="up-row__main">
+                        <div class="up-row__id">
+                            <div class="up-row__title"><span class="up-row__addr" title="${esc(name)}" data-i18n-skip>${esc(name)}</span>${stateHTML}</div>
+                            <div class="up-row__meta">${liveHTML}${upstreamChipsHTML(upstream, isActive, st)}</div>
                         </div>
-                        <div class="content">
-                        <a href="${zxEsc(url)}" target="_blank" rel="noopener" class="upstreamLink">${zxEsc(upstream.OriginIpOrDomain)} ${tlsIcon}</a>
-                            <div class="sub header">${isActive?(upstream.Weight==0?"Fallback Only":"Active"):"Inactive"} | Weight: ${upstream.Weight}x
-                                ${isActive?` | <span class="upstreamState" data-origin="${encodeURIComponent(upstream.OriginIpOrDomain)}">${renderUpstreamStateHTML(upstreamStates[upstream.OriginIpOrDomain])}</span>`:""}</div>
-                        </div>
-                    </h4>
-                    <div class="advanceOptions" style="display:none;">
-                        <div class="upstreamOriginField">
-                            <p>New upstream origin IP address or domain</p>
-                            <div class="ui small fluid input" style="margin-top: -0.6em;">
-                                <input type="text" class="newOrigin" aria-label="New upstream origin" value="${zxEsc(upstream.OriginIpOrDomain)}" onchange="handleAutoOriginClean('${domUID}');">
+                        <div class="up-row__ctl">
+                            <div class="up-stepper" role="group" aria-label="${esc(t("Weight"))}">
+                                <button type="button" class="lowPriorityButton" data-weight="${weight}" ${weight == 0 ? "disabled" : ""} title="${esc(t("Reduce weight"))}" aria-label="${esc(t("Reduce weight"))}" onclick="decreaseUpstreamWeight('${domUID}');">&minus;</button>
+                                <span class="up-stepper__val">${esc(t("Weight"))} <b data-i18n-skip>${weight}</b></span>
+                                <button type="button" class="highPriorityButton" title="${esc(t("Increase weight"))}" aria-label="${esc(t("Increase weight"))}" onclick="increaseUpstreamWeight('${domUID}');">+</button>
                             </div>
-                            <small>e.g. 192.168.0.101:8000 or example.com</small>
-                        </div>
-                        <div class="ui divider"></div>
-                        <div class="ui checkbox">
-                            <input type="checkbox" class="reqTLSCheckbox" ${upstream.RequireTLS?"checked":""}>
-                            <label>Require TLS<br>
-                                <small>Proxy target require HTTPS connection</small></label>
-                        </div><br>
-                        <div class="ui checkbox" style="margin-top: 0.6em;">
-                            <input type="checkbox" class="skipVerificationCheckbox" ${upstream.SkipCertValidations?"checked":""}>
-                                <label>Skip Verification<br>
-                                <small>Not recommended: turns certificate checking off for this upstream. Prefer a CA bundle or a pinned key (see "Upstream certificate trust" under Advanced Options). Ignored while a CA bundle or pin is set.</small></label>
-                        </div><br>
-                            <div class="ui checkbox" style="margin-top: 0.4em;">
-                            <input type="checkbox" class="SkipWebSocketOriginCheck" ${upstream.SkipWebSocketOriginCheck?"checked":""}>
-                            <label>Skip WebSocket Origin Check<br>
-                            <small>Check this to allow cross-origin websocket requests</small></label>
-                        </div><br>
-                        <!-- Advanced Settings -->
-                         <div class="ui advanceUpstreamOptions accordion" style="margin-top:0.6em;">
-                            <div class="title">
-                                <i class="dropdown icon"></i>
-                                Advanced Options
-                            </div>
-                            <div class="content">
-                                <p>Max Concurrent Connections</p>
-                                <div class="ui mini fluid input" style="margin-top: -0.6em;">
-                                    <input type="number" min="0" class="maxConn" value="${upstream.MaxConn}">
+                            <input type="checkbox" class="zx-switch enableState" role="switch" name="enabled" title="${esc(t("Send requests to this upstream"))}" aria-label="${esc(t("Send requests to this upstream"))}" onchange="setUpstreamActive('${domUID}', this);" ${isActive?"checked":""}>
+                            <button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm editbtn" onclick="handleUpstreamOriginEdit('${domUID}');" title="${esc(t("Edit this upstream"))}" aria-label="${esc(t("Edit this upstream"))}"><i class="pencil alternate icon" aria-hidden="true"></i></button>
+                            <div class="up-menu">
+                                <button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm up-menu__btn" aria-haspopup="menu" aria-expanded="false" title="${esc(t("More actions"))}" aria-label="${esc(t("More actions"))}" onclick="toggleUpstreamMenu(this);"><i class="ellipsis horizontal icon" aria-hidden="true"></i></button>
+                                <div class="up-menu__list" role="menu" hidden>
+                                    <button type="button" class="up-menu__item" role="menuitem" onclick="closeUpstreamMenus(); handleUpstreamOriginEdit('${domUID}');"><i class="pencil alternate icon" aria-hidden="true"></i>${esc(t("Edit settings"))}</button>
+                                    <button type="button" class="up-menu__item" role="menuitem" onclick="closeUpstreamMenus(); toggleUpstreamDraining('${domUID}');"><i class="${upstream.Draining ? "play" : "hourglass half"} icon" aria-hidden="true"></i>${esc(upstream.Draining ? t("Stop draining") : t("Drain for maintenance"))}</button>
+                                    <a class="up-menu__item" role="menuitem" href="${esc(url)}" target="_blank" rel="noopener" onclick="closeUpstreamMenus();"><i class="external alternate icon" aria-hidden="true"></i>${esc(t("Open in a new tab"))}</a>
+                                    <div class="up-menu__sep" role="separator"></div>
+                                    <button type="button" class="up-menu__item up-menu__item--danger" role="menuitem" onclick="closeUpstreamMenus(); removeUpstream('${domUID}');"><i class="trash alternate outline icon" aria-hidden="true"></i>${esc(t("Remove upstream"))}</button>
                                 </div>
-                                <small>Set to 0 for default value</small>
-                                <br>
-                                <p style="margin-top: 0.6em;">Response Timeout</p>
-                                <div class="ui mini right labeled fluid input" style="margin-top: -0.6em;">
-                                    <input type="number" min="0" class="respTimeout" value="${upstream.RespTimeout/1000}">
-                                     <div class="ui basic label">
-                                        Seconds
-                                    </div>
-                                </div>
-                                <small>Maximum waiting time before Zoraxy receive server header response, set to 0 for default</small>
-                                <p style="margin-top: 0.6em;">Max In-flight Requests</p>
-                                <div class="ui mini fluid input" style="margin-top: -0.6em;">
-                                    <input type="number" min="0" class="maxInFlight" value="${upstream.MaxInFlight || 0}">
-                                </div>
-                                <small>Stop sending new requests to this upstream while this many are being served (clients get 503 if all upstreams are full). 0 = unlimited.</small>
-                                <div class="ui checkbox" style="margin-top: 0.8em;">
-                                    <input type="checkbox" class="drainingCheckbox" ${upstream.Draining?"checked":""}>
-                                    <label>Draining<br><small>Receive no new requests or sticky sessions. Requests in flight finish normally. Use before maintenance.</small></label>
-                                </div>
-                                <div class="ui checkbox" style="margin-top: 0.8em;">
-                                    <input type="checkbox" class="h2cCheckbox" ${upstream.H2C?"checked":""}>
-                                    <label>HTTP/2 cleartext (h2c)<br><small>Speak HTTP/2 without TLS to this upstream, for gRPC backends on plain HTTP/2 (e.g. NetBird). Only applies when TLS is off. Leave off for ordinary web servers.</small></label>
-                                </div>
-                                <div class="ui checkbox" style="margin-top: 0.8em;">
-                                    <input type="checkbox" class="disableKeepAliveCheckbox" ${upstream.DisableKeepAlive?"checked":""}>
-                                    <label>Disable connection reuse (keep-alive)<br><small>Open a new connection for every request. Use for upstreams that close the connection after each response (intermittent 502 / 521). Slower; leave off otherwise.</small></label>
-                                </div>
-                                <div style="margin-top: 0.8em;">
-                                    <label><b>PROXY protocol</b></label>
-                                    <select class="proxyProtocolSelect" style="display:block; margin-top: 0.3em;">
-                                        <option value="0" ${!upstream.ProxyProtocol?"selected":""}>Off</option>
-                                        <option value="1" ${upstream.ProxyProtocol==1?"selected":""}>Version 1 (text)</option>
-                                        <option value="2" ${upstream.ProxyProtocol==2?"selected":""}>Version 2 (binary)</option>
-                                    </select>
-                                    <small>Send a PROXY header with the connecting client address at the start of every connection to this upstream (HAProxy / nginx <code>accept-proxy</code>, Traefik). Needs a new connection per request, so it is slower. Not used for WebSocket upgrades.</small>
-                                </div>
-                                <div style="margin-top: 0.8em;">
-                                    <label><b>Client certificate (upstream mTLS)</b></label>
-                                    <div class="ui mini fluid input" style="margin-top: 0.3em;"><input type="text" class="upstreamClientCert" placeholder="name of a certificate in the certificate store" value="${upstream.ClientCertName?upstream.ClientCertName:""}"></div>
-                                    <small>Presented when this HTTPS upstream asks for a client certificate. Name of a certificate pair (<code>name.pem</code> + <code>name.key</code>) from the TLS / SSL certificates page. Only applies when "Require TLS" is on.</small>
-                                </div>
-                                <div style="margin-top: 0.8em;" class="upstreamTrustBox">
-                                    <label><b>Upstream certificate trust (private CA / pinned key)</b></label>
-                                    <div style="margin-top: 0.3em;"><small>Recommended instead of "Skip Verification". Paste the CA certificate(s) that signed this upstream's certificate, and optionally pin its public key. The certificate chain and the host name are still checked. A CA bundle replaces the system CAs for this upstream only. Needs "Require TLS".</small></div>
-                                    <textarea class="upstreamCABundle" aria-label="CA certificates (PEM) for this upstream" rows="4" spellcheck="false" style="width:100%; margin-top: 0.3em; font-family: monospace; font-size: 0.85em;" placeholder="-----BEGIN CERTIFICATE-----">${zxEsc(upstream.TLSCABundlePEM || "")}</textarea>
-                                    <textarea class="upstreamPins" aria-label="Public key pins (SHA-256), one per line" rows="2" spellcheck="false" style="width:100%; margin-top: 0.3em; font-family: monospace; font-size: 0.85em;" placeholder="Public key pins (SHA-256), one per line, hex or base64">${zxEsc((upstream.TLSPinsSHA256 || []).join("\n"))}</textarea>
-                                    <small>A pin must match the public key of one certificate in the verified chain (the server certificate or its CA). It adds to the chain check, it never replaces it.</small>
-                                    <div style="margin-top: 0.4em;">
-                                        <button type="button" class="ui mini basic button" onclick="inspectUpstreamTrust('${domUID}');">Check and show fingerprints</button>
-                                        <button type="button" class="ui mini basic button" onclick="testUpstreamTrust('${domUID}');">Test connection with these settings</button>
-                                    </div>
-                                    <div class="upstreamTrustResult" style="margin-top: 0.4em; word-break: break-all;"></div>
-                                </div>
-                                
                             </div>
                         </div>
                     </div>
-                    <div class="upstreamActions">
-                        <!-- Change Priority -->
-                        <button class="ui basic circular icon button highPriorityButton" title="Increase Weight" onclick="increaseUpstreamWeight('${domUID}');"><i class="ui arrow up icon"></i></button>
-                        <button class="ui basic circular icon button lowPriorityButton ${downArrowClass}" title="Reduce Weight"  onclick="decreaseUpstreamWeight('${domUID}');"><i class="ui arrow down icon"></i></button>
-                        <button class="ui basic circular icon editbtn button" onclick="handleUpstreamOriginEdit('${domUID}');" title="Edit Upstream Destination"><i class="ui grey edit icon"></i></button>
-                        <button style="display:none;" class="ui basic circular icon trashbtn button" onclick="removeUpstream('${domUID}');" title="Remove Upstream"><i class="ui red trash icon"></i></button>
-                        <button style="display:none;" class="ui basic circular icon savebtn button" onclick="saveUpstreamUpdate('${domUID}');" title="Save Changes"><i class="ui green save icon"></i></button>
-                        <button style="display:none;" class="ui basic circular icon cancelbtn button" onclick="initOriginList();" title="Cancel"><i class="ui grey times icon"></i></button>
+                    <div class="advanceOptions up-edit">
+                        ${upstreamFormHTML(upstream, domUID, false)}
+                        <div class="up-edit__foot">
+                            <button type="button" class="zx-btn zx-btn--primary savebtn" onclick="saveUpstreamUpdate('${domUID}', this);">${esc(t("Save changes"))}</button>
+                            <button type="button" class="zx-btn zx-btn--secondary cancelbtn" onclick="initOriginList();">${esc(t("Cancel"))}</button>
+                            <span class="up-spacer"></span>
+                            <button type="button" class="zx-btn zx-btn--danger-outline trashbtn" onclick="removeUpstream('${domUID}');"><i class="trash alternate outline icon" aria-hidden="true"></i> ${esc(t("Remove upstream"))}</button>
+                        </div>
                     </div>
-                </div>`);
+                </article>`);
             }
+
+            /* Row menu: one open at a time, arrow keys inside, Esc and a click elsewhere close it */
+            function closeUpstreamMenus(refocus){
+                $(".up-menu__list").each(function(){
+                    if (!this.hidden){
+                        this.hidden = true;
+                        let btn = $(this).siblings(".up-menu__btn").attr("aria-expanded", "false");
+                        if (refocus){ btn.trigger("focus"); }
+                    }
+                });
+            }
+
+            function toggleUpstreamMenu(btn){
+                let list = $(btn).siblings(".up-menu__list")[0];
+                let open = list.hidden;
+                closeUpstreamMenus();
+                if (open){
+                    list.hidden = false;
+                    btn.setAttribute("aria-expanded", "true");
+                    $(list).find(".up-menu__item").first().trigger("focus");
+                }
+            }
+
+            $(document).on("click", function(ev){
+                if ($(ev.target).closest(".up-menu").length == 0){ closeUpstreamMenus(); }
+            });
+            $(document).on("keydown", ".up-menu__list", function(ev){
+                let items = $(this).find(".up-menu__item");
+                let i = items.index(document.activeElement);
+                if (ev.key === "ArrowDown"){ ev.preventDefault(); items.eq((i + 1) % items.length).trigger("focus"); }
+                else if (ev.key === "ArrowUp"){ ev.preventDefault(); items.eq((i - 1 + items.length) % items.length).trigger("focus"); }
+                else if (ev.key === "Home"){ ev.preventDefault(); items.first().trigger("focus"); }
+                else if (ev.key === "End"){ ev.preventDefault(); items.last().trigger("focus"); }
+                else if (ev.key === "Tab"){ closeUpstreamMenus(); }
+            });
+            //Esc belongs to an open menu or dialog first; only then does it leave this view (handled by the admin page)
+            window.addEventListener("keydown", function(ev){
+                if (ev.key !== "Escape"){ return; }
+                let cancel = document.querySelector(".zx-dialog [data-zx-cancel]");
+                if (cancel){
+                    ev.preventDefault(); ev.stopImmediatePropagation();
+                    cancel.click();
+                }else if ($(".up-menu__list").not("[hidden]").length){
+                    ev.preventDefault(); ev.stopImmediatePropagation();
+                    closeUpstreamMenus(true);
+                }
+            }, true);
 
             /* New Upstream Origin Functions */
 
-            //Clearn the proxy target value, make sure user do not enter http:// or https://
-            //and auto select TLS checkbox if https:// exists
+            //Clean the proxy target value, make sure user do not enter http:// or https://
+            //and auto select the TLS switch if https:// exists (Add form and the form of a row)
             function cleanProxyTargetValue(input){
+                let form = $(input).closest(".up-form");
+                let tlsSwitch = form.find(".reqTLSCheckbox");
                 let targetDomain = $(input).val().trim();
-                if (targetDomain.startsWith("http://")){
-                    targetDomain = targetDomain.substr(7);
-                    $(input).val(targetDomain);
-                    $("#requireTLS").parent().checkbox("set unchecked");
-                }else if (targetDomain.startsWith("https://")){
-                    targetDomain = targetDomain.substr(8);
-                    $(input).val(targetDomain);
-                    $("#requireTLS").parent().checkbox("set checked");
-                }else{
+                let setTLS = function(on){
+                    tlsSwitch.prop("checked", on);
+                    syncUpstreamForm(form);
+                };
+                //The sniff answers later: it must not undo a TLS choice made in the meantime
+                let seq = (form.data("tlsSniffSeq") || 0) + 1;
+                form.data("tlsSniffSeq", seq);
+                let sniffStillWanted = function(){
+                    return form.data("tlsSniffSeq") === seq && !form.data("tlsUserSet") && $(input).val().trim() == targetDomain;
+                };
+                if (/^http:\/\//i.test(targetDomain)){
+                    $(input).val(targetDomain.substr(7));
+                    setTLS(false);
+                }else if (/^https:\/\//i.test(targetDomain)){
+                    $(input).val(targetDomain.substr(8));
+                    setTLS(true);
+                }else if (targetDomain != ""){
                     //URL does not contains https or http protocol tag
                     //sniff header
                     $.cjax({
@@ -519,18 +937,51 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                             success: function(data){
                                 if (data.error != undefined){
 
+                                }else if (!sniffStillWanted()){
+                                    //the address changed again, or the user set Require TLS by hand
                                 }else if (data == "https"){
-                                    $("#requireTLS").parent().checkbox("set checked");
+                                    setTLS(true);
                                 }else if (data == "http"){
-                                    $("#requireTLS").parent().checkbox("set unchecked");
+                                    setTLS(false);
                                 }
                             }
                     })
                 }
             }
 
+            //Kept for callers that pass the id of a row
+            function handleAutoOriginClean(domid){
+                let input = $(`.upstreamEntry[data-domid=${domid}] .newOrigin`);
+                if (input.length){ cleanProxyTargetValue(input[0]); }
+            }
+
+            function resetNewUpstreamForm(focus){
+                $("#newUpstreamForm").html(upstreamFormHTML({}, "new", true));
+                syncUpstreamForm($("#newUpstreamForm .up-form"));
+                if (focus){ $("#originURL").trigger("focus"); }
+            }
+
+            //One line next to the Add button: what the button is about to do
+            function updateAddUpstreamNote(){
+                let form = $("#newUpstreamForm .up-form");
+                if (form.length == 0){ return; }
+                let origin = $("#originURL").val().trim();
+                if (origin == ""){
+                    $("#addUpstreamNote").text(t("Enter an address to add an upstream."));
+                    return;
+                }
+                let weight = parseInt(form.find(".upWeight").val());
+                if (isNaN(weight) || weight < 0){ weight = 1; }
+                let parts = [`<b data-i18n-skip>${esc(($("#requireTLS")[0].checked ? "https://" : "http://") + origin)}</b>`];
+                parts.push(esc(weight == 0 ? t("fallback only") : tf("weight {0}", weight)));
+                parts.push(esc($("#activateNewUpstreamCheckbox")[0].checked ? t("gets traffic right away") : t("added switched off")));
+                $("#addUpstreamNote").html(parts.join(" &middot; "));
+            }
+
             //Add a new upstream to this http proxy rule
             function addNewUpstream(){
+                let form = $("#newUpstreamForm .up-form");
+                let btn = document.getElementById("addUpstreamBtn");
                 let origin = $("#originURL").val().trim();
                 let requireTLS = $("#requireTLS")[0].checked;
                 let skipVerification = $("#skipTlsVerification")[0].checked;
@@ -540,6 +991,12 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 let respTimeout = $("#respTimeout").val();
                 let disableKeepAlive = $("#disableKeepAlive")[0].checked;
                 let useH2C = $("#useH2C")[0].checked;
+                //Not part of the add call: set with one update right after it
+                let weight = parseInt(form.find(".upWeight").val());
+                let maxInFlight = parseInt(form.find(".maxInFlight").val());
+                let draining = form.find(".drainingCheckbox")[0].checked;
+                if (isNaN(weight) || weight < 0){ weight = 1; }
+                if (isNaN(maxInFlight) || maxInFlight < 0){ maxInFlight = 0; }
 
                 if (maxConn == "" || isNaN(maxConn)){ 
                     maxConn = 0;
@@ -550,13 +1007,26 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 }
 
                 if (origin == ""){
-                    parent.msgbox("Upstream origin cannot be empty", false);
+                    markOriginInvalid(form);
                     return;
                 }
 
                 //Convert seconds to ms
                 respTimeout = parseInt(respTimeout) * 1000;
 
+                let done = function(){
+                    setBusy(btn, false);
+                    notify(t("New upstream origin added"));
+                    initOriginList();
+                    resetNewUpstreamForm(false);
+                    showUpstreamTab("upstreamlist");
+                };
+                let failed = function(message){
+                    setBusy(btn, false);
+                    notify(message, false);
+                };
+
+                setBusy(btn, true);
                 $.cjax({
                     url: "/api/proxy/upstream/add",
                     method: "POST",
@@ -571,19 +1041,51 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         "respt": respTimeout,
                         "nokeepalive": disableKeepAlive,
                         "h2c": useH2C,
+                        "proxyproto": parseInt(form.find(".proxyProtocolSelect").val()) || 0,
+                        "clientcert": form.find(".upstreamClientCert").val().trim(),
+                        "cabundle": form.find(".upstreamCABundle").val().trim(),
+                        "pins": splitTrustPins(form.find(".upstreamPins").val()).join("\n"),
+                    },
+                    error: function(){
+                        failed(t("The upstream could not be added: the server did not answer."));
                     },
                     success: function(data){
                         if (data.error != undefined){
-                            parent.msgbox(data.error, false);
-                        }else{
-                            parent.msgbox("New upstream origin added");
-                            initOriginList();
-                            $("#originURL").val("");
-                            $("#maxConn").val("0");
-                            $("#respTimeout").val("0");
-                            $("#disableKeepAlive").prop("checked", false);
-                            $("#useH2C").prop("checked", false);
+                            failed(data.error);
+                            return;
                         }
+                        if (weight == 1 && maxInFlight == 0 && !draining){
+                            done();
+                            return;
+                        }
+                        //Weight, the in-flight limit and draining are set on the stored upstream
+                        $.cjax({
+                            url: "/api/proxy/upstream/update",
+                            method: "POST",
+                            data: {
+                                ep: editingEndpoint.ep,
+                                origin: origin,
+                                payload: JSON.stringify({Weight: weight, MaxInFlight: maxInFlight, Draining: draining}),
+                                active: activateLoadbalancer,
+                            },
+                            error: function(){
+                                //The upstream exists now: leave the form like the refused update below does
+                                initOriginList();
+                                failed(t("The upstream was added, but its weight and limits could not be set. Edit it in the list."));
+                                resetNewUpstreamForm(false);
+                                showUpstreamTab("upstreamlist");
+                            },
+                            success: function(res){
+                                if (res.error != undefined){
+                                    initOriginList();
+                                    failed(t("The upstream was added, but its weight and limits could not be set:") + " " + res.error);
+                                    showUpstreamTab("upstreamlist");
+                                    resetNewUpstreamForm(false);
+                                }else{
+                                    done();
+                                }
+                            }
+                        });
                     }
                 })
             }
@@ -614,12 +1116,16 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 respTimeout = parseInt(respTimeout) * 1000;
 
                 //Update the original setting with new one just applied
-                originalSettings.OriginIpOrDomain = $(upstream).find(".newOrigin").val();
+                originalSettings.OriginIpOrDomain = $(upstream).find(".newOrigin").val().trim();
                 originalSettings.RequireTLS = requireTLS;
                 originalSettings.SkipCertValidations = skipTLSVerification;
                 originalSettings.SkipWebSocketOriginCheck = skipWebSocketOriginCheck;
                 originalSettings.MaxConn = parseInt(maxConn);
                 originalSettings.RespTimeout = respTimeout;
+                let weight = parseInt($(upstream).find(".upWeight").val());
+                if (!isNaN(weight) && weight >= 0){
+                    originalSettings.Weight = weight;
+                }
                 let maxInFlight = parseInt($(upstream).find(".maxInFlight").val());
                 originalSettings.MaxInFlight = (isNaN(maxInFlight) || maxInFlight < 0) ? 0 : maxInFlight;
                 originalSettings.Draining = $(upstream).find(".drainingCheckbox")[0].checked;
@@ -639,10 +1145,21 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 return String(text || "").split(/[\s,;]+/).filter(function(p){ return p != ""; });
             }
 
+            //The form a trust button belongs to: the button itself, or the id of a row
+            function trustFormOf(target){
+                return (typeof target === "string") ? $(`.upstreamEntry[data-domid=${target}]`) : $(target).closest(".up-form");
+            }
+
+            function trustResultHTML(ok, html){
+                return `<div class="up-res ${ok ? "up-res--ok" : "up-res--bad"}"><i class="${ok ? "green check circle" : "red times circle"} icon" aria-hidden="true"></i><div class="up-res__body">${html}</div></div>`;
+            }
+
             //Show the fingerprints of the pasted CA bundle and the normalised pins, or why they are refused
-            function inspectUpstreamTrust(domid){
-                let box = $(`.upstreamEntry[data-domid=${domid}]`);
+            function inspectUpstreamTrust(target){
+                let box = trustFormOf(target);
                 let out = box.find(".upstreamTrustResult");
+                let btn = (typeof target === "string") ? null : target;
+                setBusy(btn, true);
                 $.cjax({
                     url: "/api/proxy/upstream/tlsinspect",
                     method: "POST",
@@ -650,39 +1167,52 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         cabundle: box.find(".upstreamCABundle").val().trim(),
                         pins: splitTrustPins(box.find(".upstreamPins").val()).join("\n")
                     },
+                    complete: function(){
+                        setBusy(btn, false);
+                    },
+                    error: function(){
+                        out.html(trustResultHTML(false, esc(t("The check could not be run: the server did not answer."))));
+                    },
                     success: function(data){
                         if (data.error != undefined){
-                            out.html('<i class="red times circle icon"></i> ' + zxEsc(data.error));
+                            out.html(trustResultHTML(false, `<span data-i18n-skip>${esc(data.error)}</span>`));
                             return;
                         }
                         let html = "";
                         (data.Certs || []).forEach(function(c){
-                            html += '<div style="margin-bottom:0.5em;"><b>' + zxEsc(c.Subject) + '</b>' + (c.Expired ? ' <span style="color:#c0392b;">(expired)</span>' : '') + (c.IsCA ? '' : ' <span>(not a CA certificate, it will be trusted as a single certificate)</span>') +
-                                '<br><small>Issuer: ' + zxEsc(c.Issuer) + '<br>Valid until: ' + zxEsc(c.NotAfter) +
-                                '<br>Certificate SHA-256: ' + zxEsc(c.Fingerprint) + '<br>Public key pin (SHA-256): ' + zxEsc(c.SPKIPin) + '</small></div>';
+                            html += `<div class="up-cert"><div class="up-cert__name"><span data-i18n-skip>${esc(c.Subject)}</span>`
+                                + (c.Expired ? ` <span class="zx-badge zx-badge--danger">${esc(t("Expired"))}</span>` : "") + `</div>`
+                                + (c.IsCA ? "" : `<div class="up-cert__note">${esc(t("Not a CA certificate: it will be trusted as a single certificate."))}</div>`)
+                                + `<div class="up-cert__line">${esc(t("Issuer:"))} <span data-i18n-skip>${esc(c.Issuer)}</span></div>`
+                                + `<div class="up-cert__line">${esc(t("Valid until:"))} <span data-i18n-skip>${esc(c.NotAfter)}</span></div>`
+                                + `<div class="up-cert__line">${esc(t("Certificate SHA-256:"))} <span data-i18n-skip>${esc(c.Fingerprint)}</span></div>`
+                                + `<div class="up-cert__line">${esc(t("Public key pin (SHA-256):"))} <span data-i18n-skip>${esc(c.SPKIPin)}</span></div></div>`;
                         });
                         if ((data.Pins || []).length){
-                            html += '<div><small>Pins accepted: ' + data.Pins.map(zxEsc).join(", ") + '</small></div>';
+                            html += `<div class="up-cert__line">${esc(t("Pins accepted:"))} <span data-i18n-skip>${data.Pins.map(esc).join(", ")}</span></div>`;
                         }
                         if (html == ""){
-                            html = "Nothing set: the system certificate authorities are used.";
+                            html = esc(t("Nothing set: the system certificate authorities are used."));
                         }
-                        out.html('<i class="green check circle icon"></i> ' + html);
+                        out.html(trustResultHTML(true, html));
                     }
                 });
             }
 
             //Run the connection test of the new rule dialog with the trust settings typed here
-            function testUpstreamTrust(domid){
-                let box = $(`.upstreamEntry[data-domid=${domid}]`);
+            function testUpstreamTrust(target){
+                let box = trustFormOf(target);
                 let out = box.find(".upstreamTrustResult");
+                let btn = (typeof target === "string") ? null : target;
                 let origin = box.find(".newOrigin").val().trim();
                 if (origin == ""){
+                    out.html(trustResultHTML(false, esc(t("Enter the address of the upstream first."))));
                     return;
                 }
                 if (!/^https?:\/\//i.test(origin)){
                     origin = "https://" + origin;
                 }
+                setBusy(btn, true);
                 $.cjax({
                     url: "/api/proxy/testupstream",
                     method: "POST",
@@ -692,26 +1222,36 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         cabundle: box.find(".upstreamCABundle").val().trim(),
                         pins: splitTrustPins(box.find(".upstreamPins").val()).join("\n")
                     },
+                    complete: function(){
+                        setBusy(btn, false);
+                    },
+                    error: function(){
+                        out.html(trustResultHTML(false, esc(t("The test could not be run: the server did not answer."))));
+                    },
                     success: function(res){
                         if (res.error != undefined && res.ok === undefined){
-                            out.html('<i class="red times circle icon"></i> ' + zxEsc(res.error));
+                            out.html(trustResultHTML(false, `<span data-i18n-skip>${esc(res.error)}</span>`));
                         }else if (res.ok){
-                            out.html('<i class="green check circle icon"></i> Connected' + (res.trustChecked ? ", and the certificate passed the CA / pin check" : "") + (res.status ? ", answered " + res.status : ""));
+                            out.html(trustResultHTML(true, esc(t("Connected") + (res.trustChecked ? t(", and the certificate passed the CA / pin check") : "") + (res.status ? t(", answered") + " " + res.status : ""))));
                         }else{
-                            out.html('<i class="red times circle icon"></i> ' + zxEsc(res.error || "Not reachable"));
+                            out.html(trustResultHTML(false, `<span data-i18n-skip>${esc(res.error || t("Not reachable"))}</span>`));
                         }
                     }
                 });
             }
 
             //Handle setting change on upstream config
-            function saveUpstreamUpdate(upstreamDomID){
+            function saveUpstreamUpdate(upstreamDomID, btn){
                 let targetDOM = $(`.upstreamEntry[data-domid=${upstreamDomID}]`);
                 let originalSettings = $(targetDOM).attr("data-payload");
                 originalSettings = JSON.parse(decodeURIComponent(originalSettings));
                 let newConfig = getUpstreamSettingFromDOM(targetDOM);
                 let isActive = $(targetDOM).find(".enableState")[0].checked;
-                console.log(newConfig);
+                if (newConfig.OriginIpOrDomain == ""){
+                    markOriginInvalid(targetDOM);
+                    return;
+                }
+                setBusy(btn, true);
                 $.cjax({
                     url: "/api/proxy/upstream/update",
                     method: "POST",
@@ -721,65 +1261,87 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         payload: JSON.stringify(newConfig),
                         active: isActive,
                     },
+                    complete: function(){
+                        setBusy(btn, false);
+                    },
+                    error: function(){
+                        notify(t("The upstream could not be saved: the server did not answer."), false);
+                    },
                     success: function(data){
                         if (data.error != undefined){
-                            parent.msgbox(data.error, false);
-
+                            notify(data.error, false);
+                            if (!targetDOM.hasClass("is-editing")){
+                                //A switch or menu action that was refused: show the stored state again
+                                initOriginList();
+                            }
                         }else{
-                            parent.msgbox("Upstream setting updated");
+                            notify(t("Upstream setting updated"));
                             initOriginList();
                         }
                     }
                 })
             }
 
-            //Edit the upstream origin of this upstream entry
-            function handleUpstreamOriginEdit(upstreamDomID){
+            //The switch of a row: the upstream as it is stored, only switched on or off. It never reads the edit form,
+            //so a half-typed edit cannot be saved by it.
+            function setUpstreamActive(upstreamDomID, box){
                 let targetDOM = $(`.upstreamEntry[data-domid=${upstreamDomID}]`);
-                let originalSettings = getUpstreamSettingsFromDomID(upstreamDomID);
-                let originIP = originalSettings.OriginIpOrDomain;
-
-                //Change the UI to edit mode
-                $(".editbtn").hide();
-                $(".lowPriorityButton").hide();
-                $(".highPriorityButton").hide();
-                $(targetDOM).find(".trashbtn").show();
-                $(targetDOM).find(".savebtn").show();
-                $(targetDOM).find(".cancelbtn").show();
-                $(targetDOM).find(".advanceOptions").show();
+                if (targetDOM.length == 0){
+                    return;
+                }
+                if ($("#upstreamTable").hasClass("is-editing")){
+                    //An edit is open: the switch is hidden then, a stray change is undone
+                    box.checked = !box.checked;
+                    return;
+                }
+                let stored = JSON.parse(decodeURIComponent(targetDOM.attr("data-payload")));
+                box.disabled = true;
+                $.cjax({
+                    url: "/api/proxy/upstream/update",
+                    method: "POST",
+                    data: {
+                        ep: editingEndpoint.ep,
+                        origin: stored.OriginIpOrDomain,
+                        payload: JSON.stringify(stored),
+                        active: box.checked,
+                    },
+                    error: function(){
+                        notify(t("The upstream could not be saved: the server did not answer."), false);
+                        initOriginList();
+                    },
+                    success: function(data){
+                        if (data.error != undefined){
+                            notify(data.error, false);
+                        }else{
+                            notify(t("Upstream setting updated"));
+                        }
+                        initOriginList();
+                    }
+                });
             }
 
-            //Check if the entered URL contains http or https
-            function handleAutoOriginClean(domid){
-                let targetDOM = $(`.upstreamEntry[data-domid=${domid}]`);
-                let targetTLSCheckbox = $(targetDOM).find(".reqTLSCheckbox");
-                let targetDomain = $(targetDOM).find(".newOrigin").val().trim();
-                if (targetDomain.startsWith("http://")){
-                    targetDomain = targetDomain.substr(7);
-                    $(input).val(targetDomain);
-                    $(targetTLSCheckbox).parent().checkbox("set unchecked");
-                }else if (targetDomain.startsWith("https://")){
-                    targetDomain = targetDomain.substr(8);
-                    $(input).val(targetDomain);
-                    $(targetTLSCheckbox).parent().checkbox("set checked");
-                }else{
-                    //URL does not contains https or http protocol tag
-                    //sniff header
-                    $.cjax({
-                            url: "/api/proxy/tlscheck",
-                            method: "POST",
-                            data: {url: targetDomain},
-                            success: function(data){
-                                if (data.error != undefined){
-
-                                }else if (data == "https"){
-                                    $(targetTLSCheckbox).parent().checkbox("set checked");
-                                }else if (data == "http"){
-                                    $(targetTLSCheckbox).parent().checkbox("set unchecked");
-                                }
-                            }
-                    })
+            //Open the settings of this upstream entry in place
+            function handleUpstreamOriginEdit(upstreamDomID){
+                let targetDOM = $(`.upstreamEntry[data-domid=${upstreamDomID}]`);
+                if (targetDOM.length == 0){
+                    return;
                 }
+                closeUpstreamMenus();
+
+                //Change the UI to edit mode: one row at a time, the other rows step back
+                $("#upstreamTable").addClass("is-editing");
+                $(".upstreamEntry").removeClass("is-editing");
+                $(targetDOM).addClass("is-editing");
+                syncUpstreamForm($(targetDOM).find(".up-form"));
+                $(targetDOM).find(".newOrigin").trigger("focus");
+            }
+
+            //Start or stop draining from the row menu (saves the row as it is stored, with draining flipped)
+            function toggleUpstreamDraining(domid){
+                let targetDOM = $(`.upstreamEntry[data-domid=${domid}]`);
+                let box = targetDOM.find(".drainingCheckbox");
+                box.prop("checked", !box[0].checked);
+                saveUpstreamUpdate(domid);
             }
 
             function getUpstreamSettingsFromDomID(domid){
@@ -816,11 +1378,14 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         origin: originIP,
                         weight: newWeight,
                     },
+                    error: function(){
+                        notify(t("The weight could not be changed: the server did not answer."), false);
+                    },
                     success: function(data){
                         if (data.error != undefined){
-                            parent.msgbox(data.error, false);
+                            notify(data.error, false);
                         }else{
-                            parent.msgbox("Upstream Weight Updated");
+                            notify(t("Upstream Weight Updated"));
                             initOriginList();
                         }
                     }
@@ -833,50 +1398,72 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 let originalSettings = $(targetDOM).attr("data-payload");
                 originalSettings = JSON.parse(decodeURIComponent(originalSettings));
                 let UpstreamKey = originalSettings.OriginIpOrDomain;
-                if (!confirm("Confirm removing " + UpstreamKey + " from upstream?")){
-                    return;
-                }
-                //Remove the upstream
-                $.cjax({
-                    url: "/api/proxy/upstream/remove",
-                    method: "POST",
-                    data: {
-                        ep: editingEndpoint.ep,
-                        origin: originalSettings.OriginIpOrDomain, //Original ip or domain as key
-                    },
-                    success: function(data){
-                        if (data.error != undefined){
-                            parent.msgbox(data.error, false);
+                let isLast = $(".upstreamEntry").length == 1;
+                let message = tf("{0} gets no more requests of this site.", UpstreamKey) + (isLast ? " " + t("It is the only upstream: visitors get error 521 until you add another one.") : "");
+                let doRemove = function(){
+                    //Remove the upstream
+                    $.cjax({
+                        url: "/api/proxy/upstream/remove",
+                        method: "POST",
+                        data: {
+                            ep: editingEndpoint.ep,
+                            origin: originalSettings.OriginIpOrDomain, //Original ip or domain as key
+                        },
+                        error: function(){
+                            notify(t("The upstream could not be removed: the server did not answer."), false);
+                        },
+                        success: function(data){
+                            if (data.error != undefined){
+                                notify(data.error, false);
 
-                        }else{
-                            parent.msgbox("Upstream deleted");
-                            initOriginList();
+                            }else{
+                                notify(t("Upstream deleted"));
+                                initOriginList();
+                            }
                         }
-                    }
-                })
+                    })
+                };
+                if (window.ZxUI && ZxUI.confirm){
+                    ZxUI.confirm({title: t("Remove this upstream?"), message: message, danger: true, confirmLabel: t("Remove upstream")}).then(function(ok){
+                        if (ok){ doRemove(); }
+                    });
+                }else if (confirm(t("Remove this upstream?") + "\n" + message)){
+                    doRemove();
+                }
             }
 
-            /* Live upstream state */
+            /* Live upstream state: a dot badge with the word, and the live numbers next to it */
             function renderUpstreamStateHTML(st){
                 if (st == undefined){
-                    return `<span style="opacity:0.6;">no data</span>`;
+                    return `<span class="zx-badge zx-badge--dot">${esc(t("No data yet"))}</span>`;
                 }
-                let colors = {healthy: "green", unhealthy: "red", ejected: "red", draining: "orange", slow_start: "yellow"};
-                let labels = {healthy: "Healthy", unhealthy: "Unhealthy", ejected: "Ejected", draining: "Draining", slow_start: "Slow start"};
-                let color = colors[st.State] || "grey";
-                let extra = [];
+                let kinds = {healthy: "ok", unhealthy: "danger", ejected: "danger", draining: "warn", slow_start: "warn"};
+                let labels = {healthy: t("Healthy"), unhealthy: t("Unhealthy"), ejected: t("Ejected"), draining: t("Draining"), slow_start: t("Slow start")};
+                let kind = kinds[st.State];
+                return `<span class="zx-badge zx-badge--dot ${kind ? "zx-badge--" + kind : ""}">${esc(labels[st.State] || st.State)}</span>`;
+            }
+
+            function renderUpstreamLiveHTML(st){
+                if (st == undefined){
+                    return "";
+                }
+                let parts = [];
                 if (st.State == "slow_start"){
-                    extra.push(Math.round(st.SlowStartFactor * 100) + "% weight");
+                    parts.push(tf("{0}% of its weight", Math.round(st.SlowStartFactor * 100)));
                 }
                 if (st.State == "ejected" && st.EjectedUntil > 0){
-                    extra.push("back in " + Math.max(0, st.EjectedUntil - Math.floor(Date.now()/1000)) + "s");
+                    parts.push(tf("back in {0} s", Math.max(0, st.EjectedUntil - Math.floor(Date.now()/1000))));
                 }
+                parts.push(tf("{0} in flight", st.InFlight));
+                if (st.EWMAMillis > 0){
+                    parts.push(st.EWMAMillis.toFixed(st.EWMAMillis < 10 ? 1 : 0) + " ms");
+                }
+                let html = parts.map(esc).join(" &middot; ");
                 if (st.State == "unhealthy" && st.LastCheckError){
-                    extra.push(st.LastCheckError);
+                    //The reason of the failed check: two lines at most, the whole text as tooltip
+                    html += ` &middot; <span data-i18n-skip title="${esc(st.LastCheckError)}">${esc(st.LastCheckError)}</span>`;
                 }
-                let detail = extra.length ? ` (${$("<div>").text(extra[0]).html()})` : "";
-                let ewma = st.EWMAMillis > 0 ? ` | ${st.EWMAMillis.toFixed(st.EWMAMillis < 10 ? 1 : 0)} ms` : "";
-                return `<span class="ui ${color} empty circular label"></span> ${labels[st.State] || st.State}${detail} | ${st.InFlight} in flight${ewma}`;
+                return html;
             }
 
             //Refresh the state badges without rebuilding the list (keeps edit mode intact)
@@ -897,33 +1484,133 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                             let origin = decodeURIComponent($(this).attr("data-origin"));
                             $(this).html(renderUpstreamStateHTML(upstreamStates[origin]));
                         });
+                        $(".upstreamLive").each(function(){
+                            let origin = decodeURIComponent($(this).attr("data-origin"));
+                            $(this).html(renderUpstreamLiveHTML(upstreamStates[origin]));
+                        });
+                        updateUpstreamSummary();
                     }
                 });
             }
             setInterval(refreshUpstreamStates, 5000);
 
             /* Load balancing settings tab */
-            const algorithmHints = {
-                random: "Picks an upstream at random, proportional to its weight.",
-                round_robin: "Rotates through the upstreams in order.",
-                weighted_round_robin: "Rotates in order, but upstreams with a higher weight come up more often, evenly spread out.",
-                least_connections: "Sends the request to the upstream with the fewest requests in progress (relative to its weight). Good for long running requests.",
-                least_response_time: "Prefers the upstream that answers fastest (moving average of time to first byte) and is the least busy.",
-                power_of_two_choices: "Picks two random upstreams and uses the less busy one. Cheap and balances well.",
-                ip_hash: "The same client IP always reaches the same upstream, without cookies.",
-                header_hash: "Requests with the same value in a header always reach the same upstream.",
-                cookie_hash: "Requests with the same cookie value always reach the same upstream."
-            };
+            let lbBaseline = "";        //the stored settings, as the form would save them
+            let lbLoadedAlgorithm = ""; //what the server sent (an empty value stays empty unless another algorithm is picked)
+
+            function lbAlgorithm(){
+                return $("#lbAlgorithm").val() || "random";
+            }
+
+            //The algorithm cards are the visible control; the select keeps the value
+            function setLbAlgorithm(value, focus){
+                $("#lbAlgorithm").val(value);
+                lbLoadedAlgorithm = value;
+                updateLbFieldVisibility();
+                if (focus){
+                    $('#lbAlgoCards .up-algo[data-value="' + value + '"]').trigger("focus");
+                }
+            }
+            $("#lbAlgoCards").on("click", ".up-algo", function(){
+                setLbAlgorithm(this.dataset.value, false);
+            }).on("keydown", ".up-algo", function(ev){
+                let cards = $("#lbAlgoCards .up-algo");
+                let i = cards.index(this), n = cards.length, next = -1;
+                if (ev.key === "ArrowRight" || ev.key === "ArrowDown"){ next = (i + 1) % n; }
+                else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp"){ next = (i - 1 + n) % n; }
+                else if (ev.key === "Home"){ next = 0; }
+                else if (ev.key === "End"){ next = n - 1; }
+                if (next >= 0){
+                    ev.preventDefault();
+                    setLbAlgorithm(cards[next].dataset.value, true);
+                }
+            });
+            $("#lbForm").on("input change", ":input", function(){
+                updateLbFieldVisibility();
+            });
+
+            function lbOnOff(on){
+                return on ? `<span class="zx-badge zx-badge--dot zx-badge--ok">${esc(t("On"))}</span>` : `<span class="zx-badge zx-badge--dot">${esc(t("Off"))}</span>`;
+            }
+
+            //The effective policy in plain sentences, from what the form holds right now
+            function renderLbPolicy(cfg){
+                let rows = [];
+                let algo = lbAlgorithm();
+                let pick = `<b>${esc($("#lbAlgorithm option:selected").text() || t("Weighted random"))}</b>`;
+                if (algo == "header_hash" || algo == "cookie_hash"){
+                    pick += cfg.HashKey
+                        ? " " + esc(t("of")) + ` <span class="zx-mono" data-i18n-skip>${esc(cfg.HashKey)}</span>`
+                        : ` <span class="up-policy__warn">${esc(t("(the name is missing)"))}</span>`;
+                }
+                rows.push([t("Balancing"), pick]);
+
+                let a = cfg.ActiveHealthCheck, p = cfg.PassiveHealthCheck, r = cfg.Retry;
+                if (a.Enabled){
+                    let probe = a.Mode == "tcp"
+                        ? tf("TCP connect every {0} s, {1} s timeout.", a.IntervalSeconds, a.TimeoutSeconds)
+                        : tf("{0} {1} every {2} s, {3} s timeout.", a.Method, a.Path, a.IntervalSeconds, a.TimeoutSeconds);
+                    rows.push([t("Active checks"), lbOnOff(true) + esc(probe + " " + tf("Out after {0} failed probes, back after {1} passes.", a.Fall, a.Rise))]);
+                }else{
+                    rows.push([t("Active checks"), lbOnOff(false) + esc(t("Upstreams are not probed in the background."))]);
+                }
+                if (p.Enabled){
+                    rows.push([t("Passive checks"), lbOnOff(true) + esc(tf("Out for {0} s after {1} failed requests in a row.", p.CooldownSeconds, p.FailThreshold))]);
+                }else{
+                    rows.push([t("Passive checks"), lbOnOff(false) + esc(t("Failed requests do not take an upstream out."))]);
+                }
+                if ((a.Enabled || p.Enabled) && cfg.SlowStartSeconds > 0){
+                    rows.push([t("Recovery"), esc(tf("A recovered upstream gets its share back over {0} s.", cfg.SlowStartSeconds))]);
+                }
+                if (r.Enabled){
+                    let methods = ["GET", "HEAD", "OPTIONS"].concat(r.ExtraMethods || []).join(", ");
+                    rows.push([t("Retries"), lbOnOff(true) + esc((r.MaxRetries == 1 ? t("One more attempt on another upstream") : tf("Up to {0} more attempts on other upstreams", r.MaxRetries)) + " " + tf("for {0}.", methods))]);
+                }else{
+                    rows.push([t("Retries"), lbOnOff(false) + esc(t("A failed request returns the error to the client."))]);
+                }
+                let rules = (cfg.ClientRules || []).length;
+                rows.push([t("Client rules"), esc(rules == 0 ? t("None: every client can use every upstream.") : (rules == 1 ? t("1 rule decides which upstreams a client may use.") : tf("{0} rules decide which upstreams a client may use.", rules)))]);
+                if (!a.Enabled && !p.Enabled){
+                    rows.push([t("Note"), `<span class="up-policy__warn">${esc(t("Without health checks an upstream that is down keeps getting its share of requests."))}</span>`]);
+                }
+                $("#lbPolicy").html(rows.map(function(row){
+                    return `<div class="up-policy__row"><dt>${esc(row[0])}</dt><dd>${row[1]}</dd></div>`;
+                }).join(""));
+            }
 
             function updateLbFieldVisibility(){
-                let algo = $("#lbAlgorithm").val();
-                $("#lbAlgorithmHint").text(algorithmHints[algo] || "");
-                $("#lbHashKeyField").toggle(algo == "header_hash" || algo == "cookie_hash");
+                let algo = lbAlgorithm();
+                $("#lbAlgoCards .up-algo").each(function(){
+                    let on = this.dataset.value == algo;
+                    this.setAttribute("aria-checked", on ? "true" : "false");
+                    this.tabIndex = on ? 0 : -1;
+                });
+                let hashed = algo == "header_hash" || algo == "cookie_hash";
+                $("#lbHashKeyField").toggle(hashed);
+                $("#lbHashKeyLabel").text(algo == "cookie_hash" ? t("Cookie name") : t("Header name"));
+                $("#lbHashKey").attr("placeholder", algo == "cookie_hash" ? "session_id" : "X-Tenant-Id");
+                if (!hashed || $("#lbHashKey").val().trim() != ""){
+                    $("#lbHashKeyField").removeClass("is-invalid");
+                    $("#lbHashKey").removeAttr("aria-invalid");
+                }
                 $("#lbActiveFields").toggle($("#lbActiveEnabled")[0].checked);
+                $("#lbActiveFields .lbHttpOnly").toggle($("#lbAhcMode").val() != "tcp");
                 $("#lbPassiveFields").toggle($("#lbPassiveEnabled")[0].checked);
                 $("#lbRetryFields").toggle($("#lbRetryEnabled")[0].checked);
                 $("#lbSlowStartField").toggle($("#lbActiveEnabled")[0].checked || $("#lbPassiveEnabled")[0].checked);
-                $("#algorithmSummary").text($("#lbAlgorithm option:selected").text().replace(/ \(.*\)/, ""));
+                $("#algorithmSummary").text($("#lbAlgorithm option:selected").text() || t("Weighted random"));
+
+                let cfg = lbConfigFromForm();
+                if (cfg.ActiveHealthCheck.ExpectedStatusMin <= cfg.ActiveHealthCheck.ExpectedStatusMax){
+                    $("#lbAhcStatusField").removeClass("is-invalid");
+                }
+                let rules = cfg.ClientRules.length;
+                $("#lbClientRulesSet").html(rules ? `<span class="zx-badge zx-badge--info">${esc(rules == 1 ? t("1 rule") : tf("{0} rules", rules))}</span>` : esc(t("No rules")));
+                renderLbPolicy(cfg);
+                let dirty = lbBaseline !== "" && JSON.stringify(cfg) !== lbBaseline;
+                $("#lbDirtyBadge").prop("hidden", !dirty);
+                $("#lbDiscardBtn").prop("disabled", !dirty);
+                $("#lbSaveNote").text(dirty ? t("Changes apply to all upstreams of this site when you save.") : (lbBaseline !== "" ? t("Everything is saved.") : ""));
             }
 
             function loadLoadBalanceSettings(){
@@ -931,17 +1618,21 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                     url: "/api/proxy/upstream/lb/get",
                     method: "GET",
                     data: {"ep": editingEndpoint.ep},
+                    error: function(){
+                        notify(t("The load balancing settings could not be loaded."), false);
+                    },
                     success: function(data){
                         if (data.error != undefined){
-                            parent.msgbox(data.error, false);
+                            notify(data.error, false);
                             return;
                         }
-                        $("#lbAlgorithm").val(data.Algorithm);
+                        lbLoadedAlgorithm = data.Algorithm || "";
+                        $("#lbAlgorithm").val(data.Algorithm || "random");
                         $("#lbHashKey").val(data.HashKey);
-                        let a = data.ActiveHealthCheck;
-                        $("#lbActiveEnabled").prop("checked", a.Enabled);
-                        $("#lbAhcMode").val(a.Mode);
-                        $("#lbAhcMethod").val(a.Method);
+                        let a = data.ActiveHealthCheck || {};
+                        $("#lbActiveEnabled").prop("checked", !!a.Enabled);
+                        $("#lbAhcMode").val(a.Mode || "http");
+                        $("#lbAhcMethod").val(a.Method || "GET");
                         $("#lbAhcPath").val(a.Path);
                         $("#lbAhcInterval").val(a.IntervalSeconds);
                         $("#lbAhcTimeout").val(a.TimeoutSeconds);
@@ -950,21 +1641,23 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         $("#lbAhcBody").val(a.BodyContains);
                         $("#lbAhcRise").val(a.Rise);
                         $("#lbAhcFall").val(a.Fall);
-                        let p = data.PassiveHealthCheck;
-                        $("#lbPassiveEnabled").prop("checked", p.Enabled);
+                        let p = data.PassiveHealthCheck || {};
+                        $("#lbPassiveEnabled").prop("checked", !!p.Enabled);
                         $("#lbPhcThreshold").val(p.FailThreshold);
                         $("#lbPhcCooldown").val(p.CooldownSeconds);
-                        $("#lbPhcStatuses").val(p.FailureStatuses.join(","));
+                        $("#lbPhcStatuses").val((p.FailureStatuses || []).join(","));
                         $("#lbSlowStart").val(data.SlowStartSeconds);
                         $("#lbClientRules").val((data.ClientRules || []).map(function(r){
                             return [r.Name || "", (r.CIDRs || []).join(", "), (r.Countries || []).join(", "), (r.Upstreams || []).join(", "), r.Fallback || ""].join(" | ");
                         }).join("\n"));
-                        let r = data.Retry;
-                        $("#lbRetryEnabled").prop("checked", r.Enabled);
+                        let r = data.Retry || {};
+                        $("#lbRetryEnabled").prop("checked", !!r.Enabled);
                         $("#lbRetryMax").val(r.MaxRetries);
                         $("#lbRetryBody").val(r.MaxBodyKB);
-                        $("#lbRetryStatuses").val(r.RetryStatuses.join(","));
-                        $("#lbRetryMethods").val(r.ExtraMethods.join(","));
+                        $("#lbRetryStatuses").val((r.RetryStatuses || []).join(","));
+                        $("#lbRetryMethods").val((r.ExtraMethods || []).join(","));
+                        $("#lbForm .is-invalid").removeClass("is-invalid");
+                        lbBaseline = JSON.stringify(lbConfigFromForm());
                         updateLbFieldVisibility();
                     }
                 });
@@ -979,9 +1672,11 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                 return isNaN(v) ? fallback : v;
             }
 
-            function saveLoadBalanceSettings(){
-                let cfg = {
-                    Algorithm: $("#lbAlgorithm").val(),
+            //The settings as they would be saved
+            function lbConfigFromForm(){
+                let picked = $("#lbAlgorithm").val() || "random";
+                return {
+                    Algorithm: (lbLoadedAlgorithm == "" && picked == "random") ? "" : picked,
                     HashKey: $("#lbHashKey").val().trim(),
                     SlowStartSeconds: intOr("#lbSlowStart", 0),
                     ClientRules: $("#lbClientRules").val().split("\n").map(function(l){ return l.trim(); }).filter(function(l){ return l; }).map(function(l){
@@ -1016,6 +1711,24 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         ExtraMethods: $("#lbRetryMethods").val().split(",").map(x => x.trim().toUpperCase()).filter(x => x != "")
                     }
                 };
+            }
+
+            function saveLoadBalanceSettings(){
+                let cfg = lbConfigFromForm();
+                let btn = document.getElementById("lbSaveBtn");
+                //Say what is wrong at the field before asking the server
+                let algo = lbAlgorithm();
+                if ((algo == "header_hash" || algo == "cookie_hash") && cfg.HashKey == ""){
+                    $("#lbHashKeyField").addClass("is-invalid");
+                    $("#lbHashKey").attr("aria-invalid", "true").trigger("focus");
+                    return;
+                }
+                if (cfg.ActiveHealthCheck.Enabled && cfg.ActiveHealthCheck.Mode != "tcp" && cfg.ActiveHealthCheck.ExpectedStatusMin > cfg.ActiveHealthCheck.ExpectedStatusMax){
+                    $("#lbAhcStatusField").addClass("is-invalid");
+                    $("#lbAhcStatusMin").trigger("focus");
+                    return;
+                }
+                setBusy(btn, true);
                 $.cjax({
                     url: "/api/proxy/upstream/lb/set",
                     method: "POST",
@@ -1023,16 +1736,25 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                         ep: editingEndpoint.ep,
                         payload: JSON.stringify(cfg)
                     },
+                    complete: function(){
+                        setBusy(btn, false);
+                    },
+                    error: function(){
+                        notify(t("The load balancing settings could not be saved: the server did not answer."), false);
+                    },
                     success: function(data){
                         if (data.error != undefined){
-                            parent.msgbox(data.error, false);
+                            notify(data.error, false);
                         }else{
-                            parent.msgbox("Load balancing settings saved");
+                            notify(t("Load balancing settings saved"));
                             loadLoadBalanceSettings();
                         }
                     }
                 });
             }
+
+            resetNewUpstreamForm(false);
+            updateLbFieldVisibility();
 
             if (window.location.hash.length > 1){
                 let payloadHash = window.location.hash.substr(1);

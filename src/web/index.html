@@ -607,7 +607,8 @@
             function hideSideWrapper(discardFrameContent = false){
                 if ($("#httprpEditModal").length && $("#httprpEditModal").is(":visible")) {
                     //HTTP Proxy Rule editor side wrapper implementation
-                    $("#httprpEditModal .editor_side_wrapper").hide();
+                    //(through its own function: it also gives the editor behind it back to the keyboard)
+                    if (typeof hideEditorSideWrapper === "function"){ hideEditorSideWrapper(); } else { $("#httprpEditModal .editor_side_wrapper").hide(); }
                 } 
 
                 //Original side wrapper implementation

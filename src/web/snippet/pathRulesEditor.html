@@ -8,13 +8,18 @@
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
+        <style>
+            /* the Save row stands clear of the table */
+            .prSaveRow{ display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; } /* --zx-space-3; this page has no kit tokens */
+            .prSaveRow .ui.button{ margin: 0; }
+        </style>
     </head>
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
         <br>
         <div class="ui container">
-            <h3 class="ui header">Path Rules</h3>
+            <h3 class="ui header zx-sideview-title">Path Rules</h3>
             <p>Ordered rules that apply to <b>paths</b> of this proxy rule. The <b>first</b> rule whose path, method and scope match decides. Nothing changes until you press <b>Save rules</b>.</p>
 
             <div style="overflow-x: auto;">
@@ -34,8 +39,10 @@
                 </tbody>
             </table>
             </div>
+            <div class="prSaveRow">
             <button class="ui primary button" onclick="savePathRules();"><i class="save icon"></i> Save rules</button>
             <span id="pathRulesDirty" style="display:none; color:#d9822b;"><i class="exclamation triangle icon"></i> Unsaved changes</span>
+            </div>
 
             <div class="ui divider"></div>
             <h4 class="ui header">Add rule</h4>

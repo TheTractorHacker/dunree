@@ -18,15 +18,6 @@
   "card": ""
  },
  {
-  "selector": "button.downstream_primary_hostname_edit_btn",
-  "tag": "button",
-  "oldTab": "downstream",
-  "label": "",
-  "count": 1,
-  "section": "general",
-  "card": "host"
- },
- {
   "selector": ".downstream_primary_hostname_edit_input input",
   "tag": "input",
   "oldTab": "downstream",
@@ -1116,8 +1107,8 @@
   "card": "tags"
  },
  {
-  "selector": "a.editor_back_button",
-  "tag": "a",
+  "selector": "button.editor_back_button",
+  "tag": "button",
   "oldTab": "sidewrapper",
   "label": "",
   "count": 1,

@@ -2,6 +2,7 @@ package analytic
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"imuslab.com/zoraxy/mod/statistic"
@@ -103,6 +104,19 @@ func mapToStringSlice(m map[string]int) []string {
 	for k := range m {
 		slice = append(slice, k)
 	}
+	return slice
+}
+
+// refererLabels lists the referrers of a day for the CSV export. Requests that came without a Referer header are
+// stored under classification keys (statistic.ClassifyReferer); they are written as readable text, and the empty
+// key of older data as "Unknown (recorded before this version)" instead of an empty field. Sorted for a stable file.
+// The names hold no comma, because HandleRangeExport joins the list with "," in one cell.
+func refererLabels(m map[string]int) []string {
+	slice := make([]string, 0, len(m))
+	for k := range m {
+		slice = append(slice, statistic.RefererLabel(k))
+	}
+	sort.Strings(slice)
 	return slice
 }
 

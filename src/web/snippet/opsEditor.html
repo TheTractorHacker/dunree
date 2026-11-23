@@ -8,13 +8,23 @@
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
+        <style>
+            /* narrow frames: the four tabs do not fit on one line (the last one was cut and the page scrolled sideways).
+               They wrap into rows of plain buttons; the active one keeps the marker colour. */
+            @media (max-width: 560px){
+                #opsTabs{ flex-wrap: wrap; gap: 4px; border-bottom: 0; padding-bottom: 8px; }
+                #opsTabs .item{ flex: 1 1 auto; justify-content: center; margin: 0; border: 1px solid var(--divider_color, #d4d4d5) !important; border-radius: 4px !important; padding: .7em .9em; }
+                #opsTabs .item.active{ border-color: var(--theme_highlight, #2185d0) !important; font-weight: 700; }
+                .ui.bottom.attached.tab.segment{ border-top: 1px solid var(--divider_color, #d4d4d5); border-radius: 4px; }
+            }
+        </style>
     </head>
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
         <br>
         <div class="ui container">
-            <h3 class="ui header">Error pages, static responses, CORS and bandwidth</h3>
+            <h3 class="ui header zx-sideview-title">Error pages, static responses, CORS and bandwidth</h3>
             <p>Per proxy rule options, all <b>off</b> until configured. Everything is saved with one button at the bottom.</p>
 
             <div class="ui top attached tabular menu" id="opsTabs">
