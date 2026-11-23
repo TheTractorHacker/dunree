@@ -2,7 +2,9 @@
     #trustedProxyCard .tpTools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
     #trustedProxyCard .tpTools .ui.input { flex: 1 1 16rem; max-width: 24rem; }
     #trustedProxyCard .tpCount { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    #trustedProxyCard .zx-table-wrap { --zx-table-max: min(34rem, 70vh); }
+    /* a long description wraps inside its column, so the row actions never leave the card */
+    #trustedProxyCard td.proxy-desc-cell { overflow-wrap: anywhere; min-width: 0; }
+    #trustedProxyCard td.zx-actions { white-space: nowrap; width: 1%; }
     #trustedProxyCard td.proxy-ip-cell { white-space: nowrap; font-family: var(--zx-font-mono); font-size: 0.93em; }
     #trustedProxyCard .proxy-ip-edit, #trustedProxyCard .proxy-desc-edit { min-width: 9rem; }
     #trustedProxyCard td.zx-empty-cell { white-space: normal; }
@@ -34,9 +36,9 @@
     <aside class="zx-related" aria-label="Related pages">
         <span class="zx-related__title">Related</span>
         <ul>
-            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>address rules and bans use the real client address</span></li>
-            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>trusted proxies are never auto-banned</span></li>
-            <li><a href="#globalsettings" data-nav-open="globalsettings">Listeners</a> <span>client IP header and PROXY protocol options</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Address rules and bans use the real client address</span></li>
+            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>Trusted proxies are never auto-banned</span></li>
+            <li><a href="#globalsettings" data-nav-open="globalsettings">Listeners</a> <span>Client IP header and PROXY protocol options</span></li>
         </ul>
     </aside>
 

@@ -1,243 +1,365 @@
 <div class="standardContainer" id="vdirPage">
     <style>
-        #vdirPage { max-width: 1100px; }
-        /* empty list: no box inside the card, no header row above the message */
-        #vdirPage .zx-table:has(td.zx-empty-cell) thead { display: none; }
-        #vdirPage .zx-table, body.darkTheme #vdirPage .zx-table { border: 0 !important; }
-        #vdirPage td.zx-empty-cell { padding: var(--zx-space-4); }
-        #vdirPage td.zx-empty-cell .zx-empty { padding: var(--zx-space-3) 0; }
-        @media (max-width: 480px) { #vdirPage .zx-table tr:has(> td.zx-empty-cell) { border: 0; background: transparent; margin: 0; border-radius: 0; } #vdirPage .zx-table td.zx-empty-cell { padding: var(--zx-space-3) 0; } }
-        #vdirPage .zx-table-wrap { --zx-table-max: 26rem; }
         #vdirPage .zx-btn.disabled { opacity: .55; pointer-events: none; }
-        #vdirPage #newVDSection.disabled { display: none; }
-        #vdirPage .zxs-or { display: flex; align-items: center; gap: var(--zx-space-3); margin: var(--zx-space-3) 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-        #vdirPage .zxs-or::before, #vdirPage .zxs-or::after { content: ""; flex: 1 1 0; border-top: 1px solid var(--zx-border); }
-        #vdirPage .ui.checkbox label small, #vdirPage .field small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
-        #vdirPage .zx-disclosure { margin: var(--zx-space-2) 0 var(--zx-space-4); }
-        #vdirPage .zx-disclosure__body { padding-top: var(--zx-space-3); }
-        #vdirPage td.zxs-dest { word-break: break-all; }
-        #vdirPage .zx-card__head .zx-btn { flex: 0 0 auto; }
-        #vdirPage #currentVirtualDirectoryAttachingHost { background: none; border: 0; border-radius: 0; font-weight: 400; color: var(--zx-text-muted); padding: 0; }
-        #vdirPage .zxs-choose .ui.dropdown { min-height: var(--zx-control-h); }
-        #vdirPage .zx-card__foot { align-items: center; }
-        #vdirPage .zx-card__foot .ui.button { margin: 0; }
+        #vdirPage .zxs-list__bar .zx-select { width: auto; max-width: 20rem; min-width: 11rem; }
+        #vdirPage .zx-btn[disabled] { opacity: .55; cursor: not-allowed; }
+        /* the target is the one value that must stay readable in one piece: it keeps its width, host and prefix give way */
+        @media (min-width: 481px) {
+            #vdirPage td.zxs-host { width: 30%; }
+            #vdirPage th.zxs-destth, #vdirPage td.zxs-dest { width: 34%; min-width: 14rem; }
+        }
+        #vdirPage .zxs-path { font-family: var(--zx-font-mono); font-size: 0.93em; font-weight: 400; color: var(--zx-text); }
+        #vdirPage .zxs-dest .zxs-route { flex-wrap: nowrap; }
+        #vdirPage .zxs-dest .zxs-route > span:first-child { display: flex; align-items: baseline; min-width: 0; white-space: nowrap; }
+        #vdirPage .zxs-dest .zxs-addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+        #vdirPage .zxs-dest .zxs-fact { flex: 0 0 auto; }
+        @media (max-width: 480px) { #vdirPage .zxs-list__bar .zx-select { max-width: none; } #vdirPage td.zxs-dest .zxs-route { min-width: 0; flex-wrap: wrap; } #vdirPage .zxs-dest .zxs-addr { white-space: normal; overflow-wrap: anywhere; text-align: right; } }
+        #vdirPage tr.zxs-samehost td.zxs-host > * { visibility: hidden; }
+        #vdirPage tr.zxs-samehost td { border-top-color: transparent; }
+        @media (max-width: 480px) { #vdirPage tr.zxs-samehost td.zxs-host > * { visibility: visible; } }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Path routes</h2>
-            <p class="zx-page-header__sub">Send part of a site to a different place</p>
+            <p class="zx-page-header__sub">Send one part of a host, such as /api/, to a different server. Everything else on the host is unchanged.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Virtual directory"><i class="history icon" aria-hidden="true"></i> History</button>
+            <button type="button" class="zx-btn zx-btn--primary" id="vdirAddBtn" onclick="openVdirForm();"><i class="plus icon" aria-hidden="true"></i> Add path route</button>
         </div>
     </header>
     <aside class="zx-related" aria-label="Related pages">
         <span class="zx-related__title">Related</span>
         <ul>
-            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>the sites that own the path routes</span></li>
-            <li><a href="#redirectset" data-nav-open="redirectset">Redirection</a> <span>send visitors to another address instead</span></li>
-            <li><a href="#setroot" data-nav-open="setroot">Default Site</a> <span>what answers when no site matches</span></li>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>The hosts that own the path routes</span></li>
+            <li><a href="#redirectset" data-nav-open="redirectset">Redirection</a> <span>Send visitors to another address instead</span></li>
+            <li><a href="#setroot" data-nav-open="setroot">Default Site</a> <span>What answers when no host matches</span></li>
         </ul>
     </aside>
 
-    <section class="zx-card zxs-choose">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Choose a site</h3>
-            <p class="zx-card__desc">A request whose path starts with a prefix such as <code>/api/</code> goes to another server, the rest of the site is unchanged.</p>
-        </div>
-        <div class="zx-card__body">
-            <div class="ui checkbox">
-                <input type="checkbox" id="useRootProxyRouterForVdir" onchange="handleVdirAttachTargetChange(this);">
-                <label for="useRootProxyRouterForVdir">Default site<br>
-                <small>Only works when the Default Site is set to "Reverse proxy target"</small></label>
-            </div>
-            <div class="zxs-or" aria-hidden="true">or</div>
-            <div class="field zx-field" style="margin:0;">
-                <label class="zx-field__label" for="vdirBaseRoutingRule">A site you already created</label>
-                <div class="ui fluid search selection dropdown">
-                    <input type="hidden" id="vdirBaseRoutingRule" name="vdirBaseRoutingRule" onchange="handleVdirAttachTargetChange();">
-                    <i class="dropdown icon"></i>
-                    <div class="default text">Select a site</div>
-                    <div class="menu" id="hostDomainList">
+    <div class="zx-statrow zxs-statrow" id="vdirStats" hidden>
+        <div class="zx-stat"><span class="zx-stat__label">Path routes</span><span class="zx-stat__value" id="vdirStatAll">0</span><span class="zx-stat__hint">on all hosts together</span></div>
+        <div class="zx-stat"><span class="zx-stat__label">Hosts with path routes</span><span class="zx-stat__value" id="vdirStatHosts">0</span><span class="zx-stat__hint" id="vdirStatHostsHint"></span></div>
+        <div class="zx-stat"><span class="zx-stat__label">Default site</span><span class="zx-stat__value" id="vdirStatRoot">0</span><span class="zx-stat__hint">routes for addresses no host matches</span></div>
+    </div>
 
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- kept for the scripts and deep links that choose a site: the picker in the list bar and the form drive these two -->
+    <input type="checkbox" id="useRootProxyRouterForVdir" onchange="handleVdirAttachTargetChange(this);" hidden>
+    <input type="hidden" id="vdirBaseRoutingRule" name="vdirBaseRoutingRule" onchange="handleVdirAttachTargetChange();">
 
-    <section class="zx-card">
+    <section id="newVDSection" class="zx-card zxs-form section" hidden>
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Path routes</h3>
-            <button class="zx-btn zx-btn--secondary zx-btn--sm" type="button" onclick="reloadVdirList();" title="Refresh list"><i class="refresh icon"></i> Refresh</button>
-            <p class="zx-card__desc" id="currentVirtualDirectoryAttachingHost" role="status">Each path route sends one path prefix to its own destination.</p>
+            <h3 class="zx-card__title" id="vdirFormTitle">Add a path route</h3>
+            <button type="button" class="zxs-iconbtn" onclick="closeVdirForm();" aria-label="Close the form" title="Close"><i class="times icon" aria-hidden="true"></i></button>
+            <p class="zx-card__desc">Requests to the host whose path starts with the prefix go to the target. The longest matching prefix wins.</p>
         </div>
-        <div class="zx-card__body">
-            <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Path routes">
-                <table class="zx-table zx-table--compact">
-                    <thead>
-                        <tr>
-                            <th>Path route</th>
-                            <th>Destination</th>
-                            <th class="zx-actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="vdirList">
-                        <tr>
-                            <td colspan="3" class="zx-empty-cell">Choose a site above to see its path routes</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <section id="newVDSection" class="zx-card disabled section">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">New path route</h3>
-            <p class="zx-card__desc">Requests that start with the path prefix are sent to the target.</p>
-        </div>
-        <form class="ui form">
+        <form onsubmit="event.preventDefault(); submitVdirForm();">
           <div class="zx-card__body">
-            <div class="zx-form-grid">
+            <div class="zx-field field">
+                <label class="zx-field__label" for="hostDomainList">Host</label>
+                <select id="hostDomainList" class="zx-select" onchange="updateVdirExample();"></select>
+                <p class="zx-help" id="vdirRootNote" hidden>Path routes on the default site only work while the Default Site is set to "Reverse proxy target" or "Static web server".</p>
+            </div>
+            <div class="zxs-form__row">
                 <div class="field zx-field">
                     <label class="zx-field__label" for="virtualDirectoryPath">Path prefix</label>
-                    <input type="text" id="virtualDirectoryPath" placeholder="/mysite/">
-                    <small>For example <code>/mysite/</code> sends everything under <code>mydomain.com/mysite/</code> to the target</small>
+                    <input type="text" class="zx-input" id="virtualDirectoryPath" placeholder="/api/" spellcheck="false" autocomplete="off">
+                    <p class="zx-help">Starts with a slash. Letters, digits and <code class="zxs-code">- _ . /</code>, no spaces.</p>
                 </div>
+                <span class="zxs-form__arrow" aria-hidden="true">&rarr;</span>
                 <div class="field zx-field">
                     <label class="zx-field__label" for="virtualDirectoryDomain">Target address</label>
-                    <input type="text" id="virtualDirectoryDomain" placeholder="192.168.0.101:8000" onchange="updateVDTargetTLSState();">
-                    <small>An IP address or domain name with its port, for example 192.168.0.101:8000 or example.com</small>
+                    <input type="text" class="zx-input" id="virtualDirectoryDomain" placeholder="192.168.0.101:8000" spellcheck="false" autocomplete="off" onchange="updateVDTargetTLSState();">
+                    <p class="zx-help">An IP address or domain name with its port, for example 192.168.0.101:8000 or example.com</p>
                 </div>
             </div>
-            <div class="field">
-                <div class="ui checkbox">
-                    <input type="checkbox" id="vdReqTls">
-                    <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://</small></label>
-                </div>
-            </div>
+            <p class="zxs-example" id="vdirExample" aria-live="polite" style="margin: 0 0 var(--zx-space-4);"></p>
+            <label class="zxs-check">
+                <input type="checkbox" id="vdReqTls">
+                <span><b>The target needs a TLS connection</b><small>Tick this if the target address starts with https://. Zoraxy checks the target and ticks it for you when it can.</small></span>
+            </label>
 
             <!-- Advance configs -->
             <details id="advanceVdirRules" class="zx-disclosure">
                 <summary>Advanced settings</summary>
                 <div class="zx-disclosure__body">
-                    <div class="field">
-                        <div class="ui checkbox">
-                            <input type="checkbox" id="vdSkipTLSValidation">
-                            <label>Ignore TLS/SSL certificate errors<br><small>For targets with a self-signed or expired certificate (not recommended)</small></label>
-                        </div>
-                    </div>
+                    <label class="zxs-check" style="margin-bottom:0;">
+                        <input type="checkbox" id="vdSkipTLSValidation">
+                        <span><b>Ignore TLS/SSL certificate errors</b><small>For targets with a self-signed or expired certificate (not recommended)</small></span>
+                    </label>
                 </div>
             </details>
           </div>
           <div class="zx-card__foot">
-            <button class="ui primary button" onclick="addVdirToHost(); event.preventDefault();"><i class="add icon"></i> Create path route</button>
+            <button type="submit" class="zx-btn zx-btn--primary" id="vdirCreateBtn"><i class="plus icon" aria-hidden="true"></i> Create path route</button>
+            <button type="submit" class="zx-btn zx-btn--primary" id="vdirSaveBtn" hidden><i class="check icon" aria-hidden="true"></i> Save changes</button>
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="closeVdirForm();">Cancel</button>
           </div>
         </form>
     </section>
+
+    <section class="zxs-list" aria-labelledby="vdirListTitle">
+        <div class="zxs-list__bar">
+            <div class="zxs-list__heading">
+                <h3 class="zx-card__title zxs-list__title" id="vdirListTitle">Path routes</h3>
+                <p class="zxs-list__desc" id="vdirListDesc" aria-live="polite">Every path route of every host.</p>
+            </div>
+            <div class="zxs-list__tools">
+                <label class="zx-sr-only" for="vdirSiteFilter">Show the path routes of</label>
+                <select id="vdirSiteFilter" class="zx-select" onchange="setVdirFilter(this.value);"><option value="">All hosts</option></select>
+                <button type="button" class="zxs-iconbtn" onclick="reloadVdirList();" title="Reload the list" aria-label="Reload the list"><i class="refresh icon" aria-hidden="true"></i></button>
+            </div>
+        </div>
+        <div class="zx-table-wrap">
+            <table class="zx-table">
+                <thead>
+                    <tr>
+                        <th class="no-sort">Host</th>
+                        <th class="no-sort">Path prefix</th>
+                        <th class="no-sort zxs-destth">Goes to</th>
+                        <th class="no-sort zx-actions"><span class="zx-sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody id="vdirList">
+                    <tr>
+                        <td colspan="4" class="zx-empty-cell">Loading the path routes...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 <script>
-    //Virtual directories functions
+    //Path routes (virtual directories). One table of every route of every host, a host filter, and one form to add or edit.
+    var vdirHosts = [];        //host names, as listed by /api/proxy/list
+    var vdirRoutes = [];       //{ep: host name or "root", vdir: {...}}
+    var vdirFilter = "";       //"" all hosts, "root" the default site, or a host name
+    var vdirEditing = null;    //{ep, path} while the form edits a route
+    var vdirLoaded = false;    //true once the host list has answered
 
-    //Initialize the list of hosts that can be used to attach vdirs config
-    function initVdirList(){
-        //Load the hosts into the dropdown
-        $("#hostDomainList").html("");
+    function vdirHostLabel(ep){ return ep == "root" ? t("Default site") : ep; }
+
+    //Load the hosts and all their path routes (the host list already carries them), plus those of the default site
+    function initVdirList(callback){
         $.get("/api/proxy/list?type=host", function(data){
-            if (data.error != undefined){
+            if (data && data.error != undefined){
                 msgbox(data.error, false);
-            }else{
-                if (data.length == 0){
-                    //No hosts found
-                }else{
-                    data.forEach(proxyEndpoint => {
-                        let domain = proxyEndpoint.RootOrMatchingDomain;
-                        $("#hostDomainList").append(`<div class="item" data-value="${ZxUI.esc(domain)}">${ZxUI.esc(domain)}</div>`);
-                    });
-
-                    //Update the dropdown events
-                    $("#vdirBaseRoutingRule").parent().dropdown();
-                }
+                return;
             }
+            data = data || [];
+            vdirHosts = data.map(function(e){ return e.RootOrMatchingDomain; });
+            let routes = [];
+            data.forEach(function(e){
+                (e.VirtualDirectories || []).forEach(function(v){ routes.push({ep: e.RootOrMatchingDomain, vdir: v}); });
+            });
+            $.get("/api/proxy/vdir/list?type=root", function(rootList){
+                if (rootList && rootList.error == undefined && rootList.forEach){
+                    rootList.forEach(function(v){ routes.push({ep: "root", vdir: v}); });
+                }
+            }).always(function(){
+                vdirRoutes = routes;
+                vdirLoaded = true;
+                fillVdirPickers();
+                renderVdirList();
+                if (callback != undefined){ callback(); }
+            });
         });
     }
 
-    
-    function handleVdirAttachTargetChange(targetCheckbox=undefined){
-        if (targetCheckbox != undefined && targetCheckbox.checked){
-            $("#vdirBaseRoutingRule").parent().addClass("disabled");
+    function fillVdirPickers(){
+        let filter = $("#vdirSiteFilter").empty().append($("<option></option>").val("").text(t("All hosts")));
+        let form = $("#hostDomainList"), chosen = form.val();
+        form.empty().append($("<option></option>").val("").text(t("Choose a host")));
+        vdirHosts.forEach(function(h){
+            let n = vdirRoutes.filter(function(r){ return r.ep == h; }).length;
+            filter.append($("<option></option>").val(h).text(n ? h + " (" + n + ")" : h));
+            form.append($("<option></option>").val(h).text(h));
+        });
+        filter.append($("<option></option>").val("root").text(t("Default site")));
+        form.append($("<option></option>").val("root").text(t("Default site (addresses no host matches)")));
+        if (vdirFilter != "" && vdirFilter != "root" && vdirHosts.indexOf(vdirFilter) < 0){ vdirFilter = ""; }
+        filter.val(vdirFilter);
+        if (chosen && (chosen == "root" || vdirHosts.indexOf(chosen) > -1)){ form.val(chosen); }
+    }
 
-            //Load the vdir list for root
-            loadVdirList("root");
-            $("#newVDSection").removeClass("disabled");
-        }else{
-            $("#vdirBaseRoutingRule").parent().removeClass("disabled");
-            let selectedEndpointRule = $("#vdirBaseRoutingRule").val();
-            if (selectedEndpointRule != ""){
-                loadVdirList(selectedEndpointRule);
-                $("#newVDSection").removeClass("disabled");
-            }else{
-                $("#newVDSection").addClass("disabled");
-            }
-        }
+    function setVdirFilter(ep){
+        vdirFilter = ep || "";
+        $("#vdirSiteFilter").val(vdirFilter);
+        //the two legacy fields mirror the choice
+        $("#useRootProxyRouterForVdir").prop("checked", vdirFilter == "root");
+        $("#vdirBaseRoutingRule").val(vdirFilter == "root" ? "" : vdirFilter);
+        renderVdirList();
+    }
+
+    //Open the page on one host (used by the site editor and the HTTP Proxy row menu)
+    function showVdirOfHost(ep){
+        vdirFilter = ep || "";
+        initVdirList(function(){ setVdirFilter(ep); });
+    }
+
+    //A site was chosen through the legacy fields (scripts, older links): show its routes and offer the form for it
+    function handleVdirAttachTargetChange(targetCheckbox=undefined){
+        let ep = "";
+        if ($("#useRootProxyRouterForVdir")[0].checked){ ep = "root"; }
+        else { ep = ($("#vdirBaseRoutingRule").val() || "").trim(); }
+        vdirFilter = ep;
+        $("#vdirSiteFilter").val(ep);
+        renderVdirList();
+        if (ep != ""){ openVdirForm(ep); }
     }
 
     //Row buttons carry their values in data attributes (no host name or path is ever put into JavaScript source)
     $(document).on("click", "#vdirList [data-vact]", function(){
         var b = $(this);
         if (b.attr("data-vact") == "edit"){ editVdir(b.attr("data-path"), b.attr("data-ep")); }
+        else if (b.attr("data-vact") == "add"){ openVdirForm(vdirFilter); }
+        else if (b.attr("data-vact") == "all"){ setVdirFilter(""); }
         else { deleteVdir(b.attr("data-path"), b.attr("data-ep")); }
     });
 
-    //List the Vdir of the given endpoint, use "root" for root router
-    function loadVdirList(endpoint){
-        $("#currentVirtualDirectoryAttachingHost").text(endpoint == "root" ? t("Showing the path routes of the default site") : t("Showing the path routes of") + " " + endpoint);
-        let reqURL = "/api/proxy/vdir/list?type=host&ep=" + endpoint;
-        if (endpoint == "root"){
-            //Load root endpoint vdir list
-            reqURL = "/api/proxy/vdir/list?type=root";
-        }
-        
-        $.get(reqURL, function(data){
-            if (data.error != undefined){
-                msgbox(data.error, false);
-            }else{
-                $("#vdirList").html("");
-                if (data.length == 0){
-                    //No virtual directory for this host
-                    $("#vdirList").append(`<tr>
-                        <td colspan="3" class="zx-empty-cell"><div class="zx-empty"><div class="zx-empty__title">No path routes yet</div><p class="zx-empty__text">Every request to this site goes to its main upstream. Add a path prefix below to send part of the site elsewhere.</p></div></td>
-                    </tr>`);
-                }else{
-                    //List the vdirs
-                    console.log(data);
-                    data.forEach(vdir => {
-                        var tlsIcon = "";
-                        if (vdir.RequireTLS){
-                            tlsIcon = `<i class="green lock icon" title="TLS Mode"></i>`;
-                            if (vdir.SkipCertValidations){
-                                tlsIcon = `<i class="yellow lock icon" title="TLS/SSL mode without verification"></i>`
-                            }
-                        }
+    //One primary button per view: the header button steps back while the form is open or the empty state offers the same action.
+    //Without a single host there is nothing a path route could belong to, so it is disabled and says why.
+    function syncVdirHeaderBtn(){
+        let rows = vdirRoutes.filter(function(r){ return vdirFilter == "" || r.ep == vdirFilter; }).length;
+        let quiet = !document.getElementById("newVDSection").hidden || rows == 0;
+        let noHost = vdirHosts.length == 0 && vdirRoutes.length == 0 && vdirLoaded;
+        $("#vdirAddBtn").toggleClass("zx-btn--primary", !quiet).toggleClass("zx-btn--secondary", quiet)
+            .prop("disabled", noHost).attr("title", noHost ? t("Create a host on the HTTP Proxy page first: a path route belongs to a host") : null);
+    }
 
-                        let payload = JSON.stringify(vdir).hexEncode();
+    //Kept for callers that list one endpoint ("root" for the default site)
+    function loadVdirList(endpoint){ showVdirOfHost(endpoint); }
 
-                        $("#vdirList").append(`<tr vdirid="${vdir.MatchingPath.hexEncode()}" class="vdirEntry" payload="${payload}">
-                            <td data-label="Path route" editable="false" >${ZxUI.esc(vdir.MatchingPath)}</td>
-                            <td class="zxs-dest" data-label="Destination" editable="true" datatype="domain">${ZxUI.esc(vdir.Domain)} ${tlsIcon}</td>
-                            <td class="zx-actions" editable="true" datatype="action">
-                                <span class="zx-row-actions">
-                                <button type="button" aria-label="Edit this path route" title="Edit this path route" class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon editBtn" data-vact="edit" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="edit icon"></i></button>
-                                <button type="button" aria-label="Delete this path route" title="Delete this path route" class="zx-btn zx-btn--danger-outline zx-btn--sm zx-btn--icon" data-vact="delete" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="trash icon"></i></button>
-                                </span>
-                            </td>
-                        </tr>`);
-                    })
-                }
-            }
+    function renderVdirList(){
+        let rows = vdirRoutes.filter(function(r){ return vdirFilter == "" || r.ep == vdirFilter; });
+        rows.sort(function(a, b){
+            if (a.ep != b.ep){ return a.ep == "root" ? 1 : (b.ep == "root" ? -1 : a.ep.localeCompare(b.ep)); }
+            return a.vdir.MatchingPath.localeCompare(b.vdir.MatchingPath);
         });
+        let withRoutes = {}, rootCount = 0;
+        vdirRoutes.forEach(function(r){ if (r.ep == "root"){ rootCount++; } else { withRoutes[r.ep] = true; } });
+        $("#vdirStats").prop("hidden", vdirRoutes.length == 0);
+        $("#vdirStatAll").text(vdirRoutes.length);
+        $("#vdirStatHosts").text(Object.keys(withRoutes).length);
+        $("#vdirStatHostsHint").text(t("of {0} hosts").replace("{0}", vdirHosts.length));
+        $("#vdirStatRoot").text(rootCount);
+        syncVdirHeaderBtn();
+        $("#vdirListDesc").text(vdirFilter == "" ? t("Every path route of every host.") : (vdirFilter == "root" ? t("Showing the path routes of the default site") : t("Showing the path routes of") + " " + vdirFilter));
+
+        let list = $("#vdirList").html("");
+        if (rows.length == 0){
+            let title, text, buttons;
+            if (vdirHosts.length == 0 && vdirFilter == ""){
+                title = t("Create a host first");
+                text = t("A path route belongs to a host. Add a proxy rule on the HTTP Proxy page, then come back to send part of it somewhere else.");
+                buttons = `<button type="button" class="zx-btn zx-btn--primary" onclick="openTabById('httprp');">${ZxUI.esc(t("Go to HTTP Proxy"))}</button>`;
+            }else if (vdirFilter == ""){
+                title = t("No path routes yet");
+                text = t("Every request to a host goes to its upstream. A path route makes an exception for one part of it: app.example.com/api/ can go to a different server than the rest of app.example.com.");
+                buttons = `<button type="button" class="zx-btn zx-btn--primary" data-vact="add"><i class="plus icon" aria-hidden="true"></i> ${ZxUI.esc(t("Add path route"))}</button>`;
+            }else{
+                title = t("No path routes on {0}").replace("{0}", vdirHostLabel(vdirFilter));
+                text = t("Every request to this host goes to its main upstream. Add a path prefix to send part of it elsewhere.");
+                buttons = `<button type="button" class="zx-btn zx-btn--primary" data-vact="add"><i class="plus icon" aria-hidden="true"></i> ${ZxUI.esc(t("Add path route"))}</button> <button type="button" class="zx-btn zx-btn--secondary" data-vact="all">${ZxUI.esc(t("Show all hosts"))}</button>`;
+            }
+            list.append(`<tr><td colspan="4" class="zx-empty-cell"><div class="zx-empty"><div class="zx-empty__icon"><i class="code branch icon" aria-hidden="true"></i></div><p class="zx-empty__title">${ZxUI.esc(title)}</p><p class="zx-empty__text">${ZxUI.esc(text)}</p><div class="zx-btn-row" style="justify-content:center;">${buttons}</div></div></td></tr>`);
+            return;
+        }
+        let last = null;
+        rows.forEach(function(r){
+            let vdir = r.vdir, endpoint = r.ep;
+            let tls = "";
+            if (vdir.RequireTLS){
+                tls = vdir.SkipCertValidations ? `<span class="zxs-fact" title="${ZxUI.esc(t("TLS/SSL mode without verification"))}"><i class="lock open icon" aria-hidden="true"></i>${ZxUI.esc(t("TLS, not verified"))}</span>`
+                    : `<span class="zxs-fact zxs-fact--on" title="${ZxUI.esc(t("TLS Mode"))}"><i class="lock icon" aria-hidden="true"></i>TLS</span>`;
+            }
+            let payload = JSON.stringify(vdir).hexEncode();
+            let same = (last === endpoint); last = endpoint;
+            list.append(`<tr vdirid="${vdir.MatchingPath.hexEncode()}" class="vdirEntry ${same ? "zxs-samehost" : ""}" data-ep="${ZxUI.esc(endpoint)}" payload="${payload}">
+                <td class="zxs-host zxs-lead" data-label="${ZxUI.esc(t("Host"))}"><span class="zxs-cell__main zxs-clamp2" title="${ZxUI.esc(vdirHostLabel(endpoint))}">${ZxUI.esc(vdirHostLabel(endpoint))}</span></td>
+                <td data-label="${ZxUI.esc(t("Path prefix"))}"><span class="zxs-path zxs-clamp2" title="${ZxUI.esc(vdir.MatchingPath)}">${ZxUI.esc(vdir.MatchingPath)}</span></td>
+                <td class="zxs-dest" data-label="${ZxUI.esc(t("Goes to"))}"><span class="zxs-route"><span><span class="zxs-arrow" aria-hidden="true">&rarr;</span><span class="zxs-addr" title="${ZxUI.esc(vdir.Domain)}">${ZxUI.esc(vdir.Domain)}</span></span>${tls}</span></td>
+                <td class="zx-actions">
+                    <span class="zxs-actions">
+                    <button type="button" aria-label="${ZxUI.esc(t("Edit the path route {0}").replace("{0}", vdir.MatchingPath))}" title="${ZxUI.esc(t("Edit this path route"))}" class="zx-btn zx-btn--secondary zx-btn--sm editBtn" data-vact="edit" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}">${ZxUI.esc(t("Edit"))}</button>
+                    <button type="button" aria-label="${ZxUI.esc(t("Remove the path route {0}").replace("{0}", vdir.MatchingPath))}" title="${ZxUI.esc(t("Delete this path route"))}" class="zxs-iconbtn zxs-iconbtn--danger" data-vact="delete" data-path="${ZxUI.esc(vdir.MatchingPath)}" data-ep="${ZxUI.esc(endpoint)}"><i class="trash alternate outline icon" aria-hidden="true"></i></button>
+                    </span>
+                </td>
+            </tr>`);
+        });
+    }
+
+    //The sentence in the form: what the route does to a real address
+    function updateVdirExample(){
+        let ep = $("#hostDomainList").val();
+        let host = (!ep || ep == "root") ? "app.example.com" : ep;
+        let path = ($("#virtualDirectoryPath").val() || "").trim() || "/api/";
+        if (path.charAt(0) != "/"){ path = "/" + path; }
+        let target = ($("#virtualDirectoryDomain").val() || "").trim() || "192.168.0.101:8000";
+        let el = $("#vdirExample").empty();
+        el.append($("<code></code>").text(host + path.replace(/\/$/, "") + "/users"), document.createTextNode(" " + t("goes to") + " "), $("<code></code>").text(target));
+        let rootBlocked = (ep == "root" && window.defaultSiteTakesPathRoutes === false);
+        $("#vdirRootNote").prop("hidden", ep != "root").toggleClass("zxs-fielderr", rootBlocked);
+    }
+    $("#virtualDirectoryPath, #virtualDirectoryDomain").on("input", updateVdirExample);
+
+    function openVdirForm(ep, route){
+        vdirEditing = route ? {ep: ep, path: route.MatchingPath} : null;
+        $("#vdirFormTitle").text(route ? t("Edit path route") : t("Add a path route"));
+        $("#vdirCreateBtn").prop("hidden", !!route);
+        $("#vdirSaveBtn").prop("hidden", !route);
+        $("#hostDomainList").prop("disabled", !!route);
+        $("#virtualDirectoryPath").prop("readonly", !!route);
+        if (route){
+            $("#hostDomainList").val(ep);
+            $("#virtualDirectoryPath").val(route.MatchingPath);
+            $("#virtualDirectoryDomain").val(route.Domain);
+            $("#vdReqTls").prop("checked", !!route.RequireTLS);
+            $("#vdSkipTLSValidation").prop("checked", !!route.SkipCertValidations);
+            if (route.SkipCertValidations){ document.getElementById("advanceVdirRules").open = true; }
+        }else{
+            if (document.getElementById("newVDSection").hidden){ resetVdirForm(); }
+            if (ep){ $("#hostDomainList").val(ep); }
+            else if (vdirFilter){ $("#hostDomainList").val(vdirFilter); }
+        }
+        vdirClearErrors();
+        updateVdirExample();
+        let card = document.getElementById("newVDSection");
+        card.hidden = false;
+        syncVdirHeaderBtn();
+        if (card.scrollIntoView){ card.scrollIntoView({behavior: "smooth", block: "nearest"}); }
+        $(route ? "#virtualDirectoryDomain" : ($("#hostDomainList").val() ? "#virtualDirectoryPath" : "#hostDomainList")).trigger("focus");
+    }
+
+    function closeVdirForm(){
+        vdirEditing = null;
+        document.getElementById("newVDSection").hidden = true;
+        $("#hostDomainList").prop("disabled", false);
+        $("#virtualDirectoryPath").prop("readonly", false);
+        syncVdirHeaderBtn();
+        $("#vdirAddBtn").trigger("focus");
+    }
+
+    //Field checks before anything is sent: the message sits under the field, the first wrong field gets the focus
+    function vdirClearErrors(){
+        ["#hostDomainList", "#virtualDirectoryPath", "#virtualDirectoryDomain"].forEach(function(f){ ZxUI.field(f).clearError(); });
+    }
+    function vdirValidate(needHost, needPath){
+        vdirClearErrors();
+        let bad = null;
+        if ($("#virtualDirectoryDomain").val().trim() == ""){ ZxUI.field("#virtualDirectoryDomain").setError(t("Enter the address of the server that answers for this path")); bad = "#virtualDirectoryDomain"; }
+        if (needPath && $("#virtualDirectoryPath").val().trim() == ""){ ZxUI.field("#virtualDirectoryPath").setError(t("Enter the path prefix, for example /api/")); bad = "#virtualDirectoryPath"; }
+        if (needHost){ ZxUI.field("#hostDomainList").setError(t("Choose the host this path route belongs to")); bad = "#hostDomainList"; }
+        if (bad){ $(bad).trigger("focus"); }
+        return !bad;
+    }
+    $("#virtualDirectoryPath, #virtualDirectoryDomain").on("input", function(){ if (this.value.trim() != ""){ ZxUI.field(this).clearError(); } });
+    $("#hostDomainList").on("change", function(){ if (this.value){ ZxUI.field(this).clearError(); } });
+
+    function submitVdirForm(){
+        if (vdirEditing){ saveVdirInlineEdit(vdirEditing.path.hexEncode()); }
+        else { addVdirToHost(); }
     }
 
     //Check if the entered domain require TLS
@@ -251,14 +373,10 @@
                     if (data.error != undefined){
 
                     }else if (data.protocol == "https"){
-                        $("#vdReqTls").parent().checkbox("set checked");
-                        if (data.selfsign){
-                            $("#vdSkipTLSValidation").parent().checkbox("set checked");
-                        }else{
-                            $("#vdSkipTLSValidation").parent().checkbox("set unchecked");
-                        }
+                        $("#vdReqTls").prop("checked", true);
+                        $("#vdSkipTLSValidation").prop("checked", !!data.selfsign);
                     }else if (data.protocol == "http"){
-                        $("#vdReqTls").parent().checkbox("set unchecked");
+                        $("#vdReqTls").prop("checked", false);
                     }
                 }
             });
@@ -266,15 +384,7 @@
     }
 
     function reloadVdirList(){
-        $("#vdirList").find(".editBtn").removeClass("disabled");
-        if ($("#useRootProxyRouterForVdir")[0].checked){
-            loadVdirList("root");
-            return;
-        }
-        let endpoint = $("#vdirBaseRoutingRule").val().trim();
-        if (endpoint != ""){
-            loadVdirList(endpoint);
-        }
+        initVdirList();
     }
 
     //Create a virtual directory routing rule and attach to this endpoint
@@ -284,31 +394,18 @@
         var reqTLS = $("#vdReqTls")[0].checked;
         var skipTLSValidation = $("#vdSkipTLSValidation")[0].checked;
 
+        //The host comes from the form; the legacy fields are the fallback for scripts that set them directly
+        let endpoint = $("#hostDomainList").val() || "";
+        if (endpoint == ""){
+            if ($("#useRootProxyRouterForVdir")[0].checked){ endpoint = "root"; }
+            else { endpoint = ($("#vdirBaseRoutingRule").val() || "").trim(); }
+        }
         //Validate the input data
-        if (matchingPath == ""){
-            $("#virtualDirectoryPath").parent().addClass('error');
+        if (!vdirValidate(endpoint == "", true)){
             return;
-        }else{
-            $("#virtualDirectoryPath").parent().removeClass('error');
         }
 
-        if (targetDomain == ""){
-            $("#virtualDirectoryDomain").parent().addClass('error');
-            return;
-        }else{
-            $("#virtualDirectoryDomain").parent().removeClass('error');
-        }
-
-        //Check if we are editing host
-        let epType = "host";
-        let endpoint = "root";
-        if ($("#useRootProxyRouterForVdir")[0].checked){
-            //Editing root virtual directory
-            epType = "root";
-        }else{
-            //Editing hosts virtual directory
-            endpoint = $("#vdirBaseRoutingRule").val().trim();
-        }
+        let epType = endpoint == "root" ? "root" : "host";
 
         //Create a virtual directory endpoint
         $.cjax({
@@ -326,13 +423,15 @@
                 if (data.error != undefined){
                     msgbox(data.error, false);
                 }else{
-                    msgbox("New path route added" + (matchingPath.charAt(0) == "/" ? "" : " as /" + matchingPath));
+                    msgbox(matchingPath.charAt(0) == "/" ? t("Path route added") : t("Path route added as {0}").replace("{0}", "/" + matchingPath));
                     reloadVdirList();
                     resetVdirForm();
+                    $("#hostDomainList").val(endpoint);
+                    $("#virtualDirectoryPath").trigger("focus");
                 }
             }, 
             error: function(){
-                msgbox("Adding the path route failed for an unknown reason", false);
+                msgbox(t("Adding the path route failed for an unknown reason"), false);
             }
         })
         
@@ -342,108 +441,68 @@
     function resetVdirForm(){
         $("#virtualDirectoryPath").val("");
         $("#virtualDirectoryDomain").val("");
-        $("#vdReqTls").parent().checkbox("set unchecked");
-        $("#vdSkipTLSValidation").parent().checkbox("set unchecked");
+        $("#vdReqTls").prop("checked", false);
+        $("#vdSkipTLSValidation").prop("checked", false);
+        updateVdirExample();
     }
 
     //Remove Vdir 
     function deleteVdir(matchingPath, endpoint){
         var epType = "host";
-        var path = $("#vdirBaseRoutingRule").val().trim();
+        var path = endpoint;
         if (endpoint.trim() == "root"){
             epType = "root";
             path = "";
         }
-        $.cjax({
-            url: "/api/proxy/vdir/del",
-            method: "POST",
-            data: {
-                "type":epType,
-                "vdir": matchingPath,
-                "path": path
-            },
-            success: function(data){
-                if (data.error != undefined){
-                    msgbox(data.error, false);
-                }else{
-                    msgbox("Path route removed", true);
-                    reloadVdirList();
+        ZxUI.confirm({
+            title: t("Remove this path route?"),
+            message: t("Requests for {0} on {1} will go to the main upstream of the host again.").replace("{0}", matchingPath).replace("{1}", vdirHostLabel(endpoint)),
+            confirmLabel: t("Remove"),
+            danger: true
+        }).then(function(ok){
+            if (!ok){ return; }
+            $.cjax({
+                url: "/api/proxy/vdir/del",
+                method: "POST",
+                data: {
+                    "type":epType,
+                    "vdir": matchingPath,
+                    "path": path
+                },
+                success: function(data){
+                    if (data.error != undefined){
+                        msgbox(data.error, false);
+                    }else{
+                        msgbox(t("Path route removed"), true);
+                        if (vdirEditing && vdirEditing.ep == endpoint && vdirEditing.path == matchingPath){ closeVdirForm(); }
+                        reloadVdirList();
+                    }
                 }
-            }
-        })
+            })
+        });
     }
 
+    //Edit opens the same form as Add, filled with the route (host and prefix are fixed, as before)
     function editVdir(matchingPath, ept){
-        let targetDOM = $(".vdirEntry[vdirid='" + matchingPath.hexEncode() + "']");
-        $("#vdirList").find(".editBtn").addClass("disabled");
-        let payload = $(targetDOM).attr("payload").hexDecode();
-        payload = JSON.parse(payload);
-        console.log(payload);
-        $(targetDOM).find("td[editable='true']").each(function(){
-            let datatype = $(this).attr("datatype");
-            let column = $(this);
-
-            if (datatype == "domain"){
-                let domain = payload.Domain;
-                //Target require TLS for proxying
-                let tls = payload.RequireTLS;
-                if (tls){
-                    tls = "checked";
-                }else{
-                    tls = "";
-                }
-
-                //Require TLS validation
-                let skipTLSValidation = payload.SkipCertValidations;
-                let checkstate = "";
-                if (skipTLSValidation){
-                    checkstate = "checked";
-                }
-
-                input = `
-                    <div class="ui fluid input">
-                        <input type="text" class="Domain" aria-label="Target IP address or domain name" value="${ZxUI.esc(domain)}">
-                    </div>
-                    <div class="ui checkbox" style="margin-top: 0.4em;">
-                        <input type="checkbox" class="RequireTLS" ${tls}>
-                        <label>Needs TLS<br>
-                            <small>The target needs an HTTPS connection</small></label>
-                    </div><br>
-                    <div class="ui checkbox" style="margin-top: 0.4em;">
-                        <input type="checkbox" class="SkipCertValidations" ${checkstate}>
-                        <label>Skip certificate check<br>
-                        <small>For targets with a self-signed certificate</small></label>
-                    </div>
-                `;
-                column.empty().append(input);
-            }else if (datatype == 'action'){
-                column.empty().append(`
-                    <span class="zx-row-actions">
-                    <button type="button" title="Save" aria-label="Save" onclick="saveVdirInlineEdit('${payload.MatchingPath.hexEncode()}');" class="zx-btn zx-btn--primary zx-btn--sm inlineEditActionBtn">Save</button>
-                    <button type="button" title="Cancel" aria-label="Cancel" onclick="exitVdirInlineEdit();" class="zx-btn zx-btn--secondary zx-btn--sm inlineEditActionBtn">Cancel</button>
-                    </span>
-                `);
-            }
-        }); 
-
+        let hit = vdirRoutes.filter(function(r){ return r.ep == ept && r.vdir.MatchingPath == matchingPath; })[0];
+        if (hit){ openVdirForm(ept, hit.vdir); }
     }
 
     function saveVdirInlineEdit(mathingPath){
         mathingPath = mathingPath.hexDecode();
+        if (!vdirEditing){ return; }
 
         var epType = "host";
-        var path = $("#vdirBaseRoutingRule").val().trim();
-        if ($("#useRootProxyRouterForVdir")[0].checked){
+        var path = vdirEditing.ep;
+        if (vdirEditing.ep == "root"){
             epType = "root";
             path = "";
         }
 
-        //Load new setting from inline editor
-        let newDomain = $("#vdirList").find(".Domain").val();
-        let requireTLS = $("#vdirList").find(".RequireTLS")[0].checked;
-        let skipValidation = $("#vdirList").find(".SkipCertValidations")[0].checked;
-
-        //console.log(mathingPath, newDomain, requireTLS, skipValidation);
+        if (!vdirValidate(false, false)){ return; }
+        let newDomain = $("#virtualDirectoryDomain").val().trim();
+        let requireTLS = $("#vdReqTls")[0].checked;
+        let skipValidation = $("#vdSkipTLSValidation")[0].checked;
 
         $.cjax({
             url: "/api/proxy/vdir/edit",
@@ -460,12 +519,13 @@
                 if (data.error != undefined){
                     msgbox(data.error, false);
                 }else{
-                    msgbox("Path route updated", true);
+                    msgbox(t("Path route updated"), true);
+                    closeVdirForm();
                     exitVdirInlineEdit();
                 }
             },
             error: function(){
-                msgbox("unknown error occured", false)
+                msgbox(t("Saving the path route failed for an unknown reason"), false)
             }
         })
     }

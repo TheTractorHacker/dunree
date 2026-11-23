@@ -1,62 +1,120 @@
-<div class="ui form" id="dgForm">
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Destination restriction</h3>
-            <p class="zx-card__desc">Stops this Zoraxy from being used to reach places it should not. Off until you configure it; nothing changes for an existing setup.</p>
+<!-- Security Center > Network exposure. Status (the two limits and your own address), then one card per limit, each with its own Save. -->
+<section class="zx-card sx-status" id="exStatus" data-state="off">
+    <div class="sx-status__top">
+        <span class="sx-status__icon" aria-hidden="true"><i class="shield alternate icon"></i></span>
+        <div class="sx-status__text">
+            <h4 class="sx-status__title"><span class="sx-status__name">Network exposure</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+            <p class="sx-status__desc">Two limits that work next to your firewall, not instead of it: who may open this admin panel, and where Zoraxy itself may connect to. Both are off until you fill them in.</p>
         </div>
-        <div class="zx-card__body">
-            <label class="zx-toggle-row" for="dgRestrict">
-                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Restrict diagnostic tools to allowed destinations</span><span class="zx-toggle-row__desc">Covers the upstream test, port and IP scan, uptime checks, the web terminal and the HTTP forward proxy. They refuse local, link-local, cloud metadata and multicast addresses and, when the list below is not empty, everything outside it. Uptime checks of an upstream on 127.0.0.1 fail while this is on unless you list it below.</span></span>
-                <input type="checkbox" class="zx-switch" role="switch" id="dgRestrict">
-            </label>
-            <div class="field zx-field"><label for="dgAllowed">Allowed backend destinations</label>
-                <textarea id="dgAllowed" rows="5" placeholder="10.20.0.0/24&#10;10.20.1.5 443,8000-8100&#10;127.0.0.1:8080"></textarea>
-                <p class="zx-help">One per line: a network or address, optionally followed by ports (443 or 8000-8100), or written as 10.0.0.5:443. While the list is not empty, a proxy rule, upstream, path route or default site outside it is refused when saved, even with the switch off. Empty means no restriction. Local addresses are only reachable when listed; metadata and link-local addresses never are.</p></div>
-            <div id="dgWarn"></div>
-            <div id="dgMsg" class="ui negative message" style="display:none"></div>
-        </div>
-        <div class="zx-card__foot"><button class="ui primary button" id="dgSave"><i class="save icon"></i> Save</button></div>
-    </section>
-</div>
+    </div>
+    <dl class="sx-facts sx-facts--3">
+        <div class="sx-fact"><dt>Admin panel</dt><dd id="exFAdmin">-</dd></div>
+        <div class="sx-fact"><dt>Where Zoraxy may connect</dt><dd id="exFDest">-</dd></div>
+        <div class="sx-fact"><dt>Your address</dt><dd id="exFYou">-</dd></div>
+    </dl>
+</section>
 
 <div class="ui form" id="aaForm">
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Admin panel allow-list</h3>
-            <p class="zx-card__desc">Only these networks may connect to the admin port (<span id="aaListen"></span>); everyone else gets "403 Forbidden". Empty means no limit.</p>
+            <h3 class="zx-card__title">Who may open the admin panel</h3>
+            <span class="zx-badge zx-badge--dot" id="exAaBadge">Everyone</span>
+            <p class="zx-card__desc">Only the networks you list may connect to the admin port (<span id="aaListen"></span>); everyone else gets "403 Forbidden". An empty list means no limit.</p>
         </div>
         <div class="zx-card__body">
             <div class="field zx-field"><label for="aaCidrs">Networks that may reach the admin panel</label>
-                <textarea id="aaCidrs" rows="4" placeholder="192.168.10.0/24"></textarea>
+                <textarea id="aaCidrs" rows="4" placeholder="192.168.10.0/24" spellcheck="false"></textarea>
                 <p class="zx-help">One IP address or range (CIDR) per line. Your address, <b id="aaYou"></b>, must be in the list, so you cannot lock yourself out from here. 0.0.0.0/0 is refused.</p></div>
-            <p class="zx-help">The API, plugin and Fleet or cluster endpoints on the admin port are covered too, so list the hosts that use them. Requests that a proxy rule forwards to the admin port are refused while a list is set. If you are locked out anyway, stop Zoraxy and start it once with <code>-reset_admin_allowlist</code>.</p>
-            <div id="aaMsg" class="ui negative message" style="display:none"></div>
+            <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="exAddMe"><i class="plus icon" aria-hidden="true"></i> Add my address</button></div>
+            <details class="zx-disclosure"><summary>What else is covered, and how to get back in</summary><div class="zx-disclosure__body">
+                <p>The API, plugin and Fleet or cluster endpoints on the admin port are covered too, so list the hosts that use them. Requests that a proxy rule forwards to the admin port are refused while a list is set.</p>
+                <p>If you are locked out anyway, stop Zoraxy and start it once with <code>-reset_admin_allowlist</code>.</p>
+            </div></details>
+            <div id="aaMsg" class="ui negative message" style="display:none" role="alert"></div>
         </div>
-        <div class="zx-card__foot" style="display:flex;align-items:center;gap:var(--zx-space-4);flex-wrap:wrap"><button class="ui primary button" id="aaSave"><i class="save icon"></i> Save</button><span class="zx-help" id="aaStatus" style="margin:0"></span></div>
+        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" id="aaSave"><i class="save icon" aria-hidden="true"></i> Save admin allow-list</button><span class="zx-help" id="aaStatus"></span></div>
     </section>
 </div>
-<p class="zx-help">This page does not change your firewall. Keep your firewall rules; these limits are a second layer.</p>
+
+<div class="ui form" id="dgForm">
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Where Zoraxy may connect to</h3>
+            <span class="zx-badge zx-badge--dot" id="exDgBadge">Anywhere</span>
+            <p class="zx-card__desc">Stops this Zoraxy from being used to reach places it should not, such as other machines in your network. Nothing changes for an existing setup until you configure it.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="field zx-field"><label for="dgAllowed">Allowed backend destinations</label>
+                <textarea id="dgAllowed" rows="5" placeholder="10.20.0.0/24&#10;10.20.1.5 443,8000-8100&#10;127.0.0.1:8080" spellcheck="false"></textarea>
+                <p class="zx-help">One per line: a network or address, optionally followed by ports (443 or 8000-8100), or written as 10.0.0.5:443. Empty means no restriction.</p></div>
+            <label class="zx-toggle-row" for="dgRestrict">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Restrict diagnostic tools to allowed destinations</span><span class="zx-toggle-row__desc">Covers the upstream test, port and IP scan, uptime checks, the web terminal and the HTTP forward proxy. They refuse local, link-local, cloud metadata and multicast addresses and, when the list above is not empty, everything outside it.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="dgRestrict">
+            </label>
+            <details class="zx-disclosure"><summary>What exactly is refused</summary><div class="zx-disclosure__body">
+                <p>While the list is not empty, a proxy rule, upstream, path route or default site outside it is refused when saved, even with the switch off.</p>
+                <p>Local addresses are only reachable when listed; metadata and link-local addresses never are. Uptime checks of an upstream on 127.0.0.1 fail while the switch is on unless you list it.</p>
+            </div></details>
+            <div id="dgWarn"></div>
+            <div id="dgMsg" class="ui negative message" style="display:none" role="alert"></div>
+        </div>
+        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" id="dgSave"><i class="save icon" aria-hidden="true"></i> Save destinations</button></div>
+    </section>
+</div>
+<style>
+    #secPane #aaForm .zx-btn-row { margin: 0; }
+    #secPane #aaForm .zx-disclosure, #secPane #dgForm .zx-disclosure { margin-bottom: 0; }
+    #secPane #aaForm .zx-disclosure__body, #secPane #dgForm .zx-disclosure__body { padding-bottom: 0; }
+    #secPane #dgWarn .zx-callout { margin-top: var(--zx-space-4); }
+    #secPane #dgForm .zx-toggle-row { border-bottom: 0; padding-bottom: 0; }
+    #secPane #exFYou { font-family: var(--zx-font-mono); font-size: var(--zx-fs-md); }
+</style>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
     function lines(sel) { return $(sel).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
+    var dg = null, aa = null;
+    function status() {
+        if (!dg || !aa) { return; }
+        var nDest = (dg.allowedBackends || []).length, limited = !!aa.active, restricted = nDest > 0 || !!dg.restrictTools;
+        ZxSec.fact("#exFAdmin", limited ? ((aa.cidrs || []).length === 1 ? t("1 network") : t("{0} networks").replace("{0}", (aa.cidrs || []).length)) : t("Open to every address"), limited ? t("{0} refused since start").replace("{0}", aa.denied) : t("no allow-list"), limited ? "" : "warn");
+        ZxSec.fact("#exFDest", nDest ? (nDest === 1 ? t("1 destination") : t("{0} destinations").replace("{0}", nDest)) : t("Anywhere"), dg.restrictTools ? t("tools restricted too") : (nDest ? t("tools not restricted") : t("no restriction")));
+        ZxSec.fact("#exFYou", aa.yourAddr || "?");
+        $("#exAaBadge").attr("class", "zx-badge zx-badge--dot" + (limited ? " zx-badge--ok" : "")).text(limited ? t("Limited") : t("Everyone"));
+        $("#exDgBadge").attr("class", "zx-badge zx-badge--dot" + (restricted ? " zx-badge--ok" : "")).text(restricted ? t("Restricted") : t("Anywhere"));
+        ZxSec.status("#exStatus", limited && restricted ? { state: "on", badge: t("Both limits on"), title: t("The admin panel and outgoing connections are limited") }
+            : (limited ? { state: "on", badge: t("Admin panel limited"), title: t("Only your networks can open the admin panel") }
+            : (restricted ? { state: "info", badge: t("Destinations limited"), title: t("Outgoing connections are limited, the admin panel is not") }
+            : { state: "off", badge: t("No limits"), title: t("Neither limit is set") })));
+    }
     function loadDg() {
         $.get("/api/destguard/get", function (d) {
+            dg = d;
             $("#dgRestrict").prop("checked", !!d.restrictTools);
             $("#dgAllowed").val((d.allowedBackends || []).join("\n"));
             var w = (d.warnings || []).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("");
-            $("#dgWarn").html(w ? '<div class="zx-callout zx-callout--warn" role="note"><div><strong>' + esc(t("With these settings, this would be refused for existing rules")) + '</strong><ul class="list">' + w + "</ul></div></div>" : "");
+            $("#dgWarn").html(w ? '<div class="zx-callout zx-callout--warn" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"><strong>' + esc(t("With these settings, this would be refused for existing rules")) + '</strong><ul class="list">' + w + "</ul></div></div>" : "");
+            status();
         });
     }
     function loadAa() {
         $.get("/api/adminallow/get", function (d) {
+            aa = d;
             $("#aaCidrs").val((d.cidrs || []).join("\n"));
             $("#aaYou").text(d.yourAddr || "?");
             $("#aaListen").text(d.listen || "");
             $("#aaStatus").text(d.active ? t("Allow-list is on. Requests refused since start: {0}.").replace("{0}", d.denied) : t("No allow-list: every address may connect."));
+            $("#exAddMe").prop("disabled", !d.yourAddr);
+            status();
         });
     }
+    $("#exAddMe").on("click", function () {
+        var me = aa && aa.yourAddr; if (!me) { return; }
+        var cur = lines("#aaCidrs");
+        if (cur.indexOf(me) < 0) { cur.push(me); $("#aaCidrs").val(cur.join("\n")).trigger("input"); }
+        $("#aaCidrs").trigger("focus");
+    });
     $("#dgSave").on("click", function () {
         var cfg = { restrictTools: $("#dgRestrict").prop("checked"), allowedBackends: lines("#dgAllowed") };
         $.cjax({ type: "POST", url: "/api/destguard/set", data: { config: JSON.stringify(cfg) }, success: function (d) {
@@ -77,7 +135,7 @@
             } });
         };
         if (list.length) {
-            ZxUI.confirm({ title: "Limit the admin panel to these networks?", message: "Everyone else, including this panel from another address, is refused at once. Your own address must be in the list. Recovery if locked out: start Zoraxy with -reset_admin_allowlist.", confirmLabel: "Save list" }).then(function (ok) { if (ok) { go(); } });
+            ZxUI.confirm({ title: t("Limit the admin panel to these networks?"), message: t("Everyone else, including this panel from another address, is refused at once. Your own address must be in the list. Recovery if locked out: start Zoraxy with -reset_admin_allowlist."), confirmLabel: t("Save list") }).then(function (ok) { if (ok) { go(); } });
             return;
         }
         go();

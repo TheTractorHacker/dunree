@@ -1,122 +1,206 @@
+<!-- System > API Tokens (tag apitokens). Tokens are a list of rows (#atRows > li): name, state, scope, created, last used, expiry,
+     allowed addresses. A new token is shown once in #atReveal (copy, then "I have saved it"); only its hash is stored. -->
 <div class="standardContainer" id="apiTokensPage">
     <style>
-        #apiTokensPage .atName { overflow-wrap: anywhere; min-width: 10rem; max-width: 22rem; }
-        #apiTokensPage .zx-table-wrap { max-height: none; }
-        #apiTokensPage .zx-callout { margin-bottom: var(--zx-space-4); }
-        #apiTokensPage .zx-callout code { font-size: 0.9em; }
-        #apiTokensPage .zx-page-header__actions { align-self: flex-end; }
-        #apiTokensPage .zx-page-header__actions .zx-btn { min-height: var(--zx-control-h); }
+        #apiTokensPage > .zx-card, #apiTokensPage > .zx-statrow { margin-bottom: var(--zx-space-4); }
+        #apiTokensPage .zx-statrow { margin-top: 0; }
+        #apiTokensPage .at-name { overflow-wrap: anywhere; min-width: 0; }
+        #apiTokensPage .at-meta { display: flex; flex-wrap: wrap; gap: 2px var(--zx-space-4); margin: 3px 0 0; padding: 0; list-style: none; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.5; }
+        #apiTokensPage .at-meta li { min-width: 0; overflow-wrap: anywhere; }
+        #apiTokensPage .at-meta b { font-weight: 400; color: var(--zx-text); }
+        #apiTokensPage .at-row.is-off .sy-row__icon, #apiTokensPage .at-row.is-off .at-name { color: var(--zx-text-muted); }
+        #apiTokensPage .at-row.is-off .at-name { text-decoration: line-through; }
+        #apiTokensPage .at-reveal { margin: 0 0 var(--zx-space-4); padding: var(--zx-card-pad); background: var(--zx-ok-bg); border: 1px solid var(--zx-ok-line); border-radius: var(--zx-radius-lg); color: var(--zx-text); }
+        #apiTokensPage .at-reveal[hidden] { display: none; }
+        #apiTokensPage .at-reveal__title { display: flex; align-items: center; gap: var(--zx-space-2); margin: 0; font-size: var(--zx-fs-lg); font-weight: 700; color: var(--zx-ok-text); }
+        #apiTokensPage .at-reveal__title i.icon { margin: 0; height: auto; }
+        #apiTokensPage .at-reveal__text { margin: 4px 0 var(--zx-space-3); max-width: 46rem; }
+        #apiTokensPage .at-reveal .sy-secret { background: var(--zx-surface); }
+        #apiTokensPage .at-reveal__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-3); }
+        #apiTokensPage .at-reveal__foot .zx-help { margin: 0; }
+        #apiTokensPage .at-use { margin: 0; }
+        #apiTokensPage .at-use code { font-family: var(--zx-font-mono); font-size: 0.93em; }
+        #apiTokensPage .at-facts { margin: var(--zx-space-4) 0 0; padding: 0 0 0 1.2em; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.6; max-width: 62rem; }
+        #apiTokensPage #atFormError { margin-top: 0; }
+        #apiTokensPage .at-count { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; margin-left: var(--zx-space-2); }
+        #apiTokensPage .at-cidrs .zx-input { max-width: 40rem; }
+        #apiTokensPage .at-cidrs .zx-help { max-width: 46rem; }
+        #apiTokensPage .zx-card__foot { align-items: center; }
+        #apiTokensPage .zx-card__foot .zx-help { margin: 0; line-height: 1.4; }
+        @media (max-width: 600px) { #apiTokensPage .at-row .sy-row__end { flex: 0 0 auto; margin-left: calc(36px + var(--zx-space-4)); } #apiTokensPage .at-row .sy-row__end .zx-btn { flex: 0 0 auto; } }
+        #apiTokensPage .zx-page-header__actions a.zx-btn { text-decoration: none; }
+        #apiTokensPage .zx-page-header__actions a.zx-btn--secondary { color: var(--zx-text); }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">API Tokens</h2>
-            <p class="zx-page-header__sub">Let scripts and automation use the Zoraxy REST API.</p>
+            <p class="zx-page-header__sub">Let scripts and automation use the Zoraxy REST API without your password. No tokens exist until you create one.</p>
         </div>
-        <div class="zx-page-header__actions zx-btn-row">
-            <a class="zx-btn zx-btn--secondary" href="./api/v1/docs" target="_blank"><i class="book icon"></i> API documentation</a>
-            <a class="zx-btn zx-btn--ghost" href="./api/v1/openapi.yaml" target="_blank"><i class="file code outline icon"></i> OpenAPI file</a>
+        <div class="zx-page-header__actions">
+            <a class="zx-btn zx-btn--secondary" href="./api/v1/docs" target="_blank" rel="noopener"><i class="book icon" aria-hidden="true"></i> API documentation</a>
+            <a class="zx-btn zx-btn--secondary" href="./api/v1/openapi.yaml" target="_blank" rel="noopener"><i class="file code outline icon" aria-hidden="true"></i> OpenAPI file</a>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#utils" data-nav-open="utils">Utilities</a> <span>Password, sign-in sessions and SSH loopback</span></li>
+            <li><a href="#history" data-nav-open="history">History</a> <span>Changes made with a token, under its name</span></li>
+            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>Admin accounts and the sign-in log</span></li>
+        </ul>
+    </aside>
 
-    <div class="zx-callout zx-callout--info" role="note">
-        <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-        <div class="zx-callout__body">Send a token as <code>Authorization: Bearer &lt;token&gt;</code> to <code>/api/v1</code>. A token is shown <b>once</b> when you create it and only its hash is stored. Read-only tokens can only make GET requests, and tokens work nowhere except <code>/api/v1</code>.</div>
-    </div>
-
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Create a token</h3>
-            <p class="zx-card__desc">Give it a name you will recognise and the least access it needs.</p>
+    <!-- shown once, right after a token is created -->
+    <section class="at-reveal" id="atReveal" role="alert" aria-labelledby="atRevealTitle" hidden>
+        <h3 class="at-reveal__title" id="atRevealTitle"><i class="check circle icon" aria-hidden="true"></i> <span>Copy your new token now</span></h3>
+        <p class="at-reveal__text">This is the only time <b id="atRevealName" data-i18n-skip></b> is shown. Zoraxy stores a hash of it, so it cannot be shown again: if you lose it, revoke it and create a new one.</p>
+        <div class="sy-secret">
+            <code id="atTokenValue" tabindex="0" data-i18n-skip></code>
+            <button type="button" class="zx-btn zx-btn--primary" id="atCopyBtn" onclick="atCopy();"><i class="copy icon" aria-hidden="true"></i> <span>Copy token</span></button>
         </div>
-        <div class="zx-card__body">
-            <div class="ui form">
-                <div class="zx-form-grid">
-                    <div class="zx-field"><label class="zx-field__label" for="atName">Name</label><input type="text" id="atName" maxlength="64" placeholder="e.g. ci-deploy"><p class="zx-help">Shown in the token list.</p></div>
-                    <div class="zx-field"><label class="zx-field__label" for="atScope">Scope</label>
-                        <select id="atScope" class="zx-select"><option value="read">Read only</option><option value="readwrite">Read / write</option></select><p class="zx-help">Read only allows GET requests.</p></div>
-                    <div class="zx-field"><label class="zx-field__label" for="atDays">Expires after (days)</label><input type="number" id="atDays" min="1" max="3650" step="1" placeholder="never"><p class="zx-help">Leave empty for no expiry.</p></div>
-                    <div class="zx-field zx-field--wide"><label class="zx-field__label" for="atCidrs">Allowed IPs or CIDRs (optional)</label>
-                        <input type="text" id="atCidrs" placeholder="203.0.113.7, 10.0.0.0/8">
-                        <p class="zx-help">Separate with commas. The address comes from the TCP connection, so behind a reverse proxy list the proxy's address.</p>
-                        <small id="atFormError" role="alert" style="display:none; color: var(--zx-danger-text); font-weight: 600;"></small></div>
-                </div>
-                <button class="ui primary button" onclick="atCreate();"><i class="add icon"></i> Create token</button>
-            </div>
+        <div class="at-reveal__foot">
+            <button type="button" class="zx-btn zx-btn--secondary" id="atRevealDone" onclick="atCloseShow();">I have saved it</button>
+            <p class="zx-help">Closing this removes the token from the page.</p>
         </div>
     </section>
 
-    <section class="zx-card">
+    <section class="zx-card" aria-labelledby="atListTitle">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Existing tokens</h3>
+            <h3 class="zx-card__title" id="atListTitle">Your tokens <span class="at-count" id="atCount"></span></h3>
+            <p class="zx-card__desc">A revoked or expired token stops working at once. Its record stays here until you delete it.</p>
         </div>
         <div class="zx-card__body">
-            <div class="zx-empty" id="atEmpty" hidden>
+            <div class="zx-empty zx-empty--inline" id="atEmpty" hidden>
                 <div class="zx-empty__icon" aria-hidden="true"><i class="key icon"></i></div>
                 <div class="zx-empty__title">No tokens yet</div>
-                <p class="zx-empty__text">Create one above to use the REST API.</p>
+                <p class="zx-empty__text">Only a signed-in browser can use the API right now. Create a token below when a script, a monitoring tool or a deployment needs access.</p>
             </div>
-            <div class="zx-table-wrap zx-table-wrap--flush" id="atTableWrap" tabindex="0" role="region" aria-label="Existing API tokens">
-                <table class="zx-table zx-table--compact">
-                    <thead><tr><th>Name</th><th>Scope</th><th>Created</th><th>Expires</th><th>Allowed IPs</th><th>Last used</th><th>Status</th><th></th></tr></thead>
-                    <tbody id="atRows"><tr><td class="zx-empty-cell" colspan="8">Loading...</td></tr></tbody>
-                </table>
-            </div>
+            <ul class="sy-rows" id="atRows" aria-live="polite"><li class="sy-row"><span class="zx-help">Loading...</span></li></ul>
         </div>
     </section>
 
-    <div class="ui small modal" id="atShowModal">
-        <div class="header">Copy your new token</div>
-        <div class="content">
-            <p>This is the only time the token is shown. Store it somewhere safe.</p>
-            <div class="ui fluid action input">
-                <input type="text" id="atTokenValue" readonly>
-                <button class="ui button" onclick="atCopy();"><i class="copy icon"></i> Copy</button>
-            </div>
+    <section class="zx-card" aria-labelledby="atCreateTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="atCreateTitle">Create a token</h3>
+            <p class="zx-card__desc">Give it a name you will recognise and the least access it needs. Read only is the default.</p>
         </div>
-        <div class="actions"><div class="ui positive button" onclick="atCloseShow();">I have saved it</div></div>
-    </div>
+        <div class="zx-card__body">
+            <div class="zx-form-grid">
+                <div class="zx-field"><label class="zx-field__label" for="atName">Name</label><input class="zx-input" type="text" id="atName" maxlength="64" placeholder="e.g. ci-deploy" autocomplete="off"><p class="zx-help">What uses it. Shown in the list above.</p></div>
+                <div class="zx-field"><label class="zx-field__label" for="atScope">Scope</label>
+                    <select id="atScope" class="zx-select"><option value="read">Read only</option><option value="readwrite">Read / write</option></select><p class="zx-help">Read only can look (GET requests). Read / write can also change the configuration.</p></div>
+                <div class="zx-field"><label class="zx-field__label" for="atDays">Expires after (days)</label><input class="zx-input" type="number" id="atDays" min="1" max="3650" step="1" placeholder="never"><p class="zx-help">Leave empty for a token that never expires.</p></div>
+                <div class="zx-field zx-field--wide at-cidrs" style="margin-bottom: 0;"><label class="zx-field__label" for="atCidrs">Allowed IPs or CIDRs (optional)</label>
+                    <input class="zx-input" type="text" id="atCidrs" placeholder="203.0.113.7, 10.0.0.0/8" autocomplete="off">
+                    <p class="zx-help">Empty means any address. Separate several with commas. The address comes from the TCP connection, so behind a reverse proxy list the proxy's address.</p></div>
+            </div>
+            <p class="sy-msg" id="atFormError" role="alert" style="display:none;"></p>
+        </div>
+        <div class="zx-card__foot">
+            <button type="button" class="zx-btn zx-btn--primary" id="atCreateBtn" onclick="atCreate();"><i class="add icon" aria-hidden="true"></i> Create token</button>
+            <p class="zx-help">The token is shown once, at the top of this page.</p>
+        </div>
+    </section>
+
+    <section class="zx-card" aria-labelledby="atUseTitle">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="atUseTitle">Use a token</h3>
+            <p class="zx-card__desc">Send it in the Authorization header of every request to <code>/api/v1</code>.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-codeblock at-use"><pre id="atExample" data-i18n-skip>curl -H "Authorization: Bearer YOUR_TOKEN" /api/v1/</pre></div>
+            <ul class="at-facts">
+                <li>Tokens work for <code>/api/v1</code> only. They cannot sign in to this interface.</li>
+                <li>A read-only token is refused for anything but GET requests.</li>
+                <li>Changes made with a token are recorded in History under the token's name.</li>
+            </ul>
+        </div>
+    </section>
 </div>
 <script>
 (function(){
     function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
-    function ts(v){ if (!v) return "-"; var d = new Date(v * 1000); return isNaN(d.getTime()) ? "Far future" : d.toLocaleString(); }
     function notify(m, ok){ if (typeof msgbox === "function") msgbox(m, ok !== false, 5000); else console.log(m); }
+    function valid(v){ if (!v) return null; var d = new Date(v * 1000); return isNaN(d.getTime()) ? null : d; }
+    function day(v){ var d = valid(v); return d ? d.toLocaleDateString([], {year: "numeric", month: "short", day: "numeric"}) : ""; }
+    function full(v){ var d = valid(v); return d ? d.toLocaleString() : ""; }
+    // unix seconds -> "just now", "5 min ago", "3 h ago", "4 days ago", or the date
+    function ago(v){
+        var s = Math.round(Date.now() / 1000 - v);
+        if (s < 60) return t("just now");
+        if (s < 3600) return tf("{0} min ago", Math.round(s / 60));
+        if (s < 86400) return tf("{0} h ago", Math.round(s / 3600));
+        if (s < 86400 * 30) return tf("{0} days ago", Math.round(s / 86400));
+        return day(v);
+    }
+    function expiry(tok){
+        if (!tok.expires) return {text: t("Never expires")};
+        var d = valid(tok.expires);
+        if (!d) return {text: t("Expires in the far future")};
+        var left = tok.expires - Date.now() / 1000;
+        if (left <= 0) return {text: tf("Expired {0}", day(tok.expires)), title: full(tok.expires)};
+        if (left < 86400) return {text: t("Expires today"), title: full(tok.expires), soon: true};
+        if (left < 86400 * 14) return {text: tf("Expires in {0} days", Math.round(left / 86400)), title: full(tok.expires), soon: true};
+        return {text: tf("Expires {0}", day(tok.expires)), title: full(tok.expires)};
+    }
+
+    var example = document.getElementById("atExample");
+    if (example){ example.textContent = 'curl -H "Authorization: Bearer YOUR_TOKEN" ' + location.origin + "/api/v1/proxy-rules"; }
 
     window.atLoad = function(){
         $.get("./api/apitoken/list", function(list){
             var rows = $("#atRows").empty();
-            var none = !list || !list.length;
-            $("#atEmpty").prop("hidden", !none); $("#atTableWrap").prop("hidden", none);
+            var none = !Array.isArray(list) || !list.length;
+            $("#atEmpty").prop("hidden", !none); rows.prop("hidden", none);
+            $("#atCount").text("");
             if (none){ return; }
+            var active = list.filter(function(k){ return !k.revoked && !k.expired; }).length;
+            $("#atCount").text(tf("{0} active of {1}", active, list.length));
             list.forEach(function(tok){
-                var status = tok.revoked ? "Revoked" : (tok.expired ? "Expired" : "Active");
-                var tr = $("<tr>");
-                tr.append("<td class='atName' data-label='" + esc(t("Name")) + "'>" + esc(tok.name) + "</td>" +
-                    "<td data-label='" + esc(t("Scope")) + "'>" + (tok.scope === "readwrite" ? "Read / write" : "Read only") + "</td>" +
-                    "<td data-label='" + esc(t("Created")) + "'>" + ts(tok.created) + "</td>" +
-                    "<td data-label='" + esc(t("Expires")) + "'>" + (tok.expires ? ts(tok.expires) : "Never") + "</td>" +
-                    "<td data-label='" + esc(t("Allowed IPs")) + "'>" + (tok.allowedCidrs.length ? esc(tok.allowedCidrs.join(", ")) : "Any") + "</td>" +
-                    "<td data-label='" + esc(t("Last used")) + "'>" + ts(tok.lastUsed) + "</td>" +
-                    "<td data-label='" + esc(t("Status")) + "'><span class='zx-badge " + (tok.revoked ? "zx-badge--danger" : (tok.expired ? "zx-badge--warn" : "zx-badge--ok")) + "'>" + status + "</span></td>");
-                var td = $("<td class='zx-actions'>");
+                var off = tok.revoked || tok.expired;
+                var state = tok.revoked ? ["zx-badge--danger", t("Revoked")] : (tok.expired ? ["zx-badge--warn", t("Expired")] : ["zx-badge--ok", t("Active")]);
+                var ex = expiry(tok), cidrs = tok.allowedCidrs || [];
+                var li = $("<li class='sy-row at-row'>").toggleClass("is-off", !!off);
+                li.append("<span class='sy-row__icon' aria-hidden='true'><i class='key icon'></i></span>");
+                var main = $("<div class='sy-row__main'>");
+                main.append("<span class='sy-row__title'><span class='at-name' data-i18n-skip>" + esc(tok.name) + "</span>" +
+                    "<span class='zx-badge zx-badge--dot " + state[0] + "'>" + esc(state[1]) + "</span>" +
+                    "<span class='zx-badge" + (tok.scope === "readwrite" ? " zx-badge--warn" : "") + "'>" + esc(tok.scope === "readwrite" ? t("Read / write") : t("Read only")) + "</span></span>");
+                main.append("<ul class='at-meta'>" +
+                    "<li title='" + esc(full(tok.created)) + "'>" + esc(tf("Created {0}", day(tok.created) || "-")) + "</li>" +
+                    "<li title='" + esc(full(tok.lastUsed)) + "'>" + esc(valid(tok.lastUsed) ? tf("Last used {0}", ago(tok.lastUsed)) : t("Never used")) + "</li>" +
+                    "<li title='" + esc(ex.title || "") + "'>" + (ex.soon && !off ? "<b>" + esc(ex.text) + "</b>" : esc(ex.text)) + "</li>" +
+                    "<li>" + esc(cidrs.length ? tf("Only from {0}", cidrs.join(", ")) : t("From any address")) + "</li></ul>");
+                li.append(main);
+                var end = $("<div class='sy-row__end'>");
                 if (!tok.revoked){
-                    td.append($("<button class='ui basic mini red button'>Revoke</button>").click(function(){ atAct("revoke", tok.id, "Revoke token '" + tok.name + "'?"); }));
+                    end.append($("<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm sy-quiet-danger'>").text(t("Revoke")).attr("aria-label", tf("Revoke token {0}", tok.name)).on("click", function(){
+                        atAct("revoke", tok.id, {title: t("Revoke this token?"), message: tf("Anything that uses \"{0}\" stops working at once. This cannot be undone: you would have to create a new token.", tok.name), confirmLabel: t("Revoke token")});
+                    }));
                 } else {
-                    td.append($("<button class='ui basic mini button'>Delete</button>").click(function(){ atAct("delete", tok.id, "Delete the record of '" + tok.name + "'?"); }));
+                    end.append($("<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm sy-quiet-danger'>").text(t("Delete")).attr("aria-label", tf("Delete the record of token {0}", tok.name)).on("click", function(){
+                        atAct("delete", tok.id, {title: t("Delete this record?"), message: tf("\"{0}\" is already revoked. Deleting only removes it from this list.", tok.name), confirmLabel: t("Delete record")});
+                    }));
                 }
-                tr.append(td);
-                rows.append(tr);
+                li.append(end);
+                rows.append(li);
             });
+        }).fail(function(){
+            $("#atEmpty").prop("hidden", true);
+            $("#atRows").prop("hidden", false).html("<li class='sy-row'><span class='sy-msg' style='margin:0'>" + esc(t("The tokens could not be loaded. Reload the page to try again.")) + "</span></li>");
         });
     };
 
-    window.atAct = function(action, id, question){
-        if (!window.confirm(question)) return;
-        $.cjax({method: "POST", url: "./api/apitoken/" + action, data: {id: id}, success: function(d){
-            if (d && d.error){ notify(d.error, false); return; }
-            atLoad();
-        }});
+    window.atAct = function(action, id, ask){
+        ZxUI.confirm({title: ask.title, message: ask.message, confirmLabel: ask.confirmLabel, danger: true}).then(function(ok){
+            if (!ok) return;
+            $.cjax({method: "POST", url: "./api/apitoken/" + action, data: {id: id}, success: function(d){
+                if (d && d.error){ notify(d.error, false); return; }
+                notify(action === "revoke" ? t("Token revoked") : t("Record deleted"));
+                atLoad();
+            }});
+        });
     };
 
     //Same rules as the server (ParseCIDRs): a single IP or a CIDR with a valid prefix length
@@ -156,24 +240,43 @@
             $("#atCidrs").focus();
             return;
         }
+        var btn = document.getElementById("atCreateBtn");
+        ZxUI.setLoading(btn, true);
         $.cjax({method: "POST", url: "./api/apitoken/create", data: data, success: function(d){
             if (d && d.error){ notify(d.error, false); return; }
-            $("#atTokenValue").val(d.token);
-            $("#atShowModal").modal({closable: false}).modal("show");
+            // shown once, in the page: the value lives only in this element until it is dismissed
+            $("#atTokenValue").text(d.token);
+            $("#atRevealName").text(data.name);
+            $("#atCopyBtn span").text(t("Copy token"));
+            var box = document.getElementById("atReveal");
+            box.hidden = false;
+            try { box.scrollIntoView({block: "center"}); } catch (e) { box.scrollIntoView(); }
+            document.getElementById("atCopyBtn").focus({preventScroll: true});
             $("#atName, #atDays, #atCidrs").val("");
+            $("#atScope").val("read");
             atLoad();
-        }}); //a refused request shows the server's reason through the global ajax error toast
+        }, complete: function(){ ZxUI.setLoading(btn, false); }}); //a refused request shows the server's reason through the global ajax error toast
     };
 
     window.atCopy = function(){
-        var inp = document.getElementById("atTokenValue");
-        inp.select();
-        if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(inp.value).catch(function(){ document.execCommand("copy"); }); }
-        else { document.execCommand("copy"); }
-        notify("Token copied");
+        var value = $("#atTokenValue").text();
+        function done(){ $("#atCopyBtn span").text(t("Copied")); notify(t("Token copied")); }
+        function legacy(){
+            var ta = document.createElement("textarea"); ta.value = value; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand("copy"); done(); } catch (e) { notify(t("Copy failed. Select the token and copy it by hand."), false); }
+            document.body.removeChild(ta);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(value).then(done, legacy); }
+        else { legacy(); }
     };
 
-    window.atCloseShow = function(){ $("#atTokenValue").val(""); $("#atShowModal").modal("hide"); };
+    window.atCloseShow = function(){
+        $("#atTokenValue").text("");
+        document.getElementById("atReveal").hidden = true;
+        var name = document.getElementById("atName");
+        if (name){ name.focus({preventScroll: true}); }
+    };
 
     atLoad();
 })();

@@ -181,7 +181,7 @@ body.darkTheme,
 .zx-crumbs li + li::before { content: "/"; margin: 0 0.5em; color: var(--zx-text-faint); }
 .zx-crumbs a, .zx-crumbs span.zx-crumb { color: var(--zx-text-muted); text-decoration: none; border-radius: var(--zx-radius-sm); padding: 2px 2px; }
 .zx-crumbs a:hover { color: var(--zx-link); text-decoration: underline; }
-.zx-crumbs [aria-current="page"] { color: var(--zx-text); font-weight: 600; }
+.zx-crumbs [aria-current="page"] { color: var(--zx-text); font-weight: 700; }
 
 /* ===================================================================================== section card */
 .zx-card { background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-4); }
@@ -201,12 +201,12 @@ body.darkTheme,
 /* ===================================================================================== form rows */
 .zx-field { position: relative; display: block; margin: 0 0 var(--zx-space-4); color: var(--zx-text); }
 .zx-field__label-row { display: flex; align-items: center; gap: var(--zx-space-2); margin-bottom: var(--zx-space-1); }
-.zx-field__label { font-weight: 600; font-size: var(--zx-fs-md); color: var(--zx-text); }
+.zx-field__label { font-weight: 700; font-size: var(--zx-fs-md); color: var(--zx-text); }
 .zx-field__optional { font-weight: 400; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
 .zx-field__control { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
 .zx-field__control > .zx-input, .zx-field__control > .zx-select, .zx-field__control > .zx-textarea { flex: 1 1 12rem; }
 .zx-help { margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-.zx-error { margin: var(--zx-space-1) 0 0; color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 600; display: none; }
+.zx-error { margin: var(--zx-space-1) 0 0; color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 700; display: none; }
 .zx-field.is-invalid .zx-error { display: block; }
 .zx-field.is-invalid .zx-input, .zx-field.is-invalid .zx-select, .zx-field.is-invalid .zx-textarea { border-color: var(--zx-danger-solid); }
 
@@ -253,7 +253,7 @@ body.darkTheme,
 }
 .zx-toggle-row:last-child { border-bottom: 0; }
 .zx-toggle-row__text { flex: 1 1 auto; min-width: 0; display: block; }
-.zx-toggle-row__title { display: block; font-weight: 600; }
+.zx-toggle-row__title { display: block; font-weight: 700; }
 .zx-toggle-row__desc { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
 .zx-toggle-row.is-disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -280,7 +280,7 @@ body.darkTheme,
 .zx-btn {
     --_bg: var(--zx-surface); --_fg: var(--zx-text); --_bd: var(--zx-border-strong); --_hover: var(--zx-surface-2);
     position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.5em;
-    min-height: var(--zx-control-h); padding: 0 var(--zx-space-4); font: inherit; font-weight: 600; line-height: 1.2; text-decoration: none;
+    min-height: var(--zx-control-h); padding: 0 var(--zx-space-4); font: inherit; font-weight: 700; line-height: 1.2; text-decoration: none;
     color: var(--_fg); background: var(--_bg); border: 1px solid var(--_bd); border-radius: var(--zx-radius-md);
     cursor: pointer; white-space: nowrap; user-select: none; transition: background 0.12s, border-color 0.12s;
 }
@@ -310,7 +310,7 @@ body.darkTheme,
 /* ===================================================================================== badges / status pills */
 .zx-badge {
     display: inline-flex; align-items: center; gap: 0.4em; padding: 1px 9px; min-height: 22px; border-radius: var(--zx-radius-pill);
-    font-size: var(--zx-fs-xs); font-weight: 600; line-height: 1.3; white-space: nowrap;
+    font-size: var(--zx-fs-xs); font-weight: 700; line-height: 1.3; white-space: nowrap;
     background: var(--zx-neutral-bg); color: var(--zx-neutral-text); border: 1px solid var(--zx-neutral-line);
 }
 .zx-badge--ok { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
@@ -366,7 +366,7 @@ body.darkTheme,
     .zx-table, .zx-table tbody, .zx-table tr, .zx-table td { display: block; width: 100%; }
     .zx-table tr { margin: 0 0 var(--zx-space-3); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface); overflow: hidden; }
     .zx-table td { display: flex; justify-content: space-between; align-items: center; gap: var(--zx-space-3); text-align: right; padding: 8px 12px; }
-    .zx-table td::before { content: attr(data-label); flex: 0 0 38%; text-align: left; font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .zx-table td::before { content: attr(data-label); flex: 0 0 38%; text-align: left; font-size: var(--zx-fs-xs); font-weight: 400; color: var(--zx-text-muted); }   /* sentence case, like every label */
     .zx-table td.zx-actions { width: 100%; justify-content: flex-end; }
     .zx-table td.zx-actions::before { content: none; }
     .zx-table td:empty { display: none; }
@@ -380,7 +380,7 @@ body.darkTheme,
 /* ===================================================================================== tabs / segmented control */
 .zx-tabs { display: flex; flex-wrap: nowrap; gap: var(--zx-space-1); border-bottom: 1px solid var(--zx-border); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; max-width: 100%; margin: 0 0 var(--zx-space-4); }
 .zx-tab {
-    flex: 0 0 auto; padding: 9px 14px; margin-bottom: -1px; font: inherit; font-weight: 600; color: var(--zx-text-muted);
+    flex: 0 0 auto; padding: 9px 14px; margin-bottom: -1px; font: inherit; font-weight: 700; color: var(--zx-text-muted);
     background: transparent; border: 0; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; min-height: 40px;
 }
 .zx-tab > i.icon, .zx-tab > .icon { margin: 0 0.45em 0 0; color: currentColor; opacity: 0.85; }
@@ -392,7 +392,7 @@ body.darkTheme,
 
 .zx-segmented { display: inline-flex; padding: 3px; gap: 2px; background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); max-width: 100%; overflow-x: auto; }
 .zx-segmented__item {
-    flex: 0 0 auto; min-height: 30px; padding: 0 var(--zx-space-3); font: inherit; font-weight: 600; color: var(--zx-text-muted);
+    flex: 0 0 auto; min-height: 30px; padding: 0 var(--zx-space-3); font: inherit; font-weight: 700; color: var(--zx-text-muted);
     background: transparent; border: 0; border-radius: calc(var(--zx-radius-md) - 2px); cursor: pointer; white-space: nowrap;
 }
 .zx-segmented__item:hover { color: var(--zx-text); }
@@ -401,7 +401,7 @@ body.darkTheme,
 
 /* ===================================================================================== stat tile */
 .zx-stat { background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); padding: var(--zx-space-4); box-shadow: var(--zx-shadow-1); min-width: 0; }
-.zx-stat__label { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 600; }
+.zx-stat__label { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 700; }
 .zx-stat__value { display: block; font-size: var(--zx-fs-2xl); font-weight: 700; line-height: 1.15; margin: 2px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .zx-stat__hint { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
 .zx-stat--ok .zx-stat__value { color: var(--zx-ok-text); }
@@ -500,7 +500,7 @@ body.zx-has-savebar .zx-toasts { bottom: 6.5rem; }
 .zx-disclosure { border-top: 1px solid var(--zx-border); margin: var(--zx-space-4) 0; color: var(--zx-text); }
 .zx-disclosure > summary {
     list-style: none; display: flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h); padding: 6px 0;
-    cursor: pointer; font-weight: 600; font-size: var(--zx-fs-md); color: var(--zx-text); user-select: none;
+    cursor: pointer; font-weight: 700; font-size: var(--zx-fs-md); color: var(--zx-text); user-select: none;
 }
 .zx-disclosure > summary::-webkit-details-marker { display: none; }
 .zx-disclosure > summary::before {
@@ -529,7 +529,7 @@ body.zx-has-savebar .zx-toasts { bottom: 6.5rem; }
 .zx-ellipsis { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* key / value list for a structured value: <dl class="zx-kv"><dt>Source</dt><dd>10.0.0.5</dd></dl> */
 .zx-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px var(--zx-space-3); margin: 0; font-size: var(--zx-fs-sm); }
-.zx-kv dt { color: var(--zx-text-muted); font-weight: 600; }
+.zx-kv dt { color: var(--zx-text-muted); font-weight: 700; }
 .zx-kv dd { margin: 0; overflow-wrap: anywhere; font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); }
 /* a table that sits flush in a card (no second border) */
 .zx-table-wrap--flush { border: 0; border-radius: 0; background: transparent; }
@@ -586,7 +586,7 @@ body.darkTheme .ui.basic.red.button, body.darkTheme .ui.basic.red.buttons .butto
     width: max-content; max-width: calc(100vw - 2 * var(--zx-space-4)); box-sizing: border-box;
     padding: var(--zx-space-3) var(--zx-space-4); border-radius: var(--zx-radius-md);
     background: var(--zx-warn-bg); color: var(--zx-warn-text); border: 1px solid var(--zx-warn-line); border-left-width: 4px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, .25); font-size: var(--zx-fs-md); font-weight: 600;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .25); font-size: var(--zx-fs-md); font-weight: 700;
 }
 .zx-session-banner__link { text-decoration: none; }
 body.zx-has-savebar .zx-session-banner { bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem); } /* above the Save bar */
@@ -597,7 +597,7 @@ body.zx-has-savebar .zx-session-banner { bottom: calc(env(safe-area-inset-bottom
 .zx-inputgroup__unit {
     flex: 0 0 auto; display: flex; align-items: center; padding: 0 var(--zx-space-3); white-space: nowrap;
     background: var(--zx-surface-2); color: var(--zx-text-muted); border: 1px solid var(--zx-border-strong); border-left: 0;
-    border-radius: 0 var(--zx-radius-md) var(--zx-radius-md) 0; font-size: var(--zx-fs-md); font-weight: 600;
+    border-radius: 0 var(--zx-radius-md) var(--zx-radius-md) 0; font-size: var(--zx-fs-md); font-weight: 700;
 }
 
 /* ===================================================================================== final consistency pass (shared kit additions) */
@@ -647,3 +647,221 @@ body.darkTheme .zx-field select, body.darkTheme .zx-field .ui.selection.dropdown
     .zx-table td:has(> div.zx-mono) { flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
     .zx-table td > div.zx-mono { display: block; max-width: 100%; overflow-wrap: anywhere; }
 }
+
+/* =====================================================================================================
+   DESIGN V2 (docs/ux/design-v2.md): page shell, see-also menu, sectioned navigation, calmer cards and tables.
+   Everything below refines the components above; markup of existing pages keeps working.
+   ===================================================================================================== */
+:root, .zx-scheme-light, body.darkTheme, .zx-scheme-dark {
+    --zx-page-max: 1360px;          /* width of the page column, the same on every page (one left edge) */
+    --zx-page-max-wide: var(--zx-page-max);   /* kept for older CSS; data pages share the column */
+    --zx-topbar-h: 4.6rem;          /* the fixed top bar (main.css .wrapper padding-top) */
+    --zx-card-pad: 20px;
+    --zx-fs-title: 1.714rem;        /* 24px page title */
+    --zx-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --zx-dur: 0.14s;
+}
+:root, .zx-scheme-light { --zx-shadow-1: 0 1px 2px rgba(16, 24, 40, 0.05); }
+@media (max-width: 748px) { :root, .zx-scheme-light, body.darkTheme, .zx-scheme-dark { --zx-card-pad: 16px; --zx-topbar-h: 3.6rem; } }
+
+/* ---- page header: breadcrumb / title + actions on one line / subtitle ---- */
+.zx-page-header {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "crumbs crumbs" "title actions" "sub sub";
+    align-items: center; gap: 0 var(--zx-space-4); margin: 0 0 var(--zx-space-5);
+}
+.zx-page-header__main { display: contents; }
+.zx-page-header__main > * { grid-column: 1 / -1; min-width: 0; }
+.zx-page-header__crumbs { grid-area: crumbs; margin-bottom: var(--zx-space-2); }
+.zx-page-header__title { grid-area: title; font-size: var(--zx-fs-title); line-height: 1.25; letter-spacing: -0.01em; text-wrap: balance; }
+.zx-page-header__sub { grid-area: sub; margin-top: var(--zx-space-1); max-width: 46rem; line-height: var(--zx-lh); }
+.zx-page-header__actions { grid-area: actions; align-self: center; justify-content: flex-end; min-width: 0; }
+/* a header without actions: the title takes the whole row */
+.zx-page-header:not(:has(> .zx-page-header__actions)) .zx-page-header__title { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+    .zx-page-header { grid-template-columns: minmax(0, 1fr); grid-template-areas: "crumbs" "title" "sub" "actions"; margin-bottom: var(--zx-space-4); }
+    .zx-page-header__actions { justify-content: flex-start; align-self: start; margin: var(--zx-space-3) 0 0; }
+    .zx-page-header__actions:empty { display: none; }
+}
+
+/* ---- cards: one border, a whisper of shadow, 20px inset ---- */
+.zx-card__head { padding: 18px var(--zx-card-pad) 0; }
+.zx-card__title { font-size: 1.071rem; letter-spacing: -0.005em; }
+.zx-card__desc { padding: 0 var(--zx-card-pad); line-height: var(--zx-lh); max-width: 62rem; }
+.zx-card__body { padding: var(--zx-space-4) var(--zx-card-pad) var(--zx-card-pad); }
+.zx-card__foot { padding: var(--zx-space-3) var(--zx-card-pad); justify-content: flex-start; }
+.zx-card__head .zx-card__desc { max-width: none; }
+.zx-card__head + .zx-card__body, .zx-card__desc + .zx-card__body { padding-top: var(--zx-space-4); }
+
+/* ---- tables: sentence-case header, roomier rows, and NO scroll area of their own (the page is the only scroller) ---- */
+.zx-table-wrap { max-height: none; overflow-x: auto; overflow-y: visible; border-radius: var(--zx-radius-lg); }
+.zx-table-wrap.zx-table-wrap--scroll { max-height: var(--zx-table-max, 30rem); overflow-y: auto; }   /* only inside a drawer or dialog */
+.zx-table th, .zx-table td { padding: 11px 16px; }
+.zx-table thead th { position: static; font-size: var(--zx-fs-xs); text-transform: none; letter-spacing: 0.01em; font-weight: 700; padding-top: 9px; padding-bottom: 9px; }
+.zx-table--compact th, .zx-table--compact td { padding: 6px 12px; }
+.zx-table tbody tr { transition: background var(--zx-dur) var(--zx-ease); }
+.zx-longvalue { max-height: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.zx-longvalue:focus-visible, .zx-longvalue:hover { max-height: none; -webkit-line-clamp: unset; }
+
+/* empty table: the one cell is a small empty state (icon tile above the sentence; put the fixing button inside the cell if there is one) */
+.zx-table td.zx-empty-cell { padding: var(--zx-space-5) var(--zx-space-4); line-height: var(--zx-lh); border-bottom: 0; }
+.zx-table td.zx-empty-cell::before {
+    content: "\f01c"; font-family: Icons; font-style: normal; font-weight: 400; display: flex; align-items: center; justify-content: center; flex: none;
+    width: 36px; height: 36px; margin: 0 auto var(--zx-space-2); font-size: 1rem; color: var(--zx-text-muted); background: var(--zx-surface-2);
+    border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); text-transform: none; letter-spacing: 0;
+}
+.zx-table td.zx-empty-cell .zx-btn { margin-top: var(--zx-space-3); }
+.zx-table tbody tr:hover td.zx-empty-cell { background: transparent; }
+
+/* a disclosure title with inline code ("for the ech= parameter"): the summary is a flex row, so text and code share the baseline */
+.zx-disclosure > summary:has(> code) { align-items: baseline; column-gap: 0.35em; }
+.zx-disclosure > summary > code { font-size: 0.92em; line-height: inherit; padding: 0 0.2em; }
+
+/* ---- status badges: a dot badge is a quiet outline, a filled badge is for counts and results ---- */
+.zx-badge { padding: 0 9px; letter-spacing: 0.005em; }
+.zx-badge--dot { background: var(--zx-surface); border-color: var(--zx-border); color: var(--zx-text); }
+.zx-badge--dot::before { background: var(--zx-text-faint); }
+.zx-badge--dot.zx-badge--ok::before { background: var(--zx-ok-solid); }
+.zx-badge--dot.zx-badge--warn::before { background: var(--zx-warn-solid); }
+.zx-badge--dot.zx-badge--danger::before { background: var(--zx-danger-solid); }
+.zx-badge--dot.zx-badge--info::before { background: var(--zx-info-solid); }
+
+/* ---- tabs (use for 2 to 6 flat choices; more, or grouped: .zx-sectionnav) ---- */
+.zx-tabs { gap: var(--zx-space-2); margin-bottom: var(--zx-space-5); }
+.zx-tab { padding: 9px 10px; border-bottom-width: 2px; border-radius: var(--zx-radius-sm) var(--zx-radius-sm) 0 0; transition: color var(--zx-dur) var(--zx-ease), border-color var(--zx-dur) var(--zx-ease); }
+.zx-tab[aria-selected="true"] { color: var(--zx-text); }
+
+/* ---- empty state: icon tile, title, one sentence, the next action ---- */
+.zx-empty { padding: var(--zx-space-7) var(--zx-space-4); }
+.zx-empty__icon {
+    display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-bottom: var(--zx-space-3);
+    font-size: 1.25rem; color: var(--zx-text-muted); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg);
+}
+.zx-empty__title { font-size: 1.071rem; }
+.zx-empty__text { max-width: 30rem; line-height: var(--zx-lh); }
+.zx-empty--inline { padding: var(--zx-space-4); }
+.zx-empty--inline .zx-empty__icon { width: 36px; height: 36px; font-size: 1rem; }
+
+/* ---- forms: a lone field does not stretch across a wide card (fields in a .zx-form-grid share the row) ---- */
+.zx-field > .zx-input, .zx-field > .zx-select, .zx-field__control > .zx-input, .zx-field__control > .zx-select { max-width: 40rem; }
+.zx-field > .zx-textarea, .zx-field__control > .zx-textarea { max-width: 56rem; }
+.zx-form-grid > .zx-field .zx-input, .zx-form-grid > .zx-field .zx-select, .zx-form-grid > .zx-field .zx-textarea,
+.zx-field--wide > .zx-input, .zx-field--wide > .zx-field__control > .zx-input { max-width: none; }
+.zx-field__control > .zx-input--short, .zx-input.zx-input--short { max-width: 9rem; }
+
+/* ---- "See also" (.zx-related) ------------------------------------------------------------------------
+   Markup (unchanged): <aside class="zx-related" aria-label="Related pages"><span class="zx-related__title">Related</span>
+                         <ul><li><a href="#tag" data-nav-open="tag">Page</a> <span>why you would go there</span></li></ul></aside>
+   zxpage.js moves it into the page header actions as ONE "Related" menu button (icon, page name and the reason per row).
+   Without a kit page header (or without JavaScript) it stays where it is, as a quiet row of chips. */
+.zx-related { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-4); padding: 0; background: none; border: 0; font-size: var(--zx-fs-sm); color: var(--zx-text); }
+.zx-related__title { color: var(--zx-text-muted); font-weight: 700; margin-right: var(--zx-space-1); }
+.zx-related ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.zx-related li { margin: 0; min-width: 0; }
+.zx-related a {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-pill);
+    background: var(--zx-surface); color: var(--zx-text); font-weight: 400; text-decoration: none; cursor: pointer; transition: background var(--zx-dur) var(--zx-ease), border-color var(--zx-dur) var(--zx-ease);
+}
+.zx-related a:hover { background: var(--zx-surface-2); border-color: var(--zx-border-strong); text-decoration: none; }
+.zx-related a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+.zx-related li > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* chip form: the reason is the tooltip (and stays readable for screen readers) */
+.zx-related:not(.is-menu) .zx-related__desc { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.zx-related:not(.is-menu) .zx-related__icon { width: auto; height: auto; background: none; }
+/* menu form */
+.zx-related.is-menu { position: relative; display: inline-flex; margin: 0 !important; flex: 0 0 auto; }
+.zx-related__btn .zx-related__title { color: inherit; font-weight: inherit; margin: 0; }
+.zx-related__btn::after { content: ""; width: 6px; height: 6px; margin: -3px 2px 0 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); opacity: 0.7; transition: transform var(--zx-dur) var(--zx-ease); }
+.zx-related.is-open .zx-related__btn::after { transform: rotate(225deg); margin-top: 3px; }
+.zx-related.is-open .zx-related__btn { background: var(--zx-surface-2); }
+.zx-related.is-menu ul {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: var(--zx-z-popover); display: none; flex-direction: column; flex-wrap: nowrap; gap: 2px;
+    width: max-content; min-width: 16rem; max-width: min(23rem, calc(100vw - 2rem)); padding: 6px;
+    background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-2); font-size: var(--zx-fs-md);
+}
+.zx-related.is-menu.is-left ul { right: auto; left: 0; }
+.zx-related.is-menu.is-open ul { display: flex; animation: zx-pop-in 0.14s var(--zx-ease); }
+.zx-related.is-menu a {
+    display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 0 10px; min-height: 0; padding: 8px 10px; border: 0; border-radius: var(--zx-radius-md);
+    background: transparent; font-weight: 400; white-space: normal;
+}
+.zx-related.is-menu a:hover, .zx-related.is-menu a:focus-visible { background: var(--zx-surface-2); }
+.zx-related.is-menu a:focus-visible { box-shadow: inset 0 0 0 2px var(--zx-focus); }
+.zx-related__icon { grid-row: 1 / span 2; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text-muted); }
+.zx-related a:hover .zx-related__icon { background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
+.zx-related__icon i.icon { margin: 0; font-size: 0.95em; height: auto; }
+.zx-related__name { font-weight: 700; color: var(--zx-text); line-height: 1.3; }
+.zx-related__desc { grid-column: 2; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.35; }
+.zx-related__desc::first-letter { text-transform: uppercase; }   /* the reason is a sentence, whatever the source text does */
+.zx-related.is-menu a:not(:has(.zx-related__desc)) .zx-related__icon { grid-row: auto; }
+@keyframes zx-pop-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .zx-related.is-menu.is-open ul { animation: none; } .zx-related__btn::after, .zx-related a, .zx-tab, .zx-table tbody tr { transition: none; } }
+@media (max-width: 748px), (pointer: coarse) {
+    .zx-related:not(.is-menu) a { min-height: 36px; padding: 0 14px; }
+    .zx-related.is-menu a { padding: 10px; min-height: var(--zx-touch); }
+}
+
+/* ---- sectioned navigation (.zx-sectioned + .zx-sectionnav) -------------------------------------------
+   For a page with more than six sections, or sections in groups. Wide screens: a sub-navigation column that stays in view
+   while the ONE page scrolls. Window of 1320px and less (page column under about 1000px): one native select with the groups
+   as optgroups (built by ZxUI.sectionNav). Order: the summary first in a group without label, groups named for the job, a last
+   group "Advanced". State of a section (On / Off): nav.state(name, kind, word) adds a .zx-sectionnav__state.
+   <div class="zx-sectioned">
+     <nav class="zx-sectionnav" id="myNav" aria-label="Security sections">
+       <div class="zx-sectionnav__group"><button type="button" class="zx-sectionnav__item active" data-zx-section="overview">...</button></div>
+       <div class="zx-sectionnav__group" role="group" aria-labelledby="g1">
+         <div class="zx-sectionnav__label" id="g1">Block abuse</div>
+         <button type="button" class="zx-sectionnav__item" data-zx-section="abuse"><i class="ban icon" aria-hidden="true"></i>
+            <span class="zx-sectionnav__text">Auto-ban</span><span class="zx-sectionnav__tag">Beta</span>   (tag: optional)
+            <span class="zx-sectionnav__desc" hidden>One line: what this section is for.</span></button>
+       </div>
+     </nav>
+     <div class="zx-sectioned__main">
+       <header class="zx-sectionhead"><h3 class="zx-sectionhead__title"></h3><p class="zx-sectionhead__desc"></p></header>   (filled by ZxUI.sectionNav)
+       ... the section content ...
+     </div>
+   </div> */
+.zx-sectioned { display: grid; grid-template-columns: 12rem minmax(0, 1fr); gap: var(--zx-space-5); align-items: start; }
+.zx-sectioned__main { min-width: 0; }
+.zx-sectionnav { display: flex; flex-direction: column; gap: var(--zx-space-4); min-width: 0; margin: 0; padding: 0; color: var(--zx-text); }
+/* the column needs about 1000px of page: 1321px of window with the 240px menu (media query, not a container query: a size
+   container would become the containing block of every fixed popover inside the page in older browsers) */
+@media (min-width: 1321px) and (min-height: 640px) { .zx-sectionnav { position: sticky; top: calc(var(--zx-topbar-h) + var(--zx-space-4)); } }
+.zx-sectionnav__group { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.zx-sectionnav__label { padding: 0 10px 4px; font-size: var(--zx-fs-xs); font-weight: 700; letter-spacing: 0.01em; color: var(--zx-text-muted); }
+.zx-sectionnav__item {
+    position: relative; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 5px 10px; margin: 0; text-align: left;
+    font: inherit; font-weight: 400; line-height: 1.25; color: var(--zx-text-muted); background: transparent; border: 0; border-radius: var(--zx-radius-md); cursor: pointer;
+    transition: background var(--zx-dur) var(--zx-ease), color var(--zx-dur) var(--zx-ease);
+}
+.zx-sectionnav__item > i.icon { flex: 0 0 1.2em; width: 1.2em; height: auto; margin: 0; font-size: 0.95em; text-align: center; color: currentColor; opacity: 0.8; }
+.zx-sectionnav__text { flex: 1 1 auto; min-width: 0; }
+/* "Advanced": a quiet pill. Prefer one group named Advanced at the end of the navigation over tagging single items */
+.zx-sectionnav__tag { flex: 0 0 auto; padding: 1px 7px; font-size: 0.786rem; line-height: 1.45; font-weight: 400; color: var(--zx-text-muted); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-pill); }
+/* state of a section that can be on or off (nav.state(name, kind, word)): dot + the word, never colour alone */
+.zx-sectionnav__state { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; font-size: 0.786rem; font-weight: 400; color: var(--zx-text-muted); white-space: nowrap; }
+.zx-sectionnav__state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid var(--zx-text-faint); }
+.zx-sectionnav__state[data-state="on"]::before { background: var(--zx-ok-solid); border-color: var(--zx-ok-solid); }
+.zx-sectionnav__state[data-state="warn"]::before { background: var(--zx-warn-solid); border-color: var(--zx-warn-solid); }
+.zx-sectionnav__state[data-state="danger"]::before { background: var(--zx-danger-solid); border-color: var(--zx-danger-solid); }
+.zx-sectionnav__item:hover { background: var(--zx-surface-2); color: var(--zx-text); }
+.zx-sectionnav__item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--zx-focus); }
+.zx-sectionnav__item[aria-current="true"], .zx-sectionnav__item.active { background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); font-weight: 700; }
+.zx-sectionnav__item[aria-current="true"] > i.icon, .zx-sectionnav__item.active > i.icon { opacity: 1; }
+.zx-sectionnav__item[aria-current="true"] .zx-sectionnav__state, .zx-sectionnav__item.active .zx-sectionnav__state { color: inherit; }
+.zx-sectionnav__picker { display: none; }
+.zx-sectionnav__picker label { display: block; margin: 0 0 4px; font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); }
+.zx-sectionnav__picker .zx-select { width: 100%; max-width: 24rem; font-weight: 400; min-height: var(--zx-touch); }
+.zx-sectionhead { margin: 0 0 var(--zx-space-4); min-width: 0; }
+.zx-sectionhead__title { margin: 0; font-size: var(--zx-fs-xl); font-weight: 700; line-height: 1.3; letter-spacing: -0.005em; color: var(--zx-text); }
+.zx-sectionhead__desc { margin: 2px 0 0; color: var(--zx-text-muted); max-width: 46rem; line-height: var(--zx-lh); }
+.zx-sectionhead__desc:empty { display: none; }
+@media (max-width: 1320px) {
+    .zx-sectioned { display: block; }
+    .zx-sectionnav { margin: 0 0 var(--zx-space-4); }
+    .zx-sectionnav.has-picker > .zx-sectionnav__group { display: none; }
+    .zx-sectionnav.has-picker > .zx-sectionnav__picker { display: block; }
+    .zx-sectionnav:not(.has-picker) { flex-direction: row; flex-wrap: wrap; }
+    .zx-sectionnav__item { min-height: var(--zx-touch); }
+}
+@media (forced-colors: active) { .zx-sectionnav__item[aria-current="true"] { outline: 2px solid Highlight; outline-offset: -2px; } }
+@media (prefers-reduced-motion: reduce) { .zx-sectionnav__item { transition: none; } }

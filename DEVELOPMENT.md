@@ -1812,6 +1812,8 @@ All of it is opt-in; configs written by older versions load unchanged (`ProxyEnd
   `application/grpc` (request or response), `Grpc-Status`, `Trailer`, any request with `Upgrade` (WebSocket), CONNECT. Zoraxy's own
   errors (521 unreachable, 404 DNS failure, 503 busy) are replaced too when listed. Rule mode: `inherit` (global default,
   `/api/proxy/ops/globalerrors`, stored in `settings/globalErrorPages`), `off`, `on`.
+  Pages for the answers Zoraxy gives by itself BEFORE or INSTEAD of proxying (403 blocks, 429, 521, unknown host ...) are a separate,
+  newer feature: Sites > Error pages, `mod/errorpages`, `/api/errorpages/*`, see `docs/errorpages.md`. Off by default.
 - **Static responses:** exact or segment-prefix path, methods (default GET+HEAD), status, content type, body, `Location`, extra headers.
   `Public` ones are answered right after the access list (before client cert, path rules, WAF, rate limit, auth); the others after auth.
 - **CORS:** exact / `https://*.example.com` / `regex:` (RE2) / `*` origins. Preflights (OPTIONS + Origin + Access-Control-Request-Method)

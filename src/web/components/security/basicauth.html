@@ -1,42 +1,84 @@
-<div id="baMsg" class="ui negative message" style="display:none"></div>
-<section class="zx-card">
+<!-- Security Center > Basic auth. Status (lists, users, sites that use them), the lists, then which lists protect a site. -->
+<section class="zx-card sx-status" id="baStatus" data-state="off">
+    <div class="sx-status__top">
+        <span class="sx-status__icon" aria-hidden="true"><i class="key icon"></i></span>
+        <div class="sx-status__text">
+            <h4 class="sx-status__title"><span class="sx-status__name">Shared login lists</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+            <p class="sx-status__desc">A list is a set of user names and passwords that several sites can share for the browser's own login prompt. Passwords are stored hashed and never shown.</p>
+        </div>
+        <div class="sx-status__action"><button type="button" class="zx-btn zx-btn--secondary" id="baNew"><i class="plus icon" aria-hidden="true"></i> New list</button></div>
+    </div>
+    <dl class="sx-facts sx-facts--3">
+        <div class="sx-fact"><dt>Lists</dt><dd id="baFLists">-</dd></div>
+        <div class="sx-fact"><dt>Users in them</dt><dd id="baFUsers">-</dd></div>
+        <div class="sx-fact"><dt>Sites that use a list</dt><dd id="baFSites">-</dd></div>
+    </dl>
+</section>
+<div id="baMsg" class="ui negative message" style="display:none" role="alert"></div>
+
+<!-- the editor is a card of its own and only exists after "New list" or "Edit" was pressed -->
+<section class="zx-card ui form" id="baEditor" aria-labelledby="baEditTitle" hidden>
     <div class="zx-card__head">
-        <h3 class="zx-card__title">Credential lists</h3>
-        <p class="zx-card__desc">Named lists of users that several proxy rules can share, on top of each rule's own users. Passwords are stored hashed and never shown.</p>
+        <h3 class="zx-card__title" id="baEditTitle">New list</h3>
+        <p class="zx-card__desc">One user per line as username:password. Passwords are stored hashed and never shown again.</p>
     </div>
     <div class="zx-card__body">
-        <div id="baLists" class="zx-listrows"></div>
-        <h4 class="zx-subhead">Add or change a list</h4>
-        <div class="ui form">
-            <div class="zx-form-grid">
-                <div class="field zx-field"><label for="baName">List name</label><input id="baName" placeholder="team-a" autocomplete="off"></div>
-                <div class="field zx-field"><label for="baUsers">Users</label><textarea id="baUsers" rows="3" autocomplete="off" placeholder="alice:secret&#10;bob"></textarea><p class="zx-help">One per line as username:password. Leave the password out to keep an existing user's password.</p></div>
-            </div>
-            <button class="ui primary button" id="baSave"><i class="save icon"></i> Save list</button>
+        <div class="zx-form-grid">
+            <div class="field zx-field"><label for="baName">List name</label><input id="baName" placeholder="team-a" autocomplete="off"><p class="zx-help">Saving under the name of an existing list changes that list.</p></div>
+            <div class="field zx-field"><label for="baUsers">Users</label><textarea id="baUsers" rows="4" autocomplete="off" spellcheck="false" placeholder="alice:secret&#10;bob"></textarea><p class="zx-help">Leave the password out to keep an existing user's password.</p></div>
         </div>
+    </div>
+    <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" id="baSave"><i class="save icon" aria-hidden="true"></i> Save list</button><button type="button" class="zx-btn zx-btn--secondary" id="baCancel">Cancel</button></div>
+</section>
+
+<section class="zx-card" id="baListCard">
+    <div class="zx-card__head">
+        <h3 class="zx-card__title">Lists</h3>
+        <p class="zx-card__desc">Each site also keeps its own users on the HTTP Proxy page. A shared list saves you from typing the same people into every site.</p>
+    </div>
+    <div class="zx-card__body">
+        <ul id="baLists" class="sx-rows"></ul>
+        <div class="zx-empty zx-empty--inline" id="baNoLists" hidden><span class="zx-empty__icon" aria-hidden="true"><i class="key icon"></i></span><p class="zx-empty__text">No list yet. Press New list above to create the first one. A list protects nothing until you tick it for a site.</p></div>
     </div>
 </section>
-<section class="zx-card">
+
+<section class="zx-card" id="baAssignCard">
     <div class="zx-card__head">
-        <h3 class="zx-card__title">Per proxy rule</h3>
-        <p class="zx-card__desc">Choose which lists protect a proxy rule and, if you like, only some paths. Basic auth must also be the rule's authentication method (HTTP Proxy, Authentication).</p>
+        <h3 class="zx-card__title">Which lists protect a site</h3>
+        <p class="zx-card__desc">Pick a site and tick the lists whose users may sign in. The site must use Basic auth as its login method (HTTP Proxy, Authentication), otherwise the lists are not asked.</p>
     </div>
-    <div class="zx-card__body">
+    <div class="zx-card__body" id="baAssignBody">
         <div class="ui form">
-            <div class="zx-form-grid">
-                <div class="field zx-field"><label for="baEp">Proxy rule</label><select id="baEp"></select></div>
-                <div class="field zx-field"><label for="baAssign">Assigned lists</label><input id="baAssign" placeholder="team-a, team-b"><p class="zx-help">Separate list names with commas.</p></div>
-                <div class="field zx-field"><label for="baScope">Only below these paths</label><input id="baScope" placeholder="/admin, /private"><p class="zx-help">Separate with commas. Empty protects the whole host.</p></div>
+            <div class="field zx-field ba-pick"><label for="baEp">Site (proxy rule)</label><select id="baEp"></select></div>
+            <div class="field zx-field"><span class="ba-lbl" id="baPickLbl">Lists for this site</span>
+                <div id="baPick" class="ba-chips" role="group" aria-labelledby="baPickLbl"></div>
+                <input type="hidden" id="baAssign">
             </div>
-            <button class="ui primary button" id="baApply"><i class="save icon"></i> Apply</button>
+            <details class="zx-disclosure ba-scope"><summary>Only protect some paths</summary><div class="zx-disclosure__body">
+                <div class="field zx-field"><label for="baScope">Only below these paths</label><input id="baScope" placeholder="/admin, /private"><p class="zx-help">Separate with commas. Empty protects the whole site.</p></div>
+            </div></details>
         </div>
     </div>
+    <div class="zx-card__body" id="baNoSites" hidden>
+        <div class="zx-empty zx-empty--inline"><span class="zx-empty__icon" aria-hidden="true"><i class="sitemap icon"></i></span><p class="zx-empty__text">There is no site to protect yet. Add a proxy rule first, then come back to tick a list for it.</p><a href="#httprp" data-nav-open="httprp" class="zx-btn zx-btn--secondary zx-btn--sm">Open HTTP Proxy</a></div>
+    </div>
+    <div class="zx-card__foot" id="baAssignFoot"><button type="button" class="zx-btn zx-btn--primary" id="baApply"><i class="save icon" aria-hidden="true"></i> Save for this site</button><span class="zx-help" id="baApplyHint"></span></div>
 </section>
 <style>
-    #baLists .zx-listrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
-    #baLists .zx-listrow:first-child { padding-top: 0; }
-    #baLists .zx-listrow__main { flex: 1 1 16rem; min-width: 0; overflow-wrap: anywhere; }
-    #baLists .zx-listrow__meta { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #baLists:empty { display: none; }
+    #secPane #baEditor, #secPane #baListCard { margin-bottom: var(--zx-space-4); }
+    #secPane #baNoLists, #secPane #baNoSites .zx-empty { padding: 0; }
+    #secPane .ba-pick { max-width: 28rem; }
+    #secPane .ba-pick select { width: 100%; }
+    #secPane .ba-lbl { display: block; margin-bottom: var(--zx-space-1); font-weight: 700; color: var(--zx-text); }
+    #secPane .ba-chips { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
+    #secPane .ba-chips label { display: inline-flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h); padding: 0 var(--zx-space-3); margin: 0; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-pill); background: var(--zx-surface); color: var(--zx-text); font-weight: 400; cursor: pointer; }
+    #secPane .ba-chips label:has(input:checked) { background: var(--zx-primary-soft); border-color: var(--zx-primary); color: var(--zx-primary-soft-text); }
+    #secPane .ba-chips label:has(input:focus-visible) { box-shadow: var(--zx-focus-ring); }
+    #secPane .ba-chips input { width: 18px; height: 18px; margin: 0; accent-color: var(--zx-primary); }
+    #secPane .ba-chips .zx-help { margin: 0; align-self: center; }
+    #secPane .ba-scope { margin-bottom: 0; }
+    #secPane .ba-scope .zx-disclosure__body { padding-bottom: 0; }
 </style>
 <script>
 (function () {
@@ -45,45 +87,94 @@
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
     function err(m) { $("#baMsg").text(m).show(); }
     function csv(v) { return v.split(",").map(function (x) { return x.trim(); }).filter(Boolean); }
+    var lists = [], assigned = [];
+    function editor(name, users) {
+        $("#baEditTitle").text(name ? t("Change the list {0}").replace("{0}", name) : t("New list"));
+        $("#baName").val(name || ""); $("#baUsers").val(users || "");
+        $("#baEditor").prop("hidden", false);
+        document.getElementById("baEditor").scrollIntoView({ block: "nearest" });
+        (name ? $("#baUsers") : $("#baName")).trigger("focus");   // only ever after a press on New list or Edit
+    }
+    function renderPick() {
+        var names = lists.map(function (l) { return l.Name; });
+        assigned.forEach(function (n) { if (names.indexOf(n) < 0) { names.push(n); } });   // a name that no longer exists stays visible so it can be unticked
+        $("#baPick").html(names.map(function (n) {
+            var known = lists.some(function (l) { return l.Name === n; });
+            return '<label><input type="checkbox" value="' + esc(n) + '"' + (assigned.indexOf(n) >= 0 ? " checked" : "") + "> " + esc(n) + (known ? "" : ' <span class="zx-badge zx-badge--warn">' + esc(t("list is gone")) + "</span>") + "</label>";
+        }).join("") || '<p class="zx-help">' + esc(t("There is no list yet. Create one above first.")) + "</p>");
+        syncPick();
+    }
+    function syncPick() {
+        $("#baAssign").val(assigned.join(", "));
+        var ep = $("#baEp").val();
+        $("#baApplyHint").text(!ep ? "" : (assigned.length ? t("{0} will ask for a user of: {1}").replace("{0}", ep).replace("{1}", assigned.join(", ")) : t("{0} uses no shared list.").replace("{0}", ep)));
+        $("#baApply").prop("disabled", !ep);
+    }
     function loadLists() {
         $.get("/api/basicauth/lists/get", function (d) {
             $("#baMsg").hide();
-            $("#baLists").html((d || []).map(function (l) {
-                return '<div class="zx-listrow"><div class="zx-listrow__main"><strong>' + esc(l.Name) + '</strong> <span class="zx-badge">' + esc(String((l.Users || []).length)) + ' ' + esc(t("users")) + '</span><span class="zx-listrow__meta">' + esc(t("Users:")) + " " + esc((l.Users || []).join(", ") || t("none")) + " · " + esc(t("Used by:")) + " " + esc((l.UsedBy || []).join(", ") || t("no proxy rule")) + '</span></div>' +
-                    '<div class="zx-row-actions"><button class="ui mini basic button baEdit" data-n="' + esc(l.Name) + '" data-u="' + esc((l.Users || []).join(",")) + '">Edit</button> <button class="ui mini basic red button baDel" data-n="' + esc(l.Name) + '">Delete</button></div></div>';
-            }).join("") || '<div class="zx-empty zx-empty--inline"><p class="zx-empty__text">No lists yet. Create the first list below, then assign it to a proxy rule.</p></div>');
+            lists = d || [];
+            $("#baLists").html(lists.map(function (l) {
+                var users = l.Users || [], used = l.UsedBy || [];
+                return '<li class="sx-row"><div class="sx-row__main"><span class="sx-row__title">' + esc(l.Name) + ' <span class="zx-badge">' + esc(users.length === 1 ? t("1 user") : t("{0} users").replace("{0}", users.length)) + "</span>" +
+                    (used.length ? "" : ' <span class="zx-badge zx-badge--dot zx-badge--warn">' + esc(t("Not used")) + "</span>") + '</span>' +
+                    '<span class="sx-row__sub">' + esc(users.join(", ") || t("No users yet")) + '</span><span class="sx-row__sub">' + esc(used.length ? t("Protects: {0}").replace("{0}", used.join(", ")) : t("No site uses this list yet. Assign it below.")) + "</span></div>" +
+                    '<div class="sx-row__end"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm baEdit" data-n="' + esc(l.Name) + '" data-u="' + esc(users.join(",")) + '">' + esc(t("Edit")) + '</button><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm sx-del baDel" data-n="' + esc(l.Name) + '" data-used="' + used.length + '">' + esc(t("Delete")) + "</button></div></li>";
+            }).join(""));
+            $("#baNoLists").prop("hidden", lists.length > 0);
+            var nUsers = lists.reduce(function (a, l) { return a + (l.Users || []).length; }, 0), siteSet = {};
+            lists.forEach(function (l) { (l.UsedBy || []).forEach(function (s) { siteSet[s] = 1; }); });
+            var nSites = Object.keys(siteSet).length;
+            ZxSec.fact("#baFLists", lists.length); ZxSec.fact("#baFUsers", nUsers); ZxSec.fact("#baFSites", nSites, "", lists.length && !nSites ? "warn" : "");
+            if (!lists.length) { ZxSec.status("#baStatus", { state: "off", badge: t("No lists yet"), title: t("No shared login list yet"), desc: t("A list is a set of user names and passwords that several sites can share for the browser's own login prompt. Create the first one with New list, then tick it for a site.") }); }
+            else if (!nSites) { ZxSec.status("#baStatus", { state: "warn", badge: t("Not assigned"), title: t("Your lists do not protect a site yet"), desc: t("Pick a site under Which lists protect a site and tick a list.") }); }
+            else { ZxSec.status("#baStatus", { state: "on", badge: t("In use"), title: (nSites === 1 ? t("1 site asks for a user from your lists") : t("{0} sites ask for a user from your lists").replace("{0}", nSites)), desc: Object.keys(siteSet).slice(0, 5).join(", ") + (nSites > 5 ? ", ..." : "") + ". " + t("Passwords are stored hashed and never shown.") }); }
+            renderPick();
         });
     }
+    $("#baNew").on("click", function () { editor("", ""); });
+    $("#baCancel").on("click", function () { $("#baEditor").prop("hidden", true); $("#baUsers").val(""); });
     $("#baLists").on("click", ".baEdit", function () {
-        $("#baName").val($(this).attr("data-n"));
-        $("#baUsers").val($(this).attr("data-u").split(",").filter(Boolean).map(function (u) { return u + ":"; }).join("\n"));
+        editor($(this).attr("data-n"), $(this).attr("data-u").split(",").filter(Boolean).map(function (u) { return u + ":"; }).join("\n"));
     });
     $("#baLists").on("click", ".baDel", function () {
-        $.cjax({ type: "POST", url: "/api/basicauth/lists/delete", data: { name: $(this).attr("data-n") }, success: function (d) { if (d && d.error) { err(d.error); } loadLists(); } });
+        var name = $(this).attr("data-n"), used = +$(this).attr("data-used");
+        ZxUI.confirm({ title: t("Delete the list {0}?").replace("{0}", name), message: used ? t("Its users can no longer sign in to the sites that use this list.") : t("No site uses this list."), confirmLabel: t("Delete list"), danger: true }).then(function (ok) {
+            if (!ok) { return; }
+            $.cjax({ type: "POST", url: "/api/basicauth/lists/delete", data: { name: name }, success: function (d) { if (d && d.error) { err(d.error); } loadLists(); } });
+        });
     });
     $("#baSave").on("click", function () {
         var users = $("#baUsers").val().split("\n").map(function (l) { return l.replace(/\r$/, ""); }).filter(function (l) { return l.trim() !== ""; }).map(function (l) {
             var i = l.indexOf(":"); return i < 0 ? { Username: l, Password: "" } : { Username: l.substring(0, i), Password: l.substring(i + 1) };
         });
         $.cjax({ type: "POST", url: "/api/basicauth/lists/set", data: { name: $("#baName").val(), users: JSON.stringify(users) }, success: function (d) {
-            if (d && d.error) { err(d.error); } else { $("#baMsg").hide(); $("#baUsers").val(""); toast("Saved", true); loadLists(); }
+            if (d && d.error) { err(d.error); } else { $("#baMsg").hide(); $("#baUsers").val(""); $("#baEditor").prop("hidden", true); toast(t("List saved"), true); loadLists(); }
         } });
     });
     function loadEp() {
-        var ep = $("#baEp").val(); if (!ep) { return; }
+        var ep = $("#baEp").val(); if (!ep) { renderPick(); return; }
         $.get("/api/basicauth/endpoint?ep=" + encodeURIComponent(ep), function (d) {
             if (d && d.error) { err(d.error); return; }
-            $("#baAssign").val((d.Lists || []).join(", ")); $("#baScope").val((d.Scope || []).join(", "));
+            assigned = d.Lists || []; $("#baScope").val((d.Scope || []).join(", "));
+            $(".ba-scope").prop("open", (d.Scope || []).length > 0);
+            renderPick();
         });
     }
+    $("#baPick").on("change", "input", function () {
+        assigned = $("#baPick input:checked").map(function () { return this.value; }).get();
+        syncPick();
+    });
     $.cjax({ type: "POST", url: "/api/proxy/list", data: { type: "host" }, success: function (list) {
-        $("#baEp").html((list || []).map(function (e) { return "<option>" + esc(e.RootOrMatchingDomain) + "</option>"; }).join("") || "<option value=''>No proxy rules yet</option>");
+        $("#baEp").html((list || []).map(function (e) { return "<option>" + esc(e.RootOrMatchingDomain) + "</option>"; }).join("") || "<option value=''>" + esc(t("No proxy rules yet")) + "</option>");
+        var none = !(list || []).length;   // nothing to assign to: say so instead of a form that cannot be saved
+        $("#baAssignBody, #baAssignFoot").prop("hidden", none); $("#baNoSites").prop("hidden", !none);
         loadEp();
     } });
     $("#baEp").on("change", loadEp);
     $("#baApply").on("click", function () {
         $.cjax({ type: "POST", url: "/api/basicauth/endpoint", data: { ep: $("#baEp").val(), lists: JSON.stringify(csv($("#baAssign").val())), scope: JSON.stringify(csv($("#baScope").val())) }, success: function (d) {
-            if (d && d.error) { err(d.error); } else { $("#baMsg").hide(); toast("Saved", true); loadLists(); }
+            if (d && d.error) { err(d.error); } else { $("#baMsg").hide(); toast(t("Saved"), true); loadLists(); }
         } });
     });
     loadLists();

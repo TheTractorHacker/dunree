@@ -178,6 +178,17 @@ func (m *Manager) breakerRecord(p *Plugin, err error) {
 	}
 	n := p.hook.consecFail
 	p.hook.mu.Unlock()
+	p.noteCall(err) //read-only status, see status.go
+	p.obs.calls.Add(1)
+	if err != nil {
+		p.obs.callFails.Add(1)
+		if isTimeout(err) {
+			p.obs.callTimeouts.Add(1)
+		}
+	}
+	if opened {
+		p.obs.breakerOpens.Add(1)
+	}
 
 	//Log once per state change, not once per request
 	if opened {
@@ -217,14 +228,14 @@ var hookHTTPClient = &http.Client{
 }
 
 func pluginURL(p *Plugin, path string) string {
-	u := url.URL{Scheme: "http", Host: net.JoinHostPort("127.0.0.1", strconv.Itoa(p.AssignedPort)), Path: path}
+	u := url.URL{Scheme: "http", Host: net.JoinHostPort("127.0.0.1", strconv.Itoa(p.assignedPort())), Path: path}
 	return u.String()
 }
 
 // callPlugin POSTs a JSON payload to a plugin endpoint and returns the (size limited) reply body.
 // It returns the status code of the plugin so the caller can interpret it.
 func (m *Manager) callPlugin(p *Plugin, path string, payload []byte, requestID string, limit int64) (int, []byte, error) {
-	if p.AssignedPort <= 0 {
+	if p.assignedPort() <= 0 {
 		return 0, nil, errors.New("plugin has no assigned port")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), p.callTimeout())
@@ -279,11 +290,11 @@ func (m *Manager) doFilterCall(p *Plugin, stage zoraxyPlugin.HookStage, fr *zora
 	}
 	var verdict zoraxyPlugin.FilterVerdict
 	if err := json.Unmarshal(body, &verdict); err != nil {
-		return nil, fmt.Errorf("invalid verdict JSON: %v", err)
+		return nil, &rejectedAnswerError{kind: "invalid verdict JSON", detail: err}
 	}
 	cv, err := sanitizeVerdict(stage, &verdict)
 	if err != nil {
-		return nil, fmt.Errorf("invalid verdict: %v", err)
+		return nil, &rejectedAnswerError{kind: "invalid verdict", detail: err}
 	}
 	return cv, nil
 }
@@ -338,6 +349,19 @@ func (m *Manager) SetHookAdminSettings(pluginID string, global *bool, failClosed
 	}
 	rec := hookDBRecord{Global: p.hook.global, FailClosedConsent: p.hook.failClosedConsent}
 	p.hook.mu.Unlock()
+	if failClosedConsent != nil && !*failClosedConsent {
+		// Without the consent the plugin may not block anything: "block while not
+		// running" must not come back by itself when the consent is given again later
+		p.polMu.Lock()
+		changed := p.pol.BlockWhenDown
+		p.pol.BlockWhenDown = false
+		pol := p.pol.normalized()
+		p.polMu.Unlock()
+		if changed && m.Options != nil && m.Options.Database != nil && m.Options.Database.Backend != nil {
+			m.Options.Database.NewTable(policyDBTable)
+			m.Options.Database.Write(policyDBTable, pluginID, pol)
+		}
+	}
 
 	if m.Options != nil && m.Options.Database != nil && m.Options.Database.Backend != nil {
 		m.Options.Database.NewTable(hookDBTable)
@@ -368,11 +392,3 @@ func (m *Manager) HandleSetPluginHookSettings(w http.ResponseWriter, r *http.Req
 	}
 	utils.SendOK(w)
 }
-
-// pluginView is a plugin together with its admin hook state, for JSON output
-type pluginView struct {
-	*Plugin
-	HookAdmin HookAdminState
-}
-
-func viewOf(p *Plugin) pluginView { return pluginView{Plugin: p, HookAdmin: p.hookAdminState()} }

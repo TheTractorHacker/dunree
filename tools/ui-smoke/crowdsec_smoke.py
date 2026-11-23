@@ -16,6 +16,7 @@ all of that and the CrowdSec settings at the end. Run it on a throw-away instanc
 
 import http.server
 import json
+import re
 import secrets
 import socketserver
 import ssl
@@ -188,11 +189,12 @@ def crowdsec_ui(pg, ctx):
 
     def open_tab():
         js("openTabById('seccenter')")
-        pg.wait_for_selector("#secTabs .item[data-sec='crowdsec']", timeout=10000)
-        pg.click("#secTabs .item[data-sec='crowdsec']", timeout=6000)
+        pg.wait_for_selector("#secTabs .item[data-sec='crowdsec']", state="attached", timeout=10000)
+        pg.dispatch_event("#secTabs .item[data-sec='crowdsec']", "click", timeout=6000)
         pg.wait_for_selector("#csForm", timeout=10000)
         pg.wait_for_function("document.getElementById('csUrl') && document.getElementById('csPoll').value !== ''", timeout=8000)
         pg.wait_for_timeout(600)
+        js("document.querySelectorAll('#secPane details.sx-group, #secPane details.zx-disclosure').forEach(d => { d.open = true; })")   # tuning, trust, the stored key and the management tools sit in collapsed groups
 
     def type_into(sel, text):
         pg.click(sel)
@@ -316,7 +318,7 @@ def crowdsec_ui(pg, ctx):
             fail("crowdsec-logonly", "Recent matches must list the banned address as 'would block (log only)'")
         if CS_BANNED not in js("document.getElementById('csDecisions').innerText"):
             fail("crowdsec-logonly", "Recent decisions must list the ban received from the LAPI")
-        if "OK" not in js("document.getElementById('csStatus').innerText") or "Decisions in memory: 2" not in js("document.getElementById('csStatus').innerText"):
+        if "OK" not in js("document.getElementById('csStatus').innerText") or not re.search(r"Decisions in memory:?\s*2\b", js("document.getElementById('csStatus').innerText")):
             fail("crowdsec-logonly", "the status card must show OK and 2 decisions: " + js("document.getElementById('csStatus').innerText"))
         if js("document.getElementById('csKey').value") != "" or not js("document.getElementById('csKeyBadge').offsetParent !== null"):
             fail("crowdsec-secret", "after saving, the key field must be empty and a 'Key set' badge shown")

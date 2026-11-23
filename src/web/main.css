@@ -1315,12 +1315,13 @@ body.darkTheme .ui.basic.red.button, body.darkTheme .ui.basic.red.buttons .butto
 @media (max-width: 480px) {
     .zx-table.zx-table--det tr { display: grid; grid-template-columns: auto 1fr 1fr; grid-template-areas: "ev ev ev" "en n t"; column-gap: var(--zx-space-3); padding: 4px 0 8px; }
     .zx-table.zx-table--det td { width: auto; flex-direction: column; align-items: flex-start; justify-content: flex-start; text-align: left; gap: 2px; padding: 4px 12px; }
-    .zx-table.zx-table--det td::before { flex: none; }
-    .zx-table.zx-table--det td[data-label="Event"] { grid-area: ev; flex-direction: row; font-weight: 600; }
-    .zx-table.zx-table--det td[data-label="Event"]::before { content: none; }
-    .zx-table.zx-table--det td[data-label="Enabled"] { grid-area: en; }
-    .zx-table.zx-table--det td[data-label="Events (N)"] { grid-area: n; }
-    .zx-table.zx-table--det td[data-label="Within seconds (T)"] { grid-area: t; }
+    .zx-table.zx-table--det td::before { flex: none; white-space: nowrap; }
+    .zx-table.zx-table--det td { justify-content: flex-end; }   /* the three controls share a baseline whatever the label length */
+    .zx-table.zx-table--det td.det-ev { grid-area: ev; flex-direction: row; justify-content: flex-start; font-weight: 700; }
+    .zx-table.zx-table--det td.det-ev::before { content: none; }
+    .zx-table.zx-table--det td.det-en { grid-area: en; }
+    .zx-table.zx-table--det td.det-n { grid-area: n; }
+    .zx-table.zx-table--det td.det-t { grid-area: t; }
     .zx-table.zx-table--det td input[type=number] { width: 100% !important; }
     .zx-table.zx-table--det td input[type=checkbox] { width: 1.3em; height: 1.3em; margin: .3em 0; }
 }

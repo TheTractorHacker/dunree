@@ -1,7 +1,10 @@
 <!--
-    AI assistant (optional, off by default). Markup is kept simple and isolated in this file so a later
-    pass can restyle it. Data: /api/ai/* (mod/aiassist). Shared helpers: script/aiassist.js.
+    AI assistant (optional, off by default). Data: /api/ai/* (mod/aiassist). Shared helpers: script/aiassist.js.
     Nothing here polls; the page only loads settings when opened.
+    Saving: the switch in the status card (#aiEnabled) is saved as soon as it is flipped, with the last saved settings.
+    Everything else is saved with #aiSave (the row under the cards, result in #aiMsg).
+    Ask the assistant: the actions are disabled with one sentence (#aiAskNote, per card .aiCardWhy) until the call can go out;
+    an error of an action is shown in its own card (.aiCardMsg).
 -->
 <script src="script/aiassist.js"></script>
 <div class="standardContainer" id="aiPage">
@@ -13,136 +16,149 @@
         </div>
     </header>
 
-    <div class="zx-callout zx-callout--info" role="note">
-        <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-        <div class="zx-callout__body">
-            It uses <b>your own</b> API key or a model on your own network. It only <b>proposes</b>: you apply every change yourself, and suggested rules start in log-only mode.
-            <details class="aiDetails">
-                <summary>What is sent to the model?</summary>
-                <ul>
-                    <li>Only the fields shown in <b>Preview what will be sent</b>: rule ids, rule descriptions, method, host, path, counts, country codes and user agents.</li>
-                    <li>Never sent: cookies, authorization or any other header values, request or response bodies, query parameter <b>values</b>, tokens, passwords, certificates.</li>
-                    <li>IP addresses are replaced by stable labels such as <code>ip-7f3a1c</code> unless you allow real addresses below.</li>
-                    <li>Log fields can be written by attackers, so the model is told they are data, not instructions, and its answer is checked strictly before you see it.</li>
-                </ul>
-            </details>
+    <!-- status: is it on, which model, how much of the budget is used -->
+    <section class="zx-card ai-status" id="aiStatus" data-state="off" aria-label="AI assistant status">
+        <div class="ai-status__top">
+            <span class="ai-status__icon" aria-hidden="true"><i class="lightbulb outline icon"></i></span>
+            <div class="ai-status__text">
+                <h3 class="ai-status__title"><span id="aiStatusName">The AI assistant is off</span> <span class="zx-badge zx-badge--dot" id="aiStatusBadge">Off</span></h3>
+                <p class="ai-status__desc" id="aiStatusDesc">Nothing runs and nothing is sent. It uses your own API key or a model on your own network, and it only proposes: you apply every change yourself.</p>
+            </div>
+            <label class="ai-status__switch" for="aiEnabled"><span id="aiEnabledLabel">Turn on the AI assistant</span><input type="checkbox" class="zx-switch" role="switch" id="aiEnabled" aria-describedby="aiEnabledHint"></label>
         </div>
-    </div>
+        <p class="ai-status__hint" id="aiEnabledHint"><span id="aiSwitchMsg" role="status" aria-live="polite"></span><span id="aiSwitchHelp">Saved as soon as you switch it.</span></p>
+        <dl class="ai-facts">
+            <div><dt>Model</dt><dd id="aiFactModel">-</dd></div>
+            <div><dt>API key</dt><dd id="aiFactKey">-</dd></div>
+            <div><dt>Used this month</dt><dd><span id="aiUsage">-</span><div class="ui small progress" id="aiBar"><div class="bar"><div class="progress"></div></div></div></dd></div>
+        </dl>
+    </section>
 
+    <div id="aiForm">
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Setup</h3>
-            <p class="zx-card__desc">Choose the model the assistant talks to.</p>
+            <h3 class="zx-card__title">Model</h3>
+            <p class="zx-card__desc">Which model the assistant talks to. Anthropic needs an API key; a model on your own machine usually does not.</p>
         </div>
         <div class="zx-card__body">
-        <div class="ui form" id="aiForm">
-                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Turn on the AI assistant</span><span class="zx-toggle-row__desc">While this is off nothing runs and nothing is sent.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiEnabled"></label>
-            <div class="zx-form-grid" style="margin-top: var(--zx-space-4);">
+            <div class="zx-form-grid">
                 <div class="zx-field"><label class="zx-field__label" for="aiProvider">Provider</label>
                     <select id="aiProvider" class="zx-select">
                         <option value="anthropic">Anthropic (Claude)</option>
                         <option value="openai_compatible">OpenAI-compatible (Ollama, LM Studio, vLLM, ...)</option>
                     </select></div>
-                <div class="zx-field"><label class="zx-field__label" for="aiModel">Model</label><input type="text" id="aiModel" maxlength="100" autocomplete="off"></div>
-                <div class="zx-field zx-field--wide"><label class="zx-field__label" for="aiEndpoint">Endpoint</label><input type="text" id="aiEndpoint" maxlength="300" autocomplete="off" spellcheck="false">
-                    <div class="aiHint" id="aiEndpointHint"></div></div>
+                <div class="zx-field"><label class="zx-field__label" for="aiModel">Model</label><input class="zx-input" type="text" id="aiModel" maxlength="100" autocomplete="off"></div>
+                <div class="zx-field zx-field--wide"><label class="zx-field__label" for="aiEndpoint">Endpoint</label><input class="zx-input" type="text" id="aiEndpoint" maxlength="300" autocomplete="off" spellcheck="false">
+                    <p class="zx-help" id="aiEndpointHint"></p></div>
                 <div class="zx-field zx-field--wide" id="aiLocalField" style="display:none;">
                     <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">This is a model on this machine or my own network</span><span class="zx-toggle-row__desc">Allows loopback and private addresses and plain http. Cloud metadata and link-local addresses are always refused.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiLocal"></label>
                 </div>
-                <div class="zx-field zx-field--wide"><label class="zx-field__label" for="aiKey">API key</label>
-                    <input type="password" id="aiKey" autocomplete="new-password" placeholder="" spellcheck="false">
-                    <div class="aiHint" id="aiKeyState"></div>
-                    <div class="aiHint">Write-only: stored encrypted on this server, never shown again and never included in backups or Fleet snapshots.
-                        <a href="#" id="aiClearKey">Remove the stored key</a></div></div>
-                <div class="zx-field"><label class="zx-field__label" for="aiBudget">Monthly token budget</label><input type="number" id="aiBudget" min="0" max="1000000000" step="1000">
-                    <div class="aiHint">Calls stop when it is used up.</div></div>
-                <div class="zx-field"><label class="zx-field__label" for="aiRate">Calls per minute</label><input type="number" id="aiRate" min="1" max="120">
-                    <div class="aiHint">The most calls in one minute.</div></div>
-            </div>
-        </div>
-        </div>
-    </section>
-
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Features</h3>
-            <p class="zx-card__desc">Choose what the assistant may help with.</p>
-        </div>
-        <div class="zx-card__body">
-            <div class="ui form">
-                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Explain events</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiFExplain"></label>
-                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Suggest rules</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiFSuggest"></label>
-            <div id="aiFAuditWrap">
-                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Configuration audit</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiFAudit"></label>
-            </div>
+                <div class="zx-field zx-field--wide" style="margin-bottom: 0;"><label class="zx-field__label" for="aiKey">API key</label>
+                    <input class="zx-input" type="password" id="aiKey" autocomplete="new-password" placeholder="" spellcheck="false">
+                    <p class="zx-help"><span id="aiKeyState"></span> Write-only: stored encrypted on this server, never shown again and never included in backups or Fleet snapshots.
+                        <a href="#" id="aiClearKey">Remove the stored key</a></p></div>
             </div>
         </div>
     </section>
 
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Data policy</h3>
-            <p class="zx-card__desc">Decide what the model may see. Preview what will be sent before you use a feature.</p>
-        </div>
-        <div class="zx-card__body">
-            <div class="ui form">
+    <div class="sy-grid2">
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">What it may help with</h3>
+                <p class="zx-card__desc">Each feature only appears where it is used once it is switched on here.</p>
+            </div>
+            <div class="zx-card__body ai-toggles">
+                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Explain events</span><span class="zx-toggle-row__desc">A plain-language explanation next to a blocked request or a WAF event.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiFExplain"></label>
+                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Suggest rules</span><span class="zx-toggle-row__desc">Proposes rules from your traffic or from a sentence you write. They start in log-only mode.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiFSuggest"></label>
+                <div id="aiFAuditWrap">
+                    <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Configuration audit</span><span class="zx-toggle-row__desc">Turns the security check results into a prioritised plan.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiFAudit"></label>
+                </div>
+            </div>
+        </section>
+        <section class="zx-card">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">What the model may see</h3>
+                <p class="zx-card__desc">You can preview the exact text before anything is sent.</p>
+            </div>
+            <div class="zx-card__body ai-toggles">
                 <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Send real IP addresses</span><span class="zx-toggle-row__desc">Off: stable labels like ip-7f3a1c are sent instead.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiSendIPs"></label>
                 <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Send request paths and query parameter names</span><span class="zx-toggle-row__desc">Query parameter values are never sent.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiSendPaths"></label>
-                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Replace host names with labels</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiMaskHosts"></label>
+                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Replace host names with labels</span><span class="zx-toggle-row__desc">The model sees host-1, host-2 instead of your domain names.</span></span><input type="checkbox" class="zx-switch" role="switch" id="aiMaskHosts"></label>
+                <details class="zx-disclosure aiDetails">
+                    <summary>What is sent, and what never is</summary>
+                    <div class="zx-disclosure__body">
+                        <ul>
+                            <li>Only the fields shown in <b>Preview what will be sent</b>: rule ids, rule descriptions, method, host, path, counts, country codes and user agents.</li>
+                            <li>Never sent: cookies, authorization or any other header values, request or response bodies, query parameter <b>values</b>, tokens, passwords, certificates.</li>
+                            <li>IP addresses are replaced by stable labels such as <code>ip-7f3a1c</code> unless you allow real addresses above.</li>
+                            <li>Log fields can be written by attackers, so the model is told they are data, not instructions, and its answer is checked strictly before you see it.</li>
+                        </ul>
+                    </div>
+                </details>
             </div>
-        </div>
-    </section>
-
-    <div class="aiSavebar">
-        <div class="zx-btn-row">
-            <button type="button" class="ui primary button" id="aiSave"><i class="save icon"></i> Save</button>
-            <button type="button" class="ui button" id="aiTest"><i class="plug icon"></i> Test connection</button>
-            <span id="aiMsg" class="aiMsg" role="status" aria-live="polite"></span>
-        </div>
-        <p class="zx-help">Save applies to setup, features and data policy.</p>
+        </section>
     </div>
 
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Usage this month</h3>
+            <h3 class="zx-card__title">Limits</h3>
+            <p class="zx-card__desc">A ceiling on what the assistant can spend. Calls stop when a limit is reached.</p>
         </div>
         <div class="zx-card__body">
-            <div class="ui small progress" id="aiBar"><div class="bar"><div class="progress"></div></div></div>
-            <div id="aiUsage" class="aiHint"></div>
+            <div class="zx-form-grid">
+                <div class="zx-field" style="margin-bottom: 0;"><label class="zx-field__label" for="aiBudget">Monthly token budget</label><input class="zx-input" type="number" id="aiBudget" min="0" max="1000000000" step="1000">
+                    <p class="zx-help">Tokens per calendar month, input and output together.</p></div>
+                <div class="zx-field" style="margin-bottom: 0;"><label class="zx-field__label" for="aiRate">Calls per minute</label><input class="zx-input" type="number" id="aiRate" min="1" max="120">
+                    <p class="zx-help">The most calls in one minute.</p></div>
+            </div>
         </div>
     </section>
+    <div class="aiSavebar">
+        <button type="button" class="zx-btn zx-btn--primary" id="aiSave"><i class="save icon" aria-hidden="true"></i> Save AI assistant</button>
+        <button type="button" class="zx-btn zx-btn--secondary" id="aiTest"><i class="plug icon" aria-hidden="true"></i> Test connection</button>
+        <span id="aiMsg" class="aiMsg" role="status" aria-live="polite"></span>
+        <p class="zx-help">Saves the model, the key, the features, what the model may see and the limits. Test connection saves first, then sends one short request.</p>
+    </div>
+    </div>
 
     <section class="zx-card" id="aiSuggestions">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Suggestions</h3>
-            <p class="zx-card__desc">Each button first shows the exact text it will send, the first time you use it.</p>
+            <h3 class="zx-card__title">Ask the assistant</h3>
+            <p class="zx-card__desc">Each button first shows the exact text it will send, the first time you use it. Nothing is applied for you.</p>
         </div>
         <div class="zx-card__body">
-        <div class="aiCards">
-            <div class="aiCard">
+        <p class="ai-asknote" id="aiAskNote" role="note" hidden><i class="info circle icon" aria-hidden="true"></i><span></span></p>
+        <div class="aiCards" id="aiCards">
+            <div class="aiCard" data-feature="suggest">
                 <h4>Rules from your traffic</h4>
                 <p>Looks at counts from the last day (top paths, user agents, countries, status codes, WAF rules) and proposes rules.</p>
                 <div class="zx-btn-row">
-                <button type="button" class="ui button" id="aiSuggest">Suggest rules</button>
+                <button type="button" class="zx-btn zx-btn--secondary" id="aiSuggest">Suggest rules</button>
                 <button type="button" class="zx-btn zx-btn--ghost aiPrev" data-feature="suggest"><i class="eye icon"></i> Preview what will be sent</button>
                 </div>
+                <p class="aiCardWhy" hidden></p>
+                <p class="aiCardMsg" role="alert" hidden></p>
             </div>
-            <div class="aiCard">
+            <div class="aiCard" data-feature="rule">
                 <h4>Describe a rule in plain words</h4>
-                <div class="ui form"><div class="field"><textarea id="aiRuleText" rows="3" maxlength="500" placeholder="For example: log every request to wp-login.php that does not come from my office country" aria-label="Describe the rule you want"></textarea></div></div>
+                <div class="zx-field" style="margin-bottom: 0;"><div><textarea class="zx-textarea" id="aiRuleText" rows="3" maxlength="500" placeholder="For example: log every request to wp-login.php that does not come from my office country" aria-label="Describe the rule you want"></textarea></div></div>
                 <div class="aiHint"><span id="aiRuleCount">0</span> / 500</div>
                 <div class="zx-btn-row">
-                <button type="button" class="ui button" id="aiRule">Propose a rule</button>
+                <button type="button" class="zx-btn zx-btn--secondary" id="aiRule">Propose a rule</button>
                 <button type="button" class="zx-btn zx-btn--ghost aiPrev" data-feature="rule"><i class="eye icon"></i> Preview what will be sent</button>
                 </div>
+                <p class="aiCardWhy" hidden></p>
+                <p class="aiCardMsg" role="alert" hidden></p>
             </div>
-            <div class="aiCard" id="aiAuditCard" style="display:none;">
+            <div class="aiCard" id="aiAuditCard" data-feature="audit" style="display:none;">
                 <h4>Configuration audit</h4>
                 <p>Turns the posture check results into a prioritised plan in plain language.</p>
                 <div class="zx-btn-row">
-                <button type="button" class="ui button" id="aiAudit">Make a plan</button>
+                <button type="button" class="zx-btn zx-btn--secondary" id="aiAudit">Make a plan</button>
                 <button type="button" class="zx-btn zx-btn--ghost aiPrev" data-feature="audit"><i class="eye icon"></i> Preview what will be sent</button>
                 </div>
+                <p class="aiCardWhy" hidden></p>
+                <p class="aiCardMsg" role="alert" hidden></p>
             </div>
         </div>
         <div id="aiPreviewBox" class="aiPreviewBox" style="display:none;"></div>
@@ -152,30 +168,70 @@
 </div>
 
 <style>
+    #aiPage > .zx-card, #aiPage #aiForm > .zx-card { margin-bottom: var(--zx-space-4); }
     #aiPage .aiHint { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); margin-top: .3em; }
-    #aiPage #aiBar { margin: 0 0 var(--zx-space-2); }
-    #aiPage #aiBar.ui.progress { background: var(--zx-surface-3); border-radius: var(--zx-radius-pill); height: 10px; }
-    #aiPage #aiBar .bar { background: var(--zx-primary); min-width: 0; height: 10px; border-radius: var(--zx-radius-pill); }
+    #aiPage .ai-status { overflow: hidden; }
+    #aiPage .ai-status__top { display: flex; align-items: flex-start; gap: var(--zx-space-4); padding: var(--zx-card-pad); }
+    #aiPage .ai-status__icon { flex: 0 0 auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--zx-radius-lg); background: var(--zx-surface-2); color: var(--zx-text-muted); border: 1px solid var(--zx-border); font-size: 1.2rem; }
+    #aiPage .ai-status__icon i.icon { margin: 0; height: auto; }
+    #aiPage .ai-status[data-state="on"] .ai-status__icon { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
+    #aiPage .ai-status[data-state="warn"] .ai-status__icon { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #aiPage .ai-status__text { flex: 1 1 auto; min-width: 0; }
+    #aiPage .ai-status__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); margin: 0; font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.35; color: var(--zx-text); }
+    #aiPage .ai-status__desc { margin: 2px 0 0; max-width: 46rem; color: var(--zx-text-muted); line-height: var(--zx-lh); }
+    #aiPage .ai-status__switch { flex: 0 0 auto; display: inline-flex; align-items: center; gap: var(--zx-space-2); min-height: 44px; margin: 0; cursor: pointer; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 700; }
+    #aiPage .ai-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zx-space-3) var(--zx-space-4); margin: 0; padding: var(--zx-space-3) var(--zx-card-pad) var(--zx-space-4); border-top: 1px solid var(--zx-border); background: var(--zx-surface-2); }
+    #aiPage .ai-facts > div { min-width: 0; }
+    #aiPage .ai-facts dt { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+    #aiPage .ai-facts dd { margin: 2px 0 0; color: var(--zx-text); font-weight: 700; overflow-wrap: anywhere; }
+    #aiPage .ai-facts dd #aiUsage { font-weight: 400; font-size: var(--zx-fs-sm); }
+    #aiPage .ai-toggles > .zx-toggle-row:first-child { padding-top: 0; }
+    #aiPage .ai-toggles .aiDetails { margin-top: var(--zx-space-3); }
+    #aiPage .ai-toggles .aiDetails ul { margin: 0; padding-left: 1.2em; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.6; }
+    #aiPage #aiFAuditWrap .zx-toggle-row, #aiPage .ai-toggles > .zx-toggle-row:last-of-type { border-bottom: 0; }
+    #aiPage .ai-toggles > :last-child { margin-bottom: 0; padding-bottom: 0; }
+    #aiPage #aiBar { margin: 6px 0 0; max-width: 18rem; }
+    #aiPage #aiBar.ui.progress { background: var(--zx-surface-3); border-radius: var(--zx-radius-pill); height: 6px; }
+    #aiPage #aiBar .bar { background: var(--zx-primary); min-width: 0; height: 6px; border-radius: var(--zx-radius-pill); }
     #aiPage #aiBar.red .bar { background: var(--zx-danger-solid); }
     #aiPage #aiBar .bar > .progress { display: none; }
-    #aiPage .aiDetails { margin-top: .8em; }
+    @media (max-width: 700px) {
+        #aiPage .ai-status__top { flex-wrap: wrap; }
+        #aiPage .ai-status__text { flex: 1 1 60%; }
+        #aiPage .ai-status__switch { flex: 1 1 100%; justify-content: space-between; }
+        #aiPage .ai-facts { grid-template-columns: minmax(0, 1fr); }
+    }
+    #aiPage .ai-status__hint { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 var(--zx-space-3); margin: calc(-1 * var(--zx-space-3)) 0 0; padding: 0 var(--zx-card-pad) var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); text-align: right; }
+    #aiPage #aiSwitchMsg { color: var(--zx-danger-text); font-weight: 700; }
+    #aiPage #aiSwitchMsg:empty { display: none; }
+    #aiPage .aiSavebar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-5); }
+    #aiPage .ai-asknote { display: flex; align-items: flex-start; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-4); padding: var(--zx-space-3) var(--zx-space-4); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); border: 1px solid var(--zx-border); color: var(--zx-text); }
+    #aiPage .ai-asknote[hidden], #aiPage .aiCardWhy[hidden], #aiPage .aiCardMsg[hidden] { display: none; }
+    #aiPage .ai-asknote i.icon { margin: 2px 0 0; height: auto; color: var(--zx-text-muted); }
+    #aiPage .aiCard .aiCardWhy { margin: var(--zx-space-2) 0 0; font-size: var(--zx-fs-sm); }
+    #aiPage .aiCard .aiCardMsg { margin: var(--zx-space-2) 0 0; color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 700; }
+    #aiPage .aiCard .zx-btn:disabled { cursor: not-allowed; }
     #aiPage .aiChecks { margin-bottom: .5em; }
-    #aiPage .aiMsg { margin-left: .8em; }
+    #aiPage .aiMsg { font-weight: 700; }
+    #aiPage .aiMsg:empty { display: none; }
     #aiPage .aiMsg.err { color: var(--zx-danger-text); }
     #aiPage .aiMsg.ok { color: var(--zx-ok-text); }
-    #aiPage .aiCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22em), 1fr)); gap: var(--zx-space-5); }
+    #aiPage .aiCards { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--zx-space-5); }
     #aiPage .aiCard { padding: 0; border: 0; background: none; }
     #aiPage .aiCard + .aiCard { border-top: 1px solid var(--zx-border); padding-top: var(--zx-space-4); }
-    @media (min-width: 900px) { #aiPage .aiCard + .aiCard { border-top: 0; padding-top: 0; } #aiPage .aiCards { gap: var(--zx-space-6); } }
-    #aiPage .aiCard h4 { margin-top: 0; }
+    /* a fixed grid: three actions (two on a build without the configuration audit), never reflowing with a setting */
+    @media (min-width: 900px) { #aiPage .aiCard + .aiCard { border-top: 0; padding-top: 0; } #aiPage .aiCards { gap: var(--zx-space-6); grid-template-columns: repeat(3, minmax(0, 1fr)); } #aiPage .aiCards.is-two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    #aiPage .aiCard { display: flex; flex-direction: column; min-width: 0; }
+    #aiPage .aiCard > p:not(.aiCardWhy):not(.aiCardMsg), #aiPage .aiCard > .zx-field { flex: 1 1 auto; }
+    #aiPage .aiCard h4 { margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; }
     #aiPage .aiCard p { color: var(--zx-text-muted); }
     #aiPage .aiCard .zx-btn-row { margin-top: var(--zx-space-3); }
     #aiPage .aiPrev.zx-btn--ghost { color: var(--zx-link); text-decoration: underline; text-underline-offset: 3px; }
     #aiPage .aiPrev .icon { margin-right: 6px; text-decoration: none; }
-    #aiPage .aiSavebar { margin: var(--zx-space-4) 0; }
-    #aiPage .aiSavebar .zx-help { margin: var(--zx-space-2) 0 0; }
+    #aiPage .aiSavebar .zx-help { margin: 0; flex: 1 1 100%; }
+    @media (max-width: 700px) { #aiPage .ai-status__hint { justify-content: flex-start; text-align: left; margin-top: calc(-1 * var(--zx-space-2)); } }
     #aiPage .aiPreviewBox { margin-top: 1em; }
-    #aiPage .aiProposal { border: 1px solid var(--zx-border); border-left: 4px solid var(--zx-primary); border-radius: 4px; padding: .7em 1em; margin: .8em 0; }
+    #aiPage .aiProposal { border: 1px solid var(--zx-border); border-left: 4px solid var(--zx-primary); border-radius: var(--zx-radius-md); padding: .7em 1em; margin: .8em 0; }
     #aiPage .aiProposal code { display: block; white-space: pre-wrap; word-break: break-word; background: var(--zx-surface-3); padding: .4em .6em; border-radius: 4px; margin: .4em 0; }
     #aiPage .aiStep { margin: .7em 0; padding-left: .8em; border-left: 3px solid var(--zx-border-strong); }
     #aiPage .aiStep.p1 { border-left-color: var(--zx-danger-solid); }
@@ -190,7 +246,10 @@
     function N_(s){ return s; }
     var keySet = false, saved = {enabled: false}, provider = "anthropic";
 
-    function msg(text, ok){ $(P + "#aiMsg").text(text || "").removeClass("ok err").addClass(ok ? "ok" : "err"); }
+    function cap(s){ s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+    function msg(text, ok){ $(P + "#aiMsg").text(cap(text)).removeClass("ok err").addClass(ok ? "ok" : "err"); }
+    var last = null;   // the settings as the server has them (what the switch is saved with)
+    var KEYS = ["enabled", "provider", "endpoint", "model", "local_model", "feature_explain", "feature_suggest", "feature_audit", "send_ips", "send_paths", "mask_hosts", "monthly_token_budget", "rate_per_minute"];
 
     function providerUI(){
         var p = $(P + "#aiProvider").val();
@@ -199,7 +258,20 @@
         $(P + "#aiEndpointHint").text(p == "anthropic" ? "Default: " + DEF.endpoint : "For example http://127.0.0.1:11434/v1 (Ollama) or http://127.0.0.1:1234/v1 (LM Studio). The path /chat/completions is added.");
     }
 
+    // what the server has: status card, usage, the switch and which actions can run. Leaves the form fields alone.
+    var auditAvailable = false;
+    function applySaved(v, usage){
+        last = v;
+        $(P + "#aiEnabled").prop("checked", v.enabled);
+        keySet = !!v.key_set;
+        saved = {enabled: !!v.enabled, suggest: !!v.feature_suggest, explain: !!v.feature_explain, audit: !!v.feature_audit};
+        provider = v.provider;
+        usageUI(v, usage);
+        statusUI(v);
+        askUI();
+    }
     function fill(v, usage, auditOK){
+        auditAvailable = !!auditOK;
         $(P + "#aiEnabled").prop("checked", v.enabled);
         $(P + "#aiProvider").val(v.provider);
         $(P + "#aiModel").val(v.model);
@@ -211,18 +283,31 @@
         $(P + "#aiFSuggest").prop("checked", v.feature_suggest);
         $(P + "#aiFAudit").prop("checked", v.feature_audit);
         $(P + "#aiFAuditWrap").toggle(!!auditOK);
-        $(P + "#aiAuditCard").toggle(!!auditOK && v.enabled && v.feature_audit);
+        $(P + "#aiAuditCard").toggle(!!auditOK);   // part of the grid whenever this build has the audit; disabled with a reason while it cannot run
+        $(P + "#aiCards").toggleClass("is-two", !auditOK);
         $(P + "#aiSendIPs").prop("checked", v.send_ips);
         $(P + "#aiSendPaths").prop("checked", v.send_paths);
         $(P + "#aiMaskHosts").prop("checked", v.mask_hosts);
-        keySet = !!v.key_set;
-        saved = {enabled: !!v.enabled, suggest: !!v.feature_suggest, explain: !!v.feature_explain, audit: !!v.feature_audit};
-        provider = v.provider; shownProvider = v.provider;
+        shownProvider = v.provider;
         $(P + "#aiKey").val("").attr("placeholder", keySet ? "A key is stored (ends in " + (v.key_last4 || "****") + "). Type to replace it." : "Paste your API key");
-        $(P + "#aiKeyState").text(v.key_error ? v.key_error : (keySet ? "Key set." : "No key set. A local model may not need one."));
-        $(P + "#aiClearKey").toggle(keySet);
+        $(P + "#aiKeyState").text(v.key_error ? v.key_error : (v.key_set ? t("Key set.") : t("No key set. A local model may not need one.")));
+        $(P + "#aiClearKey").toggle(!!v.key_set);
         providerUI();
-        usageUI(v, usage);
+        applySaved(v, usage);
+    }
+
+    // the status card shows what is SAVED; the switch saves itself, so the two never disagree
+    function statusUI(v){
+        $(P + "#aiEnabledLabel").text(v.enabled ? t("Turn off the AI assistant") : t("Turn on the AI assistant"));
+        var on = !!v.enabled, needKey = on && v.provider == "anthropic" && !v.key_set, bad = on && (needKey || v.key_error);
+        $(P + "#aiStatus").attr("data-state", bad ? "warn" : (on ? "on" : "off"));
+        $(P + "#aiStatusName").text(on ? t("The AI assistant is on") : t("The AI assistant is off"));
+        $(P + "#aiStatusBadge").attr("class", "zx-badge zx-badge--dot" + (bad ? " zx-badge--warn" : (on ? " zx-badge--ok" : ""))).text(bad ? t("Needs a key") : (on ? t("On") : t("Off")));
+        $(P + "#aiStatusDesc").text(bad ? t("It is switched on but cannot reach the model without a working API key. Add one below and save.") :
+            (on ? t("It answers when you ask: on a blocked request, a WAF event or with the buttons below. It only proposes; you apply every change yourself.") :
+                t("Nothing runs and nothing is sent. It uses your own API key or a model on your own network, and it only proposes: you apply every change yourself.")));
+        $(P + "#aiFactModel").text(v.model || "-");
+        $(P + "#aiFactKey").text(v.key_error ? t("Not usable") : (v.key_set ? tf("Stored, ends in {0}", v.key_last4 || "****") : t("Not set")));
     }
 
     function usageUI(v, u){
@@ -253,8 +338,8 @@
         if (!/^\d+$/.test(rate) || +rate < 1 || +rate > 120) { msg(t("Calls per minute must be a whole number from 1 to 120."), false); $(P + "#aiRate").focus(); return; }
         if (k) s.api_key = k;
         zrAI.api("./api/ai/settings/save", {settings: JSON.stringify(s)}, function(d){
-            fill(d.settings, d.usage, $(P + "#aiFAuditWrap").is(":visible"));
-            msg("Saved", true);
+            fill(d.settings, d.usage, auditAvailable);
+            msg(t("Saved"), true);
             if (done) done();
         }, function(e){ msg(e, false); });
     }
@@ -271,9 +356,28 @@
         providerUI();
     });
     $(P + "#aiSave").on("click", function(){ msg(""); save(); });
+    // The master switch saves by itself, with the settings the server already has: fields that are being edited are not
+    // saved along and stay as typed. A failed save puts the switch back and says why next to it.
+    $(P + "#aiEnabled").on("change", function(){
+        var sw = this, want = sw.checked, s = {};
+        if (!last) { sw.checked = !want; return; }
+        KEYS.forEach(function(k){ s[k] = last[k]; });
+        s.enabled = want;
+        sw.disabled = true;
+        $(P + "#aiSwitchMsg").text("");
+        zrAI.api("./api/ai/settings/save", {settings: JSON.stringify(s)}, function(d){
+            sw.disabled = false;
+            applySaved(d.settings, d.usage);
+            if (window.ZxUI && ZxUI.toast) ZxUI.toast(d.settings.enabled ? t("AI assistant turned on") : t("AI assistant turned off"), {type: "success"});
+        }, function(e){
+            sw.disabled = false; sw.checked = !want;
+            $(P + "#aiSwitchMsg").text(cap(e));
+        });
+    });
     $(P + "#aiClearKey").on("click", function(e){ e.preventDefault(); save({clear_key: true}); });
     $(P + "#aiTest").on("click", function(){
         msg("");
+        if (!saved.enabled && !$(P + "#aiEnabled").prop("checked")) { msg(t("Turn the assistant on first (the switch at the top), then test the connection."), false); return; }
         var b = $(this).addClass("loading");
         save(null, function(){
             zrAI.api("./api/ai/test", {}, function(d){ b.removeClass("loading"); msg(d.message, true); load(); },
@@ -352,8 +456,13 @@
         box.append($('<p class="aiHint"></p>').text(appliable ? "These are proposals only. Nothing is created until you click \"Add as log-only rule\" (or build it yourself with \"Open in builder\"); rules created here start in log-only mode and never enforce on their own." : "The rule builder is not connected yet: proposals are shown for you to read and copy. Nothing was created."));
     }
 
-    function cap(s){ s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
-    function showErr(text){ $(P + "#aiResult").empty().append($('<div class="aiMsg err" role="alert"></div>').text(cap(text))); }
+    // an error belongs to the action that caused it: shown in that action's card, under its buttons
+    function showErr(text, feature){
+        $(P + ".aiCardMsg").prop("hidden", true).text("");
+        var slot = feature ? $(P + ".aiCard[data-feature='" + feature + "'] .aiCardMsg") : $();
+        if (slot.length) { slot.text(cap(text)).prop("hidden", false); $(P + "#aiResult").empty(); }
+        else { $(P + "#aiResult").empty().append($('<div class="aiMsg err" role="alert"></div>').text(cap(text))); }
+    }
     // The preview and send dialog only makes sense when the call can actually go out
     var FEATURE_NAME = {suggest: N_("Suggest rules"), rule: N_("Suggest rules"), audit: N_("Configuration audit")};
     function notReady(feature){
@@ -363,15 +472,30 @@
         if (provider == "anthropic" && !keySet) return t("No API key is stored yet. Paste your key in the settings above and press Save.");
         return "";
     }
+    // The actions are only pressable when the call can go out. One sentence above the three says what is missing for all
+    // of them (off, no key); a single feature that is switched off says so in its own card.
+    function askUI(){
+        var all = !saved.enabled ? (provider == "anthropic" && !keySet ? t("Turn the assistant on and save an API key to use these.") : t("Turn the assistant on (the switch at the top of this page) to use these.")) :
+            (provider == "anthropic" && !keySet ? t("Save an API key under Model to use these.") : "");
+        $(P + "#aiAskNote").prop("hidden", !all).find("span").text(all);
+        $(P + ".aiCard").each(function(){
+            var f = this.getAttribute("data-feature"), key = f == "rule" ? "suggest" : f;
+            var off = !all && !saved[key];
+            $(this).find(".zx-btn:not(.aiPrev)").prop("disabled", !!all || off);
+            $(this).find(".aiCardWhy").prop("hidden", !off).text(off ? tf("“{0}” is switched off. Switch it on under “What it may help with” and save.", t(FEATURE_NAME[f])) : "");
+            if (all || off) { $(this).find(".aiCardMsg").prop("hidden", true).text(""); }
+        });
+    }
     function run(btn, feature, params, call, render){
         msg("");
+        $(P + ".aiCardMsg").prop("hidden", true).text("");
         var why = notReady(feature);
-        if (why) { showErr(why); return; }
+        if (why) { showErr(why, feature); return; }
         zrAI.withPreview(feature, params, function(){
             btn.addClass("loading").prop("disabled", true);
             $(P + "#aiResult").empty();
             call(function(d){ btn.removeClass("loading").prop("disabled", false); render(d); load(); },
-                function(e){ btn.removeClass("loading").prop("disabled", false); showErr(e); });
+                function(e){ btn.removeClass("loading").prop("disabled", false); showErr(e, feature); });
         });
     }
     $(P + "#aiSuggest").on("click", function(){
@@ -379,7 +503,7 @@
     });
     $(P + "#aiRule").on("click", function(){
         var t = $.trim($(P + "#aiRuleText").val());
-        if (!t) { showErr(window.t("Describe the rule you want first, for example: log every request to /admin from outside my country.")); $(P + "#aiRuleText").focus(); return; }
+        if (!t) { showErr(window.t("Describe the rule you want first, for example: log every request to /admin from outside my country."), "rule"); $(P + "#aiRuleText").focus(); return; }
         run($(this), "rule", {text: t}, function(ok, bad){ zrAI.api("./api/ai/rule", {text: t}, ok, bad); }, function(d){ proposals(d.proposals || [], d.appliable); });
     });
     $(P + "#aiAudit").on("click", function(){

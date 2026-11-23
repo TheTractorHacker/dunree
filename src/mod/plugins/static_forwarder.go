@@ -55,7 +55,7 @@ func (m *Manager) GetForwarderRadixTreeFromPlugins(pluginIds []string) *radix.Tr
 	// Iterate over the loaded plugins and insert their paths into the radix tree
 	m.loadedPluginsMutex.RLock()
 	for _, plugin := range m.LoadedPlugins {
-		if !plugin.Enabled {
+		if !plugin.inRequestPath() {
 			//Ignore disabled plugins
 			continue
 		}

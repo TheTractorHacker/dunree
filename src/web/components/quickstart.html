@@ -1,118 +1,100 @@
-
+<!-- Overview > Quick Start (tag qstart). Three guided walkthroughs (.serviceOption[name], tour logic in script/quicksetup.js) and two
+     short guides (.tutorial[name]). The page hides itself once a proxy rule exists and the proxy runs (index.html, /api/quickstart). -->
 <div id="quickstart" class="standardContainer">
     <style>
-        body.darkTheme .tutorial .author{
-            color: white !important;
-        }
-
-        .tutorial{
-            cursor: pointer;
-            transition: opacity 0.3s ease, background-color 0.3s ease;
-        }
-        .tutorial:hover{
-            opacity: 0.8;
-            background-color: var(--theme_bg_active);
-        }
+        /* the legacy rules for #quickstart .serviceOption live in main.css (gradients, fixed height): replaced here by kit tokens */
+        #quickstart .qs-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zx-space-4); margin: 0 0 var(--zx-space-4); padding: 0; list-style: none; }
+        #quickstart .qs-choice.serviceOption { position: relative; display: flex; flex-direction: column; gap: var(--zx-space-3); min-height: 0; height: 100%; padding: var(--zx-card-pad); overflow: visible;
+            background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); cursor: pointer; opacity: 1;
+            transition: border-color var(--zx-dur) var(--zx-ease), background-color var(--zx-dur) var(--zx-ease); }
+        #quickstart .qs-choice.serviceOption:not(.active):hover { opacity: 1; border-color: var(--zx-border-strong); }
+        #quickstart .qs-choice.serviceOption:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+        #quickstart .qs-choice.serviceOption.active { border-color: var(--zx-primary); background: var(--zx-primary-soft); box-shadow: inset 0 0 0 1px var(--zx-primary); }
+        #quickstart .qs-choice .qs-choice__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--zx-radius-lg); background: var(--zx-surface-2); border: 1px solid var(--zx-border); color: var(--zx-text-muted); font-size: 1.2rem; font-weight: 400; }
+        #quickstart .qs-choice .qs-choice__icon i.icon { margin: 0; height: auto; font-weight: 400; }
+        #quickstart .qs-choice.active .qs-choice__icon { background: var(--zx-surface); border-color: var(--zx-primary); color: var(--zx-primary); }
+        #quickstart .qs-choice .qs-choice__title { margin: 0; font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.3; color: var(--zx-text); }
+        #quickstart .qs-choice .qs-choice__desc { margin: 0; flex: 1 1 auto; color: var(--zx-text-muted); font-weight: 400; line-height: var(--zx-lh); }
+        #quickstart .qs-choice .qs-choice__steps { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; }
+        #quickstart .qs-choice.serviceOption .activeOption { position: absolute; top: var(--zx-space-4); right: var(--zx-space-4); bottom: auto; left: auto; color: var(--zx-primary); font-weight: 400; }
+        #quickstart .qs-choice .activeOption i.icon { margin: 0; font-size: 1.3rem; font-weight: 400; }
+        #quickstart .qs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-6); }
+        #quickstart .qs-actions .zx-help { margin: 0; flex: 1 1 16rem; }
+        /* nothing picked: a quiet outline button and a sentence; picked: the one primary button of the page */
+        #quickstart .qs-actions .zx-btn.disabled { color: var(--zx-text-muted); cursor: not-allowed; }
+        #quickstart .qs-actions .zx-btn.disabled:hover { background: var(--zx-surface); }
+        #quickstart .qs-picknote { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+        #quickstart .qs-picknote[hidden] { display: none; }
+        #quickstart .qs-actions .qs-or { margin-left: var(--zx-space-2); }
+        #quickstart .qs-actions .qs-dismiss { margin-left: auto; }
+        #quickstart .qs-guide { display: flex; align-items: center; gap: var(--zx-space-4); width: 100%; padding: 14px var(--zx-card-pad); margin: 0; border: 0; background: transparent; color: var(--zx-text); font: inherit; text-align: left; cursor: pointer; opacity: 1; transition: background-color var(--zx-dur) var(--zx-ease); }
+        #quickstart .qs-guide:hover { background: var(--zx-surface-2); opacity: 1; }
+        #quickstart .qs-guide:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--zx-focus); }
+        #quickstart li:first-child > .qs-guide { border-radius: var(--zx-radius-lg) var(--zx-radius-lg) 0 0; }
+        #quickstart li:last-child > .qs-guide { border-radius: 0 0 var(--zx-radius-lg) var(--zx-radius-lg); }
+        @media (max-width: 900px) { #quickstart .qs-choices { grid-template-columns: minmax(0, 1fr); } #quickstart .qs-actions .qs-dismiss { margin-left: 0; } }
+        @media (max-width: 600px) { #quickstart .qs-actions .zx-btn { flex: 1 1 100%; } }
+        @media (prefers-reduced-motion: reduce) { #quickstart .qs-choice.serviceOption, #quickstart .qs-guide { transition: none; } }
     </style>
-    <div class="ui container">
-        <h1 class="ui header">
-            <img src="img/res/1F44B.png">
-            <div class="content" style="font-weight: lighter;">
-              Welcome to Zoraxy!
-              <div class="sub header">What services are you planning to set up today?</div>
-            </div>
-        </h1>
-        <p class="zx-sub" id="qsPickHint" style="margin-top:.8em">Pick one of the three cards to start a guided walkthrough for it, or create a proxy rule right away.</p>
-        <p class="zx-sub" style="margin-top:.8em">Already running? The <a href="#status" data-nav-open="status">Status page</a> has a short "Get started" checklist that shows what is still missing: a proxy rule, a certificate, the WAF, a backup and notifications.</p>
-        <br>
-        <div class="ui stackable equal width grid">
-            <div class="column">
-                <div class="serviceOption homepage" name="homepage">
-                    <div class="titleWrapper">
-                        <p>Basic Homepage</p>
-                    </div>
-                    <div class="ui divider"></div>
-                    <p>Host a static homepage with Zoraxy and point your domain name to your web server.</p>
-                    <img class="themebackground ui small image" src="img/res/1F310.png">
-                    <div class="activeOption">
-                        <i class="ui white huge circle check icon"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="column">
-                <div class="serviceOption subdomain" name="subdomain">
-                    <div class="titleWrapper">
-                        <p>Sub-domains Routing</p>
-                    </div>
-                    <div class="ui divider"></div>
-                    <p>Add and handle traffic from your subdomains and point them to a dedicated web services somewhere else.</p>
-                    <img class="themebackground ui small image" src="img/res/1F500.png">
-                    <div class="activeOption">
-                        <i class="ui white huge circle check icon"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="column">
-                <div class="serviceOption tls" name="tls">
-                    <div class="titleWrapper">
-                        <p>HTTPS Green Lock(s)</p>
-                    </div>
-                    <div class="ui divider"></div>
-                    <p>Turn your unsafe HTTP website into HTTPS using free certificate from public certificate authorities organizations.</p>
-                    <img class="themebackground ui small image" src="img/res/1F512.png">
-                    <div class="activeOption">
-                        <i class="ui white huge circle check icon"></i>
-                    </div>
-                </div>
-            </div>
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Welcome to Zoraxy</h2>
+            <p class="zx-page-header__sub">What do you want to set up first? Pick a walkthrough and Zoraxy shows you each step on the real pages. Nothing is changed until you save there.</p>
         </div>
-        <br>
-        <div style="width: 100%;" align="center">
-            <button onclick="openNewRuleDialog();" class="ui primary button" title="Create your first proxy rule right now"><i class="plus icon"></i> Create a proxy rule</button>
-            <button onclick="startQuickStartTour();" class="ui finished disabled button quickstartControlButton" id="qsStartBtn" aria-disabled="true" aria-describedby="qsPickHint" title="Pick one of the cards above first">
-                Start Walkthrough
-            </button>
-            <button onclick="setQuickStartDismissed(true);" class="ui basic button" id="qsDismissBtn" title="Remove Quick Start from the menu. It also disappears by itself once a proxy rule exists and the proxy is running.">
-                <i class="eye slash outline icon"></i> Dismiss Quick Start
-            </button>
-            <div style="margin-top: 0.8em; opacity: 0.7;"><small>Quick Start also hides itself once you have a proxy rule and the proxy is running.</small></div>
-        </div>
-        <div class="ui divider"></div>
-        <!-- More advance tutorials -->
-         <div class="ui segment tutorial" name="redirect">
-            <div class="ui comments">
-                <div class="comment">
-                    <a class="avatar">
-                    <img src="img/res/redirect.svg">
-                    </a>
-                    <div class="content">
-                        <div class="author">Setting Up Redirections</div>
-                        <div class="text">
-                            <p>Redirect all traffic from one domain to another domain, or redirect specific paths to other URLs.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="ui segment tutorial" name="stream">
-            <div class="ui comments">
-                <div class="comment">
-                    <a class="avatar">
-                    <img src="img/res/stream.svg">
-                    </a>
-                    <div class="content">
-                        <div class="author">Stream Proxy</div>
-                        <div class="text">
-                            <p>Proxy TCP / UDP traffic to different servers or services.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    </header>
 
-        
-    </div>
-    
+    <section class="zx-section" aria-labelledby="qsPickTitle">
+        <h3 class="zx-section__title" id="qsPickTitle">Guided walkthroughs</h3>
+        <p class="zx-section__desc" id="qsPickHint">Pick one of the three cards to start a guided walkthrough for it, or create a proxy rule right away.</p>
+        <div class="qs-choices">
+            <div class="qs-choice serviceOption homepage" name="homepage">
+                <span class="qs-choice__icon" aria-hidden="true"><i class="home icon"></i></span>
+                <p class="qs-choice__title">Basic homepage</p>
+                <p class="qs-choice__desc">Host a static homepage with Zoraxy and point your domain name to your web server.</p>
+                <p class="qs-choice__steps">Uses the Static Web Server and the Default Site.</p>
+                <div class="activeOption" aria-hidden="true"><i class="check circle icon"></i></div>
+            </div>
+            <div class="qs-choice serviceOption subdomain" name="subdomain">
+                <span class="qs-choice__icon" aria-hidden="true"><i class="random icon"></i></span>
+                <p class="qs-choice__title">Sub-domain routing</p>
+                <p class="qs-choice__desc">Send each of your sub-domains to the web service that should answer it, wherever that runs.</p>
+                <p class="qs-choice__steps">Creates a proxy rule on the HTTP Proxy page.</p>
+                <div class="activeOption" aria-hidden="true"><i class="check circle icon"></i></div>
+            </div>
+            <div class="qs-choice serviceOption tls" name="tls">
+                <span class="qs-choice__icon" aria-hidden="true"><i class="lock icon"></i></span>
+                <p class="qs-choice__title">HTTPS with a free certificate</p>
+                <p class="qs-choice__desc">Turn a plain HTTP website into HTTPS with a free certificate from a public certificate authority.</p>
+                <p class="qs-choice__steps">Uses TLS / SSL Certificates and the ACME Client.</p>
+                <div class="activeOption" aria-hidden="true"><i class="check circle icon"></i></div>
+            </div>
+        </div>
+        <div class="qs-actions">
+            <button type="button" onclick="startQuickStartTour();" class="zx-btn zx-btn--secondary finished disabled quickstartControlButton" id="qsStartBtn" aria-disabled="true" aria-describedby="qsPickNote" title="Pick one of the cards above first"><i class="play icon" aria-hidden="true"></i> Start walkthrough</button>
+            <span class="qs-picknote" id="qsPickNote">Pick a walkthrough first.</span>
+            <button type="button" onclick="openNewRuleDialog();" class="zx-btn zx-btn--secondary" title="Create your first proxy rule right now"><i class="plus icon" aria-hidden="true"></i> Create a proxy rule</button>
+            <button type="button" onclick="setQuickStartDismissed(true);" class="zx-btn zx-btn--ghost qs-dismiss" id="qsDismissBtn" title="Remove Quick Start from the menu. It also disappears by itself once a proxy rule exists and the proxy is running."><i class="eye slash outline icon" aria-hidden="true"></i> Dismiss Quick Start</button>
+        </div>
+    </section>
+
+    <section class="zx-section" aria-labelledby="qsMoreTitle">
+        <h3 class="zx-section__title" id="qsMoreTitle">More guides</h3>
+        <p class="zx-section__desc">Each starts right away.</p>
+        <div class="zx-card">
+            <ul class="sy-rows sy-rows--flush" style="margin: 0;">
+                <li><button type="button" class="qs-guide tutorial" name="redirect">
+                    <span class="sy-row__icon" aria-hidden="true"><i class="level up alternate icon"></i></span>
+                    <span class="sy-row__main"><span class="sy-row__title">Setting up redirections</span><span class="sy-row__sub">Redirect all traffic from one domain to another domain, or redirect specific paths to other URLs.</span></span>
+                    <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+                <li><button type="button" class="qs-guide tutorial" name="stream">
+                    <span class="sy-row__icon" aria-hidden="true"><i class="exchange icon"></i></span>
+                    <span class="sy-row__main"><span class="sy-row__title">Stream proxy</span><span class="sy-row__sub">Proxy TCP / UDP traffic to different servers or services.</span></span>
+                    <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+            </ul>
+        </div>
+        <p class="zx-help" style="margin-top: var(--zx-space-4);">Already running? The <a href="#status" data-nav-open="status">Status page</a> has a short "Get started" checklist that shows what is still missing: a proxy rule, a certificate, the WAF, a backup and notifications. Quick Start also hides itself once you have a proxy rule and the proxy is running.</p>
+    </section>
 </div>
 <script>
     var currentQuickSetupClass = "";
@@ -126,7 +108,9 @@
         $(this).addClass("active");
         let tourType = $(this).attr("name");
         currentQuickSetupClass = tourType;
-        $("#qsStartBtn").removeClass("disabled").attr("aria-disabled", "false").attr("title", "Start the walkthrough for the selected card");
+        $("#qsStartBtn").removeClass("disabled zx-btn--secondary").addClass("zx-btn--primary").attr("aria-disabled", "false").attr("title", t("Start the walkthrough for the selected card"));
+        $("#qsPickNote").prop("hidden", true);
+        $("#quickstart .serviceOption").attr("aria-pressed", "false"); $(this).attr("aria-pressed", "true");
     });
     //The cards are choices: make them reachable and operable from the keyboard
     $("#quickstart .serviceOption").attr({role: "button", tabindex: "0"}).on("keydown", function(e){

@@ -16,21 +16,33 @@ import (
 // this plugin
 func (p *Plugin) StartDynamicForwardRouter() error {
 	// Create a new dpcore object to forward the traffic to the plugin
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.startDynamicForwardRouterLocked()
+}
+
+func (p *Plugin) startDynamicForwardRouterLocked() error {
 	targetURL, err := url.Parse("http://127.0.0.1:" + strconv.Itoa(p.AssignedPort) + p.Spec.DynamicCaptureIngress)
 	if err != nil {
-		fmt.Println("Failed to parse target URL: "+targetURL.String(), err)
+		fmt.Println("Failed to parse the dynamic capture target URL of plugin "+p.Spec.ID, err)
 		return err
 	}
-	thisRouter := dpcore.NewDynamicProxyCore(targetURL, "", &dpcore.DpcoreOptions{})
+	thisRouter := dpcore.NewDynamicProxyCore(targetURL, "", p.captureProxyOptions())
 	p.dynamicRouteProxy = thisRouter
 	return nil
 }
 
 // StopDynamicForwardRouter stops the dynamic forward router for this plugin
 func (p *Plugin) StopDynamicForwardRouter() {
-	if p.dynamicRouteProxy != nil {
-		p.dynamicRouteProxy = nil
-	}
+	p.mu.Lock()
+	p.dynamicRouteProxy = nil
+	p.mu.Unlock()
+}
+
+// hasDynamicProxy reports whether the dynamic capture ingress of the plugin is attached
+func (p *Plugin) hasDynamicProxy() bool {
+	proxy, _ := p.dynamicProxyAndPort()
+	return proxy != nil
 }
 
 // AcceptDynamicRoute returns whether this plugin accepts dynamic route
@@ -77,13 +89,27 @@ func (p *Plugin) serveDynamicCapture(w http.ResponseWriter, r *http.Request, req
 	if tok := p.invokeToken(); tok != "" {
 		headers = append(headers, []string{zoraxy_plugin.InvokeTokenHeader, tok})
 	}
-	p.dynamicRouteProxy.ServeHTTP(w, r, &dpcore.ResponseRewriteRuleSet{
+	proxy, port := p.dynamicProxyAndPort()
+	if proxy == nil {
+		//The plugin stopped between the decision to capture and now
+		p.noteError("A dynamic capture request failed: the plugin is not running")
+		writePluginError(w, http.StatusBadGateway, "502 Bad Gateway: the plugin handling this request is not reachable")
+		return
+	}
+	if !p.beginCapture() {
+		writeCaptureUnavailable(w)
+		return
+	}
+	cw := p.newCaptureWriter(w)
+	//A transport error is returned without anything written: finishCapture answers 502 instead of an empty 200
+	_, err := proxy.ServeHTTP(cw, r, &dpcore.ResponseRewriteRuleSet{
 		UseTLS:          false,
 		OriginalHost:    r.Host,
-		ProxyDomain:     "127.0.0.1:" + strconv.Itoa(p.AssignedPort),
+		ProxyDomain:     "127.0.0.1:" + strconv.Itoa(port),
 		NoCache:         true,
 		PathPrefix:      normalizeEndpoint(p.Spec.DynamicCaptureIngress),
 		AllowUpgrade:    true,
 		UpstreamHeaders: headers,
 	})
+	p.finishCapture(cw, "dynamic", err)
 }

@@ -38,9 +38,9 @@ def enterprise_ui(pg, ctx):
 
     def open_sec(tab, sentinel):
         js("openTabById('seccenter')")
-        pg.wait_for_selector("#secTabs .item[data-sec='%s']" % tab, timeout=10000)
+        pg.wait_for_selector("#secTabs .item[data-sec='%s']" % tab, state="attached", timeout=10000)
         try:
-            pg.click("#secTabs .item[data-sec='%s']" % tab, timeout=6000)
+            pg.dispatch_event("#secTabs .item[data-sec='%s']" % tab, "click", timeout=6000)
         except Exception:
             shot("enterprise-click-failed-%s.png" % tab)
             raise
@@ -280,7 +280,7 @@ def enterprise_ui(pg, ctx):
         fail("audit", "the refused admin allow-list save left no non-ok audit entry")
     pg.select_option("#salEvent", "deployrole.*")
     pg.wait_for_timeout(900)
-    evs = js("[...document.querySelectorAll('#salRows tr td:nth-child(4)')].map(e => (e.getAttribute('title') || e.innerText).trim())")
+    evs = js("[...document.querySelectorAll('#salRows tr .sal-event')].map(e => (e.getAttribute('title') || e.innerText).trim())")
     if not evs or any(not e.startswith("deployrole.") for e in evs):
         fail("audit", f"the event filter does not filter: {evs[:5]}")
     pg.select_option("#salEvent", "")

@@ -87,7 +87,7 @@ with sync_playwright() as p:
         if dark and not pg.evaluate("document.body.classList.contains('darkTheme')"):
             pg.evaluate("toggleTheme()")
         pg.evaluate("openTabById('seccenter')")
-        pg.click("#secTabs .item[data-sec='users']")
+        pg.dispatch_event("#secTabs .item[data-sec='users']", "click")
         pg.wait_for_selector("#sesCard:not([hidden])", timeout=8000)
         pg.wait_for_function("document.querySelector('#sesMin').value !== ''")
         vals = pg.evaluate("[$('#sesMin').val(), $('#sesDays').val(), $('#sesSlide').prop('checked')]")

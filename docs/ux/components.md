@@ -52,8 +52,8 @@ Markup of every component is on the kit page (copy button). Summary and the rule
 | Badge | `.zx-badge` + `--ok --warn --danger --info`, `--dot` | Text always present, colour is never the only signal |
 | Callout | `.zx-callout` + `--info --warn --danger --success` | `role="note"`; `role="alert"` only for messages that appear after an action |
 | Empty state | `.zx-empty` (`__icon`, `__title`, `__text`) | Always offers the next action |
-| Data table | `.zx-table-wrap > table.zx-table`, `--compact --comfortable`, `.zx-num`, `.zx-actions`, `.zx-row-actions` | Sticky header; give the wrapper `tabindex="0" role="region" aria-label`; `data-label` on every `td` for the 480px card layout |
-| Tabs | `.zx-tabs > .zx-tab[data-zx-panel]`, `ZxUI.tabs(el, {onChange})` | Arrow keys, Home/End, roving tabindex |
+| Data table | `.zx-table-wrap > table.zx-table`, `--compact --comfortable`, `.zx-num`, `.zx-actions`, `.zx-row-actions` | No scroll area of its own since design v2 (the page scrolls; `.zx-table-wrap--scroll` only inside a drawer or dialog); give the wrapper `tabindex="0" role="region" aria-label`; `data-label` on every `td` for the 480px card layout |
+| Tabs | `.zx-tabs > .zx-tab[data-zx-panel]`, `ZxUI.tabs(el, {onChange})` | Arrow keys, Home/End, roving tabindex. Two to six flat choices; more, or grouped: sectioned navigation (section 9) |
 | Segmented control | `.zx-segmented > .zx-segmented__item[data-value]`, `ZxUI.segmented(el, {onChange})` | `role=radiogroup` |
 | Stat tile | `.zx-stat` (`__label`, `__value`, `__hint`), `--ok --warn --danger` | |
 | Save bar | `ZxUI.saveBar({form, onSave, onDiscard, mount, ignore, saveLabel, discardLabel, successText})` | See 2.1 |
@@ -177,7 +177,7 @@ Added in `src/web/ui/zxpages.css` and `src/web/script/zxpage.js` (loaded by `ind
 | Pattern | Markup | Used by |
 |---|---|---|
 | Page header with breadcrumbs, one-line plain-language subtitle and a History shortcut | `.zx-page-header` with `data-zx-crumbs` and `<button class="zx-btn zx-btn--secondary" data-zx-history="Object">` | Certificates, ACME, Access Rules, Trusted Proxies, SSO, CAPTCHA, Security Center, Path routes (WAF has its own hero with the same crumbs and button) |
-| Related box | `<aside class="zx-related"><span class="zx-related__title">Related</span><ul><li><a data-nav-open="tag">Page</a> <span>why</span></li></ul></aside>` | the same pages; `data-nav-open` is handled by `nav.js` so the link uses `openTabById` and the unsaved-changes guard |
+| Related menu (design v2, section 9) | `<aside class="zx-related"><span class="zx-related__title">Related</span><ul><li><a data-nav-open="tag">Page</a> <span>why</span></li></ul></aside>` | the same pages; `data-nav-open` is handled by `nav.js` so the link uses `openTabById` and the unsaved-changes guard. `zxpage.js` moves it into the header actions as one button |
 | Sibling page tabs | `.zx-pagetabs > a[data-nav-open]` with `aria-current="page"` | Certificates and ACME Client: two pages (and two menu entries) that look like tabs of one |
 | Stat row | `.zx-statrow > .zx-stat` | Certificates |
 | Collapsible card | `button.zx-collapse__toggle[data-zx-toggle=id][aria-expanded]` + `div#id[hidden]` | "Add a certificate" |
@@ -221,6 +221,64 @@ Added to `zxui.css` (opt-in, new pages) and `zxpages.css` (a skin for the legacy
 | Long values | `.zx-cell-long`, `.zx-longvalue`, `.zx-ellipsis`, `dl.zx-kv` | Wrap anywhere, 3 lines then scroll |
 | Tables in cards | `.zx-table-wrap--flush`, `td.zx-empty-cell` | |
 | Empty state | `.zx-empty--inline` | Compact, left aligned |
-| Related | `.zx-related` | One quiet line; the explanation is the link tooltip (`zxpage.js`) |
+| Related | `.zx-related` | Since design v2 a menu in the page header, see section 9 |
 | `.zx-whatis` | 24px visible, 40px hit area (32/44 on touch) | |
 | `.zx-card__desc` | no extra inset inside head/body | |
+
+## 9. Design v2: page shell, Related menu, sectioned navigation
+
+The brief (principles, type scale, spacing, page anatomy, do / don't) is [design-v2.md](design-v2.md). This section is the reference of what was added to `zxui.css` (bottom block "DESIGN V2"), `zxpages.css`, `zxui.js` and `zxpage.js`. Live examples: kit page, "Related menu" and "Sectioned navigation".
+
+### 9.1 Page shell (automatic)
+
+| What | How | Notes |
+|---|---|---|
+| Page width | ONE column for every page: `.functiontab > .standardContainer` is centred right of the menu, content width `--zx-page-max` (1360px). Every page has the same left edge, at every window width; the breadcrumb strip and the footer sit on the same column | `zx-page--wide` is a no-op now (kept so old markup does not break); a different width per page made the title jump sideways when changing pages. `zx-page--full` removes the limit (canvas, diagram). Never set `box-sizing` or `max-width` on the container yourself (Fomantic lets every descendant inherit `box-sizing`) |
+| Header | `.zx-page-header` is a grid: breadcrumb / title + actions / subtitle | `__main` is `display: contents`; do not give the header a `display` of your own. Phones: actions under the subtitle |
+| Cards | 20px inset (`--zx-card-pad`, 16px on phones), 15px title, footer left aligned | |
+| Tables | sentence-case header, no `max-height`, no sticky header | `.zx-table-wrap--scroll` restores the scroll box (drawer / dialog only). Legacy `.ui.table` gets the same header |
+| Long values | `.zx-longvalue` clamps to three lines and opens on hover / focus | no scroll box |
+| Status badge | `.zx-badge--dot` (+ `--ok --warn --danger --info`) is a white pill with a coloured dot | filled badges stay for counts and results |
+| Empty state | `.zx-empty__icon` is a 44px tile | markup unchanged |
+| Empty table | `td.zx-empty-cell` (one cell, `colspan`) shows a 36px icon tile above the sentence, the header row is hidden | automatic for every kit table. Write a real sentence ("No active bans. Clients show up here when ..."), never "None yet."; put the fixing button inside the cell when there is one |
+| Phone cards | the `data-label` of a cell is sentence case, 12px, muted | no uppercase; keep labels short ("On", "Events", "Within (s)") |
+| Embedded page | `<iframe data-zx-fit>` grows to the height of its document (`ZxUI.fitFrame(frame, {min, max, escape})`), no scrollbar of its own | same-origin frames; `data-zx-fit="escape"` hands Esc to the parent (frames inside a drawer) |
+| Section state | `nav.state(name, kind, word)` of the sectioned navigation: dot + word ("On", "Off", "Log only") | see 9.3 |
+| Forms | a lone `.zx-input` / `.zx-select` stops at 40rem, a textarea at 56rem; the same for a lone field of a legacy `.ui.form` | `.zx-field--wide` or a `.zx-form-grid` lifts the limit; `.zx-input--short` = 9rem; a lone `input[type=number]` of a legacy form stops at 12rem |
+| Save bar | lines up with the page column | |
+| Font weight | only 400 and 700 exist in the UI font; `zxui.css` and `zxpages.css` no longer contain 500 or 600 | do not write them in page CSS either |
+| Tokens | `--zx-page-max`, `--zx-page-max-wide` (= `--zx-page-max`, legacy), `--zx-topbar-h`, `--zx-card-pad`, `--zx-fs-title`, `--zx-ease`, `--zx-dur` | |
+
+### 9.2 Related menu
+
+Markup is the list that pages already have (section 7). `zxpage.js` (`enhanceRelated`, run on every DOM change) moves the `<aside>` into `.zx-page-header__actions` of the same `.standardContainer` (or `[data-zx-page]`) as the first action, adds the button (`.zx-related__btn`, labelled by the existing `.zx-related__title`, `aria-expanded`, `aria-controls`) and turns each row into one link: icon of the target page (from `ZxNav`), name (`.zx-related__name`) and the reason (`.zx-related__desc`, the former sibling `<span>`).
+
+* The reason is shown as a sentence (first letter upper case by CSS, whatever the source text does; write new ones capitalised). A screen reader hears "Name: reason" (a visually hidden ": ").
+* Keyboard: Enter / Space toggle, Down / Up open and move through the links, Home / End, Esc closes and returns the focus, Tab leaves and closes. A click outside, a click on a link and a page change close it.
+* Phones: rows are 44px; the menu opens towards the side that has room.
+* No kit header on the page (or no JavaScript): the same markup is a row of chips where it stands; the reason is the tooltip.
+* Rules: two to six links, each with a reason of a few words; no link to the page itself and none to a page that is already a tab of this page (Certificates does not list ACME Client); no other loose cross links on the page.
+* On: Security Center, WAF, SSO, CAPTCHA, Access Rules, Trusted Proxies, Certificates, ACME, Path routes, HTTP Proxy, Encrypted Client Hello, Uptime Monitor, Listeners.
+* Tests: open the menu before clicking a link (`#TAG .zx-related__btn`, then `#TAG .zx-related a[data-nav-open=...]`).
+
+### 9.3 Sectioned navigation
+
+`.zx-sectioned` (layout) + `.zx-sectionnav` (the navigation) + `.zx-sectionhead` (title and purpose of the current section). Markup: comment in `zxui.css` and the kit page. When the page column is at least about 1000px wide (window from 1321px; a media query, because a size container would capture fixed popovers in older browsers) it is a 12rem column that stays in view (sticky under the top bar) while the page scrolls; below that one native `<select>` (label "Section", at most 24rem wide) with the groups as `<optgroup>`, built by the helper.
+
+```js
+var nav = ZxUI.sectionNav("#secTabs", { attr: "data-sec", head: "#secHead" });   // attr defaults to data-zx-section
+// the page owns the switch: a click on an item (the select clicks the item for you) loads the section, then
+nav.select(name);        // marks the item (class "active", aria-current), fills the head, moves the select
+// a page without loading or guards:  ZxUI.sectionNav(el, { auto: true, head: head });
+nav.state("abuse", "on", t("On"));          // dot + word in the navigation and in the select; kinds: on, off, warn, danger; null removes it
+```
+
+* Order: the summary section first, in a group without a label, and it is the section the page opens on. Then groups named after the job ("Block abuse", "Logins and accounts"), not after the technology. Last a group called **Advanced** with everything a beginner can skip: simple by default, advanced one click away, nothing hidden.
+* Item: `button.zx-sectionnav__item` with an icon, `.zx-sectionnav__text`, and a hidden `.zx-sectionnav__desc` (one sentence; shown in the section head only, there is no tooltip). Because it is static HTML the sentence is translated like all other text. Optional `.zx-sectionnav__tag`: a quiet pill for a single marked item ("Beta"); it is `aria-hidden`, assistive technology hears ", beta", the select shows "(beta)". Prefer the Advanced group over tagging items "Advanced".
+* State: a section that can be on or off shows it in the navigation: `nav.state(name, "on" | "off" | "warn" | "danger", word)`. The page fetches the state (read-only request) and refreshes it after a save. The Security Center does this for Auto-ban, Bot rules and CrowdSec.
+* The section head already shows the title and the purpose: the first card of a section must not repeat them (no card titled like the section).
+* Groups: `div.zx-sectionnav__group[role=group][aria-labelledby]` with a `.zx-sectionnav__label`; a group without label needs neither attribute.
+* Semantics: a `nav` landmark with buttons, the current one has `aria-current="true"`. One Tab stop (roving tabindex: the current section), Up / Down / Home / End move the focus, Enter / Space open (no automatic switching, a section may load data or ask about unsaved changes).
+* Exemplar: Security Center (`components/security.html`): 12 sections, Overview + 4 groups, opens on Overview. Its ids are unchanged, so `$("#secTabs .item[data-sec='crowdsec']").trigger("click")`, the palette entries and deep links work as before. Items other than the current one are not Tab stops and on narrow screens the items are not visible: tests use `dispatch_event(selector, "click")` or the select, and click the section they need (the page no longer opens on Auto-ban).
+* A section that saves several cards with one button ends those cards with a `.zx-savefoot` row in the flow (button + one sentence saying what it saves); it is not sticky and never floats over fields.
+* The old group label inside a tab strip (`.zx-tabgroup`) is retired; do not use it.

@@ -7,11 +7,7 @@
     @media (max-width: 748px) { #netcalcPanel .ui.action.input { flex-wrap: wrap; gap: var(--zx-space-2); } #netcalcPanel .ui.action.input > input { flex: 1 1 100% !important; border-radius: var(--zx-radius-md) !important; } #netcalcPanel .ui.action.input > .button { flex: 1 1 100%; margin: 0 !important; } }
 </style>
 <div id="netcalcPanel" style="display:flex; flex-direction:column; gap:var(--zx-space-4);">
-    <section class="zx-card" aria-labelledby="ncTitle">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title" id="ncTitle">Subnet calculator</h3>
-            <p class="zx-card__desc">Work out the network, mask and usable hosts of an address block. Everything is calculated on this node and nothing is sent out.</p>
-        </div>
+    <section class="zx-card" aria-label="Subnet calculator">
         <div class="zx-card__body">
             <div class="ui form">
                 <div class="field">
@@ -20,7 +16,7 @@
                         <input type="text" id="netcalcInput" maxlength="200" placeholder="e.g. 192.168.1.10/24">
                         <button class="zx-btn zx-btn--primary" id="netcalcBtn"><i class="calculator icon"></i> Calculate</button>
                     </div>
-                    <p class="zx-help" style="margin-top:var(--zx-space-1);">Try <code>192.168.1.10/24</code>, <code>10.0.0.1 255.255.255.0</code>, <code>2001:db8::/32</code>, a single address, or a range such as <code>10.0.0.5 - 10.0.3.200</code> (converted into the shortest list of CIDR blocks).</p>
+                    <p class="zx-help" style="margin-top:var(--zx-space-1);">Try <code>192.168.1.10/24</code>, <code>10.0.0.1 255.255.255.0</code>, <code>2001:db8::/32</code>, a single address, or a range such as <code>10.0.0.5 - 10.0.3.200</code> (converted into the shortest list of CIDR blocks). Everything is calculated on this machine; nothing is sent out.</p>
                 </div>
             </div>
             <div class="ui red message" id="netcalcError" style="display:none;" role="alert"></div>

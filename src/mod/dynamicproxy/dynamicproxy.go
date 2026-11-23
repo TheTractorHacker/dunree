@@ -453,7 +453,7 @@ func (router *Router) handleNonTLSRequest(w http.ResponseWriter, r *http.Request
 	})
 	//Only the route limits are answered here; any other upstream error keeps the behaviour this path always had
 	if status, limited := routeLimitStatus(upErr, r, sep); limited {
-		http.Error(w, http.StatusText(status), status)
+		router.serveGatewayStatus(w, r, status)
 	}
 }
 

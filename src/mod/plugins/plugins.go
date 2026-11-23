@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
 	"imuslab.com/zoraxy/mod/utils"
@@ -47,6 +48,7 @@ func NewPluginManager(options *ManagerOptions) *Manager {
 	//Create database table
 	options.Database.NewTable("plugins")
 	options.Database.NewTable(hookDBTable)
+	options.Database.NewTable(policyDBTable) //reading from a table that does not exist panics in the bolt backend
 
 	thisManager := &Manager{
 		LoadedPlugins:      make(map[string]*Plugin),
@@ -99,8 +101,10 @@ func (m *Manager) ReloadPluginFromDisk() {
 			thisPlugin, err := m.LoadPluginSpec(pluginPath)
 			if err != nil {
 				m.Log("Failed to load plugin: "+filepath.Base(pluginPath), err)
+				m.noteLoadFailure(folder.Name(), err)
 				continue
 			}
+			m.clearLoadFailure(folder.Name())
 
 			//Check if the plugin id is already loaded into the runtime
 			m.loadedPluginsMutex.RLock()
@@ -143,8 +147,10 @@ func (m *Manager) LoadPluginsFromDisk() error {
 			thisPlugin, err := m.LoadPluginSpec(pluginPath)
 			if err != nil {
 				m.Log("Failed to load plugin: "+filepath.Base(pluginPath), err)
+				m.noteLoadFailure(folder.Name(), err)
 				continue
 			}
+			m.clearLoadFailure(folder.Name())
 			thisPlugin.RootDir = filepath.ToSlash(pluginPath)
 			thisPlugin.staticRouteProxy = make(map[string]*dpcore.ReverseProxy)
 			m.loadHookAdminSettings(thisPlugin)
@@ -159,6 +165,12 @@ func (m *Manager) LoadPluginsFromDisk() error {
 				err = m.StartPlugin(thisPlugin.Spec.ID)
 				if err != nil {
 					m.Log("Failed to enable plugin: "+thisPlugin.Spec.Name, err)
+					// With a restart policy a plugin that fails to start at boot is tried
+					// again with the same backoff as a crashed one (default never: nothing)
+					thisPlugin.lifeMu.Lock()
+					thisPlugin.sup.addHistory(ExitRecord{At: time.Now().Unix(), Kind: StateFailedToStart, ExitCode: -1, Reason: "start at boot failed"})
+					m.superviseFailure(thisPlugin, true, 0)
+					thisPlugin.lifeMu.Unlock()
 				}
 			}
 		}
@@ -203,11 +215,16 @@ func (m *Manager) EnablePlugin(pluginID string) error {
 	return nil
 }
 
-// DisablePlugin disables a plugin
+// ErrPluginNotRunning is returned by StopPlugin when the plugin has no running process
+var ErrPluginNotRunning = errors.New("plugin is not running")
+
+// DisablePlugin disables a plugin: it stops the process and stores enabled=false.
+// A plugin that is not running any more (it crashed, or was never started) is
+// still disabled with success: the stored state is what the administrator asked for.
 func (m *Manager) DisablePlugin(pluginID string) error {
 	err := m.StopPlugin(pluginID)
 	m.Options.Database.Write("plugins", pluginID, false)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrPluginNotRunning) {
 		return err
 	}
 	//Generate the static forwarder radix tree
@@ -240,33 +257,54 @@ func (m *Manager) ListLoadedPlugins() ([]*Plugin, error) {
 // Log a message with the plugin name
 func (m *Manager) LogForPlugin(p *Plugin, message string, err error) {
 	processID := -1
-	if p.process != nil && p.process.Process != nil {
+	if pp := p.currentProc(); pp != nil {
 		// Get the process ID of the plugin
-		processID = p.process.Process.Pid
+		processID = pp.pid
 	}
 	m.Log("["+p.Spec.Name+":"+strconv.Itoa(processID)+"] "+message, err)
 }
 
 // Terminate all plugins and exit
 func (m *Manager) Close() {
+	m.closing.Store(true) //no automatic restart from here on
 	m.loadedPluginsMutex.Lock()
-	pluginsToStop := make([]*Plugin, 0)
+	loaded := make([]*Plugin, 0, len(m.LoadedPlugins))
 	for _, plugin := range m.LoadedPlugins {
-		if plugin.Enabled {
-			pluginsToStop = append(pluginsToStop, plugin)
-		}
+		plugin.sup.resetByAdmin() //void restarts that are waiting
+		loaded = append(loaded, plugin)
 	}
 	m.loadedPluginsMutex.Unlock()
 
-	for _, thisPlugin := range pluginsToStop {
+	for _, thisPlugin := range loaded {
+		// An automatic restart that passed its "closing" check before the line above
+		// holds lifeMu until its process runs (a start can take seconds). Look at the
+		// plugin only after it: a start that is under way is then seen and stopped,
+		// and no later one begins, because every automatic restart checks "closing"
+		// again under this lock.
+		thisPlugin.lifeMu.Lock()
+		running := thisPlugin.IsRunning()
+		thisPlugin.lifeMu.Unlock()
+		if !running {
+			continue
+		}
 		m.Options.Logger.PrintAndLog("plugin-manager", "Stopping plugin: "+thisPlugin.Spec.Name, nil)
 		m.StopPlugin(thisPlugin.Spec.ID)
+		thisPlugin.logw.close()
 	}
 
 }
 
 /* Plugin Functions */
 func (m *Plugin) StartAllStaticPathRouters() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.startAllStaticPathRoutersLocked()
+}
+
+func (m *Plugin) startAllStaticPathRoutersLocked() {
+	if m.staticRouteProxy == nil {
+		m.staticRouteProxy = make(map[string]*dpcore.ReverseProxy)
+	}
 	// Create a dpcore object for each of the static capture paths of the plugin
 	for _, captureRule := range m.Spec.StaticCapturePaths {
 		//Make sure the captureRule consists / prefix and no trailing /
@@ -281,27 +319,25 @@ func (m *Plugin) StartAllStaticPathRouters() {
 		// Create a new dpcore object to forward the traffic to the plugin
 		targetURL, err := url.Parse("http://127.0.0.1:" + strconv.Itoa(m.AssignedPort) + m.Spec.StaticCaptureIngress)
 		if err != nil {
-			fmt.Println("Failed to parse target URL: "+targetURL.String(), err)
+			fmt.Println("Failed to parse the static capture target URL of plugin "+m.Spec.ID, err)
 			continue
 		}
-		thisRouter := dpcore.NewDynamicProxyCore(targetURL, captureRule.CapturePath, &dpcore.DpcoreOptions{})
+		thisRouter := dpcore.NewDynamicProxyCore(targetURL, captureRule.CapturePath, m.captureProxyOptions())
 		m.staticRouteProxy[captureRule.CapturePath] = thisRouter
 	}
 }
 
 // StopAllStaticPathRouters stops all static path routers
 func (m *Plugin) StopAllStaticPathRouters() {
-	for path := range m.staticRouteProxy {
-		m.staticRouteProxy[path] = nil
-		delete(m.staticRouteProxy, path)
-	}
+	m.mu.Lock()
 	m.staticRouteProxy = make(map[string]*dpcore.ReverseProxy)
+	m.mu.Unlock()
 }
 
 // HandleStaticRoute handles the request to the plugin via static path captures (static forwarder)
 func (p *Plugin) HandleStaticRoute(w http.ResponseWriter, r *http.Request, longestPrefix string) {
 	longestPrefix = strings.TrimSuffix(longestPrefix, "/")
-	targetRouter := p.staticRouteProxy[longestPrefix]
+	targetRouter, port := p.staticProxyFor(longestPrefix)
 	if targetRouter == nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		fmt.Println("Error: target router not found for prefix", longestPrefix)
@@ -327,19 +363,26 @@ func (p *Plugin) HandleStaticRoute(w http.ResponseWriter, r *http.Request, longe
 	if tok := p.invokeToken(); tok != "" {
 		upstreamHeaders = append(upstreamHeaders, []string{"X-Zoraxy-Plugin-Token", tok})
 	}
-	targetRouter.ServeHTTP(w, r, &dpcore.ResponseRewriteRuleSet{
+	if !p.beginCapture() {
+		writeCaptureUnavailable(w)
+		return
+	}
+	cw := p.newCaptureWriter(w)
+	//A transport error is returned without anything written: finishCapture answers 502 instead of an empty 200
+	_, err := targetRouter.ServeHTTP(cw, r, &dpcore.ResponseRewriteRuleSet{
 		UseTLS:          false,
 		OriginalHost:    r.Host,
-		ProxyDomain:     "127.0.0.1:" + strconv.Itoa(p.AssignedPort),
+		ProxyDomain:     "127.0.0.1:" + strconv.Itoa(port),
 		NoCache:         true,
 		PathPrefix:      longestPrefix,
 		AllowUpgrade:    true,
 		UpstreamHeaders: upstreamHeaders,
 	})
-
+	p.finishCapture(cw, "static", err)
 }
 
 // IsRunning checks if the plugin is currently running
 func (p *Plugin) IsRunning() bool {
-	return p.process != nil && p.process.Process != nil
+	pp := p.currentProc()
+	return pp != nil && !pp.exited()
 }

@@ -50,8 +50,8 @@ def baseline_ui(pg, ctx):
 
     def open_overview():
         js("openTabById('seccenter')")
-        pg.wait_for_selector("#secTabs .item[data-sec='overview']", timeout=10000)
-        pg.click("#secTabs .item[data-sec='overview']", timeout=6000)
+        pg.wait_for_selector("#secTabs .item[data-sec='overview']", state="attached", timeout=10000)
+        pg.dispatch_event("#secTabs .item[data-sec='overview']", "click", timeout=6000)
         pg.wait_for_selector("#blCard .bl-list li", timeout=15000)
 
     def reload_overview():

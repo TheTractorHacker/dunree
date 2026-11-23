@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"imuslab.com/zoraxy/mod/errorpages"
 	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
 	"imuslab.com/zoraxy/mod/ruleset"
 )
@@ -246,6 +247,10 @@ func (h *ProxyHandler) handleRootRouting(w http.ResponseWriter, r *http.Request)
 
 // Serve 404 page with template if exists
 func (h *ProxyHandler) serve404PageWithTemplate(w http.ResponseWriter, r *http.Request) {
+	// The owner's "no such host" page, when one was saved and enabled (errorpages_hook.go); otherwise nothing changes
+	if h.Parent.serveCustomErrorPage(w, r, http.StatusNotFound, errorpages.ClassNoHost) {
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusNotFound)
 	template, err := os.ReadFile(filepath.Join(h.Parent.Option.WebDirectory, "templates/notfound.html"))
@@ -336,7 +341,7 @@ func (h *ProxyHandler) runEndpointChain(w http.ResponseWriter, r *http.Request, 
 
 	/* Exploit Detection */
 	if sep.detector != nil {
-		if sep.detector.CheckIsAttackWithCaptcha(w, r, h.Parent.exploitCaptchaResponder(sep)) {
+		if sep.detector.CheckIsAttackWithResponders(w, r, h.Parent.exploitCaptchaResponder(sep), h.Parent.exploitErrorPage) {
 			statusCode := sep.detector.GetResponseStatusCode()
 			detail := "AI crawler / bot signature"
 			if sep.detector.CheckCommonExploits && sep.detector.RequestContainCommonExploits(r) {

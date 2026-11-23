@@ -1,494 +1,1328 @@
+<!-- Network Tools (tag networktool): sectioned navigation (#ntNav, ZxUI.sectionNav). The seven "Test a target" tools share one
+     console (#ntConsole): one target field, options per tool, a structured result, copy, and the recent runs (kept in this browser).
+     The other sections are plain panels (#ntPanel-NAME). API calls are unchanged: /api/tools/{ping,traceroute,dns,portscan,tlsinspect,httptest,whois,wol,fwdproxy/*}. -->
 <style>
-    /* Network Tools: tool cards inside the tab panels (kit tokens only) */
-    #networktool .ui.bottom.attached.tab.segment { width: 100% !important; max-width: 100%; }
     #networktool .ntStack { display: flex; flex-direction: column; gap: var(--zx-space-4); }
     #networktool .ntStack > .zx-card { margin: 0; }
-    #networktool .ntStack .ui.form .field > label { margin-bottom: 4px; }
-    #networktool .ntStack .ui.form .zx-form-grid { display: flex; flex-wrap: wrap; gap: var(--zx-space-3) var(--zx-space-4); align-items: flex-end; }
-    #networktool .ntStack .ui.form .zx-form-grid > .field { margin: 0; flex: 1 1 13rem; min-width: 0; }
-    #networktool .ntStack .ui.form .zx-form-grid > .field.ntAction { flex: 0 0 auto; }
-    #networktool .ntStack .ntAction .ui.button { margin: 0; }
-    #networktool .ntStack .zx-btn-row { margin-top: var(--zx-space-2); }
-    #networktool .ntStack .zx-btn-row .ui.button { margin: 0; }
-    #networktool .ntStack .ui.form { margin: 0; }
-    #networktool .ntStack .ntHint { margin: var(--zx-space-1) 0 0; }
-    #networktool .ntStack .ui.form .inline.fields, #networktool .ntStack .ntChecks { display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-5); margin: var(--zx-space-3) 0 0; }
-    #networktool .ntStack .ntChecks .field { margin: 0; }
-    #networktool .ntLaunch { list-style: none; margin: 0; padding: 0; }
-    #networktool .ntLaunch li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
-    #networktool .ntLaunch li:first-child { padding-top: 0; }
-    #networktool .ntLaunch li:last-child { border-bottom: 0; padding-bottom: 0; }
-    #networktool .ntLaunch__icon { flex: 0 0 auto; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--zx-radius-md); background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
-    #networktool .ntLaunch__icon i.icon { margin: 0; }
-    #networktool .ntLaunch__text { flex: 1 1 14rem; min-width: 0; }
-    #networktool .ntLaunch__title { display: block; font-weight: 600; color: var(--zx-text); }
-    #networktool .ntLaunch__desc { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    #networktool .ntKeys { display: grid; grid-template-columns: auto 1fr; gap: var(--zx-space-1) var(--zx-space-4); margin: 0; font-size: var(--zx-fs-sm); }
-    #networktool .ntKeys dt { color: var(--zx-text); font-weight: 400; }
-    #networktool .ntKeys dd { margin: 0; text-align: right; }
+    #networktool .ntPanel[hidden], #networktool .zx-btn[hidden], #networktool .ntResHead__actions[hidden] { display: none; }
+    @media (min-width: 1321px) { #networktool .zx-sectioned { grid-template-columns: 13.5rem minmax(0, 1fr); } }
+
+    /* ---- run row: target, the options of the tool, the Run button on one baseline ---- */
+    #networktool .ntRun { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--zx-space-3) var(--zx-space-4); }
+    #networktool .ntRun .zx-field { margin: 0; min-width: 0; }
+    #networktool .ntRun .zx-input, #networktool .ntRun .zx-select { max-width: none; }
+    #networktool .ntRun__target { flex: 1 1 18rem; }
+    #networktool .ntRun__opt { flex: 0 1 11rem; }
+    #networktool .ntRun__opt--wide { flex: 1 1 14rem; }
+    #networktool .ntRun__opt--narrow { flex: 0 0 7.5rem; }
+    #networktool .ntRun__opt[hidden], #networktool .ntRunChecks [hidden] { display: none; }
+    #networktool .ntRun__go { flex: 0 0 auto; }
+    #networktool .ntRun__go > .zx-field__label { display: block; visibility: hidden; }
+    #networktool .ntRun__go .zx-btn { min-width: 8.5rem; justify-content: center; }
+    #networktool #ntTarget { font-family: var(--zx-font-mono); }
+    #networktool .ntRunChecks { display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-5); margin-top: var(--zx-space-3); }
+    #networktool .ntRunChecks:not(:has(> label:not([hidden]))) { display: none; }
+    #networktool .ntRunNote { margin: var(--zx-space-3) 0 0; }
+
+    /* ---- result ---- */
+    #networktool .ntResHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); }
+    #networktool .ntResHead__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--zx-text); min-width: 0; overflow-wrap: anywhere; }
+    #networktool .ntResHead__title code { font-family: var(--zx-font-mono); font-weight: 400; font-size: var(--zx-fs-md); background: none; padding: 0; color: var(--zx-text); }
+    #networktool .ntResHead__meta { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #networktool .ntResHead__actions { margin-left: auto; display: flex; gap: var(--zx-space-2); }
+    #networktool #ntResult { margin-top: var(--zx-space-4); }
+    #networktool #ntResult > :first-child { margin-top: 0; }
+    #networktool #ntResult > :last-child { margin-bottom: 0; }
+    #networktool .ntBusy { display: flex; align-items: center; gap: var(--zx-space-3); color: var(--zx-text-muted); padding: var(--zx-space-4) 0; }
+    #networktool .ntBusy .ui.loader { flex: 0 0 auto; }
+
+    /* facts: the answer in three to five numbers, no boxes */
+    #networktool .ntFacts { display: flex; flex-wrap: wrap; gap: var(--zx-space-3) 0; margin: 0 0 var(--zx-space-4); padding: 0 0 var(--zx-space-4); border-bottom: 1px solid var(--zx-border); }
+    #networktool .ntFacts > div { flex: 0 1 auto; min-width: 7rem; padding: 0 var(--zx-space-5) 0 0; margin: 0 var(--zx-space-5) 0 0; border-right: 1px solid var(--zx-border); }
+    #networktool .ntFacts > div:last-child { border-right: 0; margin-right: 0; padding-right: 0; }
+    #networktool .ntFacts dt { color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; margin: 0 0 2px; }
+    #networktool .ntFacts dd { margin: 0; font-size: var(--zx-fs-lg); font-weight: 700; color: var(--zx-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    #networktool .ntFacts dd.ntFacts__mono { font-family: var(--zx-font-mono); font-size: var(--zx-fs-md); font-weight: 400; line-height: 1.7; }
+    #networktool .ntFacts dd.is-ok { color: var(--zx-ok-text); }
+    #networktool .ntFacts dd.is-warn { color: var(--zx-warn-text); }
+    #networktool .ntFacts dd.is-danger { color: var(--zx-danger-text); }
+
+    /* latency bars */
+    #networktool .ntBar { display: block; height: 6px; border-radius: var(--zx-radius-pill); background: var(--zx-surface-3); overflow: hidden; min-width: 3rem; }
+    #networktool .ntBar > span { display: block; height: 100%; min-width: 3px; border-radius: inherit; background: var(--zx-primary); }
+    #networktool .ntMs { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    #networktool .ntMuted { color: var(--zx-text-muted); }
+    #networktool .ntMono { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #networktool .ntSub { margin: var(--zx-space-5) 0 var(--zx-space-2); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
+    #networktool table.zx-table.ntTable th { white-space: nowrap; }
+    #networktool table.zx-table.ntTable td { vertical-align: top; }
+    #networktool .ntReason { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+
+    /* ping: the four probes of a protocol */
+    #networktool .ntProbes { display: grid; grid-template-columns: repeat(4, minmax(3.5rem, 1fr)); gap: var(--zx-space-3); min-width: 16rem; }
+    #networktool .ntProbe { display: flex; flex-direction: column; gap: 4px; font-size: var(--zx-fs-sm); }
+    #networktool .ntProbe.is-lost .ntBar > span { display: none; }
+
+    /* traceroute: one row per hop on a rail */
+    #networktool .ntHops { list-style: none; margin: 0; padding: 0; }
+    #networktool .ntHop { position: relative; display: grid; grid-template-columns: 2rem minmax(9rem, 20rem) minmax(4rem, 1fr) 5.5rem; align-items: center; gap: var(--zx-space-3); padding: 7px 0; }
+    #networktool .ntHop::before { content: ""; position: absolute; left: calc(1rem - 0.5px); top: 0; bottom: 0; width: 1px; background: var(--zx-border-strong); }
+    #networktool .ntHop:first-child::before { top: 50%; }
+    #networktool .ntHop:last-child::before { bottom: 50%; }
+    #networktool .ntHop:only-child::before { display: none; }
+    #networktool .ntHop__n { position: relative; z-index: 1; width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--zx-border-strong); background: var(--zx-surface); color: var(--zx-text); font-size: var(--zx-fs-sm); font-variant-numeric: tabular-nums; }
+    #networktool .ntHop.is-lost .ntHop__n { color: var(--zx-text-muted); border-style: dashed; }
+    #networktool .ntHop.is-last .ntHop__n { background: var(--zx-primary-soft); border-color: var(--zx-primary); color: var(--zx-primary-soft-text); font-weight: 700; }
+    #networktool .ntHop__ms { text-align: right; }
+
+    /* DNS: records grouped by type */
+    #networktool .ntRecs { margin: 0; }
+    #networktool .ntRecs > div { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
+    #networktool .ntRecs > div:first-child { padding-top: 0; }
+    #networktool .ntRecs > div:last-child { border-bottom: 0; padding-bottom: 0; }
+    #networktool .ntRecs dt { margin: 0; }
+    #networktool .ntRecs dt b { display: block; font-family: var(--zx-font-mono); font-size: var(--zx-fs-md); color: var(--zx-text); }
+    #networktool .ntRecs dt span { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; }
+    #networktool .ntRecs dd { margin: 0; min-width: 0; }
+    #networktool .ntRecs dd > div { padding: 1px 0; }
+    #networktool .ntRecs .is-empty dt b { color: var(--zx-text-muted); font-weight: 400; }
+
+    /* ports */
+    #networktool .ntPorts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: 0; padding: 0; list-style: none; }
+    #networktool .ntPorts li { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 10px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-pill); background: var(--zx-surface); font-size: var(--zx-fs-sm); }
+    #networktool .ntPorts li b { font-family: var(--zx-font-mono); font-weight: 400; color: var(--zx-text); }
+    #networktool .ntPorts li span { color: var(--zx-text-muted); }
+
+    /* TLS chain */
+    #networktool .ntChain { list-style: none; margin: 0; padding: 0; }
+    #networktool .ntChain > li { position: relative; padding: 0 0 var(--zx-space-4) calc(2rem + var(--zx-space-3)); }
+    #networktool .ntChain > li::before { content: ""; position: absolute; left: calc(1rem - 0.5px); top: 2rem; bottom: 0; width: 1px; background: var(--zx-border-strong); }
+    #networktool .ntChain > li:last-child { padding-bottom: 0; }
+    #networktool .ntChain > li:last-child::before { display: none; }
+    #networktool .ntChain__n { position: absolute; left: 0; top: 0; width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--zx-border-strong); background: var(--zx-surface); font-size: var(--zx-fs-sm); }
+    #networktool .ntChain__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); min-height: 2rem; }
+    #networktool .ntChain__name { font-weight: 700; color: var(--zx-text); overflow-wrap: anywhere; }
+    #networktool .ntChain__role { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #networktool .ntChain__line { margin: 2px 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #networktool .ntChain .zx-disclosure { margin: var(--zx-space-1) 0 0; border: 0; }
+    #networktool .ntChain .zx-disclosure > summary { padding: 2px 0; font-size: var(--zx-fs-sm); }
+    #networktool .ntKv { display: grid; grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr); gap: 4px var(--zx-space-4); margin: var(--zx-space-2) 0 0; font-size: var(--zx-fs-sm); }
+    #networktool .ntKv dt { color: var(--zx-text-muted); font-weight: 400; }
+    #networktool .ntKv dd { margin: 0; overflow-wrap: anywhere; color: var(--zx-text); }
+    #networktool .ntKv--lg { font-size: var(--zx-fs-md); gap: 8px var(--zx-space-5); }
+
+    /* HTTP: one block per request (the redirects), with the time bar and what each phase took */
+    #networktool .ntReqs { list-style: none; margin: 0; padding: 0; }
+    #networktool .ntReq { padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
+    #networktool .ntReq:first-child { padding-top: 0; }
+    #networktool .ntReq:last-child { border-bottom: 0; padding-bottom: 0; }
+    #networktool .ntReq__head { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto auto; align-items: center; column-gap: var(--zx-space-3); }
+    #networktool .ntReq__n { width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--zx-border-strong); background: var(--zx-surface); color: var(--zx-text); font-size: var(--zx-fs-sm); font-variant-numeric: tabular-nums; }
+    #networktool .ntReq__total { min-width: 4.5rem; text-align: right; font-weight: 700; color: var(--zx-text); }
+    #networktool .ntReq__body { margin: var(--zx-space-1) 0 0 calc(2rem + var(--zx-space-3)); min-width: 0; }
+    #networktool .ntReq__body .ntReason { margin-top: 0; }
+    #networktool .ntReq__err { margin: var(--zx-space-1) 0 0; color: var(--zx-danger-text); overflow-wrap: anywhere; }
+    #networktool .ntWater { display: flex; height: 8px; margin-top: var(--zx-space-2); border-radius: var(--zx-radius-pill); background: var(--zx-surface-3); overflow: hidden; min-width: 2rem; }
+    #networktool .ntWater > span { display: block; height: 100%; }
+    #networktool .ntSeg--dns { background: color-mix(in srgb, var(--zx-primary) 30%, var(--zx-surface)); }
+    #networktool .ntSeg--connect { background: color-mix(in srgb, var(--zx-primary) 55%, var(--zx-surface)); }
+    #networktool .ntSeg--tls { background: color-mix(in srgb, var(--zx-primary) 78%, var(--zx-surface)); }
+    #networktool .ntSeg--wait { background: var(--zx-primary); }
+    #networktool .ntSeg--body { background: var(--zx-text-muted); }
+    #networktool .ntPhases { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-4); margin: var(--zx-space-2) 0 0; padding: 0; list-style: none; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #networktool .ntPhases li { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    #networktool .ntPhases i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    #networktool .ntPhases b { font-weight: 400; color: var(--zx-text); font-variant-numeric: tabular-nums; }
+    #networktool .zx-callout code { font-size: var(--zx-fs-sm); background: none; padding: 0; color: inherit; }
+    #networktool .zx-callout .zx-codeblock { margin: var(--zx-space-2) 0 0; color: var(--zx-text); }
+    #networktool .ntUrl { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #networktool .ntAfter { margin-top: var(--zx-space-4); }
+    #networktool .ntAfter .ntReason b { color: var(--zx-text); }
+    #networktool .ntRaw { margin: var(--zx-space-2) 0 0; border: 0; }
+    #networktool .ntRaw > summary { padding: 2px 0; font-size: var(--zx-fs-sm); }
+    #networktool .ntRaw .zx-disclosure__body { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; color: var(--zx-text-muted); }
+    /* Wake on LAN: a long device name wraps, the row actions stay in view */
+    #networktool #wolAddressList td:first-child { overflow-wrap: anywhere; min-width: 0; }
+    #networktool #wolAddressList td.zx-mono, #networktool #wolAddressList td.zx-actions { white-space: nowrap; }
+    #networktool #wolAddressList td.zx-actions { width: 1%; }
+    #networktool #ntFwdForm .zx-field { margin: 0; }
+
+    /* recent runs */
+    #networktool .ntRuns { list-style: none; margin: 0; padding: 0; }
+    #networktool .ntRuns li { border-bottom: 1px solid var(--zx-border); }
+    #networktool .ntRuns li:last-child { border-bottom: 0; }
+    #networktool .ntRunItem { display: grid; grid-template-columns: 8rem minmax(8rem, 1.2fr) minmax(8rem, 1.6fr) 7rem; align-items: center; gap: var(--zx-space-3); width: 100%; padding: 9px var(--zx-space-2); margin: 0; border: 0; background: none; color: var(--zx-text); font: inherit; text-align: left; cursor: pointer; border-radius: var(--zx-radius-md); transition: background var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #networktool .ntRunItem:hover { background: var(--zx-surface-2); }
+    #networktool .ntRunItem:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #networktool .ntRunItem[aria-current="true"] { background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
+    #networktool .ntRunItem__tool { font-weight: 700; }
+    #networktool .ntRunItem__target { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #networktool .ntRunItem__sum { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #networktool .ntRunItem__sum > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #networktool .ntRunItem[aria-current="true"] .ntRunItem__sum, #networktool .ntRunItem[aria-current="true"] .ntRunItem__when { color: inherit; }
+    #networktool .ntDot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--zx-text-faint); }
+    #networktool .ntDot.is-ok { background: var(--zx-ok-solid); }
+    #networktool .ntDot.is-warn { background: var(--zx-warn-solid); }
+    #networktool .ntDot.is-danger { background: var(--zx-danger-solid); }
+    #networktool .ntRunItem__when { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); text-align: right; white-space: nowrap; }
+    #networktool .ntCardHead { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--zx-space-2) var(--zx-space-3); }
+    #networktool .ntCardHead > div { flex: 1 1 16rem; min-width: 0; }
+    #networktool .ntCardHead .zx-card__title, #networktool .ntCardHead .zx-card__desc { margin-top: 0; }
+    #networktool .ntCardHead > .zx-btn, #networktool .ntCardHead > .zx-badge { flex: 0 0 auto; }
+
+    /* ---- the other sections ---- */
+    #networktool .ntList { list-style: none; margin: 0; padding: 0; }
+    #networktool .ntList li { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr) auto; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
+    #networktool .ntList li:first-child { padding-top: 0; }
+    #networktool .ntList li:last-child { border-bottom: 0; padding-bottom: 0; }
+    #networktool .ntList b { color: var(--zx-text); }
+    #networktool .ntList span { color: var(--zx-text-muted); }
+    #networktool .ntInline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--zx-space-3) var(--zx-space-4); }
+    #networktool .ntInline .zx-field { margin: 0; flex: 1 1 13rem; min-width: 0; }
+    #networktool .ntInline .zx-field.ntInline__short { flex: 0 1 9rem; }
+    #networktool .ntInline .zx-input { max-width: none; }
+    #networktool .ntInline > .zx-btn { flex: 0 0 auto; }
     #networktool kbd { font-family: var(--zx-font-mono); font-size: 0.9em; padding: 1px 6px; border: 1px solid var(--zx-border-strong); border-bottom-width: 2px; border-radius: var(--zx-radius-sm); background: var(--zx-surface-2); color: var(--zx-text); }
-    #networktool #traceroute_results { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); line-height: 1.5; background: var(--zx-surface-2) !important; border-color: var(--zx-border) !important; resize: none; min-height: 12rem; white-space: pre; overflow: auto; }
-    /* one control height for inputs and selects; joined input + button become input and button with a gap */
-    #networktool .ui.form select { height: var(--zx-control-h); }
-    #networktool .ui.form input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=search]) { height: var(--zx-control-h); padding-top: 0; padding-bottom: 0; }
-    #networktool .ui.action.input { display: flex; gap: var(--zx-space-2); }
-    #networktool .ui.action.input > input { flex: 1 1 auto; min-width: 0; border-radius: var(--zx-radius-md) !important; }
-    #networktool .ui.action.input > .button { flex: 0 0 auto; margin: 0 !important; border-radius: var(--zx-radius-md) !important; }
-    #networktool .ntStack .zx-empty--inline { padding: var(--zx-space-4); }
-    #networktool .ntStack .zx-empty--inline .zx-empty__text { margin-bottom: var(--zx-space-2); }
-    #networktool .ntStack .zx-card .zx-toggle-row { padding: 0 0 var(--zx-space-2); border: 0; }
-    #networktool .ntStack .zx-card .zx-disclosure { margin: 0; border-top: 0; }
-    #networktool .ntStack .zx-card .zx-disclosure > summary { padding-left: 0; }
-    #networktool .ntStack .ui.form .field.zx-field { margin: 0; }
-    #networktool .ntStack .zx-error { margin: var(--zx-space-1) 0 0; }
-    #networktool .ntResult { margin-top: var(--zx-space-3); }
-    #networktool .ntResult:empty, #networktool .zx-table-wrap:has(> table[style*="display: none"]) { display: none; }
-    #networktool .ntResult table.zx-table td:first-child { color: var(--zx-text-muted); white-space: nowrap; }
-    #networktool .ntResult table.zx-table td { overflow-wrap: anywhere; }
-    #networktool .ntBadge { font-weight: 400; }
-    #networktool #websshTool.ntOff { opacity: 0.6; pointer-events: none; user-select: none; }
-    @media (max-width: 748px) { #networktool .ntStack .zx-btn-row .ui.button, #networktool .ntStack .ui.form .zx-form-grid > .field.ntAction, #networktool .ntStack .ntAction .ui.button { width: 100%; flex: 1 1 100%; } }
+    #networktool #websshTool.ntOff .ntInline { opacity: 0.55; pointer-events: none; user-select: none; }
+    #networktool .ntMdns { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; padding-top: var(--zx-space-2); }
+    #networktool .ntMdns .ui.dropdown { flex: 1 1 16rem; max-width: 28rem; }
+    #networktool .ntPanel > .zx-card > .zx-card__body > .zx-disclosure, #networktool #ntResult > div > .zx-disclosure { margin: var(--zx-space-4) 0 0; }
+
+    @media (max-width: 480px) {
+        /* phone cards: a cell with nothing in it (no timing for a protocol that could not run) is left out */
+        #networktool table.ntTable td.is-blank { display: none; }
+    }
+    @media (max-width: 748px) {
+        #networktool .ntRun__opt, #networktool .ntRun__opt--narrow, #networktool .ntRun__opt--wide, #networktool .ntRun__target { flex: 1 1 100%; }
+        #networktool .ntRun__go { flex: 1 1 100%; }
+        #networktool .ntRun__go > .zx-field__label { display: none; }
+        #networktool .ntRun__go .zx-btn, #networktool .ntInline > .zx-btn { width: 100%; }
+        #networktool .ntResHead__actions { margin-left: 0; flex: 1 1 100%; }
+        #networktool .ntFacts > div { flex: 1 1 40%; border-right: 0; margin-right: 0; padding-right: var(--zx-space-3); }
+        #networktool .ntHop { grid-template-columns: 2rem minmax(0, 1fr) 5rem; }
+        #networktool .ntHop .ntBar { grid-column: 2 / 4; grid-row: 2; }
+        #networktool .ntRecs > div { grid-template-columns: 1fr; gap: var(--zx-space-1); }
+        #networktool .ntRunItem { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--zx-space-3); }
+        #networktool .ntRunItem__tool { grid-area: 1 / 1; }
+        #networktool .ntRunItem__when { grid-area: 1 / 2; }
+        #networktool .ntRunItem__target { grid-area: 2 / 1 / 3 / 3; }
+        #networktool .ntRunItem__sum { grid-area: 3 / 1 / 4 / 3; }
+        #networktool .ntCell { min-width: 0; text-align: right; }
+        #networktool .ntCell .ntProbes { text-align: left; }
+        #networktool .ntList li { grid-template-columns: 1fr; }
+        #networktool .ntList li .zx-btn { justify-self: start; }
+        #networktool .ntProbes { min-width: 0; grid-template-columns: repeat(2, 1fr); }
+        #networktool .ntReq__body { margin-left: 0; }
+        #networktool .zx-sectionnav__picker .zx-select { max-width: none; }
+        #networktool #wolAddressList td.zx-mono, #networktool #wolAddressList td.zx-actions { white-space: normal; width: auto; }
+    }
 </style>
 <div class="standardContainer">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Network tools</h2>
-            <p class="zx-page-header__sub">Find devices, test connections, calculate subnets and answer local DNS names.</p>
+            <p class="zx-page-header__sub">Test a host from where Zoraxy stands, find devices on the local network, and run the small network services of this machine.</p>
         </div>
     </header>
 
-    <div class="ui top attached tabular menu zx-tabscroll">
-        <a class="nettools item active bluefont" data-tab="tab1"><i class="search icon"></i>Discovery &amp; lookup</a>
-        <a class="nettools item bluefont" data-tab="tab2"><i class="plug icon"></i>Connection</a>
-        <a class="nettools item bluefont" data-tab="tab3"><i class="stethoscope icon"></i>Diagnostics</a>
-        <a class="nettools item bluefont" data-tab="tab4"><i class="calculator icon"></i>Calculators</a>
-        <a class="nettools item bluefont" data-tab="tab5"><i class="server icon"></i>DNS responder</a>
-    </div>
+    <div class="zx-sectioned">
+        <nav class="zx-sectionnav" id="ntNav" aria-label="Network tools">
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="ntGrpTest">
+                <div class="zx-sectionnav__label" id="ntGrpTest">Test a target</div>
+                <button type="button" class="zx-sectionnav__item active" data-nt="ping"><i class="heartbeat icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Ping</span><span class="zx-sectionnav__desc" hidden>Check that a host answers, and how fast, over ICMP, TCP and UDP. Four probes each.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="trace"><i class="location arrow icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Traceroute</span><span class="zx-sectionnav__desc" hidden>List the routers between this machine and a target, with the delay to each one.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="dns"><i class="globe icon" aria-hidden="true"></i><span class="zx-sectionnav__text">DNS lookup</span><span class="zx-sectionnav__desc" hidden>See the records a DNS server returns for a name: addresses, mail, text and name servers.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="port"><i class="plug icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Port check</span><span class="zx-sectionnav__desc" hidden>Find out whether the TCP ports you care about are open on one address.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="tls"><i class="lock icon" aria-hidden="true"></i><span class="zx-sectionnav__text">TLS certificate</span><span class="zx-sectionnav__desc" hidden>Look at the certificate chain a server presents, when it expires and whether it is trusted.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="http"><i class="exchange icon" aria-hidden="true"></i><span class="zx-sectionnav__text">HTTP request</span><span class="zx-sectionnav__desc" hidden>Send one request and see the status, every redirect and where the time went.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="whois"><i class="address card outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Whois</span><span class="zx-sectionnav__desc" hidden>Look up who registered a domain or IP address, and when the registration ends.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="ntGrpLan">
+                <div class="zx-sectionnav__label" id="ntGrpLan">Local network</div>
+                <button type="button" class="zx-sectionnav__item" data-nt="scan"><i class="search icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Scanners</span><span class="zx-sectionnav__desc" hidden>Find devices and services on the network behind this machine. Each scanner opens in its own window.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="wol"><i class="power off icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Wake on LAN</span><span class="zx-sectionnav__desc" hidden>Save devices by their MAC address and wake them with a magic packet.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="ssh"><i class="terminal icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Web SSH</span><span class="zx-sectionnav__desc" hidden>Open a terminal in the browser to a device this machine can reach.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="calc"><i class="calculator icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Subnet calculator</span><span class="zx-sectionnav__desc" hidden>Work out the network, range and size of an IPv4 or IPv6 block.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="ntGrpSvc">
+                <div class="zx-sectionnav__label" id="ntGrpSvc">Services on this machine</div>
+                <button type="button" class="zx-sectionnav__item" data-nt="fwd"><i class="share icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Forward proxy</span><span class="zx-sectionnav__desc" hidden>A basic HTTP forward proxy to reach a web server in another network. Off until you start it.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-nt="dnsr"><i class="server icon" aria-hidden="true"></i><span class="zx-sectionnav__text">DNS responder</span><span class="zx-sectionnav__desc" hidden>Answer local DNS names with the address of this machine (split-horizon DNS). Off until you switch it on.</span></button>
+            </div>
+        </nav>
 
-    <div class="ui bottom attached tab segment nettoolstab active" data-tab="tab1">
-      <div class="ntStack">
-        <section class="zx-card" aria-labelledby="ntScanTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntScanTitle">Network scanners</h3>
-                <p class="zx-card__desc">Each scanner opens in its own window.</p>
-            </div>
-            <div class="zx-card__body">
-                <ul class="ntLaunch">
-                    <li>
-                        <span class="ntLaunch__icon" aria-hidden="true"><i class="wifi icon"></i></span>
-                        <span class="ntLaunch__text"><span class="ntLaunch__title">mDNS scanner</span><span class="ntLaunch__desc">Find mDNS services on the network behind this gateway.</span></span>
-                        <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/mdns.html',1000, 640);">View discovery</button>
-                    </li>
-                    <li>
-                        <span class="ntLaunch__icon" aria-hidden="true"><i class="sitemap icon"></i></span>
-                        <span class="ntLaunch__text"><span class="ntLaunch__title">IP scanner</span><span class="ntLaunch__desc">Find devices on the local network by pinging each address.</span></span>
-                        <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/ipscan.html',1000, 640);">Start scanner</button>
-                    </li>
-                    <li>
-                        <span class="ntLaunch__icon" aria-hidden="true"><i class="crosshairs icon"></i></span>
-                        <span class="ntLaunch__text"><span class="ntLaunch__title">Port scanner</span><span class="ntLaunch__desc">Check which ports are open on an IP address.</span></span>
-                        <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/portscan.html',1000, 640);">Start scanner</button>
-                    </li>
-                </ul>
-            </div>
-        </section>
+        <div class="zx-sectioned__main">
+            <header class="zx-sectionhead" id="ntHead"><h3 class="zx-sectionhead__title"></h3><p class="zx-sectionhead__desc"></p></header>
 
-        <!-- Traceroute-->
-        <section class="zx-card" aria-labelledby="ntTraceTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntTraceTitle">Traceroute and ping</h3>
-                <p class="zx-card__desc">Trace the network hops your packets take, or check that a target answers.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-form-grid">
-                        <div class="field">
-                            <label for="traceroute_domain">Target domain or IP</label>
-                            <input type="text" id="traceroute_domain" placeholder="1.1.1.1" onkeypress="if(event.keyCode === 13) { traceroute(); }">
+            <!-- ============ the console: ping, traceroute, DNS, ports, TLS, HTTP, whois ============ -->
+            <div class="ntPanel ntStack" id="ntConsole">
+                <section class="zx-card" aria-label="Run the tool">
+                    <div class="zx-card__body">
+                        <form id="ntForm" class="ntRun" novalidate onsubmit="ntConsole.run(); return false;">
+                            <div class="zx-field ntRun__target">
+                                <label class="zx-field__label" for="ntTarget" id="ntTargetLabel">Host name or IP address</label>
+                                <input type="text" class="zx-input" id="ntTarget" placeholder="example.com" autocomplete="off" autocapitalize="off" spellcheck="false">
+                                <p class="zx-error" id="ntTargetErr" role="alert"></p>
+                            </div>
+                            <div class="zx-field ntRun__opt ntRun__opt--narrow" data-tools="trace" hidden>
+                                <label class="zx-field__label" for="traceroute_maxhops">Max hops</label>
+                                <input type="number" class="zx-input" id="traceroute_maxhops" min="1" max="64" step="1" value="64">
+                            </div>
+                            <div class="zx-field ntRun__opt ntRun__opt--wide" data-tools="dns" hidden>
+                                <label class="zx-field__label" for="diagDnsServer">DNS server <span class="zx-field__optional">optional</span></label>
+                                <input type="text" class="zx-input" id="diagDnsServer" placeholder="The resolver of this machine" autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="zx-field ntRun__opt ntRun__opt--wide" data-tools="port" hidden>
+                                <label class="zx-field__label" for="ntPorts">Ports to report <span class="zx-field__optional">optional</span></label>
+                                <input type="text" class="zx-input" id="ntPorts" placeholder="22, 80, 443" autocomplete="off" inputmode="numeric">
+                                <p class="zx-error" role="alert"></p>
+                            </div>
+                            <div class="zx-field ntRun__opt ntRun__opt--narrow" data-tools="tls" hidden>
+                                <label class="zx-field__label" for="diagTlsPort">Port</label>
+                                <input type="number" class="zx-input" id="diagTlsPort" value="443" min="1" max="65535">
+                            </div>
+                            <div class="zx-field ntRun__opt ntRun__opt--wide" data-tools="tls" hidden>
+                                <label class="zx-field__label" for="diagTlsSni">Server name (SNI) <span class="zx-field__optional">optional</span></label>
+                                <input type="text" class="zx-input" id="diagTlsSni" placeholder="Same as the host" autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="zx-field ntRun__opt ntRun__opt--narrow" data-tools="http" hidden>
+                                <label class="zx-field__label" for="diagHttpMethod">Method</label>
+                                <select class="zx-select" id="diagHttpMethod"><option>GET</option><option>HEAD</option><option>OPTIONS</option></select>
+                            </div>
+                            <div class="ntRun__go">
+                                <span class="zx-field__label" aria-hidden="true">&nbsp;</span>
+                                <button type="submit" class="zx-btn zx-btn--primary" id="ntRunBtn">Run</button>
+                            </div>
+                        </form>
+                        <div class="ntRunChecks">
+                            <label class="zx-check" data-tools="http" hidden><input type="checkbox" id="diagHttpFollow" checked> <span>Follow redirects (at most 10)</span></label>
+                            <label class="zx-check" data-tools="http" hidden><input type="checkbox" id="diagHttpSkipVerify"> <span>Ignore certificate errors</span></label>
+                            <label class="zx-check" data-tools="tls http" hidden><input type="checkbox" id="diagAllowMetadata"> <span>Allow cloud metadata and link-local addresses</span></label>
                         </div>
-                        <div class="field">
-                            <label for="traceroute_maxhops">Max hops</label>
-                            <input type="number" min="1" step="1" id="traceroute_maxhops" placeholder="64" value="64">
-                        </div>
+                        <p class="zx-help ntRunNote" id="ntRunNote"></p>
                     </div>
-                    <div class="zx-btn-row">
-                        <button class="ui primary button" onclick="traceroute();"><i class="location arrow icon"></i> Start tracing</button>
-                        <button class="zx-btn zx-btn--secondary" onclick="ping();"><i class="circle outline icon"></i> Ping</button>
-                    </div>
-                    <div class="field" style="margin-top: var(--zx-space-4);">
-                        <label for="traceroute_results">Results</label>
-                        <textarea id="traceroute_results" rows="8" readonly aria-live="polite" placeholder="Results appear here after you start a trace or a ping."></textarea>
-                    </div>
-                </div>
-            </div>
-        </section>
+                </section>
 
-        <!-- Whois-->
-        <section class="zx-card" aria-labelledby="ntWhoisTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntWhoisTitle">Whois</h3>
-                <p class="zx-card__desc">Look up who owns and registered a domain or IP address.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="field">
-                        <label for="whoisdomain">Domain or IP</label>
-                        <div class="ui action fluid input">
-                            <input id="whoisdomain" type="text" onkeypress="if(event.keyCode === 13) { performWhoisLookup(); }" placeholder="example.com">
-                            <button class="ui primary button" type="button" onclick="performWhoisLookup();"><i class="search icon"></i> Look up</button>
+                <section class="zx-card" id="ntResultCard" aria-labelledby="ntResTitle">
+                    <div class="zx-card__body">
+                        <div class="ntResHead">
+                            <h4 class="ntResHead__title" id="ntResTitle">Result</h4>
+                            <span id="ntResBadge"></span>
+                            <span class="ntResHead__meta" id="ntResMeta"></span>
+                            <span class="ntResHead__actions" id="ntResActions" hidden>
+                                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ntCopyBtn"><i class="copy outline icon" aria-hidden="true"></i> Copy result</button>
+                                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ntAgainBtn"><i class="redo icon" aria-hidden="true"></i> Run again</button>
+                            </span>
                         </div>
-                        <p class="zx-help ntHint">A lookup can take a few minutes to complete.</p>
+                        <div id="ntResult" aria-live="polite"></div>
                     </div>
-                </div>
-                <div id="whois_table" class="ntResult zx-table-wrap zx-table-wrap--flush"></div>
-            </div>
-        </section>
-      </div>
-    </div>
+                </section>
 
-    <div class="ui bottom attached tab segment nettoolstab" data-tab="tab2">
-      <div class="ntStack">
-        <section class="zx-card" id="websshTool" aria-labelledby="ntSshTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntSshTitle">Web SSH</h3>
-                <p class="zx-card__desc">Open a terminal to a device on the local network of this gateway.</p>
+                <section class="zx-card" id="ntRunsCard" aria-labelledby="ntRunsTitle" hidden>
+                    <div class="zx-card__head ntCardHead">
+                        <div>
+                            <h4 class="zx-card__title" id="ntRunsTitle">Recent runs</h4>
+                            <p class="zx-card__desc">The last ten runs of any tool, kept in this browser only. Open one to see its result again.</p>
+                        </div>
+                        <button type="button" class="zx-btn zx-btn--ghost zx-btn--sm" id="ntRunsClear" hidden>Clear list</button>
+                    </div>
+                    <div class="zx-card__body">
+                        <ul class="ntRuns" id="ntRuns"></ul>
+                    </div>
+                </section>
             </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-form-grid">
-                        <div class="field">
-                            <label for="ssh_server">Server name or IP address</label>
-                            <input type="text" id="ssh_server" placeholder="e.g. example.com or 192.168.1.1">
-                        </div>
-                        <div class="field">
-                            <label for="ssh_port">Port number</label>
-                            <input type="number" id="ssh_port" placeholder="e.g. 22 or 2022">
-                        </div>
-                        <div class="field">
-                            <label for="ssh_username">Username</label>
-                            <input type="text" id="ssh_username" placeholder="root">
-                        </div>
-                    </div>
-                    <div class="zx-btn-row">
-                        <button class="ui primary button" onclick="connectSSH();"><i class="terminal icon"></i> Connect using SSH</button>
-                    </div>
-                </div>
-                <div class="zx-callout zx-callout--info" role="note" style="margin-top: var(--zx-space-4);">
-                    <div class="zx-callout__body">
-                        <span class="zx-callout__title">Terminal shortcuts</span>
-                        <dl class="ntKeys">
-                            <dt>Copy from terminal</dt><dd><kbd>Ctrl</kbd> + <kbd>Insert</kbd></dd>
-                            <dt>Paste to terminal</dt><dd><kbd>Shift</kbd> + <kbd>Insert</kbd></dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <section class="zx-card" aria-labelledby="ntFwdTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntFwdTitle">Forward proxy</h3>
-                <p class="zx-card__desc">A basic HTTP forward proxy to reach a web server in another network. To use it for a domain, add a proxy rule that points to <code>127.0.0.1:</code> and the port below.</p>
-            </div>
-            <div class="zx-card__body">
-                <form class="ui form" onsubmit="return false;">
-                    <div class="field" style="max-width: 24rem;">
-                        <label for="forwardProxyPort">Listening port</label>
-                        <div class="ui action fluid input">
-                            <input id="forwardProxyPort" type="number" placeholder="5587" step="1" min="1024" max="65535" value="5587">
-                            <button onclick="updateForwardProxyPort(); event.preventDefault();" class="zx-btn zx-btn--secondary"><i class="check icon"></i> Apply</button>
-                        </div>
-                        <p class="zx-help ntHint">A whole number from 1024 to 65535.</p>
+            <!-- ============ Scanners ============ -->
+            <div class="ntPanel ntStack" id="ntPanel-scan" hidden>
+                <section class="zx-card" aria-label="Scanners">
+                    <div class="zx-card__body">
+                        <ul class="ntList">
+                            <li><b>mDNS services</b><span>Devices that announce themselves on the local network: printers, media players, other servers.</span>
+                                <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/mdns.html',1000, 640);"><i class="external alternate icon" aria-hidden="true"></i> Open mDNS scanner</button></li>
+                            <li><b>IP scanner</b><span>Every address of a range that answers a ping, with its host name when it has one.</span>
+                                <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/ipscan.html',1000, 640);"><i class="external alternate icon" aria-hidden="true"></i> Open IP scanner</button></li>
+                            <li><b>Port scanner</b><span>Every open TCP port of one address, with a link to open it. For a quick answer about a few ports use Port check.</span>
+                                <button class="zx-btn zx-btn--secondary" onclick="launchToolWithSize('./tools/portscan.html',1000, 640);"><i class="external alternate icon" aria-hidden="true"></i> Open port scanner</button></li>
+                        </ul>
                     </div>
-                    <div id="forwardProxyButtons" class="zx-btn-row">
-                        <button onclick="toggleForwadProxy(true); event.preventDefault();" class="ui primary button startBtn"><i class="play icon"></i> Start</button>
-                        <button onclick="toggleForwadProxy(false); event.preventDefault();" class="ui basic red button stopBtn"><i class="stop icon"></i> Stop</button>
-                    </div>
-                </form>
+                </section>
             </div>
-        </section>
 
-        <section class="zx-card" aria-labelledby="ntWolTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntWolTitle">Wake on LAN</h3>
-                <p class="zx-card__desc">Save devices and wake them up with a magic packet.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-form-grid">
-                        <div class="field">
-                            <label for="wol_servername">Server name</label>
-                            <input type="text" id="wol_servername" placeholder="e.g. nas">
+            <!-- ============ Wake on LAN ============ -->
+            <div class="ntPanel ntStack" id="ntPanel-wol" hidden>
+                <section class="zx-card" aria-labelledby="ntWolListTitle">
+                    <div class="zx-card__head ntCardHead">
+                        <div>
+                            <h4 class="zx-card__title" id="ntWolListTitle">Saved devices</h4>
+                            <p class="zx-card__desc">The device must be on the same network segment as this machine and have Wake on LAN switched on.</p>
                         </div>
-                        <div class="field">
-                            <label for="wol_mac">MAC address</label>
-                            <input type="text" id="wol_mac" placeholder="aa:bb:cc:dd:ee:ff">
-                        </div>
-                        <div class="field ntAction">
-                            <button class="ui primary button" onclick="setWoLAddress();"><i class="add icon"></i> Add address</button>
+                        <button class="zx-btn zx-btn--secondary zx-btn--sm" onclick="listWoL();"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
+                    </div>
+                    <div class="zx-card__body">
+                        <div class="zx-table-wrap zx-table-wrap--flush">
+                            <table class="zx-table">
+                                <thead>
+                                    <tr><th>Name</th><th>MAC address</th><th class="zx-actions">Actions</th></tr>
+                                </thead>
+                                <tbody id="wolAddressList">
+                                    <tr><td class="zx-empty-cell" colspan="3">No saved devices. Add one below with its name and MAC address.</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-                <div class="ui accordion">
-                    <div class="title">
-                        <i class="dropdown icon"></i>
-                        Pick from mDNS scan results
+                </section>
+                <section class="zx-card" aria-labelledby="ntWolAddTitle">
+                    <div class="zx-card__head">
+                        <h4 class="zx-card__title" id="ntWolAddTitle">Add a device</h4>
                     </div>
-                    <div class="content">
-                        <div class="ui basic segment">
-                            <div class="ui selection fluid dropdown" id="mdnsWoL">
-                                <input type="hidden">
-                                <i class="dropdown icon"></i>
-                                <div class="default text">Select a server</div>
-                                <div class="menu" id="mdnsResultForWoL">
+                    <div class="zx-card__body">
+                        <div class="ntInline">
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="wol_servername">Name</label>
+                                <input type="text" class="zx-input" id="wol_servername" placeholder="nas" onkeydown="if(event.key === 'Enter') { setWoLAddress(); }">
+                            </div>
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="wol_mac">MAC address</label>
+                                <input type="text" class="zx-input zx-mono" id="wol_mac" placeholder="aa:bb:cc:dd:ee:ff" autocomplete="off" spellcheck="false" onkeydown="if(event.key === 'Enter') { setWoLAddress(); }">
+                            </div>
+                            <button class="zx-btn zx-btn--primary" onclick="setWoLAddress();"><i class="add icon" aria-hidden="true"></i> Add device</button>
+                        </div>
+                        <details class="zx-disclosure">
+                            <summary>Pick a device the mDNS scanner has found</summary>
+                            <div class="zx-disclosure__body">
+                                <div class="ntMdns">
+                                    <div class="ui selection dropdown" id="mdnsWoL">
+                                        <input type="hidden">
+                                        <i class="dropdown icon"></i>
+                                        <div class="default text">Select a device</div>
+                                        <div class="menu" id="mdnsResultForWoL"></div>
+                                    </div>
+                                    <button class="zx-btn zx-btn--secondary" onclick="selectMdnsResultForWol();"><i class="add icon" aria-hidden="true"></i> Add it</button>
+                                    <button class="zx-btn zx-btn--ghost" onclick="updateMDNSListForWoL();"><i class="sync icon" aria-hidden="true"></i> Refresh the list</button>
                                 </div>
+                                <p class="zx-help">Only devices that announce a MAC address and are not saved yet are listed.</p>
                             </div>
-                            <div class="zx-btn-row" style="margin-top: var(--zx-space-3);">
-                                <button class="zx-btn zx-btn--secondary" onclick="updateMDNSListForWoL();"><i class="refresh icon"></i> Refresh mDNS results</button>
-                                <button class="zx-btn zx-btn--secondary" onclick="selectMdnsResultForWol();"><i class="add icon"></i> Add from mDNS</button>
-                            </div>
+                        </details>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ============ Web SSH ============ -->
+            <div class="ntPanel ntStack" id="ntPanel-ssh" hidden>
+                <section class="zx-card" id="websshTool" aria-label="Web SSH">
+                    <div class="zx-card__body">
+                        <div id="websshOffNote" class="zx-callout zx-callout--warn" role="note" hidden>
+                            <span class="zx-callout__icon" aria-hidden="true"><i class="warning icon"></i></span>
+                            <div class="zx-callout__body"><span class="zx-callout__title">Web SSH is not available on this machine</span>
+                            The terminal bridge only runs on Linux hosts that have it bundled.</div>
                         </div>
+                        <div class="ntInline">
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="ssh_server">Host name or IP address</label>
+                                <input type="text" class="zx-input zx-mono" id="ssh_server" placeholder="192.168.1.10" autocomplete="off" spellcheck="false" onkeydown="if(event.key === 'Enter') { connectSSH(); }">
+                            </div>
+                            <div class="zx-field ntInline__short">
+                                <label class="zx-field__label" for="ssh_port">Port</label>
+                                <input type="number" class="zx-input" id="ssh_port" placeholder="22" min="2" max="65533">
+                            </div>
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="ssh_username">User name</label>
+                                <input type="text" class="zx-input" id="ssh_username" placeholder="root" autocomplete="off" autocapitalize="off" spellcheck="false">
+                            </div>
+                            <button class="zx-btn zx-btn--primary" onclick="connectSSH();"><i class="terminal icon" aria-hidden="true"></i> Connect</button>
+                        </div>
+                        <p class="zx-help" style="margin-top: var(--zx-space-3);">The terminal opens in its own window and asks for the password there. Empty port and user name mean 22 and root. In the terminal, copy with <kbd>Ctrl</kbd> + <kbd>Insert</kbd> and paste with <kbd>Shift</kbd> + <kbd>Insert</kbd>.</p>
                     </div>
-                </div>
-                <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Saved Wake on LAN addresses" style="margin-top: var(--zx-space-3);">
-                    <table class="zx-table">
-                        <thead>
-                            <tr><th>Server name</th><th>MAC address</th><th class="zx-actions">Action</th></tr>
-                        </thead>
-                        <tbody id="wolAddressList">
-                            <tr>
-                                <td class="zx-empty-cell" colspan="3"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">No saved devices yet. Add a server name and its MAC address above.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="$('#wol_servername').trigger('focus');">Add a device</button></div></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="zx-btn-row" style="margin-top: var(--zx-space-3);">
-                    <button class="zx-btn zx-btn--secondary" onclick="listWoL();"><i class="refresh icon"></i> Refresh</button>
-                </div>
+                </section>
             </div>
-        </section>
-      </div>
-    </div>
 
-    <!-- IPv4 / IPv6 calculators, see netcalc.html -->
-    <div class="ui bottom attached tab segment nettoolstab" data-tab="tab4">
-        <div id="netcalcHost"></div>
-        <script>$("#netcalcHost").load("./components/netcalc.html");</script>
-    </div>
-
-    <!-- Split-horizon DNS responder, see dnsresponder.html -->
-    <div class="ui bottom attached tab segment nettoolstab" data-tab="tab5">
-        <div id="dnsResponderHost"></div>
-        <script>$("#dnsResponderHost").load("./components/dnsresponder.html");</script>
-    </div>
-
-    <!-- Diagnostics: DNS lookup, TLS certificate inspector, HTTP request tester -->
-    <div class="ui bottom attached tab segment nettoolstab" data-tab="tab3">
-      <div class="ntStack">
-        <section class="zx-card" aria-labelledby="ntSafeTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntSafeTitle">Allowed targets</h3>
-                <p class="zx-card__desc">These tools make Zoraxy connect to the host you enter (admin only). Connections to cloud metadata and link-local addresses are refused unless you allow them.</p>
+            <!-- ============ Subnet calculator (netcalc.html) ============ -->
+            <div class="ntPanel" id="ntPanel-calc" hidden>
+                <div id="netcalcHost"></div>
             </div>
-            <div class="zx-card__body">
-                <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Allow metadata and link-local addresses</span><span class="zx-toggle-row__desc">Off by default. Turn it on only when you trust the target host.</span></span><input type="checkbox" class="zx-switch" role="switch" id="diagAllowMetadata"></label>
-                <details class="zx-disclosure">
-                    <summary>Which addresses are refused</summary>
-                    <div class="zx-disclosure__body"><code>169.254.0.0/16</code>, <code>168.63.129.16</code>, <code>fd00:ec2::254</code> and <code>100.100.100.200</code>.</div>
-                </details>
-            </div>
-        </section>
 
-        <section class="zx-card" aria-labelledby="ntDnsTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntDnsTitle">DNS lookup</h3>
-                <p class="zx-card__desc">See which records a DNS server returns for a host name.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-form-grid">
-                        <div class="field zx-field"><label for="diagDnsHost">Host</label><input type="text" id="diagDnsHost" placeholder="example.com" onkeypress="if(event.keyCode === 13) { diagDns(); }"></div>
-                        <div class="field zx-field"><label for="diagDnsServer">DNS server (optional IP)</label><input type="text" id="diagDnsServer" placeholder="1.1.1.1"></div>
-                        <div class="field ntAction"><button class="ui primary button" onclick="diagDns();"><i class="search icon"></i> Lookup</button></div>
+            <!-- ============ Forward proxy ============ -->
+            <div class="ntPanel ntStack" id="ntPanel-fwd" hidden>
+                <section class="zx-card" aria-labelledby="ntFwdTitle">
+                    <div class="zx-card__head ntCardHead">
+                        <div>
+                            <h4 class="zx-card__title" id="ntFwdTitle">Proxy service</h4>
+                            <p class="zx-card__desc">To send a site through it, create a proxy rule with the target <code id="forwardProxyTarget">127.0.0.1:5587</code>: this machine, on the port below.</p>
+                        </div>
+                        <span class="zx-badge zx-badge--dot" id="forwardProxyState">Checking</span>
                     </div>
-                </div>
-                <div class="zx-table-wrap zx-table-wrap--flush ntResult" tabindex="0" role="region" aria-label="DNS lookup result"><table class="zx-table" id="diagDnsResult" style="display:none;"><thead><tr><th>Type</th><th>Records</th></tr></thead><tbody></tbody></table></div>
+                    <div class="zx-card__body">
+                        <form id="ntFwdForm" onsubmit="updateForwardProxyPort(); return false;" novalidate>
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="forwardProxyPort">Listening port</label>
+                                <input id="forwardProxyPort" class="zx-input zx-input--short" type="number" placeholder="5587" step="1" min="1024" max="65535" value="5587">
+                                <p class="zx-help">A whole number from 1024 to 65535 that nothing else on this machine uses.</p>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="zx-card__foot" id="forwardProxyButtons">
+                        <button type="button" onclick="toggleForwadProxy(true);" class="zx-btn zx-btn--primary startBtn"><i class="play icon" aria-hidden="true"></i> Start proxy</button>
+                        <button type="button" onclick="toggleForwadProxy(false);" class="zx-btn zx-btn--danger-outline stopBtn" hidden><i class="stop icon" aria-hidden="true"></i> Stop proxy</button>
+                        <button type="submit" form="ntFwdForm" class="zx-btn zx-btn--secondary" id="forwardProxyPortSave">Save port</button>
+                    </div>
+                </section>
             </div>
-        </section>
 
-        <section class="zx-card" aria-labelledby="ntTlsTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntTlsTitle">TLS certificate inspector</h3>
-                <p class="zx-card__desc">Check the certificate a server presents and whether it is trusted.</p>
+            <!-- ============ DNS responder (dnsresponder.html) ============ -->
+            <div class="ntPanel" id="ntPanel-dnsr" hidden>
+                <div id="dnsResponderHost"></div>
             </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-form-grid">
-                        <div class="field zx-field"><label for="diagTlsHost">Host</label><input type="text" id="diagTlsHost" placeholder="example.com" onkeypress="if(event.keyCode === 13) { diagTls(); }"></div>
-                        <div class="field zx-field"><label for="diagTlsPort">Port</label><input type="number" id="diagTlsPort" value="443" min="1" max="65535"></div>
-                        <div class="field zx-field"><label for="diagTlsSni">SNI (optional)</label><input type="text" id="diagTlsSni" placeholder="same as host"></div>
-                        <div class="field ntAction"><button class="ui primary button" onclick="diagTls();"><i class="certificate icon"></i> Inspect</button></div>
-                    </div>
-                </div>
-                <div id="diagTlsResult" class="ntResult"></div>
-            </div>
-        </section>
-
-        <section class="zx-card" aria-labelledby="ntHttpTitle">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title" id="ntHttpTitle">HTTP request tester</h3>
-                <p class="zx-card__desc">Send one request and see the status and timing of every hop.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-form-grid">
-                        <div class="field zx-field"><label for="diagHttpUrl">URL</label><input type="text" id="diagHttpUrl" placeholder="https://example.com/" onkeypress="if(event.keyCode === 13) { diagHttp(); }"></div>
-                        <div class="field zx-field"><label for="diagHttpMethod">Method</label><select id="diagHttpMethod"><option>GET</option><option>HEAD</option><option>OPTIONS</option></select></div>
-                        <div class="field ntAction"><button class="ui primary button" onclick="diagHttp();"><i class="exchange icon"></i> Send</button></div>
-                    </div>
-                    <div class="ntChecks">
-                        <div class="field"><div class="ui checkbox"><input type="checkbox" id="diagHttpFollow" checked><label>Follow redirects (max 10)</label></div></div>
-                        <div class="field"><div class="ui checkbox"><input type="checkbox" id="diagHttpSkipVerify"><label>Ignore TLS certificate errors</label></div></div>
-                    </div>
-                </div>
-                <div class="zx-table-wrap zx-table-wrap--flush ntResult" tabindex="0" role="region" aria-label="HTTP request result"><table class="zx-table" id="diagHttpResult" style="display:none;"><thead><tr><th>#</th><th>URL</th><th>Status</th><th>Remote</th><th class="zx-num">DNS</th><th class="zx-num">Connect</th><th>TLS</th><th class="zx-num">First byte</th><th class="zx-num">Total</th></tr></thead><tbody></tbody></table></div>
-            </div>
-        </section>
-      </div>
+        </div>
     </div>
 </div>
 
-
 <script>
-    // Diagnostics tab (DNS lookup / TLS inspector / HTTP tester). All output is inserted with .text() (remote data is untrusted)
-    //Empty required input: mark the field, focus it and say what is missing (no silent dead buttons)
-    function ntRequire(inputSel, message){
-        let el = $(inputSel);
-        let zxRow = el.closest(".zx-field");
-        if (String(el.val()).trim() != ""){
-            el.closest(".field, .ui.input").removeClass("error");
-            if (zxRow.length){ ZxUI.field(el).clearError(); }
-            return true;
-        }
-        el.closest(".field, .ui.input").addClass("error");
-        el.trigger("focus");
-        //fields of the diagnostics tab show the problem next to the field, the others use a toast
-        if (zxRow.length){ ZxUI.field(el).setError(message); } else { msgbox(message, false, 5000); }
-        return false;
+/* ======================================================================================================================
+   Console: one target, the options of the chosen tool, a structured result, copy, recent runs (localStorage, this browser).
+   Everything that comes from the network is inserted with .text(): remote data is untrusted.
+   ====================================================================================================================== */
+window.ntConsole = (function(){
+    var CONSOLE_TOOLS = ["ping", "trace", "dns", "port", "tls", "http", "whois"];
+    var STORE_KEY = "zx.nettools.runs.v1", STORE_SECTION = "zx.nettools.section", MAX_RUNS = 10;
+    var tool = "ping", runs = [], shown = null, busy = null, seq = 0;
+
+    function toolName(k){
+        return ({ping: t("Ping"), trace: t("Traceroute"), dns: t("DNS lookup"), port: t("Port check"), tls: t("TLS certificate"), http: t("HTTP request"), whois: t("Whois")})[k] || k;
     }
-    $(document).on("input", "#networktool .field.error input, #networktool .ui.input.error input", function(){
-        $(this).closest(".field, .ui.input").removeClass("error");
-        if ($(this).closest(".zx-field").length){ ZxUI.field(this).clearError(); }
+    function runLabel(k){
+        return ({ping: t("Run ping"), trace: t("Trace route"), dns: t("Look up"), port: t("Check ports"), tls: t("Inspect"), http: t("Send request"), whois: t("Look up")})[k];
+    }
+    function targetLabel(k){
+        if (k == "http"){ return t("URL"); }
+        if (k == "whois"){ return t("Domain or IP address"); }
+        if (k == "dns"){ return t("Host name"); }
+        return t("Host name or IP address");
+    }
+    function targetPlaceholder(k){
+        return ({http: "https://example.com/", port: "192.168.1.10", ping: "1.1.1.1", trace: "1.1.1.1"})[k] || "example.com";
+    }
+    function runNote(k){
+        return ({
+            ping: t("Sent from the machine Zoraxy runs on, not from your browser. ICMP needs raw socket permission; TCP and UDP probes work without it."),
+            trace: t("Sent from the machine Zoraxy runs on. Needs raw socket permission (root or CAP_NET_RAW). A long route can take a minute."),
+            dns: t("Asked by the machine Zoraxy runs on. Leave the DNS server empty to use its own resolver, or enter one such as 1.1.1.1 to compare."),
+            port: t("Tries every TCP port of the address from this machine, so only check machines you run. Leave the ports empty to list all open ones."),
+            tls: t("Connects from this machine and reads the certificate; nothing is sent to the server after the handshake. Cloud metadata and link-local addresses are refused unless you allow them."),
+            http: t("Sent from this machine without cookies or a body. Cloud metadata and link-local addresses are refused unless you allow them."),
+            whois: t("Asks the public registry. Some registries take a while to answer or hide the owner.")
+        })[k];
+    }
+    function missingText(k){
+        if (k == "http"){ return t("Enter a URL"); }
+        if (k == "whois"){ return t("Enter a domain or IP address"); }
+        if (k == "dns"){ return t("Enter a host name"); }
+        return t("Enter a host name or IP address");
+    }
+    function busyText(k, target){
+        return ({
+            ping: tf("Sending four probes each over ICMP, TCP and UDP to {0}.", target),
+            trace: tf("Tracing the route to {0}. This can take up to a minute.", target),
+            dns: tf("Asking for the records of {0}.", target),
+            port: tf("Trying the TCP ports of {0}. Closed or filtered ports can take a few seconds.", target),
+            tls: tf("Connecting to {0} and reading its certificate.", target),
+            http: tf("Sending the request to {0}.", target),
+            whois: tf("Asking the registry about {0}. This can take a while.", target)
+        })[k];
+    }
+
+    /* ---------- small builders ---------- */
+    function el(tag, cls, text){
+        var e = $(document.createElement(tag));
+        if (cls){ e.addClass(cls); }
+        if (text !== undefined && text !== null){ e.text(String(text)); }
+        return e;
+    }
+    function fmtMs(ms){
+        if (ms === null || ms === undefined || isNaN(ms)){ return ""; }
+        if (ms >= 1000){ return tf("{0} s", (ms / 1000).toFixed(ms >= 10000 ? 1 : 2)); }
+        if (ms < 1){ return t("<1 ms"); }
+        return tf("{0} ms", ms >= 100 || ms === Math.round(ms) ? Math.round(ms) : ms.toFixed(1));
+    }
+    function bar(value, max){
+        var pct = max > 0 ? Math.max(value > 0 ? 6 : 0, Math.min(100, value / max * 100)) : 0;
+        return el("span", "ntBar").attr("aria-hidden", "true").append($("<span></span>").css("width", pct + "%"));
+    }
+    function badge(kind, word){
+        return el("span", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : ""), word);
+    }
+    function facts(list){
+        var dl = el("dl", "ntFacts");
+        list.forEach(function(f){
+            if (!f){ return; }
+            var dd = el("dd", (f.cls || "") + (f.mono ? " ntFacts__mono" : ""), f.value);
+            dl.append($("<div></div>").append(el("dt", null, f.label), dd));
+        });
+        return dl;
+    }
+    function callout(kind, title, body){
+        var icon = kind == "danger" ? "times circle" : (kind == "warn" ? "warning" : "info circle");
+        var c = el("div", "zx-callout zx-callout--" + kind).attr("role", kind == "danger" ? "alert" : "note");
+        c.append($("<span class='zx-callout__icon' aria-hidden='true'></span>").append($("<i></i>").addClass(icon + " icon")));
+        var b = el("div", "zx-callout__body").append(el("span", "zx-callout__title", title));
+        if (body){ b.append(typeof body == "string" ? document.createTextNode(body) : body); }
+        return c.append(b);
+    }
+    function table(heads){
+        var tb = $("<table class='zx-table ntTable'></table>");
+        var tr = $("<tr></tr>");
+        heads.forEach(function(h){ tr.append(el("th", h.cls || null, h.text)); });
+        tb.append($("<thead></thead>").append(tr)).append("<tbody></tbody>");
+        tb.labels = heads.map(function(h){ return h.text; });
+        return tb;
+    }
+    function row(tb, cells){
+        var tr = $("<tr></tr>");
+        cells.forEach(function(c, i){
+            var td = (c && c.jquery && c.is("td")) ? c : $("<td></td>").append(c && c.jquery ? c : document.createTextNode(c === null || c === undefined ? "" : String(c)));
+            td.toggleClass("is-blank", td.text() === "" && td.children().length === 0).wrapInner("<div class='ntCell'></div>").attr("data-label", tb.labels[i]);
+            tr.append(td);
+        });
+        tb.find("tbody").append(tr);
+        return tr;
+    }
+    function wrap(tb){ return el("div", "zx-table-wrap zx-table-wrap--flush").append(tb); }
+    /* the Go ICMP error is long and technical: say what to do, keep the original behind "Details" */
+    var SETCAP = "sudo setcap cap_net_raw+ep /path/to/zoraxy";
+    function friendlyError(msg){
+        msg = String(msg || "");
+        if (/CAP_NET_RAW|raw socket|operation not permitted/i.test(msg)){
+            return {title: t("ICMP is not available to Zoraxy on this machine"),
+                    text: t("Sending ICMP needs the raw socket permission (CAP_NET_RAW). Run Zoraxy as root, or give the program the permission once and restart it:"),
+                    code: SETCAP, raw: msg};
+        }
+        return {title: null, text: msg, raw: msg};
+    }
+    function codeBlock(text){ return el("div", "zx-codeblock").append(el("pre", null, text)); }
+    function rawDetails(raw){
+        return $("<details class='zx-disclosure ntRaw'></details>").append(el("summary", null, t("Details")), el("div", "zx-disclosure__body", raw));
+    }
+    function errorBlock(title, msg){
+        var f = friendlyError(msg);
+        var c = callout("danger", f.title || title, $("<span></span>").text(f.text));
+        if (f.code){ c.find(".zx-callout__body").append(codeBlock(f.code), rawDetails(f.raw)); }
+        return c;
+    }
+    /* Go network and certificate errors in plain words. Returns "" when there is nothing better to say than the original. */
+    function plainTlsError(msg){
+        msg = String(msg || "");
+        if (/has expired or is not yet valid/i.test(msg)){ return t("The certificate has expired, or its start date is still in the future."); }
+        if (/unknown authority/i.test(msg)){ return t("The certificate is signed by an authority this machine does not trust: it is self-signed, or it comes from a private CA."); }
+        if (/not valid for any names|is valid for .+, not |doesn't contain any IP SANs/i.test(msg)){ return t("The certificate was issued for another name."); }
+        if (/handshake failure|protocol version|no supported versions/i.test(msg)){ return t("The server and this machine share no TLS version or cipher."); }
+        return "";
+    }
+    function plainNetError(msg, host){
+        msg = String(msg || "");
+        var m = /dial (?:tcp|udp)6? (\S+?): /.exec(msg), addr = m ? m[1] : host;
+        if (/connection refused/i.test(msg)){ return tf("Connection refused by {0}. Nothing listens on that port, or a firewall rejects it.", addr); }
+        if (/no such host/i.test(msg)){ return tf("The name {0} does not exist in DNS.", host); }
+        if (/i\/o timeout|deadline exceeded|Client\.Timeout|timed out/i.test(msg)){ return t("No answer within the time limit. The host is down, or a firewall drops the connection."); }
+        if (/no route to host|network is unreachable/i.test(msg)){ return t("This machine has no route to that address."); }
+        if (/server gave HTTP response to HTTPS client/i.test(msg)){ return t("The server speaks plain HTTP on this port, not HTTPS. Try the address with http://."); }
+        if (/x509|certificate/i.test(msg)){ return (plainTlsError(msg) || t("The certificate of the server was not accepted.")) + " " + t("Tick \"Ignore certificate errors\" to see the answer anyway."); }
+        if (/connection reset|EOF|broken pipe/.test(msg)){ return t("The server closed the connection without answering."); }
+        return "";
+    }
+
+    /* ---------- parsers and renderers: each returns {node, ok: "ok"|"warn"|"danger", word, summary, text} ---------- */
+    var R = {};
+
+    R.ping = function(data, q){
+        var protos = ["ICMP", "TCP", "UDP"].map(function(p){
+            var probes = (data[p] || []).map(function(s){
+                var m = /Time=(\d+(?:\.\d+)?)ms(?:\s+TTL=(\d+))?/.exec(s);
+                if (m){ return {ok: true, ms: Number(m[1]), ttl: m[2]}; }
+                return {ok: false, reason: String(s).replace(/^Reply from \S*:\s*/, "")};
+            });
+            var okp = probes.filter(function(x){ return x.ok; }), times = okp.map(function(x){ return x.ms; });
+            var reasons = probes.filter(function(x){ return !x.ok; }).map(function(x){ return x.reason; }).filter(function(v, i, a){ return a.indexOf(v) === i; });
+            return {name: p, probes: probes, replies: okp.length,
+                    min: times.length ? Math.min.apply(null, times) : null, max: times.length ? Math.max.apply(null, times) : null,
+                    avg: times.length ? times.reduce(function(a, b){ return a + b; }, 0) / times.length : null,
+                    reasons: reasons,
+                    // could not be sent at all from this machine (no raw socket permission): says nothing about the target
+                    unavailable: okp.length == 0 && reasons.some(function(r){ return friendlyError(r).title !== null; })};
+        });
+        var ran = protos.filter(function(p){ return !p.unavailable; }), skipped = protos.filter(function(p){ return p.unavailable; });
+        var sent = 0, got = 0, scale = 1, best = null;
+        ran.forEach(function(p){
+            sent += p.probes.length; got += p.replies;
+            if (p.max !== null){ scale = Math.max(scale, p.max); }
+            if (p.avg !== null && (best === null || p.avg < best)){ best = p.avg; }
+        });
+        var state, word;
+        if (!ran.length){ state = "warn"; word = t("Could not run"); }
+        else if (got == 0){ state = "danger"; word = t("No answer"); }
+        else if (got < sent){ state = "warn"; word = t("Answers in part"); }
+        else { state = "ok"; word = skipped.length ? tf("Answers over {0}", ran.map(function(p){ return p.name; }).join(" " + t("and") + " ")) : t("Answers"); }
+        var out = $("<div></div>");
+        out.append(facts([
+            {label: t("Verdict"), value: word, cls: "is-" + state},
+            ran.length ? {label: t("Replies"), value: tf("{0} of {1}", got, sent)} : null,
+            best !== null ? {label: t("Fastest average"), value: fmtMs(best)} : null
+        ]));
+        var tb = table([{text: t("Protocol")}, {text: t("Replies")}, {text: t("Fastest"), cls: "zx-num"}, {text: t("Average"), cls: "zx-num"}, {text: t("Slowest"), cls: "zx-num"}, {text: t("Each probe")}]);
+        var lines = [tf("Ping {0}: {1}", q.target, word) + (ran.length ? ", " + tf("{0} of {1} replies", got, sent) : "")];
+        var after = el("div", "ntAfter");
+        protos.forEach(function(p){
+            var cell;
+            if (p.unavailable){
+                cell = el("span", "ntMuted", t("Could not be sent from this machine"));
+            }else{
+                cell = el("div", "ntProbes");
+                p.probes.forEach(function(x, i){
+                    var one = el("div", "ntProbe" + (x.ok ? "" : " is-lost"));
+                    one.append(bar(x.ok ? Math.max(x.ms, scale * 0.02) : 0, scale));
+                    one.append(el("span", x.ok ? "ntMs" : "ntMuted", x.ok ? fmtMs(x.ms) : t("No reply")));
+                    one.attr("title", tf("Probe {0}", i + 1));
+                    cell.append(one);
+                });
+            }
+            var first = $("<td></td>").append(el("b", null, p.name));
+            var repl = $("<td></td>").append(p.unavailable ? badge("", t("Not available here")) : badge(p.replies == 0 ? "danger" : (p.replies < p.probes.length ? "warn" : "ok"), tf("{0} of {1}", p.replies, p.probes.length)));
+            function num(v){ return $("<td class='zx-num ntMs'></td>").text(v === null ? "" : fmtMs(v)); }
+            row(tb, [first, repl, num(p.min), num(p.avg), num(p.max), cell]);
+            if (!p.unavailable && p.reasons.length){
+                after.append($("<p class='ntReason'></p>").append(el("b", null, p.name + ": "), document.createTextNode(p.reasons.join(" / "))));
+            }
+            lines.push(p.name + ": " + (p.unavailable ? "not available on this machine" : p.probes.map(function(x){ return x.ok ? (x.ms < 1 ? "<1" : x.ms) + " ms" : "no reply"; }).join(", ")) + (p.reasons.length ? "  (" + p.reasons[0] + ")" : ""));
+        });
+        out.append(wrap(tb));
+        if (skipped.length){
+            var f = friendlyError(skipped[0].reasons[0]);
+            var note = callout("info", tf("{0} could not be sent from this machine", skipped.map(function(p){ return p.name; }).join(", ")), $("<span></span>").text(t("The verdict above only counts the protocols that ran.") + " " + f.text));
+            note.find(".zx-callout__body").append(codeBlock(f.code), rawDetails(f.raw));
+            after.append(note);
+        }
+        if (after.children().length){ out.append(after); }
+        var summary = !ran.length ? word : (best !== null ? tf("{0} of {1} replies, {2}", got, sent, fmtMs(best)) : tf("{0} of {1} replies", got, sent));
+        return {node: out, ok: state, word: word, summary: summary, text: lines.join("\n")};
+    };
+
+    function goDuration(s){
+        // "1.234ms", "850.3µs", "1.2s", "1m2.5s" -> milliseconds
+        var total = 0, any = false, re = /([\d.]+)(ns|µs|μs|us|ms|s|m|h)/g, m;
+        while ((m = re.exec(s)) !== null){
+            any = true;
+            total += Number(m[1]) * ({ns: 1e-6, "µs": 1e-3, "μs": 1e-3, us: 1e-3, ms: 1, s: 1000, m: 60000, h: 3600000})[m[2]];
+        }
+        return any ? total : null;
+    }
+    R.trace = function(data, q){
+        var hops = (data || []).map(function(line){
+            var m = /^(\d+):\s*(.*)$/.exec(String(line).trim());
+            if (!m){ return {n: "", lost: true, note: String(line)}; }
+            var rest = m[2].trim();
+            if (rest == "*" || rest == ""){ return {n: m[1], lost: true}; }
+            var parts = rest.split(/\s+/), ms = parts.length >= 2 ? goDuration(parts[parts.length - 1]) : null;
+            if (ms === null){ return {n: m[1], lost: true, note: rest}; }
+            return {n: m[1], addr: parts.slice(0, -1).join(" "), ms: ms};
+        });
+        var answered = hops.filter(function(h){ return !h.lost; });
+        var scale = Math.max.apply(null, [1].concat(answered.map(function(h){ return h.ms; })));
+        var last = answered.length ? answered[answered.length - 1] : null;
+        var slow = answered.slice().sort(function(a, b){ return b.ms - a.ms; })[0];
+        var state = !answered.length ? "danger" : (hops[hops.length - 1].lost ? "warn" : "ok");
+        var word = !answered.length ? t("No hop answered") : (state == "warn" ? t("Route ends without an answer") : t("Route found"));
+        var out = $("<div></div>");
+        out.append(facts([
+            {label: t("Verdict"), value: word, cls: "is-" + state},
+            {label: t("Hops"), value: String(hops.length)},
+            last ? {label: t("Last answer from"), value: last.addr, mono: true} : null,
+            slow ? {label: t("Slowest hop"), value: tf("{0} at hop {1}", fmtMs(slow.ms), slow.n)} : null
+        ]));
+        var ol = el("ol", "ntHops");
+        hops.forEach(function(h, i){
+            var li = el("li", "ntHop" + (h.lost ? " is-lost" : "") + (i == hops.length - 1 && !h.lost ? " is-last" : ""));
+            li.append(el("span", "ntHop__n", h.n));
+            if (h.lost){
+                li.append(el("span", "ntMuted", h.note ? h.note : t("No reply (the router does not answer probes)")).css("grid-column", "2 / -1"));
+            }else{
+                li.append(el("span", "ntMono", h.addr), bar(Math.max(h.ms, scale * 0.02), scale), el("span", "ntMs ntHop__ms", fmtMs(h.ms)));
+            }
+            ol.append(li);
+        });
+        out.append(ol);
+        return {node: out, ok: state, word: word, summary: tf("{0} hops", hops.length) + (last ? ", " + fmtMs(last.ms) : ""),
+                text: [tf("Traceroute to {0}", q.target)].concat((data || []).map(function(s){ return String(s).trim(); })).join("\n")};
+    };
+
+    function dnsTypeName(ty){
+        return ({A: t("IPv4 address"), AAAA: t("IPv6 address"), CNAME: t("Alias"), MX: t("Mail server"), TXT: t("Text"), NS: t("Name server")})[ty] || "";
+    }
+    R.dns = function(data, q){
+        var total = 0, types = 0;
+        data.forEach(function(r){ total += r.Records.length; if (r.Records.length){ types++; } });
+        if (total == 0){
+            var errs = data.map(function(r){ return r.Error; }).filter(function(v, i, a){ return v && a.indexOf(v) === i; });
+            var note = callout("warn", tf("No DNS records found for {0}", q.target), t("The name does not exist, or the DNS server could not be reached.")).attr("id", "diagDnsNote");
+            if (errs.length){ note.find(".zx-callout__body").append(el("span", "ntReason", errs.join(" / "))); }
+            return {node: note, ok: "warn", word: t("No records"), summary: t("No records"), text: tf("No DNS records found for {0}", q.target)};
+        }
+        var out = $("<div></div>");
+        out.append(facts([
+            {label: t("Records"), value: String(total)},
+            {label: t("Record types"), value: tf("{0} of {1}", types, data.length)},
+            {label: t("Answered by"), value: q.server ? q.server : t("The resolver of this machine"), mono: !!q.server}
+        ]));
+        var dl = el("dl", "ntRecs").attr("id", "diagDnsResult"), lines = [tf("DNS records of {0}", q.target)];
+        data.forEach(function(r){
+            var box = $("<div></div>").toggleClass("is-empty", r.Records.length == 0);
+            box.append($("<dt></dt>").append(el("b", null, r.Type), el("span", null, dnsTypeName(r.Type))));
+            var dd = $("<dd></dd>");
+            if (r.Records.length == 0){
+                dd.append(el("span", "ntMuted", r.Error ? r.Error : t("No record of this type")));
+            }
+            r.Records.forEach(function(rec){
+                var line = $("<div></div>"), mx = r.Type == "MX" ? /^(\d+)\s+(.+)$/.exec(rec) : null;
+                if (mx && mx[2] == "."){
+                    line.append(el("span", "ntMuted", t("Accepts no mail (null MX record)")));
+                }else if (mx){
+                    line.append(el("span", "ntMono", mx[2]), " ", el("span", "ntMuted", tf("priority {0}", mx[1])));
+                }else{
+                    line.append(el("span", "ntMono", rec));
+                }
+                dd.append(line);
+                lines.push(r.Type + "\t" + rec);
+            });
+            dl.append(box.append(dd));
+        });
+        out.append(dl);
+        return {node: out, ok: "ok", word: t("Records found"), summary: tf("{0} records in {1} types", total, types), text: lines.join("\n")};
+    };
+
+    var SERVICES = {20: "FTP data", 21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 53: "DNS", 80: "HTTP", 110: "POP3", 111: "RPC", 123: "NTP", 135: "RPC", 139: "NetBIOS", 143: "IMAP", 389: "LDAP", 443: "HTTPS", 445: "SMB", 465: "SMTPS", 514: "Syslog", 587: "SMTP submission", 631: "IPP", 636: "LDAPS", 853: "DNS over TLS", 993: "IMAPS", 995: "POP3S", 1433: "SQL Server", 1883: "MQTT", 2049: "NFS", 2375: "Docker", 2376: "Docker TLS", 3000: "Web app", 3306: "MySQL", 3389: "Remote Desktop", 5000: "Web app", 5432: "PostgreSQL", 5900: "VNC", 6379: "Redis", 6443: "Kubernetes API", 8000: "Web app", 8006: "Proxmox", 8080: "HTTP alternative", 8123: "Home Assistant", 8443: "HTTPS alternative", 9000: "Web app", 9090: "Web app", 9100: "Printer / metrics", 9200: "Elasticsearch", 11211: "Memcached", 27017: "MongoDB", 32400: "Plex"};
+    R.port = function(data, q){
+        var open = (data || []).map(function(p){ return p.Port; }).sort(function(a, b){ return a - b; });
+        var want = q.ports || [], out = $("<div></div>"), lines = [], state, word, summary;
+        if (want.length){
+            var hit = want.filter(function(p){ return open.indexOf(p) >= 0; });
+            state = hit.length == want.length ? "ok" : (hit.length ? "warn" : "danger");
+            word = hit.length == want.length ? (want.length == 1 ? t("Open") : t("All open")) : (hit.length ? t("Some closed") : (want.length == 1 ? t("Closed") : t("All closed")));
+            summary = tf("{0} of {1} open", hit.length, want.length);
+            out.append(facts([
+                {label: t("Verdict"), value: word, cls: "is-" + state},
+                {label: t("Address"), value: q.ip, mono: true},
+                {label: t("Open, of the ports you asked for"), value: tf("{0} of {1}", hit.length, want.length)},
+                {label: t("Open ports in total"), value: String(open.length)}
+            ]));
+            var tb = table([{text: t("Port")}, {text: t("Usually")}, {text: t("State")}]);
+            want.forEach(function(p){
+                var isOpen = open.indexOf(p) >= 0;
+                row(tb, [el("span", "ntMono", p + " / TCP"), SERVICES[p] || "", isOpen ? badge("ok", t("Open")) : badge("danger", t("Closed or filtered"))]);
+                lines.push(p + "/tcp\t" + (isOpen ? "open" : "closed or filtered"));
+            });
+            out.append(wrap(tb));
+            var rest = open.filter(function(p){ return want.indexOf(p) < 0; });
+            if (rest.length){
+                out.append(el("h5", "ntSub", tf("Other open ports ({0})", rest.length)), portChips(rest));
+                lines.push("other open: " + rest.join(", "));
+            }
+        }else{
+            state = open.length ? "ok" : "warn";
+            word = open.length ? t("Open ports found") : t("No open port");
+            summary = tf("{0} open", open.length);
+            out.append(facts([
+                {label: t("Open TCP ports"), value: String(open.length)},
+                {label: t("Address"), value: q.ip, mono: true},
+                {label: t("Ports tried"), value: "1 - 65535"}
+            ]));
+            if (!open.length){
+                out.append($("<div class='zx-empty zx-empty--inline'></div>").append(el("p", "zx-empty__text", tf("No open TCP port on {0}. The machine is off, unreachable from here, or a firewall drops every connection.", q.ip))));
+            }else{
+                out.append(portChips(open));
+                open.forEach(function(p){ lines.push(p + "/tcp\topen" + (SERVICES[p] ? "\t" + SERVICES[p] : "")); });
+            }
+        }
+        lines.unshift(tf("Port check of {0}", q.ip) + (q.ip != q.target ? " (" + q.target + ")" : ""));
+        return {node: out, ok: state, word: word, summary: summary, text: lines.join("\n")};
+    };
+    function portChips(list){
+        var LIMIT = 120, ul = el("ul", "ntPorts"), box = $("<div></div>").append(ul);
+        function add(p){ ul.append($("<li></li>").append(el("b", null, p), SERVICES[p] ? el("span", null, SERVICES[p]) : null)); }
+        list.slice(0, LIMIT).forEach(add);
+        if (list.length > LIMIT){
+            var more = el("button", "zx-btn zx-btn--secondary zx-btn--sm", tf("Show all {0} ports", list.length)).attr("type", "button").css("margin-top", "var(--zx-space-3)");
+            more.on("click", function(){ list.slice(LIMIT).forEach(add); more.remove(); });
+            box.append(more);
+        }
+        return box;
+    }
+
+    function cn(subject){
+        var m = /(?:^|,)\s*CN=([^,]+)/.exec(subject || "");
+        return m ? m[1] : (subject || "");
+    }
+    function day(iso){ return String(iso || "").slice(0, 10); }
+    function daysAgo(n){ return n == 1 ? t("1 day ago") : tf("{0} days ago", n); }
+    R.tls = function(data, q){
+        var chain = data.Chain || [], leaf = chain[0];
+        var state = !data.Verified || !data.HostnameOK ? "danger" : (leaf && leaf.DaysLeft < 21 ? "warn" : "ok");
+        var word = !data.Verified ? t("Not trusted") : (!data.HostnameOK ? t("Wrong name") : (state == "warn" ? t("Expires soon") : t("Trusted")));
+        var out = $("<div></div>");
+        out.append(facts([
+            {label: t("Verdict"), value: word, cls: "is-" + state},
+            leaf ? (leaf.DaysLeft < 0 ? {label: t("Expired"), value: daysAgo(-leaf.DaysLeft), cls: "is-danger"} : {label: t("Expires"), value: tf("in {0} days", leaf.DaysLeft), cls: leaf.DaysLeft < 21 ? "is-warn" : ""}) : null,
+            {label: t("Protocol"), value: data.Version + (data.ALPN ? " / " + data.ALPN : "")},
+            {label: t("Handshake"), value: fmtMs(data.HandshakeMS)},
+            {label: t("Answered by"), value: data.Address, mono: true}
+        ]));
+        if (!data.Verified){
+            var why = plainTlsError(data.VerifyError), bad = callout("danger", tf("The chain is not trusted for {0}", data.ServerName), why || data.VerifyError || "");
+            if (why && data.VerifyError){ bad.find(".zx-callout__body").append(rawDetails(data.VerifyError)); }
+            out.append(bad);
+        }else if (!data.HostnameOK){
+            out.append(callout("danger", tf("The certificate does not cover {0}", data.ServerName), t("A browser would show a warning for this name.")));
+        }
+        out.append(el("h5", "ntSub", t("Certificate chain")).css("margin-top", (!data.Verified || !data.HostnameOK) ? "" : "0"));
+        var ol = el("ol", "ntChain"), lines = [tf("TLS certificate of {0}", data.Target || q.target), word + (data.VerifyError ? ": " + data.VerifyError : ""), data.Version + " / " + data.CipherSuite + (data.ALPN ? " / " + data.ALPN : "")];
+        chain.forEach(function(c, i){
+            var li = $("<li></li>").append(el("span", "ntChain__n", i + 1));
+            var role = i == 0 ? t("Server certificate") : (c.SelfSigned ? t("Root") : t("Intermediate"));
+            var head = el("div", "ntChain__head").append(el("span", "ntChain__name", cn(c.Subject)), el("span", "ntChain__role", role));
+            if (c.DaysLeft < 0){ head.append(badge("danger", t("Expired"))); }
+            else if (c.DaysLeft < 21){ head.append(badge("warn", tf("{0} days left", c.DaysLeft))); }
+            if (c.SelfSigned && i == 0){ head.append(badge("warn", t("Self signed"))); }
+            li.append(head);
+            li.append(el("p", "ntChain__line", tf("Issued by {0}", cn(c.Issuer)) + (c.SelfSigned ? " " + t("(itself)") : "")));
+            li.append(el("p", "ntChain__line", c.DaysLeft < 0 ? tf("Valid from {0} to {1}, expired {2}", day(c.NotBefore), day(c.NotAfter), daysAgo(-c.DaysLeft)) : tf("Valid from {0} to {1}, {2} days left", day(c.NotBefore), day(c.NotAfter), c.DaysLeft)));
+            var kv = el("dl", "ntKv");
+            function add(k, v, mono){ if (v){ kv.append(el("dt", null, k), el("dd", mono ? "ntMono" : null, v)); } }
+            add(t("Subject"), c.Subject, true);
+            add(t("Issuer"), c.Issuer, true);
+            add(t("DNS names"), (c.DNSNames || []).join(", "), true);
+            add(t("IP addresses"), (c.IPAddresses || []).join(", "), true);
+            add(t("Key / signature"), c.KeyAlgorithm + " / " + c.SigAlgorithm);
+            add(t("Serial"), c.SerialHex, true);
+            add("SHA-256", c.SHA256, true);
+            li.append($("<details class='zx-disclosure'></details>").append(el("summary", null, t("Details")), el("div", "zx-disclosure__body").append(kv)));
+            ol.append(li);
+            lines.push((i + 1) + ". " + c.Subject + "  |  issuer " + c.Issuer + "  |  " + day(c.NotBefore) + " to " + day(c.NotAfter) + " (" + (c.DaysLeft < 0 ? "expired " + (-c.DaysLeft) + " days ago" : c.DaysLeft + " days left") + ")  |  SHA-256 " + c.SHA256);
+        });
+        out.append(ol);
+        out.append(el("p", "zx-help", tf("Cipher suite: {0}", data.CipherSuite)));
+        return {node: out, ok: state, word: word, summary: word + (leaf ? ", " + (leaf.DaysLeft < 0 ? tf("expired {0}", daysAgo(-leaf.DaysLeft)) : tf("{0} days left", leaf.DaysLeft)) : ""), text: lines.join("\n")};
+    };
+
+    function statusKind(code){ return code >= 500 ? "danger" : (code >= 400 ? "warn" : (code >= 300 ? "info" : "ok")); }
+    R.http = function(data, q){
+        var hops = data.Hops || [], last = hops[hops.length - 1] || {};
+        var failed = !!last.Error, code = data.Final || last.Status || 0;
+        var state = failed ? "danger" : (code >= 500 ? "danger" : (code >= 400 ? "warn" : "ok"));
+        var word = failed ? t("Failed") : String(code);
+        var out = $("<div></div>");
+        out.append(facts([
+            {label: t("Final status"), value: failed ? t("No response") : String(code), cls: "is-" + state},
+            failed ? null : {label: t("Total time"), value: fmtMs(data.TotalMS)},
+            {label: t("Redirects"), value: String(Math.max(0, hops.length - 1))},
+            last.Proto ? {label: t("Protocol"), value: last.Proto + (last.TLSVersion ? " / " + last.TLSVersion : "")} : null,
+            last.RemoteAddr && !failed ? {label: t("Answered by"), value: last.RemoteAddr, mono: true} : null
+        ]));
+        var scale = Math.max.apply(null, [1].concat(hops.map(function(h){ return h.TotalMS || 0; })));
+        var ol = el("ol", "ntReqs").attr("id", "diagHttpResult");
+        var lines = [q.method + " " + q.target];
+        var PHASES = [["dns", t("DNS")], ["connect", t("Connect")], ["tls", t("TLS")], ["wait", t("Waiting for the server")], ["body", t("Download")]];
+        hops.forEach(function(h, i){
+            var li = el("li", "ntReq" + (h.Error ? " is-failed" : ""));
+            var total = h.TotalMS || 0;
+            var head = el("div", "ntReq__head").append(el("span", "ntReq__n", i + 1), el("span", "ntUrl", h.URL));
+            head.append(h.Error ? badge("danger", t("Failed")) : badge(statusKind(h.Status), String(h.Status)));
+            head.append(el("span", "ntReq__total ntMs", h.Error && !total ? "" : fmtMs(total)));
+            li.append(head);
+            var body = el("div", "ntReq__body");
+            if (h.Location){ body.append(el("span", "ntReason", tf("Redirects to {0}", h.Location))); }
+            if (h.RemoteAddr && !h.Error){ body.append(el("span", "ntReason", tf("Answered by {0}", h.RemoteAddr))); }
+            if (h.Error){
+                // no timing to show for a request that never got an answer: say why, in words
+                var host = hostOnly(h.URL || ""), plain = plainNetError(h.Error, host);
+                body.append(el("p", "ntReq__err", plain || String(h.Error).replace(/^(Get|Head|Options) "[^"]*": /i, "")));
+                if (plain){ body.append(rawDetails(h.Error)); }
+            }else{
+                var dns = h.DNSMS || 0, con = h.ConnectMS || 0, tls = h.TLSVersion ? (h.TLSMS || 0) : 0;
+                var wait = Math.max(0, (h.TTFBMS || 0) - dns - con - tls), down = Math.max(0, total - Math.max(h.TTFBMS || 0, dns + con + tls));
+                var parts = {dns: dns, connect: con, tls: tls, wait: wait, body: down};
+                var water = el("span", "ntWater").attr("aria-hidden", "true").css("width", Math.max(8, total / scale * 100) + "%");
+                var phases = el("ul", "ntPhases");
+                PHASES.forEach(function(ph){
+                    var v = parts[ph[0]];
+                    if (!(v > 0)){ return; }   // a phase that did not happen (no DNS for an IP address, no TLS on http://) is left out
+                    if (total > 0){ water.append(el("span", "ntSeg--" + ph[0]).css("width", (v / total * 100) + "%")); }
+                    phases.append($("<li></li>").append($("<i aria-hidden='true'></i>").addClass("ntSeg--" + ph[0]), document.createTextNode(ph[1] + " "), el("b", null, fmtMs(v))));
+                });
+                if (phases.children().length){ body.append(water, phases); }
+            }
+            li.append(body);
+            ol.append(li);
+            lines.push((i + 1) + ". " + h.URL + "  ->  " + (h.Error ? h.Error : h.Status + (h.Location ? " " + h.Location : "")) + "  (" + total + " ms)");
+        });
+        out.append(ol);
+        if (last.Headers && Object.keys(last.Headers).length){
+            var kv = el("dl", "ntKv");
+            Object.keys(last.Headers).sort().forEach(function(k){
+                kv.append(el("dt", null, k), $("<dd class='ntMono'></dd>").append(el("span", "zx-longvalue", (last.Headers[k] || []).join(", ")).attr("tabindex", "0")));
+            });
+            out.append($("<details class='zx-disclosure'></details>").append(el("summary", null, tf("Response headers ({0})", Object.keys(last.Headers).length)), el("div", "zx-disclosure__body").append(kv)));
+        }
+        return {node: out, ok: state, word: word, summary: failed ? t("Failed, no response") : String(code) + ", " + fmtMs(data.TotalMS), text: lines.join("\n")};
+    };
+
+    function humanKey(k){
+        var s = String(k).replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase();
+        return s.charAt(0).toUpperCase() + s.slice(1).replace(/\bid\b/g, "ID").replace(/\bdnssec\b/g, "DNSSEC").replace(/\bip\b/g, "IP");
+    }
+    function whoisValue(v){
+        if (v === null || v === undefined){ return ""; }
+        if (Array.isArray(v)){ return v.map(whoisValue).filter(function(x){ return x !== ""; }).join(", "); }
+        if (typeof v == "object"){ return Object.keys(v).map(function(k){ var x = whoisValue(v[k]); return x === "" ? "" : humanKey(k) + ": " + x; }).filter(function(x){ return x !== ""; }).join("; "); }
+        return String(v).trim();
+    }
+    R.whois = function(data, q){
+        var out = $("<div></div>"), lines = [tf("Whois of {0}", q.target)];
+        var expiry = data.expiryDate ? new Date(data.expiryDate) : null, daysLeft = expiry && !isNaN(expiry) ? Math.floor((expiry - Date.now()) / 86400000) : null;
+        var f = [
+            data.registrar ? {label: t("Registrar"), value: data.registrar} : null,
+            data.creationDate ? {label: t("Registered"), value: day(data.creationDate)} : null,
+            data.expiryDate ? {label: t("Expires"), value: day(data.expiryDate) + (daysLeft !== null ? " (" + (daysLeft < 0 ? tf("{0} days ago", -daysLeft) : tf("in {0} days", daysLeft)) + ")" : ""), cls: daysLeft !== null && daysLeft < 0 ? "is-danger" : (daysLeft !== null && daysLeft < 30 ? "is-warn" : "")} : null
+        ].filter(Boolean);
+        if (f.length){ out.append(facts(f)); }
+        var kv = el("dl", "ntKv ntKv--lg").attr("id", "whois_table"), hidden = 0, shownCount = 0;
+        Object.keys(data).forEach(function(k){
+            var v = /Date$/.test(k) && data[k] ? String(data[k]).replace("T", " ").replace(/Z$/, " UTC") : whoisValue(data[k]);
+            if (v === ""){ hidden++; return; }
+            shownCount++;
+            kv.append(el("dt", null, humanKey(k)), el("dd", /name|email|servers|id$/i.test(k) ? "ntMono" : null, v));
+            lines.push(humanKey(k) + ": " + v);
+        });
+        if (!shownCount){
+            return {node: callout("warn", tf("The registry returned nothing for {0}", q.target), t("Check the spelling, or try the registered domain without a sub domain.")), ok: "warn", word: t("No data"), summary: t("No data"), text: lines[0]};
+        }
+        out.append(kv);
+        if (hidden){ out.append(el("p", "zx-help", tf("{0} fields the registry left empty are not shown.", hidden)).css("margin-top", "var(--zx-space-3)")); }
+        var summary = data.registrar ? data.registrar : tf("{0} fields", shownCount);
+        var state = daysLeft !== null && daysLeft < 0 ? "danger" : (daysLeft !== null && daysLeft < 30 ? "warn" : "ok");
+        return {node: out, ok: state, word: state == "danger" ? t("Expired") : (state == "warn" ? t("Expires soon") : t("Found")), summary: summary, text: lines.join("\n")};
+    };
+
+    /* ---------- running ---------- */
+    function isIp(s){ return /^\d{1,3}(\.\d{1,3}){3}$/.test(s) || (/^[0-9a-f:.]+$/i.test(s) && s.indexOf(":") >= 0); }
+    function hostOnly(v){
+        var m = /^[a-z][a-z0-9+.-]*:\/\/([^\/?#]+)/i.exec(v);
+        if (!m){ return v; }
+        var h = m[1].replace(/^[^@]*@/, "");
+        if (h.charAt(0) == "["){ return h.replace(/^\[([^\]]+)\].*$/, "$1"); }
+        return h.replace(/:\d+$/, "");
+    }
+    /* a host name or IP address as the tools accept it: no spaces, no path, no user part (the server checks again) */
+    function validHost(h){
+        h = String(h || "");
+        if (h === "" || h.length > 253){ return false; }
+        if (isIp(h)){ return true; }
+        return /^[^\s\/\\?#@:"'<>(){}\[\]|^`%,;=!$&*+~]+$/.test(h) && !/^[.-]|\.\.|-$/.test(h);
+    }
+    /* the server refused the input itself (nothing was sent to the target): shown, but not kept in the recent runs */
+    function isInputError(msg){ return /^(invalid |URL must |only GET|missing )|is required$/i.test(String(msg || "")); }
+    function parsePorts(raw){
+        var out = [], bad = false;
+        String(raw).split(/[\s,;]+/).forEach(function(p){
+            if (p === ""){ return; }
+            var m = /^(\d+)(?:-(\d+))?$/.exec(p);
+            if (!m){ bad = true; return; }
+            var a = Number(m[1]), b = m[2] ? Number(m[2]) : a;
+            if (a < 1 || b > 65535 || b < a || b - a > 255){ bad = true; return; }
+            for (var i = a; i <= b; i++){ if (out.indexOf(i) < 0){ out.push(i); } }
+        });
+        return bad ? null : out;
+    }
+    /* reads the form -> a query object, or null after marking the field that is wrong */
+    function readQuery(){
+        var field = ZxUI.field("#ntTarget"), raw = String($("#ntTarget").val()).trim();
+        if (raw === ""){
+            field.setError(missingText(tool));
+            $("#ntTarget").trigger("focus");
+            return null;
+        }
+        field.clearError();
+        var q = {tool: tool, target: raw};
+        function refuse(text){
+            field.setError(text);
+            $("#ntTarget").trigger("focus");
+            if (!busy){ showEmpty(); }   // the result of an earlier target must not look like the answer to this one
+            return null;
+        }
+        if (tool == "http"){
+            // a bare host gets https:// in front (and the field shows it); anything else must be an http(s) URL
+            if (!/^[a-z][a-z0-9+.-]*:/i.test(raw) || /^[^\/:]+:\d+(\/|$)/.test(raw)){ q.target = "https://" + raw; }
+            var u = null;
+            try { u = new URL(q.target); } catch (e) { u = null; }
+            if (!u || !/^https?:$/.test(u.protocol) || !u.hostname || /\s/.test(q.target) || !validHost(u.hostname.replace(/^\[|\]$/g, ""))){
+                return refuse(t("Enter a web address that starts with http:// or https://, for example https://example.com/"));
+            }
+            if (q.target != raw){ $("#ntTarget").val(q.target); }
+            q.method = $("#diagHttpMethod").val();
+            q.follow = $("#diagHttpFollow").is(":checked");
+            q.skipverify = $("#diagHttpSkipVerify").is(":checked");
+            q.allowmetadata = $("#diagAllowMetadata").is(":checked");
+        }else{
+            q.target = hostOnly(raw);
+            if (!validHost(q.target)){
+                return refuse(tool == "dns" ? t("That is not a host name. Use a name such as example.com, without spaces or a path.") : t("That is not a host name or IP address. Use a name such as example.com or an address such as 192.168.1.10."));
+            }
+        }
+        if (tool == "trace"){ q.maxhops = String($("#traceroute_maxhops").val()).trim() || "64"; }
+        if (tool == "dns"){ q.server = String($("#diagDnsServer").val()).trim(); }
+        if (tool == "tls"){
+            q.port = String($("#diagTlsPort").val()).trim() || "443";
+            q.sni = String($("#diagTlsSni").val()).trim();
+            q.allowmetadata = $("#diagAllowMetadata").is(":checked");
+        }
+        if (tool == "port"){
+            var pf = ZxUI.field("#ntPorts"), ports = parsePorts($("#ntPorts").val());
+            if (ports === null){
+                pf.setError(t("Use port numbers from 1 to 65535, separated by commas, for example 22, 80, 443"));
+                $("#ntPorts").trigger("focus");
+                return null;
+            }
+            pf.clearError();
+            q.ports = ports;
+        }
+        return q;
+    }
+    function writeQuery(q){
+        $("#ntTarget").val(q.target);
+        if (q.tool == "trace" && q.maxhops){ $("#traceroute_maxhops").val(q.maxhops); }
+        if (q.tool == "dns"){ $("#diagDnsServer").val(q.server || ""); }
+        if (q.tool == "tls"){ $("#diagTlsPort").val(q.port || "443"); $("#diagTlsSni").val(q.sni || ""); }
+        if (q.tool == "http"){ $("#diagHttpMethod").val(q.method || "GET"); $("#diagHttpFollow").prop("checked", q.follow !== false); $("#diagHttpSkipVerify").prop("checked", !!q.skipverify); }
+        if (q.tool == "port"){ $("#ntPorts").val((q.ports || []).join(", ")); }
+    }
+    /* the request of each tool: resolves with the data, rejects with a message */
+    function request(q){
+        var d = $.Deferred();
+        function get(url, params){
+            return $.get(url, params).then(function(data){
+                if (data && data.error !== undefined){ return $.Deferred().reject(String(data.error)).promise(); }
+                return data;
+            }, function(xhr){
+                return $.Deferred().reject(xhr && xhr.status ? tf("The request failed (HTTP {0}).", xhr.status) : t("The request failed. Zoraxy did not answer.")).promise();
+            });
+        }
+        var meta = q.allowmetadata ? {allowmetadata: "true"} : {};
+        var p;
+        if (q.tool == "ping"){ p = get("/api/tools/ping", {target: q.target}); }
+        else if (q.tool == "trace"){ p = get("/api/tools/traceroute", {target: q.target, maxhops: q.maxhops}); }
+        else if (q.tool == "dns"){ p = get("/api/tools/dns", {host: q.target, server: q.server}); }
+        else if (q.tool == "tls"){ p = get("/api/tools/tlsinspect", Object.assign({host: q.target, port: q.port, sni: q.sni}, meta)); }
+        else if (q.tool == "http"){ p = get("/api/tools/httptest", Object.assign({url: q.target, method: q.method, follow: q.follow, skipverify: q.skipverify}, meta)); }
+        else if (q.tool == "whois"){ p = get("/api/tools/whois", {target: q.target}); }
+        else if (q.tool == "port"){
+            // the scanner takes an IP address: resolve a name first
+            var ipReady = isIp(q.target) ? $.Deferred().resolve(q.target).promise() : get("/api/tools/dns", {host: q.target, server: ""}).then(function(recs){
+                var ip = null;
+                ["A", "AAAA"].forEach(function(ty){ (recs || []).forEach(function(r){ if (!ip && r.Type == ty && r.Records.length){ ip = r.Records[0]; } }); });
+                if (!ip){ return $.Deferred().reject(tf("{0} has no address: the name does not exist or the DNS server did not answer.", q.target)).promise(); }
+                return ip;
+            });
+            p = ipReady.then(function(ip){ q.ip = ip; return get("/api/tools/portscan", {ip: ip}); });
+        }
+        p.then(function(data){ d.resolve(data); }, function(msg){ d.reject(msg); });
+        return d.promise();
+    }
+    function run(preset){
+        if (busy){ return; }
+        var q = preset || readQuery();
+        if (!q){ return; }
+        var mine = ++seq, started = Date.now();
+        busy = mine;
+        ZxUI.setLoading($("#ntRunBtn")[0], true);
+        shown = null;
+        $("#ntResTitle").empty().append(document.createTextNode(toolName(q.tool) + " "), el("code", null, q.target));
+        $("#ntResBadge").empty().append(badge("info", t("Running")));
+        $("#ntResMeta").text("");
+        $("#ntResActions").prop("hidden", true);
+        $("#ntResult").empty().append(el("div", "ntBusy").append("<div class='ui active inline small loader'></div>", el("span", null, busyText(q.tool, q.target))));
+        markRuns();
+        request(q).then(function(data){
+            finish({q: q, at: started, took: Date.now() - started, data: data});
+        }, function(msg){
+            finish({q: q, at: started, took: Date.now() - started, error: String(msg)});
+        });
+        function finish(entry){
+            if (busy === mine){ busy = null; ZxUI.setLoading($("#ntRunBtn")[0], false); }
+            entry.id = started + "-" + mine;
+            var res = render(entry);
+            entry.ok = res.ok; entry.summary = res.summary;
+            if (!(entry.error !== undefined && isInputError(entry.error))){
+                runs.unshift(entry);
+                runs = runs.slice(0, MAX_RUNS);
+                save();
+            }
+            // show it, unless the reader has moved on to another section meanwhile
+            if (CONSOLE_TOOLS.indexOf(tool) >= 0){ show(entry, res); }
+            drawRuns();
+        }
+    }
+    function render(entry){
+        if (entry.error !== undefined){
+            return {node: errorBlock(tf("{0} could not run", toolName(entry.q.tool)), entry.error), ok: "danger", word: t("Failed"), summary: friendlyError(entry.error).title || entry.error, text: toolName(entry.q.tool) + " " + entry.q.target + "\n" + entry.error};
+        }
+        try {
+            return R[entry.q.tool](entry.data, entry.q);
+        } catch (e) {
+            return {node: callout("danger", t("The answer could not be read"), String(e && e.message || e)), ok: "danger", word: t("Failed"), summary: t("The answer could not be read"), text: JSON.stringify(entry.data)};
+        }
+    }
+    function show(entry, res){
+        res = res || render(entry);
+        shown = {entry: entry, text: res.text};
+        $("#ntResTitle").empty().append(document.createTextNode(toolName(entry.q.tool) + " "), el("code", null, entry.q.target));
+        $("#ntResBadge").empty().append(badge(res.ok, res.word));
+        $("#ntResMeta").text(tf("{0}, took {1}", new Date(entry.at).toLocaleTimeString(), fmtMs(entry.took)));
+        $("#ntResActions").prop("hidden", false);
+        $("#ntResult").empty().append(res.node);
+        markRuns();
+    }
+    function showEmpty(){
+        shown = null;
+        $("#ntResTitle").text(t("Result"));
+        $("#ntResBadge").empty();
+        $("#ntResMeta").text("");
+        $("#ntResActions").prop("hidden", true);
+        var box = el("div", "zx-empty zx-empty--inline");
+        box.append($("<span class='zx-empty__icon' aria-hidden='true'><i class='terminal icon'></i></span>"));
+        box.append(el("p", "zx-empty__text", tf("Nothing run yet. Enter a target above and press \"{0}\"; the answer appears here, and every run is kept in a list below so you can compare before and after a change.", runLabel(tool))));
+        $("#ntResult").empty().append(box);
+        markRuns();
+    }
+
+    /* ---------- recent runs ---------- */
+    function load(){
+        try {
+            var raw = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+            runs = Array.isArray(raw) ? raw.filter(function(r){ return r && r.q && R[r.q.tool]; }).slice(0, MAX_RUNS) : [];
+        } catch (e) { runs = []; }
+    }
+    function save(){
+        // results can be large (a port list, a certificate chain): drop the oldest data first when the browser refuses
+        var copy = runs.slice();
+        for (var cut = copy.length; cut >= 0; cut--){
+            try {
+                localStorage.setItem(STORE_KEY, JSON.stringify(copy.map(function(r, i){ return i < cut ? r : {id: r.id, q: r.q, at: r.at, took: r.took, ok: r.ok, summary: r.summary, gone: true}; })));
+                return;
+            } catch (e) { /* quota or private mode: try with less, then give up silently */ }
+        }
+    }
+    function ago(ts){
+        var s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+        if (s < 60){ return t("just now"); }
+        if (s < 3600){ return tf("{0} min ago", Math.round(s / 60)); }
+        if (s < 86400){ return tf("{0} h ago", Math.round(s / 3600)); }
+        return new Date(ts).toLocaleDateString();
+    }
+    function drawRuns(){
+        var ul = $("#ntRuns").empty();
+        $("#ntRunsClear").prop("hidden", runs.length == 0);
+        $("#ntRunsCard").prop("hidden", runs.length == 0);   // no second empty card under an empty result
+        if (!runs.length){ return; }
+        runs.forEach(function(r){
+            var b = el("button", "ntRunItem").attr({type: "button", "data-run": r.id});
+            b.append(el("span", "ntRunItem__tool", toolName(r.q.tool)), el("span", "ntRunItem__target", r.q.target).attr("title", r.q.target));
+            b.append(el("span", "ntRunItem__sum").append(el("span", "ntDot is-" + r.ok).attr("aria-hidden", "true"), el("span", null, r.summary || "")));
+            b.append(el("span", "ntRunItem__when", ago(r.at)));
+            ul.append($("<li></li>").append(b));
+        });
+        markRuns();
+    }
+    function markRuns(){
+        $("#ntRuns .ntRunItem").each(function(){
+            var on = !!shown && shown.entry.id == this.getAttribute("data-run");
+            if (on){ this.setAttribute("aria-current", "true"); } else { this.removeAttribute("aria-current"); }
+        });
+    }
+    function openRun(id){
+        var r = runs.filter(function(x){ return x.id == id; })[0];
+        if (!r){ return; }
+        if (r.q.tool != tool){ selectSection(r.q.tool, true); }
+        writeQuery(r.q);
+        if (r.gone){ run(r.q); return; }   // the stored result was dropped to save space: ask again
+        show(r);
+        try { document.getElementById("ntResultCard").scrollIntoView({block: "nearest", behavior: "smooth"}); } catch (e) { /* older browsers */ }
+    }
+    function copyResult(){
+        if (!shown){ return; }
+        var text = shown.text, done = function(){ ZxUI.toast(t("Result copied"), {type: "success"}); };
+        function fallback(){
+            var ta = $("<textarea readonly></textarea>").val(text).css({position: "fixed", top: 0, left: "-9999px"}).appendTo(document.body);
+            ta[0].select();
+            try { document.execCommand("copy"); done(); } catch (e) { ZxUI.toast(t("Copying is blocked by the browser"), {type: "error"}); }
+            ta.remove();
+        }
+        if (navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(done, fallback); } else { fallback(); }
+    }
+
+    /* ---------- sections ---------- */
+    var nav = ZxUI.sectionNav("#ntNav", {attr: "data-nt", head: "#ntHead", onSelect: function(name){ selectSection(name); }});
+    function selectSection(name, keepResult){
+        var isConsole = CONSOLE_TOOLS.indexOf(name) >= 0;
+        $("#networktool .ntPanel").each(function(){
+            this.hidden = isConsole ? this.id != "ntConsole" : this.id != "ntPanel-" + name;
+        });
+        nav.select(name);
+        try { localStorage.setItem(STORE_SECTION, name); } catch (e) { /* private mode */ }
+        if (!isConsole){ tool = name; return; }
+        tool = name;
+        $("#ntForm [data-tools], #networktool .ntRunChecks [data-tools]").each(function(){
+            this.hidden = this.getAttribute("data-tools").split(" ").indexOf(name) < 0;
+        });
+        $("#ntTargetLabel").text(targetLabel(name));
+        $("#ntTarget").attr("placeholder", targetPlaceholder(name));
+        $("#ntRunBtn").text(runLabel(name));
+        $("#ntRunNote").text(runNote(name));
+        ZxUI.field("#ntTarget").clearError();
+        if (keepResult){ return; }
+        if (busy){ return; }   // a run is on its way: keep showing it
+        var latest = runs.filter(function(r){ return r.q.tool == name && !r.gone; })[0];
+        if (latest){ show(latest); } else { showEmpty(); }
+    }
+
+    $("#ntTarget").on("input", function(){ ZxUI.field(this).clearError(); });
+    $("#ntPorts").on("input", function(){ ZxUI.field(this).clearError(); });
+    $("#ntCopyBtn").on("click", copyResult);
+    $("#ntAgainBtn").on("click", function(){ if (shown){ var q = Object.assign({}, shown.entry.q); if (q.tool != tool){ selectSection(q.tool, true); } writeQuery(q); run(q); } });
+    $("#ntRuns").on("click", ".ntRunItem", function(){ openRun(this.getAttribute("data-run")); });
+    $("#ntRunsClear").on("click", function(){
+        runs = [];
+        try { localStorage.removeItem(STORE_KEY); } catch (e) { /* private mode */ }
+        drawRuns();
+        if (!busy){ showEmpty(); }
     });
 
-    function diagCommon(){
-        return $("#diagAllowMetadata").is(":checked") ? {allowmetadata: "true"} : {};
-    }
-    function diagCell(text){ return $("<td></td>").text(text); }
+    load();
+    drawRuns();
+    var startAt = "ping";
+    try { startAt = localStorage.getItem(STORE_SECTION) || "ping"; } catch (e) { /* private mode */ }
+    if (!$("#ntNav [data-nt='" + String(startAt).replace(/[^a-z]/g, "") + "']").length){ startAt = "ping"; }
+    selectSection(startAt);
 
-    function diagDns(){
-        if (!ntRequire("#diagDnsHost", "Enter a host name")){ return; }
-        let host = $("#diagDnsHost").val().trim();
-        $("#diagDnsResult").hide().find("tbody").empty(); //never leave the previous answer under a new lookup
-        $("#diagDnsNote").remove();
-        $.get("/api/tools/dns", {host: host, server: $("#diagDnsServer").val().trim()}, function(data){
-            if (data.error != undefined){ msgbox(data.error, false); return; }
-            let tbody = $("#diagDnsResult tbody").empty();
-            if (data.every(function(r){ return r.Records.length == 0; })){
-                //six "no records" rows are not an answer: say it once
-                $("#diagDnsResult").before($("<div id='diagDnsNote' class='ui warning message'></div>").text(
-                    tf("No DNS records found for {0}. The name does not exist, or the DNS server could not be reached.", host)));
-                return;
-            }
-            data.forEach(function(r){
-                let td = $("<td></td>");
-                if (r.Records.length == 0){
-                    td.append($("<span class='zx-help'></span>").text(r.Error ? r.Error : "none"));
-                }
-                r.Records.forEach(function(rec){ td.append($("<div></div>").append($("<code></code>").text(rec))); });
-                tbody.append($("<tr></tr>").append(diagCell(r.Type), td));
-            });
-            $("#diagDnsResult").show();
-        });
-    }
+    return {run: function(){ run(); }, open: selectSection, nav: nav, current: function(){ return tool; }};
+})();
 
-    function diagTls(){
-        if (!ntRequire("#diagTlsHost", "Enter a host name")){ return; }
-        let host = $("#diagTlsHost").val().trim();
-        let params = Object.assign({host: host, port: $("#diagTlsPort").val(), sni: $("#diagTlsSni").val().trim()}, diagCommon());
-        $("#diagTlsResult").empty().append($("<div class='ui active inline loader'></div>"));
-        $.get("/api/tools/tlsinspect", params, function(data){
-            let box = $("#diagTlsResult").empty();
-            if (data.error != undefined){
-                box.append($("<div class='ui red message'></div>").text(data.error));
-                return;
-            }
-            let summary = $("<div class='ui message'></div>").addClass(data.Verified ? "positive" : "warning");
-            summary.append($("<div></div>").text(data.Version + " / " + data.CipherSuite + (data.ALPN ? " / " + data.ALPN : "") + " (handshake " + data.HandshakeMS + " ms, " + data.Address + ")"));
-            summary.append($("<div></div>").text(data.Verified ? "Certificate chain is trusted for " + data.ServerName : "Not trusted: " + data.VerifyError));
-            if (!data.HostnameOK){ summary.append($("<div></div>").text("The certificate does not cover " + data.ServerName)); }
-            box.append(summary);
-            (data.Chain || []).forEach(function(c, i){
-                let t = $("<table class='zx-table zx-table--compact'></table>");
-                function row(k, v){ t.append($("<tr></tr>").append($("<td></td>").text(k), $("<td></td>").text(v))); }
-                row("Certificate " + (i + 1), c.Subject);
-                row("Issuer", c.Issuer + (c.SelfSigned ? " (self signed)" : ""));
-                row("Valid", c.NotBefore + " to " + c.NotAfter + " (" + c.DaysLeft + " days left)");
-                if (c.DNSNames && c.DNSNames.length) row("DNS names", c.DNSNames.join(", "));
-                if (c.IPAddresses && c.IPAddresses.length) row("IP addresses", c.IPAddresses.join(", "));
-                row("Key / signature", c.KeyAlgorithm + " / " + c.SigAlgorithm);
-                row("Serial", c.SerialHex);
-                row("SHA-256", c.SHA256);
-                box.append($("<div class='zx-table-wrap zx-table-wrap--flush' style='margin-top:var(--zx-space-3);' tabindex='0' role='region' aria-label='Certificate details'></div>").append(t));
-            });
-        });
-    }
-
-    function diagHttp(){
-        if (!ntRequire("#diagHttpUrl", "Enter a URL")){ return; }
-        let url = $("#diagHttpUrl").val().trim();
-        $("#diagHttpResult").hide().find("tbody").empty(); //a refused or failed request must not show the previous result
-        let params = Object.assign({url: url, method: $("#diagHttpMethod").val(), follow: $("#diagHttpFollow").is(":checked"), skipverify: $("#diagHttpSkipVerify").is(":checked")}, diagCommon());
-        $.get("/api/tools/httptest", params, function(data){
-            if (data.error != undefined){ msgbox(data.error, false); return; }
-            let tbody = $("#diagHttpResult tbody").empty();
-            data.Hops.forEach(function(h, i){
-                let status = h.Error ? h.Error : (h.Status + (h.Location ? " -> " + h.Location : ""));
-                tbody.append($("<tr></tr>").append(diagCell(i + 1), diagCell(h.URL), diagCell(status), diagCell(h.RemoteAddr || ""),
-                    diagCell(h.DNSMS + " ms").addClass("zx-num"), diagCell(h.ConnectMS + " ms").addClass("zx-num"), diagCell(h.TLSVersion ? (h.TLSMS + " ms " + h.TLSVersion) : "-"),
-                    diagCell(h.TTFBMS + " ms").addClass("zx-num"), diagCell(h.TotalMS + " ms").addClass("zx-num")));
-            });
-            $("#diagHttpResult").show();
-        });
-    }
+$("#netcalcHost").load("./components/netcalc.html");
+$("#dnsResponderHost").load("./components/dnsresponder.html");
 </script>
 
 <script>
-    // Activate the default tab
-    $('.ui.accordion').accordion();
-    $('.menu .nettools.item').tab();
-    $('.menu .nettools.item').addClass("activated");
-
-    // Switch tabs when clicking on the menu items
-    $('.menu .nettools.item').on('click', function() {
-        $('.menu .nettools.item').removeClass('active');
-        $(this).addClass('active');
-        var tab = $(this).attr('data-tab');
-        $('.nettoolstab.tab.segment').removeClass('active');
-        $('div[data-tab="' + tab + '"]').addClass('active');
-    }); 
-
     //Check if web.ssh is supported
     function checkWebSSHSupport(){
         $.get("/api/tools/websshSupported", function(data){
             if (data == false){
-                $("#websshTool").css({
-                    "opacity": "0.6",
-                    "pointer-events": "none",
-                    "user-select": "none",
-                });
-                $("#websshTool").find("button").addClass("disabled");
+                $("#websshTool").addClass("ntOff").find("button").prop("disabled", true);
+                $("#websshOffNote").prop("hidden", false);
             }
         })
     }
@@ -509,18 +1343,18 @@
 
             // Validate server input
             if (server === "") {
-                msgbox("Server Name or IP Address is required", false, 5000);
+                msgbox(t("Server name or IP address is required"), false, 5000);
                 serverInput.focus();
                 isValid = false;
             } else if (!isIpAddress(server) && !isDomainName(server)) {
-                msgbox("Invalid Server Name or IP Address", false, 5000);
+                msgbox(t("Invalid server name or IP address"), false, 5000);
                 serverInput.focus();
                 isValid = false;
             }
 
             // Validate port input
             if (isNaN(port) || port < 2 || port > 65533) {
-                msgbox("Port Number must be a number between 2 and 65533", false, 5000);
+                msgbox(t("Port number must be a number between 2 and 65533"), false, 5000);
                 portInput.focus();
                 isValid = false;
             }
@@ -535,8 +1369,6 @@
 
                 let settings = encodeURIComponent(JSON.stringify(settingPayload));
                 launchToolWithSize('./tools/sshconn.html#' + settings,1000, 640);
-            }else{
-
             }
         }
 
@@ -554,7 +1386,7 @@
 
         validateForm();
     }
-    
+
 </script>
 <script>
 function launchToolWithSize(url, width, height){
@@ -578,6 +1410,10 @@ const wake_on_lan_API = "/api/tools/wol";
 
 function selectMdnsResultForWol(){
     let selectedText = $("#mdnsWoL").dropdown("get value");
+    if (!selectedText){
+        msgbox(t("Select a device from the list first"), false, 4000);
+        return;
+    }
     let selectedWoL = JSON.parse(decodeURIComponent(selectedText));
     $("#wol_servername").val(selectedWoL[0]);
     $("#wol_mac").val(selectedWoL[1]);
@@ -590,18 +1426,15 @@ function setWoLAddress() {
     var name = $("#wol_servername").val().trim();
     var mac = $("#wol_mac").val().trim();
 
-    if (name.length == 0){
-        $("#wol_servername").parent().addClass("error");
-    }else{
-        $("#wol_servername").parent().removeClass("error");
-    }
+    $("#wol_servername").closest(".zx-field").toggleClass("is-invalid", name.length == 0);
 
     if (!isValidMacAddress(mac)){
-        $("#wol_mac").parent().addClass("error");
-        msgbox("Invalid MAC address given", false, 5000);
+        $("#wol_mac").closest(".zx-field").addClass("is-invalid");
+        $("#wol_mac").trigger("focus");
+        msgbox(t("Invalid MAC address given"), false, 5000);
         return
     }else{
-        $("#wol_mac").parent().removeClass("error");
+        $("#wol_mac").closest(".zx-field").removeClass("is-invalid");
     }
 
     $.cjax({
@@ -612,7 +1445,7 @@ function setWoLAddress() {
             name: name
         },
         success: function(result) {
-            msgbox(result.error || "WoL MAC Added", (result.error == undefined), (result.error == undefined)?3000:5000);
+            msgbox(result.error || t("WoL MAC Added"), (result.error == undefined), (result.error == undefined)?3000:5000);
             listWoL();
 
             if (result.error == undefined){
@@ -627,7 +1460,7 @@ function setWoLAddress() {
 }
 
 function delWoLAddr(mac, name) {
-    if (confirm(`Confirm remove WoL record for ${name} (${mac}) ?`)){
+    if (confirm(tf("Confirm remove WoL record for {0} ({1}) ?", name, mac))){
         $.cjax({
             url: wake_on_lan_API,
             type: "POST",
@@ -635,7 +1468,7 @@ function delWoLAddr(mac, name) {
                 del: mac.trim()
             },
             success: function(result) {
-                msgbox(result.error || "WoL MAC Removed", (result.error == undefined), (result.error == undefined)?3000:5000);
+                msgbox(result.error || t("WoL MAC Removed"), (result.error == undefined), (result.error == undefined)?3000:5000);
                 listWoL();
             },
             error: function(error) {
@@ -643,12 +1476,12 @@ function delWoLAddr(mac, name) {
             }
         });
     }
-    
+
 }
 
 function wakeWoL(mac, object=undefined) {
     if (object != undefined){
-        $(object).addClass("loading").addClass("disabled");
+        ZxUI.setLoading(object, true);
     }
     $.cjax({
         url: wake_on_lan_API,
@@ -659,20 +1492,26 @@ function wakeWoL(mac, object=undefined) {
         success: function(result) {
             if (result.error != undefined){
                 msgbox(result.error, false, 5000);
+                if (object != undefined){ ZxUI.setLoading(object, false); }
             }else{
-                //Success?
+                msgbox(tf("Magic packet sent to {0}", mac));
+                //a device takes a moment to start: keep the button busy so it is not pressed again at once
                 setTimeout(function(){
                     if (object != undefined){
-                        $(object).removeClass("loading").removeClass("disabled");
+                        ZxUI.setLoading(object, false);
                     }
                 }, 5000);
             }
-            console.log(result);
         },
         error: function(error) {
             console.error(error);
+            if (object != undefined){ ZxUI.setLoading(object, false); }
         }
     });
+}
+
+function wolEmptyRow(){
+    return `<tr><td class="zx-empty-cell" colspan="3">${ZxUI.esc(t("No saved devices. Add one below with its name and MAC address."))}</td></tr>`;
 }
 
 function listWoL(callback) {
@@ -682,31 +1521,29 @@ function listWoL(callback) {
     success: function(data) {
         // Clear existing rows from the table
         $("#wolAddressList").empty();
+        if (!Array.isArray(data)){ data = []; }
 
         // Loop through data and create a new row for each object
-        for (var i = 0; i < data.length; i++) {
+        for (var i = 0; i < data.length; i++){
             let thisServerName = data[i].ServerName;
             let thisMacAddr = data[i].MacAddr
             $("#wolAddressList").append(`
                 <tr class="wolmacentry" mac="${ZxUI.esc(thisMacAddr)}">
-                    <td data-label="Server name">${ZxUI.esc(thisServerName)}</td>
-                    <td data-label="MAC address" class="zx-mono">${ZxUI.esc(thisMacAddr)}</td>
-                    <td class="zx-actions" data-label="Action">
+                    <td data-label="${ZxUI.esc(t("Name"))}"><b>${ZxUI.esc(thisServerName)}</b></td>
+                    <td data-label="${ZxUI.esc(t("MAC address"))}" class="zx-mono">${ZxUI.esc(thisMacAddr)}</td>
+                    <td class="zx-actions" data-label="${ZxUI.esc(t("Actions"))}">
                         <div class="zx-row-actions">
-                        <button data-mac="${ZxUI.esc(thisMacAddr)}" onclick="wakeWoL(this.dataset.mac, this);" class="ui tiny basic button"><i class="power icon"></i>Wake on LAN</button>
-                        <button data-mac="${ZxUI.esc(thisMacAddr)}" data-name="${ZxUI.esc(thisServerName)}" aria-label="Delete this record" title="Delete" onclick="delWoLAddr(this.dataset.mac, this.dataset.name);" class="ui tiny red basic icon button"><i class="trash icon"></i></button>
+                        <button type="button" data-mac="${ZxUI.esc(thisMacAddr)}" onclick="wakeWoL(this.dataset.mac, this);" class="zx-btn zx-btn--secondary zx-btn--sm"><i class="power off icon" aria-hidden="true"></i> ${ZxUI.esc(t("Wake up"))}</button>
+                        <button type="button" data-mac="${ZxUI.esc(thisMacAddr)}" data-name="${ZxUI.esc(thisServerName)}" onclick="delWoLAddr(this.dataset.mac, this.dataset.name);" class="zx-btn zx-btn--ghost zx-btn--sm">${ZxUI.esc(t("Remove"))}</button>
                         </div>
                     </td>
-
                 </tr>
             `);
         }
 
         if (data.length == 0){
-            $("#wolAddressList").append(`<tr>
-                <td class="zx-empty-cell" colspan="3"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">No saved devices yet. Add a server name and its MAC address above.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="$('#wol_servername').trigger('focus');">Add a device</button></div></td>
-            </tr>`);
-        }   
+            $("#wolAddressList").append(wolEmptyRow());
+        }
 
         //Also update the MDNS list
         updateMDNSListForWoL();
@@ -732,7 +1569,6 @@ function updateMDNSListForWoL(){
     $(".wolmacentry").each(function(){
         let thisMac = $(this).attr("mac").trim();
         if (isValidMacAddress(thisMac)){
-            console.log(thisMac);
             alreadyAddedEntries.push(thisMac);
         }
     });
@@ -750,124 +1586,42 @@ function updateMDNSListForWoL(){
                         continue;
                     }
                     let encodedObject = encodeURIComponent(JSON.stringify([thisServer.HostName, thisMacAddr]));
-                    $("#mdnsResultForWoL").append(`<div class="item" data-value="${encodedObject}"><i class="server icon"></i> ${ZxUI.esc(thisServer.HostName)} (${ZxUI.esc(thisMacAddr)})</div>`);
+                    $("#mdnsResultForWoL").append(`<div class="item" data-value="${encodedObject}">${ZxUI.esc(thisServer.HostName)} (${ZxUI.esc(thisMacAddr)})</div>`);
                 }
             }
         });
         $("#mdnsResultForWoL").parent().dropdown();
     });
 }
-updateMDNSListForWoL();
-
-function traceroute(){
-    if (!ntRequire("#traceroute_domain", "Enter a target domain or IP address")){ return; }
-    let domain = $("#traceroute_domain").val().trim();
-    let maxhops = $("#traceroute_maxhops").val().trim();
-    $("#traceroute_results").val("Loading...");
-    $.get("/api/tools/traceroute", {target: domain, maxhops: maxhops}, function(data){
-        if (data.error != undefined){
-            //show the reason in the result box as well, the toast disappears
-            $("#traceroute_results").val(data.error);
-            msgbox(data.error, false, 6000);
-        }else{
-            $("#traceroute_results").val(data.join("\n"));
-        }
-    });
-}
-
-function ping(){
-    if (!ntRequire("#traceroute_domain", "Enter a target domain or IP address")){ return; }
-    let domain = $("#traceroute_domain").val().trim();
-    $("#traceroute_results").val("Loading...");
-    $.get("/api/tools/ping", {target: domain}, function(data){
-        if (data.error != undefined){
-            $("#traceroute_results").val(data.error);
-            msgbox(data.error, false, 6000);
-        }else{
-            $("#traceroute_results").val(`--------- ICMP Ping -------------
-${data.ICMP.join("\n")}\n
----------- TCP Ping -------------
-${data.TCP.join("\n")}\n
----------- UDP Ping -------------
-${data.UDP.join("\n")}`);
-        }
-    });
-}
-
-function performWhoisLookup(){
-    if (!ntRequire("#whoisdomain", "Enter a domain or IP address")){ return; }
-    let whoisDomain = $("#whoisdomain").val().trim();
-    $("#whois_table").empty();
-    $("#whoisdomain").parent().addClass("disabled");
-    $("#whoisdomain").parent().css({
-        "cursor": "wait"
-    });
-    $.get("/api/tools/whois", {target: whoisDomain}, function(data){
-        $("#whoisdomain").parent().removeClass("disabled");
-        $("#whoisdomain").parent().css({
-            "cursor": "auto"
-        });
-        if (data.error != undefined){
-            msgbox(data.error, false, 6000);
-        }else{
-            renderWhoisDomainTable(data);
-        }
-    })
-}
-
-function renderWhoisDomainTable(jsonData) {
-
-    function formatDate(dateString) {
-        var date = new Date(dateString);
-        return date.toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    var table = $('<table>').addClass('zx-table');
-
-    // Create table body
-    var body = $('<tbody>');
-    for (var key in jsonData) {
-    var value = jsonData[key];
-    var row = $('<tr>');
-    row.append($('<td>').text(key));
-    if (key.endsWith('Date')) {
-        row.append($('<td>').text(formatDate(value)));
-    } else if (Array.isArray(value)) {
-        row.append($('<td>').text(value.join(', ')));
-    }else if (typeof(value) == "object"){
-        row.append($('<td>').text(JSON.stringify(value)));
-    } else {
-        row.append($('<td>').text(value));
-    }
-    body.append(row);
-    }
-
-    // Append the table body to the table
-    table.append(body);
-
-    // Append the table to the target element
-    $('#whois_table').empty().append(table);
-}
-
 
 //Forward Proxy
 function initForwardProxyInfo(){
     $.get("/api/tools/fwdproxy/enable", function(data){
-        if (data == true){
-            //Disable the start btn
-            $("#forwardProxyButtons").find(".startBtn").addClass('disabled');
-            $("#forwardProxyButtons").find(".stopBtn").removeClass('disabled');
-        }else{
-            $("#forwardProxyButtons").find(".startBtn").removeClass('disabled');
-            $("#forwardProxyButtons").find(".stopBtn").addClass('disabled');
-        }
+        let running = data == true;
+        $("#forwardProxyButtons").find(".startBtn").prop("hidden", running);
+        $("#forwardProxyButtons").find(".stopBtn").prop("hidden", !running);
+        $("#forwardProxyState").toggleClass("zx-badge--ok", running).text(running ? t("On") : t("Off"));
+        ntConsole.nav.state("fwd", running ? "on" : "off", running ? t("On") : t("Off"));
     });
 
     $.get("/api/tools/fwdproxy/port", function(data){
         $("#forwardProxyPort").val(data);
+        if (/^\d+$/.test(String(data))){ $("#forwardProxyTarget").text("127.0.0.1:" + data); }
     })
 }
 initForwardProxyInfo();
+
+//The DNS responder section shows its state in the navigation too (read-only request)
+function ntRefreshDnsResponderState(){
+    $.get("/api/tools/dnsresponder", function(data){
+        if (!data || !data.config){ return; }
+        let on = data.config.enabled === true;
+        let broken = on && data.status && data.status.running === false;
+        ntConsole.nav.state("dnsr", broken ? "danger" : (on ? "on" : "off"), broken ? t("Not running") : (on ? t("On") : t("Off")));
+    });
+}
+ntRefreshDnsResponderState();
+$(document).on("click", "#dnsResponderHost #dnsrSave", function(){ setTimeout(ntRefreshDnsResponderState, 1500); });
 
 function toggleForwadProxy(enabled){
     $.cjax({
@@ -880,7 +1634,7 @@ function toggleForwadProxy(enabled){
             if (data.error != undefined){
                 msgbox(data.error, false);
             }else{
-                msgbox(`Forward proxy ${enabled?"enabled":"disabled"}`)
+                msgbox(enabled ? t("Forward proxy enabled") : t("Forward proxy disabled"))
             }
 
             initForwardProxyInfo();
@@ -891,14 +1645,14 @@ function toggleForwadProxy(enabled){
 function updateForwardProxyPort(){
     let rawPort = String($("#forwardProxyPort").val()).trim();
     let newPortNumber = Number(rawPort);
-    let field = $("#forwardProxyPort").closest(".field");
+    let field = $("#forwardProxyPort").closest(".zx-field");
     if (!/^\d+$/.test(rawPort) || newPortNumber < 1024 || newPortNumber > 65535){
-        field.addClass("error");
+        field.addClass("is-invalid");
         $("#forwardProxyPort").trigger("focus");
-        msgbox("Invalid port: use a whole number between 1024 and 65535", false, 5000);
+        msgbox(t("Invalid port: use a whole number between 1024 and 65535"), false, 5000);
         return;
     }
-    field.removeClass("error");
+    field.removeClass("is-invalid");
 
     $.cjax({
         url: "/api/tools/fwdproxy/port",
@@ -912,12 +1666,10 @@ function updateForwardProxyPort(){
                 initForwardProxyInfo(); //show the port that is really in use
                 return;
             }
-            msgbox("Forward proxy port updated");
+            msgbox(t("Forward proxy port updated"));
             initForwardProxyInfo();
         }
     });
 }
 
 </script>
-
-

@@ -2,6 +2,7 @@ package dynamicproxy
 
 import (
 	"context"
+	"imuslab.com/zoraxy/mod/errorpages"
 	"imuslab.com/zoraxy/mod/pathmatch"
 	"net/http"
 	"strconv"
@@ -231,6 +232,9 @@ func (router *Router) ruleRateLimited(w http.ResponseWriter, r *http.Request, se
 	router.logRequestRule(r, false, status, "rule-ratelimit", r.Host, "", sep, m.Name, "rule:"+m.Name)
 	applyRespHeaders(w, r)
 	w.Header().Set("Retry-After", "1")
+	if status == http.StatusTooManyRequests && router.serveCustomErrorPage(w, r, status, errorpages.ClassRateLimit) { //the owner's 429 page, if any
+		return
+	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(status)
 	w.Write([]byte(statusText(status) + "\n"))

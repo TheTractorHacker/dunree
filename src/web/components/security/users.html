@@ -1,32 +1,46 @@
-<div id="usrMsg" class="ui negative message" style="display:none"></div>
+<!-- Security Center > Admin accounts. Status (who can sign in), the accounts with their actions behind "Manage",
+     the sign-in session (save bar) and the recent account activity as a two-line log. -->
+<section class="zx-card sx-status" id="usrStatus" data-state="off">
+    <div class="sx-status__top">
+        <span class="sx-status__icon" aria-hidden="true"><i class="users icon"></i></span>
+        <div class="sx-status__text">
+            <h4 class="sx-status__title"><span class="sx-status__name">Admin accounts</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+            <p class="sx-status__desc">Admins can change everything. Viewers can look at every page but change nothing.</p>
+        </div>
+        <div class="sx-status__action"><button type="button" class="zx-btn zx-btn--primary" id="usrNew"><i class="plus icon" aria-hidden="true"></i> Add account</button></div>
+    </div>
+    <dl class="sx-facts">
+        <div class="sx-fact"><dt>Admins</dt><dd id="usrFAdmins">-</dd></div>
+        <div class="sx-fact"><dt>Viewers</dt><dd id="usrFViewers">-</dd></div>
+        <div class="sx-fact"><dt>Disabled</dt><dd id="usrFOff">-</dd></div>
+        <div class="sx-fact"><dt>Last sign-in</dt><dd id="usrFLast">-</dd></div>
+    </dl>
+</section>
+<div id="usrMsg" class="ui negative message" style="display:none" role="alert"></div>
+
 <section class="zx-card">
     <div class="zx-card__head">
-        <h3 class="zx-card__title">Admin accounts</h3>
-        <p class="zx-card__desc">Admins can change everything. Viewers are read-only. Changing a password, disabling, renaming or deleting an account signs it out.</p>
+        <h3 class="zx-card__title">Accounts</h3>
+        <p class="zx-card__desc">Changing a password, a role or a name, and disabling or deleting an account, signs that account out everywhere.</p>
     </div>
     <div class="zx-card__body">
-        <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Admin accounts">
-            <table class="zx-table">
-                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th class="zx-actions">Actions</th></tr></thead>
-                <tbody id="usrRows"><tr><td colspan="4" class="zx-empty-cell">Loading...</td></tr></tbody>
-            </table>
-        </div>
-        <p class="zx-help">The last enabled admin cannot be removed, disabled or demoted. Locked out? Start Zoraxy once with the reset option (<code>-reset_ac</code>).</p>
-        <h4 class="zx-subhead">Add account</h4>
-        <div class="ui form">
-            <div class="zx-form-grid">
+        <div class="usr-add ui form" id="usrAddBox" hidden>
+            <h4 class="zx-subhead">New account</h4>
+            <div class="sx-inline">
                 <div class="field zx-field"><label for="usrNewName">Username</label><input type="text" id="usrNewName" placeholder="username" autocomplete="off"></div>
                 <div class="field zx-field"><label for="usrNewPw">Password</label><input type="password" id="usrNewPw" placeholder="8 or more characters" autocomplete="new-password"></div>
-                <div class="field zx-field"><label for="usrNewRole">Role</label><select id="usrNewRole"><option value="viewer">viewer (read-only)</option><option value="admin">admin</option></select></div>
-                <div class="zx-field zx-field--btn"><button class="zx-btn zx-btn--primary" id="usrAdd"><i class="plus icon" aria-hidden="true"></i> Add</button></div>
+                <div class="field zx-field"><label for="usrNewRole">Role</label><select id="usrNewRole"><option value="viewer">Viewer (read-only)</option><option value="admin">Admin (can change everything)</option></select></div>
+                <div class="sx-inline__btn"><button type="button" class="zx-btn zx-btn--primary" id="usrAdd"><i class="plus icon" aria-hidden="true"></i> Add</button> <button type="button" class="zx-btn zx-btn--secondary" id="usrAddCancel">Cancel</button></div>
             </div>
-            <p class="zx-help" id="usrAddHint" style="display:none">Accounts are not available while the admin panel runs without a login.</p>
         </div>
+        <ul class="sx-rows" id="usrRows"><li class="zx-empty zx-empty--inline"><p class="zx-empty__text">Loading...</p></li></ul>
+        <p class="sx-note" id="usrResetNote">The last enabled admin cannot be removed, disabled or made a viewer. Locked out? Start Zoraxy once with the reset option (<code>-reset_ac</code>).</p>
     </div>
 </section>
+
 <section class="zx-card" id="sesCard" aria-labelledby="sesTitle" hidden>
-    <div class="zx-card__head"><h3 class="zx-card__title" id="sesTitle">Sign-in session</h3>
-        <p class="zx-card__desc">How long an admin stays signed in. A new value applies to later sign-ins; accounts already signed in keep their expiry.</p></div>
+    <div class="zx-card__head"><h3 class="zx-card__title" id="sesTitle">How long a sign-in lasts</h3>
+        <p class="zx-card__desc">A new value applies to later sign-ins; accounts already signed in keep their expiry.</p></div>
     <div class="zx-card__body">
         <div class="ui form" id="sesForm">
             <div class="zx-form-grid">
@@ -36,7 +50,7 @@
                     <p class="zx-help" id="sesMinHelp">5 to 43200 (30 days)</p>
                 </div>
                 <div class="field zx-field">
-                    <label for="sesDays">Remember me keeps me signed in for</label>
+                    <label for="sesDays">With "Remember me" ticked</label>
                     <div class="zx-inputgroup"><input type="number" id="sesDays" min="1" max="365" step="1" inputmode="numeric"><span class="zx-inputgroup__unit">days</span></div>
                     <p class="zx-help" id="sesDaysHelp">1 to 365</p>
                 </div>
@@ -46,63 +60,118 @@
                 <input type="checkbox" class="zx-switch" role="switch" id="sesSlide">
             </label>
         </div>
-        <p class="zx-help" id="sesNow" role="status"></p>
+        <p class="sx-note" id="sesNow" role="status"></p>
     </div>
 </section>
+
 <section class="zx-card">
     <div class="zx-card__head">
         <h3 class="zx-card__title">Recent account activity</h3>
-        <p class="zx-card__desc">Sign-ins and account changes of the admin panel.</p>
+        <p class="zx-card__desc">Sign-ins, failed attempts and account changes of this admin panel, newest first.</p>
     </div>
     <div class="zx-card__body">
-        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Recent account activity">
-            <table class="zx-table zx-table--compact">
-                <thead><tr><th>Time</th><th>User</th><th>Event</th><th>Target</th><th>From</th><th>Detail</th></tr></thead>
-                <tbody id="usrAudit"><tr><td colspan="6" class="zx-empty-cell">No account activity recorded yet.</td></tr></tbody>
-            </table>
-        </div>
+        <ul class="sx-log" id="usrAudit"><li class="zx-empty zx-empty--inline"><p class="zx-empty__text">No account activity recorded yet. Sign-ins and account changes will be listed here.</p></li></ul>
+        <div class="sx-more" id="usrAuditFoot" hidden><button type="button" class="zx-btn zx-btn--secondary" id="usrAuditMore">Show more</button></div>
     </div>
 </section>
+<style>
+    #secPane .usr-add { margin: 0 0 var(--zx-space-4); padding-bottom: var(--zx-space-4); border-bottom: 1px solid var(--zx-border); }
+    #secPane .usr-add .zx-subhead { margin-top: 0; font-size: 1.071rem; }
+    #usrRows .usr-av { flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); font-weight: 700; text-transform: uppercase; }
+    #usrRows .is-disabled .usr-av { background: var(--zx-surface-3); color: var(--zx-text-muted); }
+    #usrRows .sx-row select { min-width: 8rem; height: 28px; min-height: 28px; padding-top: 2px; padding-bottom: 2px; }
+    #usrRows .usr-panel { flex: 1 1 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--zx-space-3) var(--zx-space-4); padding: var(--zx-space-1) 0 var(--zx-space-2) calc(36px + var(--zx-space-4)); }
+    @media (max-width: 640px) { #usrRows .usr-panel { padding-left: 0; } }
+    #usrRows .usr-panel[hidden] { display: none; }
+    #usrRows .usr-panel label { display: block; margin: 0 0 var(--zx-space-1); font-weight: 700; }
+    #usrRows .usr-panel .usr-set { display: flex; gap: var(--zx-space-2); }
+    #usrRows .usr-panel .usr-set input { flex: 1 1 auto; min-width: 0; height: var(--zx-control-h); padding: 0 var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); background: var(--zx-surface); color: var(--zx-text); }
+    #usrRows .usr-panel .usr-set input:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #usrRows .usr-panel .usr-danger { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); padding-top: var(--zx-space-1); }
+    #usrRows .usr-panel .usr-danger .zx-help { margin: 0; flex: 1 1 12rem; }
+    @media (max-width: 640px) { #usrRows .usr-panel { grid-template-columns: minmax(0, 1fr); } }
+</style>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function err(m) { $("#usrMsg").text(m).show(); }
+    var audit = [], auditShown = 10, openUser = null;
+    var EVENTS = { login: N_("Signed in"), "login-failed": N_("Sign-in failed"), login_failed: N_("Sign-in failed"), logout: N_("Signed out"), create: N_("Account created"), "delete": N_("Account deleted"), setPassword: N_("Password changed"), rename: N_("Account renamed"), setRole: N_("Role changed"), disable: N_("Account disabled"), enable: N_("Account enabled") };
+    function N_(s) { return s; }
+    function evName(e) { return EVENTS[e] ? t(EVENTS[e]) : String(e || "").replace(/[._-]+/g, " ").replace(/^./, function (c) { return c.toUpperCase(); }); }
+    function renderAudit() {
+        var h = audit.slice(0, auditShown).map(function (e) {
+            var bad = /fail|denied/i.test(e.Event || "");
+            return '<li><span class="sx-log__time" title="' + esc(new Date(e.Time * 1000).toLocaleString()) + '">' + esc(new Date(e.Time * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })) + '</span><span class="sx-log__what"><b title="' + esc(e.Event) + '">' + esc(evName(e.Event)) + "</b>" + (e.Target && e.Target !== e.Actor ? " " + esc(e.Target) : "") +
+                '<span class="sx-log__by">' + esc(t("{0} from {1}").replace("{0}", e.Actor && e.Actor !== "-" ? e.Actor : t("Not signed in")).replace("{1}", e.IP || t("unknown address"))) + (e.Detail ? " · " + esc(e.Detail) : "") + "</span></span>" +
+                '<span class="zx-badge zx-badge--dot ' + (bad ? "zx-badge--danger" : "zx-badge--ok") + '">' + esc(bad ? t("Failed") : t("OK")) + "</span></li>";
+        }).join("");
+        $("#usrAudit").html(h || '<li class="zx-empty zx-empty--inline"><p class="zx-empty__text">' + esc(t("No account activity recorded yet. Sign-ins and account changes will be listed here.")) + "</p></li>");
+        $("#usrAuditFoot").prop("hidden", audit.length <= auditShown);
+    }
     function load() {
         $.get("/api/users/list", function (r) {
             $("#usrMsg").hide();
-            var h = "";
-            (r.Users || []).forEach(function (u) {
-                var n = esc(u.Username);
-                h += '<tr><td data-label="' + esc(t("Username")) + '">' + n + '</td><td data-label="' + esc(t("Role")) + '">' + esc(u.Role) + '</td><td data-label="' + esc(t("Status")) + '">' + (u.Disabled ? '<span class="zx-badge">' + esc(t("disabled")) + "</span>" : '<span class="zx-badge zx-badge--ok">' + esc(t("active")) + "</span>") + '</td><td class="zx-actions"><div class="zx-row-actions">' +
-                    '<button class="ui mini basic button usrA" data-a="setPassword" data-u="' + n + '">Set password</button> ' +
-                    '<button class="ui mini basic button usrA" data-a="rename" data-u="' + n + '">Rename</button> ' +
-                    '<button class="ui mini basic button usrA" data-a="setRole" data-r="' + (u.Role === "admin" ? "viewer" : "admin") + '" data-u="' + n + '">' + (u.Role === "admin" ? t("Make viewer") : t("Make admin")) + "</button> " +
-                    '<button class="ui mini basic button usrA" data-a="' + (u.Disabled ? "enable" : "disable") + '" data-u="' + n + '">' + (u.Disabled ? "Enable" : "Disable") + "</button> " +
-                    '<button class="ui mini basic red button usrA" data-a="delete" data-u="' + n + '">Delete</button></div></td></tr>';
+            var users = r.Users || [], h = "";
+            var admins = users.filter(function (u) { return u.Role === "admin" && !u.Disabled; }).length;
+            users.forEach(function (u) {
+                var n = esc(u.Username), isAdmin = u.Role === "admin", lastAdmin = isAdmin && !u.Disabled && admins <= 1, open = openUser === u.Username;
+                h += '<li class="sx-row' + (u.Disabled ? " is-disabled" : "") + '" data-user="' + n + '"><span class="usr-av" aria-hidden="true">' + esc(u.Username.charAt(0)) + "</span>" +
+                    '<div class="sx-row__main"><span class="sx-row__title">' + n + " " + (u.Disabled ? '<span class="zx-badge zx-badge--dot">' + esc(t("Disabled")) + "</span>" : '<span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(t("Active")) + "</span>") + "</span>" +
+                    '<span class="sx-row__sub">' + esc(isAdmin ? t("Admin: can change everything") : t("Viewer: read-only")) + (lastAdmin ? " · " + esc(t("the only admin")) : "") + "</span></div>" +
+                    '<div class="sx-row__end"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm usrManage" aria-expanded="' + open + '">' + esc(t("Manage")) + "</button></div>" +
+                    '<div class="usr-panel"' + (open ? "" : " hidden") + ">" +
+                    '<div><label>' + esc(t("New password")) + '</label><div class="usr-set"><input type="password" class="usrPw" autocomplete="new-password" placeholder="' + esc(t("8 or more characters")) + '" aria-label="' + esc(t("New password for {0}").replace("{0}", u.Username)) + '"><button type="button" class="zx-btn zx-btn--secondary usrA" data-a="setPassword" data-u="' + n + '">' + esc(t("Set password")) + "</button></div></div>" +
+                    '<div><label>' + esc(t("New username")) + '</label><div class="usr-set"><input type="text" class="usrName" autocomplete="off" placeholder="' + n + '" aria-label="' + esc(t("New username for {0}").replace("{0}", u.Username)) + '"><button type="button" class="zx-btn zx-btn--secondary usrA" data-a="rename" data-u="' + n + '">' + esc(t("Rename")) + "</button></div></div>" +
+                    '<div class="usr-danger"><button type="button" class="zx-btn zx-btn--secondary usrA" data-a="setRole" data-r="' + (isAdmin ? "viewer" : "admin") + '" data-u="' + n + '"' + (lastAdmin ? " disabled" : "") + ">" + esc(isAdmin ? t("Make viewer") : t("Make admin")) + "</button>" +
+                    '<button type="button" class="zx-btn zx-btn--secondary usrA" data-a="' + (u.Disabled ? "enable" : "disable") + '" data-u="' + n + '"' + (lastAdmin ? " disabled" : "") + ">" + esc(u.Disabled ? t("Enable") : t("Disable")) + "</button>" +
+                    '<button type="button" class="zx-btn zx-btn--secondary sx-del usrA" data-a="delete" data-u="' + n + '"' + (lastAdmin ? " disabled" : "") + ">" + esc(t("Delete")) + "</button>" +
+                    (lastAdmin ? '<span class="zx-help">' + esc(t("This is the only admin, so it cannot be demoted, disabled or deleted.")) + "</span>" : "") + "</div></div></li>";
             });
-            $("#usrRows").html(h || '<tr><td colspan="4" class="zx-empty-cell">No accounts yet.</td></tr>');
-            var a = "";
-            (r.Audit || []).forEach(function (e) {
-                a += '<tr><td data-label="' + esc(t("Time")) + '" style="white-space:nowrap">' + esc(new Date(e.Time * 1000).toLocaleString()) + '</td><td data-label="' + esc(t("User")) + '">' + esc(e.Actor) + '</td><td data-label="' + esc(t("Event")) + '">' + esc(e.Event) + '</td><td data-label="' + esc(t("Target")) + '">' + esc(e.Target) + '</td><td data-label="' + esc(t("From")) + '">' + esc(e.IP) + '</td><td data-label="' + esc(t("Detail")) + '" class="zx-cell-long"><div class="zx-longvalue" tabindex="0">' + esc(e.Detail) + "</div></td></tr>";
-            });
-            $("#usrAudit").html(a || '<tr><td colspan="6" class="zx-empty-cell">No account activity recorded yet.</td></tr>');
-        }).fail(function (x) { err(x.status === 403 ? "Admin role required." : "Unable to load accounts."); $("#usrRows").html('<tr><td colspan="4" class="zx-empty-cell">' + esc(t("Accounts could not be loaded.")) + "</td></tr>"); });
+            $("#usrRows").html(h || '<li class="zx-empty zx-empty--inline"><p class="zx-empty__text">' + esc(t("No accounts yet.")) + "</p></li>");
+            var viewers = users.filter(function (u) { return u.Role !== "admin" && !u.Disabled; }).length, off = users.filter(function (u) { return u.Disabled; }).length;
+            ZxSec.fact("#usrFAdmins", admins, "", admins ? "" : "danger"); ZxSec.fact("#usrFViewers", viewers); ZxSec.fact("#usrFOff", off);
+            audit = r.Audit || []; renderAudit();
+            var lastIn = audit.filter(function (e) { return /^login$/i.test(e.Event || "") || EVENTS[e.Event] === "Signed in"; })[0], lastFail = audit.filter(function (e) { return /fail/i.test(e.Event || ""); })[0];
+            ZxSec.fact("#usrFLast", lastIn ? ZxSec.ago(lastIn.Time) : t("Not recorded"), lastIn ? lastIn.Actor : (lastFail ? t("last failure {0}").replace("{0}", ZxSec.ago(lastFail.Time)) : ""));
+            ZxSec.status("#usrStatus", { state: "on", badge: t("Login required"), title: users.length === 1 ? t("1 account can sign in") : t("{0} accounts can sign in").replace("{0}", users.length - off),
+                desc: admins === 1 ? t("There is one admin. A second admin account is a spare key if a password is lost.") : t("Admins can change everything. Viewers can look at every page but change nothing.") });
+        }).fail(function (x) {
+            err(x.status === 403 ? t("Admin role required.") : t("Unable to load accounts."));
+            $("#usrRows").html('<li class="zx-empty zx-empty--inline"><p class="zx-empty__text">' + esc(t("Accounts could not be loaded.")) + "</p></li>");
+            ZxSec.status("#usrStatus", { state: "off", badge: "", title: t("Admin accounts"), desc: x.status === 403 ? t("Only an admin can see and change the accounts.") : t("Accounts could not be loaded.") });
+            $("#usrNew").prop("hidden", true);
+        });
     }
     function act(data) {
         $.cjax({ type: "POST", url: "/api/users/action", data: data, success: function (d) {
-            if (d && d.error) { err(d.error); } else { load(); }
-        }, error: function (x) { err(x.status === 403 ? "Admin role required." : "Request failed."); } });
+            if (d && d.error) { err(d.error); } else { if (data.action === "create") { $("#usrNewName").val(""); $("#usrAddBox").prop("hidden", true); } if (data.action === "rename" || data.action === "delete") { openUser = null; } load(); }
+        }, error: function (x) { err(x.status === 403 ? t("Admin role required.") : t("Request failed.")); } });
     }
+    $("#usrNew").on("click", function () { $("#usrAddBox").prop("hidden", false); $("#usrNewName").trigger("focus"); });
+    $("#usrAddCancel").on("click", function () { $("#usrAddBox").prop("hidden", true); $("#usrNewPw").val(""); });
     $("#usrAdd").on("click", function () {
         act({ action: "create", username: $("#usrNewName").val(), password: $("#usrNewPw").val(), role: $("#usrNewRole").val() });
         $("#usrNewPw").val("");
     });
+    $("#usrAuditMore").on("click", function () { auditShown += 25; renderAudit(); });
+    $("#usrRows").on("click", ".usrManage", function () {
+        var li = $(this).closest("li"), panel = li.find(".usr-panel"), open = panel.prop("hidden");
+        $("#usrRows .usr-panel").prop("hidden", true); $("#usrRows .usrManage").attr("aria-expanded", "false");
+        panel.prop("hidden", !open); $(this).attr("aria-expanded", String(open));
+        openUser = open ? li.attr("data-user") : null;
+        if (open) { li.find(".usrPw").trigger("focus"); }
+    });
+    $("#usrRows").on("keydown", ".usr-set input", function (e) { if (e.key === "Enter") { $(this).next("button").trigger("click"); } });
     $("#usrRows").on("click", ".usrA", function () {
-        var a = $(this).attr("data-a"), u = $(this).attr("data-u"), d = { action: a, username: u };
-        if (a === "delete" && !confirm("Delete account " + u + "?")) { return; }
-        if (a === "setPassword") { d.password = prompt("New password for " + u + " (8+ characters)"); if (!d.password) { return; } }
-        if (a === "rename") { d.newUsername = prompt("New username for " + u); if (!d.newUsername) { return; } }
+        var a = $(this).attr("data-a"), u = $(this).attr("data-u"), d = { action: a, username: u }, li = $(this).closest("li");
+        if (a === "setPassword") { d.password = li.find(".usrPw").val(); if (!d.password) { li.find(".usrPw").trigger("focus"); return; } }
+        if (a === "rename") { d.newUsername = $.trim(li.find(".usrName").val()); if (!d.newUsername) { li.find(".usrName").trigger("focus"); return; } }
         if (a === "setRole") { d.role = $(this).attr("data-r"); }
+        if (a === "delete") {
+            ZxUI.confirm({ title: t("Delete the account {0}?").replace("{0}", u), message: t("The account is signed out and can no longer sign in. This cannot be undone."), confirmLabel: t("Delete account"), danger: true }).then(function (ok) { if (ok) { act(d); } });
+            return;
+        }
         act(d);
     });
     /* Sign-in session lifetime (admin only) */
@@ -146,8 +215,12 @@
     });
     $.get("/api/auth/authEnabled", function (on) {
         if (on === false) {
-            $("#usrRows").html('<tr><td colspan="4" class="zx-empty-cell">The admin panel runs without a login, so there are no accounts to manage. Start Zoraxy with authentication to add accounts.</td></tr>');
-            $("#usrAdd").prop("disabled", true); $("#usrAddHint").show();
+            $("#usrRows").html('<li class="zx-empty zx-empty--inline"><span class="zx-empty__icon" aria-hidden="true"><i class="unlock icon"></i></span><p class="zx-empty__text">' + esc(t("The admin panel runs without a login, so there are no accounts to manage. Start Zoraxy with authentication to add accounts.")) + "</p></li>");
+            // no login, no accounts: the Add button and the note about the last admin would only mislead
+            $("#usrNew, #usrAddBox, #usrResetNote").prop("hidden", true);
+            ["#usrFAdmins", "#usrFViewers", "#usrFOff"].forEach(function (s) { ZxSec.fact(s, t("None")); });
+            ZxSec.fact("#usrFLast", t("No login"), t("nobody signs in"));
+            ZxSec.status("#usrStatus", { state: "danger", badge: t("No login"), title: t("Anyone who can reach this panel is an admin"), desc: t("Zoraxy was started without a login (-noauth), so there are no accounts. Restart it without that option to require a sign-in.") });
         } else { load(); }
     });
 })();

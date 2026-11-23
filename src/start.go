@@ -436,6 +436,7 @@ func startupSequence() {
 		PluginGroupsConfig: CONF_PLUGIN_GROUPS,
 		APIKeyManager:      pluginApiKeyManager,
 		RunAsUser:          *plugin_user,
+		ProbePluginPorts:   *plugin_port_probe,
 		RunAsGroup:         *plugin_group,
 		ZoraxyPort:         ZoraxyPort,
 		CSRFTokenGen: func(r *http.Request) string {

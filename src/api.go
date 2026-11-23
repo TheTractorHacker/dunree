@@ -379,6 +379,9 @@ func RegisterPluginAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/plugins/rebuild", pluginManager.HandleRebuildPlugin)
 	authRouter.HandleFunc("/api/plugins/icon", pluginManager.HandleLoadPluginIcon)
 	authRouter.HandleFunc("/api/plugins/info", pluginManager.HandlePluginInfo)
+	authRouter.HandleFunc("/api/plugins/status", pluginManager.HandlePluginStatus)   //read-only: state, exit code, last error, last output lines
+	authRouter.HandleFunc("/api/plugins/policy", pluginManager.HandlePluginPolicy)   //per plugin supervision: restart policy, health check, timeouts, log target, limits (all off by default)
+	authRouter.HandleFunc("/api/plugins/restart", pluginManager.HandleRestartPlugin) //stop + start, also clears a crash loop
 
 	authRouter.HandleFunc("/api/plugins/hooks/set", pluginManager.HandleSetPluginHookSettings)
 	authRouter.HandleFunc("/api/plugins/groups/list", pluginManager.HandleListPluginGroups)
@@ -491,6 +494,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	authRouter.HandleFunc("/api/proxy/upstream/tlsinspect", HandleUpstreamTLSInspect)
 	RegisterNetworkingAPIs(authRouter)
 	RegisterOpsAPIs(authRouter)
+	RegisterErrorPageAPIs(authRouter) //customisable error pages (off until saved and enabled), see errorpagesapi.go
 	RegisterEchAPIs(authRouter)
 	RegisterScriptAPIs(authRouter)
 	RegisterSablierAPIs(authRouter)

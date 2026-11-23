@@ -102,7 +102,7 @@ with sync_playwright() as p:
         judge(t, pg.evaluate(COLLECT))
         if t == "seccenter":
             for sec in pg.eval_on_selector_all("#secTabs .item", "els => els.map(e => e.getAttribute('data-sec'))"):
-                pg.click(f"#secTabs .item[data-sec='{sec}']")
+                pg.dispatch_event(f"#secTabs .item[data-sec='{sec}']", "click")
                 settle(pg, 1000)
                 judge("seccenter/" + sec, pg.evaluate(COLLECT))
     if args.snippets:

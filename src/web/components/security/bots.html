@@ -1,34 +1,40 @@
-<div class="ui warning message" id="brChallengeNote" role="status" style="display:none;"><span id="brChallengeText"></span> <a href="#" id="brChallengeLink">Open CAPTCHA</a></div>
+<!-- Security Center > Bot rules. Status and the main switch, the ready-made lists and the search engines to let through;
+     fake bots, custom rules and per-site overrides are groups a beginner can skip. -->
+<div class="zx-callout zx-callout--warn" id="brChallengeNote" role="status" style="display:none;"><span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"><span id="brChallengeText"></span> <a href="#" id="brChallengeLink">Open CAPTCHA</a></div></div>
 <div class="ui form" id="brForm">
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Bot rules</h3>
-            <p class="zx-card__desc">Block, challenge or only log requests by their User-Agent. This stops lazy bots and scanners, not determined attackers. Off by default.</p>
-        </div>
-        <div class="zx-card__body">
-            <label class="zx-toggle-row" for="brEnabled">
-                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Enable for all proxy rules</span><span class="zx-toggle-row__desc">A single proxy rule can opt in or out in the last card. A challenge needs a CAPTCHA on the proxy rule, otherwise it blocks.</span></span>
-                <input type="checkbox" class="zx-switch" role="switch" id="brEnabled">
-            </label>
-        </div>
-    </section>
-
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Managed lists</h3>
-            <p class="zx-card__desc">Ready-made lists of known bots. The AI crawler list is the one the exploit detector's "block AI crawlers" option uses.</p>
-        </div>
-        <div class="zx-card__body">
-            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Managed lists">
-                <table class="zx-table zx-table--compact zx-table--bots"><thead><tr><th>On</th><th>List</th><th>Action</th></tr></thead><tbody id="brCats"></tbody></table>
+    <section class="zx-card sx-status" id="brStatus" data-state="off">
+        <div class="sx-status__top">
+            <span class="sx-status__icon" aria-hidden="true"><i class="bug icon"></i></span>
+            <div class="sx-status__text">
+                <h4 class="sx-status__title"><span class="sx-status__name">Bot rules</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+                <p class="sx-status__desc">Block, challenge or only log requests by the name a client sends (its User-Agent). This stops lazy bots and scanners, not determined attackers.</p>
+            </div>
+            <div class="sx-status__action">
+                <label class="sx-switch" for="brEnabled"><span>On for all sites</span><input type="checkbox" class="zx-switch" role="switch" id="brEnabled"></label>
             </div>
         </div>
+        <dl class="sx-facts">
+            <div class="sx-fact"><dt>Bot lists in use</dt><dd id="brFLists">-</dd></div>
+            <div class="sx-fact"><dt>Search engines allowed</dt><dd id="brFGood">-</dd></div>
+            <div class="sx-fact"><dt>Your own rules</dt><dd id="brFCustom">-</dd></div>
+            <div class="sx-fact"><dt>Sites with their own setting</dt><dd id="brFSites">-</dd></div>
+        </dl>
     </section>
 
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Good bots</h3>
-            <p class="zx-card__desc">Search engines you want to allow. Zoraxy checks them by reverse DNS, so a faked User-Agent is not trusted.</p>
+            <h3 class="zx-card__title">Known bots</h3>
+            <p class="zx-card__desc">Ready-made lists that ship with Zoraxy. Switch a list on and choose what happens to a request that matches it. Not sure? Start with Log only and look at the blocked requests on the Status page.</p>
+        </div>
+        <div class="zx-card__body">
+            <ul class="sx-rows" id="brCats" aria-label="Managed lists"></ul>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Search engines you let through</h3>
+            <p class="zx-card__desc">Ticked crawlers are never blocked by the lists above. Zoraxy checks who they really are, so a faked name is not trusted.</p>
         </div>
         <div class="zx-card__body">
             <div id="brGood" class="zx-chips"></div>
@@ -36,59 +42,109 @@
                 <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Verify by reverse DNS (recommended)</span><span class="zx-toggle-row__desc">Visitors that claim to be a good bot but fail the check count as fake bots.</span></span>
                 <input type="checkbox" class="zx-switch" role="switch" id="brVerify">
             </label>
+        </div>
+    </section>
+
+    <h4 class="sx-label">Advanced</h4>
+    <details class="sx-group">
+        <summary><span class="sx-group__title">Fake bots and clients without a name</span><span class="sx-group__desc">What happens to a visitor that pretends to be a search engine, or sends no User-Agent at all.</span><span class="sx-group__now" id="brNowFake"></span></summary>
+        <div class="sx-group__body">
             <div class="zx-form-grid">
-                <div class="field zx-field"><label for="brFakeAct">Action for a fake bot</label><select id="brFakeAct"></select></div>
-                <div class="field zx-field"><label for="brEmpty">Requests without a User-Agent</label><select id="brEmpty"><option value="">allow</option></select></div>
+                <div class="field zx-field"><label for="brFakeAct">A fake search engine is</label><select id="brFakeAct"></select><p class="zx-help">Only used while the reverse DNS check is on.</p></div>
+                <div class="field zx-field"><label for="brEmpty">A request without a User-Agent is</label><select id="brEmpty"><option value="">Allowed</option></select><p class="zx-help">Some health checks and old devices send none.</p></div>
             </div>
         </div>
-    </section>
-
-    <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Custom rules</h3>
-            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="brAddRule"><i class="plus icon" aria-hidden="true"></i> Add rule</button>
-            <p class="zx-card__desc">Checked before the managed lists; the first match wins. Plain text rules ignore case. Patterns use safe RE2 syntax (no backreferences), 200 characters at most.</p>
+    </details>
+    <details class="sx-group" id="brGrpCustom">
+        <summary><span class="sx-group__title">Your own rules</span><span class="sx-group__desc">Match a User-Agent by text or pattern. Checked before the lists; the first match wins.</span><span class="sx-group__now" id="brNowCustom"></span></summary>
+        <div class="sx-group__body">
+            <div id="brCustom" class="br-rules"></div>
+            <div class="zx-empty zx-empty--inline brEmptyFoot"><p class="zx-empty__text">No rules of your own yet. Add one to block or challenge a specific User-Agent.</p></div>
+            <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="brAddRule"><i class="plus icon" aria-hidden="true"></i> Add rule</button></div>
+            <p class="sx-note">Text rules ignore case unless you untick the box. Patterns use safe RE2 syntax (no backreferences), 200 characters at most.</p>
         </div>
-        <div class="zx-card__body">
-            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Custom rules">
-                <table class="zx-table zx-table--compact"><thead><tr><th>Name</th><th>Type</th><th>Pattern</th><th>Ignore case</th><th>Action</th><th class="zx-actions"><span class="zx-sr-only">Remove</span></th></tr></thead><tbody id="brCustom"></tbody><tfoot class="brEmptyFoot"><tr><td colspan="6" class="zx-empty-cell">No custom rules yet. Add one to block or challenge a specific User-Agent.</td></tr></tfoot><style>#brCustom:has(tr) + .brEmptyFoot{display:none}</style></table>
-            </div>
+    </details>
+    <details class="sx-group" id="brGrpSites" data-zx-ignore>
+        <summary><span class="sx-group__title">Exceptions for single sites</span><span class="sx-group__desc">Force bot rules on or off for one proxy rule, whatever the main switch says. A change here applies at once.</span><span class="sx-group__now" id="brNowSites"></span></summary>
+        <div class="sx-group__body">
+            <div class="br-polfilter" id="brPolTools" hidden><input type="search" id="brPolFilter" placeholder="Filter sites" aria-label="Filter sites" autocomplete="off"></div>
+            <ul class="sx-rows" id="brPolicies" aria-label="Per proxy rule"></ul>
+            <div class="sx-more" id="brPolMoreBox" hidden><button type="button" class="zx-btn zx-btn--secondary" id="brPolMore">Show more</button></div>
         </div>
-    </section>
-    <div class="zx-savefoot"><button class="ui primary button" id="brSave"><i class="save icon"></i> Save</button><span class="zx-help">Saves the switches, lists and rules above.</span></div>
+    </details>
+    <div class="sx-actions"><button type="button" class="zx-btn zx-btn--primary" id="brSave"><i class="save icon" aria-hidden="true"></i> Save bot rules</button><span class="zx-help">Saves the switch, the lists, the search engines, fake bots and your own rules. Exceptions for single sites apply at once.</span></div>
 </div>
-
-<section class="zx-card">
-    <div class="zx-card__head">
-        <h3 class="zx-card__title">Per proxy rule</h3>
-        <p class="zx-card__desc">Follow the global switch, or force bot rules on or off for one proxy rule. Changes here apply at once.</p>
-    </div>
-    <div class="zx-card__body">
-        <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Per proxy rule">
-            <table class="zx-table"><thead><tr><th>Proxy rule</th><th>Bot rules</th></tr></thead><tbody id="brPolicies"></tbody></table>
-        </div>
-    </div>
-</section>
 <style>
     #brForm .zx-chips { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-3); }
-    #brForm .zx-chips input.gb { width: 24px; height: 24px; min-width: 24px; margin: 0; }
-    #brForm .zx-chips .ui.checkbox, #brForm .zx-chips label.zx-chip { display: inline-flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h); padding: 0 var(--zx-space-3); margin: 0 !important; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-pill); background: var(--zx-surface); color: var(--zx-text); cursor: pointer; }
-    #brForm .zx-table--bots select, #brPolicies select, #brCustom select { min-width: 9rem; height: var(--zx-control-h); }
-    #brCustom input[type="text"], #brCustom input:not([type]) { width: 100%; min-width: 8rem; }
-    </style>
+    #brForm .zx-chips input.gb { width: 18px; height: 18px; min-width: 18px; margin: 0; accent-color: var(--zx-primary); }
+    #secPane #brForm .zx-chips label.zx-chip { display: inline-flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h); padding: 0 var(--zx-space-3); margin: 0; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-pill); background: var(--zx-surface); color: var(--zx-text); cursor: pointer; }
+    #brForm .zx-chips label.zx-chip:has(input:checked) { background: var(--zx-primary-soft); border-color: var(--zx-primary); color: var(--zx-primary-soft-text); }
+    #brForm .zx-chips label.zx-chip:has(input:focus-visible) { box-shadow: var(--zx-focus-ring); }
+    #brCats .sx-row.is-off .sx-row__title { color: var(--zx-text-muted); }
+    #brCats select, #brPolicies select { height: var(--zx-control-h); }
+    #brCustom:has(.brRule) + .brEmptyFoot { display: none; }
+    #brForm .brEmptyFoot { padding: 0 0 var(--zx-space-3); }
+    #brCustom .brRule { display: grid; grid-template-columns: minmax(0, 1fr) 8rem minmax(0, 1.3fr) 13.5rem auto; gap: var(--zx-space-2) var(--zx-space-3); align-items: start; padding: var(--zx-space-3) 0; border-top: 1px solid var(--zx-border); }
+    #brCustom .brRule:first-child { border-top: 0; padding-top: 0; }
+    #brCustom .brRule > label { display: block; min-width: 0; margin: 0; }
+    #brCustom .brRule > label > span { display: block; margin-bottom: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+    #brCustom .brRule input:not([type="checkbox"]), #brCustom .brRule select { width: 100%; max-width: none; min-width: 0; height: var(--zx-control-h); }
+    #brCustom .brRule .br-case { display: inline-flex; align-items: center; gap: var(--zx-space-1); margin-top: var(--zx-space-1); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; cursor: pointer; }
+    #brCustom .brRule .br-case input { display: inline-block; width: 16px; height: 16px; margin: 0; accent-color: var(--zx-primary); }
+    #brCustom .brRule .brDel { margin-top: 20px; }
+    #brGrpCustom .zx-btn-row { margin-top: var(--zx-space-3); }
+    #brForm .br-polfilter { max-width: 22rem; margin: 0 0 var(--zx-space-4); }
+    #brForm .br-polfilter input { width: 100%; }
+    #secPane #brCats select, #secPane #brPolicies select { min-width: 13.5rem; }
+    @media (max-width: 760px) { #brCustom .brRule { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } #brCustom .brRule .brDel { margin-top: 0; justify-self: start; } }
+</style>
 <script>
 (function () {
+    function N_(s) { return s; }
     var ACTIONS = ["block", "challenge", "log", "drop"];
+    var ACT_LABEL = { block: N_("Blocked (403 page)"), challenge: N_("Challenged (CAPTCHA)"), log: N_("Logged only"), drop: N_("Dropped (no answer)") };
+    var ACT_WORD = { block: N_("blocked"), challenge: N_("challenged"), log: N_("logged"), drop: N_("dropped") };   // the short word for a closed group
+    var polFilter = "", polShown = 25;
     var data = null;
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
-    function actSel(cls, cur, lbl) {
-        return '<select class="' + cls + '" aria-label="' + esc(lbl || "Action") + '">' + ACTIONS.map(function (a) { return '<option' + (a === cur ? " selected" : "") + ">" + a + "</option>"; }).join("") + "</select>";
-    }
+    function opts(cur) { return ACTIONS.map(function (a) { return '<option value="' + a + '"' + (a === cur ? " selected" : "") + ">" + esc(t(ACT_LABEL[a])) + "</option>"; }).join(""); }
+    function actSel(cls, cur, lbl) { return '<select class="' + cls + '" aria-label="' + esc(lbl || t("Action")) + '">' + opts(cur) + "</select>"; }
     function customRow(r) {
         r = r || { Name: "", Type: "substring", Pattern: "", CaseInsensitive: true, Action: "block" };
-        return '<tr class="brRule"><td data-label="Name"><input class="rn" aria-label="Rule name" value="' + esc(r.Name) + '"></td><td data-label="Type"><select class="rt" aria-label="Rule type"><option' + (r.Type === "substring" ? " selected" : "") + '>substring</option><option' + (r.Type === "regex" ? " selected" : "") + '>regex</option></select></td>' +
-            '<td data-label="Pattern"><input class="rp" aria-label="Pattern" value="' + esc(r.Pattern) + '"></td><td data-label="Ignore case"><input type="checkbox" class="rc" aria-label="Ignore case"' + (r.CaseInsensitive ? " checked" : "") + '></td><td data-label="Action">' + actSel("ra", r.Action) + '</td><td class="zx-actions"><button type="button" class="ui mini basic icon button brDel" aria-label="Remove rule" title="Remove rule"><i class="trash icon"></i></button></td></tr>';
+        return '<div class="brRule"><label><span>' + esc(t("Name")) + '</span><input class="rn" value="' + esc(r.Name) + '" placeholder="' + esc(t("Old scraper")) + '"></label>' +
+            '<label><span>' + esc(t("Matches")) + '</span><select class="rt"><option value="substring"' + (r.Type === "substring" ? " selected" : "") + ">" + esc(t("Text")) + '</option><option value="regex"' + (r.Type === "regex" ? " selected" : "") + ">" + esc(t("Pattern")) + "</option></select></label>" +
+            '<div><label style="display:block;margin:0"><span style="display:block;margin-bottom:2px;color:var(--zx-text-muted);font-size:var(--zx-fs-xs);font-weight:700">' + esc(t("User-Agent contains")) + '</span><input class="rp" value="' + esc(r.Pattern) + '" placeholder="python-requests"></label>' +
+            '<label class="br-case"><input type="checkbox" class="rc"' + (r.CaseInsensitive ? " checked" : "") + "> " + esc(t("Ignore case")) + "</label></div>" +
+            '<label><span>' + esc(t("The request is")) + "</span>" + actSel("ra", r.Action) + "</label>" +
+            '<button type="button" class="zx-btn zx-btn--ghost zx-btn--icon brDel" aria-label="' + esc(t("Remove rule")) + '" title="' + esc(t("Remove rule")) + '"><i class="trash alternate outline icon" aria-hidden="true"></i></button></div>';
+    }
+    function summary() {
+        if (!document.getElementById("brForm")) { return; }   // an answer that arrives after the section was left
+        var on = $("#brEnabled").prop("checked"), saved = !!(data && data.Config && data.Config.Enabled);
+        var cats = $("#brCats .ce"), nCats = cats.filter(":checked").length, good = $("#brGood .gb"), nGood = good.filter(":checked").length, nCustom = $("#brCustom .brRule").length;
+        var pol = (data && data.Policies) || {}, forced = Object.keys(pol).filter(function (k) { return pol[k] === "on" || pol[k] === "off"; }), forcedOn = forced.filter(function (k) { return pol[k] === "on"; }).length;
+        ZxSec.fact("#brFLists", t("{0} of {1}").replace("{0}", nCats).replace("{1}", cats.length), "", on && !nCats && !nCustom ? "warn" : "");
+        ZxSec.fact("#brFGood", t("{0} of {1}").replace("{0}", nGood).replace("{1}", good.length), $("#brVerify").prop("checked") ? t("identity checked") : t("not verified"));
+        ZxSec.fact("#brFCustom", nCustom);
+        ZxSec.fact("#brFSites", forced.length, forced.length ? t("{0} on, {1} off").replace("{0}", forcedOn).replace("{1}", forced.length - forcedOn) : t("all follow the switch"));
+        $("#brCats .sx-row").each(function () { $(this).toggleClass("is-off", !$(this).find(".ce").prop("checked")); });
+        var st;
+        if (saved && on) {
+            st = (nCats || nCustom) ? { state: "on", badge: t("On"), title: t("Bot rules are on"), desc: t("Every site checks the name a client sends against {0} lists and {1} rules of your own.").replace("{0}", nCats).replace("{1}", nCustom) }
+                : { state: "warn", badge: t("On, nothing to match"), title: t("Bot rules are on but match nothing"), desc: t("Switch on a list below or add a rule of your own.") };
+        } else if (on) {
+            st = { state: "info", badge: t("Not saved yet"), title: t("Bot rules will switch on when you save"), desc: t("Every site will check requests against {0} lists and {1} rules of your own.").replace("{0}", nCats).replace("{1}", nCustom) };
+        } else if (forcedOn) {
+            st = { state: "info", badge: t("On for {0} sites").replace("{0}", forcedOn), title: t("Bot rules are off, except where a site forces them on"), desc: t("Only the sites listed under Exceptions for single sites check requests.") };
+        } else {
+            st = { state: "off", badge: saved ? t("Off when you save") : t("Off"), title: t("Bot rules are off"), desc: t("No request is checked against the lists. Switch them on for all sites here, or for one site under Exceptions for single sites.") };
+        }
+        ZxSec.status("#brStatus", st);
+        var fake = $("#brFakeAct").val(), emp = $("#brEmpty").val();
+        $("#brNowFake").text(t("Fake: {0}").replace("{0}", fake ? t(ACT_WORD[fake] || fake) : t("blocked")) + " · " + t("No name: {0}").replace("{0}", emp ? t(ACT_WORD[emp] || emp) : t("allowed")));
+        $("#brNowCustom").text(nCustom === 1 ? t("1 rule") : t("{0} rules").replace("{0}", nCustom));
+        $("#brNowSites").text(forced.length ? (forced.length === 1 ? t("1 site") : t("{0} sites").replace("{0}", forced.length)) : t("None"));
     }
     function load() {
         $.get("/api/botrules/get", function (d) {
@@ -97,20 +153,34 @@
             $("#brEnabled").prop("checked", c.Enabled); $("#brVerify").prop("checked", c.VerifyBots);
             $("#brCats").html(d.Categories.map(function (k) {
                 var cc = (c.Categories || {})[k.ID] || { Enabled: false, Action: "block" };
-                return '<tr data-id="' + esc(k.ID) + '"><td data-label="On"><input type="checkbox" class="ce zx-switch" role="switch" aria-label="Enable list ' + esc(k.Title) + '"' + (cc.Enabled ? " checked" : "") + '></td><td data-label="List">' + esc(k.Title) + " (" + k.Count + ')</td><td data-label="Action">' + actSel("ca", cc.Action) + "</td></tr>";
+                return '<li class="sx-row" data-id="' + esc(k.ID) + '"><input type="checkbox" class="ce zx-switch" role="switch" aria-label="' + esc(t("Use the list {0}").replace("{0}", k.Title)) + '"' + (cc.Enabled ? " checked" : "") + '>' +
+                    '<div class="sx-row__main"><span class="sx-row__title">' + esc(k.Title) + '</span><span class="sx-row__sub">' + esc(t("{0} known names").replace("{0}", k.Count)) + '</span></div>' +
+                    '<div class="sx-row__end">' + actSel("ca", cc.Action, t("What happens to {0}").replace("{0}", k.Title)) + "</div></li>";
             }).join(""));
             $("#brGood").html(d.GoodBots.map(function (n) {
                 return '<label class="zx-chip"><input type="checkbox" class="gb" value="' + esc(n) + '"' + ((c.AllowedBots || []).indexOf(n) >= 0 ? " checked" : "") + "> " + esc(n) + "</label>";
             }).join(""));
-            $("#brFakeAct").html(ACTIONS.map(function (a) { return "<option" + (a === (c.FakeBotAction || "block") ? " selected" : "") + ">" + a + "</option>"; }).join(""));
-            $("#brEmpty").html('<option value="">allow</option>' + ACTIONS.map(function (a) { return '<option' + (a === c.BlockEmptyUA ? " selected" : "") + ">" + a + "</option>"; }).join(""));
+            $("#brFakeAct").html(opts(c.FakeBotAction || "block"));
+            $("#brEmpty").html('<option value="">' + esc(t("Allowed")) + "</option>" + opts(c.BlockEmptyUA));
             $("#brCustom").html((c.Custom || []).map(customRow).join(""));
-            $("#brPolicies").html(Object.keys(d.Policies || {}).sort().map(function (n) {
-                var p = d.Policies[n];
-                return '<tr><td data-label="Proxy rule">' + esc(n) + '</td><td data-label="Bot rules"><select class="brPol" aria-label="Bot rules for ' + esc(n) + '" data-ep="' + esc(n) + '"><option value=""' + (p === "" ? " selected" : "") + '>Follow global switch</option><option value="on"' + (p === "on" ? " selected" : "") + '>On</option><option value="off"' + (p === "off" ? " selected" : "") + ">Off</option></select></td></tr>";
-            }).join("") || '<tr><td colspan="2" class="zx-empty-cell">No proxy rules yet. Add one on the HTTP Proxy page.</td></tr>');
+            renderPolicies();
+            summary();
         });
     }
+    /* one row per site: the sites with a setting of their own first, a filter once the list is long, 25 at a time (the page is the only scroller) */
+    function renderPolicies() {
+        var pol = (data && data.Policies) || {}, all = Object.keys(pol).sort(function (a, b) { var oa = pol[a] ? 0 : 1, ob = pol[b] ? 0 : 1; return oa - ob || a.localeCompare(b); });
+        var q = polFilter.toLowerCase(), names = q ? all.filter(function (n) { return n.toLowerCase().indexOf(q) >= 0; }) : all;
+        $("#brPolTools").prop("hidden", all.length <= 10);
+        $("#brPolicies").html(names.slice(0, polShown).map(function (n) {
+            var p = pol[n];
+            return '<li class="sx-row' + (p ? " is-own" : "") + '"><div class="sx-row__main"><span class="sx-row__title">' + esc(n) + (p ? ' <span class="zx-badge">' + esc(t("Own setting")) + "</span>" : "") + '</span></div><div class="sx-row__end"><select class="brPol" aria-label="' + esc(t("Bot rules for {0}").replace("{0}", n)) + '" data-ep="' + esc(n) + '"><option value=""' + (p === "" ? " selected" : "") + ">" + esc(t("Follows the main switch")) + '</option><option value="on"' + (p === "on" ? " selected" : "") + ">" + esc(t("Always on")) + '</option><option value="off"' + (p === "off" ? " selected" : "") + ">" + esc(t("Always off")) + "</option></select></div></li>";
+        }).join("") || '<li class="zx-empty zx-empty--inline"><p class="zx-empty__text">' + esc(all.length ? t("No site matches the filter.") : t("No proxy rules yet. Add one on the HTTP Proxy page.")) + "</p></li>");
+        $("#brPolMoreBox").prop("hidden", names.length <= polShown);
+        $("#brPolMore").text(t("Show more ({0} left)").replace("{0}", Math.max(0, names.length - polShown)));
+    }
+    $("#brPolFilter").on("input", function () { polFilter = $.trim(this.value); polShown = 25; renderPolicies(); });
+    $("#brPolMore").on("click", function () { polShown += 25; renderPolicies(); });
     // Challenge needs a CAPTCHA on the site; without one it blocks. One read-only line, only when it applies.
     function challengeNote(d) {
         var c = d.Config || {}, n = 0, anyOn = !!c.Enabled;
@@ -120,21 +190,24 @@
         if (c.BlockEmptyUA === "challenge") { n++; }
         Object.keys(d.Policies || {}).forEach(function (k) { if (d.Policies[k] === "on") { anyOn = true; } });
         var show = n > 0 && anyOn && !(d.CaptchaSites > 0);
-        $("#brChallengeNote").toggle(show);
+        $("#brChallengeNote").css("display", show ? "" : "none");
         if (show) { $("#brChallengeText").text(n === 1 ? t("1 bot rule is set to challenge, but no site has a CAPTCHA, so it blocks.") : tf("{0} bot rules are set to challenge, but no site has a CAPTCHA, so they block.", n)); }
     }
     $("#brChallengeLink").on("click", function (e) { e.preventDefault(); if (window.openTabById) { openTabById("captcha"); } });
-    $("#brAddRule").on("click", function () { $("#brCustom").append(customRow()); });
-    $("#brCustom").on("click", ".brDel", function () { $(this).closest("tr").remove(); });
+    $("#brAddRule").on("click", function () { $("#brCustom").append(customRow()); $("#brCustom .brRule").last().find(".rn").focus(); summary(); });
+    $("#brCustom").on("click", ".brDel", function () { $(this).closest(".brRule").remove(); summary(); });
+    $("#brForm").on("input change", summary);
     $("#brSave").on("click", function () {
         var c = { Enabled: $("#brEnabled").prop("checked"), VerifyBots: $("#brVerify").prop("checked"), FakeBotAction: $("#brFakeAct").val(), BlockEmptyUA: $("#brEmpty").val(), Categories: {}, Custom: [], AllowedBots: [] };
-        $("#brCats tr").each(function () { c.Categories[$(this).attr("data-id")] = { Enabled: $(this).find(".ce").prop("checked"), Action: $(this).find(".ca").val() }; });
+        $("#brCats [data-id]").each(function () { c.Categories[$(this).attr("data-id")] = { Enabled: $(this).find(".ce").prop("checked"), Action: $(this).find(".ca").val() }; });
         $(".gb:checked").each(function () { c.AllowedBots.push($(this).val()); });
         $(".brRule").each(function () { c.Custom.push({ Name: $(this).find(".rn").val(), Type: $(this).find(".rt").val(), Pattern: $(this).find(".rp").val(), CaseInsensitive: $(this).find(".rc").prop("checked"), Action: $(this).find(".ra").val() }); });
-        $.cjax({ type: "POST", url: "/api/botrules/set", data: { config: JSON.stringify(c) }, success: function (d) { if (d && d.error) { toast(d.error, false); } else { toast("Saved", true); load(); } } });
+        $.cjax({ type: "POST", url: "/api/botrules/set", data: { config: JSON.stringify(c) }, success: function (d) { if (d && d.error) { if (/custom|rule|pattern/i.test(d.error)) { $("#brGrpCustom").prop("open", true); } toast(d.error, false); } else { toast(t("Bot rules saved"), true); load(); } } });
     });
     $("#brPolicies").on("change", ".brPol", function () {
-        $.cjax({ type: "POST", url: "/api/botrules/endpoint", data: { ep: $(this).attr("data-ep"), policy: $(this).val() }, success: function (d) { if (d && d.error) { toast(d.error, false); } else { toast("Saved", true); } } });
+        var ep = $(this).attr("data-ep"), v = $(this).val();
+        $.cjax({ type: "POST", url: "/api/botrules/endpoint", data: { ep: ep, policy: v }, success: function (d) { if (d && d.error) { toast(d.error, false); } else { toast(t("Saved"), true); if (data && data.Policies) { data.Policies[ep] = v; } summary(); } } });
+        $(this).closest(".sx-row").toggleClass("is-own", !!v);   // the order is kept until the next load, so the row does not jump away under the pointer
     });
     load();
 })();

@@ -1,55 +1,123 @@
-<section class="zx-card">
-    <div class="zx-card__head">
-        <h3 class="zx-card__title">Authentication audit</h3>
-        <p class="zx-card__desc">Which login protects each proxy rule, and what weakens it. This only reports; nothing changes unless you tag the rules.</p>
+<!-- Security Center > Auth audit. A report: how many sites ask for a login, which are open, which are weakened. -->
+<section class="zx-card sx-status" id="aaStatus" data-state="off">
+    <div class="sx-status__top">
+        <span class="sx-status__icon" aria-hidden="true"><i class="clipboard check icon"></i></span>
+        <div class="sx-status__text">
+            <h4 class="sx-status__title"><span class="sx-status__name">Login per site</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+            <p class="sx-status__desc">Which login protects each site, and what weakens it. This is a report: nothing here blocks a request.</p>
+        </div>
+        <div class="sx-status__action"><button type="button" class="zx-btn zx-btn--secondary" id="aaRefresh"><i class="refresh icon" aria-hidden="true"></i> Check again</button></div>
     </div>
+    <dl class="sx-facts">
+        <div class="sx-fact"><dt>Sites</dt><dd id="aaFAll">-</dd></div>
+        <div class="sx-fact"><dt>Ask for a login</dt><dd id="aaFAuth">-</dd></div>
+        <div class="sx-fact"><dt>Login is weakened</dt><dd id="aaFWeak">-</dd></div>
+        <div class="sx-fact"><dt>Open to everyone</dt><dd id="aaFOpen">-</dd></div>
+    </dl>
+    <div id="aaWarn" class="zx-callout zx-callout--warn" role="note" style="display:none"></div>
+</section>
+
+<section class="zx-card">
     <div class="zx-card__body">
         <label class="zx-toggle-row" for="aaReq">
-            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Warn about rules without authentication</span><span class="zx-toggle-row__desc">Report only, it never blocks a request. Saved as soon as you switch it.</span></span>
+            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Every site should ask for a login</span><span class="zx-toggle-row__desc">Sites without one are then reported as a warning here and in the Security Overview. It never blocks a request. Saved as soon as you switch it.</span></span>
             <input type="checkbox" class="zx-switch" role="switch" id="aaReq">
         </label>
-        <div id="aaWarn" class="zx-callout zx-callout--warn" role="note" style="display:none"></div>
     </div>
 </section>
+
 <section class="zx-card">
     <div class="zx-card__head">
-        <h3 class="zx-card__title">Proxy rules</h3>
-        <button class="ui basic icon button" id="aaRefresh" title="Refresh" aria-label="Refresh"><i class="refresh icon"></i></button>
-        <button class="zx-btn zx-btn--secondary zx-btn--sm" id="aaTag" title="Replaces the auth:* tags of the rules; other tags are kept"><i class="tags icon" aria-hidden="true"></i> Tag by auth provider</button>
-    </div>
-    <div class="zx-card__body">
-        <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Authentication per proxy rule">
-            <table class="zx-table">
-                <thead><tr><th>Proxy rule</th><th>Provider</th><th>Weakened by</th><th>Tags</th></tr></thead>
-                <tbody id="aaRows"><tr><td colspan="4" class="zx-empty-cell">Loading...</td></tr></tbody>
-            </table>
+        <h3 class="zx-card__title">Sites</h3>
+        <div class="zx-segmented sx-filter" id="aaFilter" aria-label="Show">
+            <button type="button" class="zx-segmented__item" data-value="all" aria-checked="true">All<b id="aaNAll"></b></button>
+            <button type="button" class="zx-segmented__item" data-value="open">Open<b id="aaNOpen"></b></button>
+            <button type="button" class="zx-segmented__item" data-value="weak">Weakened<b id="aaNWeak"></b></button>
         </div>
     </div>
+    <div class="zx-card__body">
+        <ul class="sx-rows" id="aaRows"><li class="zx-empty zx-empty--inline"><p class="zx-empty__text">Loading...</p></li></ul>
+    </div>
 </section>
+
+<details class="sx-group">
+    <summary><span class="sx-group__title">Tag sites by their login</span><span class="sx-group__desc">Adds a tag such as auth:basic or auth:none to every proxy rule, so you can filter the HTTP Proxy list by it.</span></summary>
+    <div class="sx-group__body">
+        <p class="sx-note">Existing auth:* tags are replaced; all other tags are kept. Run it again after you change a site's login.</p>
+        <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--secondary" id="aaTag"><i class="tags icon" aria-hidden="true"></i> Tag by auth provider</button></div>
+    </div>
+</details>
+<style>
+    #aaRows .aa-weak { display: block; margin-top: 2px; color: var(--zx-warn-text); font-size: var(--zx-fs-sm); }
+    #aaRows .aa-tags { display: inline-flex; flex-wrap: wrap; gap: var(--zx-space-1); }
+    #aaRows .sx-row__end > .zx-badge--dot { min-width: 6.5rem; }
+    #aaRows .aaSet { min-width: 5.5rem; }
+    #secPane .zx-card__head > .sx-filter { margin-left: auto; }
+    #secPane .sx-group__body .zx-btn-row { margin-top: var(--zx-space-3); }
+</style>
 <script>
 (function () {
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
+    var rows = [], filter = "all", requireAll = false;
+    var METHOD = { basic: "Basic auth", forward: "Forward auth", oauth2: "OAuth2", sso: "SSO" };
+    function render() {
+        var list = rows.filter(function (r) { return filter === "all" || (filter === "open" ? r.Method === "none" : (r.Method !== "none" && (r.Weaknesses || []).length)); });
+        $("#aaRows").html(list.map(function (r) {
+            var none = r.Method === "none", weak = (r.Weaknesses || []).length > 0;
+            // an open site is not a failure: neutral, unless the reader asked for a login everywhere or the site is tagged as internal
+            var inner = (r.Tags || []).some(function (g) { return /^(internal|admin|private)$/i.test(g); });
+            var badge = none ? '<span class="zx-badge zx-badge--dot' + (requireAll || inner ? " zx-badge--warn" : "") + '">' + esc(t("No login")) + "</span>" : '<span class="zx-badge zx-badge--dot ' + (weak ? "zx-badge--warn" : "zx-badge--ok") + '">' + esc(METHOD[r.Method] || r.Method) + "</span>";
+            var tags = (r.Tags || []).map(function (g) { return '<span class="zx-badge">' + esc(g) + "</span>"; }).join("");
+            return '<li class="sx-row"><div class="sx-row__main"><span class="sx-row__title">' + esc(r.Name) + (r.Disabled ? ' <span class="zx-badge">' + esc(t("disabled")) + "</span>" : "") + "</span>" +
+                (weak ? (r.Weaknesses || []).map(function (w) { return '<span class="aa-weak"><i class="exclamation triangle icon" aria-hidden="true"></i> ' + esc(w) + "</span>"; }).join("") : "") +
+                (none && inner && !requireAll ? '<span class="sx-row__sub">' + esc(t("Tagged as internal, but open to everyone.")) + "</span>" : "") +
+                "</div>" + '<div class="sx-row__end">' + (tags ? '<span class="aa-tags">' + tags + "</span>" : "") + badge +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm aaSet" data-ep="' + esc(r.Name) + '" aria-label="' + esc((none ? t("Set a login for {0}") : t("Change the login of {0}")).replace("{0}", r.Name)) + '">' + esc(none ? t("Set login") : t("Change")) + "</button></div></li>";
+        }).join("") || '<li class="zx-empty zx-empty--inline"><p class="zx-empty__text">' + esc(!rows.length ? t("No proxy rules yet. Add one on the HTTP Proxy page.") : (filter === "open" ? t("No site is open to everyone.") : t("No login is weakened."))) + "</p></li>");
+    }
     function load() {
         $.get("/api/authaudit/get", function (d) {
-            $("#aaReq").prop("checked", d.RequireAll);
+            $("#aaReq").prop("checked", d.RequireAll); requireAll = !!d.RequireAll;
             var v = d.Violations || [];
-            if (v.length) { $("#aaWarn").html("<div><b>" + esc(v.length === 1 ? t("1 proxy rule has no authentication:") : tf("{0} proxy rules have no authentication:", v.length)) + "</b> " + v.map(esc).join(", ") + "</div>").show(); } else { $("#aaWarn").hide(); }
-            $("#aaRows").html((d.Rows || []).map(function (r) {
-                var none = r.Method === "none", weak = r.Weaknesses && r.Weaknesses.length;
-                var prov = none ? '<span class="zx-badge zx-badge--danger">' + esc(t("None")) + "</span>" : '<span class="zx-badge' + (weak ? " zx-badge--warn" : " zx-badge--ok") + '">' + esc(r.Method) + "</span>";
-                return '<tr><td data-label="' + esc(t("Proxy rule")) + '">' + esc(r.Name) + (r.Disabled ? ' <span class="zx-badge">' + esc(t("disabled")) + "</span>" : "") + '</td><td data-label="' + esc(t("Provider")) + '">' + prov + '</td><td data-label="' + esc(t("Weakened by")) + '">' +
-                    ((r.Weaknesses || []).map(esc).join("<br>") || "-") + '</td><td data-label="' + esc(t("Tags")) + '">' + ((r.Tags || []).map(function (g) { return '<span class="zx-badge">' + esc(g) + "</span>"; }).join(" ")) + "</td></tr>";
-            }).join("") || '<tr><td colspan="4" class="zx-empty-cell">No proxy rules yet. Add one on the HTTP Proxy page.</td></tr>');
+            rows = d.Rows || [];
+            var open = rows.filter(function (r) { return r.Method === "none"; }).length, weak = rows.filter(function (r) { return r.Method !== "none" && (r.Weaknesses || []).length; }).length, auth = rows.length - open;
+            if (v.length) { $("#aaWarn").html('<span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"><b>' + esc(v.length === 1 ? t("1 proxy rule has no authentication:") : tf("{0} proxy rules have no authentication:", v.length)) + "</b> " + v.map(esc).join(", ") + "</div>").show(); } else { $("#aaWarn").hide(); }
+            ZxSec.fact("#aaFAll", rows.length); ZxSec.fact("#aaFAuth", auth, "", auth && auth === rows.length ? "ok" : "");
+            ZxSec.fact("#aaFWeak", weak, "", weak ? "warn" : ""); ZxSec.fact("#aaFOpen", open, "", open && d.RequireAll ? "warn" : "");
+            $("#aaNAll").text(rows.length); $("#aaNOpen").text(open); $("#aaNWeak").text(weak);
+            var st;
+            if (!rows.length) { st = { state: "off", badge: t("No sites yet"), title: t("There is no site to check yet"), desc: t("Add a proxy rule on the HTTP Proxy page. This report then shows which login protects it.") }; }
+            else if (!open && !weak) { st = { state: "on", badge: t("All protected"), title: t("Every site asks for a login"), desc: t("Nothing weakens the login of any site.") }; }
+            else if (!open) { st = { state: "warn", badge: t("Weakened"), title: t("Every site asks for a login, but {0} can be bypassed in part").replace("{0}", weak), desc: t("See what weakens them below.") }; }
+            else { st = { state: d.RequireAll ? "warn" : "off", badge: open === 1 ? t("1 open") : t("{0} open").replace("{0}", open), title: t("{0} of {1} sites ask for a login").replace("{0}", auth).replace("{1}", rows.length),
+                desc: d.RequireAll ? t("You asked for a login on every site: the open ones are reported as warnings.") : t("That is fine for public sites. Admin tools and dashboards should ask for a login: press Set login next to the site.") }; }
+            ZxSec.status("#aaStatus", st);
+            render();
         });
     }
+    ZxUI.segmented("#aaFilter", { onChange: function (v) { filter = v; render(); } });
     $("#aaRefresh").on("click", load);
+    // straight to that site's Security section (where Authentication is) in the HTTP Proxy editor; nothing is changed by opening it
+    $("#aaRows").on("click", ".aaSet", function () {
+        var host = $(this).attr("data-ep");
+        if (typeof openTabById === "function") { openTabById("httprp"); }
+        var go = function () {
+            var r = (window.httpProxyList || []).filter(function (x) { return x.RootOrMatchingDomain === host; })[0];
+            if (!r || typeof initHttpProxyRuleEditorModal !== "function") { return; }
+            var copy = JSON.parse(JSON.stringify(r));
+            Object.keys(copy).forEach(function (k) { if (k.charAt(0) === "_") { delete copy[k]; } });
+            initHttpProxyRuleEditorModal(copy);
+            setTimeout(function () { if (window.HrpEditor && HrpEditor.show) { HrpEditor.show("security"); } }, 350);
+        };
+        if (window.ProxyTable && ProxyTable.reload) { ProxyTable.reload(true).then(go); } else { setTimeout(go, 400); }
+    });
     $("#aaReq").on("change", function () {
         $.cjax({ type: "POST", url: "/api/authaudit/setRequire", data: { enable: this.checked ? "true" : "false" }, success: load });
     });
     $("#aaTag").on("click", function () {
         $.cjax({ type: "POST", url: "/api/authaudit/autotag", data: {}, success: function (d) {
-            if (d && d.error) { toast(d.error, false); } else { toast("Updated " + d.Changed + " rule(s)", true); load(); }
+            if (d && d.error) { toast(d.error, false); } else { toast(t("Updated {0} rule(s)").replace("{0}", d.Changed), true); load(); }
         } });
     });
     load();

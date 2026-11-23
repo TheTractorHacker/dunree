@@ -12,35 +12,64 @@
         --hx-chip-bg: var(--zx-neutral-bg);
         --hx-accent: var(--zx-link);
     }
-    #hxPage .hx-toolbar { margin: 0; }
-    #hxPage .hx-toolbar .hx-btns { display: flex; gap: var(--zx-space-2); align-items: center; margin-top: var(--zx-space-2); }
-    #hxPage .zx-page-header__actions { align-self: flex-end; }
-    #hxPage .hx-error { color: var(--zx-danger-text); margin: var(--zx-space-2) 0 0; }
+    #hxPage .hx-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: var(--zx-space-3); align-items: end; margin: 0; }
+    #hxPage .hx-toolbar .zx-field { margin: 0; min-width: 0; }
+    #hxPage .hx-toolbar .zx-input { width: 100%; max-width: none; }
+    #hxPage .hx-toolbar .hx-btns { display: flex; gap: var(--zx-space-2); align-items: center; }
+    #hxPage .hx-error { grid-column: 1 / -1; color: var(--zx-danger-text); font-weight: 700; margin: 0; }
+    #hxPage .hx-error[hidden] { display: none; }
+    #hxPage > .zx-card { margin-bottom: var(--zx-space-4); }
     #hxPage .hx-stats { margin: 0 0 var(--zx-space-3); }
-    #hxPage .hx-callout { margin-bottom: var(--zx-space-4); }
-    #hxPage .hx-toolbar input { max-width: 100%; }
-    #hxPage .hx-timeline { position: relative; margin: 0; padding: 0; list-style: none; }
+    #hxPage #hxBanner > .ui.message { margin: 0 0 var(--zx-space-4); }
+    /* the timeline: a rail with one dot per version, newest on top */
+    #hxPage .hx-timeline { position: relative; margin: 0; padding: 0 0 0 28px; list-style: none; }
+    #hxPage .hx-timeline::before { content: ""; position: absolute; left: 7px; top: 22px; bottom: 22px; width: 2px; background: var(--zx-border); }
     #hxPage .hx-item {
         position: relative; border: 1px solid var(--hx-line); background: var(--hx-card); border-radius: var(--zx-radius-lg);
-        box-shadow: var(--zx-shadow-1); padding: var(--zx-space-3) var(--zx-space-4); margin-bottom: var(--zx-space-3); overflow-wrap: anywhere;
+        box-shadow: var(--zx-shadow-1); padding: var(--zx-space-4) var(--zx-card-pad); margin-bottom: var(--zx-space-3); overflow-wrap: anywhere;
     }
-    #hxPage .hx-item.hx-current { border-left: 4px solid var(--zx-ok-solid); }
-    #hxPage .hx-head { display: flex; flex-wrap: wrap; gap: 0.5em; align-items: baseline; }
-    #hxPage .hx-id { font-weight: 700; color: var(--hx-accent); }
-    #hxPage .hx-summary { font-weight: 600; }
-    #hxPage .hx-meta { color: var(--hx-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
-    #hxPage .hx-badge { display: inline-block; padding: 0 0.6em; border-radius: var(--zx-radius-pill); background: var(--hx-chip-bg); color: var(--zx-neutral-text); font-size: var(--zx-fs-sm); }
-    #hxPage .hx-chips { margin-top: var(--zx-space-2); display: flex; flex-wrap: wrap; gap: var(--zx-space-1); }
-    #hxPage .hx-chip { padding: 0 0.6em; border-radius: var(--zx-radius-sm); background: var(--hx-chip-bg); color: var(--zx-neutral-text); font-size: var(--zx-fs-sm); }
+    #hxPage .hx-item::before { content: ""; position: absolute; left: -28px; top: 18px; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: var(--zx-bg); border: 2px solid var(--zx-border-strong); }
+    #hxPage .hx-item.hx-current::before { background: var(--zx-ok-solid); border-color: var(--zx-ok-solid); box-shadow: 0 0 0 3px var(--zx-ok-bg); }
+    #hxPage .hx-head { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-2); align-items: center; }
+    #hxPage .hx-id { flex: 0 0 auto; padding: 0 7px; border-radius: var(--zx-radius-sm); background: var(--zx-surface-2); border: 1px solid var(--zx-border); color: var(--zx-text-muted); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); font-weight: 400; line-height: 1.7; }
+    #hxPage .hx-summary { font-size: var(--zx-fs-lg); font-weight: 700; color: var(--zx-text); min-width: 0; }
+    #hxPage .hx-meta { color: var(--hx-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
+    #hxPage .hx-badge { display: inline-block; padding: 0 0.6em; border-radius: var(--zx-radius-pill); background: var(--hx-chip-bg); color: var(--zx-neutral-text); font-size: var(--zx-fs-xs); font-weight: 400; }
+    #hxPage .hx-chips { margin-top: var(--zx-space-3); display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-2); }
+    #hxPage .hx-chips:empty { display: none; }
+    #hxPage .hx-chip { display: inline-flex; align-items: baseline; gap: 5px; padding: 1px 8px; border-radius: var(--zx-radius-sm); background: var(--hx-chip-bg); color: var(--zx-neutral-text); font-size: var(--zx-fs-xs); line-height: 1.6; min-width: 0; overflow-wrap: anywhere; }
+    #hxPage .hx-chip__sign { flex: 0 0 auto; font-family: var(--zx-font-mono); font-weight: 700; }
     #hxPage .hx-chip.hx-added { background: var(--hx-add-bg); color: var(--hx-add-fg); }
     #hxPage .hx-chip.hx-removed { background: var(--hx-del-bg); color: var(--hx-del-fg); }
-    #hxPage .hx-actions { margin-top: var(--zx-space-3); display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
+    #hxPage .hx-actions { position: relative; margin-top: var(--zx-space-3); display: flex; align-items: center; gap: var(--zx-space-2); }
+    #hxPage .hx-show[aria-expanded="true"] i.icon { transform: rotate(90deg); }
+    #hxPage .hx-show i.icon { transition: transform var(--zx-dur) var(--zx-ease); }
+    /* filters: one toolbar; on phones a disclosure that starts closed so the versions are the first thing on screen */
+    #hxPage .hx-filters > summary { display: none; }
+    #hxPage .hx-filters__n { font-weight: 400; color: var(--zx-text-muted); }
+    #hxPage .hx-filters__n:empty { display: none; }
     #hxPage .hx-actions .zx-btn { margin: 0; }
-    #hxPage .hx-diff { margin-top: var(--zx-space-3); max-height: 32rem; overflow: auto; }
-    #hxPage details.hx-file { border: 1px solid var(--hx-line); border-radius: 4px; margin-bottom: 0.5em; }
-    #hxPage details.hx-file > summary { cursor: pointer; padding: 0.4em 0.7em; font-weight: 600; }
-    #hxPage .hx-code { overflow-x: auto; max-width: 100%; border-top: 1px solid var(--hx-line); }
-    #hxPage .hx-code table { border-collapse: collapse; width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
+    #hxPage .hx-diff { margin-top: var(--zx-space-3); }   /* grows with the page: each file is a disclosure, no scroll box */
+    #hxPage .zx-btn.disabled { opacity: .55; cursor: not-allowed; }
+    #hxPage .hx-about { margin: 0 0 var(--zx-space-3); max-width: 62rem; }
+    #hxPage .hx-retention { display: grid; grid-template-columns: repeat(3, minmax(0, 12rem)); gap: var(--zx-space-3); margin: var(--zx-space-3) 0; }
+    #hxPage .hx-retention .zx-field { margin: 0; }
+    #hxPage .hx-retention .zx-input { width: 100%; }
+    #hxPage .hx-more > .zx-disclosure { margin-bottom: var(--zx-space-2); }
+    @media (max-width: 1100px) { #hxPage .hx-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } #hxPage .hx-toolbar .hx-btns { grid-column: 1 / -1; } }
+    @media (max-width: 600px) { #hxPage .hx-retention { grid-template-columns: minmax(0, 1fr); } #hxPage .hx-timeline { padding-left: 22px; } #hxPage .hx-item::before { left: -22px; width: 14px; height: 14px; } #hxPage .hx-timeline::before { left: 6px; } }
+    /* what changed: flush rows with the kit chevron, one per changed object; the lines are a code block that may scroll sideways */
+    #hxPage .hx-diff { border-top: 1px solid var(--zx-border); }
+    #hxPage details.hx-file.zx-disclosure { margin: 0; border-top: 0; border-bottom: 1px solid var(--zx-border); }
+    #hxPage details.hx-file.zx-disclosure:last-child { border-bottom: 0; }
+    #hxPage details.hx-file > summary { flex-wrap: wrap; row-gap: 2px; }
+    #hxPage .hx-file__name { min-width: 0; overflow-wrap: anywhere; }
+    #hxPage .hx-file__count { font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); font-weight: 400; color: var(--zx-text-muted); white-space: nowrap; }
+    #hxPage .hx-file__count b { font-weight: 400; color: var(--zx-ok-text); }
+    #hxPage .hx-file__count i { font-style: normal; color: var(--zx-danger-text); }
+    #hxPage details.hx-file > .hx-note { padding: 0 0 var(--zx-space-3); }
+    #hxPage .hx-code { overflow-x: auto; max-width: 100%; margin: 0 0 var(--zx-space-3); padding: var(--zx-space-2) 0; background: var(--zx-surface-2); border-radius: var(--zx-radius-md); }
+    #hxPage .hx-code table { border-collapse: collapse; width: 100%; font-family: var(--zx-font-mono); font-size: 0.85em; }
     #hxPage .hx-code td { padding: 0 0.5em; white-space: pre; vertical-align: top; }
     #hxPage .hx-code td.hx-no { color: var(--hx-muted); text-align: right; width: 1%; user-select: none; }
     #hxPage .hx-code tr.hx-add td { background: var(--hx-add-bg); color: var(--hx-add-fg); }
@@ -49,28 +78,35 @@
     #hxPage .hx-note { color: var(--hx-muted); padding: 0.4em 0.7em; }
     #hxPage .hx-pager { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5em; }
     #hxPage .hx-pager[hidden] { display: none; }
-    #hxPage .hx-empty { color: var(--hx-muted); padding: var(--zx-space-5); text-align: center; border: 1px dashed var(--hx-line); border-radius: var(--zx-radius-lg); }
-    #hxPage .hx-secret { font-family: ui-monospace, monospace; }
+    #hxPage .hx-empty { margin-left: -28px; color: var(--hx-muted); padding: var(--zx-space-6) var(--zx-space-5); text-align: center; background: var(--zx-surface); border: 1px solid var(--hx-line); border-radius: var(--zx-radius-lg); }
+    #hxPage .hx-timeline:has(> .hx-empty)::before { display: none; }
+    #hxPage .hx-secret { font-family: var(--zx-font-mono); }
     #hxRestoreModal .hx-list { max-height: 14em; overflow: auto; margin: 0.5em 0; padding-left: 1.2em; }
     #hxRestoreModal .hx-list li { overflow-wrap: anywhere; }
     #hxRestoreModal .hx-diff { overflow: visible; } /* the dialog scrolls, not a box inside it */
     #hxRestoreModal details.hx-file { border: 1px solid rgba(128,128,128,.35); border-radius: 4px; margin-bottom: 0.4em; }
-    #hxRestoreModal details.hx-file > summary { cursor: pointer; padding: 0.3em 0.6em; font-weight: 600; }
+    #hxRestoreModal details.hx-file > summary { cursor: pointer; padding: 0.3em 0.6em; font-weight: 700; }
     #hxRestoreModal .hx-code { overflow-x: auto; max-width: 100%; }
-    #hxRestoreModal .hx-code table { border-collapse: collapse; width: 100%; font-family: ui-monospace, monospace; font-size: 0.8em; }
+    #hxRestoreModal .hx-code table { border-collapse: collapse; width: 100%; font-family: var(--zx-font-mono); font-size: 0.8em; }
     #hxRestoreModal .hx-code td { padding: 0 0.4em; white-space: pre; }
     #hxRestoreModal .hx-code tr.hx-add td { background: var(--zx-ok-bg); color: var(--zx-ok-text); }
     #hxRestoreModal .hx-code tr.hx-del td { background: var(--zx-danger-bg); color: var(--zx-danger-text); }
     #hxRestoreModal .hx-code tr.hx-hunk td { background: var(--zx-surface-2); color: var(--zx-text-muted); }
     #hxRestoreModal .hx-code td.hx-no { display: none; }
     @media (max-width: 600px) {
-        #hxPage .zx-page-header__actions { align-self: stretch; }
-        #hxPage .zx-page-header__actions .ui.button { flex: 1 1 100%; justify-content: center; margin: 0; }
+        #hxPage .hx-toolbar { grid-template-columns: minmax(0, 1fr); padding-top: var(--zx-space-3); }
         #hxPage .hx-toolbar .hx-btns .zx-btn { flex: 1 1 0; }
-        #hxPage .hx-toolbar .field { flex: 1 1 100%; }
-        #hxPage .hx-actions .zx-btn { flex: 1 1 auto; }
+        #hxPage .hx-empty { margin-left: -22px; }
         #hxPage .hx-code td.hx-no { display: none; }
+        #hxPage .hx-actions .sy-more { position: static; }   /* the menu opens under the row, from its left edge: always inside the card */
+        #hxPage .hx-filters > summary { display: flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-touch); margin: calc(-1 * var(--zx-space-2)) 0; cursor: pointer; font-weight: 700; list-style: none; color: var(--zx-text); }
+        #hxPage .hx-filters > summary::-webkit-details-marker { display: none; }
+        #hxPage .hx-filters > summary::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-right: 2px solid var(--zx-text-muted); border-bottom: 2px solid var(--zx-text-muted); transform: rotate(45deg); }
+        #hxPage .hx-filters[open] > summary::after { transform: rotate(-135deg); }
+        #hxPage .hx-filters > summary:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+        #hxPage .hx-filters > summary i.icon { margin: 0; height: auto; color: var(--zx-text-muted); }
     }
+    @media (prefers-reduced-motion: reduce) { #hxPage .hx-show i.icon { transition: none; } }
 </style>
 
 <div class="standardContainer" id="hxPage">
@@ -80,46 +116,50 @@
             <h2 class="zx-page-header__title">History</h2>
             <p class="zx-page-header__sub">Every change is saved as a version you can compare and go back to.</p>
         </div>
-        <div class="zx-page-header__actions zx-btn-row">
-            <button class="ui primary button" id="hxSnapshotBtn"><i class="camera icon"></i> Save a version now</button>
-            <button class="ui button" id="hxUndoBtn"><i class="undo icon"></i> Undo the last change</button>
+        <div class="zx-page-header__actions">
+            <button type="button" class="zx-btn zx-btn--secondary" id="hxUndoBtn"><i class="undo icon" aria-hidden="true"></i> Undo the last change</button>
+            <button type="button" class="zx-btn zx-btn--primary" id="hxSnapshotBtn"><i class="camera icon" aria-hidden="true"></i> Save a version now</button>
         </div>
     </header>
-
-    <div class="zx-callout zx-callout--info hx-callout" role="note">
-        <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-        <div class="zx-callout__body">Changes made through the admin interface or the REST API are recorded. Versions are stored encrypted on this server, and secrets (keys, tokens, password hashes) are never shown in a comparison. Logs, statistics, accounts and API tokens are not part of the history.</div>
-    </div>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#utils" data-nav-open="utils">Utilities</a> <span>Download or restore a full backup file</span></li>
+            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>The audit log of security settings</span></li>
+            <li><a href="#updater" data-nav-open="updater">Update</a> <span>Roll back the program, not the configuration</span></li>
+        </ul>
+    </aside>
 
     <div id="hxBanner"></div>
 
-    <section class="zx-card">
+    <section class="zx-card" aria-label="Find a version">
         <div class="zx-card__body">
-            <div class="ui form hx-toolbar">
-                <div class="zx-form-grid">
-                    <div class="zx-field">
-                        <label class="zx-field__label" for="hxFilterObject">Object</label>
-                        <input type="text" id="hxFilterObject" placeholder="example.com, WAF, redirect" autocomplete="off">
-                    </div>
-                    <div class="zx-field">
-                        <label class="zx-field__label" for="hxFilterActor">Changed by</label>
-                        <input type="text" id="hxFilterActor" placeholder="user or token" autocomplete="off">
-                    </div>
-                    <div class="zx-field">
-                        <label class="zx-field__label" for="hxFilterFrom">From</label>
-                        <input type="date" id="hxFilterFrom">
-                    </div>
-                    <div class="zx-field">
-                        <label class="zx-field__label" for="hxFilterTo">To</label>
-                        <input type="date" id="hxFilterTo">
-                    </div>
+          <details class="hx-filters" id="hxFilters" open>
+            <summary><i class="filter icon" aria-hidden="true"></i> <span>Filter versions</span> <span class="hx-filters__n" id="hxFiltersN"></span></summary>
+            <div class="hx-toolbar">
+                <div class="zx-field">
+                    <label class="zx-field__label" for="hxFilterObject">What changed</label>
+                    <input class="zx-input" type="text" id="hxFilterObject" placeholder="example.com, WAF, redirect" autocomplete="off">
+                </div>
+                <div class="zx-field">
+                    <label class="zx-field__label" for="hxFilterActor">Changed by</label>
+                    <input class="zx-input" type="text" id="hxFilterActor" placeholder="user or token" autocomplete="off">
+                </div>
+                <div class="zx-field">
+                    <label class="zx-field__label" for="hxFilterFrom">From</label>
+                    <input class="zx-input" type="date" id="hxFilterFrom">
+                </div>
+                <div class="zx-field">
+                    <label class="zx-field__label" for="hxFilterTo">To</label>
+                    <input class="zx-input" type="date" id="hxFilterTo">
                 </div>
                 <div class="hx-btns">
-                    <button class="zx-btn zx-btn--secondary" id="hxFilterBtn" type="button"><i class="search icon"></i> Filter</button>
-                    <button class="zx-btn zx-btn--secondary" id="hxFilterClear" type="button">Clear</button>
+                    <button class="zx-btn zx-btn--secondary" id="hxFilterBtn" type="button"><i class="search icon" aria-hidden="true"></i> Filter</button>
+                    <button class="zx-btn zx-btn--ghost" id="hxFilterClear" type="button">Clear</button>
                 </div>
                 <p class="hx-error" id="hxFilterError" role="alert" hidden></p>
             </div>
+          </details>
         </div>
     </section>
 
@@ -130,27 +170,34 @@
         <div class="hx-pager" id="hxPager">
             <span id="hxPageInfo" class="zx-help"></span>
             <span class="zx-btn-row">
-                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="hxPrev" type="button"><i class="left chevron icon"></i> Newer</button>
-                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="hxNext" type="button">Older <i class="right chevron icon"></i></button>
+                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="hxPrev" type="button"><i class="left chevron icon" aria-hidden="true"></i> Newer</button>
+                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="hxNext" type="button">Older <i class="right chevron icon" aria-hidden="true"></i></button>
             </span>
         </div>
     </div>
 
-    <div style="margin-top: var(--zx-space-4);">
+    <div class="hx-more" style="margin-top: var(--zx-space-5);">
+        <details class="zx-disclosure">
+            <summary>What is recorded</summary>
+            <div class="zx-disclosure__body">
+                <p class="zx-help hx-about">Changes made through the admin interface or the REST API are recorded. Versions are stored encrypted on this server, and secrets (keys, tokens, password hashes) are never shown in a comparison. Logs, statistics, accounts and API tokens are not part of the history.</p>
+            </div>
+        </details>
         <details id="hxSettingsBox" class="zx-disclosure">
             <summary>Retention settings</summary>
             <div class="zx-disclosure__body">
-            <p class="zx-help">Pruning keeps a version when it is among the newest N <b>or</b> younger than D days, then enforces the size cap
-                from the oldest version on. The newest 5 versions and any version a pending restore needs are never removed.</p>
-            <div class="ui form">
-                <div class="inline fields" style="flex-wrap:wrap;">
-                    <div class="field"><label for="hxKeepCount">Keep newest</label><input type="number" id="hxKeepCount" min="5" max="10000" style="width:6em;"></div>
-                    <div class="field"><label for="hxKeepDays">Keep for (days)</label><input type="number" id="hxKeepDays" min="1" max="3650" style="width:6em;"></div>
-                    <div class="field"><label for="hxMaxMiB">Size cap (MiB)</label><input type="number" id="hxMaxMiB" min="10" max="102400" style="width:7em;"></div>
-                    <div class="field"><div class="ui toggle checkbox" id="hxEnabledBox"><input type="checkbox" id="hxEnabled"><label>Record versions</label></div></div>
-                    <div class="field"><button class="ui primary button" id="hxSaveSettings">Save</button></div>
+                <p class="zx-help hx-about">Pruning keeps a version when it is among the newest N <b>or</b> younger than D days, then enforces the size cap
+                    from the oldest version on. The newest 5 versions and any version a pending restore needs are never removed.</p>
+                <div class="hx-retention">
+                    <div class="zx-field"><label class="zx-field__label" for="hxKeepCount">Keep newest</label><input class="zx-input" type="number" id="hxKeepCount" min="5" max="10000"></div>
+                    <div class="zx-field"><label class="zx-field__label" for="hxKeepDays">Keep for (days)</label><input class="zx-input" type="number" id="hxKeepDays" min="1" max="3650"></div>
+                    <div class="zx-field"><label class="zx-field__label" for="hxMaxMiB">Size cap (MiB)</label><input class="zx-input" type="number" id="hxMaxMiB" min="10" max="102400"></div>
                 </div>
-            </div>
+                <label class="zx-toggle-row" id="hxEnabledBox">
+                    <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Record versions</span><span class="zx-toggle-row__desc">On by default. While off, changes are not saved as versions and cannot be undone from here.</span></span>
+                    <input type="checkbox" class="zx-switch" role="switch" id="hxEnabled">
+                </label>
+                <div class="zx-btn-row" style="margin-top: var(--zx-space-3);"><button type="button" class="zx-btn zx-btn--primary" id="hxSaveSettings">Save retention</button></div>
             </div>
         </details>
     </div>
@@ -201,6 +248,28 @@
     }
     var TRIGGERS = { "api": "Change", "baseline": "Starting point", "external": "Edited outside the UI", "pre-update": "Before update",
         "pre-restore": "Before restore", "restore": "Restore", "manual": "Saved by hand" };
+
+    // What a change is called: the server names the stored object (a file or a table of the settings database);
+    // the reader gets the name the interface uses for it. Unknown ones are tidied up, never shown as a file name.
+    var TABLES = { "settings": N_("General settings"), "oauth2": N_("OAuth2 settings"), "oauth2_providers": N_("OAuth2 providers"), "auth_sso_forward": N_("Forward authentication settings"),
+        "zorxauth": N_("Zoraxy Auth settings"), "zorxauth_users": N_("Zoraxy Auth users"), "redirect": N_("Redirect options"), "acmepref": N_("ACME account and preferences"),
+        "statsettings": N_("Statistics settings"), "webserv": N_("Static web server settings"), "uptime": N_("Uptime monitor settings"), "visitors": N_("Visitor tracking settings"),
+        "blocklog": N_("Blocked request log settings"), "plugins": N_("Plugin settings"), "geodb": N_("Geo-IP update settings"), "fwdproxy": N_("Forward proxy settings") };
+    var FILES = { "acme_conf.json": N_("ACME settings"), "log_conf.json": N_("Log settings"), "plugin_groups.json": N_("Plugin groups"), "waf_central.json": N_("WAF settings for all sites"),
+        "trusted_proxies.json": N_("Trusted proxies") };
+    function N_(s) { return s; }
+    function tidy(s) { s = String(s).replace(/\.(json|config|conf|csv|txt|yaml|yml)$/i, "").replace(/[_-]+/g, " ").trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
+    function nice(label, path) {
+        label = label == null ? "" : String(label);
+        var file = String(path || "").split("/").pop(), m;
+        if ((m = /^Settings table (.+)$/.exec(label))) { return TABLES[m[1]] ? t(TABLES[m[1]]) : tf("Settings: {0}", tidy(m[1]).toLowerCase()); }
+        if (FILES[file] && (label === file || /^Access /.test(label))) { return t(FILES[file]); }
+        if (FILES[label]) { return t(FILES[label]); }
+        if ((m = /^Access (.+)$/.exec(label))) { return tf("Access rule {0}", m[1]); }
+        if (/\.(json|config|conf|csv|txt|yaml|yml)$/i.test(label)) { return tidy(label); }
+        return label;
+    }
+    var KIND = { added: ["+", N_("Added")], removed: ["\u2212", N_("Removed")], changed: ["~", N_("Changed")], modified: ["~", N_("Changed")] };
 
     function fmtSize(b) {
         b = b || 0;
@@ -256,19 +325,25 @@
         }
         res.items.forEach(function (v) {
             var chips = (v.changes || []).slice(0, 4).map(function (c) {
-                return '<span class="hx-chip hx-' + esc(c.kind) + '" title="' + esc(c.path) + '">' + esc(c.kind) + ': ' + esc(c.label) + '</span>';
+                var k = KIND[c.kind] || ["~", c.kind];
+                return '<span class="hx-chip hx-' + esc(c.kind) + '" title="' + esc(t(k[1])) + '"><span class="hx-chip__sign" aria-hidden="true">' + k[0] + '</span><span class="zx-sr-only">' + esc(t(k[1])) + ': </span>' + esc(nice(c.label, c.path)) + '</span>';
             }).join("");
-            if ((v.changes || []).length > 4) chips += '<span class="hx-chip">+' + (v.changes.length - 4) + ' more</span>';
+            if ((v.changes || []).length > 4) chips += '<span class="hx-chip">' + esc(tf("and {0} more", v.changes.length - 4)) + '</span>';
             var $li = $('<li class="hx-item' + (v.id === res.latest ? " hx-current" : "") + '" data-id="' + v.id + '"></li>');
             $li.html(
                 '<div class="hx-head"><span class="hx-id">#' + v.id + '</span><span class="hx-summary">' + esc(v.summary) + '</span>' +
-                (v.id === res.latest ? '<span class="zx-badge zx-badge--ok">Current</span>' : '') + '</div>' +
-                '<div class="hx-meta">' + when(v.time) + ' &middot; ' + esc(v.actor || "-") + ' &middot; <span class="hx-badge">' + esc(TRIGGERS[v.trigger] || v.trigger) + '</span></div>' +
+                (v.id === res.latest ? '<span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(t("Current")) + '</span>' : '') + '</div>' +
+                '<div class="hx-meta">' + when(v.time) + ' &middot; ' + esc(v.actor || "-") +
+                // an ordinary change needs no label; only the special kinds of version say what they are
+                (v.trigger && v.trigger !== "api" ? ' &middot; <span class="hx-badge">' + esc(t(TRIGGERS[v.trigger] || v.trigger)) + '</span>' : '') + '</div>' +
                 '<div class="hx-chips">' + chips + '</div>' +
                 '<div class="hx-actions">' +
-                '<button class="zx-btn zx-btn--secondary zx-btn--sm hx-show" type="button"><i class="code icon"></i> What changed</button>' +
-                '<button class="zx-btn zx-btn--secondary zx-btn--sm hx-restore" type="button"><i class="undo icon"></i> Restore this version</button>' +
-                '<button class="zx-btn zx-btn--secondary zx-btn--sm hx-export" type="button"><i class="download icon"></i> Export comparison</button>' +
+                '<button class="zx-btn zx-btn--secondary zx-btn--sm hx-show" type="button" aria-expanded="false"><i class="chevron right icon" aria-hidden="true"></i> ' + esc(t("What changed")) + '</button>' +
+                '<details class="sy-more"><summary class="zx-btn zx-btn--secondary zx-btn--sm zx-btn--icon" aria-label="' + esc(tf("More actions for version {0}", v.id)) + '" title="' + esc(t("More actions")) + '"><i class="ellipsis horizontal icon" aria-hidden="true"></i></summary>' +
+                '<div class="sy-more__menu">' +
+                '<button class="sy-more__item hx-restore" type="button"><i class="undo icon" aria-hidden="true"></i> ' + esc(t("Restore this version")) + '</button>' +
+                '<button class="sy-more__item hx-export" type="button"><i class="download icon" aria-hidden="true"></i> ' + esc(t("Export comparison")) + '</button>' +
+                '</div></details>' +
                 '</div><div class="hx-diff" hidden></div>');
             $ul.append($li);
         });
@@ -278,7 +353,8 @@
     function renderDiff(files) {
         if (!files.length) return '<div class="hx-note">No differences.</div>';
         return files.map(function (f) {
-            var head = esc(f.label) + ' <span class="hx-badge">' + esc(f.change) + '</span> <span style="color:var(--zx-text-muted); font-weight:400;">+' + f.added + ' -' + f.removed + '</span>';
+            var k = KIND[f.change] || ["~", f.change];
+            var head = '<span class="hx-file__name">' + esc(nice(f.label, f.path)) + '</span> <span class="hx-badge">' + esc(t(k[1])) + '</span> <span class="hx-file__count">' + (f.added ? '<b>+' + f.added + '</b>' : '+0') + ' ' + (f.removed ? '<i>\u2212' + f.removed + '</i>' : '\u22120') + '</span>';
             var body = "";
             if (f.hidden) {
                 body = '<div class="hx-note">' + esc(f.note || "Content is not shown.") + '</div>';
@@ -298,13 +374,14 @@
                 if (!rows) rows = '<tr><td colspan="3" class="hx-note">' + esc(f.note || "No visible differences.") + '</td></tr>';
                 body = '<div class="hx-code"><table>' + rows + '</table></div>';
             }
-            return '<details class="hx-file"' + (files.length <= 3 ? " open" : "") + '><summary>' + head + '</summary>' + body + '</details>';
+            return '<details class="zx-disclosure hx-file"' + (files.length <= 3 ? " open" : "") + '><summary>' + head + '</summary>' + body + '</details>';
         }).join("");
     }
 
     function toggleDiff($item) {
-        var $d = $item.find(".hx-diff"), id = $item.data("id");
-        if (!$d.prop("hidden")) { $d.prop("hidden", true); return; }
+        var $d = $item.find(".hx-diff"), id = $item.data("id"), $b = $item.find(".hx-show");
+        if (!$d.prop("hidden")) { $d.prop("hidden", true); $b.attr("aria-expanded", "false"); return; }
+        $b.attr("aria-expanded", "true");
         $d.prop("hidden", false).html('<div class="hx-note">Loading...</div>');
         window.ZxHistory.diff("", id).then(function (res) {
             $d.html(renderDiff(res.files));
@@ -346,12 +423,12 @@
                 html += '<div class="ui info message">The current configuration already matches this version for this selection. Nothing to restore.</div>';
             } else {
                 html += '<p><b>' + res.items.length + '</b> object(s) would change. Nothing has been changed yet.</p><ul class="hx-list">' +
-                    res.items.map(function (i) { return '<li>' + esc(i.kind === "added" ? "brought back" : i.kind === "removed" ? "removed" : "reverted") + ': ' + esc(i.label) + '</li>'; }).join("") + '</ul>';
+                    res.items.map(function (i) { return '<li>' + esc(i.kind === "added" ? "brought back" : i.kind === "removed" ? "removed" : "reverted") + ': ' + esc(nice(i.label, i.path)) + '</li>'; }).join("") + '</ul>';
                 diffHtml = '<h4 style="margin:0 0 0.4em;">What would change, line by line</h4><div class="hx-diff">' + renderDiff(res.diffs || []) + '</div>';
             }
             if (res.skipped.length) {
                 html += '<div class="ui warning message"><b>Skipped (managed elsewhere):</b><ul class="hx-list">' +
-                    res.skipped.map(function (s) { return '<li>' + esc(s.label) + ' - ' + esc(s.reason) + '</li>'; }).join("") + '</ul></div>';
+                    res.skipped.map(function (s) { return '<li>' + esc(nice(s.label, s.path)) + ' - ' + esc(s.reason) + '</li>'; }).join("") + '</ul></div>';
             }
             html += '<p class="zx-help">Applying a restore restarts Zoraxy. If it does not come back healthy, the previous configuration is put back automatically.</p>';
             $("#hxPreview").html(html);
@@ -423,6 +500,8 @@
             if (v) f[p[0]] = v;
         });
         S.filters = f;
+        var n = Object.keys(f).length;
+        $("#hxFiltersN").text(n ? (n === 1 ? t("1 active") : tf("{0} active", n)) : "");
         var bad = f.from && f.to && f.from > f.to;
         $("#hxFilterError").prop("hidden", !bad).text(bad ? "The From date is after the To date. Swap them to see versions." : "");
         $("#hxFilterFrom, #hxFilterTo").attr("aria-invalid", bad ? "true" : "false");
@@ -449,6 +528,20 @@
         $("#hxUndoBtn").on("click", function () {
             window.ZxHistory.undoLast().catch(function (e) { toast(e.message, false); });
         });
+        // filters: always open on wide screens, a closed disclosure on phones (opened by hand, or while a filter is set)
+        (function () {
+            var box = document.getElementById("hxFilters"), mq = window.matchMedia ? window.matchMedia("(max-width: 600px)") : null;
+            function sync() { box.open = !(mq && mq.matches) || Object.keys(S.filters).length > 0; }
+            sync();
+            if (mq) { if (mq.addEventListener) { mq.addEventListener("change", sync); } else if (mq.addListener) { mq.addListener(sync); } }
+        })();
+        // the "more" menu of a version closes after a choice, on Escape and on a click anywhere else
+        $(document).off("click.hxMore keydown.hxMore").on("click.hxMore", function (e) {
+            $("#hxTimeline details.sy-more[open]").each(function () { if (!this.contains(e.target) || $(e.target).closest(".sy-more__item").length) { this.open = false; } });
+        }).on("keydown.hxMore", function (e) {
+            if (e.key !== "Escape") { return; }
+            $("#hxTimeline details.sy-more[open]").each(function () { this.open = false; $(this).children("summary").trigger("focus"); });
+        });
         $("#hxTimeline").on("click", ".hx-show", function () { toggleDiff($(this).closest(".hx-item")); });
         $("#hxTimeline").on("click", ".hx-export", function () { exportDiff($(this).closest(".hx-item").data("id")); });
         $("#hxTimeline").on("click", ".hx-restore", function () { openRestore($(this).closest(".hx-item").data("id"), "all"); });
@@ -461,7 +554,7 @@
                 enabled: $("#hxEnabled").prop("checked") ? "true" : "false" }).then(function () { toast("Retention settings saved"); load(); },
                 function (e) { toast(e.message, false); });
         });
-        $("#hxEnabledBox").checkbox();
+        // the switch is a native checkbox (kit switch)
         load(1);
     });
 

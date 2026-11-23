@@ -1,72 +1,94 @@
-<!-- Security Center > Network plan: a document, a comparison with the real configuration, and firewall recommendations to export. Applies nothing. -->
+<!-- Security Center > Network plan (advanced): a document, a comparison with the real configuration, and firewall recommendations to export. Applies nothing.
+     Status first (does the configuration match the plan), then what differs, then the plan itself, then the export. -->
 <style>
-    #npPage .np-zone { display: grid; grid-template-columns: minmax(9rem, 13rem) 1fr; gap: var(--zx-space-2) var(--zx-space-3); margin-bottom: var(--zx-space-3); }
-    #npPage .np-zone .field { margin: 0; }
-    #npPage .np-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-3); }
+    #npPage .np-zone { display: grid; grid-template-columns: 11rem minmax(0, 13rem) minmax(0, 1fr); gap: var(--zx-space-2) var(--zx-space-4); align-items: start; margin: 0; padding: var(--zx-space-4) 0; border: 0; border-top: 1px solid var(--zx-border); min-width: 0; }
+    #npPage .np-zone:first-of-type { border-top: 0; padding-top: 0; }
+    #npPage .np-zone legend { float: left; width: 100%; padding: 0; font-weight: 700; color: var(--zx-text); }
+    #npPage .np-zone legend small { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; line-height: 1.4; }
+    #npPage .np-zone .field { margin: 0; min-width: 0; }
+    #npPage .np-zone .field input, #npPage .np-zone .field textarea { width: 100%; max-width: none; }
+    #npPage .np-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--zx-space-4); }
+    @media (max-width: 760px) { #npPage .np-grid2 { grid-template-columns: minmax(0, 1fr); } }
     #npPage .np-grid2 .field { margin: 0; }
+    #npPage .np-grid2 .field textarea, #npPage .np-grid2 .field input { width: 100%; max-width: none; }
     #npPage .np-list { list-style: none; margin: 0; padding: 0; }
-    #npPage .np-list li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px var(--zx-space-2); padding: 5px 0; border-top: 1px solid var(--zx-border); }
-    #npPage .np-list li:first-child { border-top: 0; }
+    #npPage .np-list li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2px var(--zx-space-3); padding: 10px 0; border-top: 1px solid var(--zx-border); }
+    #npPage .np-list li:first-child { border-top: 0; padding-top: 0; }
+    #npPage .np-list li > .zx-badge { flex: 0 0 auto; min-width: 5.5rem; justify-content: flex-start; margin-top: 1px; }
     #npPage .np-list .grow { flex: 1 1 16rem; min-width: 0; overflow-wrap: anywhere; }
-    #npPage .np-list .np-ev { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #npPage .np-list .np-ev { display: block; margin-top: 1px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
     #npPage .np-go { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; font-size: var(--zx-fs-sm); }
     #npPage .np-go:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
-    #npPage .np-actions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: var(--zx-space-2) 0; }
-    #npPage #npMd { width: 100%; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); min-height: 14rem; resize: vertical; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); padding: var(--zx-space-2); }
-    @media (max-width: 600px) { #npPage .np-zone { grid-template-columns: 1fr; } }
+    #npPage #npResult > details { margin-top: var(--zx-space-3); }
+    #npPage #npResult > details > .np-list { margin-top: var(--zx-space-3); }
+    #npPage #npResult > .zx-callout { margin: 0 0 var(--zx-space-3); }
+    #npPage #npResult .zx-subhead { font-size: 1.071rem; margin-top: var(--zx-space-5); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+    #npPage .np-actions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: 0; }
+    #npPage #npMd { width: 100%; margin-top: var(--zx-space-3); font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); min-height: 14rem; resize: vertical; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); padding: var(--zx-space-2); }
+    @media (max-width: 760px) { #npPage .np-zone { grid-template-columns: minmax(0, 1fr); } }
 </style>
 <div id="npPage">
-    <div class="zx-callout zx-callout--warn" role="note" id="npDisclaimer" style="margin-bottom:var(--zx-space-4)">
-        <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
-        <div class="zx-callout__body"><span class="zx-callout__title">Zoraxy does not change your firewall</span>
-            This page is a planning document. It compares the networks you write down with this Zoraxy's own settings and can write firewall recommendations for you to review and apply yourself. Nothing is compared or changed until you save a plan.</div>
-    </div>
+    <section class="zx-card sx-status" id="npStatus" data-state="off">
+        <div class="sx-status__top">
+            <span class="sx-status__icon" aria-hidden="true"><i class="road icon"></i></span>
+            <div class="sx-status__text">
+                <h4 class="sx-status__title"><span class="sx-status__name">Network plan</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+                <p class="sx-status__desc" id="npDisclaimer">Write down which networks Zoraxy and your servers live in. This page compares that plan with Zoraxy's own settings and can write firewall recommendations for you to review. Zoraxy does not change your firewall, and nothing is compared until you save a plan.</p>
+            </div>
+            <div class="sx-status__action"><button type="button" class="zx-btn zx-btn--secondary" id="npRecheck"><i class="sync icon" aria-hidden="true"></i> Check again</button></div>
+        </div>
+        <dl class="sx-facts">
+            <div class="sx-fact"><dt>Plan</dt><dd id="npFPlan">-</dd></div>
+            <div class="sx-fact"><dt>Does not match</dt><dd id="npFFail">-</dd></div>
+            <div class="sx-fact"><dt>Worth a look</dt><dd id="npFWarn">-</dd></div>
+            <div class="sx-fact"><dt>Matches</dt><dd id="npFOk">-</dd></div>
+        </dl>
+    </section>
+
+    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h3 class="zx-card__title">Does the real configuration match?</h3><p class="zx-card__desc">What this Zoraxy is set up to do, checked against the plan below. Worst first.</p></div>
+        <div class="zx-card__body" id="npResult" aria-live="polite"><div class="zx-skeleton zx-skeleton--block" style="height:5rem"></div></div></section>
 
     <div class="ui form" id="npForm">
-        <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Your networks</h3><p class="zx-card__desc">Name the network segments (VLANs) Zoraxy and your servers live in.</p></div><div class="zx-card__body">
-            <div class="np-zone">
-                <div class="field zx-field"><label for="npProxyName">Proxy VLAN name</label><input type="text" id="npProxyName" maxlength="48" placeholder="Example: Proxy DMZ" autocomplete="off"></div>
-                <div class="field zx-field"><label for="npProxyCidrs">Proxy VLAN networks </label><textarea id="npProxyCidrs" rows="2" placeholder="10.0.1.0/24" spellcheck="false"></textarea></div>
-            </div>
-            <div class="np-zone">
-                <div class="field zx-field"><label for="npMgmtName">Management VLAN name</label><input type="text" id="npMgmtName" maxlength="48" placeholder="Example: Management" autocomplete="off"></div>
-                <div class="field zx-field"><label for="npMgmtCidrs">Management VLAN networks </label><textarea id="npMgmtCidrs" rows="2" placeholder="10.0.9.0/24" spellcheck="false"></textarea></div>
-            </div>
-            <div class="np-zone">
-                <div class="field zx-field"><label for="npAppName">Application VLAN name</label><input type="text" id="npAppName" maxlength="48" placeholder="Example: Servers" autocomplete="off"></div>
-                <div class="field zx-field"><label for="npAppCidrs">Application VLAN networks </label><textarea id="npAppCidrs" rows="2" placeholder="10.0.2.0/24" spellcheck="false"></textarea></div>
-            </div>
-            <p class="zx-help" style="margin:0">One network per line. Names may use letters, digits, spaces and . _ - ( ). Networks are CIDR (10.0.2.0/24) or a single address; "everything" (0.0.0.0/0) is refused.</p>
+        <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Your networks</h3><p class="zx-card__desc">Name the three network segments (VLANs) and say which address ranges belong to each. Leave a segment empty if you do not have it.</p></div><div class="zx-card__body">
+            <fieldset class="np-zone"><legend>Proxy segment<small>Where this Zoraxy and other proxies live.</small></legend>
+                <div class="field zx-field"><label for="npProxyName">Name</label><input type="text" id="npProxyName" maxlength="48" placeholder="Proxy DMZ" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npProxyCidrs">Networks</label><textarea id="npProxyCidrs" rows="2" placeholder="10.0.1.0/24" spellcheck="false"></textarea></div>
+            </fieldset>
+            <fieldset class="np-zone"><legend>Management segment<small>Where you administer things from.</small></legend>
+                <div class="field zx-field"><label for="npMgmtName">Name</label><input type="text" id="npMgmtName" maxlength="48" placeholder="Management" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npMgmtCidrs">Networks</label><textarea id="npMgmtCidrs" rows="2" placeholder="10.0.9.0/24" spellcheck="false"></textarea></div>
+            </fieldset>
+            <fieldset class="np-zone"><legend>Application segment<small>Where the servers behind Zoraxy live.</small></legend>
+                <div class="field zx-field"><label for="npAppName">Name</label><input type="text" id="npAppName" maxlength="48" placeholder="Servers" autocomplete="off"></div>
+                <div class="field zx-field"><label for="npAppCidrs">Networks</label><textarea id="npAppCidrs" rows="2" placeholder="10.0.2.0/24" spellcheck="false"></textarea></div>
+            </fieldset>
+            <p class="sx-note">One network per line, as a range (10.0.2.0/24) or a single address. Names may use letters, digits, spaces and . _ - ( ). "Everything" (0.0.0.0/0) is refused.</p>
         </div></section>
 
-        <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Who talks to whom</h3><p class="zx-card__desc">The proxies in front of this one, the servers behind it and who may administer it.</p></div><div class="zx-card__body">
+        <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Who talks to whom</h3><p class="zx-card__desc">The proxies in front of this one, the servers behind it and who may administer it. All four are optional.</p></div><div class="zx-card__body">
             <div class="np-grid2">
-                <div class="field zx-field"><label for="npUpstream">Trusted upstream proxies </label><textarea id="npUpstream" rows="3" placeholder="10.0.1.5" spellcheck="false"></textarea>
-                    <p class="zx-help">The proxies in front of this one (an internal proxy lists the external proxy). They should be inside the proxy VLAN and listed under <a href="#trustproxy" data-nav-open="trustproxy">Trusted Proxies</a>.</p></div>
-                <div class="field zx-field"><label for="npBackends">Allowed backend destinations </label><textarea id="npBackends" rows="3" placeholder="10.0.3.5 443&#10;10.0.3.0/24 8000-8100" spellcheck="false"></textarea>
-                    <p class="zx-help">Single servers outside (or narrower than) the application VLAN. Same format as the list in <a href="#" class="np-go" data-page="seccenter" data-anchor="exposure">Network exposure</a>.</p></div>
-                <div class="field zx-field"><label for="npPorts">Permitted application ports</label><input type="text" id="npPorts" placeholder="443, 8000-8100" autocomplete="off">
+                <div class="field zx-field"><label for="npUpstream">Proxies in front of this one</label><textarea id="npUpstream" rows="3" placeholder="10.0.1.5" spellcheck="false"></textarea>
+                    <p class="zx-help">An internal proxy lists the external proxy. They should be inside the proxy segment and listed under <a href="#trustproxy" data-nav-open="trustproxy">Trusted Proxies</a>.</p></div>
+                <div class="field zx-field"><label for="npBackends">Servers outside the application segment</label><textarea id="npBackends" rows="3" placeholder="10.0.3.5 443&#10;10.0.3.0/24 8000-8100" spellcheck="false"></textarea>
+                    <p class="zx-help">Allowed backend destinations, in the format of the list in <a href="#" class="np-go" data-page="seccenter" data-anchor="exposure">Network exposure</a>.</p></div>
+                <div class="field zx-field"><label for="npPorts">Ports your applications use</label><input type="text" id="npPorts" placeholder="443, 8000-8100" autocomplete="off">
                     <p class="zx-help">Comma separated ports or ranges. A proxy rule that uses another port is reported.</p></div>
-                <div class="field zx-field"><label for="npAdmin">Extra administrative access </label><textarea id="npAdmin" rows="3" placeholder="192.168.77.5" spellcheck="false"></textarea>
-                    <p class="zx-help">Addresses besides the management VLAN that may reach the admin panel, for example a jump host.</p></div>
+                <div class="field zx-field"><label for="npAdmin">Extra administrative access</label><textarea id="npAdmin" rows="3" placeholder="192.168.77.5" spellcheck="false"></textarea>
+                    <p class="zx-help">Addresses besides the management segment that may reach the admin panel, for example a jump host.</p></div>
             </div>
         </div></section>
         <div id="npMsg" class="ui negative message" style="display:none" role="alert"></div>
     </div>
 
-    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h3 class="zx-card__title">Does the real configuration match?</h3>
-            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="npRecheck"><i class="sync icon" aria-hidden="true"></i> Check again</button></div>
-        <div class="zx-card__body" id="npResult" aria-live="polite"><div class="zx-skeleton zx-skeleton--block" style="height:5rem"></div></div></section>
-
-    <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Firewall recommendations</h3><p class="zx-card__desc">Written from the saved plan for UniFi (zone-based firewall) and Proxmox. Not applied and not tested against your network: review before you use them.</p></div><div class="zx-card__body">
-        <p class="zx-help" style="margin:0">The export uses the saved plan (save your edits first). It contains your networks and the backend addresses of your proxy rules, no passwords, keys or paths.</p>
+    <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Firewall recommendations</h3><p class="zx-card__desc">A text document written from the saved plan, for UniFi (zone-based firewall) and Proxmox. Nothing is applied and nothing was tested against your network: review it before you use it.</p></div><div class="zx-card__body">
         <div class="np-actions">
-            <button type="button" class="zx-btn zx-btn--primary" id="npGen"><i class="file alternate outline icon" aria-hidden="true"></i> Export policy recommendations</button>
+            <button type="button" class="zx-btn zx-btn--secondary" id="npGen"><i class="file alternate outline icon" aria-hidden="true"></i> Write recommendations</button>
             <button type="button" class="zx-btn zx-btn--secondary" id="npDl" disabled><i class="download icon" aria-hidden="true"></i> Download .md</button>
             <button type="button" class="zx-btn zx-btn--secondary" id="npCopy" disabled><i class="copy icon" aria-hidden="true"></i> Copy text</button>
         </div>
         <label for="npMd" class="zx-sr-only">Generated recommendations (markdown)</label>
         <textarea id="npMd" readonly hidden spellcheck="false"></textarea>
+        <p class="sx-note">Uses the saved plan, so save your edits first. It contains your networks and the backend addresses of your proxy rules, no passwords, keys or paths.</p>
     </div></section>
 </div>
 <script>
@@ -95,8 +117,8 @@
         };
     }
 
-    var SEV = { fail: ["danger", N_("Mismatch")], warn: ["warn", N_("Check")], unknown: ["info", N_("Unknown")], ok: ["ok", N_("Matches")] };
-    function badge(kind, text) { return '<span class="zx-badge zx-badge--' + kind + '">' + esc(text) + "</span>"; }
+    var SEV = { fail: ["danger", N_("Failing")], warn: ["warn", N_("Warning")], unknown: ["", N_("Unknown")], ok: ["ok", N_("OK")] };
+    function badge(kind, text) { return '<span class="zx-badge zx-badge--dot' + (kind ? " zx-badge--" + kind : "") + '">' + esc(text) + "</span>"; }
     function row(f) {
         var s = SEV[f.status] || SEV.unknown;
         var fix = f.remediation && f.remediation.page ? '<a href="#" class="np-go" data-page="' + esc(f.remediation.page) + '" data-anchor="' + esc(f.remediation.anchor || "") + '">' + esc(t(f.remediation.label)) + "</a>" : "";
@@ -114,14 +136,21 @@
         }
         if (open.length) { h += '<ul class="np-list">' + open.map(row).join("") + "</ul>"; }
         else if (v.declared) { h += '<div class="zx-callout zx-callout--success" role="note"><span class="zx-callout__icon"><i class="check circle icon"></i></span><div class="zx-callout__body">' + esc(t("Nothing found: every check that applies matches your plan.")) + "</div></div>"; }
-        if (ok.length) { h += '<details style="margin-top:var(--zx-space-2)"><summary>' + esc(t("{0} checks match the plan").replace("{0}", ok.length)) + '</summary><ul class="np-list">' + ok.map(row).join("") + "</ul></details>"; }
-        if (na.length) { h += '<details style="margin-top:var(--zx-space-1)"><summary>' + esc(t("{0} checks do not apply yet").replace("{0}", na.length)) + '</summary><ul class="np-list">' + na.map(function (x) {
+        if (ok.length) { h += '<details class="sx-more-d"><summary>' + esc(t("{0} checks match the plan").replace("{0}", ok.length)) + '</summary><ul class="np-list">' + ok.map(row).join("") + "</ul></details>"; }
+        if (na.length) { h += '<details class="sx-more-d"><summary>' + esc(t("{0} checks do not apply yet").replace("{0}", na.length)) + '</summary><ul class="np-list">' + na.map(function (x) {
             return "<li><span class=\"grow\"><b>" + esc(t(x.title)) + '</b><span class="np-ev">' + esc((x.evidence || [])[0] || "") + "</span></span></li>"; }).join("") + "</ul></details>"; }
         var rel = (v.related || []).filter(function (x) { return x.status !== "ok" && x.status !== "not-applicable"; });
         h += '<h4 class="zx-subhead">' + esc(t("Already covered by the Security Overview")) + "</h4>" +
             '<p class="zx-help" style="margin:0 0 4px">' + esc(t("These checks exist elsewhere and are not repeated here: upstream certificate verification, a proxy rule that points at the admin panel, the allowed backend list.")) + "</p>";
         h += rel.length ? '<ul class="np-list">' + rel.map(row).join("") + "</ul>" : '<p class="zx-help" style="margin:0">' + esc(t("None of them reports a problem.")) + "</p>";
         $("#npResult").html(h);
+        var nFail = open.filter(function (x) { return x.status === "fail"; }).length, nWarn = open.length - nFail;
+        ZxSec.fact("#npFPlan", v.declared ? t("Saved") : t("Not written yet"), v.declared ? "" : t("nothing is compared"));
+        ZxSec.fact("#npFFail", nFail, "", nFail ? "danger" : ""); ZxSec.fact("#npFWarn", nWarn, "", nWarn ? "warn" : ""); ZxSec.fact("#npFOk", ok.length, na.length ? t("{0} do not apply").replace("{0}", na.length) : "", ok.length && !open.length ? "ok" : "");
+        ZxSec.status("#npStatus", !v.declared ? { state: "off", badge: t("No plan yet"), title: t("No plan is saved yet") }
+            : (nFail ? { state: "danger", badge: nFail === 1 ? t("1 mismatch") : t("{0} mismatches").replace("{0}", nFail), title: t("The configuration does not match your plan") }
+            : (nWarn ? { state: "warn", badge: t("{0} to check").replace("{0}", nWarn), title: t("The configuration matches your plan, with points to check") }
+            : { state: "on", badge: t("Matches"), title: t("The configuration matches your plan") })));
     }
     function load(keepForm) {
         $.get("/api/netplan/get", function (v) {

@@ -270,7 +270,7 @@ def blocked_ui(pg, ctx):
             fail("blocked", "Status tile must say See why")
         js("openTabById('seccenter')")
         pg.wait_for_timeout(600)
-        pg.click("#secTabs .item[data-sec='bots']")
+        pg.dispatch_event("#secTabs .item[data-sec='bots']", "click")
         pg.wait_for_timeout(1000)
         if not pg.is_visible("#brChallengeNote"):
             fail("blocked", "bot rules must warn that challenge without a CAPTCHA blocks")

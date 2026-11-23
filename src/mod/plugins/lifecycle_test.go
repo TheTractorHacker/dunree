@@ -42,8 +42,14 @@ func TestStartPluginOutputReadersDoNotRaceProcessField(t *testing.T) {
 		t.Fatal(err)
 	}
 	time.Sleep(200 * time.Millisecond) // let both readers log their first line
-	_ = p.process.Process.Kill()
-	_, _ = p.process.Process.Wait()
+	proc := p.currentProc()
+	if proc == nil {
+		t.Fatal("plugin has no process after StartPlugin")
+	}
+	_ = proc.cmd.Process.Kill()
+	if !waitProcDone(proc, 5*time.Second) {
+		t.Fatal("killed plugin process was not reaped")
+	}
 }
 
 // TestPluginOutputForUnknownPluginDoesNotPanic covers a line that arrives after

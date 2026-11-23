@@ -1,76 +1,94 @@
 <div class="standardContainer" id="webservPage">
     <style>
-        #webservPage { max-width: 1100px; }
-        #webservPage .zxs-readonly { background: var(--zx-surface-2) !important; color: var(--zx-text) !important; cursor: default; }
-        #webservPage .zxs-short { max-width: 10rem; }
-        #webservPage .zx-field small, #webservPage .field small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
-        #webservPage .zx-card__head .zx-badge { flex: 0 0 auto; }
-        #webservPage .zx-disclosure { margin: var(--zx-space-4) 0 0; }
-        #webservPage .zx-disclosure__body ol, #webservPage .zx-disclosure__body ul { padding-left: 1.4em; margin: var(--zx-space-1) 0 var(--zx-space-3); }
-        #webservPage .zxs-step { margin: var(--zx-space-3) 0 var(--zx-space-1); font-weight: 700; color: var(--zx-text); }
-        #webservPage .zx-disclosure__body code { background: var(--zx-surface-2); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); }
-        #webservPage .zxs-oslist { list-style: none; padding: 0 !important; }
-        #webservPage .zxs-oslist > li { margin: 0 0 var(--zx-space-3); }
-        #webservPage .zxs-note { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: var(--zx-space-3) 0 0; }
+        #webservPage .zxs-readonly { background: var(--zx-surface-2); color: var(--zx-text); cursor: default; font-family: var(--zx-font-mono); }
+        #webservPage .zx-field > .zx-field__label { display: block; margin: 0 0 4px; }
+        #webservPage .zx-form-grid { margin-top: var(--zx-space-4); grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); gap: 0 var(--zx-space-5); }
+        #webservPage .zx-form-grid .zx-input { width: 100%; }
+        #webservPage .zx-disclosure { margin: var(--zx-space-2) 0 0; }
+        #webservPage .zx-disclosure__body { padding-top: var(--zx-space-2); }
+        #webservPage .zx-disclosure__body code, #webservPage .zx-help code { font-family: var(--zx-font-mono); font-size: 0.93em; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); padding: 1px 6px; border-radius: var(--zx-radius-sm); overflow-wrap: anywhere; }
+        #webservPage .zxs-oslist { list-style: none; padding: 0; margin: var(--zx-space-2) 0 0; display: grid; gap: var(--zx-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+        #webservPage .zxs-oslist > li { padding: var(--zx-space-3); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+        #webservPage .zxs-oslist > li > b { display: block; color: var(--zx-text); margin-bottom: 4px; font-size: var(--zx-fs-md); }
+        #webservPage .zxs-oslist ol { padding-left: 1.3em; margin: 4px 0 0; }
+        #webservPage .zxs-notes { padding-left: 1.3em; margin: 4px 0 0; }
+        #webservPage .zxs-creds { margin-top: var(--zx-space-3); }
+        #webservPage .zxs-creds .zx-form-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); margin-top: 0; }
+        #webservPage .zx-stat__hint code { font-family: var(--zx-font-mono); }
+        #webservPage .zxs-usedby { color: var(--zx-text); }
+        #webservPage .zxs-usedby[hidden] { display: none; }
+        #webservPage .zxs-usedby i.icon { margin: 0 4px 0 0; color: var(--zx-text-muted); }
+        @media (max-width: 748px) { #webservPage .zx-form-grid { grid-template-columns: minmax(0, 1fr); } }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Static Web Server</h2>
-            <p class="zx-page-header__sub">Serve HTML, CSS and JavaScript files from a folder on this host</p>
+            <p class="zx-page-header__sub">Serve HTML, CSS and JavaScript files from a folder on this host, without setting up Apache or Nginx.</p>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>Give the web server a host name</span></li>
+            <li><a href="#setroot" data-nav-open="setroot">Default Site</a> <span>Show the web server for unknown addresses</span></li>
+        </ul>
+    </aside>
+
+    <div class="zx-statrow zxs-statrow">
+        <div class="zx-stat"><span class="zx-stat__label">Web server</span><span class="zx-stat__value zxs-stat__text"><span class="zx-badge zx-badge--dot webservStateBadge" role="status"><span class="webserv_status">Stopped</span></span></span><span class="zx-stat__hint">port <span class="webserv_port">8081</span></span></div>
+        <div class="zx-stat"><span class="zx-stat__label">WebDAV file access</span><span class="zx-stat__value zxs-stat__text"><span class="zx-badge zx-badge--dot webdavStateBadge" role="status"><span class="webdav_status">Stopped</span></span></span><span class="zx-stat__hint">port <span class="webdav_port">5488</span>, this host only</span></div>
+        <div class="zx-stat"><span class="zx-stat__label">Web folder</span><span class="zx-stat__value zxs-stat__text"><span class="zxs-addr webserv_docRootText">./www/html/</span></span><span class="zx-stat__hint">put your files here</span></div>
+    </div>
 
     <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Web server</h3>
-            <span class="zx-badge" id="webservRunningState" role="status"><i class="minus circle icon" aria-hidden="true"></i> <span class="webserv_status">Stopped</span>&nbsp;&middot;&nbsp;port&nbsp;:<span class="webserv_port">8081</span></span>
-            <p class="zx-card__desc">Changes on this page are saved automatically.</p>
+        <div class="zxs-svc__head">
+            <span class="zxs-svc__icon"><i class="globe icon" aria-hidden="true"></i></span>
+            <div class="zxs-svc__name">
+                <h3 class="zx-card__title">Web server</h3>
+                <p class="zx-card__desc">Serves the web folder over plain HTTP. Every change on this page is saved at once.</p>
+                <p class="zx-card__desc zxs-usedby" id="webservUsedByRoot" hidden><i class="home icon" aria-hidden="true"></i> Used by the <a href="#setroot" data-nav-open="setroot" onclick="openTabById('setroot'); return false;">Default Site</a>: while it is stopped, visitors with an unknown address get an error.</p>
+            </div>
+            <label class="zxs-svc__switch webservRootDisabled" for="webserv_enable" title="Starts or stops the built-in server at once">
+                <span class="zx-badge zx-badge--dot webservStateBadge" id="webservRunningState"><span class="webserv_status">Stopped</span></span>
+                <input id="webserv_enable" type="checkbox" class="zx-switch" role="switch" aria-label="Run the static web server">
+            </label>
         </div>
+        <div class="zx-callout zx-callout--warn zxs-inlinemsg" id="webservError" role="alert" hidden><div class="zx-callout__body"><i class="exclamation triangle icon" aria-hidden="true"></i> <span></span></div></div>
         <div class="zx-card__body">
-            <div class="ui form">
-                <label class="zx-toggle-row webservRootDisabled" for="webserv_enable">
-                    <span class="zx-toggle-row__text">
-                        <span class="zx-toggle-row__title">Run the static web server</span>
-                        <span class="zx-toggle-row__desc">Starts or stops the built-in server at once</span>
-                    </span>
-                    <input id="webserv_enable" type="checkbox" class="zx-switch" role="switch">
-                </label>
-                <label class="zx-toggle-row" for="webserv_enableDirList">
-                    <span class="zx-toggle-row__text">
-                        <span class="zx-toggle-row__title">Show directory listing</span>
-                        <span class="zx-toggle-row__desc">If a folder has no index file, list what is inside it</span>
-                    </span>
-                    <input id="webserv_enableDirList" type="checkbox" class="zx-switch" role="switch">
-                </label>
-                <label class="zx-toggle-row" for="webserv_enableAllInterfaces">
-                    <span class="zx-toggle-row__text">
-                        <span class="zx-toggle-row__title">Listen on all interfaces</span>
-                        <span class="zx-toggle-row__desc">When off, the server only listens on localhost (127.0.0.1) and can only be reached through proxy rules</span>
-                    </span>
-                    <input id="webserv_enableAllInterfaces" type="checkbox" class="zx-switch" role="switch">
-                </label>
-                <div style="margin-top: var(--zx-space-4);">
-                    <div class="field zx-field">
-                        <label class="zx-field__label" for="webserv_docRoot">Document root folder</label>
-                        <input id="webserv_docRoot" type="text" readonly="true" class="zxs-readonly">
-                        <small>Fixed for security reasons. To use another folder, start Zoraxy with the <code>-webserv</code> flag.</small>
-                    </div>
-                    <div class="field zx-field webservRootDisabled">
-                        <label class="zx-field__label" for="webserv_listenPort">Port number</label>
-                        <input id="webserv_listenPort" class="zxs-short" type="number" step="1" min="1" max="65535" value="8081" onchange="updateWebServLinkExample(this.value);">
-                        <small>Use <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> in a proxy rule to reach the web server</small>
-                    </div>
+            <label class="zx-toggle-row" for="webserv_enableDirList">
+                <span class="zx-toggle-row__text">
+                    <span class="zx-toggle-row__title">Show directory listing</span>
+                    <span class="zx-toggle-row__desc">If a folder has no index file, list what is inside it</span>
+                </span>
+                <input id="webserv_enableDirList" type="checkbox" class="zx-switch" role="switch">
+            </label>
+            <label class="zx-toggle-row" for="webserv_enableAllInterfaces">
+                <span class="zx-toggle-row__text">
+                    <span class="zx-toggle-row__title">Listen on all interfaces</span>
+                    <span class="zx-toggle-row__desc">When off, the server only listens on localhost (127.0.0.1) and can only be reached through proxy rules</span>
+                </span>
+                <input id="webserv_enableAllInterfaces" type="checkbox" class="zx-switch" role="switch">
+            </label>
+            <div class="zx-form-grid">
+                <div class="field zx-field webservRootDisabled">
+                    <label class="zx-field__label" for="webserv_listenPort">Port number</label>
+                    <input id="webserv_listenPort" class="zx-input" type="number" step="1" min="1" max="65535" value="8081" onchange="updateWebServLinkExample(this.value);">
+                    <p class="zx-help">1 to 65535</p>
+                </div>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="webserv_docRoot">Document root folder</label>
+                    <input id="webserv_docRoot" type="text" readonly="true" class="zx-input zxs-readonly">
+                    <p class="zx-help">Fixed for security reasons. To use another folder, start Zoraxy with the <code>-webserv</code> flag.</p>
                 </div>
             </div>
             <details class="zx-disclosure webservhelp">
                 <summary>How to reach the static web server</summary>
                 <div class="zx-disclosure__body">
-                    <p>There are three ways:</p>
-                    <ol>
-                        <li>If Zoraxy is your gateway, add a proxy rule for a subdomain that points to <code>http://127.0.0.1:<span class="webserv_port">8081</span></code></li>
-                        <li>If Zoraxy runs behind another reverse proxy, add <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> to that proxy's configuration</li>
-                        <li>Open it directly at <code>http://{zoraxy_host_ip}:<span class="webserv_port">8081</span></code> (not recommended)</li>
+                    <ol class="zxs-steps">
+                        <li><b>Through Zoraxy (recommended)</b><span>Add a proxy rule for a host name that points to <code>http://127.0.0.1:<span class="webserv_port">8081</span></code></span></li>
+                        <li><b>Behind another reverse proxy</b><span>Add <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> to that proxy's configuration</span></li>
+                        <li><b>Directly (not recommended)</b><span>Open <code>http://{zoraxy_host_ip}:<span class="webserv_port">8081</span></code>. Needs "Listen on all interfaces".</span></li>
                     </ol>
                 </div>
             </details>
@@ -78,86 +96,91 @@
     </section>
 
     <section class="zx-card">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">WebDAV server</h3>
-            <span class="zx-badge" id="webdavRunningState" role="status"><i class="minus circle icon" aria-hidden="true"></i> <span class="webdav_status">Stopped</span>&nbsp;&middot;&nbsp;port&nbsp;:<span class="webdav_port">5488</span></span>
-            <p class="zx-card__desc">Manage the files of the web folder with a WebDAV client. Changes are saved automatically.</p>
-        </div>
-        <div class="zx-card__body">
-            <div class="ui form">
-                <label class="zx-toggle-row" for="webdav_enable">
-                    <span class="zx-toggle-row__text">
-                        <span class="zx-toggle-row__title">Run the WebDAV server</span>
-                        <span class="zx-toggle-row__desc">You still need a proxy rule to reach it from outside</span>
-                    </span>
-                    <input id="webdav_enable" type="checkbox" class="zx-switch" role="switch">
-                </label>
-                <div class="field zx-field" style="margin-top: var(--zx-space-4);">
-                    <label class="zx-field__label" for="webdav_port">WebDAV port</label>
-                    <input id="webdav_port" class="zxs-short" type="number" step="1" min="1" max="65535" value="5488">
-                    <small>For security, the WebDAV server only listens on localhost (127.0.0.1)</small>
-                </div>
-                <details class="zx-disclosure">
-                    <summary>Advanced options</summary>
-                    <div class="zx-disclosure__body">
-                        <label class="zx-toggle-row" for="webdav_useCustomCredentials">
-                            <span class="zx-toggle-row__text">
-                                <span class="zx-toggle-row__title">Use custom credentials</span>
-                                <span class="zx-toggle-row__desc">Sign in to WebDAV with its own user name and password instead of the Zoraxy admin account</span>
-                            </span>
-                            <input id="webdav_useCustomCredentials" type="checkbox" class="zx-switch" role="switch">
-                        </label>
-                        <div id="webdav_customCredentialsForm">
-                            <div class="zx-form-grid" style="margin-top: var(--zx-space-3);">
-                                <div class="field zx-field">
-                                    <label class="zx-field__label" for="webdav_customUsername">Custom user name</label>
-                                    <input id="webdav_customUsername" type="text" placeholder="3 to 32 characters">
-                                </div>
-                                <div class="field zx-field">
-                                    <label class="zx-field__label" for="webdav_customPassword">Custom password</label>
-                                    <input id="webdav_customPassword" type="password" placeholder="At least 8 characters">
-                                </div>
-                            </div>
-                            <button class="ui primary button" id="webdav_saveCustomCredentials"><i class="save icon"></i> Save credentials</button>
-                            <p class="zx-help">Credentials are saved separately from the other settings.</p>
-                        </div>
-                    </div>
-                </details>
+        <div class="zxs-svc__head">
+            <span class="zxs-svc__icon"><i class="folder open outline icon" aria-hidden="true"></i></span>
+            <div class="zxs-svc__name">
+                <h3 class="zx-card__title">WebDAV file access</h3>
+                <p class="zx-card__desc">Upload and edit the files of the web folder from your computer with a WebDAV client. Off by default.</p>
             </div>
+            <label class="zxs-svc__switch" for="webdav_enable" title="You still need a proxy rule to reach it from outside">
+                <span class="zx-badge zx-badge--dot webdavStateBadge" id="webdavRunningState"><span class="webdav_status">Stopped</span></span>
+                <input id="webdav_enable" type="checkbox" class="zx-switch" role="switch" aria-label="Run the WebDAV server">
+            </label>
+        </div>
+        <div class="zx-callout zx-callout--warn zxs-inlinemsg" id="webdavError" role="alert" hidden><div class="zx-callout__body"><i class="exclamation triangle icon" aria-hidden="true"></i> <span></span></div></div>
+        <div class="zx-card__body">
+            <div class="zx-form-grid" style="margin-top:0;">
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="webdav_port">WebDAV port</label>
+                    <input id="webdav_port" class="zx-input" type="number" step="1" min="1" max="65535" value="5488">
+                    <p class="zx-help">1 to 65535</p>
+                </div>
+                <div class="field zx-field">
+                    <span class="zx-field__label">Reachable from</span>
+                    <p class="zx-help" style="margin-top:8px;">For security, the WebDAV server only listens on localhost (127.0.0.1). Add a proxy rule that points to <code>http://127.0.0.1:<span class="webdav_port">5488</span></code> to use it from another computer.</p>
+                </div>
+            </div>
+            <details class="zx-disclosure">
+                <summary>Advanced: sign in with separate credentials</summary>
+                <div class="zx-disclosure__body">
+                    <label class="zx-toggle-row" for="webdav_useCustomCredentials">
+                        <span class="zx-toggle-row__text">
+                            <span class="zx-toggle-row__title">Use custom credentials</span>
+                            <span class="zx-toggle-row__desc">Sign in to WebDAV with its own user name and password instead of the Zoraxy admin account</span>
+                        </span>
+                        <input id="webdav_useCustomCredentials" type="checkbox" class="zx-switch" role="switch">
+                    </label>
+                    <div id="webdav_customCredentialsForm" class="zxs-creds">
+                        <div class="zx-form-grid">
+                            <div class="field zx-field">
+                                <label class="zx-field__label" for="webdav_customUsername">Custom user name</label>
+                                <input id="webdav_customUsername" class="zx-input" type="text" placeholder="3 to 32 characters" autocomplete="off">
+                            </div>
+                            <div class="field zx-field">
+                                <label class="zx-field__label" for="webdav_customPassword">Custom password</label>
+                                <input id="webdav_customPassword" class="zx-input" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+                            </div>
+                        </div>
+                        <button type="button" class="zx-btn zx-btn--secondary" id="webdav_saveCustomCredentials"><i class="save icon" aria-hidden="true"></i> Save credentials</button>
+                        <p class="zx-help">Credentials are saved separately from the other settings.</p>
+                    </div>
+                </div>
+            </details>
             <details class="zx-disclosure webdavhelp">
                 <summary>How to reach the WebDAV server</summary>
                 <div class="zx-disclosure__body">
-                    <p class="zxs-step">Step 1: add a proxy rule</p>
-                    <p>Add a proxy rule for a subdomain (for example <code>webdav.example.com</code>) that points to <code>http://127.0.0.1:<span class="webdav_port">5488</span></code></p>
-
-                    <p class="zxs-step">Step 2: connect with a WebDAV client</p>
-                    <ul class="zxs-oslist">
-                        <li><strong><i class="windows icon"></i> Windows</strong> Use <strong>WinSCP</strong> or map a network drive:
-                            <ol>
-                                <li>Open File Explorer</li>
-                                <li>Right-click "This PC" and choose "Map network drive"</li>
-                                <li>Enter <code>\\webdav.example.com@SSL\</code> (or <code>http://webdav.example.com</code>)</li>
+                    <ol class="zxs-steps">
+                        <li><b>Add a proxy rule</b><span>Add a proxy rule for a host name (for example <code>webdav.example.com</code>) that points to <code>http://127.0.0.1:<span class="webdav_port">5488</span></code></span></li>
+                        <li><b>Connect with a WebDAV client</b>
+                            <ul class="zxs-oslist">
+                                <li><b><i class="windows icon" aria-hidden="true"></i> Windows</b> Use <strong>WinSCP</strong> or map a network drive:
+                                    <ol>
+                                        <li>Open File Explorer</li>
+                                        <li>Right-click "This PC" and choose "Map network drive"</li>
+                                        <li>Enter <code>\\webdav.example.com@SSL\</code> (or <code>http://webdav.example.com</code>)</li>
+                                        <li>Sign in with your Zoraxy admin user name and password</li>
+                                    </ol>
+                                </li>
+                                <li><b><i class="apple icon" aria-hidden="true"></i> macOS</b> Use <strong>Finder, Go, Connect to Server</strong>:
+                                    <ol>
+                                        <li>Press <kbd>Cmd</kbd>+<kbd>K</kbd></li>
+                                        <li>Enter <code>https://webdav.example.com</code></li>
+                                        <li>Click "Connect" and enter your Zoraxy admin credentials</li>
+                                    </ol>
+                                </li>
+                                <li><b><i class="linux icon" aria-hidden="true"></i> Linux</b> Use the "Connect to Server" feature of your file manager, or mount it with <code>davfs2</code>:
+                                    <br><code>mount -t davfs https://webdav.example.com /mnt/webdav</code>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><b>Good to know</b>
+                            <ul class="zxs-notes">
+                                <li>Use HTTPS (SSL/TLS) for secure connections</li>
                                 <li>Sign in with your Zoraxy admin user name and password</li>
-                            </ol>
+                                <li>The WebDAV server serves the whole <code>www/</code> folder, including <code>html/</code> (static web files) and <code>templates/</code> (Zoraxy templates)</li>
+                            </ul>
                         </li>
-                        <li><strong><i class="apple icon"></i> macOS</strong> Use <strong>Finder, Go, Connect to Server</strong>:
-                            <ol>
-                                <li>Press <kbd>Cmd</kbd>+<kbd>K</kbd></li>
-                                <li>Enter <code>https://webdav.example.com</code></li>
-                                <li>Click "Connect" and enter your Zoraxy admin credentials</li>
-                            </ol>
-                        </li>
-                        <li><strong><i class="linux icon"></i> Linux</strong> Use the "Connect to Server" feature of your file manager, or mount it with <code>davfs2</code>:
-                            <br><code>mount -t davfs https://webdav.example.com /mnt/webdav</code>
-                        </li>
-                    </ul>
-
-                    <p class="zxs-step">Good to know</p>
-                    <ul>
-                        <li>Use HTTPS (SSL/TLS) for secure connections</li>
-                        <li>Sign in with your Zoraxy admin user name and password</li>
-                        <li>The WebDAV server serves the whole <code>www/</code> folder, including <code>html/</code> (static web files) and <code>templates/</code> (Zoraxy templates)</li>
-                    </ul>
+                    </ol>
                 </div>
             </details>
         </div>
@@ -173,22 +196,41 @@
             }
         }
 
+        //Every badge of a service (summary tile and card head) shows the same state: dot + word
         function setRunningBadge(selector, statusClass, running){
             let badge = $(selector);
             badge.toggleClass("zx-badge--ok", running);
-            badge.find("i").attr("class", running ? "check circle icon" : "minus circle icon");
-            badge.find(statusClass).text(running ? "Running" : "Stopped");
+            $(statusClass).text(running ? t("Running") : t("Stopped"));
         }
 
         function setWebServerRunningState(running){
             setSwitchState("#webserv_enable", running);
-            setRunningBadge("#webservRunningState", ".webserv_status", running);
+            setRunningBadge(".webservStateBadge", ".webserv_status", running);
             $(".webservRunningStateWrapper").toggleClass("enabled", running);
+            //the Default Site page reports whether its answer really works: tell it the server changed
+            if (typeof renderDefaultSiteNow == "function"){ renderDefaultSiteNow(); }
+        }
+
+        //A start or stop that failed: the switch goes back to what the server really does (without sending a second request)
+        //and the reason stays in the card until the next try
+        function showServiceError(boxSel, switchSel, badgeSel, statusSel, running, message){
+            $(switchSel).prop("checked", running);
+            setRunningBadge(badgeSel, statusSel, running);
+            let box = $(boxSel);
+            box.find("span").text(message);
+            box.prop("hidden", !message);
+        }
+
+        //Says on this page that the Default Site depends on the web server (set there, see rproot.html)
+        function refreshWebservUsedBy(){
+            $.get("/api/proxy/list?type=root", function(root){
+                $("#webservUsedByRoot").prop("hidden", !(root && root.DefaultSiteOption === 0));
+            });
         }
 
         function setWebDAVServerRunningState(running){
             setSwitchState("#webdav_enable", running);
-            setRunningBadge("#webdavRunningState", ".webdav_status", running);
+            setRunningBadge(".webdavStateBadge", ".webdav_status", running);
             $(".webdavRunningStateWrapper").toggleClass("enabled", running);
         }
 
@@ -208,6 +250,7 @@
                 $("#webserv_enableDirList").prop("checked", !!data.EnableDirectoryListing);
 
                 $("#webserv_docRoot").val(data.WebRoot + "/html/");
+                $(".webserv_docRootText").text(data.WebRoot + "/html/");
 
                 if (!data.EnableWebDirManager){
                     $("#webdirManDisabledNotice").show();
@@ -237,49 +280,49 @@
                 //Bind checkbox events
                 $("#webserv_enable").off("change").on("change", function(){
                     let enable = $(this)[0].checked;
+                    $("#webservError").prop("hidden", true);
                     if (enable){
                         $.get("/api/webserv/start", function(data){
                             if (data.error != undefined){
-                                msgbox(data.error, false);
+                                showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", false, t("The web server did not start: {0}").replace("{0}", data.error));
                             }else{
-                                msgbox("Static web server started");
+                                msgbox(t("Static web server started"));
                                 setWebServerRunningState(true);
                             }
-                        });
+                        }).fail(function(){ showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", false, t("The web server did not start: the request failed")); });
                     }else{
                         $.get("/api/webserv/stop", function(data){
                             if (data.error != undefined){
-                                msgbox(data.error, false);
+                                showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", true, t("The web server did not stop: {0}").replace("{0}", data.error));
                             }else{
-                                msgbox("Static web server stopped");
+                                msgbox(t("Static web server stopped"));
                                 setWebServerRunningState(false);
                             }
-                        });
+                        }).fail(function(){ showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", true, t("The web server did not stop: the request failed")); });
                     }
                 });
 
                 $("#webdav_enable").off("change").on("change", function(){
                     let enable = $(this)[0].checked;
+                    $("#webdavError").prop("hidden", true);
                     if (enable){
                         $.get("/api/webserv/webdav/start", function(data){
                             if (data.error != undefined){
-                                msgbox(data.error, false);
-                                setWebDAVServerRunningState(false);
+                                showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", false, t("WebDAV did not start: {0}").replace("{0}", data.error));
                             }else{
-                                msgbox("WebDAV server started");
+                                msgbox(t("WebDAV server started"));
                                 setWebDAVServerRunningState(true);
                             }
-                        });
+                        }).fail(function(){ showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", false, t("WebDAV did not start: the request failed")); });
                     }else{
                         $.get("/api/webserv/webdav/stop", function(data){
                             if (data.error != undefined){
-                                msgbox(data.error, false);
-                                setWebDAVServerRunningState(true);
+                                showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", true, t("WebDAV did not stop: {0}").replace("{0}", data.error));
                             }else{
-                                msgbox("WebDAV server stopped");
+                                msgbox(t("WebDAV server stopped"));
                                 setWebDAVServerRunningState(false);
                             }
-                        });
+                        }).fail(function(){ showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", true, t("WebDAV did not stop: the request failed")); });
                     }
                 });
 
@@ -447,6 +490,8 @@
             })
         }
         updateWebServState();
+        refreshWebservUsedBy();
+        tabSwitchEventBind["webserv"] = function(){ refreshWebservUsedBy(); };
 
         function updateWebServLinkExample(newport){
             $(".webserv_port").text(newport);

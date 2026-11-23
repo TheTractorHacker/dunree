@@ -52,17 +52,21 @@ def consistency_ui(pg, ctx):
             fail("cert", f"'Hosts without a certificate' does not list {PLAIN}: {missing!r}")
         if js("document.getElementById('certMissingList').querySelectorAll('img').length"):
             fail("cert", "hostile host name became markup in the missing-certificate list")
-        if not js("document.getElementById('certAddBody').hidden"):
-            fail("cert", "the Add a certificate card should start collapsed")
-        pg.click("#certAddToggle")
-        if js("document.getElementById('certAddBody').hidden") or js("document.getElementById('certAddToggle').getAttribute('aria-expanded')") != "true":
-            fail("cert", "the Add a certificate toggle did not open the card")
+        if not js("document.getElementById('certAddCard').hidden"):
+            fail("cert", "the Add a certificate card should start closed")
+        pg.click("#certAddOpenBtn")
+        if js("document.getElementById('certAddCard').hidden") or js("document.getElementById('certAddOpenBtn').getAttribute('aria-expanded')") != "true":
+            fail("cert", "the Add a certificate button did not open the card")
+        # a guided choice of three paths; each shows only its own fields
+        if js("document.querySelectorAll('#certPathChoice input[name=certPath]').length") != 3 or pg.is_visible("#certdomain") or pg.is_visible("#certAcmeDomains") or pg.is_visible("#certSelfCN"):
+            fail("cert", "Add a certificate should offer three paths and show no fields before one is chosen")
+        pg.click("#certPage label[data-cert-path=upload]")
         for sel in ("#certdomain", "#pubkeySelector", "#prikeySelector", "#certUploadBtn", "#certPasteBtn"):
             if not pg.is_visible(sel):
                 fail("cert", f"upload control {sel} not visible in the open card")
         if not js("[...document.querySelectorAll('#certPage input, #certPage textarea')].filter(i => i.offsetParent && !i.labels.length && !i.getAttribute('aria-label')).length == 0"):
             fail("a11y", "an input of the Certificates page has no label")
-        pg.click("#certAddToggle")
+        pg.click("#certAddClose")
         for theme_dark, name in ((False, "cert-sections-light.png"), (True, "cert-sections-dark.png")):
             theme(theme_dark)
             pg.wait_for_timeout(300)
@@ -96,6 +100,13 @@ def consistency_ui(pg, ctx):
             if not js("t => !!document.querySelector('#' + t + ' [data-zx-crumbs]')", tab):
                 fail("related", f"{tab}: no kit page header with breadcrumbs")
             target = js("t => document.querySelector('#' + t + ' .zx-related a[data-nav-open]').getAttribute('data-nav-open')", tab)
+            # design v2: the Related links are a menu in the page header (zxpage.js); open it, then follow the first link
+            if js("t => !!document.querySelector('#' + t + ' .zx-page-header__actions .zx-related.is-menu .zx-related__btn')", tab):
+                pg.click(f"#{tab} .zx-related__btn")
+                if js("t => document.querySelector('#' + t + ' .zx-related__btn').getAttribute('aria-expanded')", tab) != "true":
+                    fail("related", f"{tab}: the Related button did not open its menu")
+            else:
+                fail("related", f"{tab}: the Related links are not a menu in the page header")
             pg.click(f"#{tab} .zx-related a[data-nav-open] >> nth=0")
             pg.wait_for_timeout(400)
             if visible_tab() != target:
@@ -104,6 +115,9 @@ def consistency_ui(pg, ctx):
         # ---- Auto-ban save bar and the "View history" toast action ----
         current["page"] = "savebar-history"
         js("openTabById('seccenter')")
+        pg.wait_for_selector("#secTabs .item[data-sec='abuse']", state="attached", timeout=10000)
+        if not js("!!document.querySelector(\"#secTabs .item.active[data-sec='abuse']\")"):  # the Security Center opens on Overview
+            pg.dispatch_event("#secTabs .item[data-sec='abuse']", "click")
         pg.wait_for_selector("#abBan", timeout=8000)
         pg.wait_for_function("document.getElementById('abBan').value !== ''", timeout=8000)
         orig = int(js("document.getElementById('abBan').value"))
@@ -123,6 +137,9 @@ def consistency_ui(pg, ctx):
             pg.wait_for_function("document.getElementById('hxFilterObject') && document.getElementById('hxFilterObject').value === 'Auto-ban'", timeout=8000)
             shot("history-from-toast.png")
         js("openTabById('seccenter')")
+        pg.wait_for_selector("#secTabs .item[data-sec='abuse']", state="attached", timeout=10000)
+        if not js("!!document.querySelector(\"#secTabs .item.active[data-sec='abuse']\")"):  # the Security Center opens on Overview
+            pg.dispatch_event("#secTabs .item[data-sec='abuse']", "click")
         pg.wait_for_selector("#abBan", timeout=8000)
         pg.wait_for_function(f"document.getElementById('abBan').value === '{orig + 7}'", timeout=8000)
         pg.fill("#abBan", str(orig))
@@ -150,7 +167,7 @@ def consistency_ui(pg, ctx):
         if js("document.querySelectorAll('img[src=\"x\"]').length") or js("window.__xss"):
             where = js("[...document.querySelectorAll('img[src=\"x\"]')].map(i => (i.closest('.functiontab') || {}).id)")
             fail("xss", f"a hostile host name was rendered as markup in: {where}")
-        if HOSTILE not in js("document.getElementById('hostDomainList').innerText"):
+        if HOSTILE not in js("document.getElementById('hostDomainList').textContent"):
             fail("xss", "the hostile host name is not shown as plain text in the Path routes host list")
 
         # ---- HTTP Proxy rule editor: host, alias, upstream and path-route values are text, never markup ----

@@ -3,34 +3,60 @@
     <head>
         <!-- Notes: This should be open in its original path-->
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
+        <title>Export or reset statistics</title>
         <link rel="stylesheet" href="../script/semantic/semantic.min.css">
+        <link rel="stylesheet" href="../ui/zxui.css">
         <script src="../script/jquery-3.6.0.min.js"></script>
         <script src="../script/semantic/semantic.min.js"></script>
         <script src="../script/utils.js"></script>
+        <style>
+            /* Export or reset (side panel of Statistics). Works on the date range picked on the Statistics page. */
+            body{ margin: 0; background: var(--zx-bg); color: var(--zx-text); font-size: var(--zx-fs-md); }
+            .ssWrap{ padding: var(--zx-space-4); max-width: 46rem; margin: 0 auto; }
+            .ssHead{ margin: 0 0 var(--zx-space-4); padding-right: 5.5rem; }   /* room for the Close button of the panel */
+            .ssHead h2{ margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-xl); font-weight: 700; line-height: 1.3; color: var(--zx-text); }
+            .ssHead p{ margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+            .ssRange{ display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--zx-space-1) var(--zx-space-3); margin: 0 0 var(--zx-space-4); padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
+            .ssRange__k{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+            .ssRange b{ font-weight: 700; font-variant-numeric: tabular-nums; }
+            .ssRange b i.icon{ margin: 0 var(--zx-space-1); color: var(--zx-text-muted); font-weight: 400; }
+            .ssRange .zx-help{ flex: 1 1 100%; margin: 0; }
+            .ssWrap .zx-card{ margin: 0 0 var(--zx-space-4); }
+            .ssWrap .zx-card__desc{ margin-bottom: var(--zx-space-4); }
+        </style>
     </head>
     <body>
         <link rel="stylesheet" href="../darktheme.css">
         <script src="../script/darktheme.js"></script>
-        <br>
-        <div class="ui container">
-            <div class="ui header">
-                <div class="content">
-                    Advanced Statistics Operations
-                    <div class="sub header">Selected Range: <span id="daterange"></span></div>
-                </div>
+        <div class="ssWrap">
+            <header class="ssHead">
+                <h2>Export or reset statistics</h2>
+                <p>Download the daily statistics, or remove them for good.</p>
+            </header>
+            <div class="ssRange">
+                <span class="ssRange__k">Selected range</span>
+                <b id="daterange">-</b>
+                <p class="zx-help">Both actions use the range chosen on the Statistics page. Close this panel to pick another one.</p>
             </div>
-            <div class="ui divider"></div>
-            <h3>Export Data</h3>
-            <p>You can export the statistics collected by Zoraxy in the selected range for further analysis</p>
-            <button class="ui basic teal button" onclick="handleExportAsCSV();"><i class="download icon"></i> Export CSV</button>
-            <button class="ui basic pink button" onclick="handleExportAsJSON();"><i class="download icon"></i> Export JSON</button>
-            <div class="ui divider"></div>
-            <h3>Reset Statistics</h3>
-            <p>You can reset the statistics within the selected time range for debug purpose. Note that this operation is irreversible.</p>
-            <button class="ui basic red button" onclick="handleResetStats();"><i class="trash icon"></i> Reset statistics</button>
-            <br><br>
-            <button class="ui basic button iframeOnly"  style="float: right;" onclick="parent.hideSideWrapper();"><i class="remove icon"></i> Close</button>
+
+            <section class="zx-card">
+                <div class="zx-card__head"><h3 class="zx-card__title">Export</h3></div>
+                <p class="zx-card__desc">Downloads one record per day of the range, to analyse somewhere else. Nothing is changed.</p>
+                <div class="zx-card__foot">
+                    <button type="button" class="zx-btn zx-btn--secondary" onclick="handleExportAsCSV();"><i class="download icon" aria-hidden="true"></i> Export CSV</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" onclick="handleExportAsJSON();"><i class="download icon" aria-hidden="true"></i> Export JSON</button>
+                </div>
+            </section>
+
+            <section class="zx-card">
+                <div class="zx-card__head"><h3 class="zx-card__title">Reset</h3></div>
+                <p class="zx-card__desc">Removes the statistics of every day in the range. You are asked to confirm, and it cannot be undone. Export first if you may need the numbers.</p>
+                <div class="zx-card__foot">
+                    <button type="button" class="zx-btn zx-btn--secondary" onclick="handleResetStats();"><i class="trash icon" aria-hidden="true"></i> Reset statistics</button>
+                </div>
+            </section>
         </div>
         <script>
             let startDate = "";
@@ -58,7 +84,7 @@
                             if (data.error != undefined){
                                 parent.msgbox(data.error, false, 5000);
                             }else{
-                                parent.msgbox("Statistic Cleared");
+                                parent.msgbox("Statistics reset");
                                 parent.hideSideWrapper();
                             }
                         }
@@ -92,7 +118,8 @@
                         startDate = s;
                         endDate = e;
 
-                        $("#daterange").html(startDate + ` <i class="arrow right icon" style="margin-right: 0;"></i> ` + endDate);
+                        $("#daterange").empty().append(document.createTextNode(startDate.split("_").join("-")));
+                        if (endDate !== startDate) $("#daterange").append('<i class="arrow right icon" aria-hidden="true"></i><span class="zx-sr-only"> to </span>', document.createTextNode(endDate.split("_").join("-")));
                     }catch(ex){
                         alert("Invalid usage: Invalid date range given");
                     }

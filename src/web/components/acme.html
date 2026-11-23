@@ -1,28 +1,37 @@
+<!-- ACME Client (tag acme). Order: is auto-renew on and what is due next (status header), the authority and contact it uses,
+     which certificates it looks after (with the next renewal of each), requesting a new one. Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
 <style>
-    #acme .expiredDomain { color: var(--zx-danger-text); }
-    #acme .validDomain   { color: var(--zx-ok-text); }
-    #acme #acmeDomainCertTable.disabled { opacity: 0.6; pointer-events: none; }
-    #acme .renewPanel { margin-top: var(--zx-space-3); padding-top: var(--zx-space-3); border-top: 1px solid var(--zx-border); }
-    #acme .renewPanel.section-disabled .zx-table-wrap, #acme .renewPanel.section-disabled .zx-btn-row { opacity: 0.75; pointer-events: none; user-select: none; }
-    #acme .renewPanel__lead { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); }
-    #acme .acmeState { display: inline-flex; margin-left: var(--zx-space-2); vertical-align: middle; }
-    #acme #acmeEnableToggleSucc { margin: var(--zx-space-2) 0 0; color: var(--zx-ok-text); font-size: var(--zx-fs-sm); }
-    #acme .zx-form-grid { max-width: 56em; }
-    #acme .zx-table-wrap { border: 0; }
-    #acme #acmeDomainTableBody td.acmeEmptyRow { color: var(--zx-text-muted); }
-    /* the switch keeps its full width (it used to run past the card edge on a phone) and an off / disabled switch stays visible */
-    #acme .zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
-    #acme .zx-toggle-row > .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
-    #acme .zx-toggle-row > .ui.toggle.checkbox.disabled, #acme .zx-toggle-row > .ui.toggle.checkbox.read-only { opacity: 1; }
-    #acme .zx-toggle-row__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-2); }
-    #acme .acmeState { margin-left: 0; }
+    #acme .acmeSwitch { display: inline-flex; align-items: center; gap: var(--zx-space-2); }
+    #acme .acmeSwitch > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
+    #acme .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
+    #acme .ui.toggle.checkbox.disabled, #acme .ui.toggle.checkbox.read-only { opacity: 1; }
+    #acme #acmeEnableToggleSucc { margin: 0; color: var(--zx-ok-text); font-size: var(--zx-fs-sm); }
+    #acme [hidden] { display: none; }
+    #acme .acmeRenewTable { table-layout: fixed; }
+    #acme .acmeRenewTable td { vertical-align: top; }
+    #acme .acmeRenewTable td .cx-cell, #acme .acmeRenewTable td .zx-longvalue { max-width: 100%; overflow-wrap: anywhere; }
+    #acme .acmeRenewTable .zx-longvalue { -webkit-line-clamp: 2; }
+    @media (max-width: 480px) { #acme .acmeRenewTable { table-layout: auto; } }
+    #acme .acmeRenewTable th:nth-child(2) { width: 11rem; }
+    #acme .acmeRenewTable th:nth-child(3) { width: 17rem; }
+    #acme .acmeRenewTable th:nth-child(4) { width: 8rem; }
+    #acme .acmeRenewTable input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--zx-primary); }
+    #acme .acmeRenewTable .cx-cell__main { font-weight: 700; }
+    #acme .acmePolicyNote { margin: var(--zx-space-3) 0 0; }
+    #acme .zx-toggle-row { border-bottom: 0; padding-top: 0; }
+    #acme .zx-form-grid > .field { margin-bottom: 0; }
+    #acme .zx-card__desc + .zx-card__foot { margin-top: var(--zx-space-4); }
+    @media (max-width: 480px) {
+        #acme .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
+        #acme .zx-card .zx-table tbody tr:last-child { border-bottom: 0; }
+    }
 </style>
 <div class="standardContainer" id="acmePage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">ACME Client</h2>
-            <p class="zx-page-header__sub">Request and renew free certificates from a certificate authority such as Let's Encrypt.</p>
+            <p class="zx-page-header__sub">Free certificates from an authority such as Let's Encrypt, requested and renewed by Zoraxy.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="ACME"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -33,9 +42,34 @@
         <a href="#acme" data-nav-open="acme" aria-current="page">ACME Client</a>
     </nav>
 
-    <section class="zx-card" tourstep="acmeSettings">
-        <div class="zx-card__head"><h3 class="zx-card__title">Authority and email</h3></div>
-        <p class="zx-card__desc">The certificate authority used by default when you create a proxy rule with a TLS certificate.</p>
+    <!-- status: on or off, what it uses, what is due next -->
+    <section class="zx-card cx-status" id="acmeStatusCard" aria-labelledby="acmeStatusTitle">
+        <div class="cx-status__top">
+            <span class="cx-status__icon" aria-hidden="true"><i class="sync icon"></i></span>
+            <div class="cx-status__text">
+                <div class="cx-status__title" role="heading" aria-level="3"><span id="acmeStatusTitle">Automatic renewal</span> <span class="zx-badge zx-badge--dot" id="acmeAutoRenewer"><span id="acmeAutoRenewerStatus">Off</span></span></div>
+                <p class="cx-status__desc" id="acmeStatusDesc">Off until you switch it on. Zoraxy then checks once a day and renews certificates that have 30 days or less left.</p>
+            </div>
+            <div class="cx-status__action" id="acmeToggleRow">
+                <p id="acmeEnableToggleSucc" role="status" style="display:none;"><i class="check icon" aria-hidden="true"></i> Saved</p>
+                <span class="acmeSwitch">
+                    <div class="ui toggle checkbox" id="acmeAutoRenewCheckbox">
+                        <input type="checkbox" id="enableCertAutoRenew" aria-label="Renew certificates automatically">
+                        <label></label>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div id="acmeEmailRequiredHint" class="zx-callout zx-callout--warn" role="note" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+            <div class="zx-callout__body">Auto-renew needs a contact email. Enter it under Authority and contact below and save, then switch auto-renew on.</div>
+        </div>
+        <dl class="cx-facts" id="acmeFacts" aria-live="polite"></dl>
+    </section>
+
+    <div class="zx-card" tourstep="acmeSettings">
+        <div class="zx-card__head"><h3 class="zx-card__title">Authority and contact</h3></div>
+        <p class="zx-card__desc">Who issues the certificates, and the email the authority may write to. Used for new certificates and when you create a site with HTTPS. Default: Let's Encrypt.</p>
         <div class="zx-card__body">
             <div class="ui fluid form">
                 <div class="zx-form-grid">
@@ -54,9 +88,9 @@
                         </div>
                     </div>
                     <div class="zx-field field">
-                        <label class="zx-field__label" for="prefACMEEmail">Email address</label>
+                        <label class="zx-field__label" for="prefACMEEmail">Contact email</label>
                         <input id="prefACMEEmail" type="text" placeholder="admin@example.com" autocomplete="email">
-                        <p class="zx-help">The authority sends expiry notices here. Example: admin@example.com</p>
+                        <p class="zx-help">The authority sends expiry notices here. Needed before a certificate can be requested.</p>
                     </div>
                     <div class="zx-field field" id="prefcaInput" style="display:none;">
                         <label class="zx-field__label" for="prefcaURL">ACME server URL</label>
@@ -79,90 +113,58 @@
                 </div>
             </div>
         </div>
-        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" onclick="saveDefaultCA();">Save</button></div>
-    </section>
+        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" onclick="saveDefaultCA();">Save authority and contact</button></div>
+    </div>
 
     <section class="zx-card">
-        <div class="zx-card__head"><h3 class="zx-card__title">Auto-renew</h3></div>
-        <p class="zx-card__desc">Renew certificates before they expire, without manual work.</p>
-        <div class="zx-card__body">
-            <div id="acmeToggleRow">
-                <div class="zx-toggle-row">
-                    <span class="zx-toggle-row__text">
-                        <span class="zx-toggle-row__title">Renew certificates automatically <span class="acmeState"><span class="zx-badge zx-badge--dot" id="acmeAutoRenewer"><span id="acmeAutoRenewerStatus">Disabled</span></span></span></span>
-                        <span class="zx-toggle-row__desc">Needs an email address above. Zoraxy checks daily and renews certificates close to expiry.</span>
-                    </span>
-                    <div class="ui toggle checkbox" id="acmeAutoRenewCheckbox">
-                        <input type="checkbox" id="enableCertAutoRenew" aria-label="Renew certificates automatically">
-                        <label></label>
-                    </div>
-                </div>
-                <p id="acmeEnableToggleSucc" style="display:none;"><i class="check icon" aria-hidden="true"></i> Setting updated</p>
-                <div id="acmeEmailRequiredHint" class="zx-callout zx-callout--warn" role="note" hidden style="margin-top: var(--zx-space-3);">
-                    <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
-                    <div class="zx-callout__body">Set the ACME email above and save it before you turn on auto-renew.</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="zx-card">
-        <div class="zx-card__head"><h3 class="zx-card__title">Renew policy</h3></div>
-        <p class="zx-card__desc">Choose which certificates the auto-renewer looks after.</p>
+        <div class="zx-card__head"><h3 class="zx-card__title">What gets renewed</h3></div>
+        <p class="zx-card__desc">The certificates the daily check looks after, and when each one is due. Default: all of them.</p>
         <div class="zx-card__body">
             <div class="zx-toggle-row">
                 <span class="zx-toggle-row__text">
                     <span class="zx-toggle-row__title">Renew all certificates</span>
-                    <span class="zx-toggle-row__desc">Turn off to pick individual certificates.</span>
+                    <span class="zx-toggle-row__desc">Turn off to pick the certificates yourself in the list below.</span>
                 </span>
                 <div class="ui toggle checkbox" id="renewAllSupportedCheckbox">
                     <input type="checkbox" id="renewAllSupported" aria-label="Renew all certificates" onchange="window.acmeSetAutoRenewMode(this.checked);">
                     <label></label>
                 </div>
             </div>
-            <div class="renewPanel renew_all_certificate">
-                <p class="renewPanel__lead">Every certificate is renewed automatically.</p>
-                <div class="zx-btn-row">
-                    <button type="button" id="acmeRenewNowBtn" onclick="window.acmeRenewNow();" class="ui basic button"><i class="refresh icon" aria-hidden="true"></i> Renew now</button>
-                </div>
+            <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Certificates and their next renewal">
+                <table id="acmeDomainCertTable" class="zx-table zx-table--comfortable acmeRenewTable">
+                    <thead>
+                        <tr>
+                            <th scope="col">Certificate</th>
+                            <th scope="col">Expires</th>
+                            <th scope="col">Next renewal</th>
+                            <th scope="col">Auto-renew</th>
+                        </tr>
+                    </thead>
+                    <tbody id="acmeDomainTableBody"></tbody>
+                </table>
             </div>
-            <div class="renewPanel renew_selected_certificate">
-                <p class="renewPanel__lead">Select the certificates to renew automatically. Expired ones are marked.</p>
-                <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Certificates to renew automatically">
-                    <table id="acmeDomainCertTable" class="zx-table zx-table--compact disabled">
-                        <thead>
-                            <tr>
-                                <th scope="col">Domain name</th>
-                                <th scope="col">Certificate file</th>
-                                <th scope="col">Auto-renew</th>
-                            </tr>
-                        </thead>
-                        <tbody id="acmeDomainTableBody"></tbody>
-                    </table>
-                </div>
-                <div class="zx-callout zx-callout--warn" role="note" style="margin-top: var(--zx-space-3);">
-                    <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
-                    <div class="zx-callout__body">Auto-renew only works with certificate authorities that Zoraxy supports. See the Zoraxy wiki for the list.</div>
-                </div>
-                <div class="zx-btn-row" style="margin-top: var(--zx-space-3);">
-                    <button type="button" id="acmeRenewSelectedBtn" onclick="window.acmeRenewNow();" class="ui basic disabled button"><i class="refresh icon" aria-hidden="true"></i> Renew selected</button>
-                </div>
-            </div>
+            <p class="zx-help acmePolicyNote">Certificates from the certificate folder or a signing request are renewed by whoever issued them. Renewal works with authorities that speak ACME; see the Zoraxy wiki for the list.</p>
         </div>
-        <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--secondary" onclick="window.acmeSaveRenewPolicy();">Save renew policy</button></div>
+        <div class="zx-card__foot">
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="window.acmeSaveRenewPolicy();">Save renew policy</button>
+            <button type="button" id="acmeRenewNowBtn" onclick="window.acmeRenewNow();" class="zx-btn zx-btn--secondary" title="Runs the daily check now: renews what is due and leaves the rest"><i class="refresh icon" aria-hidden="true"></i> Check and renew now</button>
+        </div>
     </section>
 
     <section class="zx-card">
         <div class="zx-card__head"><h3 class="zx-card__title">Request a certificate</h3></div>
-        <p class="zx-card__desc">Request one now for a domain that has no certificate yet.</p>
-        <div class="zx-card__body"><button type="button" class="zx-btn zx-btn--secondary" tourstep="openACMEManager" onclick="openACMEManager();"><i class="external icon" aria-hidden="true"></i> Open ACME tool</button></div>
+        <p class="zx-card__desc">For a domain that has no certificate yet. The guided way covers one or more names over HTTP; the full tool adds wildcards, the DNS challenge and other authorities.</p>
+        <div class="zx-card__foot">
+            <button type="button" class="zx-btn zx-btn--secondary" id="acmeGuidedBtn"><i class="plus icon" aria-hidden="true"></i> Get a certificate</button>
+            <button type="button" class="zx-btn zx-btn--secondary" tourstep="openACMEManager" onclick="openACMEManager();"><i class="external icon" aria-hidden="true"></i> Open the full ACME tool</button>
+        </div>
     </section>
 
     <aside class="zx-related" aria-label="Related pages">
         <span class="zx-related__title">Related</span>
         <ul>
-            <li><a href="#cert" data-nav-open="cert">TLS / SSL Certificates</a> <span>expiry, hosts without a certificate, upload</span></li>
-            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>the sites that use the certificates</span></li>
+            <li><a href="#globalsettings" data-nav-open="globalsettings">Listeners</a> <span>Port 80 must answer for the HTTP challenge</span></li>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>The sites that use the certificates</span></li>
         </ul>
     </aside>
 </div>
@@ -172,6 +174,12 @@
     var enableTriggerOnChangeEvent = true;
     var expiredDomains = [];
     var expiredFiles = [];   // stored certificates whose expiry date has passed, whoever manages them
+    var certInfo = {};       // file name -> entry of /api/cert/list (expiry, issuer, who manages it)
+    var renewOn = false;     // auto-renew switch
+    var emailSet = "";       // saved contact email
+    var caName = "Let's Encrypt";
+    var EARLY_RENEW_DAYS = 30;   // default of the -earlyrenew start flag
+    function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
 
     // Widget initialization
     $("#defaultCA").dropdown();
@@ -192,7 +200,7 @@
     // The toggle is disabled while no email is set; a click on it must say why instead of doing nothing
     $("#acmeToggleRow").on("click", function(){
         if ($("#acmeAutoRenewCheckbox").hasClass("disabled")){
-            msgbox("Set the ACME email first (Authority and email, above), then turn on auto-renew.", false, 5000);
+            msgbox(t("Set the ACME email first (Authority and contact, below), then turn on auto-renew."), false, 5000);
             $("#prefACMEEmail").focus();
         }
     });
@@ -245,51 +253,141 @@
 
     // Advanced Renew Policy
     function acmeSetAutoRenewMode(useAutoMode) {
-        if (useAutoMode){
-            $("#acmeDomainCertTable").addClass("disabled");
-            $("#acmeRenewNowBtn").removeClass("disabled");
-            $("#acmeRenewSelectedBtn").addClass("disabled");
-            $(".renew_all_certificate").removeClass("section-disabled");
-            $(".renew_selected_certificate").addClass("section-disabled");
-        } else {
-            $("#acmeDomainCertTable").removeClass("disabled");
-            $("#acmeRenewNowBtn").addClass("disabled");
-            $("#acmeRenewSelectedBtn").removeClass("disabled");
-            $(".renew_all_certificate").addClass("section-disabled");
-            $(".renew_selected_certificate").removeClass("section-disabled");
-        }
+        //all: every row is looked after (the boxes show it and are locked); selected: the boxes are yours
+        $('#acmeDomainTableBody input[type="checkbox"]').each(function(){
+            var ext = $(this).attr("data-external") === "1";
+            if (useAutoMode){ this.checked = !ext; }
+            this.disabled = useAutoMode || ext;
+        });
+        refreshRenewCells();
+        renderFacts();
+    }
+
+    function isExpired(srcfile, domains){
+        if (expiredFiles.includes(srcfile)){ return true; }
+        for (var i = 0; i < domains.length; i++){ if (expiredDomains.includes(domains[i])){ return true; } }
+        return false;
+    }
+
+    //"Next renewal" of one row, from the switch, the box of the row and the days left
+    function nextRenewalText(info, checked, external){
+        if (external){ return {text: t("Managed outside Zoraxy"), muted: true}; }
+        if (!checked){ return {text: t("Not renewed automatically"), muted: true}; }
+        if (!renewOn){ return {text: t("Waiting: auto-renew is off"), muted: true}; }
+        if (!info){ return {text: t("At the daily check, when 30 days or less are left"), muted: false}; }
+        var due = info.RemainingDays - EARLY_RENEW_DAYS;
+        if (due <= 0){ return {text: t("Due at the next daily check"), muted: false}; }
+        return {text: due == 1 ? t("In about 1 day") : tf("In about {0} days", due), muted: false};
+    }
+
+    function refreshRenewCells(){
+        $("#acmeDomainTableBody tr[data-file]").each(function(){
+            var file = $(this).attr("data-file"), box = $(this).find('input[type="checkbox"]')[0];
+            var n = nextRenewalText(certInfo[file], box && box.checked, box && box.getAttribute("data-external") === "1");
+            $(this).find(".acmeNext").text(n.text).toggleClass("cx-cell__sub", n.muted);
+        });
+    }
+    $("#acmeDomainTableBody").on("change", 'input[type="checkbox"]', function(){ refreshRenewCells(); renderFacts(); });
+
+    function daysBadge(info, expired){
+        if (!info){ return expired ? '<span class="zx-badge zx-badge--dot zx-badge--danger">' + esc(t("Expired")) + '</span>' : ""; }
+        var d = info.RemainingDays, cls = d <= 7 ? "zx-badge--danger" : (d <= 30 ? "zx-badge--warn" : "zx-badge--ok");
+        var text = d <= 0 ? t("Expired") : (d == 1 ? t("1 day left") : tf("{0} days left", d));
+        return '<span class="zx-badge zx-badge--dot ' + cls + '">' + esc(text) + '</span>';
+    }
+
+    /*
+        Host names as quiet chips (shared with the Certificates page, which defines the same helper): natural order
+        (host2 before host10), at most three chips and about 70 characters shown, the rest behind "+N more" that
+        grows in place. A long name is cut with an ellipsis and keeps its full text as a tooltip.
+    */
+    window.cxHostChips = window.cxHostChips || function(list, label){
+        function e(v){ return String(v == undefined ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+        list = (list || []).slice().sort(function(a, b){ return String(a).localeCompare(String(b), undefined, {numeric: true, sensitivity: "base"}); });
+        if (list.length == 0){ return ""; }
+        var shown = 0, chars = 0;
+        while (shown < list.length && shown < 3 && (shown == 0 || chars + String(list[shown]).length <= 70)){ chars += String(list[shown]).length; shown++; }
+        var html = '<ul class="cx-hosts"' + (label ? ' aria-label="' + e(label) + '"' : "") + '>';
+        list.forEach(function(n, i){ html += '<li class="cx-host' + (i >= shown ? ' cx-host--extra" hidden' : '"') + ' title="' + e(n) + '">' + e(n) + '</li>'; });
+        if (list.length > shown){ html += '<li><button type="button" class="cx-host" data-cx-more="' + (list.length - shown) + '" aria-expanded="false">' + e(tf("+{0} more", list.length - shown)) + '</button></li>'; }
+        return html + "</ul>";
+    };
+    if (!window.cxHostChipsBound){
+        window.cxHostChipsBound = true;
+        $(document).on("click", ".cx-hosts [data-cx-more]", function(){
+            var b = $(this), open = b.attr("aria-expanded") === "true";
+            b.closest(".cx-hosts").find(".cx-host--extra").prop("hidden", open);
+            b.attr("aria-expanded", open ? "false" : "true").text(open ? tf("+{0} more", b.attr("data-cx-more")) : t("Show fewer"));
+        });
+    }
+
+    //The name a certificate is stored under can be 250 characters long: then it is a clamped value that opens on hover or focus
+    function storedHtml(name){
+        if (String(name).length <= 48){ return '<span class="cx-cell__sub">' + esc(tf("Stored as {0}", name)) + '</span>'; }
+        return '<span class="cx-cell__sub">' + esc(t("Stored as")) + '</span><span class="zx-longvalue" tabindex="0" aria-label="' + esc(tf("Stored as {0}", name)) + '">' + esc(name) + '</span>';
     }
 
     function renderDomainTable(domainFileList) {
         var tableBody = $('#acmeDomainTableBody');
         tableBody.empty();
+        var files = Object.keys(domainFileList).filter(function(f){ return domainFileList.hasOwnProperty(f); });
+        files.sort(function(a, b){ return ((certInfo[a] || {}).RemainingDays || 0) - ((certInfo[b] || {}).RemainingDays || 0); });
 
-        for (var srcfile in domainFileList) {
-            if (!domainFileList.hasOwnProperty(srcfile)){ continue; }
-            var domains = domainFileList[srcfile];
+        files.forEach(function(srcfile){
+            var domains = domainFileList[srcfile] || [], info = certInfo[srcfile];
+            var expired = isExpired(srcfile, domains);
+            var external = !!info && (info.ManagedBy == "mapdir" || info.ManagedBy == "csr");
+            var own = info && info.Domain ? info.Domain : (domains[0] || srcfile);
+            var skip = [String(own).toLowerCase(), String(srcfile).toLowerCase()];
+            var chips = cxHostChips(domains.filter(function(d){ return skip.indexOf(String(d).toLowerCase()) < 0; }), t("Also covers"));
+            var stored = srcfile != own ? storedHtml(srcfile) : "";
+            var source = info ? ({acme: t("Issued here"), mapdir: t("From the certificate folder"), csr: t("From a signing request")}[info.ManagedBy] || t("Uploaded")) : "";
 
-            var domainClass = "validDomain";
-            for (var i = 0; i < domains.length; i++){
-                if (expiredDomains.includes(domains[i]) || expiredFiles.includes(srcfile)){
-                    domainClass = "expiredDomain";
-                    break;
-                }
-            }
+            var row = $('<tr>').attr("data-file", srcfile);
+            row.append($('<td class="' + (expired ? "expiredDomain" : "validDomain") + '">').attr("data-label", t("Certificate")).html(
+                '<div class="cx-cell"><span class="cx-cell__main">' + esc(own) + '</span>' + stored + chips + '</div>'));
+            row.append($('<td>').attr("data-label", t("Expires")).html('<div class="cx-cell">' + daysBadge(info, expired) + (source ? '<span class="cx-cell__sub">' + esc(source) + '</span>' : "") + '</div>'));
+            row.append($('<td>').attr("data-label", t("Next renewal")).html('<span class="acmeNext"></span>'));
 
-            var row = $('<tr>');
-            row.append($('<td class="' + domainClass + '" data-label="Domain name">').html($("<div>").text(domains.join("\n")).html().replace(/\n/g, "<br>") + (domainClass === "expiredDomain" ? ' <span class="zx-badge zx-badge--danger">Expired</span>' : '')));
-            row.append($('<td data-label="Certificate file">').text(srcfile));
-
-            var checkboxCell = $('<td data-label="Auto-renew">').attr('srcfile', srcfile).attr('domain', encodeURIComponent(JSON.stringify(domains)));
-            checkboxCell.append($('<input type="checkbox">').attr('name', srcfile));
+            var checkboxCell = $('<td>').attr("data-label", t("Auto-renew")).attr('srcfile', srcfile).attr('domain', encodeURIComponent(JSON.stringify(domains)));
+            checkboxCell.append($('<input type="checkbox">').attr('name', srcfile).attr("aria-label", tf("Renew {0} automatically", own)).attr("data-external", external ? "1" : "0").prop("disabled", external));
             row.append(checkboxCell);
 
             tableBody.append(row);
-        }
+        });
 
-        if (Object.keys(domainFileList).length === 0){
-            tableBody.append('<tr><td class="zx-empty-cell acmeEmptyRow" colspan="3">No certificates in use yet.</td></tr>');
+        if (files.length === 0){
+            tableBody.append('<tr><td class="zx-empty-cell acmeEmptyRow" colspan="4">' + esc(t("No certificates yet. A certificate you request or upload shows up here with its next renewal.")) + '</td></tr>');
         }
+    }
+
+    //The facts of the status header: authority, contact, what is looked after, what is due next
+    function renderFacts(){
+        var rows = $("#acmeDomainTableBody tr[data-file]"), covered = [], all = $("#renewAllSupported").prop("checked");
+        rows.each(function(){
+            var box = $(this).find('input[type="checkbox"]')[0];
+            if (box && box.checked){ covered.push($(this).attr("data-file")); }
+        });
+        var next = null;
+        covered.forEach(function(f){ var i = certInfo[f]; if (i && (next === null || i.RemainingDays < next.RemainingDays)){ next = i; } });
+        function fact(label, value, cls, small){
+            return '<div class="cx-fact"><dt>' + esc(label) + '</dt><dd' + (cls ? ' class="' + cls + '"' : "") + '>' + esc(value) + (small ? '<small>' + esc(small) + '</small>' : "") + '</dd></div>';
+        }
+        var nextValue = t("Nothing"), nextSmall = t("no certificate is looked after"), nextCls = "is-muted";
+        if (next){
+            var due = next.RemainingDays - EARLY_RENEW_DAYS;
+            nextValue = next.Domain || next.Filename; nextCls = "";
+            nextSmall = !renewOn ? t("waiting: auto-renew is off") : (due <= 0 ? t("due at the next daily check") : (due == 1 ? t("in about 1 day") : tf("in about {0} days", due)));
+            if (!renewOn && next.RemainingDays <= EARLY_RENEW_DAYS){ nextCls = "is-warn"; }
+        }
+        $("#acmeFacts").html(
+            fact(t("Authority"), caName == "custom" ? t("Custom ACME server") : caName, "", "") +
+            fact(t("Contact email"), emailSet || t("Not set"), emailSet ? "" : "is-warn", emailSet ? "" : t("needed before it can be switched on")) +
+            fact(t("Looks after"), all ? t("All certificates") : tf("{0} of {1}", covered.length, rows.length), "", all ? "" : t("certificates you picked")) +
+            fact(t("Next renewal"), nextValue, nextCls, nextSmall));
+        $("#acmeStatusCard").attr("data-state", renewOn ? "ok" : (emailSet ? "" : "warn"));
+        $("#acmeStatusDesc").text(renewOn ? t("On. Zoraxy checks once a day and renews the certificates it looks after when they have 30 days or less left.")
+            : t("Off until you switch it on. Zoraxy then checks once a day and renews certificates that have 30 days or less left."));
     }
 
     function initAutoRenewPolicy(){
@@ -302,6 +400,7 @@
                 $("#renewAllSupportedCheckbox").checkbox("set checked");
                 acmeSetAutoRenewMode(true);
             } else {
+                $("#renewAllSupportedCheckbox").checkbox("set unchecked");
                 data.forEach(function(name){
                     $('#acmeDomainTableBody input[type="checkbox"][name="' + name + '"]').prop('checked', true);
                 });
@@ -330,7 +429,10 @@
             },
             complete: function(){
                 $.get("/api/cert/list?date=true", function(list){
-                    expiredFiles = (list || []).filter(function(c){ return c.RemainingDays <= 0; }).map(function(c){ return c.Filename; });
+                    list = Array.isArray(list) ? list : [];
+                    certInfo = {};
+                    list.forEach(function(c){ certInfo[c.Filename] = c; });
+                    expiredFiles = list.filter(function(c){ return c.RemainingDays <= 0; }).map(function(c){ return c.Filename; });
                 }).always(initDomainTable);
             }
         });
@@ -344,7 +446,7 @@
                 method: "POST",
                 data: {opr: "setAuto"},
                 success: function(data){
-                    msgbox("Renew policy updated");
+                    msgbox(t("Renew policy updated"));
                 }
             });
         } else {
@@ -364,12 +466,19 @@
     }
 
     function acmeRenewNow(){
+        var btn = $("#acmeRenewNowBtn");
+        if (btn.prop("disabled")){ return; }
+        btn.prop("disabled", true).attr("aria-busy", "true");
+        msgbox(t("Checking the certificates. Renewing can take a few minutes."));
         $.get("/api/acme/autoRenew/renewNow", function(data){
             if (data.error != undefined){
                 msgbox(data.error, false, 6000);
             } else {
                 msgbox(data);
             }
+        }).always(function(){
+            btn.prop("disabled", false).removeAttr("aria-busy");
+            initDomainFileList();
         });
     }
 
@@ -377,7 +486,9 @@
     function initAcmeStatus(){
         $.get("/api/acme/autoRenew/email", function(data){
             $("#prefACMEEmail").val(data);
+            emailSet = (typeof data === "string") ? data.trim() : "";
             updateEmailGate(data);
+            renderFacts();
             if (data.trim() == ""){
                 $(".renewButton").addClass('disabled');
             } else {
@@ -387,6 +498,8 @@
 
         $.get("/api/acme/autoRenew/ca", function(data){
             $("#defaultCA").dropdown("set value", data.name);
+            caName = data.name || "Let's Encrypt";
+            renderFacts();
             $("#prefcaURL").val(data.url || "");
             updatePrefCaFields(data.name);
             $("#skipTLSCheckbox").prop("checked", data.skipTLS || false);
@@ -420,8 +533,11 @@
     // Global exports
     // setACMEEnableStates is also called from snippet/acme.html via parent.setACMEEnableStates
     window.setACMEEnableStates = function(enabled){
-        $("#acmeAutoRenewerStatus").text(enabled ? "Enabled" : "Disabled");
+        renewOn = !!enabled;
+        $("#acmeAutoRenewerStatus").text(enabled ? t("On") : t("Off"));
         $("#acmeAutoRenewer").toggleClass("zx-badge--ok", !!enabled);
+        refreshRenewCells();
+        renderFacts();
     };
 
     $("input[name=defaultCA]").on("change", function(){
@@ -463,7 +579,9 @@
                     msgbox(data.error, false);
                 } else {
                     $(".renewButton").removeClass('disabled');
+                    emailSet = newDefaultEmail;
                     updateEmailGate(newDefaultEmail);
+                    renderFacts();
                 }
             }
         });
@@ -479,6 +597,9 @@
             success: function(data){
                 if (data.error != undefined){
                     msgbox(data.error, false);
+                } else {
+                    caName = newDefaultCA || "Let's Encrypt";
+                    renderFacts();
                 }
             }
         });
@@ -509,6 +630,14 @@
 
         msgbox("Settings updated");
     };
+
+    //the guided way lives on the Certificates page
+    $("#acmeGuidedBtn").on("click", function(){
+        openTabById("cert");
+        if (typeof openCertAddCard === "function"){ openCertAddCard("acme"); }
+    });
+    //the table and the facts are re-read every time the page is opened
+    document.addEventListener("zx:tabopen", function(e){ if (e.detail && e.detail.tag === "acme"){ initDomainFileList(); } });
 
     window.openACMEManager = function(){
         showSideWrapper('snippet/acme.html');

@@ -265,7 +265,8 @@ SUBTAB_JS = r"""
   const root = document.querySelector(rootSel);
   if (!root) return [];
   const sel = 'a.item[data-tab], .item[data-sec], .ui.tabular.menu > .item, .ui.pointing.menu > .item, .ui.secondary.pointing.menu > .item, .ui.top.attached.tabular.menu > .item, .menu .accesscontrol.item';
-  const items = [...root.querySelectorAll(sel)].filter(e => e.offsetParent !== null && !e.closest('#mainmenu'));
+  // items of a sectioned navigation (.zx-sectionnav) are a <select> on narrow screens: still sub tabs, opened with a script click
+  const items = [...root.querySelectorAll(sel)].filter(e => (e.offsetParent !== null || e.classList.contains('zx-sectionnav__item')) && !e.closest('#mainmenu'));
   return items.map((e, i) => ({idx: i, label: (e.textContent || '').replace(/\s+/g, ' ').trim() || e.getAttribute('data-tab') || e.getAttribute('data-sec') || ('tab' + i)}));
 }
 """
@@ -327,12 +328,15 @@ def audit_page(pg, tag):
         try:
             # indexes are computed on visible items only, so look them up the same way
             handle = pg.evaluate_handle("""([rootSel, sel, idx]) => [...document.querySelector(rootSel).querySelectorAll(sel)]
-                .filter(e => e.offsetParent !== null && !e.closest('#mainmenu'))[idx]""", [root, sel, it["idx"]])
+                .filter(e => (e.offsetParent !== null || e.classList.contains('zx-sectionnav__item')) && !e.closest('#mainmenu'))[idx]""", [root, sel, it["idx"]])
             el = handle.as_element()
             if el is None:
                 continue
-            el.scroll_into_view_if_needed(timeout=2000)
-            el.click(timeout=3000)
+            if el.is_visible():
+                el.scroll_into_view_if_needed(timeout=2000)
+                el.click(timeout=3000)
+            else:
+                el.evaluate("e => e.click()")
             settle(pg, 800)
             run_checks(pg, root, True)
         except Exception as ex:

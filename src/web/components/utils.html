@@ -1,319 +1,539 @@
+<!-- System > Utilities (tag utils): the system administration hub. Kit page header, Related menu and the sectioned navigation
+     (#utNav, ZxUI.sectionNav); every section is a static pane (.sy-pane[data-pane]).
+     Open a section from other code with: ZxUtils.go("backup")  (overview, security, updates, backup, logs, network, calc, info, contributors, danger).
+     The navigation shows the state of a section (utNav.state): update available, log rotation, Geo-IP auto update, sign-in off.
+     Interface language, default error pages and the database live on System > Settings. -->
 <div class="standardContainer" id="utilsPage">
     <style>
-        #utilsPage .ut-result { margin: var(--zx-space-3) 0 0; padding: var(--zx-space-3); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text); font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; min-height: 2.5em; }
-        #utilsPage .ut-result.is-empty { color: var(--zx-text-muted); font-family: inherit; }
-        #utilsPage .ut-result.is-error { color: var(--zx-danger-text); border-color: var(--zx-danger-line); background: var(--zx-danger-bg); font-family: inherit; }
-        #utilsPage .ut-inline { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: stretch; }
-        #utilsPage .ut-inline > input { flex: 1 1 14rem; min-width: 0; }
-        #utilsPage .ut-inline > .ui.button { flex: 0 0 auto; align-self: stretch; height: auto; margin: 0; }
-        #utilsPage .ut-range { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-3); }
-        #utilsPage .ut-range .zx-field { margin-bottom: 0; }
-        #utilsPage .ut-kv { display: grid; grid-template-columns: 14rem minmax(0, 1fr); margin: 0; }
-        #utilsPage .ut-kv dt, #utilsPage .ut-kv dd { margin: 0; padding: var(--zx-space-3) 0; border-top: 1px solid var(--zx-border); }
-        #utilsPage .ut-kv dt:first-of-type, #utilsPage .ut-kv dd:first-of-type { border-top: 0; }
-        #utilsPage .ut-kv dt { color: var(--zx-text-muted); font-weight: 600; padding-right: var(--zx-space-4); }
-        #utilsPage .ut-kv dd { overflow-wrap: anywhere; min-width: 0; }
-        #utilsPage .ut-kv dd.uuid { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
-        #utilsPage .ut-supporters { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
-        #utilsPage .ut-supporters .zx-badge { font-size: var(--zx-fs-md); padding: 4px 12px; }
-        #utilsPage .zx-card .ui.message { margin-top: var(--zx-space-3); }
-        #utilsPage .ut-hint { margin: var(--zx-space-3) 0 0; }
-        @media (max-width: 600px) {
-            #utilsPage .ut-kv { grid-template-columns: minmax(0, 1fr); }
-            #utilsPage .ut-kv dt { border-top: 1px solid var(--zx-border); padding-bottom: 0; }
-            #utilsPage .ut-kv dd { border-top: 0; padding-top: var(--zx-space-1); }
-            #utilsPage .ut-kv dt:first-of-type { border-top: 0; }
-        }
+        #utilsPage .ut-credit { margin: var(--zx-space-4) 0 0; }
+        #utilsPage #geodbUpdateMsg[hidden] { display: none; }
+        #utilsPage .ut-geo-country { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-4) 0 var(--zx-space-3); }
+        #utilsPage .ut-geo-country b { font-size: var(--zx-fs-xl); }
+        #utilsPage .zx-statrow { margin-top: 0; }
+        #utilsPage .zx-stat__value.ut-stat-text { font-size: var(--zx-fs-xl); line-height: 1.35; margin: 4px 0; }
+        #utilsPage .sy-jump .zx-badge { flex: 0 0 auto; }
+        #utilsPage .sy-jump .zx-badge[hidden], #utilsPage .zx-callout[hidden], #utilsPage .sy-row__end .zx-badge[hidden] { display: none; }
+        #utilsPage a.sy-jump, #utilsPage a.sy-jump:hover { color: var(--zx-text); text-decoration: none; }
+        #utilsPage .ut-attn .zx-callout__body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); }
+        #utilsPage .ut-attn__text { flex: 1 1 16rem; min-width: 0; }
+        #utilsPage .ut-attn__text b { display: block; }
+        #utilsPage .ut-pwform { margin: 0; }
+        @media (max-width: 600px) { #utilsPage .sy-jump { flex-wrap: wrap; } #utilsPage .sy-jump .sy-row__main { flex: 1 1 60%; } #utilsPage .sy-jump .zx-badge { order: 3; margin-left: calc(36px + var(--zx-space-3)); } }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Utilities</h2>
-            <p class="zx-page-header__sub">Logs, backups, geo-IP data and network helpers.</p>
+            <p class="zx-page-header__sub">Look after this Zoraxy: your password, Geo-IP data, updates, backups, logs and a few handy tools.</p>
         </div>
     </header>
-    <div class="ui top attached tabular menu zx-tabscroll">
-        <a class="utils item active" data-tab="utiltab1"><i class="user circle outline icon"></i> Accounts</a>
-        <a class="utils item" data-tab="utiltab2"><i class="file alternate outline icon"></i> Logger</a>
-        <a class="utils item" data-tab="utiltab3"><i class="wrench icon"></i> Toolbox</a>
-        <a class="utils item" data-tab="utiltab4"><i class="server icon"></i> System</a>
-        <a class="utils item" data-tab="utiltab5"><i class="heart outline icon"></i> Contributors</a>
-    </div>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#settings" data-nav-open="settings">Settings</a> <span>Interface language, default error pages and the database</span></li>
+            <li><a href="#updater" data-nav-open="updater">Update</a> <span>Check for and install a new version</span></li>
+            <li><a href="#history" data-nav-open="history">History</a> <span>Every saved version of the configuration</span></li>
+            <li><a href="#apitokens" data-nav-open="apitokens">API Tokens</a> <span>Access for scripts and automation</span></li>
+            <li><a href="#networktool" data-nav-open="networktool">Network Tools</a> <span>Ping, traceroute, whois and more</span></li>
+        </ul>
+    </aside>
+    <!-- the command palette looks for this text on the page; choosing it there opens the section -->
+    <b class="zx-sr-only" aria-hidden="true" data-ut-go="backup">System backup &amp; restore</b>
+    <b class="zx-sr-only" aria-hidden="true" data-ut-go="security">Change password</b>
 
-    <div class="ui bottom attached tab segment utilitiesTabs active" data-tab="utiltab1">
-        <div class="extAuthOnly" style="display:none;">
-            <div class="zx-empty">
-                <div class="zx-empty__icon" aria-hidden="true"><i class="user circle outline icon"></i></div>
-                <div class="zx-empty__title">No accounts to manage</div>
-                <p class="zx-empty__text">Sign-in is turned off, so there are no accounts to manage here. Zoraxy was started without its own login, for example behind another authentication service.</p>
+    <div class="zx-sectioned">
+        <nav class="zx-sectionnav" id="utNav" aria-label="Utilities sections">
+            <div class="zx-sectionnav__group">
+                <button type="button" class="zx-sectionnav__item active" data-zx-section="overview"><i class="tachometer alternate icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Overview</span><span class="zx-sectionnav__desc" hidden>Version, sign-in, Geo-IP data and backups of this Zoraxy at a glance.</span></button>
             </div>
-        </div>
-        <div class="selfauthOnly">
-            <section class="zx-card">
-                <div class="zx-card__head">
-                    <h3 class="zx-card__title">Change password</h3>
-                    <p class="zx-card__desc">Update the password of the account you are signed in with.</p>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpSystem">
+                <div class="zx-sectionnav__label" id="utGrpSystem">Maintain</div>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="security"><i class="lock icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Security</span><span class="zx-sectionnav__desc" hidden>Your password, how long a sign-in lasts and the tokens that scripts use.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="updates"><i class="download icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Updates</span><span class="zx-sectionnav__desc" hidden>Which version is running and how new releases are found. Nothing is installed by itself.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="backup"><i class="database icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Backup &amp; restore</span><span class="zx-sectionnav__desc" hidden>Download the configuration to protect or move it, restore it from a backup, or step back through saved versions.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="logs"><i class="file alternate outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Logs</span><span class="zx-sectionnav__desc" hidden>Read what Zoraxy wrote down and keep the log file from growing without limit. Rotation is off until you switch it on.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpTools">
+                <div class="zx-sectionnav__label" id="utGrpTools">Network tools</div>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="network"><i class="globe icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Geo-IP</span><span class="zx-sectionnav__desc" hidden>The Geo-IP database turns visitor addresses into countries for access rules and statistics. Look up an address to test it.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="calc"><i class="calculator icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Address calculator</span><span class="zx-sectionnav__desc" hidden>Convert between IP ranges and CIDR blocks for allow and block lists. IPv4 and IPv6.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpAbout">
+                <div class="zx-sectionnav__label" id="utGrpAbout">About</div>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="info"><i class="server icon" aria-hidden="true"></i><span class="zx-sectionnav__text">System information</span><span class="zx-sectionnav__desc" hidden>Identity, version and uptime of this Zoraxy host.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="contributors"><i class="heart outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Contributors</span><span class="zx-sectionnav__desc" hidden>Zoraxy is free and open source thanks to the people who support it.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpAdvanced">
+                <div class="zx-sectionnav__label" id="utGrpAdvanced">Advanced</div>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="danger"><i class="exclamation triangle icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Danger zone</span><span class="zx-sectionnav__desc" hidden>Actions that delete data or replace the configuration. Each one asks before it runs, and none can be undone from here.</span></button>
+            </div>
+        </nav>
+
+        <div class="zx-sectioned__main">
+            <header class="zx-sectionhead" id="utHead"><h3 class="zx-sectionhead__title"></h3><p class="zx-sectionhead__desc"></p></header>
+
+            <!-- ================= Overview ================= -->
+            <div class="sy-pane" data-pane="overview">
+                <div class="zx-callout zx-callout--info ut-attn" id="utOvAttn" role="status" hidden>
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="download icon"></i></span>
+                    <div class="zx-callout__body">
+                        <span class="ut-attn__text"><b id="utOvAttnTitle"></b><span id="utOvAttnText">A newer Zoraxy release is ready. Nothing is installed until you confirm it on the Update page.</span></span>
+                        <a class="zx-btn zx-btn--primary" href="#updater" data-nav-open="updater"><i class="download icon" aria-hidden="true"></i> Open Update</a>
+                    </div>
                 </div>
-                <div class="zx-card__body">
-                    <div class="ui form">
+                <div class="zx-statrow">
+                    <div class="zx-stat"><span class="zx-stat__label">Version</span><span class="zx-stat__value" id="utOvVersion">-</span><span class="zx-stat__hint" id="utOvBuild">&nbsp;</span></div>
+                    <div class="zx-stat"><span class="zx-stat__label">Running for</span><span class="zx-stat__value" id="utOvUptime">-</span><span class="zx-stat__hint" id="utOvSince">&nbsp;</span></div>
+                    <div class="zx-stat"><span class="zx-stat__label">Sign-in</span><span class="zx-stat__value" id="utOvAuth">-</span><span class="zx-stat__hint" id="utOvUser">&nbsp;</span></div>
+                    <div class="zx-stat"><span class="zx-stat__label">Geo-IP data</span><span class="zx-stat__value" id="utOvGeo">-</span><span class="zx-stat__hint" id="utOvGeoHint">&nbsp;</span></div>
+                </div>
+                <section class="zx-card" aria-label="Sections of this page">
+                    <div class="zx-card__body">
+                        <ul class="sy-rows sy-rows--flush">
+                            <li><button type="button" class="sy-jump" data-ut-go="security">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="lock icon"></i></span>
+                                <span class="sy-row__main"><span class="sy-row__title">Change password</span><span class="sy-row__sub" id="utOvSecurity">Your password, sign-in sessions and API tokens.</span></span>
+                                <span class="zx-badge zx-badge--dot" id="utOvSecBadge" hidden></span>
+                                <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+                            <li><button type="button" class="sy-jump" data-ut-go="network">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="globe icon"></i></span>
+                                <span class="sy-row__main"><span class="sy-row__title">Geo-IP database</span><span class="sy-row__sub" id="utOvNetwork">Update the country data and look up an address.</span></span>
+                                <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+                            <li><button type="button" class="sy-jump" data-ut-go="updates">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="download icon"></i></span>
+                                <span class="sy-row__main"><span class="sy-row__title">Updates</span><span class="sy-row__sub" id="utOvUpdates">Which version is running and how new releases are found.</span></span>
+                                <span class="zx-badge zx-badge--dot" id="utOvUpdBadge" hidden></span>
+                                <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+                            <li><button type="button" class="sy-jump" data-ut-go="backup">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="database icon"></i></span>
+                                <span class="sy-row__main"><span class="sy-row__title">Backup &amp; restore</span><span class="sy-row__sub" id="utOvBackup">Download the configuration or restore it from a backup.</span></span>
+                                <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+                            <li><button type="button" class="sy-jump" data-ut-go="logs">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="file alternate outline icon"></i></span>
+                                <span class="sy-row__main"><span class="sy-row__title">Logs</span><span class="sy-row__sub" id="utOvLogs">Read the logs and set up log rotation.</span></span>
+                                <span class="zx-badge zx-badge--dot" id="utOvLogBadge" hidden></span>
+                                <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></button></li>
+                            <li><a class="sy-jump" href="#settings" data-nav-open="settings">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="cog icon"></i></span>
+                                <span class="sy-row__main"><span class="sy-row__title">Language, error pages and database</span><span class="sy-row__sub">The interface language, the error pages visitors see and what the settings database holds are on the Settings page.</span></span>
+                                <span class="sy-jump__go" aria-hidden="true"><i class="chevron right icon"></i></span></a></li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ================= Security & sessions ================= -->
+            <div class="sy-pane" data-pane="security" hidden>
+                <section class="zx-card selfauthOnly">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Password</h3>
+                        <p class="zx-card__desc">Change the password of the account you are signed in with. Other sign-ins of this account stay valid until they expire.</p>
+                    </div>
+                    <form class="ut-pwform" id="utPwForm" autocomplete="on" novalidate>
+                    <div class="zx-card__body">
+                        <input type="text" id="utPwUser" name="username" autocomplete="username" class="zx-sr-only" tabindex="-1" aria-hidden="true" readonly data-zx-ignore>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="utPwOld">Current password</label>
+                            <input class="zx-input" type="password" id="utPwOld" name="oldPassword" autocomplete="current-password">
+                        </div>
                         <div class="zx-form-grid">
-                            <div class="zx-field zx-field--wide">
-                                <label class="zx-field__label" for="utPwOld">Current password</label>
-                                <input type="password" id="utPwOld" name="oldPassword" autocomplete="current-password">
-                            </div>
                             <div class="zx-field">
                                 <label class="zx-field__label" for="utPwNew">New password</label>
-                                <input type="password" id="utPwNew" name="newPassword" autocomplete="new-password">
+                                <input class="zx-input" type="password" id="utPwNew" name="newPassword" autocomplete="new-password">
                             </div>
                             <div class="zx-field">
                                 <label class="zx-field__label" for="utPwConfirm">Confirm new password</label>
-                                <input type="password" id="utPwConfirm" name="confirmNewPassword" autocomplete="new-password">
+                                <input class="zx-input" type="password" id="utPwConfirm" name="confirmNewPassword" autocomplete="new-password">
                             </div>
                         </div>
-                        <button type="button" class="ui primary button" onclick="changePassword()"><i class="key icon"></i> Update password</button>
+                        <p class="sy-msg" id="utPwError" role="alert" hidden></p>
+                        <div id="passwordChangeSuccMsg" class="zx-callout zx-callout--success" role="status" style="display:none;">
+                            <span class="zx-callout__icon" aria-hidden="true"><i class="circle checkmark icon"></i></span>
+                            <div class="zx-callout__body">Password updated</div>
+                        </div>
                     </div>
-                    <div id="passwordChangeSuccMsg" class="ui green message" style="display:none;">
-                        <i class="circle checkmark icon"></i> Password updated
+                    <div class="zx-card__foot">
+                        <button type="submit" class="zx-btn zx-btn--primary" id="utPwBtn"><i class="key icon" aria-hidden="true"></i> Update password</button>
                     </div>
-                </div>
-            </section>
-        </div>
-    </div>
-
-    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab2">
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">Log rotation</h3>
-                <p class="zx-card__desc">Keep the Zoraxy log from growing without limit by rotating it into numbered backup files.</p>
+                    </form>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Sessions and access</h3>
+                        <p class="zx-card__desc">Who and what can reach this admin interface. These are managed on their own pages.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <ul class="sy-rows">
+                            <li class="sy-row extAuthOnly" style="display:none;">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="user circle outline icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Sign-in</span><span class="sy-row__sub">Zoraxy was started without its own login (the -noauth start parameter), for example behind another authentication service. There is no password to change here.</span></div>
+                                <div class="sy-row__end"><span class="zx-badge zx-badge--dot zx-badge--warn">Off</span></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="clock outline icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Sign-in sessions</span><span class="sy-row__sub" id="utSesText">How long a sign-in lasts before the password is asked again.</span></div>
+                                <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--secondary" id="utSesBtn">Admin accounts</button></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="key icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">API tokens <span class="zx-badge" id="utTokBadge" hidden></span></span><span class="sy-row__sub" id="utTokText">Tokens let scripts use the REST API without your password.</span></div>
+                                <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="#apitokens" data-nav-open="apitokens">Manage tokens</a></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="terminal icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">SSH loopback</span><span class="sy-row__sub">Lets the web SSH tool connect to this server itself. Set with a start parameter; off unless Zoraxy was started with it.</span></div>
+                                <div class="sy-row__end"><span class="zx-badge zx-badge--dot" id="utSshBadge">-</span></div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
             </div>
-            <div class="zx-card__body">
-                <form id="log-settings-form" class="ui form">
-                    <label class="zx-toggle-row">
-                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Enable log rotation</span><span class="zx-toggle-row__desc">Start a new log file when the current one reaches the maximum size.</span></span>
-                        <input type="checkbox" class="zx-switch" role="switch" id="logRotationEnabled" name="enabled">
-                    </label>
-                    <label class="zx-toggle-row">
-                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Compress rotated logs</span><span class="zx-toggle-row__desc">Rotated log files are saved as ZIP archives.</span></span>
-                        <input type="checkbox" class="zx-switch" role="switch" id="logCompressionEnabled" name="compress">
-                    </label>
-                    <div class="zx-form-grid" style="margin-top: var(--zx-space-4);">
-                        <div class="zx-field">
-                            <label class="zx-field__label" for="logMaxSize">Maximum log file size</label>
-                            <div class="zx-inputgroup">
-                                <input type="text" id="logMaxSize" name="maxSize" placeholder="e.g. 200M, 10K, 500" value="0">
-                                <span class="zx-inputgroup__unit">bytes, K, M or G</span>
+
+            <!-- ================= Network ================= -->
+            <div class="sy-pane" data-pane="network" hidden>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Database <span id="geodbSource"></span></h3>
+                        <p class="zx-card__desc">Zoraxy ships with a database and can download a newer one. Updating keeps country lookups accurate; nothing else changes.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <dl class="sy-facts">
+                            <dt>Database date</dt><dd id="geodbDate">-</dd>
+                            <dt>Loaded entries</dt><dd id="geodbEntries">-</dd>
+                            <dt>Last updated</dt><dd id="geodbLastUpdate">-</dd>
+                            <dt id="geodbNextUpdate" style="display:none;">Next update</dt><dd id="geodbNextUpdateVal" style="display:none;"><span id="geodbCountdown">-</span></dd>
+                        </dl>
+                        <div id="geodbUpdateMsg" class="zx-callout" role="status" style="display:none; margin-top: var(--zx-space-3);"></div>
+                        <label class="zx-toggle-row" style="margin-top: var(--zx-space-4);">
+                            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Update automatically</span><span class="zx-toggle-row__desc">Off by default. When on, the database is refreshed once a week, counting from when Zoraxy started, plus a random delay of up to 30 minutes so installations do not all contact the update server at the same moment. Saved as soon as you switch it.</span></span>
+                            <input type="checkbox" class="zx-switch" role="switch" id="geodbAutoUpdateEnabled">
+                        </label>
+                    </div>
+                    <div class="zx-card__foot">
+                        <button type="button" class="zx-btn zx-btn--secondary" id="geodbUpdateNowBtn" onclick="updateGeoDBNow();"><i class="download icon" aria-hidden="true"></i> Update now</button>
+                        <p class="zx-help">Downloads the current database and loads it without a restart.</p>
+                    </div>
+                </section>
+
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Look up an address</h3>
+                        <p class="zx-card__desc">Enter an IP address to see its estimated country and whether each access rule would let it in.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <div class="zx-field" style="margin-bottom: 0;">
+                            <label class="zx-field__label" for="geoipInput">IP address (IPv4 or IPv6)</label>
+                            <div class="sy-inline">
+                                <input class="zx-input" type="text" id="geoipInput" placeholder="e.g. 1.1.1.1" autocomplete="off"><button type="button" class="zx-btn zx-btn--secondary" onclick="lookupGeoIp()"><i class="search icon" aria-hidden="true"></i> Lookup</button>
                             </div>
-                            <p class="zx-help">Use a plain number of bytes or add K, M or G. Set to 0 to turn the size limit off.</p>
                         </div>
-                        <div class="zx-field">
-                            <label class="zx-field__label" for="logMaxBackups">Maximum backup files</label>
-                            <input type="number" id="logMaxBackups" name="maxBackups" placeholder="10" min="1" value="16">
-                            <p class="zx-help">How many rotated log files to keep.</p>
-                        </div>
-                    </div>
-                    <div class="zx-btn-row">
-                        <button class="ui primary button" type="submit"><i class="save icon"></i> Save</button>
-                        <button class="ui button" id="rotateLogBtn" onclick="triggerLogRotation(event)"><i class="sync icon"></i> Rotate now</button>
-                    </div>
-                    <div id="logSettingsSuccessMsg" class="ui green message" style="display:none;">
-                        <i class="checkmark icon"></i> Log settings updated successfully
-                    </div>
-                    <div id="logSettingsErrorMsg" class="ui red message" style="display:none;">
-                        <i class="exclamation triangle icon"></i> <span id="logSettingsErrorText"></span>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">System log viewer</h3>
-                <p class="zx-card__desc">View and download the Zoraxy log, search access logs or read notifications.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="zx-btn-row">
-                    <a class="ui button" href="snippet/logview.html" target="_blank"><i class="file alternate outline icon"></i> Open log viewer</a>
-                    <a class="ui button" href="snippet/logsearch.html" target="_blank"><i class="search icon"></i> Search access logs</a>
-                    <a class="ui button" href="snippet/notifications.html" target="_blank"><i class="bell outline icon"></i> Notifications</a>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab3">
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">IP range to CIDR</h3>
-                <p class="zx-card__desc">Turn a start and end address into CIDR blocks for allow and block lists. A range that does not fit one block becomes the shortest list that covers it exactly (IPv4 and IPv6).</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="ut-range">
-                        <div class="zx-field">
-                            <label class="zx-field__label" for="startIpInput">Start IP</label>
-                            <input type="text" id="startIpInput" placeholder="e.g. 192.168.0.0" autocomplete="off">
-                        </div>
-                        <div class="zx-field">
-                            <label class="zx-field__label" for="endIpInput">End IP</label>
-                            <input type="text" id="endIpInput" placeholder="e.g. 192.168.0.255" autocomplete="off">
+                        <div id="geoipError" class="sy-result is-error" role="alert" style="display:none;"></div>
+                        <div id="geoipResult" style="display:none;">
+                            <p class="ut-geo-country"><span class="zx-help" style="margin:0;">Country code</span> <b id="geoipCountryCode">-</b></p>
+                            <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Access rule check">
+                                <table class="zx-table zx-table--compact" id="geoipRuleTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Access rule</th>
+                                            <th>Rule ID</th>
+                                            <th>Result</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="geoipRuleTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    <button type="button" class="ui button" onclick="convertToCIDR()">Convert</button>
-                </div>
-                <div id="cidrOutput" class="ut-result is-empty" aria-live="polite">No result yet</div>
+                </section>
             </div>
-        </section>
 
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">CIDR to IP range</h3>
-                <p class="zx-card__desc">See the first and last address covered by a CIDR block.</p>
+            <!-- ================= Updates ================= -->
+            <div class="sy-pane" data-pane="updates" hidden>
+                <div class="zx-callout zx-callout--info ut-attn" id="utUpAttn" role="status" hidden>
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="download icon"></i></span>
+                    <div class="zx-callout__body">
+                        <span class="ut-attn__text"><b id="utUpAttnTitle"></b><span>Read what is new and install it on the Update page. Zoraxy restarts for a few seconds when you do.</span></span>
+                        <a class="zx-btn zx-btn--primary" href="#updater" data-nav-open="updater"><i class="download icon" aria-hidden="true"></i> Open Update</a>
+                    </div>
+                </div>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">This installation</h3>
+                        <p class="zx-card__desc">Zoraxy never contacts the release server by itself unless the daily check is on, and it never installs anything without your confirmation.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <dl class="sy-facts">
+                            <dt>Running version</dt><dd id="utUpVersion">-</dd>
+                            <dt>Latest release</dt><dd id="utUpLatest">-</dd>
+                            <dt>Release channel</dt><dd id="utUpChannel">-</dd>
+                            <dt>Daily check</dt><dd id="utUpAuto">-</dd>
+                            <dt>Backup before updating</dt><dd id="utUpBackup">-</dd>
+                        </dl>
+                    </div>
+                    <div class="zx-card__foot">
+                        <a class="zx-btn zx-btn--secondary" id="utUpOpen" href="#updater" data-nav-open="updater"><i class="download icon" aria-hidden="true"></i> Open Update</a>
+                        <p class="zx-help">Check for a new version, change the channel or roll back there.</p>
+                    </div>
+                </section>
             </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-field">
-                        <label class="zx-field__label" for="cidrInput">CIDR block</label>
-                        <div class="ut-inline">
-                            <input type="text" placeholder="e.g. 192.168.0.0/24" id="cidrInput" autocomplete="off"><button type="button" class="ui button" onclick="convertToIPRange()">Convert</button>
+
+            <!-- ================= Backup & restore ================= -->
+            <div class="sy-pane" data-pane="backup" hidden>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Configuration backup</h3>
+                        <p class="zx-card__desc">A backup is one ZIP file with your proxy rules, certificates and settings. Keep it somewhere safe: it can contain private keys.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <ul class="sy-rows">
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="download icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Download a backup</span><span class="sy-row__sub">Choose what goes in: everything, the configuration only, or a copy without secrets that is safe to share.</span></div>
+                                <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--primary" id="utConfigToolsBtn" data-ut-conf="backup"><i class="download icon" aria-hidden="true"></i> Download backup…</button></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="upload icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Restore from a backup</span><span class="sy-row__sub">Check a backup file first (dry run), then restore it. Restoring replaces the current configuration and stops Zoraxy so it starts with the restored one.</span></div>
+                                <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--secondary" id="utRestoreBtn" data-ut-conf="restore"><i class="upload icon" aria-hidden="true"></i> Restore…</button></div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="zx-card__foot">
+                        <p class="zx-help">Both open in a side panel. Nothing is downloaded or changed until you confirm there.</p>
+                    </div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__body">
+                        <ul class="sy-rows">
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="history icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Saved versions</span><span class="sy-row__sub" id="utHistText">Every change made in this interface is saved as a version you can compare and go back to, without a backup file.</span></div>
+                                <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="#history" data-nav-open="history">Open History</a></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="shield alternate icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Backup before an update</span><span class="sy-row__sub" id="utBkUpdText">The updater can copy the configuration and the database before it installs a new version.</span></div>
+                                <div class="sy-row__end"><span class="zx-badge zx-badge--dot" id="utBkUpdBadge" hidden></span></div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ================= Logs ================= -->
+            <div class="sy-pane" data-pane="logs" hidden>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Read the logs</h3>
+                        <p class="zx-card__desc">Each viewer opens in a new browser tab.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <ul class="sy-rows">
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="file alternate outline icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">System log</span><span class="sy-row__sub">What Zoraxy itself reports: start-up, errors, certificate renewals. View or download it.</span></div>
+                                <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="snippet/logview.html" target="_blank"><i class="external alternate icon" aria-hidden="true"></i> Open log viewer</a></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="search icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Access logs</span><span class="sy-row__sub">Search the requests your sites received by host, address, path or status.</span></div>
+                                <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="snippet/logsearch.html" target="_blank"><i class="external alternate icon" aria-hidden="true"></i> Search access logs</a></div>
+                            </li>
+                            <li class="sy-row">
+                                <span class="sy-row__icon" aria-hidden="true"><i class="bell outline icon"></i></span>
+                                <div class="sy-row__main"><span class="sy-row__title">Notifications</span><span class="sy-row__sub">Alerts Zoraxy sent or tried to send, and where they go.</span></div>
+                                <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="snippet/notifications.html" target="_blank"><i class="external alternate icon" aria-hidden="true"></i> Notifications</a></div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Log rotation <span class="zx-badge zx-badge--dot" id="utLogBadge" hidden></span></h3>
+                        <p class="zx-card__desc">Without rotation the Zoraxy log keeps growing. With it, a full log is moved to a numbered backup file and a new one is started.</p>
+                    </div>
+                    <form id="log-settings-form">
+                        <div class="zx-card__body">
+                            <label class="zx-toggle-row">
+                                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Enable log rotation</span><span class="zx-toggle-row__desc">Start a new log file when the current one reaches the maximum size.</span></span>
+                                <input type="checkbox" class="zx-switch" role="switch" id="logRotationEnabled" name="enabled">
+                            </label>
+                            <label class="zx-toggle-row">
+                                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Compress rotated logs</span><span class="zx-toggle-row__desc">Rotated log files are saved as ZIP archives.</span></span>
+                                <input type="checkbox" class="zx-switch" role="switch" id="logCompressionEnabled" name="compress">
+                            </label>
+                            <div class="zx-form-grid" style="margin-top: var(--zx-space-4);">
+                                <div class="zx-field" style="margin-bottom: 0;">
+                                    <label class="zx-field__label" for="logMaxSize">Maximum log file size</label>
+                                    <input class="zx-input" type="text" id="logMaxSize" name="maxSize" placeholder="e.g. 200M, 10K, 500" value="0">
+                                    <p class="zx-help">A number of bytes, or add K, M or G (200M). 0 turns the size limit off.</p>
+                                </div>
+                                <div class="zx-field" style="margin-bottom: 0;">
+                                    <label class="zx-field__label" for="logMaxBackups">Rotated files to keep</label>
+                                    <input class="zx-input" type="number" id="logMaxBackups" name="maxBackups" placeholder="10" min="1" value="16">
+                                    <p class="zx-help">Older ones are deleted.</p>
+                                </div>
+                            </div>
+                            <div id="logSettingsSuccessMsg" class="zx-callout zx-callout--success" role="status" style="display:none;">
+                                <span class="zx-callout__icon" aria-hidden="true"><i class="checkmark icon"></i></span><div class="zx-callout__body" id="logSettingsSuccessText">Log settings updated successfully</div>
+                            </div>
+                            <div id="logSettingsErrorMsg" class="zx-callout zx-callout--danger" role="alert" style="display:none;">
+                                <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body" id="logSettingsErrorText"></div>
+                            </div>
+                        </div>
+                        <div class="zx-card__foot">
+                            <button class="zx-btn zx-btn--primary" type="submit"><i class="save icon" aria-hidden="true"></i> Save log rotation</button>
+                            <button class="zx-btn zx-btn--secondary" type="button" id="rotateLogBtn" onclick="triggerLogRotation(event)"><i class="sync icon" aria-hidden="true"></i> Rotate now</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <!-- ================= Address calculator ================= -->
+            <div class="sy-pane" data-pane="calc" hidden>
+                <div class="sy-grid2">
+                    <section class="zx-card">
+                        <div class="zx-card__head">
+                            <h3 class="zx-card__title">IP range to CIDR</h3>
+                            <p class="zx-card__desc">A range that does not fit one block becomes the shortest list of blocks that covers it exactly.</p>
+                        </div>
+                        <div class="zx-card__body">
+                            <div class="zx-form-grid">
+                                <div class="zx-field">
+                                    <label class="zx-field__label" for="startIpInput">Start IP</label>
+                                    <input class="zx-input" type="text" id="startIpInput" placeholder="e.g. 192.168.0.0" autocomplete="off">
+                                </div>
+                                <div class="zx-field">
+                                    <label class="zx-field__label" for="endIpInput">End IP</label>
+                                    <input class="zx-input" type="text" id="endIpInput" placeholder="e.g. 192.168.0.255" autocomplete="off">
+                                </div>
+                            </div>
+                            <button type="button" class="zx-btn zx-btn--secondary" onclick="convertToCIDR()">Convert</button>
+                            <div id="cidrOutput" class="sy-result is-empty" aria-live="polite">The CIDR blocks appear here.</div>
+                        </div>
+                    </section>
+                    <section class="zx-card">
+                        <div class="zx-card__head">
+                            <h3 class="zx-card__title">CIDR to IP range</h3>
+                            <p class="zx-card__desc">See the first and the last address a CIDR block covers.</p>
+                        </div>
+                        <div class="zx-card__body">
+                            <div class="zx-field">
+                                <label class="zx-field__label" for="cidrInput">CIDR block</label>
+                                <div class="sy-inline">
+                                    <input class="zx-input" type="text" placeholder="e.g. 192.168.0.0/24" id="cidrInput" autocomplete="off"><button type="button" class="zx-btn zx-btn--secondary" onclick="convertToIPRange()">Convert</button>
+                                </div>
+                            </div>
+                            <div id="ipRangeOutput" class="sy-result is-empty" aria-live="polite">The first and last address appear here.</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- ================= Danger zone ================= -->
+            <div class="sy-pane" data-pane="danger" hidden>
+                <section class="zx-card zx-card--danger" aria-label="Danger zone">
+                    <div class="zx-card__body">
+                        <ul class="sy-rows">
+                            <li class="sy-row">
+                                <div class="sy-row__main"><span class="sy-row__title">Reset all statistics</span><span class="sy-row__sub">Deletes every traffic statistic Zoraxy has collected, for all sites and all days. Proxy rules and settings are not touched. You type a word to confirm.</span></div>
+                                <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--danger-outline" onclick="handleResetAllStats();"><i class="trash alternate outline icon" aria-hidden="true"></i> Reset all statistics</button></div>
+                            </li>
+                            <li class="sy-row">
+                                <div class="sy-row__main"><span class="sy-row__title">Replace the configuration with a backup</span><span class="sy-row__sub">Restoring overwrites the current proxy rules, certificates and settings with those in the backup file, then stops Zoraxy. Download a backup of the current state first.</span></div>
+                                <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--secondary" data-ut-go="backup">Go to Backup &amp; restore</button></div>
+                            </li>
+                            <li class="sy-row">
+                                <div class="sy-row__main"><span class="sy-row__title">Roll back to the previous version</span><span class="sy-row__sub">Puts the previous Zoraxy program back and restarts. The configuration is not reverted. Only available after an update installed from the Update page.</span></div>
+                                <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="#updater" data-nav-open="updater">Open Update</a></div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ================= System information ================= -->
+            <div class="sy-pane" data-pane="info" hidden>
+                <section class="zx-card" id="zoraxyinfo">
+                    <div class="zx-card__body">
+                        <dl class="sy-facts">
+                            <dt>Host ID</dt><dd class="uuid sy-mono"></dd>
+                            <dt>Version</dt><dd class="version"></dd>
+                            <dt>Build</dt><dd class="development"></dd>
+                            <dt>Running since</dt><dd class="boottime"></dd>
+                            <dt>SSH loopback</dt><dd class="sshlb"></dd>
+                        </dl>
+                        <p class="zx-help ut-credit">Zoraxy is developed by tobychui for <a href="//imuslab.com" target="_blank" rel="noopener">imuslab</a> and open source under <a href="https://www.gnu.org/licenses/agpl-3.0.txt" target="_blank" rel="noopener">AGPL</a>.</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ================= Contributors ================= -->
+            <div class="sy-pane" data-pane="contributors" hidden>
+                <section class="zx-card">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">Financial supporters</h3>
+                        <p class="zx-card__desc">Zoraxy is made possible by the generosity of its supporters. Thank you to everyone who has donated to keep this project free and open source.</p>
+                    </div>
+                    <div class="zx-card__body">
+                        <div id="supportersList">
+                            <div class="ui active centered inline loader" style="margin: 2em 0;"></div>
                         </div>
                     </div>
-                </div>
-                <div id="ipRangeOutput" class="ut-result is-empty" aria-live="polite">No result yet</div>
-            </div>
-        </section>
-
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">Geo-IP lookup</h3>
-                <p class="zx-card__desc">Enter an IP address to see its estimated country and whether each access rule would let it in.</p>
-            </div>
-            <div class="zx-card__body">
-                <div class="ui form">
-                    <div class="zx-field">
-                        <label class="zx-field__label" for="geoipInput">IP address (IPv4 or IPv6)</label>
-                        <div class="ut-inline">
-                            <input type="text" id="geoipInput" placeholder="e.g. 1.1.1.1" autocomplete="off"><button type="button" class="ui button" onclick="lookupGeoIp()"><i class="search icon"></i> Lookup</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="geoipResult" style="display:none; margin-top: var(--zx-space-4);">
-                    <p><span class="zx-badge zx-badge--info"><i class="globe icon"></i> Country code: <span id="geoipCountryCode">-</span></span></p>
-                    <h4>Access rule check</h4>
-                    <p class="zx-help">Shows whether this IP would be permitted by each access rule.</p>
-                    <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Access rule check">
-                        <table class="zx-table zx-table--compact" id="geoipRuleTable">
-                            <thead>
-                                <tr>
-                                    <th>Rule ID</th>
-                                    <th>Rule name</th>
-                                    <th>Access</th>
-                                </tr>
-                            </thead>
-                            <tbody id="geoipRuleTableBody">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div id="geoipError" class="ui red message" style="display:none;"></div>
-            </div>
-        </section>
-    </div>
-
-    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab4">
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">Geo-IP database update</h3>
-                <p class="zx-card__desc">The Geo-IP database turns visitor IP addresses into country codes for access rules and statistics. Updating it keeps those lookups accurate.</p>
-            </div>
-            <div class="zx-card__body">
-                <dl class="ut-kv">
-                    <dt>Database source</dt><dd id="geodbSource">-</dd>
-                    <dt>Database date</dt><dd id="geodbDate">-</dd>
-                    <dt>Loaded entries</dt><dd id="geodbEntries">-</dd>
-                    <dt>Last updated</dt><dd id="geodbLastUpdate">-</dd>
-                </dl>
-                <div class="zx-btn-row" style="margin-top: var(--zx-space-4);">
-                    <button class="ui button" id="geodbUpdateNowBtn" onclick="updateGeoDBNow();"><i class="download icon"></i> Update now</button>
-                </div>
-                <div class="ui form">
-                    <label class="zx-toggle-row" style="margin-top: var(--zx-space-3);">
-                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Update automatically</span><span class="zx-toggle-row__desc">Refresh the database once a week, counting from when Zoraxy started, plus a random delay of up to 30 minutes so installations do not all contact the update server at the same moment.</span></span>
-                        <input type="checkbox" class="zx-switch" role="switch" id="geodbAutoUpdateEnabled">
-                    </label>
-                </div>
-                <div id="geodbNextUpdate" class="ui green message" style="display:none;">
-                    <i class="clock outline icon"></i> Next update in <span id="geodbCountdown">-</span>
-                </div>
-                <div id="geodbUpdateMsg" class="ui message" style="display:none;"></div>
-            </div>
-        </section>
-
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">System backup &amp; restore</h3>
-                <p class="zx-card__desc">Export the configuration to move or protect it, or restore it from a backup.</p>
-            </div>
-            <div class="zx-card__body">
-                <button class="ui button" onclick="showSideWrapper('snippet/configTools.html');"><i class="database icon"></i> Open config tools</button>
-            </div>
-        </section>
-
-        <section class="zx-card zx-card--danger">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">Statistics</h3>
-                <p class="zx-card__desc">Delete all the traffic statistics Zoraxy has collected. This cannot be undone.</p>
-            </div>
-            <div class="zx-card__body">
-                <button class="ui basic red button" onclick="handleResetAllStats();"><i class="trash alternate outline icon"></i> Reset all statistics</button>
-            </div>
-        </section>
-
-        <section class="zx-card" id="zoraxyinfo">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title">System information</h3>
-                <p class="zx-card__desc">Basic information about this Zoraxy host.</p>
-            </div>
-            <div class="zx-card__body">
-                <dl class="ut-kv">
-                    <dt>Host ID</dt><dd class="uuid"></dd>
-                    <dt>Version</dt><dd class="version"></dd>
-                    <dt>Build</dt><dd class="development"></dd>
-                    <dt>Running since</dt><dd class="boottime"></dd>
-                    <dt>SSH loopback</dt><dd class="sshlb"></dd>
-                </dl>
-                <p class="zx-help ut-hint">Zoraxy is developed by tobychui for <a href="//imuslab.com" target="_blank">imuslab</a> and open source under <a href="https://www.gnu.org/licenses/agpl-3.0.txt" target="_blank">AGPL</a>.</p>
-            </div>
-        </section>
-    </div>
-
-    <div class="ui bottom attached tab segment utilitiesTabs" data-tab="utiltab5">
-        <section class="zx-card">
-            <div class="zx-card__head">
-                <h3 class="zx-card__title"><i class="heart outline icon"></i> Financial supporters</h3>
-                <p class="zx-card__desc">Zoraxy is made possible by the generosity of its supporters. Thank you to everyone who has donated to keep this project free and open source.</p>
-            </div>
-            <div class="zx-card__body">
-                <div id="supportersList">
-                    <div class="ui active centered inline loader" style="margin: 2em 0;"></div>
+                </section>
+                <div class="zx-callout zx-callout--info" role="note">
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+                    <div class="zx-callout__body"><strong>Privacy:</strong> If you would prefer not to have your name shown here, ask on the <a href="https://github.com/tobychui/zoraxy" target="_blank" rel="noopener">Zoraxy GitHub repository</a>. You can use a pseudonym or any text you like, and requests are handled promptly.</div>
                 </div>
             </div>
-        </section>
-        <div class="zx-callout zx-callout--info" role="note">
-            <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-            <div class="zx-callout__body"><strong>Privacy:</strong> If you would prefer not to have your name shown here, ask on the <a href="https://github.com/tobychui/zoraxy" target="_blank">Zoraxy GitHub repository</a>. You can use a pseudonym or any text you like, and requests are handled promptly.</div>
         </div>
     </div>
 </div>
 <script>
-    $('.menu .utils.item').tab();
-    // Switch tabs when clicking on the menu items
-    $('.menu .utils.item').on('click', function() {
-        $('.menu .utils.item').removeClass('active');
-        $(this).addClass('active');
-        var tab = $(this).attr('data-tab');
-        $('.utilitiesTabs.tab.segment').removeClass('active');
-        $('div[data-tab="' + tab + '"]').addClass('active');
-    }); 
+    /*
+        Sections: static panes, one visible. ZxUtils.go(name) opens one from anywhere.
+    */
+    var utNav = ZxUI.sectionNav("#utNav", { head: "#utHead" });
+    function utShow(name){
+        if (!document.querySelector('#utilsPage .sy-pane[data-pane="' + name + '"]')){ return; }
+        utNav.select(name);
+        $("#utilsPage .sy-pane").each(function(){ this.hidden = this.getAttribute("data-pane") !== name; });
+        if (typeof utRefresh === "function"){ utRefresh(name); }
+    }
+    $("#utNav").on("click", ".zx-sectionnav__item", function(){ utShow(this.getAttribute("data-zx-section")); });
+    $("#utilsPage").on("click", "[data-ut-go]", function(){
+        utShow(this.getAttribute("data-ut-go"));
+        var head = document.getElementById("utHead");
+        if (head){ try { head.scrollIntoView({block: "nearest"}); } catch (e) { /* older browsers */ } }
+    });
+    window.ZxUtils = {
+        go: function(name){
+            if (typeof openTabById === "function" && !$("#utils").is(":visible")){ openTabById("utils"); }
+            utShow(name);
+        }
+    };
+    // The command palette and "Change password" in the account menu open this page and point at a control: when that
+    // control sits in another section, open the section (the palette marks its target with the class zx-flash).
+    (function(){
+        var page = document.getElementById("utilsPage");
+        if (!page || !window.MutationObserver){ return; }
+        new MutationObserver(function(list){
+            list.forEach(function(m){
+                var el = m.target;
+                if (!el.classList || !el.classList.contains("zx-flash")){ return; }
+                var go = el.getAttribute("data-ut-go"), pane = el.closest(".sy-pane");
+                if (go){ utShow(go); return; }
+                if (pane && pane.hidden){
+                    utShow(pane.getAttribute("data-pane"));
+                    try { el.scrollIntoView({block: "center"}); } catch (e) { el.scrollIntoView(); }
+                }
+            });
+        }).observe(page, {subtree: true, attributes: true, attributeFilter: ["class"]});
+        $(document).off("click.zxUtilsPw").on("click.zxUtilsPw", "a.zx-mi[data-tag='utils']", function(){
+            setTimeout(function(){ utShow("security"); }, 0);
+        });
+    })();
 
     /*
         Account Password utilities
@@ -324,53 +544,171 @@
             //Using external auth manager. Hide options
             $(".selfauthOnly").hide();
             $(".extAuthOnly").show();
+            $("#utOvAuth").text(t("Off"));
+            $("#utOvUser").text(t("Started without its own login"));
+            $("#utOvSecurity").text(t("Sign-in is turned off. Sessions and API tokens are listed here."));
+            $("#utilsPage [data-ut-go='security'] .sy-row__title").first().text(t("Security"));
+            $("#utOvSecBadge").prop("hidden", false).attr("class", "zx-badge zx-badge--dot zx-badge--warn").text(t("Sign-in off"));
+            utNav.state("security", "warn", t("No sign-in"));
+        }else{
+            $("#utOvAuth").text(t("On"));
+            $.get("/api/auth/username", function(name){
+                if (typeof name === "string" && name !== ""){ $("#utOvUser").text(tf("Signed in as {0}", name)); $("#utPwUser").val(name); }
+            });
         }
+    });
+    // Enter in a password field submits; the hidden user name field lets a password manager file the new password
+    $("#utPwForm").on("submit", function(e){ e.preventDefault(); changePassword(); });
+
+    /*
+        Read-only summaries of settings that live on other pages (sessions, API tokens, update settings, history).
+        A request that fails, for example for a viewer, leaves the neutral sentence in place.
+        They are read again whenever the section that shows them is opened (utRefresh), so a token created or an
+        update found on another page shows here without a reload.
+    */
+    var utVersion = "", utUpd = null, utBadge = null;
+    // The release the top bar knows about: the last check made on the Update page in this browser (kept by topbar.js)
+    // or, with the daily check on, the release the server cached (GET /api/updater/badge, no request to GitHub).
+    function utKnownRelease(){
+        var u = null;
+        try { u = JSON.parse(localStorage.getItem("zoraxy.topbar.update") || "null"); } catch (e) { u = null; }
+        if (u && Date.now() - (u.at || 0) > 14 * 24 * 3600 * 1000){ u = null; }
+        if (utBadge && utBadge.auto_check && utBadge.update_available){ return {available: true, latest: utBadge.latest || ""}; }
+        if (u && u.available && utVersion && u.latest && u.latest.replace(/^v/, "") === utVersion){ return {available: false, latest: u.latest, checked: true}; }
+        if (u){ return {available: !!u.available, latest: u.latest || "", checked: true}; }
+        return {available: false, latest: "", checked: !!(utBadge && utBadge.auto_check)};
+    }
+    function utOverviewUpdates(){
+        var rel = utKnownRelease(), set = (utUpd && utUpd.settings) || {};
+        var running = utVersion || (utUpd && utUpd.current && utUpd.current.version) || "";
+        if (rel.available){
+            var title = rel.latest ? tf("Update available: {0}", rel.latest) : t("Update available");
+            $("#utOvUpdates").text(running ? tf("{0}. You are running v{1}.", title, running) : title + ".");
+            $("#utOvUpdBadge").prop("hidden", false).attr("class", "zx-badge zx-badge--dot zx-badge--info").text(t("Update available"));
+            $("#utOvAttnTitle, #utUpAttnTitle").text(title);
+            $("#utOvAttn, #utUpAttn").prop("hidden", false);
+            $("#utUpLatest").html(`<span class="zx-badge zx-badge--dot zx-badge--info">${t("Update available")}</span> ` + ZxUI.esc(rel.latest));
+            utNav.state("updates", "warn", t("New"));
+        }else{
+            $("#utOvAttn, #utUpAttn").prop("hidden", true);
+            $("#utOvUpdBadge").prop("hidden", true);
+            utNav.state("updates", null);
+            if (utUpd){ $("#utOvUpdates").text(tf("Running v{0} on the {1} channel. Daily check {2}.", running || "?", set.channel || "stable", set.auto_check ? t("on") : t("off"))); }
+            $("#utUpLatest").html(rel.checked ? ZxUI.esc(t("No newer release found at the last check.")) :
+                ZxUI.esc(t("Not checked yet")) + ` <small>${t("Releases are looked up when you open the Update page.")}</small>`);
+        }
+    }
+    function utLoadUpdater(){
+        $.ajax({url: "/api/updater/info", dataType: "json", cache: false}).done(function(d){
+            if (!d || d.error || !d.settings){ return; }
+            utUpd = d;
+            $("#utUpChannel").text(d.settings.channel === "beta" ? t("Beta (also pre-releases)") : t("Stable (releases only)"));
+            $("#utUpAuto").html(d.settings.auto_check ? `<span class="zx-badge zx-badge--dot zx-badge--ok">${t("On")}</span> <small>${t("One request to the release server per day.")}</small>` : `<span class="zx-badge zx-badge--dot">${t("Off")}</span> <small>${t("Releases are only looked up when you open the Update page.")}</small>`);
+            $("#utUpBackup").html(d.settings.backup_first ? `<span class="zx-badge zx-badge--dot zx-badge--ok">${t("On")}</span>` : `<span class="zx-badge zx-badge--dot zx-badge--warn">${t("Off")}</span>`);
+            $("#utBkUpdBadge").prop("hidden", false).attr("class", "zx-badge zx-badge--dot" + (d.settings.backup_first ? " zx-badge--ok" : " zx-badge--warn")).text(d.settings.backup_first ? t("On") : t("Off"));
+            $("#utBkUpdText").text(d.settings.backup_first ? t("Before it installs a new version, the updater copies the configuration and the database. The update stops if that copy fails.") : t("Switched off on the Update page: a new version is installed without copying the configuration first."));
+            utOverviewUpdates();
+        });
+        $.ajax({url: "/api/updater/badge", dataType: "json", cache: false, timeout: 5000}).done(function(b){
+            utBadge = b && !b.error ? b : null;
+            utOverviewUpdates();
+        });
+    }
+    function utLoadSessions(){
+        $.ajax({url: "/api/auth/sessionSettings", dataType: "json", cache: false}).done(function(d){
+            if (!d || d.error || !d.LifetimeText){ return; }
+            $("#utSesText").text(tf("A sign-in lasts {0}. With \"Remember me\" it lasts {1}.", d.LifetimeText, d.RememberText) + " " + (d.Settings && d.Settings.SlidingExtend ? t("Activity extends it.") : ""));
+        });
+    }
+    $("#utSesBtn").on("click", function(){
+        if (typeof openTabById === "function"){ openTabById("seccenter"); }
+        setTimeout(function(){ $("#secTabs .item[data-sec='users']").trigger("click"); }, 400);
+    });
+    function utLoadTokens(){
+        $.ajax({url: "./api/apitoken/list", dataType: "json", cache: false}).done(function(list){
+            if (!Array.isArray(list)){ return; }
+            var active = list.filter(function(k){ return !k.revoked && !k.expired; }).length;
+            $("#utTokBadge").prop("hidden", false).text(active === 1 ? t("1 active") : tf("{0} active", active));
+            $("#utTokText").text(active === 0 ? t("No active tokens: nothing but a signed-in browser can use the API.") : t("Tokens let scripts use the REST API without your password."));
+        });
+    }
+    // What a section shows from other pages is read again when the section opens, and when the Utilities page is opened again
+    var utLoadedOnce = false;
+    function utRefresh(name){
+        if (!utLoadedOnce){ return; }   // the first load below fetches everything once
+        if (name === "overview" || name === "security"){ utLoadTokens(); utLoadSessions(); }
+        if (name === "overview" || name === "updates" || name === "backup"){ utLoadUpdater(); }
+    }
+    utLoadUpdater(); utLoadSessions(); utLoadTokens();
+    utLoadedOnce = true;
+    if (typeof tabSwitchEventBind !== "undefined"){ tabSwitchEventBind["utils"] = function(){ utRefresh(utNav.current()); }; }
+
+    // Backup & restore: both rows open the config tools side panel, "Restore" at the restore step
+    $("#utilsPage").on("click", "[data-ut-conf]", function(){
+        var step = this.getAttribute("data-ut-conf"), frame = document.querySelector(".sideWrapper iframe");
+        if (frame && step === "restore"){
+            $(frame).one("load", function(){
+                try {
+                    var doc = frame.contentDocument, target = doc.getElementById("uploadForm");
+                    var heads = doc.querySelectorAll("h3");
+                    if (heads.length > 1){ target = heads[1]; }
+                    if (target){ target.scrollIntoView({block: "start"}); }
+                    var file = doc.getElementById("fileInput");
+                    if (file){ file.focus({preventScroll: true}); }
+                } catch (e) { /* the panel still opens at its top */ }
+            });
+        }
+        showSideWrapper("snippet/configTools.html?step=" + encodeURIComponent(step));
     });
 
     $.get("/api/info/x", function(data){
-        function timeConverter(UNIX_timestamp){
-            var a = new Date(UNIX_timestamp * 1000);
-            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            var year = a.getFullYear();
-            var month = months[a.getMonth()];
-            var date = a.getDate();
-            var hour = a.getHours();
-            var min = a.getMinutes();
-            var sec = a.getSeconds();
-            var pad = function(n){ return String(n).padStart(2, "0"); };
-            var time = date + ' ' + month + ' ' + year + ' ' + pad(hour) + ':' + pad(min) + ':' + pad(sec);
-            return time;
+        //One format for a moment and one for a duration, on the Overview and under System information
+        function utMoment(unix){ return new Date(unix * 1000).toLocaleString([], {dateStyle: "medium", timeStyle: "short"}); }
+        function utDuration(up){
+            var d = Math.floor(up / 86400), h = Math.floor(up % 86400 / 3600), m = Math.floor(up % 3600 / 60);
+            return d > 0 ? tf("{0} d {1} h", d, h) : (h > 0 ? tf("{0} h {1} min", h, m) : tf("{0} min", Math.max(1, m)));
         }
 
-        function secondsToDhms(seconds) {
-            seconds = Number(seconds);
-            var d = Math.floor(seconds / (3600*24));
-            var h = Math.floor(seconds % (3600*24) / 3600);
-            var m = Math.floor(seconds % 3600 / 60);
-            var s = Math.floor(seconds % 60);
-
-            var dDisplay = d > 0 ? d + (d == 1 ? " day, " : " days, ") : "";
-            var hDisplay = h > 0 ? h + (h == 1 ? " hour, " : " hours, ") : "";
-            var mDisplay = m > 0 ? m + (m == 1 ? " minute, " : " minutes, ") : "";
-            var sDisplay = s > 0 ? s + (s == 1 ? " second" : " seconds") : "";
-            return dDisplay + hDisplay + mDisplay + sDisplay;
-        }
-
-        console.log(data);
         $("#zoraxyinfo .uuid").text(data.NodeUUID);
-        $("#zoraxyinfo .development").text(data.Development?"Development":"Release");
+        $("#zoraxyinfo .development").text(data.Development ? t("Development build") : t("Release build"));
         $("#zoraxyinfo .version").text(data.Version);
         $(".zrversion").text("v." + data.Version); //index footer
         //BootTime 0 = not disclosed to this session: never print 1 Jan 1970
-        $("#zoraxyinfo .boottime").text(data.BootTime > 0 ? timeConverter(data.BootTime) + ` ( ${secondsToDhms(parseInt(Date.now()/1000) - data.BootTime)} ago)` : "Not available");
-        $("#zoraxyinfo .sshlb").html(data.EnableSshLoopback?`<span class="zx-badge zx-badge--warn"><i class="exclamation triangle icon"></i> ${t("Enabled")}</span>`:t("Disabled"));
+        $("#zoraxyinfo .boottime").text(data.BootTime > 0 ? tf("{0} ({1} ago)", utMoment(data.BootTime), utDuration(parseInt(Date.now()/1000) - data.BootTime)) : t("Not available"));
+        $("#zoraxyinfo .sshlb").html(data.EnableSshLoopback?`<span class="zx-badge zx-badge--dot zx-badge--warn">${t("Enabled")}</span>`:`<span class="zx-badge zx-badge--dot">${t("Disabled")}</span>`);
+        $("#utSshBadge").attr("class", "zx-badge zx-badge--dot" + (data.EnableSshLoopback ? " zx-badge--warn" : "")).text(data.EnableSshLoopback ? t("Enabled") : t("Disabled"));
+        //Overview tiles
+        utVersion = data.Version || "";
+        $("#utOvVersion").text(data.Version ? "v" + data.Version : "-");
+        $("#utOvBuild").text(data.Development ? t("Development build") : t("Release build"));
+        $("#utUpVersion").text(data.Version ? "v" + data.Version + " (" + (data.Development ? t("Development build") : t("Release build")) + ")" : "-");
+        if (data.BootTime > 0){
+            $("#utOvUptime").text(utDuration(parseInt(Date.now()/1000) - data.BootTime));
+            $("#utOvSince").text(tf("Since {0}", utMoment(data.BootTime)));
+        }else{
+            $("#utOvUptime").text("-");
+            $("#utOvSince").text(t("Not available"));
+        }
+        utOverviewUpdates();
     });
 
     function changePassword() {
         const oldPassword = document.getElementsByName('oldPassword')[0].value;
         const newPassword = document.getElementsByName('newPassword')[0].value;
         const confirmNewPassword = document.getElementsByName('confirmNewPassword')[0].value;
-        
+        function pwError(text){ $("#utPwError").text(text || "").prop("hidden", !text); }
+        pwError("");
+        if (oldPassword === "" || newPassword === ""){
+            pwError(t("Enter your current password and a new one."));
+            (oldPassword === "" ? $("#utPwOld") : $("#utPwNew")).trigger("focus");
+            return;
+        }
+        if (newPassword !== confirmNewPassword){
+            pwError(t("The new password and its confirmation are not the same."));
+            $("#utPwConfirm").trigger("focus");
+            return;
+        }
+        ZxUI.setLoading(document.getElementById("utPwBtn"), true);
         $.cjax({
             type: "POST",
             url: "/api/auth/changePassword",
@@ -381,17 +719,18 @@
             },
             success: function (data) {
                 if (data.error != undefined){
-                    alert(data.error);
+                    pwError(data.error);
                 }else{
-                    $("#passwordChangeSuccMsg").stop().finish().slideDown("fast").delay(3000).slideUp("fast");
+                    $("#passwordChangeSuccMsg").stop().finish().slideDown("fast").delay(4000).slideUp("fast");
                     $('[name="oldPassword"]').val('');
                     $('[name="newPassword"]').val('');
                     $('[name="confirmNewPassword"]').val('');
                 }
             },
             error: function (xhr, status, error) {
-                alert("Error changing password: " + error);
+                pwError(t("The password could not be changed:") + " " + error);
             },
+            complete: function(){ ZxUI.setLoading(document.getElementById("utPwBtn"), false); }
         });
     }
 
@@ -437,28 +776,33 @@
             }
 
             $("#geodbSource").html(data.usingExternalDB ?
-                `<span class="zx-badge zx-badge--ok"><i class="check circle icon"></i> ${t("Downloaded database")}</span>` :
-                `<span class="zx-badge"><i class="box icon"></i> ${t("Bundled database (never updated)")}</span>`);
-            $("#geodbDate").text(data.usingExternalDB ? geodbUnixToString(data.databaseTime) : "Same as Zoraxy build date");
-            $("#geodbEntries").text(data.ipv4EntryCount.toLocaleString() + " IPv4 / " + data.ipv6EntryCount.toLocaleString() + " IPv6 ranges");
+                `<span class="zx-badge zx-badge--dot zx-badge--ok">${t("Downloaded database")}</span>` :
+                `<span class="zx-badge zx-badge--dot">${t("Bundled database (never updated)")}</span>`);
+            //Overview
+            $("#utOvGeo").text(data.usingExternalDB ? t("Downloaded") : t("Bundled"));
+            $("#utOvGeoHint").text(data.autoUpdateEnabled ? t("Updates weekly") : t("Automatic update off"));
+            utNav.state("network", data.autoUpdateEnabled ? "on" : "off", data.autoUpdateEnabled ? t("Auto") : t("Manual"));
+            $("#utOvNetwork").text((data.usingExternalDB ? tf("Downloaded database from {0}.", geodbUnixToString(data.databaseTime)) : t("Using the database that came with Zoraxy.")) + " " + (data.autoUpdateEnabled ? t("Updates itself once a week.") : t("Automatic update is off.")));
+            $("#geodbDate").text(data.usingExternalDB ? geodbUnixToString(data.databaseTime) : t("Same as Zoraxy build date"));
+            $("#geodbEntries").text(tf("{0} IPv4 and {1} IPv6 ranges", data.ipv4EntryCount.toLocaleString(), data.ipv6EntryCount.toLocaleString()));
             $("#geodbLastUpdate").text(geodbUnixToString(data.lastUpdateTime));
             $("#geodbAutoUpdateEnabled").prop("checked", data.autoUpdateEnabled);
 
             if (data.lastUpdateError != ""){
-                showGeoDBMessage("Last update failed: " + data.lastUpdateError, false);
+                showGeoDBMessage(t("Last update failed:") + " " + data.lastUpdateError, false);
             }
 
             //Start or stop the countdown depending on the scheduler state
             geodbNextUpdateTime = data.nextUpdateTime;
             if (data.autoUpdateEnabled && geodbNextUpdateTime > 0){
-                $("#geodbNextUpdate").show();
+                $("#geodbNextUpdate, #geodbNextUpdateVal").show();
                 startGeoDBCountdown();
             }else{
-                $("#geodbNextUpdate").hide();
+                $("#geodbNextUpdate, #geodbNextUpdateVal").hide();
                 stopGeoDBCountdown();
             }
         }).fail(function(){
-            showGeoDBMessage("Unable to load Geo-IP database status", false);
+            showGeoDBMessage(t("Unable to load Geo-IP database status"), false);
         });
     }
 
@@ -484,7 +828,7 @@
         let remainingSeconds = geodbNextUpdateTime - currentTime;
         if (remainingSeconds <= 0){
             //Timer is up. Poll the backend until the next update is scheduled
-            $("#geodbCountdown").text("any moment now");
+            $("#geodbCountdown").text(t("any moment now"));
             if (currentTime % 10 == 0){
                 loadGeoDBUpdateStatus();
             }
@@ -495,26 +839,25 @@
     }
 
     function updateGeoDBNow(){
-        let updateBtn = $("#geodbUpdateNowBtn");
-        let originalBtnText = updateBtn.html();
-        updateBtn.html('<i class="spinner loading icon"></i> Updating...').addClass("loading disabled");
+        let updateBtn = document.getElementById("geodbUpdateNowBtn");
+        ZxUI.setLoading(updateBtn, true);
 
         $.cjax({
             type: "POST",
             url: "/api/geodb/updateNow",
             success: function(data){
                 if (data.error != undefined){
-                    showGeoDBMessage("Update failed: " + data.error, false);
+                    showGeoDBMessage(t("Update failed:") + " " + data.error, false);
                 }else{
-                    showGeoDBMessage("Geo-IP database updated and reloaded", true);
+                    showGeoDBMessage(t("Geo-IP database updated and reloaded"), true);
                 }
                 loadGeoDBUpdateStatus();
             },
             error: function(xhr, status, error){
-                showGeoDBMessage("Update failed: " + error, false);
+                showGeoDBMessage(t("Update failed:") + " " + error, false);
             },
             complete: function(){
-                updateBtn.html(originalBtnText).removeClass("loading disabled");
+                ZxUI.setLoading(updateBtn, false);
             }
         });
     }
@@ -529,21 +872,21 @@
                     showGeoDBMessage(data.error, false);
                     //Revert the toggle to the actual state
                 }else{
-                    showGeoDBMessage(enabled ? "Scheduled update enabled" : "Scheduled update disabled", true);
+                    showGeoDBMessage(enabled ? t("Scheduled update enabled") : t("Scheduled update disabled"), true);
                 }
                 loadGeoDBUpdateStatus();
             },
             error: function(xhr, status, error){
-                showGeoDBMessage("Unable to update setting: " + error, false);
+                showGeoDBMessage(t("Unable to update setting:") + " " + error, false);
                 loadGeoDBUpdateStatus();
             }
         });
     }
 
     function showGeoDBMessage(message, isSuccess){
-        $("#geodbUpdateMsg").removeClass("green red")
-            .addClass(isSuccess ? "green" : "red")
-            .html(`<i class="${isSuccess ? "check circle" : "exclamation triangle"} icon"></i> ` + $("<span>").text(message).html())
+        $("#geodbUpdateMsg").removeClass("zx-callout--success zx-callout--danger")
+            .addClass(isSuccess ? "zx-callout--success" : "zx-callout--danger")
+            .html(`<span class="zx-callout__icon" aria-hidden="true"><i class="${isSuccess ? "check circle" : "exclamation triangle"} icon"></i></span><div class="zx-callout__body">` + $("<span>").text(message).html() + "</div>")
             .stop().finish().slideDown("fast").delay(isSuccess ? 3000 : 8000).slideUp("fast");
     }
 
@@ -561,7 +904,7 @@
     function lookupGeoIp() {
         const ip = document.getElementById('geoipInput').value.trim();
         if (!ip) {
-            document.getElementById('geoipError').textContent = 'Please enter an IP address.';
+            document.getElementById('geoipError').textContent = t('Please enter an IP address.');
             document.getElementById('geoipError').style.display = 'block';
             document.getElementById('geoipResult').style.display = 'none';
             return;
@@ -575,27 +918,27 @@
                 document.getElementById('geoipError').style.display = 'block';
                 return;
             }
-            const countryCode = data.countryIsoCode || '(unknown)';
+            const countryCode = data.countryIsoCode || t('Unknown');
             document.getElementById('geoipCountryCode').textContent = countryCode;
 
             const tbody = document.getElementById('geoipRuleTableBody');
             tbody.innerHTML = '';
             (data.rules || []).forEach(function(rule) {
                 const icon = rule.allowed
-                    ? '<span class="zx-badge zx-badge--ok"><i class="check circle icon"></i> ' + t("Allow") + '</span>'
-                    : '<span class="zx-badge zx-badge--danger"><i class="times circle icon"></i> ' + t("Deny") + '</span>';
+                    ? '<span class="zx-badge zx-badge--dot zx-badge--ok">' + t("Allow") + '</span>'
+                    : '<span class="zx-badge zx-badge--dot zx-badge--danger">' + t("Deny") + '</span>';
                 tbody.innerHTML += `<tr>
-                    <td class="zx-mono zx-ellipsis" data-label="${t("Rule ID")}" title="${ZxUI.esc(rule.id)}">${ZxUI.esc(rule.id)}</td>
-                    <td data-label="${t("Rule name")}">${ZxUI.esc(rule.name)}</td>
-                    <td data-label="${t("Access")}">${icon}</td>
+                    <td data-label="${t("Access rule")}">${ZxUI.esc(rule.name)}</td>
+                    <td class="zx-mono zx-cell-long" data-label="${t("Rule ID")}">${ZxUI.esc(rule.id)}</td>
+                    <td data-label="${t("Result")}">${icon}</td>
                 </tr>`;
             });
             if ((data.rules || []).length === 0) {
-                tbody.innerHTML = '<tr><td class="zx-empty-cell" colspan="3">' + t("No access rules configured.") + '</td></tr>';
+                tbody.innerHTML = '<tr><td class="zx-empty-cell" colspan="3">' + t("No access rules yet. Rules you add under Access Rules are checked here.") + '</td></tr>';
             }
             document.getElementById('geoipResult').style.display = 'block';
         }).fail(function(xhr) {
-            let msg = 'Lookup failed.';
+            let msg = t('Lookup failed.');
             try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
             document.getElementById('geoipError').textContent = msg;
             document.getElementById('geoipError').style.display = 'block';
@@ -665,11 +1008,18 @@
             $("#logMaxSize").val(data.maxSize);
             $("#logMaxBackups").val(data.maxBackups || 16);
             $("#logCompressionEnabled").prop("checked", data.compress);
-            // Re-initialize checkboxes after setting values
-            $('.ui.checkbox').checkbox();
+            utLogState(data.enabled, data.maxSize);
         }).fail(function(xhr, status, error) {
             console.error("Failed to load log settings:", error);
         });
+    }
+
+    //State of log rotation in the card title and on the Overview
+    function utLogState(enabled, maxSize){
+        $("#utLogBadge").prop("hidden", false).attr("class", "zx-badge zx-badge--dot" + (enabled ? " zx-badge--ok" : "")).text(enabled ? t("On") : t("Off"));
+        $("#utOvLogBadge").prop("hidden", false).attr("class", "zx-badge zx-badge--dot" + (enabled ? " zx-badge--ok" : "")).text(enabled ? t("Rotation on") : t("Rotation off"));
+        utNav.state("logs", enabled ? "on" : "off", enabled ? t("On") : t("Off"));
+        $("#utOvLogs").text(enabled ? (String(maxSize) !== "0" && maxSize ? tf("Log rotation is on: a new log file starts at {0}.", maxSize) : t("Log rotation is on.")) : t("Log rotation is off: the log file grows without limit."));
     }
 
     function saveLogSettings() {
@@ -683,18 +1033,18 @@
         // Validate maxSize format
         const maxSizeRegex = /^\d+[KMG]?$/i;
         if (!maxSizeRegex.test(settings.maxSize)) {
-            showLogSettingsError("Max size must be a number optionally followed by K, M, or G (e.g., 200M, 10K, 500)");
+            showLogSettingsError(t("Max size must be a number optionally followed by K, M, or G (e.g., 200M, 10K, 500)"));
             return;
         }
 
         // Basic validation
         if (settings.maxSize === "") {
-            showLogSettingsError("Max size cannot be empty");
+            showLogSettingsError(t("Max size cannot be empty"));
             return;
         }
 
         if (settings.maxBackups < 1) {
-            showLogSettingsError("Max backups must be at least 1");
+            showLogSettingsError(t("Max backups must be at least 1"));
             return;
         }
 
@@ -707,17 +1057,20 @@
                     showLogSettingsError(data.error);
                 } else {
                     showLogSettingsSuccess();
+                    utLogState(settings.enabled, settings.maxSize);
                 }
             },
             error: function(xhr, status, error) {
-                showLogSettingsError("Failed to save settings: " + error);
+                showLogSettingsError(t("Failed to save settings:") + " " + error);
             }
         });
     }
 
-    function showLogSettingsSuccess() {
-        msgbox("Log settings updated successfully"); //visible wherever the page is scrolled
+    function showLogSettingsSuccess(text) {
+        text = text || t("Log settings updated successfully");
+        msgbox(text); //visible wherever the page is scrolled
         $("#logSettingsErrorMsg").hide();
+        $("#logSettingsSuccessText").text(text);
         $("#logSettingsSuccessMsg").stop().finish().slideDown("fast").delay(3000).slideUp("fast");
     }
 
@@ -731,29 +1084,21 @@
     function triggerLogRotation(event) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        // Show loading state on button
-        const rotateBtn = $('#rotateLogBtn');
-        const originalText = rotateBtn.html();
-        rotateBtn.html('<i class="spinner loading icon"></i> Rotating...').addClass('loading disabled');
+        const rotateBtn = document.getElementById("rotateLogBtn");
+        ZxUI.setLoading(rotateBtn, true);
 
         $.get("/api/log/rotate/trigger", function(data) {
             if (data.error) {
-                showLogSettingsError("Failed to rotate log: " + data.error);
+                showLogSettingsError(t("Failed to rotate log:") + " " + data.error);
             } else {
-                showLogSettingsSuccess();
-                // Update success message for rotation
-                $("#logSettingsSuccessMsg").html('<i class="archive icon"></i> Log rotation triggered successfully').stop().finish().slideDown("fast").delay(3000).slideUp("fast");
+                showLogSettingsSuccess(t("Log rotation triggered successfully"));
             }
         }).fail(function(xhr, status, error) {
-            showLogSettingsError("Failed to rotate log: " + error);
+            showLogSettingsError(t("Failed to rotate log:") + " " + error);
         }).always(function() {
-            // Restore button state
-            rotateBtn.html(originalText).removeClass('loading disabled');
+            ZxUI.setLoading(rotateBtn, false);
         });
     }
-
-    // Initialize Semantic UI checkboxes
-    $('.ui.checkbox').checkbox();
 
     // Bind form submission
     $("#log-settings-form").submit(function(e) {
@@ -780,7 +1125,7 @@
                     if (data.error != undefined){
                         msgbox(data.error, false, 5000);
                     }else{
-                        msgbox("All Statistics Cleared");
+                        msgbox(t("All statistics cleared"));
                     }
                 }
             });
@@ -808,7 +1153,7 @@
                 return;
             }
 
-            var html = '<div class="ut-supporters">';
+            var html = '<div class="sy-chips">';
             var seen = {};
             names = names.filter(function(name) {
                 var key = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

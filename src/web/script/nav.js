@@ -38,6 +38,7 @@
         { id: "sites", label: N_("Sites"), icon: "sitemap", items: [
             { tag: "httprp", label: N_("HTTP Proxy"), icon: "sitemap", kw: "reverse proxy hosts domains upstream rules websites" },
             { tag: "setroot", label: N_("Default Site"), icon: "home", kw: "fallback catch all root unknown host" },
+            { tag: "errorpages", label: N_("Error pages"), icon: "exclamation triangle", kw: "403 404 429 502 503 forbidden blocked not found custom template branding logo theme maintenance" },
             { tag: "redirectset", label: N_("Redirection"), icon: "level up alternate", kw: "redirect 301 302 forward" },
             { tag: "vdir", label: N_("Path routes"), icon: "folder", kw: "virtual directory vdir path prefix subpath" },
             { tag: "streamproxy", label: N_("Stream Proxy"), icon: "exchange", kw: "tcp udp port forward stream" },

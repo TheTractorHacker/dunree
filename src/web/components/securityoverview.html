@@ -1,64 +1,130 @@
 <style>
-    /* Security overview. Scoped to #secOvPage / #secOvDlg; colours come from the kit tokens only. */
+    /* Security Overview: a posture dashboard. Scoped to #secOvPage / #secOvDlg; colours come from the kit tokens only. */
     #secOvPage .soMuted { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    #secOvPage .soScore { display: grid; grid-template-columns: auto 1fr; gap: var(--zx-space-4) var(--zx-space-5); align-items: center; background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
-    #secOvPage .soRing { position: relative; width: 140px; height: 140px; flex: 0 0 auto; }
+    /* the top of the page is one column of full-width cards: the score with the recommended fixes beside it, the six areas as a 3 x 2 grid,
+       then what to fix first. Nothing is stretched to match a taller neighbour. */
+    #secOvPage .soStack { display: grid; gap: var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
+    #secOvPage .soStack > * { min-width: 0; }
+    #secOvPage .soStack .zx-card, #secOvPage .soTrio .zx-card { margin: 0; }
+    #secOvPage .soHeroTop { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 23rem); align-items: stretch; }
+    #secOvPage .soRecSide { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: var(--zx-space-2); padding: var(--zx-card-pad); border-left: 1px solid var(--zx-border); }
+    #secOvPage .soRecSide h4 { margin: 0; font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); }
+    #secOvPage .soRecSide .soRecLead { margin: 0; font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.3; color: var(--zx-text); }
+    #secOvPage .soRecSide .soRecTxt { margin: 0; font-size: var(--zx-fs-sm); }
+    #secOvPage .soRecSide .zx-btn { margin-top: var(--zx-space-1); }
+    @media (max-width: 900px) { #secOvPage .soHeroTop { grid-template-columns: minmax(0, 1fr); } #secOvPage .soRecSide { border-left: 0; border-top: 1px solid var(--zx-border); } }
+    #secOvPage .soSide { display: grid; gap: var(--zx-space-4); }
+    #secOvPage .soTrio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
+    @media (max-width: 1100px) { #secOvPage .soTrio { grid-template-columns: minmax(0, 1fr); } }
+    /* hero */
+    #secOvPage .soScore { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--zx-space-4) var(--zx-space-5); align-items: center; padding: var(--zx-card-pad); }
+    #secOvPage .soRing { position: relative; width: 132px; height: 132px; flex: 0 0 auto; }
     #secOvPage .soRing svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-    #secOvPage .soRing .track { fill: none; stroke: var(--zx-surface-3); stroke-width: 12; }
-    #secOvPage .soRing .arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray .5s; }
+    #secOvPage .soRing .track { fill: none; stroke: var(--zx-surface-3); stroke-width: 11; }
+    #secOvPage .soRing .arc { fill: none; stroke-width: 11; stroke-linecap: round; transition: stroke-dasharray .5s; }
     #secOvPage .soRing .num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
-    #secOvPage .soRing .num b { font-size: var(--zx-fs-2xl); font-weight: 700; }
+    #secOvPage .soRing .num b { font-size: 2.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
     #secOvPage .soRing .num span { font-size: var(--zx-fs-xs); color: var(--zx-text-muted); margin-top: 2px; }
-    #secOvPage .soScoreSide h3 { margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-xl); }
-    #secOvPage .soTiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: var(--zx-space-2); margin: var(--zx-space-3) 0 var(--zx-space-2); }
-    #secOvPage .soTile { background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-2) var(--zx-space-3); }
-    #secOvPage .soTile b { display: block; font-size: var(--zx-fs-xl); line-height: 1.2; font-variant-numeric: tabular-nums; }
-    #secOvPage .soTile small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); }
-    #secOvPage .soTile.t-ok b { color: var(--zx-ok-text); } #secOvPage .soTile.t-warn b { color: var(--zx-warn-text); } #secOvPage .soTile.t-fail b { color: var(--zx-danger-text); }
+    #secOvPage .soScoreSide h3 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-title, 1.714rem); font-weight: 700; line-height: 1.2; }
+    #secOvPage .soScoreSide .soLead { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); line-height: var(--zx-lh); max-width: 40rem; }
+    #secOvPage .soCounts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: 0; padding: 0; list-style: none; }
+    #secOvPage .soCounts .zx-badge b { margin-right: 4px; font-variant-numeric: tabular-nums; }
     #secOvPage .soNote { background: var(--zx-info-bg); color: var(--zx-info-text); border: 1px solid var(--zx-info-line); padding: var(--zx-space-3); border-radius: var(--zx-radius-md); margin: var(--zx-space-3) 0 0; }
     #secOvPage .soNote.warn { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
     #secOvPage #soBanner .soNote { margin: 0 0 var(--zx-space-4); }
-    #secOvPage details.soWhy { margin-top: var(--zx-space-3); }
-    #secOvPage details.soWhy summary { cursor: pointer; font-weight: 600; }
-    #secOvPage .soLoss { display: grid; grid-template-columns: 1fr auto; gap: var(--zx-space-1) var(--zx-space-4); margin: var(--zx-space-2) 0; font-size: var(--zx-fs-sm); }
+    #secOvPage details.soWhy { border-top: 1px solid var(--zx-border); }
+    #secOvPage details.soWhy summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-2); list-style: none; cursor: pointer; padding: var(--zx-space-3) var(--zx-card-pad); color: var(--zx-text); font-size: var(--zx-fs-sm); font-weight: 700; border-radius: 0 0 var(--zx-radius-lg) var(--zx-radius-lg); }
+    #secOvPage details.soWhy summary .soMuted { font-weight: 400; }
+    #secOvPage details.soWhy summary::-webkit-details-marker { display: none; }
+    #secOvPage details.soWhy summary::before { content: ""; flex: 0 0 auto; width: 6px; height: 6px; margin: 0 6px 0 2px; border-right: 2px solid var(--zx-text-muted); border-bottom: 2px solid var(--zx-text-muted); transform: rotate(-45deg); transition: transform var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #secOvPage details.soWhy[open] summary::before { transform: rotate(45deg); }
+    #secOvPage details.soWhy summary:hover { background: var(--zx-surface-2); }
+    #secOvPage details.soWhy[open] summary { border-radius: 0; }
+    #secOvPage details.soWhy summary:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    @media (prefers-reduced-motion: reduce) { #secOvPage details.soWhy summary::before { transition: none; } }
+    #secOvPage details.soWhy .soWhyBody { padding: 0 var(--zx-card-pad) var(--zx-card-pad); }
+    #secOvPage .soLoss { display: grid; grid-template-columns: 1fr auto; gap: var(--zx-space-1) var(--zx-space-4); margin: var(--zx-space-3) 0; font-size: var(--zx-fs-sm); max-width: 40rem; }
     #secOvPage .soLoss span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
-    #secOvPage .soFormula { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: var(--zx-space-2) 0 0; }
-    #secOvPage .soRec { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
-    #secOvPage .soRec .txt { flex: 1 1 26em; min-width: 0; }
-    #secOvPage .soRec .txt h4 { margin: 0; font-size: var(--zx-fs-lg); }
-    #secOvPage .soRec .txt p { margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); }
-    #secOvPage .soHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-5) 0 var(--zx-space-1); }
-    #secOvPage .soHead h3.soH { margin: 0; }
-    #secOvPage .soSub { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-md); }
-    #secOvPage .soFirst .soItem { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-3) var(--zx-space-4); margin: 0 0 var(--zx-space-3); }
-    #secOvPage .soItem .txt { flex: 1 1 22em; min-width: 0; overflow-wrap: anywhere; }
-    #secOvPage .soItem .txt small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
-    #secOvPage h3.soH { font-size: var(--zx-fs-lg); font-weight: 700; margin: 0; }
-    #secOvPage .soItem .acts .button { min-width: 12rem; justify-content: center; }
+    #secOvPage .soFormula { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: 0; max-width: 46rem; }
+    /* what is protected: one row per area */
+    #secOvPage .soAreas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zx-space-4) var(--zx-space-6); }
+    @media (max-width: 900px) { #secOvPage .soAreas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--zx-space-4) var(--zx-space-5); } }
+    @media (max-width: 480px) { #secOvPage .soAreas { grid-template-columns: minmax(0, 1fr); } }
+    #secOvPage .soArea { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px var(--zx-space-3); width: 100%; padding: 0; border: 0; background: transparent; color: var(--zx-text); font: inherit; text-align: left; cursor: pointer; border-radius: 0; }
+    #secOvPage .soArea:hover .soAreaName { color: var(--zx-link); text-decoration: underline; text-underline-offset: 2px; }
+    #secOvPage .soArea:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+    #secOvPage .soAreaName { font-weight: 700; }
+    #secOvPage .soAreaN { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-variant-numeric: tabular-nums; }
+    #secOvPage .soBar { grid-column: 1 / -1; display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; background: var(--zx-surface-3); }
+    #secOvPage .soBar i { display: block; height: 100%; min-width: 3px; }
+    #secOvPage .soBar .b-ok { background: var(--zx-ok-solid); } #secOvPage .soBar .b-warn { background: var(--zx-warn-solid); } #secOvPage .soBar .b-fail { background: var(--zx-danger-solid); } #secOvPage .soBar .b-unknown { background: var(--zx-text-faint); }
+    /* fix first */
+    #secOvPage .soFirst .soItem { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); padding: var(--zx-space-3) 0; border-top: 1px solid var(--zx-border); }
+    #secOvPage .soFirst .soItem:first-child { border-top: 0; padding-top: 0; }
+    #secOvPage .soFirst .soItem:last-child { padding-bottom: 0; }
+    #secOvPage .soItem .txt { flex: 1 1 20em; min-width: 0; overflow-wrap: anywhere; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px var(--zx-space-3); align-items: start; }
+    #secOvPage .soItem .txt .soDot { grid-row: 1 / span 2; margin-top: 1px; }
+    #secOvPage .soItem .txt small { grid-column: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
     #secOvPage .soItem .txt code { font-size: var(--zx-fs-xs); }
-    #secOvPage .soFirst { margin-top: var(--zx-space-2); }
-    #secOvPage .soItem .acts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
-    #secOvPage .soItem .acts .button { margin: 0; }
-    #secOvPage .soCat { background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-3); overflow: hidden; }
-    #secOvPage .soCatHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: var(--zx-space-3) var(--zx-space-4); cursor: pointer; user-select: none; }
+    #secOvPage .soItem .txt .soHow { grid-column: 2; margin-top: 2px; font-size: var(--zx-fs-sm); color: var(--zx-text); }
+    #secOvPage .soItem .txt .soHow span { color: var(--zx-text-muted); }
+    #secOvPage .soItem .acts, #secOvPage .soRowBody .acts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
+    #secOvPage .soRecTxt { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); line-height: var(--zx-lh); }
+    #secOvPage .soLinks { list-style: none; margin: 0 0 var(--zx-space-4); padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--zx-space-3); }
+    #secOvPage .soLinks a { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--zx-space-3); height: 100%; padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); color: var(--zx-text); text-decoration: none; transition: border-color var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #secOvPage .soLinks a > i.icon { display: grid; place-items: center; width: 32px; height: 32px; margin: 0; border-radius: var(--zx-radius-md); background: var(--zx-surface-2); color: var(--zx-text-muted); }
+    #secOvPage .soLinks a b { display: block; }
+    #secOvPage .soLinks a small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.35; }
+    #secOvPage .soLinks a:hover { border-color: var(--zx-primary); }
+    #secOvPage .soLinks a:hover b { color: var(--zx-link); }
+    #secOvPage .soLinks a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    @media (max-width: 1100px) { #secOvPage .soLinks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { #secOvPage .soLinks { grid-template-columns: minmax(0, 1fr); } }
+    @media (prefers-reduced-motion: reduce) { #secOvPage .soLinks a { transition: none; } }
+    /* last 24 hours */
+    #secOvPage .soBig { display: block; font-size: var(--zx-fs-2xl); font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    #secOvPage .soBars { list-style: none; margin: 0; padding: 0; }
+    #secOvPage .soBars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--zx-space-3); padding: 5px 0; font-size: var(--zx-fs-sm); }
+    #secOvPage .soBars .k { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #secOvPage .soBars .n { color: var(--zx-text-muted); font-variant-numeric: tabular-nums; }
+    #secOvPage .soBars .bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--zx-surface-3); overflow: hidden; }
+    #secOvPage .soBars .bar i { display: block; height: 100%; border-radius: 2px; background: var(--zx-danger-solid); }
+    #secOvPage .soBlk { list-style: none; margin: 0; padding: 0; }
+    #secOvPage .soBlk li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px var(--zx-space-3); padding: 7px 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); }
+    #secOvPage .soBlk li:first-child { border-top: 0; padding-top: 0; }
+    #secOvPage .soBlk .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #secOvPage .soBlk .who code { font-size: var(--zx-fs-sm); }
+    #secOvPage .soBlk .path { grid-column: 1 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text-muted); }
+    #secOvPage svg.soSpark { display: block; width: 100%; height: 44px; margin: var(--zx-space-3) 0 var(--zx-space-1); background: var(--zx-surface-2); border-radius: var(--zx-radius-md); }
+    #secOvPage svg.soSpark rect { fill: var(--zx-danger-solid); }
+    #secOvPage .soCardFoot { margin: var(--zx-space-3) 0 0; font-size: var(--zx-fs-sm); }
+    #secOvPage .soCardFoot a, #secOvPage a.soGo { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+    #secOvPage .soEmptyLine { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    /* all checks */
+    #secOvPage .soHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-6) 0 var(--zx-space-1); }
+    #secOvPage h3.soH { font-size: var(--zx-fs-xl); font-weight: 700; margin: 0; }
+    #secOvPage .soSub { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-md); max-width: 62rem; }
+    #secOvPage .soCat { background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); margin: 0 0 var(--zx-space-2); overflow: hidden; scroll-margin-top: calc(var(--zx-topbar-h, 56px) + 12px); }
+    #secOvPage .soCatHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: 14px var(--zx-card-pad); cursor: pointer; user-select: none; }
+    #secOvPage .soCatHead:hover { background: var(--zx-surface-2); }
     #secOvPage .soCatHead:focus-visible, #secOvPage .soRowHead:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--zx-focus); }
-    #secOvPage .soCatHead b { font-size: var(--zx-fs-lg); }
+    #secOvPage .soCatHead b { font-size: 1.071rem; }
     #secOvPage .soCatHead .sum { margin-left: auto; display: flex; gap: var(--zx-space-1); flex-wrap: wrap; }
     #secOvPage .soCatBody { display: none; border-top: 1px solid var(--zx-border); }
     #secOvPage .soCat.open .soCatBody { display: block; }
-    #secOvPage .soCat .chev { transition: transform .15s; margin: 0; } #secOvPage .soCat.open .chev { transform: rotate(90deg); }
+    #secOvPage .soCat .chev { transition: transform .15s; margin: 0; color: var(--zx-text-muted); } #secOvPage .soCat.open .chev { transform: rotate(90deg); }
     #secOvPage .soRow { border-top: 1px solid var(--zx-border); }
     #secOvPage .soRow:first-child { border-top: 0; }
-    #secOvPage .soRowHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: var(--zx-space-2) var(--zx-space-4); cursor: pointer; }
+    #secOvPage .soRowHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: 10px var(--zx-card-pad); cursor: pointer; }
     #secOvPage .soRowHead:hover { background: var(--zx-surface-2); }
     #secOvPage .soRowHead .ttl { flex: 1 1 16em; min-width: 0; overflow-wrap: anywhere; }
-    #secOvPage .soRowBody { display: none; padding: var(--zx-space-1) var(--zx-space-4) var(--zx-space-4) calc(var(--zx-space-4) + 1.9em); }
+    #secOvPage .soRowBody { display: none; padding: var(--zx-space-1) var(--zx-card-pad) var(--zx-card-pad) calc(var(--zx-card-pad) + 1.4em + var(--zx-space-3)); max-width: 62rem; }
     #secOvPage .soRow.open .soRowBody { display: block; }
+    #secOvPage .soRow.open .soRowHead .ttl { font-weight: 700; }
     #secOvPage .soRowBody ul { margin: var(--zx-space-1) 0 var(--zx-space-2) 1.1em; padding: 0; }
     #secOvPage .soRowBody li { margin: 2px 0; overflow-wrap: anywhere; }
-    #secOvPage .soRowBody .acts { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-2); }
-    #secOvPage .soRowBody .acts .button { margin: 0; }
-    #secOvPage .soRowBody .lbl { text-transform: uppercase; letter-spacing: .04em; font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); margin-top: var(--zx-space-3); }
+    #secOvPage .soRowBody .acts { margin-top: var(--zx-space-3); }
+    #secOvPage .soRowBody .lbl { font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); margin-top: var(--zx-space-3); }
     #secOvPage #soCats.hide-na .soRow.na, #secOvPage #soCats.hide-na .soCat.allna { display: none; }
     #secOvPage .soDot { flex: 0 0 auto; width: 1.4em; height: 1.4em; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .8em; font-weight: 700; color: var(--zx-on-solid); }
     #secOvPage .soDot.s-ok { background: var(--zx-ok-solid); } #secOvPage .soDot.s-warn { background: var(--zx-warn-solid); } #secOvPage .soDot.s-fail { background: var(--zx-danger-solid); }
@@ -68,19 +134,16 @@
     #secOvPage .soPill.s-ok { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); }
     #secOvPage .soPill.s-warn { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
     #secOvPage .soPill.s-fail { background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
-    #secOvPage .soSev { font-size: var(--zx-fs-xs); color: var(--zx-text-muted); text-transform: capitalize; }
+    #secOvPage .soSev { font-size: var(--zx-fs-xs); color: var(--zx-text-muted); text-transform: capitalize; min-width: 4.2em; text-align: right; }
     #secOvPage .soHeur { font-size: var(--zx-fs-xs); border: 1px dashed var(--zx-border-strong); border-radius: var(--zx-radius-sm); padding: 0 .4em; color: var(--zx-text-muted); }
-    #secOvPage .soLost { font-variant-numeric: tabular-nums; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); min-width: 3.5em; text-align: right; }
-    #secOvPage .soEmpty { text-align: center; padding: var(--zx-space-5) var(--zx-space-4); color: var(--zx-text-muted); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
-    #secOvPage .soEmpty b { color: var(--zx-text); }
-    #secOvPage .soSkel { height: 150px; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: soSk 1.2s infinite; }
+    #secOvPage .soLost { font-variant-numeric: tabular-nums; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); min-width: 3.2em; text-align: right; }
+    #secOvPage .soSkel { height: 180px; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: soSk 1.2s infinite; }
     @keyframes soSk { from { background-position: 0 0; } to { background-position: -200% 0; } }
-    @media (prefers-reduced-motion: reduce) { #secOvPage .soSkel { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { #secOvPage .soSkel { animation: none; } #secOvPage .soRing .arc, #secOvPage .soCat .chev { transition: none; } }
     @media (max-width: 560px) {
-        #secOvPage .soScore { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-        #secOvPage .soRowBody { padding-left: var(--zx-space-4); }
-        #secOvPage .soLoss { text-align: left; }
-        #secOvPage .soSev { flex: 1 0 100%; order: 5; }
+        #secOvPage .soScore { grid-template-columns: 1fr; justify-items: start; }
+        #secOvPage .soRowBody { padding-left: var(--zx-card-pad); }
+        #secOvPage .soSev { flex: 1 0 100%; order: 5; text-align: left; padding-left: calc(1.4em + var(--zx-space-3)); }
     }
     /* preview dialog */
     #secOvDlgBg { position: fixed; inset: 0; z-index: 1100; background: var(--zx-overlay); display: none; align-items: center; justify-content: center; padding: var(--zx-space-3); }
@@ -118,17 +181,44 @@
     <aside class="zx-related" aria-label="Related pages">
         <span class="zx-related__title">Related</span>
         <ul>
-            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>ban abusive clients, block bots, review events</span></li>
-            <li><a href="#waf" data-nav-open="waf">WAF</a> <span>blocks attacks inside requests</span></li>
-            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>blocklists, allowlists and countries</span></li>
+            <li><a href="#seccenter" data-nav-open="seccenter">Security Center</a> <span>Ban abusive clients, block bots, review events</span></li>
+            <li><a href="#waf" data-nav-open="waf">WAF</a> <span>Blocks attacks inside requests</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Blocklists, allowlists and countries</span></li>
         </ul>
     </aside>
 
     <div>
-        <div id="soScoreBox"><div class="soSkel"></div></div>
         <div id="soBanner"></div>
-        <div id="soRec"></div>
-        <div id="soFirstBox"></div>
+        <div class="soStack">
+            <section class="zx-card" id="soScoreBox" aria-label="Security score"><div class="soSkel"></div></section>
+            <section class="zx-card" id="soAreasCard">
+                <div class="zx-card__head"><h3 class="zx-card__title">What is protected</h3><p class="zx-card__desc">Checks that pass in each area. Pick an area to see its checks.</p></div>
+                <div class="zx-card__body"><ul class="soAreas" id="soAreas"><li class="soEmptyLine">Checking...</li></ul></div>
+            </section>
+            <section class="zx-card" id="soFirstCard">
+                <div class="zx-card__head"><h3 class="zx-card__title">Fix these first</h3><p class="zx-card__desc">The open checks that cost the most points. Each one says what was found and takes you to the setting.</p></div>
+                <div class="zx-card__body" id="soFirstBox"></div>
+            </section>
+        </div>
+        <ul class="soLinks" id="soLinks" aria-label="Go to">
+            <li><a href="#" data-page="seccenter" data-anchor="abuse"><i class="ban icon" aria-hidden="true"></i><span><b>Auto-ban</b><small>Ban addresses that keep attacking</small></span></a></li>
+            <li><a href="#" data-page="waf" data-anchor=""><i class="shield alternate icon" aria-hidden="true"></i><span><b>WAF</b><small>Inspect requests for attacks</small></span></a></li>
+            <li><a href="#" data-page="access" data-anchor=""><i class="filter icon" aria-hidden="true"></i><span><b>Access Rules</b><small>Block addresses and countries</small></span></a></li>
+            <li><a href="#" data-page="cert" data-anchor=""><i class="lock icon" aria-hidden="true"></i><span><b>Certificates</b><small>HTTPS for every site</small></span></a></li>
+            <li><a href="#" data-page="seccenter" data-anchor="auditlog"><i class="list icon" aria-hidden="true"></i><span><b>Audit log</b><small>Who changed a security setting</small></span></a></li>
+        </ul>
+
+        <div class="soHead" style="margin-top:var(--zx-space-5)">
+            <h3 class="soH zx-section__title">Blocked in the last 24 hours</h3>
+            <a href="#" class="soGo" id="soGoBlocked">All blocked requests on Status</a>
+        </div>
+        <p class="soSub">Requests Zoraxy refused, who sent them and why. Kept in memory on this Zoraxy only.</p>
+        <div class="soTrio" id="soActivity">
+            <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Blocked requests</h3></div><div class="zx-card__body" id="soBlkTotal"><p class="soEmptyLine">Loading...</p></div></section>
+            <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Top offenders</h3></div><div class="zx-card__body" id="soBlkTop"><p class="soEmptyLine">Loading...</p></div></section>
+            <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Latest blocks</h3></div><div class="zx-card__body" id="soBlkLast"><p class="soEmptyLine">Loading...</p></div></section>
+        </div>
+
         <div class="soHead">
             <h3 class="soH zx-section__title">All checks</h3>
             <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="soToggleNa" aria-pressed="false" hidden></button>
@@ -136,7 +226,6 @@
         <p class="soSub">Every check with the facts it looked at, why it matters and how to fix it. Nothing here changes by itself: every fix is previewed first and only runs when you confirm it.</p>
         <div id="soCats" class="hide-na"></div>
         <section class="zx-card" style="margin-top:var(--zx-space-4)">
-            <div class="zx-card__head"><h3 class="zx-card__title">Notifications</h3></div>
             <div class="zx-card__body">
                 <label class="zx-toggle-row" for="soNotify" id="soNotifyBox">
                     <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Notify me when the score drops</span><span class="zx-toggle-row__desc">Tells you through the notification centre when the score drops by 10 points or a check starts failing, at most once every 6 hours. Needs a channel in <a href="snippet/notifications.html" target="_blank">Notifications</a>. Off by default.</span></span>
@@ -151,7 +240,7 @@
 </div>
 <script>
 (function(){
-    var S = { data: null, openCats: null, openRows: {}, loading: false };
+    var S = { data: null, openCats: null, openRows: {}, loading: false, whyOpen: false };
     function esc(t){ return $("<div>").text(t == null ? "" : String(t)).html(); }
     function plural(n, a, b){ return n === 1 ? a : b; }
     var ICON = { ok: "&#10003;", warn: "!", fail: "&#10005;", unknown: "?", "not-applicable": "-" };
@@ -172,20 +261,61 @@
     }
 
     function renderScore(d){
-        var sc = d.score, c = sc.counts || {};
-        var tiles = [["ok", "Passed", c.ok], ["warn", "Warnings", c.warn], ["fail", "Failing", c.fail], ["unknown", "Unknown", c.unknown], ["na", "Not applicable", c["not-applicable"]]];
-        var h = '<div class="soScore">' + ring(sc) + '<div class="soScoreSide"><h3>' + esc(sc.label) + (sc.grade && sc.grade !== "?" ? ' <span class="soMuted">(grade ' + esc(sc.grade) + ')</span>' : '') + '</h3>';
-        h += '<div class="soMuted" id="soChecked" aria-live="polite"></div><div class="soMuted">' + (sc.lost > 0 ? esc(sc.lost) + ' points lost' : 'No points lost') + ' &middot; ' + sc.applicableWeight + ' points of weight are in scope</div>';
-        h += '<div class="soTiles">' + tiles.map(function(t){ return '<div class="soTile t-' + t[0] + '"><b>' + (t[2] || 0) + '</b><small>' + t[1] + '</small></div>'; }).join("") + '</div>';
+        var sc = d.score, c = sc.counts || {}, n = function(k){ return c[k] || 0; };
+        var open = n("fail") + n("warn") + n("unknown");
+        var lead = sc.applicableWeight > 0 ? (open ? tr("{0} of the {1} checks that apply to this setup pass. {2} need a look.").replace("{0}", n("ok")).replace("{1}", n("ok") + open).replace("{2}", open) : tr("Every check that applies to this setup passes.")) : tr("No check applies yet.");
+        var h = '<div class="soScore">' + ring(sc) + '<div class="soScoreSide"><h3>' + esc(sc.label) + (sc.grade && sc.grade !== "?" ? ' <span class="zx-badge">' + esc(tr("Grade {0}").replace("{0}", sc.grade)) + '</span>' : '') + '</h3>';
+        h += '<p class="soLead">' + esc(lead) + '</p>';
+        h += '<ul class="soCounts">' + [["ok", "ok", "passed"], ["warn", "warn", "warnings"], ["danger", "fail", "failing"], ["", "unknown", "unknown"], ["", "not-applicable", "not applicable"]].filter(function(t){ return t[1] === "ok" || n(t[1]); }).map(function(t){
+            return '<li class="zx-badge zx-badge--dot' + (t[0] ? " zx-badge--" + t[0] : "") + '"><b>' + n(t[1]) + '</b>' + esc(tr(t[2])) + '</li>'; }).join("") + '</ul>';
         if (sc.provisional && sc.applicableWeight > 0) h += '<div class="soNote warn"><b>Incomplete.</b> ' + sc.unknownShare + '% of the checks could not be determined, so this score is capped and has no grade. Open the "Unknown" checks to see what is missing.</div>';
         else if (sc.capped) h += '<div class="soNote warn">' + esc(sc.capReason) + '.</div>';
-        h += '<details class="soWhy"><summary>How this score is calculated</summary><p class="soFormula">' + esc(sc.formula) + '</p>';
+        h += '</div></div>';
+        // recommended protection sits beside the score (filled by renderRec): one sentence and one button, no card of its own
+        h = '<div class="soHeroTop">' + h + '<aside class="soRecSide" id="soRecCard" aria-labelledby="soRecTitle"><h4 id="soRecTitle">' + esc(tr("Recommended protection")) + '</h4><div id="soRec"></div></aside></div>';
+        h += '<details class="soWhy"' + (S.whyOpen ? " open" : "") + '><summary>How this score is calculated <span class="soMuted">&middot; ' + (sc.lost > 0 ? esc(sc.lost) + ' points lost' : 'No points lost') + ' &middot; ' + sc.applicableWeight + ' points of weight in scope &middot; <span id="soChecked" aria-live="polite"></span></span></summary><div class="soWhyBody"><p class="soFormula">' + esc(sc.formula) + '</p>';
         if ((sc.losses || []).length) {
             h += '<div class="soLoss">' + sc.losses.map(function(l){ return '<span>' + esc(l.title) + ' <span class="soMuted">(' + STATUS_TXT[l.status].toLowerCase() + ')</span></span><span>' + pts(l.points) + '</span>'; }).join("") + '</div>';
-            h += '<div class="soMuted">' + esc(sc.lost) + ' points lost: ' + sc.losses.slice(0, 6).map(function(l){ return esc(l.title) + ' (' + pts(l.points) + ')'; }).join(", ") + (sc.losses.length > 6 ? ", ..." : "") + '</div>';
         } else h += '<p>Nothing is costing points.</p>';
-        h += '</details></div></div>';
+        h += '</div></details>';
         $("#soScoreBox").html(h);
+    }
+
+    /* what is protected: one bar per area (category), click to jump to its checks */
+    function renderAreas(d){
+        var cats = {}, order = [];
+        d.checks.forEach(function(c){ if (!cats[c.category]) { cats[c.category] = { ok: 0, warn: 0, fail: 0, unknown: 0, na: 0 }; order.push(c.category); } cats[c.category][c.status === "not-applicable" ? "na" : c.status]++; });
+        $("#soAreas").html(order.map(function(name){
+            var k = cats[name], tot = k.ok + k.warn + k.fail + k.unknown;
+            var bar = tot ? ["ok", "warn", "fail", "unknown"].filter(function(s){ return k[s]; }).map(function(s){ return '<i class="b-' + s + '" style="flex:' + k[s] + ' 1 0"></i>'; }).join("") : "";
+            var word = !tot ? tr("does not apply yet") : tr("{0} of {1} pass").replace("{0}", k.ok).replace("{1}", tot);
+            return '<li><button type="button" class="soArea" data-cat="' + esc(name) + '"><span class="soAreaName">' + esc(name) + '</span><span class="soAreaN">' + esc(word) + '</span><span class="soBar" aria-hidden="true">' + bar + '</span></button></li>';
+        }).join(""));
+    }
+
+    /* blocked in the last 24 hours: total + reasons, top offenders, the latest blocks (read-only requests of the blocked log) */
+    var REASON = { waf: "WAF", captcha: "CAPTCHA", bot: "Bot rule", abuse: "Auto-ban", ratelimit: "Rate limit", access: "Access rule", crowdsec: "CrowdSec", exploit: "Exploit filter", geo: "Country rule" };
+    function reason(k){ return REASON[k] ? tr(REASON[k]) : k; }
+    function barList(items, labeller){
+        var max = items.reduce(function(m, x){ return Math.max(m, x.n); }, 1);
+        return '<ul class="soBars">' + items.slice(0, 5).map(function(x){ return '<li><span class="k" title="' + esc(x.key) + '">' + esc(labeller ? labeller(x.key) : x.key) + '</span><span class="n">' + Number(x.n).toLocaleString() + '</span><span class="bar"><i style="width:' + Math.max(4, Math.round(x.n / max * 100)) + '%"></i></span></li>'; }).join("") + '</ul>';
+    }
+    function loadActivity(){
+        var none = '<p class="soEmptyLine">' + esc(tr("Nothing was blocked in the last 24 hours.")) + '</p>';
+        $.ajax({ url: "/api/blocked/summary", dataType: "json", cache: false }).done(function(s){
+            if (!s || s.error) { $("#soBlkTotal, #soBlkTop").html('<p class="soEmptyLine">' + esc(tr("The blocked request log is not available.")) + '</p>'); return; }
+            if (s.enabled === false) { $("#soBlkTotal, #soBlkTop, #soBlkLast").html('<p class="soEmptyLine">' + esc(tr("The blocked request log is switched off.")) + '</p>'); return; }
+            var hours = (s.hourly || []).map(function(x){ return x.n || 0; }), total = hours.reduce(function(a, b){ return a + b; }, 0), max = Math.max.apply(null, hours.concat([1]));
+            var W = 240, H = 44, bw = W / Math.max(hours.length, 1);
+            var spark = '<svg class="soSpark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(tr("Blocked requests per hour over the last 24 hours")) + '">' + hours.map(function(v, i){ var hh = v / max * (H - 4); return hh > 0 ? '<rect x="' + (i * bw + 1).toFixed(1) + '" y="' + (H - hh).toFixed(1) + '" width="' + Math.max(bw - 2, 1).toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="1"/>' : ''; }).join("") + '</svg>';
+            $("#soBlkTotal").html('<span class="soBig">' + Number(total).toLocaleString() + '</span><span class="soMuted">' + esc(tr("requests refused, per hour:")) + '</span>' + spark + ((s.reasons || []).length ? barList(s.reasons, reason) : none));
+            $("#soBlkTop").html((s.topIPs || []).length ? barList(s.topIPs) + '<p class="soCardFoot"><a href="#" class="soGo" data-page="access">' + esc(tr("Ban an address in Access Rules")) + '</a></p>' : none);
+        }).fail(function(){ $("#soBlkTotal, #soBlkTop").html('<p class="soEmptyLine">' + esc(tr("The blocked request log is not available.")) + '</p>'); });
+        $.ajax({ url: "/api/blocked/list", data: { limit: 6 }, dataType: "json", cache: false }).done(function(r){
+            var items = (r && r.items) || [];
+            $("#soBlkLast").html(items.length ? '<ul class="soBlk">' + items.slice(0, 6).map(function(x){
+                return '<li><span class="who"><code>' + esc(x.ip) + '</code> &rarr; ' + esc(x.host) + '</span><span class="zx-badge zx-badge--dot zx-badge--danger">' + esc(reason(x.reason)) + '</span><span class="path" title="' + esc(x.path) + '">' + esc(new Date(x.t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })) + ' &middot; ' + esc(x.method || "") + ' ' + esc(x.path || "") + '</span></li>'; }).join("") + '</ul>' : none);
+        }).fail(function(){ $("#soBlkLast").html('<p class="soEmptyLine">' + esc(tr("The blocked request log is not available.")) + '</p>'); });
     }
 
     function actionById(id){ return ((S.data && S.data.actions) || []).filter(function(a){ return a.id === id; })[0]; }
@@ -201,10 +331,11 @@
         var avail = (d.actions || []).filter(function(a){ return a.state === "available"; });
         var nRefused = (d.actions || []).filter(function(a){ return a.state === "refused"; }).length;
         var h;
-        if (d.managed) h = '<div class="soRec"><div class="txt"><h4 style="margin:0"><i class="lock icon"></i> Fixes are disabled on this node</h4><p>' + esc(d.managed) + '</p></div></div>';
-        else if (!avail.length) h = '<div class="soRec"><div class="txt"><h4 style="margin:0"><i class="check circle icon"></i> Recommended protection</h4><p>Everything Zoraxy can safely switch on for you is already in place or does not apply yet.</p></div></div>';
-        else h = '<div class="soRec"><div class="txt"><h4 style="margin:0"><i class="magic icon"></i> Apply recommended protection</h4><p>' + avail.length + ' safe ' + plural(avail.length, "fix is", "fixes are") + ' ready' + (nRefused ? ' (' + nRefused + ' more ' + plural(nRefused, "is", "are") + ' listed as not available, with the reason)' : '') + '. You see exactly what would change first, choose what to apply and can undo most of it. The WAF is only ever started in detection-only mode.</p></div>' +
-            '<button class="ui primary button" id="soRecBtn"><i class="play circle icon"></i> Review recommended protection</button></div>';
+        if (d.managed) h = '<p class="soRecLead">' + esc(tr("Disabled on this node")) + '</p><p class="soRecTxt">' + esc(d.managed) + '</p>';
+        else if (!avail.length) h = '<p class="soRecLead"><span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(tr("In place")) + '</span></p><p class="soRecTxt">' + esc(tr("Everything Zoraxy can safely switch on for you is already in place or does not apply yet.")) + '</p>';
+        else h = '<p class="soRecLead">' + esc(avail.length === 1 ? tr("1 safe fix is ready") : tr("{0} safe fixes are ready").replace("{0}", avail.length)) + '</p>' +
+            '<p class="soRecTxt">' + esc(tr("You see exactly what would change before anything is applied, and can undo most of it. The WAF is only ever started in detection-only mode.")) + (nRefused ? ' ' + esc(nRefused === 1 ? tr("1 more is listed as not available, with the reason.") : tr("{0} more are listed as not available, with the reason.").replace("{0}", nRefused)) : '') + '</p>' +
+            '<button type="button" class="zx-btn zx-btn--primary" id="soRecBtn"><i class="magic icon" aria-hidden="true"></i> ' + esc(tr("Review recommended protection")) + '</button>';
         $("#soRec").html(h);
         // refused fixes are listed too (greyed out, with the reason), so it is clear why they are not offered
         var shown = (d.actions || []).filter(function(a){ return a.state === "available" || a.state === "refused"; });
@@ -213,8 +344,8 @@
 
     function rowActions(c){
         var r = c.remediation || {}, h = "", a = r.action ? actionById(r.action) : null;
-        if (r.page || r.href) h += '<button class="ui mini basic button soOpen" data-id="' + esc(c.id) + '"><i class="external alternate icon"></i> ' + esc(r.label || "Open the setting") + '</button>';
-        if (a && a.state === "available" && !(S.data && S.data.managed)) h += '<button class="ui mini primary button soFix" data-act="' + esc(a.id) + '"><i class="eye icon"></i> Preview fix</button>';
+        if (r.page || r.href) h += '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm soOpen" data-id="' + esc(c.id) + '">' + esc(r.label || "Open the setting") + '</button>';
+        if (a && a.state === "available" && !(S.data && S.data.managed)) h += '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm soFix" data-act="' + esc(a.id) + '"><i class="eye icon" aria-hidden="true"></i> Preview fix</button>';
         return h;
     }
 
@@ -223,10 +354,12 @@
     function renderFirst(d){
         var bad = d.checks.filter(function(c){ return c.status === "fail" || c.status === "warn" || c.status === "unknown"; })
             .sort(function(a, b){ return (b.lostPoints - a.lostPoints) || (b.weight - a.weight); }).slice(0, 5);
-        if (!bad.length) { $("#soFirstBox").html('<div class="soEmpty"><i class="big green check circle icon"></i><div><b>Nothing needs your attention.</b></div><div class="soMuted">Every check that applies to your setup passed.</div></div>'); return; }
-        var h = '<h3 class="soH zx-section__title">Fix these first</h3><div class="soFirst">' + bad.map(function(c){
-            return '<div class="soItem s-' + c.status + '"><div class="txt">' + dot(c.status) + ' <b>' + esc(c.title) + '</b> <span class="soMuted">' + pts(c.lostPoints) + ' points</span>' +
-                '<small>' + flagCode(esc((c.evidence || [])[0] || "")) + '</small></div><div class="acts">' + rowActions(c) + '</div></div>';
+        if (!bad.length) { $("#soFirstBox").html('<div class="zx-empty zx-empty--inline"><span class="zx-empty__icon" aria-hidden="true"><i class="check icon"></i></span><p class="zx-empty__title">Nothing needs your attention.</p><p class="zx-empty__text">Every check that applies to your setup passed.</p></div>'); return; }
+        var h = '<div class="soFirst">' + bad.map(function(c){
+            // a remedy without a page (a start option, for example) is a "How to fix" line under the evidence, not a grey text where the buttons are
+            var acts = rowActions(c), how = acts ? "" : ((c.remediation || {}).label || "");
+            return '<div class="soItem s-' + c.status + '"><div class="txt">' + dot(c.status) + '<span><b>' + esc(c.title) + '</b> <span class="soMuted">' + pts(c.lostPoints) + ' points</span></span>' +
+                '<small>' + flagCode(esc((c.evidence || [])[0] || "")) + '</small>' + (how ? '<span class="soHow"><span>' + esc(tr("How to fix:")) + '</span> ' + flagCode(esc(how)) + '</span>' : '') + '</div>' + (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>';
         }).join("") + '</div>';
         $("#soFirstBox").html(h);
     }
@@ -241,7 +374,7 @@
             var n = {}; list.forEach(function(c){ n[c.status] = (n[c.status] || 0) + 1; });
             var sum = ["fail", "warn", "unknown", "ok"].filter(function(s){ return n[s]; }).map(function(s){ return '<span class="soPill s-' + s + '">' + n[s] + ' ' + STATUS_TXT[s].toLowerCase() + '</span>'; }).join("");
             var open = S.openCats[name];
-            return '<div class="soCat' + (open ? " open" : "") + (list.every(function(c){ return c.status === "not-applicable"; }) ? " allna" : "") + '" data-cat="' + esc(name) + '"><div class="soCatHead" tabindex="0" role="button" aria-expanded="' + !!open + '"><i class="angle right icon chev"></i><b>' + esc(name) + '</b><span class="sum">' + sum + '</span></div>' +
+            return '<div class="soCat' + (open ? " open" : "") + (list.every(function(c){ return c.status === "not-applicable"; }) ? " allna" : "") + '" data-cat="' + esc(name) + '"><div class="soCatHead" tabindex="0" role="button" aria-expanded="' + !!open + '"><i class="angle right icon chev" aria-hidden="true"></i><b>' + esc(name) + '</b><span class="sum">' + sum + '</span></div>' +
                 '<div class="soCatBody">' + list.map(function(c){
                     var ro = !!S.openRows[c.id];
                     return '<div class="soRow' + (c.status === "not-applicable" ? " na" : "") + (ro ? " open" : "") + '" data-id="' + esc(c.id) + '"><div class="soRowHead" tabindex="0" role="button" aria-expanded="' + ro + '">' + dot(c.status) + '<span class="ttl">' + esc(c.title) +
@@ -257,7 +390,8 @@
 
     function render(d){
         S.data = d;
-        renderScore(d); renderBanner(d); renderRec(d); renderFirst(d); renderCats(d);
+        S.whyOpen = !!$("#soScoreBox details.soWhy").prop("open");
+        renderScore(d); renderAreas(d); renderBanner(d); renderRec(d); renderFirst(d); renderCats(d);
         $("#soChecked").text(tr("Checked") + " " + new Date(d.generated).toLocaleTimeString());
         var nNa = d.checks.filter(function(c){ return c.status === "not-applicable"; }).length;
         $("#soToggleNa").prop("hidden", !nNa).data("n", nNa); setNaLabel();
@@ -274,13 +408,14 @@
 
     function load(refresh, done){
         if (S.loading) return; S.loading = true;
-        $("#soRecheck").addClass("loading disabled");
+        $("#soRecheck").prop("disabled", true);
+        loadActivity();
         $.getJSON("/api/security/posture" + (refresh ? "?refresh=1" : ""), function(d){
             if (d && d.error) { msgbox(d.error, false, 6000); return; }
             render(d); if (done) done(d);
         }).fail(function(){
-            $("#soScoreBox").html('<div class="soEmpty"><i class="big orange exclamation triangle icon"></i><div><b>The security overview could not be loaded.</b></div><div class="soMuted">Check that Zoraxy is running, then press Re-check.</div></div>');
-        }).always(function(){ S.loading = false; $("#soRecheck").removeClass("loading disabled"); });
+            $("#soScoreBox").html('<div class="zx-empty"><div class="zx-empty__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></div><p class="zx-empty__title">The security overview could not be loaded.</p><p class="zx-empty__text">Check that Zoraxy is running, then press Re-check.</p></div>');
+        }).always(function(){ S.loading = false; $("#soRecheck").prop("disabled", false); });
     }
 
     /* ---- opening a setting ---- */
@@ -330,7 +465,7 @@
             (p.notes || []).forEach(function(n){ h += '<div class="sdNote">' + esc(n) + '</div>'; });
             h += '</div>';
         });
-        h += '<div class="sdBtns"><button class="ui basic button" id="sdCancel">Cancel</button><button class="ui primary button" id="sdApply"' + (any ? "" : " disabled") + '><i class="check icon"></i> <span id="sdApplyTxt">Apply selected</span></button></div>';
+        h += '<div class="sdBtns"><button type="button" class="zx-btn zx-btn--secondary" id="sdCancel">Cancel</button><button type="button" class="zx-btn zx-btn--primary" id="sdApply"' + (any ? "" : " disabled") + '><i class="check icon" aria-hidden="true"></i> <span id="sdApplyTxt">Apply selected</span></button></div>';
         $("#secOvDlg").html(h); updateApplyBtn();
     }
     function selected(){ return $("#secOvDlg .sdAct").filter(function(){ return $(this).find(".sdChk").prop("checked") && !$(this).find(".sdChk").prop("disabled"); }).map(function(){ return $(this).attr("data-id"); }).get(); }
@@ -338,11 +473,11 @@
     function doApply(){
         var ids = selected(); if (!ids.length) return;
         var reqs = ids.map(function(id){ var p = DLG.previews.filter(function(x){ return x.id === id; })[0]; return { id: id, hash: p.hash }; });
-        $("#sdApply").addClass("loading disabled");
+        $("#sdApply").prop("disabled", true);
         $.ajax({ url: "/api/security/posture/apply", method: "POST", contentType: "application/json", data: JSON.stringify({ actions: reqs }), dataType: "json",
             headers: { "X-CSRF-Token": document.getElementsByTagName("meta")["zoraxy.csrf.Token"].getAttribute("content") } })
-            .done(function(r){ if (r && r.error) { msgbox(r.error, false, 6000); $("#sdApply").removeClass("loading disabled"); return; } showResults(r.results || []); })
-            .fail(function(){ msgbox("Applying failed", false, 6000); $("#sdApply").removeClass("loading disabled"); });
+            .done(function(r){ if (r && r.error) { msgbox(r.error, false, 6000); $("#sdApply").prop("disabled", false); return; } showResults(r.results || []); })
+            .fail(function(){ msgbox("Applying failed", false, 6000); $("#sdApply").prop("disabled", false); });
     }
     var RES_TXT = { applied: "Applied", "nothing-to-do": "Already in place", refused: "Refused", failed: "Failed", changed: "Not applied: settings changed since the preview", undone: "Undone" };
     function showResults(rs){
@@ -353,13 +488,28 @@
                 (r.applied || []).map(function(c){ return '<div class="soMuted">' + esc(c.label) + ' (' + esc(c.target) + '): ' + esc(c.from) + ' &rarr; ' + esc(c.to) + '</div>'; }).join("") +
                 (r.skipped || []).map(function(s){ return '<div class="soMuted">Skipped: ' + esc(s) + '</div>'; }).join("") + '</div>';
         });
-        h += '<p class="soMuted">Each applied change is recorded in the audit log.</p><div class="sdBtns"><button class="ui primary button" id="sdDone">Done</button></div>';
+        h += '<p class="soMuted">Each applied change is recorded in the audit log.</p><div class="sdBtns"><button type="button" class="zx-btn zx-btn--primary" id="sdDone">Done</button></div>';
         $("#secOvDlg").html(h);
         load(true);
     }
 
     /* ---- events ---- */
     $("#secOvPage").on("click", "#soRecheck", function(){ load(true); });
+    $("#secOvPage").on("click", ".soArea", function(){
+        var name = $(this).attr("data-cat"), cat = $("#soCats .soCat").filter(function(){ return $(this).attr("data-cat") === name; });
+        if (!cat.length) return;
+        if (cat.hasClass("allna") && $("#soCats").hasClass("hide-na")) { $("#soCats").removeClass("hide-na"); setNaLabel(); }
+        if (!cat.hasClass("open")) cat.find(".soCatHead").trigger("click");
+        cat[0].scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+        cat.find(".soCatHead").trigger("focus");
+    });
+    $("#secOvPage").on("click", "#soLinks a, a.soGo[data-page], #soGoBlocked", function(e){
+        e.preventDefault();
+        var page = this.id === "soGoBlocked" ? "status" : $(this).attr("data-page"), anchor = $(this).attr("data-anchor");
+        if (typeof openTabById !== "function") return;
+        openTabById(page);
+        if (anchor) setTimeout(function(){ $("#" + page).find('[data-tab="' + anchor + '"],[data-sec="' + anchor + '"]').first().trigger("click"); }, 450);
+    });
     $("#secOvPage").on("click", ".soCatHead", function(){ var c = $(this).closest(".soCat"), n = c.attr("data-cat"); S.openCats[n] = !c.hasClass("open"); c.toggleClass("open"); $(this).attr("aria-expanded", S.openCats[n]); });
     $("#secOvPage").on("click", ".soRowHead", function(){ var r = $(this).closest(".soRow"), id = r.attr("data-id"); S.openRows[id] = !r.hasClass("open"); r.toggleClass("open"); $(this).attr("aria-expanded", S.openRows[id]); });
     $("#secOvPage").on("keydown", ".soCatHead,.soRowHead", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $(this).trigger("click"); } });

@@ -7,91 +7,98 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Settings</h2>
-            <p class="zx-page-header__sub">Preferences of this management interface and of the pages Zoraxy shows to visitors.</p>
+            <p class="zx-page-header__sub">Preferences of this admin interface, the error pages your visitors see and what the settings database holds.</p>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#utils" data-nav-open="utils">Utilities</a> <span>Password, backups, updates, logs and Geo-IP data</span></li>
+            <li><a href="#errorpages" data-nav-open="errorpages">Error pages</a> <span>Design the pages Zoraxy shows when it blocks or fails</span></li>
+            <li><a href="#globalsettings" data-nav-open="globalsettings">Listeners</a> <span>Ports, TLS and timeouts</span></li>
+            <li><a href="#updater" data-nav-open="updater">Update</a> <span>Check for and install a new version</span></li>
+        </ul>
+    </aside>
 
-    <section class="zx-card" aria-labelledby="settingsGenTitle">
-        <style>
-            #settingsPage .st-row { display: flex; align-items: center; justify-content: space-between; gap: var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
-            #settingsPage .st-row:first-child { padding-top: 0; }
-            #settingsPage .st-row:last-child { border-bottom: 0; padding-bottom: 0; }
-            #settingsPage .st-row__text { flex: 1 1 18rem; min-width: 0; }
-            #settingsPage .st-row__title { display: block; font-weight: 600; }
-            #settingsPage .st-row__desc { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-            #settingsPage .st-row__control { flex: 0 1 18rem; display: flex; align-items: center; gap: var(--zx-space-2); justify-content: flex-end; }
-            #settingsPage .st-row__control .zx-select { width: 100%; }
-            @media (max-width: 600px) {
-                #settingsPage .st-row { flex-wrap: wrap; align-items: stretch; }
-                #settingsPage .st-row__control { flex: 1 1 100%; justify-content: flex-start; }
-                #settingsPage .st-row__control .zx-btn { width: 100%; }
-            }
-        </style>
+    <section class="zx-card sy-pane-card" aria-labelledby="settingsGenTitle">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="settingsGenTitle">General</h3>
-            <p class="zx-card__desc">Language of this interface and the pages Zoraxy shows to visitors.</p>
+            <p class="zx-card__desc">How this interface looks to you, and what visitors see when something goes wrong.</p>
         </div>
         <div class="zx-card__body">
-            <div class="st-row">
-                <div class="st-row__text">
-                    <label class="st-row__title" for="uiLanguageSetting">Interface language</label>
-                    <span class="st-row__desc">Choose a language and save. It only changes the text of this admin interface, not the pages your visitors see. Translations are machine-assisted; <a href="https://github.com/tobychui/zoraxy/blob/main/docs/translating.md" target="_blank" rel="noopener">help translate</a>.</span>
-                </div>
-                <div class="st-row__control">
-                    <select class="zx-select" id="uiLanguageSetting" aria-label="Interface language"></select>
-                </div>
-            </div>
-            <div class="st-row">
-                <div class="st-row__text">
-                    <span class="st-row__title">Default error pages</span>
-                    <span class="st-row__desc">The pages visitors see when a host is not found, access is denied or an upstream fails.</span>
-                </div>
-                <div class="st-row__control">
-                    <button type="button" class="zx-btn zx-btn--secondary" id="defaultErrorPagesBtn" onclick="showSideWrapper('snippet/globalErrorPages.html?t=' + Date.now());"><i class="edit outline icon"></i> Edit default error pages</button>
-                </div>
-            </div>
-            <div class="st-row quickStartShowAgain" style="display:none;">
-                <div class="st-row__text">
-                    <span class="st-row__title">Quick Start</span>
-                    <span class="st-row__desc">The Quick Start page was hidden from the menu.</span>
-                </div>
-                <div class="st-row__control">
-                    <button type="button" class="zx-btn zx-btn--secondary" onclick="setQuickStartDismissed(false);" title="Put the Quick Start page back in the menu"><i class="play circle outline icon"></i> Show Quick Start again</button>
-                </div>
-            </div>
+            <ul class="sy-rows" id="settingsGenForm">
+                <li class="sy-row">
+                    <span class="sy-row__icon" aria-hidden="true"><i class="language icon"></i></span>
+                    <div class="sy-row__main">
+                        <label class="sy-row__title" for="uiLanguageSetting">Interface language</label>
+                        <span class="sy-row__sub">Choose a language, then save. It only changes the text of this admin interface, not the pages your visitors see. Translations are machine-assisted; <a href="https://github.com/tobychui/zoraxy/blob/main/docs/translating.md" target="_blank" rel="noopener">help translate</a>.</span>
+                    </div>
+                    <div class="sy-row__end">
+                        <select class="zx-select" id="uiLanguageSetting" aria-label="Interface language"></select>
+                    </div>
+                </li>
+                <li class="sy-row">
+                    <span class="sy-row__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                    <div class="sy-row__main">
+                        <span class="sy-row__title">Default error pages</span>
+                        <span class="sy-row__sub">The pages visitors see when a host is not found, access is denied or an upstream fails. Opens an editor in a side panel.</span>
+                    </div>
+                    <div class="sy-row__end">
+                        <button type="button" class="zx-btn zx-btn--secondary" id="defaultErrorPagesBtn" onclick="showSideWrapper('snippet/globalErrorPages.html?t=' + Date.now());"><i class="edit outline icon" aria-hidden="true"></i> Edit default error pages</button>
+                    </div>
+                </li>
+                <li class="sy-row quickStartShowAgain" style="display:none;">
+                    <span class="sy-row__icon" aria-hidden="true"><i class="magic icon"></i></span>
+                    <div class="sy-row__main">
+                        <span class="sy-row__title">Quick Start</span>
+                        <span class="sy-row__sub">The guided walkthroughs for a first site, sub-domain routing and HTTPS. Quick Start leaves the menu once a proxy rule exists and the proxy runs; you can still open it from here.</span>
+                    </div>
+                    <div class="sy-row__end">
+                        <button type="button" class="zx-btn zx-btn--secondary" onclick="setQuickStartDismissed(false);" title="Open the Quick Start page"><i class="play circle outline icon" aria-hidden="true"></i> Open Quick Start</button>
+                    </div>
+                </li>
+            </ul>
         </div>
     </section>
 
     <!-- Database: what sys.db holds (read only), see docs/ux/changes.md and docs/db-growth.md -->
     <section class="zx-card" id="dbUsageCard" aria-labelledby="dbUsageTitle" hidden>
         <style>
-            #dbUsageCard .db-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-4); }
-            #dbUsageCard .db-stats .zx-stat { box-shadow: none; padding: var(--zx-space-3); }
-            #dbUsageCard .db-name { font-weight: 500; font-size: var(--zx-fs-sm); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+            #settingsPage > .zx-card { margin-bottom: var(--zx-space-4); }
+            #settingsPage .sy-row.quickStartShowAgain[style*="none"] { display: none; }
+            #dbUsageCard .db-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 var(--zx-space-4); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); }
+            #dbUsageCard .db-stats .zx-stat { box-shadow: none; border: 0; border-left: 1px solid var(--zx-border); border-radius: 0; background: transparent; padding: var(--zx-space-3) var(--zx-space-4); }
+            #dbUsageCard .db-stats .zx-stat:first-child { border-left: 0; }
+            #dbUsageCard .db-stats .zx-stat__value { font-size: var(--zx-fs-xl); }
+            @media (max-width: 700px) {
+                #dbUsageCard .db-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                #dbUsageCard .db-stats .zx-stat:nth-child(odd) { border-left: 0; }
+                #dbUsageCard .db-stats .zx-stat:nth-child(n+3) { border-top: 1px solid var(--zx-border); }
+            }
+            #dbUsageCard .db-name { font-weight: 700; font-size: var(--zx-fs-sm); font-family: var(--zx-font-mono); overflow-wrap: anywhere; }
             #dbUsageCard .db-what { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 0.15em; }
             #dbUsageCard .db-size { white-space: nowrap; font-variant-numeric: tabular-nums; }
-            #dbUsageCard .db-bar { display: inline-block; vertical-align: middle; width: 6rem; height: 6px; margin: 0 var(--zx-space-3) 0 0; border-radius: 3px; background: var(--zx-surface-2); overflow: hidden; }
+            #dbUsageCard .db-bar { display: inline-block; vertical-align: middle; width: 6rem; height: 6px; margin: 0 var(--zx-space-3) 0 0; border-radius: 3px; background: var(--zx-surface-3); overflow: hidden; }
             #dbUsageCard .db-bar > span { display: block; height: 100%; min-width: 2px; background: var(--zx-primary); border-radius: 3px; }
             #dbUsageCard .zx-table-wrap { max-height: none; }
-            #dbUsageCard pre.db-cmd { margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-sm); overflow-x: auto; font-size: var(--zx-fs-sm); white-space: pre; }
-            #dbUsageCard details.db-compact { margin-top: var(--zx-space-4); }
-            #dbUsageCard details.db-compact > summary { cursor: pointer; font-weight: 600; }
+            #dbUsageCard pre.db-cmd { margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-sm); font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); white-space: pre-wrap; overflow-wrap: anywhere; }
+            #dbUsageCard details.db-compact { margin: var(--zx-space-4) 0 0; }
+            #dbUsageCard details.db-compact > .zx-disclosure__body { padding-bottom: 0; }
             #dbUsageCard .db-callout { margin-bottom: var(--zx-space-4); }
             #dbUsageCard .db-meta { margin: var(--zx-space-3) 0 0; }
             #dbUsageCard [hidden] { display: none !important; } /* zx-btn / table display rules would otherwise win over the attribute */
             #dbUsageCard .db-more { margin-top: var(--zx-space-3); }
             @media (max-width: 480px) {
                 #dbUsageCard td.db-first { display: block; text-align: left; }
-                #dbUsageCard td[data-label="Keys"] { display: none; }
                 #dbUsageCard td.db-size { white-space: normal; flex-wrap: wrap; }
                 #dbUsageCard td.db-size .db-bar { flex: 1 0 100%; order: 3; width: auto; margin: 0; }
             }
         </style>
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="dbUsageTitle">Database</h3>
-            <button type="button" class="zx-btn zx-btn--secondary" id="dbUsageRefresh"><i class="sync icon"></i> Refresh</button>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="dbUsageRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
+            <p class="zx-card__desc">What the settings database (sys.db) holds and which tables take the space. Read only: nothing is deleted or changed from here.</p>
         </div>
-        <p class="zx-card__desc">What the settings database (sys.db) holds and which tables take the space. Read only: nothing is deleted or changed from here. Size is the stored data of a table, not the pages it occupies; the file also holds free pages and bookkeeping.</p>
         <div class="zx-card__body" aria-live="polite">
             <div id="dbUsageLoading" class="zx-help">Loading...</div>
             <div id="dbUsageError" class="zx-callout zx-callout--warn" role="note" hidden>
@@ -116,12 +123,15 @@
                     </table>
                 </div>
                 <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm db-more" id="dbMore" aria-expanded="false" hidden></button>
+                <p class="zx-help db-meta">Size is the stored data of a table, not the pages it occupies; the file also holds free pages and bookkeeping.</p>
                 <p class="zx-help db-meta" id="dbTruncated" hidden>Counting stopped after a few seconds, so the sizes marked with a plus sign are lower bounds and some tables were not counted. Refresh to try again.</p>
-                <details class="db-compact" id="dbCompactHelp">
+                <details class="zx-disclosure db-compact" id="dbCompactHelp">
                     <summary>Compact the database file (offline)</summary>
+                    <div class="zx-disclosure__body">
                     <p class="zx-help">Zoraxy must be stopped first: the compactor refuses to run while the database is in use. It keeps a timestamped backup next to the file, verifies the new file table by table and only then replaces the old one. Run these in a terminal on the server (use your own service name or stop Zoraxy any other way):</p>
                     <pre class="db-cmd" id="dbCompactCmd" tabindex="0"></pre>
                     <p class="zx-help">The backup file is named sys.db.bak-DATE-TIME and is kept until you delete it.</p>
+                    </div>
                 </details>
             </div>
         </div>
@@ -140,7 +150,7 @@
         }
         // Save bar: the language is chosen here and applied with Save (the picker in the top bar stays an instant shortcut)
         var bar = ZxUI.saveBar({
-            form: "#settingsPage",
+            form: "#settingsGenForm",
             id: "settings",
             onSave: function () {
                 var want = sel.value;
@@ -239,7 +249,7 @@
                 var size = x.truncated && !x.bytes ? esc(t("not counted")) : human(x.bytes) + (x.truncated ? "+" : "");
                 var pct = x.bytes > 0 && big > 0 ? Math.max(1, Math.round(x.bytes * 100 / big)) : 0;
                 html += "<tr" + (i >= SHOWN ? " class=\"db-extra\" hidden" : "") + "><td class=\"db-first\"><span class=\"db-name\">" + esc(x.name) + "</span><span class=\"db-what\">" + esc(what) + "</span></td>" +
-                    "<td class=\"zx-num\" data-label=\"" + esc(t("Keys")) + "\">" + (x.truncated && !x.keys ? "-" : x.keys.toLocaleString()) + "</td>" +
+                    "<td class=\"zx-num db-keys\" data-label=\"" + esc(t("Keys")) + "\">" + (x.truncated && !x.keys ? "-" : x.keys.toLocaleString()) + "</td>" +
                     "<td class=\"zx-num db-size\" data-label=\"" + esc(t("Size")) + "\">" +
                     (pct ? "<span class=\"db-bar\" aria-hidden=\"true\"><span style=\"width:" + pct + "%\"></span></span>" : "") + size + "</td></tr>";
             });

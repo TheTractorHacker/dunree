@@ -1,391 +1,700 @@
+<!--
+    Uptime Monitor: which upstreams answer, how fast, and when they did not.
+    Data: /api/utm/list (mod/uptime; up to 288 checks per target, about one day at the 5 minute interval),
+    /api/utm/healthyStatus (what counts as up) and /api/proxy/list (read-only, for the tags of a site).
+    Everything on this page (availability, incidents, response times) is computed here from those checks.
+-->
 <style>
     #utm { background: transparent; }
     #utm .standardContainer, body.darkTheme #utm .standardContainer { background: transparent !important; }
-    #utmrender { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 28em), 1fr)); gap: var(--zx-space-3); align-items: start; }
-    #utmrender > .zx-empty, #utmrender > .utmLoading { grid-column: 1 / -1; }
-    #utm .utmHost { margin: 0; min-width: 0; }
-    #utm .utmInline { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+    #utm .zx-statrow { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); margin: 0 0 var(--zx-space-4); }
+    #utm .zx-statrow .zx-stat__hint { overflow-wrap: anywhere; }
+    #utm .zx-stat__unit { font-size: var(--zx-fs-md); font-weight: 400; color: var(--zx-text-muted); margin-left: 3px; }
+
+    /* filters: search, status and tag on the left, the range on the right */
+    #utm .utmBar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
+    #utm .utmSearch { position: relative; flex: 0 1 17rem; min-width: 11rem; }
+    #utm .utmSearch > i.icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); margin: 0; color: var(--zx-text-muted); pointer-events: none; }
+    #utm .utmSearch > .zx-input { width: 100%; padding-left: 32px; }
+    #utm .utmBar .zx-select { width: auto; min-width: 0; max-width: min(14rem, 100%); text-overflow: ellipsis; }
+    #utm .utmBar[hidden], #utm .zx-statrow[hidden], #utm .zx-select[hidden], #utm .zx-card[hidden] { display: none; }
+    #utm .utmBar__gap { flex: 1 1 0; }
+    #utm .utmCount { font-weight: 400; color: var(--zx-text-muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+    #utm .zx-segmented__item[aria-checked="true"] .utmCount { color: var(--zx-text-muted); }
+
+    /* the list: one card, one row per site */
+    #utm .utmList { padding: 0; overflow: hidden; }
+    #utm .utmCols, #utm .utmRow__main {
+        display: grid; grid-template-columns: 8rem minmax(0, 1.25fr) minmax(0, 2.1fr) 4.25rem minmax(9.5rem, 0.85fr) minmax(0, 1.15fr) 2rem;
+        column-gap: var(--zx-space-5); align-items: center; padding: 0 var(--zx-card-pad);
+    }
+    #utm .utmCols { min-height: 38px; background: var(--zx-surface-2); border-bottom: 1px solid var(--zx-border); color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+    #utm .utmRow + .utmRow { border-top: 1px solid var(--zx-border); }
+    #utm .utmRow__main { padding-top: 14px; padding-bottom: 14px; cursor: pointer; transition: background-color var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #utm .utmRow__main:hover { background: var(--zx-surface-2); }
+    #utm .utmRow.is-open > .utmRow__main { background: var(--zx-surface-2); }
+    #utm .utmName { min-width: 0; }
+    #utm .utmName b { display: block; font-size: var(--zx-fs-md); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #utm .utmName span { display: block; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #utm .utmStatus .zx-badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    #utm .utmPct { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    #utm .utmCols .utmPct { font-weight: 700; }
+    #utm .utmResp { display: flex; align-items: center; gap: var(--zx-space-2); min-width: 0; }
+    #utm .utmResp svg { flex: 0 0 auto; display: block; }
+    #utm .utmResp__v { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: var(--zx-fs-sm); }
+    #utm .utmMuted { color: var(--zx-text-muted); }
+    #utm .utmInc1 { display: block; font-size: var(--zx-fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #utm .utmInc1.is-now { color: var(--zx-danger-text); font-weight: 700; }
+    #utm .utmInc2 { display: block; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #utm .utmToggle { width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--zx-text-muted); border-radius: var(--zx-radius-md); cursor: pointer; padding: 0; }
+    #utm .utmToggle:hover { color: var(--zx-text); background: var(--zx-surface-3); }
+    #utm .utmToggle:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #utm .utmToggle i.icon { display: flex; align-items: center; justify-content: center; width: 1em; height: 1em; line-height: 1; margin: 0; transition: transform var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #utm .utmRow.is-open .utmToggle i.icon { transform: rotate(90deg); }
+
+    /* the uptime strip: one bar per time slot, oldest left */
+    #utm .utmStrip { display: flex; gap: 2px; height: 28px; min-width: 0; }
+    #utm .utmStrip i { flex: 1 1 0; min-width: 2px; border-radius: 2px; background: var(--zx-surface-3); }
+    #utm .utmStrip i.ok { background: var(--zx-ok-solid); }
+    #utm .utmStrip i.part { background: var(--zx-warn-solid); }
+    #utm .utmStrip i.bad { background: var(--zx-danger-solid); }
+    #utm .utmStrip i:hover, #utm .utmStrip i.is-tip { filter: brightness(0.82); transform: scaleY(1.14); }
+    #utm .utmStrip:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+    #utm .utmStripCell { min-width: 0; }
+    #utm .utmStripAxis { display: none; justify-content: space-between; margin-top: 4px; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); }
+    #utmTip { position: fixed; z-index: var(--zx-z-popover); pointer-events: none; min-width: 11rem; max-width: 17rem; padding: var(--zx-space-2) var(--zx-space-3); background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); box-shadow: var(--zx-shadow-2); font-size: var(--zx-fs-sm); line-height: 1.45; }
+    #utmTip[hidden] { display: none; }
+    #utmTip b { display: block; }
+    #utmTip div { color: var(--zx-text-muted); }
+    #utmTip .utmTip__state { display: flex; align-items: center; gap: 6px; color: var(--zx-text); }
+    #utmTip .utmTip__state::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--zx-surface-3); flex: 0 0 auto; }
+    #utmTip .utmTip__state.ok::before { background: var(--zx-ok-solid); }
+    #utmTip .utmTip__state.part::before { background: var(--zx-warn-solid); }
+    #utmTip .utmTip__state.bad::before { background: var(--zx-danger-solid); }
+
+    /* list footer: legend and what the numbers cover */
+    #utm .utmFoot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-4); padding: var(--zx-space-3) var(--zx-card-pad); border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-xs); color: var(--zx-text-muted); }
+    #utm .utmLegend { display: inline-flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-3); }
+    #utm .utmLegend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    #utm .utmLegend span::before { content: ""; width: 8px; height: 12px; border-radius: 2px; background: var(--zx-surface-3); }
+    #utm .utmLegend .ok::before { background: var(--zx-ok-solid); }
+    #utm .utmLegend .part::before { background: var(--zx-warn-solid); }
+    #utm .utmLegend .bad::before { background: var(--zx-danger-solid); }
+    #utm .utmFoot__note { margin-left: auto; }
+
+    /* a site opened in place: response-time chart, facts, its incidents */
+    #utm .utmDetail { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--zx-space-5); padding: var(--zx-space-4) var(--zx-card-pad) var(--zx-space-5); background: var(--zx-surface-2); border-top: 1px solid var(--zx-border); }
+    #utm .utmDetail h4 { margin: 0 0 var(--zx-space-2); font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); }
+    #utm .utmChart { position: relative; padding-left: 3.6rem; }
+    #utm .utmChart svg { display: block; width: 100%; height: 120px; overflow: visible; }
+    #utm .utmChart__y { position: absolute; left: 0; width: 3.1rem; text-align: right; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); font-variant-numeric: tabular-nums; line-height: 1; }
+    #utm .utmChart__y.top { top: 0; } #utm .utmChart__y.bottom { top: 112px; }
+    #utm .utmChart__x { display: flex; justify-content: space-between; margin-top: 6px; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); }
+    #utm .utmChart__none { height: 120px; display: flex; align-items: center; justify-content: center; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); border: 1px dashed var(--zx-border-strong); border-radius: var(--zx-radius-md); }
+    #utm .utmFacts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px var(--zx-space-4); margin: 0 0 var(--zx-space-4); font-size: var(--zx-fs-sm); }
+    #utm .utmFacts dt { color: var(--zx-text-muted); }
+    #utm .utmFacts dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    #utm .utmFacts a { color: var(--zx-link); }
+    #utm .utmMini { list-style: none; margin: 0; padding: 0; font-size: var(--zx-fs-sm); }
+    #utm .utmMini li { display: flex; gap: var(--zx-space-2); align-items: baseline; padding: 5px 0; border-top: 1px solid var(--zx-border); }
+    #utm .utmMini li:first-child { border-top: 0; padding-top: 0; }
+    #utm .utmMini li::before { content: ""; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--zx-text-faint); transform: translateY(-1px); }
+    #utm .utmMini li.is-now::before { background: var(--zx-danger-solid); }
+    #utm .utmMini__what { flex: 1 1 auto; min-width: 0; }
+    #utm .utmMini__when { flex: 0 0 auto; color: var(--zx-text-muted); white-space: nowrap; }
+    #utm .utmDetail__actions { margin-top: var(--zx-space-4); }
+
+    /* incident timeline */
+    #utm #utmIncidents { margin-top: var(--zx-space-4); }
+    #utm .utmTimeline { margin: 0; padding: 0; list-style: none; }
+    #utm .utmIncident { border-top: 1px solid var(--zx-border); }
+    #utm .utmIncident:first-child { border-top: 0; }
+    #utm .utmIncident > summary { display: grid; grid-template-columns: 7.5rem minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.1fr) 6.5rem 1.25rem; column-gap: var(--zx-space-4); align-items: center; padding: 10px 0; cursor: pointer; list-style: none; font-size: var(--zx-fs-sm); border-radius: var(--zx-radius-sm); }
+    #utm .utmIncident > summary::-webkit-details-marker { display: none; }
+    #utm .utmIncident > summary:hover b { color: var(--zx-primary-soft-text); }
+    #utm .utmIncident > summary:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #utm .utmIncident b { font-size: var(--zx-fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #utm .utmIncident__dur { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    #utm .utmIncident summary > i.icon { display: flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; line-height: 1; margin: 0; color: var(--zx-text-muted); transition: transform var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #utm .utmIncident[open] summary > i.icon { transform: rotate(90deg); }
+    #utm .utmIncident__cell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #utm .utmIncident__body { padding: 0 0 var(--zx-space-3) calc(7.5rem + var(--zx-space-4)); font-size: var(--zx-fs-sm); color: var(--zx-text-muted); }
+    #utm .utmIncident__body p { margin: 0 0 var(--zx-space-2); max-width: 46rem; overflow-wrap: anywhere; }
+    #utm .utmChecks { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 2px var(--zx-space-4); margin: 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
+    #utm .utmChecks li { display: flex; justify-content: space-between; gap: var(--zx-space-3); padding: 2px 0; }
+    #utm .utmChecks li span:last-child { color: var(--zx-text); }
+    #utm .utmMoreRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); padding-top: var(--zx-space-3); border-top: 1px solid var(--zx-border); }
+
+    /* settings */
+    #utm #utmStatusSetting { margin-top: var(--zx-space-4); }
+    #utm .utmInline { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; max-width: 40rem; }
     #utm .utmInline .zx-input { flex: 1 1 14em; min-width: 0; }
-    #utm .utmHost__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-3); margin-bottom: var(--zx-space-3); }
-    #utm .utmHost__name { min-width: 0; flex: 1 1 16em; }
-    #utm .utmHost__name h3 { margin: 0 0 2px; font-size: var(--zx-fs-md); line-height: 1.3; overflow-wrap: anywhere; }
-    #utm .utmHost__name a { display: block; font-size: var(--zx-fs-sm); overflow-wrap: anywhere; color: var(--zx-link); }
-    #utm .utmHost__badges { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
-    #utm .statusbar .status { display: flex; flex-wrap: wrap; gap: 3px; }
-    #utm .statusDot { margin-left: 0; width: 8px; height: 22px; border-radius: 4px; }
-    #utm .utmHost__note { margin: var(--zx-space-2) 0 0; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); }
-    #utm .selectedDotInfo { position: relative; margin-top: var(--zx-space-3); padding: var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); font-size: var(--zx-fs-sm); }
-    #utm .selectedDotInfo .ui.list .item { padding: 2px 0; color: var(--zx-text); }
-    #utm .utmSetting { max-width: 40em; }
     #utm .utmSetting .zx-help { margin-bottom: 0; }
-    #utm .utmSetting .zx-btn-row { margin-top: var(--zx-space-3); }
-    #utm .utmLoading { padding: var(--zx-space-6); text-align: center; color: var(--zx-text-muted); }
+
+    /* loading */
+    #utm .utmSkel { padding: 16px var(--zx-card-pad); display: grid; grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 2fr) 6rem; gap: var(--zx-space-4); align-items: center; }
+    #utm .utmSkel + .utmSkel { border-top: 1px solid var(--zx-border); }
+    #utm .utmSkel .zx-skeleton { margin: 0; height: 14px; width: auto; }
+    #utm .utmSkel .zx-skeleton:nth-child(3) { height: 28px; }
+
+    @media (max-width: 1240px) {
+        #utm .utmCols { display: none; }
+        #utm .utmRow__main { grid-template-columns: 7.5rem minmax(0, 1fr) 4.5rem 10.5rem 2rem; grid-template-areas: "status name pct resp toggle" "strip strip strip strip strip" "inc inc inc inc inc"; row-gap: 10px; }
+        #utm .utmStatus { grid-area: status; } #utm .utmName { grid-area: name; } #utm .utmStripCell { grid-area: strip; } #utm .utmRow__main > .utmPct { grid-area: pct; }
+        #utm .utmResp { grid-area: resp; } #utm .utmInc { grid-area: inc; display: flex; flex-wrap: wrap; gap: 2px var(--zx-space-2); align-items: baseline; } #utm .utmToggle { grid-area: toggle; }
+        #utm .utmStripAxis { display: flex; }
+        #utm .utmDetail { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 748px) {
+        #utm .utmSearch { flex: 1 1 100%; }
+        #utm .utmBar .zx-segmented { flex: 1 1 100%; }
+        #utm .utmBar .zx-segmented__item { flex: 1 1 auto; }
+        #utm .utmBar .zx-select { flex: 1 1 100%; width: 100%; max-width: 100%; }
+        #utm .utmBar__gap { display: none; }
+        #utm .utmRow__main { grid-template-columns: auto minmax(0, 1fr) 2.75rem; grid-template-areas: "name name toggle" "status pct pct" "strip strip strip" "resp resp resp" "inc inc inc"; }
+        #utm .utmRow__main > .utmPct { text-align: left; }
+        #utm .utmToggle { width: 2.75rem; height: 2.75rem; }
+        #utm .utmName b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
+        #utm .utmFoot__note { margin-left: 0; }
+        #utm .utmChart { padding-left: 0; } #utm .utmChart__y { display: none; }
+        #utm .utmIncident > summary { grid-template-columns: minmax(0, 1fr) auto 1.25rem; grid-template-areas: "site dur chev" "state state state" "cause cause cause" "when when when"; row-gap: 2px; padding: 12px 0; }
+        #utm .utmIncident summary > b { grid-area: site; } #utm .utmIncident__dur { grid-area: dur; } #utm .utmIncident summary > i.icon { grid-area: chev; }
+        #utm .utmIncident__state { grid-area: state; } #utm .utmIncident__cause { grid-area: cause; } #utm .utmIncident__when { grid-area: when; }
+        #utm .utmIncident__body { padding-left: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { #utm .utmStrip i:hover, #utm .utmStrip i.is-tip { transform: none; } #utm .utmToggle i.icon, #utm .utmIncident summary > i.icon, #utm .utmRow__main { transition: none; } }
 </style>
 <div class="standardContainer">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Uptime Monitor</h2>
-            <p class="zx-page-header__sub">See which of your sites answer, and how fast.</p>
+            <p class="zx-page-header__sub">Which of your sites answer, how fast, and when they did not. Every upstream of an enabled proxy rule is checked about every 5 minutes.</p>
         </div>
         <div class="zx-page-header__actions">
+            <button type="button" class="zx-btn zx-btn--secondary" id="utmSettingsBtn"><i class="sliders horizontal icon" aria-hidden="true"></i> Check settings</button>
             <button type="button" class="zx-btn zx-btn--secondary" id="utmRefreshBtn" onclick="reloadUptimeList();"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>The sites that are checked, and their upstream servers</span></li>
+            <li><a href="#status" data-nav-open="status">Status</a> <span>Live traffic and errors right now</span></li>
+            <li><a href="#stats" data-nav-open="stats">Statistics</a> <span>Requests and errors over time</span></li>
+        </ul>
+    </aside>
 
     <div class="zx-statrow" id="utmStats" aria-live="polite" hidden></div>
 
+    <div class="utmBar" id="utmTools" hidden>
+        <div class="utmSearch">
+            <i class="search icon" aria-hidden="true"></i>
+            <input type="search" class="zx-input" id="utmSearch" placeholder="Search sites" aria-label="Search sites by name or address" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="zx-segmented" id="utmFilterStatus" aria-label="Status">
+            <button type="button" class="zx-segmented__item" data-value="all" aria-checked="true">All <span class="utmCount" data-count="all"></span></button>
+            <button type="button" class="zx-segmented__item" data-value="problem">Not answering <span class="utmCount" data-count="problem"></span></button>
+            <button type="button" class="zx-segmented__item" data-value="up">Up <span class="utmCount" data-count="up"></span></button>
+        </div>
+        <select class="zx-select" id="utmFilterTag" aria-label="Tag" hidden><option value="">All tags</option></select>
+        <span class="utmBar__gap"></span>
+        <div class="zx-segmented" id="utmRange" aria-label="Time range">
+            <button type="button" class="zx-segmented__item" data-value="1">1 hour</button>
+            <button type="button" class="zx-segmented__item" data-value="6">6 hours</button>
+            <button type="button" class="zx-segmented__item" data-value="24" aria-checked="true">24 hours</button>
+        </div>
+    </div>
+
+    <div id="utmrender">
+        <section class="zx-card utmList" aria-busy="true">
+            <div class="utmSkel"><span class="zx-skeleton"></span><span class="zx-skeleton"></span><span class="zx-skeleton"></span><span class="zx-skeleton"></span></div>
+            <div class="utmSkel"><span class="zx-skeleton"></span><span class="zx-skeleton"></span><span class="zx-skeleton"></span><span class="zx-skeleton"></span></div>
+            <div class="utmSkel"><span class="zx-skeleton"></span><span class="zx-skeleton"></span><span class="zx-skeleton"></span><span class="zx-skeleton"></span></div>
+        </section>
+    </div>
+
+    <section class="zx-card" id="utmIncidents" hidden>
+        <div class="zx-card__head"><h3 class="zx-card__title">Incidents</h3><span class="zx-badge" id="utmIncidentCount"></span></div>
+        <p class="zx-card__desc" id="utmIncidentDesc">Every time a site stopped answering, newest first. Open one to see the checks that failed.</p>
+        <div class="zx-card__body" id="utmIncidentBody"></div>
+    </section>
+
     <section class="zx-card" id="utmStatusSetting">
         <div class="zx-card__head"><h3 class="zx-card__title">What counts as up</h3></div>
-        <p class="zx-card__desc">Choose which answers from a site are treated as online.</p>
+        <p class="zx-card__desc">Which answers from a site are treated as online. By default any answer counts except gateway errors, so apps behind a login are not shown as down.</p>
         <div class="zx-card__body utmSetting">
-            <div class="zx-field">
+            <div class="zx-field" id="utmHealthyStatusField">
                 <div class="zx-field__label-row">
                     <label class="zx-field__label" for="utmHealthyStatus">Status codes that count as up</label>
                     <button type="button" class="zx-whatis" aria-label="What can I enter here?" aria-controls="utmStatusHelp" aria-expanded="false">?</button>
                 </div>
                 <div class="utmInline">
-                    <input type="text" class="zx-input" id="utmHealthyStatus" placeholder="Any answer" autocomplete="off">
+                    <input type="text" class="zx-input" id="utmHealthyStatus" placeholder="Any answer" autocomplete="off" aria-describedby="utmHealthyStatusErr utmHealthyStatusHelp">
                     <button type="button" class="zx-btn zx-btn--primary" id="utmHealthyStatusSave">Save</button>
                 </div>
-                <p class="zx-help">Leave empty to accept any answer except gateway errors (502, 503, 504, 52x). Example: 200-399.</p>
+                <p class="zx-error" id="utmHealthyStatusErr" role="alert"></p>
+                <p class="zx-help" id="utmHealthyStatusHelp">Leave empty to accept any answer except gateway errors (502, 503, 504, 52x). Example: 200-399.</p>
                 <div class="zx-popover" id="utmStatusHelp" hidden>Comma separated: single codes (<code>401</code>), ranges (<code>200-399</code>), classes (<code>2xx</code>) or <code>any</code>. Empty means <code>any</code>, so login-protected apps are not shown offline. Use <code>200-399</code> to require a success or redirect. A single proxy rule can override this in its editor.</div>
             </div>
         </div>
     </section>
-    <script>
-        $.get("./api/utm/healthyStatus", function(d){ if (d && d.status !== undefined) { $("#utmHealthyStatus").val(d.status); } });
-        $("#utmHealthyStatusSave").on("click", function(){
-            $.cjax({ url: "./api/utm/healthyStatus", method: "POST", data: { status: $("#utmHealthyStatus").val() }, success: function(d){
-                if (d && d.error) { msgbox(d.error, false, 6000); } else { msgbox("Saved. Targets are being re-checked."); setTimeout(function(){ if (typeof reloadUptimeList === "function") { reloadUptimeList(); } }, 2500); }
-            }});
-        });
-    </script>
-    <div id="utmrender">
-        <div class="zx-empty">
-            <div class="zx-empty__icon"><i class="heartbeat icon" aria-hidden="true"></i></div>
-            <div class="zx-empty__title">Uptime Monitor is not available</div>
-            <p class="zx-empty__text">The service could not be reached. Try again in a moment.</p>
-            <button type="button" class="zx-btn zx-btn--secondary" onclick="reloadUptimeList();">Try again</button>
-        </div>
-    </div>
+    <div id="utmTip" role="tooltip" aria-live="polite" hidden></div>
 </div>
 
-
 <script>
-    var uptime5xxErrorMessage = {
-        "500": "Internal Server Error",
-        "501": "Not Implemented",
-        "502": "Bad Gateway",
-        "503": "Service Unavailable",
-        "504": "Gateway Timeout",
-        "505": "HTTP Version Not Supported",
-        "506": "Variant Also Negotiates",
-        "507": "Insufficient Storage",
-        "508": "Loop Detected",
-        "510": "Not Extended",
-        "511": "Network Authentication Required",
-        "520": "Web Server Returned an Unknown Error (Cloudflare)",
-        "521": "Web Server is Down (Cloudflare)",
-        "522": "Connection Timed Out (Cloudflare)",
-        "523": "Origin is Unreachable (Cloudflare)",
-        "524": "A Timeout Occurred (Cloudflare)",
-        "525": "SSL Handshake Failed (Cloudflare)",
-        "526": "Invalid SSL Certificate (Cloudflare)",
-        "527": "Railgun Error (Cloudflare)",
-        "530": "Site is Frozen (Pantheon)"
-    }
+(function(){
+    var HTTP_TEXT = { 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 408: "Request Timeout", 429: "Too Many Requests",
+        500: "Internal Server Error", 501: "Not Implemented", 502: "Bad Gateway", 503: "Service Unavailable", 504: "Gateway Timeout", 505: "HTTP Version Not Supported",
+        506: "Variant Also Negotiates", 507: "Insufficient Storage", 508: "Loop Detected", 510: "Not Extended", 511: "Network Authentication Required",
+        520: "Unknown Error (Cloudflare)", 521: "Web Server Is Down (Cloudflare)", 522: "Connection Timed Out (Cloudflare)", 523: "Origin Is Unreachable (Cloudflare)",
+        524: "A Timeout Occurred (Cloudflare)", 525: "SSL Handshake Failed (Cloudflare)", 526: "Invalid SSL Certificate (Cloudflare)", 527: "Railgun Error (Cloudflare)", 530: "Site Is Frozen" };
+    /* range in hours -> [number of slots, seconds per slot] of the uptime strip */
+    var SLOTS = { 1: [12, 300], 6: [36, 600], 24: [48, 1800] };
+    var INCIDENT_PAGE = 8;
+    var S = { records: null, tags: {}, range: 24, status: "all", tag: "", q: "", open: {}, incOpen: {}, incShown: INCIDENT_PAGE, loadedAt: 0, sites: [] };
 
-        $('#utmEnable').checkbox({
-          onChange: function() {
-            var utmEnable = $('input[name="utmEnable"]').is(":checked");
-            $.post({
-              url: '/api/toggle-utm',
-              data: {utmEnable: utmEnable},
-              success: function(response) {
-                console.log(response);
-              },
-              error: function(error) {
-                console.log(error);
-              }
-            });
-          }
+    function tr(s){ return typeof window.t === "function" ? window.t(s) : s; }
+    function trf(s){
+        var a = Array.prototype.slice.call(arguments, 1);
+        return tr(s).replace(/\{(\d+)\}/g, function(m, n){ return a[+n] !== undefined ? a[+n] : m; });
+    }
+    var esc = ZxUI.esc;
+    function nowSec(){ return Math.floor(Date.now() / 1000); }
+    function median(list){
+        if (!list.length) return null;
+        var s = list.slice().sort(function(a, b){ return a - b; }), m = Math.floor(s.length / 2);
+        return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+    }
+    function fmtMs(ms){ return ms == null ? "" : (ms >= 10000 ? (ms / 1000).toFixed(0) + " s" : ms >= 1000 ? (ms / 1000).toFixed(1) + " s" : Math.round(ms) + " ms"); }
+    function fmtPct(p){ return p == null ? "–" : (p >= 100 ? "100" : p >= 99.995 ? "99.99" : p.toFixed(p >= 10 ? 2 : 1)) + "%"; }
+    function fmtDur(sec){
+        sec = Math.max(0, Math.round(sec));
+        if (sec < 60) return tr("under 1 min");
+        var m = Math.round(sec / 60);
+        if (m < 60) return trf("{0} min", m);
+        var h = Math.floor(m / 60); m = m % 60;
+        if (h < 24) return m ? trf("{0} h {1} min", h, m) : trf("{0} h", h);
+        var d = Math.floor(h / 24); h = h % 24;
+        return h ? trf("{0} d {1} h", d, h) : trf("{0} d", d);
+    }
+    function fmtAgo(ts){
+        var d = Math.max(0, nowSec() - ts);
+        if (d < 60) return tr("just now");
+        if (d < 3600) return trf("{0} min ago", Math.floor(d / 60));
+        if (d < 86400) return trf("{0} h ago", Math.floor(d / 3600));
+        return trf("{0} d ago", Math.floor(d / 86400));
+    }
+    function fmtClock(ts){ return new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    function fmtWhen(ts){
+        var d = new Date(ts * 1000), today = new Date();
+        var sameDay = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+        return (sameDay ? "" : d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", ") + fmtClock(ts);
+    }
+    function rangeWords(){ return S.range === 1 ? tr("the last hour") : trf("the last {0} hours", S.range); }
+    function codeText(code){ return code > 0 ? (code + (HTTP_TEXT[code] ? " " + HTTP_TEXT[code] : "")) : tr("No answer"); }
+
+    /* ---------- model: everything is derived from the raw checks of a target ---------- */
+    function tagsOf(id){
+        var best = null;
+        Object.keys(S.tags).forEach(function(host){
+            if (id === host || id.indexOf(host + " (upstream:") === 0 || id.indexOf(host + "/") === 0){ if (!best || host.length > best.length) best = host; }
         });
-
-    function utmUnavailable(icon, title, text){
-        $("#utmrender").html(`<div class="zx-empty">
-            <div class="zx-empty__icon"><i class="${icon} icon" aria-hidden="true"></i></div>
-            <div class="zx-empty__title">${title}</div>
-            <p class="zx-empty__text">${text}</p>
-            <button type="button" class="zx-btn zx-btn--secondary" onclick="reloadUptimeList();">Try again</button>
-        </div>`);
-        $("#utmStats").prop("hidden", true).empty();
+        return best ? S.tags[best] : [];
     }
-
-    function initUptimeTable(){
-        $.get("/api/utm/list", function(data){
-            let records = data;
-            renderRecords(records);
-        }).fail(function(jqXHR){
-            if (jqXHR.status === 500){
-                utmUnavailable("clock outline", "Uptime Monitor is still starting", "The service is starting up. Wait a moment and try again.");
-            }else{
-                utmUnavailable("heartbeat", "Uptime Monitor is not available", "The service could not be reached. Try again in a moment.");
-            }
+    function incidentsOf(recs){
+        var out = [], cur = null;
+        recs.forEach(function(r){
+            if (!r.Online){
+                if (!cur){ cur = { start: r.Timestamp, end: null, checks: [], code: r.StatusCode }; out.push(cur); }
+                cur.checks.push(r);
+                cur.code = r.StatusCode;
+            } else if (cur){ cur.end = r.Timestamp; cur = null; }
+        });
+        return out;
+    }
+    function buildSite(id, recs){
+        recs = (recs || []).slice().sort(function(a, b){ return a.Timestamp - b.Timestamp; });
+        var last = recs[recs.length - 1], now = nowSec(), from = now - S.range * 3600;
+        var inRange = recs.filter(function(r){ return r.Timestamp >= from; });
+        var ok = inRange.filter(function(r){ return r.Online; });
+        var lat = ok.map(function(r){ return r.Latency; });
+        var incidents = incidentsOf(recs).map(function(i){ i.site = last.Name || id; i.id = id; i.key = id + "@" + i.start; return i; });
+        var state = last.Online ? "up" : (last.StatusCode > 0 ? "degraded" : "down");
+        return { id: id, name: last.Name || id, url: last.URL || "", last: last, recs: recs, inRange: inRange, okCount: ok.length,
+            pct: inRange.length ? 100 * ok.length / inRange.length : null, median: median(lat), min: lat.length ? Math.min.apply(null, lat) : null, max: lat.length ? Math.max.apply(null, lat) : null,
+            state: state, tags: tagsOf(id), incidents: incidents,
+            incidentsInRange: incidents.filter(function(i){ return (i.end == null ? now : i.end) >= from; }) };
+    }
+    function buildAll(){
+        var sites = [];
+        Object.keys(S.records || {}).forEach(function(id){ var r = S.records[id]; if (r && r.length) sites.push(buildSite(id, r)); });
+        var order = { down: 0, degraded: 1, up: 2 };
+        sites.sort(function(a, b){ return (order[a.state] - order[b.state]) || a.name.localeCompare(b.name); });
+        S.sites = sites;
+    }
+    function visibleSites(){
+        var q = S.q.toLowerCase();
+        return S.sites.filter(function(s){
+            if (S.status === "up" && s.state !== "up") return false;
+            if (S.status === "problem" && s.state === "up") return false;
+            if (S.tag && s.tags.indexOf(S.tag) < 0) return false;
+            if (q && (s.name + " " + s.url + " " + s.tags.join(" ")).toLowerCase().indexOf(q) < 0) return false;
+            return true;
         });
     }
-    initUptimeTable();
 
-    function reloadUptimeList(){
-        $("#utmrender").html(`<div class="utmLoading" role="status"><i class="notched circle loading icon" aria-hidden="true"></i> Loading</div>`);
-        setTimeout(initUptimeTable, 300);
+    /* ---------- pieces ---------- */
+    function stateBadge(s){
+        if (s.state === "up") return '<span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(tr("Up")) + '</span>';
+        /* an answer with a status code that does not count as up is down, like no answer: one meaning in the badge, the strip and the summary */
+        if (s.state === "degraded") return '<span class="zx-badge zx-badge--dot zx-badge--danger" title="' + esc(trf("Answers with {0}, which does not count as up", codeText(s.last.StatusCode))) + '">' + esc(trf("Down · {0}", s.last.StatusCode)) + '</span>';
+        return '<span class="zx-badge zx-badge--dot zx-badge--danger">' + esc(tr("Down")) + '</span>';
+    }
+    function slotsOf(s){
+        var def = SLOTS[S.range], n = def[0], size = def[1], now = nowSec(), start = now - n * size, slots = [];
+        for (var i = 0; i < n; i++) slots.push({ from: start + i * size, to: start + (i + 1) * size, ok: 0, bad: 0, lat: 0, codes: {} });
+        s.inRange.forEach(function(r){
+            var i = Math.min(n - 1, Math.floor((r.Timestamp - start) / size));
+            if (i < 0) return;
+            var sl = slots[i];
+            if (r.Online){ sl.ok++; sl.lat += r.Latency; } else { sl.bad++; sl.codes[r.StatusCode] = (sl.codes[r.StatusCode] || 0) + 1; }
+        });
+        return slots;
+    }
+    function strip(s){
+        var slots = slotsOf(s), bad = 0;
+        var bars = slots.map(function(sl){
+            var cls = (sl.ok + sl.bad) === 0 ? "" : sl.bad === 0 ? "ok" : sl.ok === 0 ? "bad" : "part";
+            if (sl.bad) bad++;
+            var codes = Object.keys(sl.codes).map(function(c){ return codeText(+c) + (sl.codes[c] > 1 ? " ×" + sl.codes[c] : ""); }).join(", ");
+            return '<i class="' + cls + '" data-tip="' + esc(JSON.stringify([sl.from, sl.to, sl.ok, sl.bad, sl.ok ? Math.round(sl.lat / sl.ok) : -1, codes])) + '"></i>';
+        }).join("");
+        var label = trf("{0} answered {1} of its checks in {2}; {3} of {4} time slots had a failed check.", s.name, fmtPct(s.pct), rangeWords(), bad, slots.length);
+        return '<div class="utmStripCell"><div class="utmStrip" role="group" tabindex="0" aria-label="' + esc(label + " " + tr("Use the left and right arrow keys to read each time slot.")) + '">' + bars + '</div>' +
+            '<div class="utmStripAxis" aria-hidden="true"><span>' + esc(fmtWhen(slots[0].from)) + '</span><span>' + esc(tr("now")) + '</span></div></div>';
+    }
+    /* response time of the successful checks as a line; gaps where a check failed */
+    function linePath(s, w, h, pad){
+        var now = nowSec(), from = now - S.range * 3600, span = now - from;
+        var max = Math.max(1, s.max || 1), segs = [], cur = [];
+        s.inRange.forEach(function(r){
+            if (!r.Online){ if (cur.length) segs.push(cur); cur = []; return; }
+            cur.push([(w * (r.Timestamp - from) / span), (h - pad - (h - 2 * pad) * r.Latency / max)]);
+        });
+        if (cur.length) segs.push(cur);
+        return { segs: segs, max: max, from: from, span: span };
+    }
+    function pathD(seg){ return seg.map(function(p, i){ return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(""); }
+    function spark(s){
+        if (s.median == null) return '<span class="utmResp__v utmMuted">' + esc(tr("No answer")) + '</span>';
+        /* one point per time slot (its average), so a single slow check does not turn the line into a comb */
+        var w = 72, h = 24, pad = 3, slots = slotsOf(s), max = 1, segs = [], cur = [], d = "";
+        slots.forEach(function(sl){ if (sl.ok) max = Math.max(max, sl.lat / sl.ok); });
+        slots.forEach(function(sl, i){
+            if (!sl.ok){ if (sl.bad && cur.length){ segs.push(cur); cur = []; } return; }
+            cur.push([w * (i + 0.5) / slots.length, h - pad - (h - 2 * pad) * (sl.lat / sl.ok) / max]);
+        });
+        if (cur.length) segs.push(cur);
+        var points = segs.reduce(function(n, seg){ return n + seg.length; }, 0);
+        if (points < 3) return '<span class="utmResp__v" title="' + esc(trf("Median response time in {0}", rangeWords())) + '">' + esc(fmtMs(s.median)) + '</span>';   /* too few checks for a trend */
+        segs.forEach(function(seg){ d += seg.length === 1 ? "M" + (seg[0][0] - 1).toFixed(1) + " " + seg[0][1].toFixed(1) + "h2" : pathD(seg); });
+        return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><path d="' + d + '" fill="none" style="stroke:var(--zx-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '<span class="utmResp__v" title="' + esc(trf("Median response time in {0}", rangeWords())) + '">' + esc(fmtMs(s.median)) + '</span>';
+    }
+    function incidentCell(s){
+        var list = s.incidents, i = list[list.length - 1];
+        if (!i) return '<span class="utmInc1 utmMuted">' + esc(tr("No incidents")) + '</span>';
+        if (i.end == null) return '<span class="utmInc1 is-now">' + esc(trf("Down for {0}", fmtDur(nowSec() - i.start))) + '</span><span class="utmInc2">' + esc(trf("since {0}", fmtWhen(i.start))) + '</span>';
+        return '<span class="utmInc1">' + esc(trf("Down for {0}", fmtDur(i.end - i.start))) + '</span><span class="utmInc2" title="' + esc(trf("{0} to {1}", fmtWhen(i.start), fmtWhen(i.end))) + '">' + esc(trf("ended {0}", fmtAgo(i.end))) + '</span>';
+    }
+    function chart(s){
+        if (s.median == null) return '<div class="utmChart__none">' + esc(trf("No successful check in {0}.", rangeWords())) + '</div>';
+        var w = 600, h = 120, lp = linePath(s, w, h, 6), line = "", area = "", marks = "";
+        lp.segs.forEach(function(seg){
+            if (seg.length === 1){ line += "M" + (seg[0][0] - 2).toFixed(1) + " " + seg[0][1].toFixed(1) + "h4"; return; }
+            line += pathD(seg);
+            area += pathD(seg) + "L" + seg[seg.length - 1][0].toFixed(1) + " " + h + "L" + seg[0][0].toFixed(1) + " " + h + "Z";
+        });
+        s.inRange.forEach(function(r){ if (!r.Online) marks += '<rect x="' + (w * (r.Timestamp - lp.from) / lp.span - 1.5).toFixed(1) + '" y="0" width="3" height="' + h + '" style="fill:var(--zx-danger-solid)" opacity="0.28"/>'; });
+        return '<div class="utmChart"><span class="utmChart__y top">' + esc(fmtMs(lp.max)) + '</span><span class="utmChart__y bottom">0 ms</span>' +
+            '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" role="img" aria-label="' + esc(trf("Response time of {0} in {1}: median {2}, slowest {3}.", s.name, rangeWords(), fmtMs(s.median), fmtMs(s.max))) + '">' +
+            '<line x1="0" x2="' + w + '" y1="0.5" y2="0.5" style="stroke:var(--zx-border)" vector-effect="non-scaling-stroke"/><line x1="0" x2="' + w + '" y1="' + (h / 2) + '" y2="' + (h / 2) + '" style="stroke:var(--zx-border)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>' +
+            '<line x1="0" x2="' + w + '" y1="' + (h - 0.5) + '" y2="' + (h - 0.5) + '" style="stroke:var(--zx-border-strong)" vector-effect="non-scaling-stroke"/>' + marks +
+            '<path d="' + area + '" style="fill:var(--zx-primary)" opacity="0.1"/><path d="' + line + '" fill="none" style="stroke:var(--zx-primary)" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>' +
+            '<div class="utmChart__x" aria-hidden="true"><span>' + esc(fmtWhen(lp.from)) + '</span><span>' + esc(tr("now")) + '</span></div></div>';
+    }
+    function detail(s){
+        var isUrl = /^https?:\/\//i.test(s.url), fails = s.inRange.length - s.okCount;
+        var facts = [[tr("Site"), esc(s.name)], [tr("Checked address"), isUrl ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.url) + '</a>' : esc(s.url)],
+            [tr("Last check"), esc(fmtWhen(s.last.Timestamp) + " · " + (s.last.Online ? codeText(s.last.StatusCode) + " · " + fmtMs(s.last.Latency) : codeText(s.last.StatusCode)))],
+            [tr("Checks"), esc(fails ? trf("{0} in {1}, {2} failed", s.inRange.length, rangeWords(), fails) : trf("{0} in {1}, all answered", s.inRange.length, rangeWords()))],
+            [tr("Response time"), s.median == null ? esc(tr("No answer")) : esc(trf("{0} median, {1} fastest, {2} slowest", fmtMs(s.median), fmtMs(s.min), fmtMs(s.max)))]];
+        if (s.tags.length) facts.push([tr("Tags"), s.tags.map(function(x){ return '<span class="zx-badge">' + esc(x) + '</span>'; }).join(" ")]);
+        var inc = s.incidentsInRange.slice().reverse(), mini;
+        if (!inc.length) mini = '<p class="utmMuted" style="margin:0;font-size:var(--zx-fs-sm)">' + esc(trf("No incidents in {0}.", rangeWords())) + '</p>';
+        else mini = '<ul class="utmMini">' + inc.slice(0, 5).map(function(i){
+            return '<li class="' + (i.end == null ? "is-now" : "") + '"><span class="utmMini__what">' + esc((i.end == null ? trf("Down for {0}, still down", fmtDur(nowSec() - i.start)) : trf("Down for {0}", fmtDur(i.end - i.start))) + " · " + codeText(i.code)) + '</span><span class="utmMini__when">' + esc(fmtWhen(i.start)) + '</span></li>';
+        }).join("") + '</ul>' + (inc.length > 5 ? '<p class="utmMuted" style="margin:var(--zx-space-2) 0 0;font-size:var(--zx-fs-xs)">' + esc(trf("and {0} more in the incident list below", inc.length - 5)) + '</p>' : "");
+        return '<div class="utmDetail"><div><h4>' + esc(tr("Response time")) + '</h4>' + chart(s) + '</div>' +
+            '<div><dl class="utmFacts">' + facts.map(function(f){ return "<dt>" + esc(f[0]) + "</dt><dd>" + f[1] + "</dd>"; }).join("") + '</dl>' +
+            '<h4>' + esc(tr("Incidents")) + '</h4>' + mini +
+            '<div class="utmDetail__actions"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-utm-open="httprp"><i class="exchange icon" aria-hidden="true"></i> ' + esc(tr("Open HTTP Proxy")) + '</button></div></div></div>';
+    }
+    function rowHtml(s){
+        var open = !!S.open[s.id], did = "utmD" + btoa(unescape(encodeURIComponent(s.id))).replace(/[^a-z0-9]/gi, "");
+        return '<div class="utmRow' + (open ? " is-open" : "") + '" data-id="' + esc(s.id) + '" role="listitem">' +
+            '<div class="utmRow__main">' +
+                '<div class="utmStatus">' + stateBadge(s) + '</div>' +
+                '<div class="utmName"><b title="' + esc(s.name) + '">' + esc(s.name) + '</b><span title="' + esc(s.url) + '">' + esc(s.url.replace(/^https?:\/\//i, "")) + '</span></div>' +
+                strip(s) +
+                '<div class="utmPct" title="' + esc(trf("{0} of {1} checks answered in {2}", s.okCount, s.inRange.length, rangeWords())) + '">' + esc(fmtPct(s.pct)) + '</div>' +
+                '<div class="utmResp">' + spark(s) + '</div>' +
+                '<div class="utmInc">' + incidentCell(s) + '</div>' +
+                '<button type="button" class="utmToggle" aria-expanded="' + open + '" aria-controls="' + did + '" aria-label="' + esc(trf("Details of {0}", s.name)) + '"><i class="angle right icon" aria-hidden="true"></i></button>' +
+            '</div><div id="' + did + '" class="utmRow__detail"' + (open ? "" : " hidden") + '>' + (open ? detail(s) : "") + '</div></div>';
     }
 
-    //For every 5 minutes
-    setInterval(function(){
-        $.get("/api/utm/list", function(data){
-            records = data;
-            renderRecords(records);
+    /* ---------- render ---------- */
+    function renderStats(){
+        var sites = S.sites, checks = 0, ok = 0, lat = [], incidents = [], slowest = null;
+        sites.forEach(function(s){
+            checks += s.inRange.length; ok += s.okCount;
+            s.inRange.forEach(function(r){ if (r.Online) lat.push(r.Latency); });
+            incidents = incidents.concat(s.incidentsInRange);
+            if (s.median != null && (!slowest || s.median > slowest.median)) slowest = s;
         });
-    }, (300 * 1000));
-
-    function renderRecords(records){
-        $("#utmrender").html("");
-        if (Object.keys(records).length === 0){
-            $("#utmStats").prop("hidden", true).empty();
-            $("#utmrender").html(`<div class="zx-empty" id="utmEmpty">
-                <div class="zx-empty__icon"><i class="heartbeat icon" aria-hidden="true"></i></div>
-                <div class="zx-empty__title">No uptime monitor targets yet</div>
-                <p class="zx-empty__text">Targets appear here when you add a proxy rule. The first checks run within a few minutes after that.</p>
-                <button type="button" class="zx-btn zx-btn--primary" onclick="openTabById('httprp');">Go to HTTP Proxy</button>
-            </div>`);
+        var down = sites.filter(function(s){ return s.state !== "up"; }), up = sites.length - down.length;
+        var pct = checks ? 100 * ok / checks : null, med = median(lat), now = nowSec();
+        var longest = incidents.reduce(function(m, i){ return Math.max(m, (i.end == null ? now : i.end) - i.start); }, 0);
+        var pctCls = pct == null ? "" : pct >= 99 ? "zx-stat--ok" : pct >= 95 ? "zx-stat--warn" : "zx-stat--danger";
+        function tile(cls, label, value, hint, title){ return '<div class="zx-stat ' + cls + '"><div class="zx-stat__label">' + esc(label) + '</div><div class="zx-stat__value">' + value + '</div><div class="zx-stat__hint"' + (title ? ' title="' + esc(title) + '"' : "") + '>' + esc(hint) + '</div></div>'; }
+        var downNames = down.map(function(s){ return s.name; });
+        var medHtml = med == null ? "–" : esc(String(fmtMs(med)).replace(/\s.*$/, "")) + '<span class="zx-stat__unit">' + esc(String(fmtMs(med)).replace(/^\S+\s/, "")) + '</span>';
+        $("#utmStats").html(
+            tile(pctCls, tr("Availability"), esc(fmtPct(pct)), trf("of {0} checks answered", checks.toLocaleString())) +
+            tile("", tr("Sites up"), esc(String(up)) + '<span class="zx-stat__unit">' + esc(trf("of {0}", sites.length)) + '</span>', tr("answering right now")) +
+            tile(down.length ? "zx-stat--danger" : "", tr("Down now"), esc(String(down.length)), down.length ? downNames[0] + (down.length > 1 ? " " + trf("and {0} more", down.length - 1) : "") : tr("every site answers"), downNames.join(", ")) +
+            tile("", tr("Incidents"), esc(String(incidents.length)), incidents.length ? trf("longest {0}", fmtDur(longest)) : trf("none in {0}", rangeWords())) +
+            tile("", tr("Median response"), medHtml, slowest ? trf("slowest: {0}", slowest.name) : tr("no successful check"), slowest ? slowest.name : "")
+        ).prop("hidden", false);
+        $('#utmFilterStatus [data-count="all"]').text(sites.length);
+        $('#utmFilterStatus [data-count="problem"]').text(down.length);
+        $('#utmFilterStatus [data-count="up"]').text(up);
+    }
+    function renderTags(){
+        var all = {};
+        S.sites.forEach(function(s){ s.tags.forEach(function(x){ all[x] = 1; }); });
+        var tags = Object.keys(all).sort();
+        if (S.tag && tags.indexOf(S.tag) < 0) S.tag = "";
+        $("#utmFilterTag").html('<option value="">' + esc(tr("All tags")) + '</option>' + tags.map(function(x){ return '<option value="' + esc(x) + '" title="' + esc(x) + '">' + esc(x.length > 40 ? x.slice(0, 39) + "…" : x) + '</option>'; }).join("")).val(S.tag).prop("hidden", !tags.length);
+    }
+    function renderList(){
+        var list = visibleSites(), html;
+        if (!list.length){
+            html = '<section class="zx-card utmList"><div class="zx-empty zx-empty--inline" id="utmNoMatch"><div class="zx-empty__icon"><i class="filter icon" aria-hidden="true"></i></div>' +
+                '<div class="zx-empty__title">' + esc(S.status === "problem" && !S.q && !S.tag ? tr("Every site answers") : tr("No site matches these filters")) + '</div>' +
+                '<p class="zx-empty__text">' + esc(S.status === "problem" && !S.q && !S.tag ? tr("Sites that stop answering are listed here, and first in the full list.") : tr("Change the search, the status or the tag to see more sites.")) + '</p>' +
+                '<button type="button" class="zx-btn zx-btn--secondary" id="utmClearFilters">' + esc(tr("Show all sites")) + '</button></div></section>';
+        } else {
+            html = '<section class="zx-card utmList"><div class="utmCols" aria-hidden="true"><span>' + esc(tr("Status")) + '</span><span>' + esc(tr("Site")) + '</span><span>' + esc(S.range === 1 ? tr("Last hour") : trf("Last {0} hours", S.range)) + '</span><span class="utmPct">' + esc(tr("Uptime")) + '</span><span>' + esc(tr("Response time")) + '</span><span>' + esc(tr("Last incident")) + '</span><span></span></div>' +
+                '<div role="list" aria-label="' + esc(tr("Monitored sites")) + '">' + list.map(rowHtml).join("") + '</div>' +
+                '<div class="utmFoot"><span class="utmLegend"><span class="ok">' + esc(tr("All checks answered")) + '</span><span class="part">' + esc(tr("Some failed")) + '</span><span class="bad">' + esc(tr("All failed")) + '</span><span>' + esc(tr("No check")) + '</span></span>' +
+                '<span class="utmFoot__note">' + esc(trf("One bar is {0}. The last 288 checks of a site are kept, about one day. Updated {1}.", fmtDur(SLOTS[S.range][1]), new Date(S.loadedAt || Date.now()).toLocaleTimeString())) + '</span></div></section>';
+        }
+        $("#utmrender").html(html);
+    }
+    function renderIncidents(){
+        var all = [], now = nowSec();
+        visibleSites().forEach(function(s){ all = all.concat(s.incidentsInRange); });
+        all.sort(function(a, b){ return b.start - a.start; });
+        var ongoing = all.filter(function(i){ return i.end == null; }).length;
+        $("#utmIncidentCount").text(all.length ? (ongoing ? trf("{0} ongoing", ongoing) : trf("{0} resolved", all.length)) : "").attr("class", "zx-badge" + (ongoing ? " zx-badge--danger" : "")).prop("hidden", !all.length);
+        var body = $("#utmIncidentBody");
+        if (!all.length){
+            body.html('<div class="zx-empty zx-empty--inline"><div class="zx-empty__icon"><i class="check icon" aria-hidden="true"></i></div><div class="zx-empty__title">' + esc(trf("No incidents in {0}", rangeWords())) + '</div>' +
+                '<p class="zx-empty__text">' + esc(tr("Every check of the listed sites was answered. When a site stops answering, the outage is listed here with its start, length and cause.")) + '</p></div>');
+        } else {
+            var shown = all.slice(0, S.incShown);
+            body.html('<ul class="utmTimeline">' + shown.map(function(i){
+                var live = i.end == null, len = (live ? now : i.end) - i.start, checks = i.checks.slice(-12);
+                return '<li><details class="utmIncident" data-key="' + esc(i.key) + '"' + (S.incOpen[i.key] ? " open" : "") + '><summary>' +
+                    '<span class="utmIncident__state">' + (live ? '<span class="zx-badge zx-badge--dot zx-badge--danger">' + esc(tr("Ongoing")) + '</span>' : '<span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(tr("Resolved")) + '</span>') + '</span>' +
+                    '<b title="' + esc(i.site) + '">' + esc(i.site) + '</b>' +
+                    '<span class="utmIncident__cell utmIncident__cause">' + esc(codeText(i.code)) + '</span>' +
+                    '<span class="utmIncident__cell utmIncident__when utmMuted">' + esc(live ? trf("Started {0}", fmtWhen(i.start)) : trf("{0} to {1}", fmtWhen(i.start), fmtClock(i.end))) + '</span>' +
+                    '<span class="utmIncident__dur">' + esc(fmtDur(len)) + '</span><i class="angle right icon" aria-hidden="true"></i></summary>' +
+                    '<div class="utmIncident__body"><p>' + esc(live ? trf("{0} has been down since {1} ({2}). It is re-checked every 30 seconds and returns to the list as up with the first answer that counts.", i.site, fmtWhen(i.start), fmtAgo(i.start))
+                        : trf("{0} stopped answering at {1} and answered again at {2}.", i.site, fmtWhen(i.start), fmtWhen(i.end))) + ' ' + esc(i.checks.length > 12 ? trf("The last 12 of {0} failed checks:", i.checks.length) : trf("Failed checks: {0}", i.checks.length)) + '</p>' +
+                    '<ul class="utmChecks">' + checks.map(function(c){ return '<li><span>' + esc(fmtWhen(c.Timestamp)) + '</span><span>' + esc(codeText(c.StatusCode)) + '</span></li>'; }).join("") + '</ul></div></details></li>';
+            }).join("") + '</ul>' + (all.length > shown.length ? '<div class="utmMoreRow"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="utmIncMore">' + esc(trf("Show {0} more", Math.min(INCIDENT_PAGE * 2, all.length - shown.length))) + '</button> <span class="utmMuted" style="font-size:var(--zx-fs-sm)">' + esc(trf("Showing {0} of {1}", shown.length, all.length)) + '</span></div>' : ""));
+        }
+        $("#utmIncidents").prop("hidden", false);
+    }
+    function renderAll(){
+        hideTip();
+        if (!S.records) return;
+        buildAll();
+        if (!S.sites.length){
+            $("#utmStats, #utmTools, #utmIncidents").prop("hidden", true);
+            $("#utmrender").html('<div class="zx-empty" id="utmEmpty"><div class="zx-empty__icon"><i class="heartbeat icon" aria-hidden="true"></i></div>' +
+                '<div class="zx-empty__title">' + esc(tr("No sites are monitored yet")) + '</div>' +
+                '<p class="zx-empty__text">' + esc(tr("Every enabled proxy rule is checked automatically. Add one and its first check runs within a few minutes; availability, response times and incidents then build up here.")) + '</p>' +
+                '<button type="button" class="zx-btn zx-btn--primary" data-utm-open="httprp">' + esc(tr("Go to HTTP Proxy")) + '</button></div>');
             return;
         }
-        let up = 0, down = 0, total = 0;
-        //sites that are down first
-        let entries = Object.entries(records).sort(function(a, b){
-            let ad = a[1] && a[1].length ? (a[1][a[1].length - 1].Online ? 1 : 0) : 1, bd = b[1] && b[1].length ? (b[1][b[1].length - 1].Online ? 1 : 0) : 1;
-            return ad - bd;
+        $("#utmTools").prop("hidden", false);
+        renderStats(); renderTags(); renderList(); renderIncidents();
+    }
+    function utmUnavailable(icon, title, text){
+        $("#utmStats, #utmTools, #utmIncidents").prop("hidden", true);
+        $("#utmrender").html('<div class="zx-empty" id="utmError"><div class="zx-empty__icon"><i class="' + icon + ' icon" aria-hidden="true"></i></div><div class="zx-empty__title">' + esc(title) + '</div>' +
+            '<p class="zx-empty__text">' + esc(text) + '</p><button type="button" class="zx-btn zx-btn--secondary" onclick="reloadUptimeList();">' + esc(tr("Try again")) + '</button></div>');
+    }
+
+    /* ---------- data ---------- */
+    function loadTags(){
+        $.get("/api/proxy/list?type=host", function(list){
+            var tags = {};
+            (Array.isArray(list) ? list : []).forEach(function(e){ if (e && e.RootOrMatchingDomain && e.Tags && e.Tags.length) tags[e.RootOrMatchingDomain] = e.Tags; });
+            var changed = JSON.stringify(tags) !== JSON.stringify(S.tags);
+            S.tags = tags;
+            if (changed && S.records) renderAll();
         });
-        for (let [key, value] of entries) {
-            if (!value || value.length == 0){ continue; }
-            total++;
-            if (value[value.length - 1].Online){ up++; }else{ down++; }
-            renderUptimeData(key, value);
-        }
-        $("#utmStats").html(`<div class="zx-stat"><div class="zx-stat__label">Monitored sites</div><div class="zx-stat__value">${total}</div></div>
-            <div class="zx-stat zx-stat--ok"><div class="zx-stat__label">Online</div><div class="zx-stat__value">${up}</div></div>
-            <div class="zx-stat ${down > 0 ? "zx-stat--danger" : ""}"><div class="zx-stat__label">Not reachable</div><div class="zx-stat__value">${down}</div></div>`).prop("hidden", false);
     }
-
-    function format_time(s) {
-        const date = new Date(s * 1e3);
-        return(date.toLocaleString());
+    function load(quiet){
+        $.get("/api/utm/list", function(data){
+            S.records = (data && typeof data === "object") ? data : {};
+            S.loadedAt = Date.now();
+            renderAll();
+        }).fail(function(jqXHR){
+            if (quiet && S.records) return;   // keep what is on screen when a background refresh fails
+            if (jqXHR.status === 500) utmUnavailable("clock outline", tr("Uptime Monitor is still starting"), tr("The service is starting up. Wait a moment and try again."));
+            else utmUnavailable("heartbeat", tr("Uptime Monitor is not available"), tr("The service could not be reached. Try again in a moment."));
+        });
     }
+    window.initUptimeTable = function(){ load(false); };
+    window.reloadUptimeList = function(){
+        var btn = $("#utmRefreshBtn");
+        ZxUI.setLoading(btn, true);
+        setTimeout(function(){ ZxUI.setLoading(btn, false); }, 600);
+        loadTags();
+        setTimeout(function(){ load(false); }, 300);
+    };
+    /* kept for callers and tests that hand in the checks of one target */
+    window.renderUptimeData = function(key, value){
+        if (!value || !value.length) return;
+        S.records = S.records || {};
+        S.records[key] = value;
+        renderAll();
+    };
+    window.utmRenderRecords = function(records){ S.records = records || {}; S.loadedAt = Date.now(); renderAll(); };
 
-    function resolveUptime5xxErrorMessage(errorCode){
-        if (uptime5xxErrorMessage[errorCode] != undefined){
-            return uptime5xxErrorMessage[errorCode]
-        }else{
-            return "Unknown Error";
-        }
+    /* ---------- tooltip of the strip ---------- */
+    var tip = document.getElementById("utmTip"), tipBar = null;
+    function hideTip(){ if (tipBar){ tipBar.classList.remove("is-tip"); tipBar = null; } tip.hidden = true; }
+    function showTip(bar){
+        var d;
+        try { d = JSON.parse(bar.getAttribute("data-tip")); } catch (e) { return; }
+        if (tipBar && tipBar !== bar) tipBar.classList.remove("is-tip");
+        tipBar = bar; bar.classList.add("is-tip");
+        var total = d[2] + d[3], cls = total === 0 ? "" : d[3] === 0 ? "ok" : d[2] === 0 ? "bad" : "part";
+        var state = total === 0 ? tr("No check in this slot") : d[3] === 0 ? (total === 1 ? tr("The check was answered") : trf("All {0} checks answered", total)) : d[2] === 0 ? (total === 1 ? tr("The check failed") : trf("All {0} checks failed", total)) : trf("{0} of {1} checks failed", d[3], total);
+        var sep = '<span class="zx-sr-only">. </span>';   /* the lines are blocks on screen; read aloud or copied they need a separator */
+        tip.innerHTML = '<b>' + esc(fmtWhen(d[0]) + " – " + fmtClock(d[1])) + sep + '</b><div class="utmTip__state ' + cls + '">' + esc(state) + sep + '</div>' +
+            (d[4] >= 0 ? '<div>' + esc(trf("Response {0} on average", fmtMs(d[4]))) + sep + '</div>' : "") + (d[5] ? '<div>' + esc(d[5]) + '</div>' : "");
+        tip.hidden = false;
+        var r = bar.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+        var left = Math.max(8, Math.min(window.innerWidth - tw - 8, r.left + r.width / 2 - tw / 2));
+        var top = r.top - th - 8;
+        if (top < 8) top = r.bottom + 8;
+        tip.style.left = left + "px"; tip.style.top = top + "px";
     }
+    $("#utmrender").on("mouseover", ".utmStrip i", function(){ showTip(this); })
+        .on("mouseleave", ".utmStrip", hideTip)
+        .on("click", ".utmStrip i", function(e){ e.stopPropagation(); if (tipBar === this && !tip.hidden && e.pointerType !== "mouse" && !window.matchMedia("(hover: hover)").matches) hideTip(); else showTip(this); });
+    /* keyboard: the strip is one Tab stop, the arrow keys walk its time slots (newest first) */
+    $("#utmrender").on("keydown", ".utmStrip", function(e){
+        var bars = this.children, i = tipBar && tipBar.parentNode === this ? Array.prototype.indexOf.call(bars, tipBar) : -1;
+        if (e.key === "ArrowLeft") i = i < 0 ? bars.length - 1 : Math.max(0, i - 1);
+        else if (e.key === "ArrowRight") i = i < 0 ? bars.length - 1 : Math.min(bars.length - 1, i + 1);
+        else if (e.key === "Home") i = 0;
+        else if (e.key === "End") i = bars.length - 1;
+        else if (e.key === "Escape"){ if (!tip.hidden){ hideTip(); e.stopPropagation(); } return; }
+        else return;
+        e.preventDefault(); e.stopPropagation();
+        if (bars[i]) showTip(bars[i]);
+    }).on("focusout", ".utmStrip", hideTip)
+      .on("click", ".utmStrip", function(e){ e.stopPropagation(); });
+    window.addEventListener("scroll", hideTip, true);
+    $(document).on("click", function(e){ if (!$(e.target).closest("#utm .utmStrip").length) hideTip(); });
 
-    function showStatusDotInfo(targetDot){
-        $(".statusbar .selectedDotInfo").hide();
-        let payload = $(targetDot).attr("payload");
-        let statusData = JSON.parse(decodeURIComponent(payload)); 
-        let statusDotInfoEle = $(targetDot).parent().parent().find(".selectedDotInfo");
-        let statusInfoEle = $(statusDotInfoEle).find(".status_dot_status_info");
-        //Fill in the data to the info box
-        $(statusDotInfoEle).find(".status_dot_timestamp").text(format_time(statusData.Timestamp));
-        $(statusDotInfoEle).find(".status_dot_latency").text(statusData.Latency + "ms");
-        $(statusDotInfoEle).find(".status_dot_status_code").text(statusData.StatusCode);
-        
-
-        //Set the class of the info box if status code is 5xx
-        $(statusDotInfoEle).removeClass("yellow");
-        $(statusDotInfoEle).removeClass("red");
-        $(statusDotInfoEle).removeClass("green");
-        if (statusData.StatusCode >= 500 && statusData.StatusCode < 600){
-            $(statusDotInfoEle).addClass("yellow");
-            $(statusInfoEle).text(httpErrorStatusCodeToText(statusData.StatusCode));
-        }else if (statusData.StatusCode == 0 && !statusData.Online){
-            $(statusDotInfoEle).addClass("red");
-            $(statusInfoEle).text("Target is offline");
-        }else{
-            $(statusDotInfoEle).addClass("green");
-            $(statusInfoEle).text("Target is online");
-        }
-
-        $(statusDotInfoEle).show();
+    /* ---------- wiring ---------- */
+    function toggleRow(row){
+        var id = row.attr("data-id"), open = !S.open[id];
+        if (open) S.open[id] = true; else delete S.open[id];
+        var site = S.sites.filter(function(s){ return s.id === id; })[0];
+        row.toggleClass("is-open", open).find(".utmToggle").attr("aria-expanded", open ? "true" : "false");
+        row.children(".utmRow__detail").prop("hidden", !open).html(open && site ? detail(site) : "");
     }
+    $("#utmrender").on("click", ".utmRow__main", function(e){
+        if ($(e.target).closest("a, .utmStrip i").length) return;
+        if (window.getSelection && String(window.getSelection()).length) return;
+        toggleRow($(this).closest(".utmRow"));
+    });
+    $("#utmrender").on("click", "#utmClearFilters", function(){
+        S.q = ""; S.tag = ""; S.status = "all";
+        $("#utmSearch").val(""); $("#utmFilterTag").val("");
+        $('#utmFilterStatus [data-value="all"]').trigger("click");
+        renderList(); renderIncidents();
+    });
+    $("#utm").on("click", "[data-utm-open]", function(){ openTabById($(this).attr("data-utm-open")); });
+    $("#utmIncidentBody").on("click", "#utmIncMore", function(){ S.incShown += INCIDENT_PAGE * 2; renderIncidents(); });
+    $("#utmIncidentBody").on("toggle", "details", function(){}); // (toggle does not bubble; state is read below)
+    document.getElementById("utmIncidentBody").addEventListener("toggle", function(e){
+        var d = e.target; if (!d || !d.matches || !d.matches("details.utmIncident")) return;
+        if (d.open) S.incOpen[d.getAttribute("data-key")] = true; else delete S.incOpen[d.getAttribute("data-key")];
+    }, true);
+    var qTimer = null;
+    $("#utmSearch").on("input", function(){ var v = this.value.trim(); clearTimeout(qTimer); qTimer = setTimeout(function(){ S.q = v; renderList(); renderIncidents(); }, 150); });
+    $("#utmFilterTag").on("change", function(){ S.tag = this.value; renderList(); renderIncidents(); });
+    try { var saved = parseInt(localStorage.getItem("zoraxy.utm.range"), 10); if (SLOTS[saved]){ S.range = saved; $("#utmRange .zx-segmented__item").each(function(){ this.setAttribute("aria-checked", this.getAttribute("data-value") === String(saved) ? "true" : "false"); }); } } catch (e) {}
+    ZxUI.segmented("#utmFilterStatus", { onChange: function(v){ S.status = v; S.incShown = INCIDENT_PAGE; if (S.records){ renderList(); renderIncidents(); } } });
+    ZxUI.segmented("#utmRange", { onChange: function(v){ S.range = parseInt(v, 10); S.incShown = INCIDENT_PAGE; try { localStorage.setItem("zoraxy.utm.range", String(S.range)); } catch (e) {} renderAll(); } });
+    $("#utmSettingsBtn").on("click", function(){
+        var el = document.getElementById("utmStatusSetting");
+        try { el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } catch (e) { el.scrollIntoView(); }
+        document.getElementById("utmHealthyStatus").focus({ preventScroll: true });
+    });
 
-
-    function renderUptimeData(key, value){
-        if (value.length == 0){
-            return
-        }
-
-        //console.log(key, value);
-        let id = value[0].ID;
-        let name = value[0].Name;
-        let url = value[value.length - 1].URL;
-        let protocol = value[0].Protocol;
-
-        //Generate the status dot
-        let statusDotList = ``;
-
-        let ontimeRate = 0;
-        for (var i = 0; i < value.length; i++){
-            //Render status to html
-            let thisStatus = value[i];
-            let dotType = "";
-            let statusCode = thisStatus.StatusCode;
-            let statusDotPayload = encodeURIComponent(JSON.stringify(thisStatus));
-
-            if (!thisStatus.Online && statusCode == 0){
-                dotType = "offline";
-            }else if (statusCode < 200){
-                //1xx
-                dotType = "fine";
-                ontimeRate++;
-            }else if (statusCode < 300){
-                //2xx
-                dotType = "online";
-                ontimeRate++;
-            }else if (statusCode < 400){
-                //3xx
-                dotType = "online";
-                ontimeRate++;
-            }else if (statusCode < 500){
-                //4xx
-                dotType = "fine";
-                ontimeRate++;
-            }else if (statusCode < 600){
-                //5xx
-                dotType = "error";
-            }else {
-                dotType = "offline";
-            }
-        
-            let datetime = format_time(thisStatus.Timestamp);
-            statusDotList += `<div title="${datetime}" class="${dotType} statusDot" payload="${statusDotPayload}" onclick="showStatusDotInfo(this);"></div>`
-        }
-
-        ontimeRate = ontimeRate / value.length * 100;
-        let rateBadge = "zx-badge--danger";
-        if (ontimeRate > 80){
-            rateBadge = "zx-badge--ok";
-        }else if(ontimeRate > 50) {
-            rateBadge = "zx-badge--warn";
-        }
-        //Check of online status now
-        let last = value[value.length - 1];
-        let currentOnlineStatus = "Unknown";
-        let stateBadge = "zx-badge--danger";
-        let reminderEle = ``;
-        if (last.Online){
-            currentOnlineStatus = `Online`;
-            stateBadge = "zx-badge--ok";
-        }else{
-            if (last.StatusCode >= 500 && last.StatusCode < 600){
-                currentOnlineStatus = `${last.StatusCode} - ${resolveUptime5xxErrorMessage(last.StatusCode)}`;
-                stateBadge = "zx-badge--warn";
-                reminderEle = `<p class="utmHost__note">The target answers but returns a server error.</p>`;
-            }else if (last.StatusCode >= 400 && last.StatusCode <= 405){
-                let latestStatusCode = last.StatusCode;
-                currentOnlineStatus = httpErrorStatusCodeToText(latestStatusCode);
-                stateBadge = "zx-badge--info";
-                reminderEle = `<p class="utmHost__note">The target is online and answers with status ${latestStatusCode}.</p>`;
-            }else{
-                currentOnlineStatus = `Unreachable`;
-            }
-        }
-        let latency = last.Online ? last.Latency : 0;
-        let safeUrl = ZxUI.esc(url);
-
-        //Generate the html
-        $("#utmrender").append(`<section class="zx-card utmHost statusbar"><div class="zx-card__body">
-            <div class="domain utmHost__head">
-                <div class="utmHost__name">
-                    <h3>${ZxUI.esc(name)}</h3>
-                    <a href="${ZxUI.esc(/^https?:\/\//i.test(url) ? url : "#")}" target="_blank" rel="noopener" title="${safeUrl}">${safeUrl}</a>
-                </div>
-                <div class="utmHost__badges">
-                    <span class="zx-badge ${stateBadge} zx-badge--dot">${ZxUI.esc(currentOnlineStatus)}</span>
-                    <span class="zx-badge">${last.Online ? latency + " ms" : "no answer"}</span>
-                    <span class="zx-badge ${rateBadge}" title="Share of checks that succeeded">${(ontimeRate).toFixed(2)}% up</span>
-                </div>
-            </div>
-            <div class="status">
-                    ${statusDotList}
-            </div>
-            ${reminderEle}
-            <div class="selectedDotInfo" style="display:none;">
-                <div class="ui list">
-                    <div class="item"><b>Time</b>: <span class="status_dot_timestamp"></span></div>
-                    <div class="item"><b>Latency</b>: <span class="status_dot_latency"></span></div>
-                    <div class="item"><b>Status code</b>: <span class="status_dot_status_code"></span></div>
-                    <div class="item"><b>Result</b>: <span class="status_dot_status_info"></span></div>
-                </div>
-                <button type="button" onclick="$(this).parent().hide();" style="position: absolute; right: 0.4em; top: 0.6em;" aria-label="Close" class="ui basic tiny circular icon button"><i class="ui times icon"></i></button>
-            </div>
-        </div></section>`);
+    /* what counts as up */
+    $.get("./api/utm/healthyStatus", function(d){ if (d && d.status !== undefined) { $("#utmHealthyStatus").val(d.status); } });
+    /* a refused value is reported at the field; the toast is for success only */
+    function statusError(msg){
+        $("#utmHealthyStatusField").toggleClass("is-invalid", !!msg);
+        $("#utmHealthyStatusErr").text(msg || "");
+        $("#utmHealthyStatus").attr("aria-invalid", msg ? "true" : null);
+        if (msg) document.getElementById("utmHealthyStatus").focus();
     }
+    $("#utmHealthyStatusSave").on("click", function(){
+        var btn = $(this);
+        ZxUI.setLoading(btn, true);
+        $.cjax({ url: "./api/utm/healthyStatus", method: "POST", data: { status: $("#utmHealthyStatus").val() }, success: function(d){
+            if (d && d.error) { statusError(d.error); } else { statusError(""); msgbox(tr("Saved. Targets are being re-checked.")); setTimeout(function(){ load(true); }, 2500); }
+        }, error: function(x){ statusError(trf("The setting could not be saved (HTTP {0}). Try again.", x.status)); },
+        complete: function(){ ZxUI.setLoading(btn, false); }});
+    });
+    $("#utmHealthyStatus").on("input", function(){ if (this.getAttribute("aria-invalid")) statusError(""); });
+    $("#utmHealthyStatus").on("keydown", function(e){ if (e.key === "Enter") $("#utmHealthyStatusSave").trigger("click"); });
 
-    function httpErrorStatusCodeToText(statusCode){
-        switch(statusCode){
-            case 400:
-            return "Bad Request";
-            case 401:
-            return "Unauthorized";
-            case 403:
-            return "Forbidden";
-            case 404:
-            return "Not Found";
-            case 405:
-            return "Method Not Allowed";
-            case 500:
-            return "Internal Server Error";
-            case 501:
-            return "Not Implemented";
-            case 502:
-            return "Bad Gateway";
-            case 503:
-            return "Service Unavailable";
-            case 504:
-            return "Gateway Timeout";
-            case 505:
-            return "HTTP Version Not Supported";
-            case 506:
-            return "Variant Also Negotiates";
-            case 507:
-            return "Insufficient Storage";
-            case 508:
-            return "Loop Detected";
-            case 510:
-            return "Not Extended";
-            case 511:
-            return "Network Authentication Required";
-            case 520:
-            return "Web Server Returned an Unknown Error (Cloudflare)";
-            case 521:
-            return "Web Server is Down (Cloudflare)";
-            case 522:
-            return "Connection Timed Out (Cloudflare)";
-            case 523:
-            return "Origin is Unreachable (Cloudflare)";
-            case 524:
-            return "A Timeout Occurred (Cloudflare)";
-            case 525:
-            return "SSL Handshake Failed (Cloudflare)";
-            case 526:
-            return "Invalid SSL Certificate (Cloudflare)";
-            case 527:
-            return "Railgun Error (Cloudflare)";
-            default:
-            return "Unknown Error";
-        }
-    }
+    /* refresh every minute while the page is on screen (a GET of data the server already holds) */
+    setInterval(function(){
+        if (document.hidden || !$("#utm").is(":visible")) return;
+        load(true);
+    }, 60 * 1000);
+    if (typeof tabSwitchEventBind !== "undefined") tabSwitchEventBind["utm"] = function(){ loadTags(); load(true); };
+
+    loadTags();
+    load(false);
+})();
 </script>

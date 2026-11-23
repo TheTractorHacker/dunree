@@ -98,9 +98,24 @@ Status: ✅ done · 🔧 in progress · 📋 planned
 - 📋 Replace the regex exploit detector with WAF rules, or keep it as a lightweight mode.
 
 ## 8. Plugins / add-ons
-- 📋 Pre-auth hook stage (so plugins can act as WAF/bot filters), request/response modification
-  middleware (add headers and continue), body access for dynamic capture, sniff timeouts, global plugins
-  that do not need endpoint tags.
+- ✅ Filter hooks for plugins (`src/mod/plugins/zoraxy_plugin/hooks.go`): `pre_auth`, `post_auth` and `response` stages,
+  allow / deny / modify verdicts (headers, path, query), a size-limited body preview for filters, a per-call timeout
+  (also for the legacy dynamic capture sniff), a circuit breaker, fail-open by default with fail-closed only on admin
+  consent, and global plugins that do not need endpoint tags ("Apply to all HTTP proxy rules").
+- ✅ Plugin reliability, phase 0 (`docs/plugins/reliability-plan.md`): fault-injection test plugin and suite
+  (`src/mod/plugins/testdata/chaosplugin`, `fault_test.go`), read-only process status per plugin (running / crashed /
+  exited / failed to start, exit code, last problem, last output) in the API and the Plugin Manager, and the lifecycle
+  bug fixes (clean exit noticed, clean-up after a crash, no empty 200 from a dead capture plugin, races).
+- ✅ Plugin reliability, phase 1 (same document): per plugin and off by default: restart policy with backoff and crash-loop
+  stop, readiness gate, health check, answer timeout with circuit breaker on capture and plugin pages, own log file and
+  output rate limit, memory / CPU / task / open file limits (Linux, systemd scope), "block while not running" for
+  fail-closed plugins; bounded event queue, process group per plugin, secrets over stdin for plugins that ask for it;
+  Health column, exit history and Supervision form in the Plugin Manager; UI scenario in `tools/ui-smoke/plugins_smoke.py`.
+- 📋 Plugin reliability, phase 1 leftovers: per-request plugin time budget, Prometheus series per plugin, status in the
+  plugin info panel, limits run as root and with `-plugin_user`.
+- 📋 Plugin reliability, phases 2 and 3: versioned SDK contract, signed plugin index, safe install / update / rollback;
+  reference plugins and a conformance checker. Every new behaviour off or log-only by default.
+- 📋 Full request body access for the legacy dynamic capture sniff (filters get a preview, the sniff call does not).
 
 ## 9. Observability
 - ✅ Prometheus metrics (`-metrics`, `-metrics_port`, `/api/metrics`, see DEVELOPMENT.md) incl. per-upstream health/in-flight/EWMA, WAF, CAPTCHA, rate limit and certificate expiry.

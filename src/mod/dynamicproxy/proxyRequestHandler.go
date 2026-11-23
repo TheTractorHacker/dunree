@@ -17,6 +17,7 @@ import (
 	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
 	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
 	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"imuslab.com/zoraxy/mod/errorpages"
 	"imuslab.com/zoraxy/mod/i18n"
 	"imuslab.com/zoraxy/mod/netutils"
 	"imuslab.com/zoraxy/mod/statistic"
@@ -183,7 +184,9 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 		if errors.Is(err, loadbalance.ErrUpstreamsBusy) {
 			//Every upstream reached its max concurrent requests
 			w.Header().Set("Retry-After", "1")
-			http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
+			if !h.Parent.serveCustomErrorPage(w, r, http.StatusServiceUnavailable, errorpages.ClassMaintenance) { //the owner's 503 page, if any
+				http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
+			}
 			h.Parent.logRequest(r, false, http.StatusServiceUnavailable, "host-http", r.Host, "", target)
 			return
 		}
@@ -269,7 +272,7 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 	}
 	if err != nil {
 		if status, limited := routeLimitStatus(err, r, target); limited {
-			http.Error(w, http.StatusText(status), status)
+			h.Parent.serveGatewayStatus(w, r, status)
 			h.Parent.logRequest(r, false, status, "host-http", reqHostname, upstreamHostname, target)
 			return
 		}
@@ -450,7 +453,7 @@ func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, targe
 	}
 	if err != nil {
 		if status, limited := routeLimitStatus(err, r, target.parent); limited {
-			http.Error(w, http.StatusText(status), status)
+			h.Parent.serveGatewayStatus(w, r, status)
 			h.Parent.logRequest(r, false, status, "vdir-http", reqHostname, target.Domain, target.parent)
 			return
 		}
@@ -579,6 +582,10 @@ func (router *Router) logRequestRule(r *http.Request, succ bool, statusCode int,
 // Serve error page with status code
 // Checks for custom templates in web directory before falling back to embedded content
 func serveProxyRequestError(w http.ResponseWriter, r *http.Request, statusCode int, router *Router, templateType ErrorTemplateType) {
+	// The owner's page for this class, when one was saved and enabled (errorpages_hook.go); otherwise nothing changes
+	if router.serveCustomErrorPage(w, r, statusCode, templateType.errorClass()) {
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Add("Vary", "Accept-Language")
 	// Block pages carry the reference ID the admin can search in Statistics > Blocked

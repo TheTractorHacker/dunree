@@ -126,6 +126,63 @@
   #pluginsPage .pm-dev-grid { max-width: 22rem; }
   #selectablePluginList > .item, #selectedTagPluginList > .item { display: block !important; }
   #selectablePluginList > .item p { margin: 0 0 .3em; }
+  /* Plugin list: status column and the details row under a plugin */
+  #pluginsPage .pm-status { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 9.5em; }
+  #pluginsPage .pm-status__sub { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); line-height: 1.35; }
+  #pluginsPage .pm-status__problem { font-size: var(--zx-fs-sm); color: var(--zx-danger-text); line-height: 1.35; overflow-wrap: anywhere; max-width: 22em; }
+  #pluginsPage .pm-status__problem--warn { color: var(--zx-warn-text); }
+  #pluginsPage .pm-status__more { font-size: var(--zx-fs-sm); background: none; border: 0; padding: 0; color: var(--zx-link, var(--zx-accent)); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  #pluginsPage .pm-status__more:focus-visible { outline: 2px solid var(--zx-focus, currentColor); outline-offset: 2px; border-radius: 2px; }
+  #pluginsPage tr.pm-detail > td { background: var(--zx-surface-2); padding: var(--zx-space-4); }
+  #pluginsPage .pm-detail__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--zx-space-5); align-items: start; }
+  #pluginsPage .pm-detail__grid, #pluginsPage .pm-detail__grid .zx-kv dd { text-align: left; }
+  #pluginsPage tr.pm-detail > td { display: block; }
+  @media (min-width: 781px) { #pluginsPage tr.pm-detail > td { display: table-cell; } }
+  #pluginsPage .pm-desc { min-width: 0; overflow-wrap: anywhere; }
+  #pluginsPage .pm-actions-cell { display: flex; flex-wrap: wrap; gap: var(--zx-space-1); align-items: center; }
+  #pluginsPage .pm-actions-cell .ui.button { margin: 0; }
+  #pluginsPage .pm-breaker { color: var(--zx-warn-text); }
+  #pluginsPage .pm-detail__grid .zx-kv dd { font-family: inherit; font-size: var(--zx-fs-sm); }
+  #pluginsPage .pm-detail__title { font-weight: 700; font-size: var(--zx-fs-sm); margin: 0 0 var(--zx-space-2); }
+  #pluginsPage .pm-detail__hint { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); margin: var(--zx-space-3) 0 0; }
+  #pluginsPage .pm-detail .zx-codeblock { background: var(--zx-surface); max-height: 16em; overflow: auto; font-size: var(--zx-fs-xs); }
+  /* Health column, alerts above the table, exit history and the supervision settings in the details row */
+  #pluginsPage .pm-health { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 10.5em; }
+  #pluginsPage .pm-health__line { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); line-height: 1.35; }
+  #pluginsPage .pm-health__line--warn { color: var(--zx-warn-text); }
+  #pluginsPage .pm-health__line--danger { color: var(--zx-danger-text); }
+  #pluginsPage #pluginAlerts:empty { display: none; }
+  #pluginsPage #pluginAlerts .zx-callout { margin-bottom: var(--zx-space-3); }
+  #pluginsPage .pm-detail__block { margin-top: var(--zx-space-4); text-align: left; }
+  #pluginsPage .pm-history { font-size: var(--zx-fs-sm); background: var(--zx-surface); }
+  #pluginsPage .pm-history__row { display: grid; grid-template-columns: 7rem minmax(10rem, 1.2fr) 5rem minmax(12rem, 2fr); gap: var(--zx-space-3); padding: 6px 10px; border-bottom: 1px solid var(--zx-border); }
+  #pluginsPage .pm-history__row:last-child { border-bottom: 0; }
+  #pluginsPage .pm-history__row--head { color: var(--zx-text-muted); font-weight: 700; }
+  #pluginsPage .pm-history__row > span { min-width: 0; overflow-wrap: anywhere; }
+  #pluginsPage .pm-history-wrap { max-height: 18em; overflow-y: auto; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); }
+  @media (max-width: 780px) {
+    #pluginsPage .pm-history__row--head { display: none; }
+    #pluginsPage .pm-history__row { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--zx-space-3); }
+    #pluginsPage .pm-history__row > span:nth-child(2) { grid-column: 1; grid-row: 1; font-weight: 700; }
+    #pluginsPage .pm-history__row > span:nth-child(1) { grid-column: 2; grid-row: 1; color: var(--zx-text-muted); }
+    #pluginsPage .pm-history__row > span:nth-child(3) { grid-column: 2; grid-row: 2; color: var(--zx-text-muted); }
+    #pluginsPage .pm-history__row > span:nth-child(4) { grid-column: 1; grid-row: 2; }
+  }
+  #pluginsPage .pm-settings { background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-4); text-align: left; }
+  #pluginsPage .pm-settings .zx-field { margin-bottom: var(--zx-space-3); }
+  #pluginsPage .pm-settings .zx-field__label { font-size: var(--zx-fs-sm); }
+  #pluginsPage .pm-settings .zx-inputgroup .zx-input { flex: 1 1 auto; min-width: 0; max-width: 9rem; }
+  #pluginsPage .pm-settings .zx-inputgroup .zx-input:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  #pluginsPage .pm-settings__group { margin: var(--zx-space-3) 0 var(--zx-space-2); font-weight: 700; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); text-transform: none; }
+  #pluginsPage .pm-settings__foot { display: flex; flex-wrap: wrap; gap: var(--zx-space-3); align-items: center; margin-top: var(--zx-space-2); }
+  #pluginsPage .pm-settings__foot .zx-help { margin: 0; flex: 1 1 16rem; }
+  #pluginsPage .pm-settings label.pm-check { display: flex; gap: var(--zx-space-2); align-items: flex-start; font-size: var(--zx-fs-sm); cursor: pointer; }
+  #pluginsPage .pm-settings label.pm-check input { margin-top: 3px; flex: 0 0 auto; }
+  #pluginsPage .pm-summary { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin-bottom: var(--zx-space-3); }
+  #pluginsPage .pm-summary:empty { display: none; }
+  #pluginsPage #pluginLoadFailures:empty { display: none; }
+  #pluginsPage #pluginLoadFailures ul { margin: var(--zx-space-1) 0 0; padding-left: 1.2em; }
+  #pluginsPage #pluginLoadFailures code { overflow-wrap: anywhere; }
   .selectColTitle{
     font-weight: bold;
     margin-bottom: 0.4em;
@@ -134,6 +191,7 @@
   }
 
   @media (max-width: 780px) {
+    #pluginsPage .pm-detail__grid { grid-template-columns: minmax(0, 1fr); }
     #pluginsPage .pm-map { grid-template-columns: minmax(0, 1fr); }
     #pluginsPage .pm-actions { flex-direction: row; justify-content: center; }
     #pluginsPage .pm-actions .mobileViewOnly { display: flex; gap: var(--zx-space-2); }
@@ -212,14 +270,19 @@
     <section class="zx-card">
       <div class="zx-card__head">
         <h3 class="zx-card__title">Plugin list</h3>
-        <p class="zx-card__desc">Installed plugins and whether they are running.</p>
+        <p class="zx-card__desc">Installed plugins, whether they are running and how healthy they are. A plugin that stops by itself is only started again if you give it a restart policy (Details, Supervision).</p>
       </div>
       <div class="zx-card__body">
+    <div id="pluginLoadFailures"></div>
+    <div id="pluginAlerts"></div>
+    <div class="pm-summary" id="pluginStatusSummary" aria-live="polite"></div>
     <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Installed plugins">
     <table class="zx-table">
         <thead>
           <tr>
             <th>Plugin name</th>
+            <th>Status</th>
+            <th>Health</th>
             <th>Description</th>
             <th>Category</th>
             <th>Action</th>
@@ -263,17 +326,17 @@ $('#pluginTagList').on('change', function() {
 });
 
 function loadPluginsForTag(tag) {
-  $.get(`/api/plugins/groups/list?tag=${tag}`, function(data) {
+  $.get(`/api/plugins/groups/list?tag=${encodeURIComponent(tag)}`, function(data) {
     $("#selectedTagPluginList").html("");
 
     let selectedPluginIDs = [];
     data.forEach(plugin => {
       $("#selectedTagPluginList").append(`
-        <div class="item selectedPluginItem" pluginid="${plugin.Spec.id}">
-          <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${plugin.Spec.id}">
+        <div class="item selectedPluginItem" pluginid="${ZxUI.esc(plugin.Spec.id)}">
+          <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${encodeURIComponent(plugin.Spec.id)}">
           <div class="content">
             <a class="header">${ZxUI.esc(plugin.Spec.name)}</a>
-            <div class="description">${plugin.Spec.description}</div>
+            <div class="description">${ZxUI.esc(plugin.Spec.description)}</div>
           </div>
           <div class="selectedIcon">
             <i class="ui large green circle check icon"></i>
@@ -302,11 +365,11 @@ function loadPluginsForTag(tag) {
       }
       if (!selectedPluginIDs.includes(plugin.Spec.id)) {
         $("#selectablePluginList").append(`
-          <div class="item selectablePluginItem" pluginid="${plugin.Spec.id}">
-            <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${plugin.Spec.id}">
+          <div class="item selectablePluginItem" pluginid="${ZxUI.esc(plugin.Spec.id)}">
+            <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${encodeURIComponent(plugin.Spec.id)}">
             <div class="content">
               <a class="header">${ZxUI.esc(plugin.Spec.name)}</a>
-              <div class="description">${plugin.Spec.description}</div>
+              <div class="description">${ZxUI.esc(plugin.Spec.description)}</div>
             </div>
             <div class="selectedIcon">
               <i class="ui large green circle check icon"></i>
@@ -361,10 +424,10 @@ function initSelectablePluginList(){
       }
       $("#selectablePluginList").append(`
         <div class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
-          <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${plugin.Spec.id}">
+          <img class="ui avatar image" src="/api/plugins/icon?plugin_id=${encodeURIComponent(plugin.Spec.id)}">
           <div class="content">
             <a class="header">${ZxUI.esc(plugin.Spec.name)}</a>
-            <div class="description">${plugin.Spec.description}</div>
+            <div class="description">${ZxUI.esc(plugin.Spec.description)}</div>
           </div>
         </div>
       `);
@@ -464,37 +527,66 @@ function removePluginFromTag(pluginId, tag){
 
 /* Plugin List */
 //Render the plugin list to Zoraxy homepage side menu
+//A plugin whose process ended by itself (crashed, exited, failed to start) is not "not installed": say what happened
+function pluginStoppedUnexpectedly(plugin){
+  const st = (plugin.Status || {}).State;
+  return st == "crashed" || st == "exited" || st == "failed_to_start" || st == "restarting" || st == "crash_loop";
+}
+
 function initPluginSideMenu(){
   $.get(`/api/plugins/list`, function(data){
     $("#pluginMenu").html("");
     let enabledPluginCount = 0;
+    let troubleCount = 0;
     plugin_list = data;
     data.forEach(plugin => {
+      if (pluginStoppedUnexpectedly(plugin)){
+        troubleCount++;
+      }
       if (!plugin.Enabled){
         return;
       }
       $("#pluginMenu").append(`
-        <a class="item" tag="pluginContextWindow" pluginid="${plugin.Spec.id}">
-            <img style="width: 20px;" class="ui mini right spaced image" src="/api/plugins/icon?plugin_id=${plugin.Spec.id}"> ${ZxUI.esc(plugin.Spec.name)}
+        <a class="item" tag="pluginContextWindow" pluginid="${ZxUI.esc(plugin.Spec.id)}">
+            <img style="width: 20px;" class="ui mini right spaced image" src="/api/plugins/icon?plugin_id=${encodeURIComponent(plugin.Spec.id)}"> ${ZxUI.esc(plugin.Spec.name)}
         </a>
       `);
       enabledPluginCount++;
     });
-    if (enabledPluginCount == 0){
+    if (data.length == 0){
       $("#pluginMenu").append(`
          <a class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
-            <i class="grey info circle icon"></i> No Plugins Installed
+            <i class="grey info circle icon"></i> ${ZxUI.esc(t("No Plugins Installed"))}
+        </a>
+      `);
+    } else if (troubleCount > 0){
+      //Opens the Plugin Manager, where the status column says what happened
+      const msg = troubleCount == 1 ? t("1 plugin stopped unexpectedly") : tf("{0} plugins stopped unexpectedly", troubleCount);
+      $("#pluginMenu").append(`
+         <a class="item pluginMenuNote" href="#plugins" title="${ZxUI.esc(t("Open the Plugin Manager"))}">
+            <i class="orange exclamation triangle icon"></i> ${ZxUI.esc(msg)}
+        </a>
+      `);
+    } else if (enabledPluginCount == 0){
+      const msg = data.length == 1 ? t("1 plugin installed, not running") : tf("{0} plugins installed, none running", data.length);
+      $("#pluginMenu").append(`
+         <a class="item pluginMenuNote" href="#plugins" title="${ZxUI.esc(t("Open the Plugin Manager"))}" style="color: var(--zx-text-muted);">
+            <i class="grey info circle icon"></i> ${ZxUI.esc(msg)}
         </a>
       `);
     }
 
     //Rebind events for the plugin menu
-    $("#pluginMenu").find(".item").each(function(){
+    $("#pluginMenu").find(".item[pluginid]").each(function(){
         $(this).off("click").on("click", function(event){
             let tabid = $(this).attr("tag");
             openTabById(tabid, $(this));
             loadPluginUIContextIfAvailable();
         });
+    });
+    $("#pluginMenu").find(".pluginMenuNote").off("click").on("click", function(event){
+        event.preventDefault();
+        openTabById("plugins");
     });
 
     /* Handling Plugin Manager State, see index.html */
@@ -532,20 +624,28 @@ function pluginHookControls(plugin){
   const id = plugin.Spec.id;
   let html = `<div class="ui divider"></div><div class="ui form">`;
   if (hasHooks) {
-    html += `<small>Hook stages: ${hooks.stages.join(", ")}</small><br>`;
+    html += `<small>Hook stages: ${ZxUI.esc(hooks.stages.join(", "))}</small><br>`;
   }
   html += `<div class="ui checkbox" style="margin-top:0.4em;">
-      <input type="checkbox" ${admin.Global ? "checked" : ""} onchange="setPluginHookSetting('${id}', 'global', this.checked);">
-      <label>Apply to all HTTP proxy rules <small>(add the tag <code>no-plugin:${id}</code> to a rule to opt out)</small></label>
+      <input type="checkbox" ${admin.Global ? "checked" : ""} data-pid="${ZxUI.esc(id)}" onchange="setPluginHookSetting(this.dataset.pid, 'global', this.checked);">
+      <label>Apply to all HTTP proxy rules <small>(add the tag <code>no-plugin:${ZxUI.esc(id)}</code> to a rule to opt out)</small></label>
     </div>`;
   if (admin.FailClosedDeclared) {
     html += `<br><div class="ui checkbox" style="margin-top:0.4em;">
-      <input type="checkbox" ${admin.FailClosedConsent ? "checked" : ""} onchange="setPluginHookSetting('${id}', 'fail_closed', this.checked);">
+      <input type="checkbox" ${admin.FailClosedConsent ? "checked" : ""} data-pid="${ZxUI.esc(id)}" onchange="setPluginHookSetting(this.dataset.pid, 'fail_closed', this.checked);">
       <label>Block requests if this plugin fails <small>(fail-closed; when off, requests continue if the plugin is down)</small></label>
     </div>`;
   }
+  if (admin.FailClosedDeclared) {
+    const pol = (plugin.Status || {}).Policy || {};
+    const can = !!admin.FailClosedConsent;
+    html += `<br><div class="ui ${can ? "" : "disabled"} checkbox pm-blockdown-wrap" style="margin-top:0.4em;">
+      <input type="checkbox" class="pm-blockdown" ${pol.BlockWhenDown ? "checked" : ""} ${can ? "" : "disabled"} data-pid="${ZxUI.esc(id)}" onchange="setPluginPolicyValue(this.dataset.pid, {block_when_down: this.checked});">
+      <label>${ZxUI.esc(t("Also block requests while this plugin is not running"))} <small>(${ZxUI.esc(can ? t("after a crash, a failed start or while it is being restarted; when off, such requests pass and are counted") : t("needs the option above"))})</small></label>
+    </div>`;
+  }
   if (admin.BreakerOpen) {
-    html += `<br><small style="color:#b03030;"><i class="exclamation triangle icon"></i> Plugin is failing and is temporarily skipped</small>`;
+    html += `<br><small class="pm-breaker"><i class="exclamation triangle icon"></i> Plugin is failing and is temporarily skipped</small>`;
   }
   html += `</div>`;
   return html;
@@ -569,67 +669,671 @@ function setPluginHookSetting(pluginId, key, value){
   });
 }
 
-function initiatePluginList(){
+/* Plugin status (read-only): what Zoraxy knows about the process of each plugin */
+
+//"3 min ago", for a Unix time in seconds
+function pluginTimeAgo(unix){
+  if (!unix) return "";
+  const sec = Math.max(0, Math.floor(Date.now() / 1000) - unix);
+  if (sec < 45) return t("just now");
+  if (sec < 90) return t("1 minute ago");
+  if (sec < 3600) return tf("{0} minutes ago", Math.round(sec / 60));
+  if (sec < 5400) return t("1 hour ago");
+  if (sec < 86400) return tf("{0} hours ago", Math.round(sec / 3600));
+  if (sec < 129600) return t("1 day ago");
+  return tf("{0} days ago", Math.round(sec / 86400));
+}
+
+function pluginClockTime(unix){
+  if (!unix) return "";
+  const d = new Date(unix * 1000);
+  const sameDay = d.toDateString() == new Date().toDateString();
+  return sameDay ? d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : d.toLocaleString([], {dateStyle: "medium", timeStyle: "short"});
+}
+
+//How the process ended, in words: "exit code 3" or "ended by a signal (killed)"
+function pluginExitText(st){
+  if (!st.HasExited) return "";
+  if (st.ExitCode >= 0) return tf("exit code {0}", st.ExitCode);
+  const sig = (st.ExitReason || "").replace(/^signal:\s*/, "");
+  return sig ? tf("ended by a signal ({0})", sig) : t("ended by a signal");
+}
+
+//Badge, one line of context and (if any) the problem, for one plugin
+function pluginStatusInfo(plugin){
+  const st = plugin.Status || {State: plugin.Enabled ? "running" : "stopped"};
+  const info = {badge: "", label: t("Stopped"), sub: "", problem: "", warn: false, state: st.State};
+  switch (st.State){
+    case "running":
+      info.badge = "zx-badge--ok"; info.label = t("Running");
+      info.sub = st.StartedAt ? tf("Started {0}", pluginTimeAgo(st.StartedAt)) : "";
+      if (st.Health == "starting"){
+        info.badge = "zx-badge--info"; info.label = t("Starting");
+        info.sub = t("Waiting for the plugin to open its port");
+      } else if (st.Health == "not_listening"){
+        info.badge = "zx-badge--warn"; info.label = t("Not listening"); info.warn = true;
+        info.problem = t("The process is running but its port is closed.");
+      } else if (st.Health == "not_responding"){
+        info.badge = "zx-badge--warn"; info.label = t("Not responding"); info.warn = true;
+        info.problem = t("The process is running but it does not answer Zoraxy.");
+      } else if (st.Health == "unhealthy"){
+        info.badge = "zx-badge--warn"; info.label = t("Unhealthy"); info.warn = true;
+        info.problem = t("The process is running but it fails its health check.");
+      }
+      break;
+    case "restarting":
+      info.badge = "zx-badge--warn"; info.label = t("Restarting");
+      info.sub = [pluginExitText(st), st.NextRestartAt ? pluginTimeUntil(st.NextRestartAt) : ""].filter(Boolean).join(" · ");
+      info.sub = info.sub.charAt(0).toUpperCase() + info.sub.slice(1);
+      break;
+    case "crash_loop":
+      info.badge = "zx-badge--danger"; info.label = t("Crash loop");
+      info.problem = tf("It ended {0} times in a short time, so Zoraxy stopped restarting it.", st.RecentFailures || st.CrashLoopLimit || 0);
+      break;
+    case "crashed":
+      info.badge = "zx-badge--danger"; info.label = t("Crashed");
+      info.sub = [pluginExitText(st), pluginTimeAgo(st.ExitedAt)].filter(Boolean).join(" · ");
+      info.sub = info.sub.charAt(0).toUpperCase() + info.sub.slice(1);
+      break;
+    case "exited":
+      info.badge = "zx-badge--warn"; info.label = t("Exited");
+      info.sub = [t("Stopped by itself"), pluginExitText(st), pluginTimeAgo(st.ExitedAt)].filter(Boolean).join(" · ");
+      break;
+    case "failed_to_start":
+      info.badge = "zx-badge--danger"; info.label = t("Failed to start");
+      info.problem = (st.LastError || "").replace(/^failed to start:\s*/i, "");
+      break;
+    default:
+      info.sub = st.ExitedAt ? tf("Stopped {0}", pluginTimeAgo(st.ExitedAt)) : "";
+  }
+  return info;
+}
+
+//"next start in 4 s", for a Unix time in the near future
+function pluginTimeUntil(unix){
+  const sec = unix - Math.floor(Date.now() / 1000);
+  if (sec <= 0) return t("next start now");
+  if (sec < 90) return tf("next start in {0} s", sec);
+  return tf("next start in {0} min", Math.round(sec / 60));
+}
+
+//"0.4 s", "12 s", "3 min", for a duration in milliseconds
+function pluginDuration(ms){
+  if (ms < 1000) return tf("{0} s", (ms / 1000).toFixed(1));
+  if (ms < 90000) return tf("{0} s", Math.round(ms / 1000));
+  if (ms < 5400000) return tf("{0} min", Math.round(ms / 60000));
+  return tf("{0} h", Math.round(ms / 3600000));
+}
+
+function pluginRestartPolicyText(policy){
+  if (policy == "on-failure") return t("Restart: when it crashes");
+  if (policy == "always") return t("Restart: always");
+  return t("Restart: never");
+}
+
+//Health column: what Zoraxy can tell about a plugin beyond "the process exists"
+function pluginHealthInfo(plugin){
+  const st = plugin.Status || {};
+  const pol = st.Policy || {};
+  const c = st.Counters || {};
+  const info = {badge: "", label: t("Not running"), lines: []};
+  const checked = pol.HealthCheck && pol.HealthCheck != "off";
+  if (st.State == "running"){
+    if (st.Health == "unhealthy"){ info.badge = "zx-badge--warn"; info.label = t("Check failing"); }
+    else if (st.Health == "not_responding"){ info.badge = "zx-badge--warn"; info.label = t("Calls failing"); }
+    else if (st.Health == "not_listening"){ info.badge = "zx-badge--warn"; info.label = t("Port closed"); }
+    else if (st.Health == "starting"){ info.badge = "zx-badge--info"; info.label = t("Starting"); }
+    else if (checked){ info.badge = "zx-badge--ok"; info.label = t("Check passing"); }
+    else { info.label = t("Not checked"); }
+    if (st.Attached === false){
+      info.lines.push({text: t("Not attached yet: waiting for its port"), cls: ""});
+    }
+  }
+  let restart = pluginRestartPolicyText(pol.Restart);
+  if (st.AutoRestartCount > 0){
+    restart += " · " + (st.AutoRestartCount == 1 ? t("1 automatic restart") : tf("{0} automatic restarts", st.AutoRestartCount));
+  }
+  info.lines.push({text: restart, cls: ""});
+  if (c.PassedWhileDown > 0){
+    info.lines.push({text: c.PassedWhileDown == 1 ? t("1 request passed unfiltered while it was down") : tf("{0} requests passed unfiltered while it was down", c.PassedWhileDown), cls: "pm-health__line--danger"});
+  }
+  if (c.BlockedWhileDown > 0){
+    info.lines.push({text: c.BlockedWhileDown == 1 ? t("1 request refused while it was down") : tf("{0} requests refused while it was down", c.BlockedWhileDown), cls: "pm-health__line--warn"});
+  }
+  const failed = (c.CallFailures || 0) + (c.CaptureFailures || 0);
+  if (failed > 0){
+    info.lines.push({text: failed == 1 ? t("1 failed call") : tf("{0} failed calls", failed), cls: "pm-health__line--warn"});
+  }
+  if (c.CaptureRejected > 0){
+    info.lines.push({text: tf("{0} requests answered 503 while it did not answer", c.CaptureRejected), cls: "pm-health__line--warn"});
+  }
+  if (c.EventsDropped > 0){
+    info.lines.push({text: c.EventsDropped == 1 ? t("1 event dropped") : tf("{0} events dropped", c.EventsDropped), cls: "pm-health__line--warn"});
+  }
+  if (c.LogLinesDropped > 0){
+    info.lines.push({text: tf("{0} output lines dropped", c.LogLinesDropped), cls: ""});
+  }
+  return info;
+}
+
+function pluginHealthCell(plugin){
+  const info = pluginHealthInfo(plugin);
+  const head = info.badge ? `<span class="zx-badge zx-badge--dot ${info.badge}">${ZxUI.esc(info.label)}</span>` : `<span class="pm-health__line">${ZxUI.esc(info.label)}</span>`;
+  return `<div class="pm-health">${head}${info.lines.map(l => `<span class="pm-health__line ${l.cls}">${ZxUI.esc(l.text)}</span>`).join("")}</div>`;
+}
+
+//Callouts above the table for what needs the attention of the administrator
+function renderPluginAlerts(data){
+  const loops = [], passed = [];
+  data.forEach(plugin => {
+    const st = plugin.Status || {};
+    if (st.State == "crash_loop") loops.push(plugin.Spec.name);
+    if (((st.Counters || {}).PassedWhileDown || 0) > 0) passed.push(plugin.Spec.name);
+  });
+  let html = "";
+  if (loops.length){
+    html += `<div class="zx-callout zx-callout--danger" role="alert" data-alert="crash_loop">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(loops.length == 1 ? t("1 plugin keeps crashing and is no longer restarted") : tf("{0} plugins keep crashing and are no longer restarted", loops.length))}</div>
+        ${ZxUI.esc(loops.join(", "))}. ${ZxUI.esc(t("Open Details to see the exit history and the last output. Start tries again."))}</div>
+      </div>`;
+  }
+  if (passed.length){
+    html += `<div class="zx-callout zx-callout--warn" role="note" data-alert="passed_while_down">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(t("Requests passed unfiltered while a fail-closed plugin was not running"))}</div>
+        ${ZxUI.esc(passed.join(", "))}. ${ZxUI.esc(t("You allowed this plugin to block requests when it fails, but it was not running, so it could not. Turn on \"Also block requests while this plugin is not running\" to refuse such requests instead."))}</div>
+      </div>`;
+  }
+  $("#pluginAlerts").html(html);
+}
+
+function pluginStatusCell(plugin){
+  const info = pluginStatusInfo(plugin);
+  const pid = ZxUI.esc(plugin.Spec.id);
+  return `<div class="pm-status" data-state="${ZxUI.esc(info.state)}" data-health="${ZxUI.esc((plugin.Status || {}).Health || "")}">
+      <span class="zx-badge zx-badge--dot ${info.badge}">${ZxUI.esc(info.label)}</span>
+      ${info.sub ? `<span class="pm-status__sub">${ZxUI.esc(info.sub)}</span>` : ""}
+      ${info.problem ? `<span class="pm-status__problem ${info.warn ? "pm-status__problem--warn" : ""}">${ZxUI.esc(info.problem)}</span>` : ""}
+      <button type="button" class="pm-status__more" data-pid="${pid}" aria-expanded="false" onclick="togglePluginStatusDetail(this.dataset.pid, this);">${ZxUI.esc(t("Details"))}</button>
+    </div>`;
+}
+
+//"4 installed" "2 running" "1 crashed" above the table
+function renderPluginStatusSummary(data){
+  const box = $("#pluginStatusSummary");
+  if (data.length == 0){ box.html(""); return; }
+  const count = {};
+  data.forEach(plugin => {
+    const info = pluginStatusInfo(plugin);
+    const key = info.label + "|" + info.badge;
+    count[key] = (count[key] || 0) + 1;
+  });
+  //Worst first, healthy last but one, plain stopped last
+  const order = ["zx-badge--danger", "zx-badge--warn", "zx-badge--info", "zx-badge--ok", ""];
+  const keys = Object.keys(count).sort((a, b) => order.indexOf(a.split("|")[1]) - order.indexOf(b.split("|")[1]));
+  let html = `<span class="zx-muted">${ZxUI.esc(data.length == 1 ? t("1 plugin installed") : tf("{0} plugins installed", data.length))}:</span>`;
+  keys.forEach(key => {
+    const [label, badge] = key.split("|");
+    html += `<span class="zx-badge zx-badge--dot ${badge}">${count[key]} ${ZxUI.esc(label.toLowerCase())}</span>`;
+  });
+  box.html(html);
+}
+
+//Folders in the plugin directory that are not loadable plugins: they used to be invisible
+function renderPluginLoadFailures(data){
+  {
+    const fails = (data && data.LoadFailures) || [];
+    if (fails.length == 0){ $("#pluginLoadFailures").html(""); return; }
+    let items = "";
+    fails.forEach(f => {
+      items += `<li><code>${ZxUI.esc(f.Folder)}</code>: ${ZxUI.esc(f.Error)}</li>`;
+    });
+    $("#pluginLoadFailures").html(`<div class="zx-callout zx-callout--danger" role="alert">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(fails.length == 1 ? t("1 plugin folder could not be loaded") : tf("{0} plugin folders could not be loaded", fails.length))}</div>
+        ${ZxUI.esc(t("These folders are in the plugin directory but Zoraxy could not read a plugin from them, so they are not in the list below."))}
+        <ul>${items}</ul></div>
+      </div>`);
+  }
+}
+
+//The plugin list as this page shows it. The list itself (/api/plugins/list) never makes Zoraxy connect to a plugin.
+//The status view adds one thing on top: with probe=true Zoraxy looks whether the port of each running plugin is open
+//(at most once per 2 seconds per plugin, no HTTP request), which is what shows "Starting" and "Not listening".
+//Only this page asks for it, so it only happens while the Plugin Manager is shown.
+function loadPluginListWithStatus(done){
+  //This component is loaded with the admin UI, long before its page is opened: no probe while it is not on screen
+  const shown = $("#pluginsPage").is(":visible") && !document.hidden;
   $.get(`/api/plugins/list`, function(data){
+    $.get(`/api/plugins/status` + (shown ? `?probe=true` : ``), function(statusData){
+      const byId = {};
+      ((statusData && statusData.Plugins) || []).forEach(x => { byId[x.ID] = x.Status; });
+      data.forEach(plugin => { if (byId[plugin.Spec.id]) plugin.Status = byId[plugin.Spec.id]; });
+      done(data, statusData);
+    }).fail(function(){ done(data, null); });
+  });
+}
+
+var plugin_detail_open = {}; //plugin id => true while its details row is open
+
+function pluginDetailHtml(detail){
+  const st = detail.Status || {};
+  const rows = [];
+  const add = (k, v) => { if (v) rows.push(`<dt>${ZxUI.esc(k)}</dt><dd>${ZxUI.esc(v)}</dd>`); };
+  if (st.State == "running"){
+    add(t("Process ID"), String(st.PID || ""));
+    add(t("Started"), pluginClockTime(st.StartedAt) + " (" + pluginTimeAgo(st.StartedAt) + ")");
+  } else if (st.StartedAt){
+    add(t("Last started"), pluginClockTime(st.StartedAt) + " (" + pluginTimeAgo(st.StartedAt) + ")");
+  }
+  if (st.HasExited){
+    add(t("Last exit"), pluginClockTime(st.ExitedAt) + " (" + pluginTimeAgo(st.ExitedAt) + "), " + pluginExitText(st));
+  }
+  if (st.LastSeen){
+    add(t("Last sign of life"), pluginClockTime(st.LastSeen) + " (" + pluginTimeAgo(st.LastSeen) + ")");
+  }
+  add(t("Starts since Zoraxy started"), String(st.StartCount || 0) + (st.AutoRestartCount ? " (" + tf("{0} by the restart policy", st.AutoRestartCount) + ")" : ""));
+  if (st.State == "restarting" && st.NextRestartAt){
+    add(t("Next automatic start"), pluginClockTime(st.NextRestartAt) + " (" + pluginTimeUntil(st.NextRestartAt) + ")");
+  }
+  if (st.State == "running" && st.ReadyAfterMs >= 0){
+    add(t("Port open after"), pluginDuration(st.ReadyAfterMs));
+  }
+  if (st.State == "running" && st.LimitsNote){
+    add(t("Limits"), st.LimitsNote);
+  }
+  if (detail.LogFile){
+    add(t("Log file"), detail.LogFile);
+  }
+  if (st.LastError){
+    add(t("Last problem"), st.LastError + (st.LastErrorAt ? " (" + pluginTimeAgo(st.LastErrorAt) + ")" : ""));
+  }
+  let hint = "";
+  const restartPolicy = (st.Policy || {}).Restart || "never";
+  if ((st.State == "crashed" || st.State == "exited") && restartPolicy == "never"){
+    hint = t("The restart policy of this plugin is \"never\", so Zoraxy leaves it stopped. Press Start to run it again, or set a restart policy below. It also starts again when Zoraxy restarts.");
+  } else if (st.State == "exited"){
+    hint = t("The plugin ended without an error, and the restart policy \"when it crashes\" does not restart it then. Press Start to run it again.");
+  } else if (st.State == "restarting"){
+    hint = t("Zoraxy starts the plugin again by itself. Each further failure doubles the wait, up to 5 minutes. Stop cancels the restart.");
+  } else if (st.State == "crash_loop"){
+    hint = t("Zoraxy stopped restarting the plugin because it ended too often in a short time. Look at the exit history and the last output, fix the cause, then press Start.");
+  } else if (st.State == "failed_to_start"){
+    hint = t("Fix the problem above, then press Start.");
+  } else if (st.Health == "not_responding" || st.Health == "not_listening" || st.Health == "unhealthy"){
+    hint = t("Requests continue without this plugin while it does not answer, unless you allowed it to block them. Stop and start it to try again.");
+  }
+  const out = detail.RecentOutput || [];
+  return `<div class="pm-detail__grid">
+      <div>
+        <p class="pm-detail__title">${ZxUI.esc(t("Process"))}</p>
+        <dl class="zx-kv">${rows.join("")}</dl>
+        ${hint ? `<p class="pm-detail__hint">${ZxUI.esc(hint)}</p>` : ""}
+        ${pluginCountersHtml(st.Counters || {})}
+      </div>
+      <div>
+        <p class="pm-detail__title">${ZxUI.esc(t("Last output of the plugin"))}</p>
+        ${out.length ? `<div class="zx-codeblock" tabindex="0"><pre>${ZxUI.esc(out.join("\n"))}</pre></div>` : `<p class="zx-muted">${ZxUI.esc(t("The plugin has not printed anything since Zoraxy started."))}</p>`}
+      </div>
+    </div>
+    ${pluginHistoryHtml(detail.ExitHistory || [])}`;
+}
+
+//Counters since Zoraxy started: only the ones that are not zero
+function pluginCountersHtml(c){
+  const rows = [];
+  const add = (k, v) => { if (v) rows.push(`<dt>${ZxUI.esc(k)}</dt><dd>${ZxUI.esc(String(v))}</dd>`); };
+  add(t("Filter calls"), c.Calls ? tf("{0} ({1} failed, {2} timed out)", c.Calls, c.CallFailures || 0, c.CallTimeouts || 0) : "");
+  add(t("Times skipped after repeated failures"), c.BreakerOpens);
+  add(t("Requests handed to the plugin"), c.CaptureRequests ? tf("{0} ({1} failed)", c.CaptureRequests, c.CaptureFailures || 0) : "");
+  add(t("Requests answered 503 while it did not answer"), c.CaptureRejected);
+  add(t("Requests passed unfiltered while it was down"), c.PassedWhileDown);
+  add(t("Requests refused while it was down"), c.BlockedWhileDown);
+  add(t("Events"), (c.EventsSent || c.EventsFailed || c.EventsDropped || c.EventsQueued) ? tf("{0} sent, {1} failed, {2} dropped, {3} waiting", c.EventsSent || 0, c.EventsFailed || 0, c.EventsDropped || 0, c.EventsQueued || 0) : "");
+  add(t("Health checks"), (c.HealthChecksOK || c.HealthChecksFail) ? tf("{0} passed, {1} failed", c.HealthChecksOK || 0, c.HealthChecksFail || 0) : "");
+  add(t("Output lines"), c.LogLines ? (c.LogLinesDropped ? tf("{0} ({1} dropped by the rate limit)", c.LogLines, c.LogLinesDropped) : String(c.LogLines)) : "");
+  if (rows.length == 0) return "";
+  return `<p class="pm-detail__title" style="margin-top: var(--zx-space-4);">${ZxUI.esc(t("Since Zoraxy started"))}</p><dl class="zx-kv pm-counters">${rows.join("")}</dl>`;
+}
+
+//What ended a process, and what Zoraxy did about it. Newest first.
+function pluginHistoryHtml(history){
+  if (history.length == 0) return "";
+  const what = h => {
+    const exit = pluginExitText({HasExited: true, ExitCode: h.ExitCode, ExitReason: h.Reason});
+    switch (h.Kind){
+      case "crashed": return tf("Crashed ({0})", exit);
+      case "exited": return tf("Ended by itself ({0})", exit);
+      case "stopped": return t("Stopped by Zoraxy");
+      case "failed_to_start": return t("Could not be started");
+      case "unhealthy": return t("Ended by Zoraxy: health check failed");
+    }
+    return h.Kind;
+  };
+  const did = h => {
+    switch (h.Action){
+      case "restart": return tf("Started again after {0}", pluginDuration(h.RestartInMs));
+      case "crash_loop": return t("Stopped restarting (crash loop)");
+      case "would_restart": return tf("Nothing (restart policy: never). A restart policy would have started it again after {0}", pluginDuration(h.WouldInMs));
+      case "none": return t("Nothing (the restart policy does not cover this)");
+    }
+    return "";
+  };
+  const rows = history.slice().reverse().map(h => `<div class="pm-history__row" role="row" data-kind="${ZxUI.esc(h.Kind)}" data-action="${ZxUI.esc(h.Action || "")}">
+      <span role="cell">${ZxUI.esc(pluginClockTime(h.At))}</span>
+      <span role="cell">${ZxUI.esc(what(h))}</span>
+      <span role="cell">${ZxUI.esc(h.Kind == "failed_to_start" ? "" : tf("ran {0}", pluginDuration((h.UptimeSec || 0) * 1000)))}</span>
+      <span role="cell">${ZxUI.esc(did(h))}</span>
+    </div>`).join("");
+  return `<div class="pm-detail__block">
+      <p class="pm-detail__title">${ZxUI.esc(history.length == 1 ? t("Exit history (1 exit since Zoraxy started)") : tf("Exit history (last {0} exits since Zoraxy started)", history.length))}</p>
+      <div class="pm-history-wrap" tabindex="0"><div class="pm-history" role="table" aria-label="${ZxUI.esc(t("Exit history"))}">
+        <div class="pm-history__row pm-history__row--head" role="row"><span role="columnheader">${ZxUI.esc(t("When"))}</span><span role="columnheader">${ZxUI.esc(t("What happened"))}</span><span role="columnheader">${ZxUI.esc(t("Ran for"))}</span><span role="columnheader">${ZxUI.esc(t("What Zoraxy did"))}</span></div>
+        ${rows}
+      </div></div>
+    </div>`;
+}
+
+/* Supervision settings of one plugin (all off by default), see /api/plugins/policy */
+function pluginSettingsHtml(view){
+  const pol = view.Policy || {};
+  const pid = ZxUI.esc(view.ID);
+  const opt = (value, label, current) => `<option value="${value}" ${current == value ? "selected" : ""}>${ZxUI.esc(label)}</option>`;
+  const cgroup = view.LimitsSupport == "systemd";
+  const rlimit = cgroup || view.LimitsSupport == "rlimit";
+  const num = (name, label, value, unit, help, enabled, step) => `<div class="zx-field">
+        <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-${name}-${pid}">${ZxUI.esc(label)}</label></div>
+        <div class="zx-inputgroup"><input class="zx-input zx-input--short" type="number" min="0" step="${step || 1}" inputmode="${step ? "decimal" : "numeric"}" id="pmset-${name}-${pid}" data-key="${name}" value="${Number(value) || 0}" ${enabled ? "" : "disabled"}>${unit ? `<span class="zx-inputgroup__unit">${ZxUI.esc(unit)}</span>` : ""}</div>
+        <p class="zx-help">${ZxUI.esc(help)}</p>
+      </div>`;
+  const healthHow = view.HealthPath ? tf("Every 10 seconds Zoraxy asks the plugin at {0}.", view.HealthPath) : t("This plugin has no health address, so Zoraxy can only test every 10 seconds that its port is open. A plugin that accepts connections but no longer answers is not noticed this way.");
+  return `<form class="pm-settings" data-pid="${pid}" onsubmit="savePluginSettings(this); return false;">
+      <p class="pm-detail__title">${ZxUI.esc(t("Supervision"))}</p>
+      <p class="zx-help" style="margin-bottom: var(--zx-space-3);">${ZxUI.esc(t("Everything here is off unless you turn it on. Without it Zoraxy only reports what happens to the plugin."))}</p>
+      <div class="zx-form-grid">
+        <div class="zx-field">
+          <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-restart-${pid}">${ZxUI.esc(t("When the plugin stops by itself"))}</label></div>
+          <select class="zx-select" id="pmset-restart-${pid}" data-key="restart">
+            ${opt("never", t("Leave it stopped (default)"), pol.Restart)}
+            ${opt("on-failure", t("Start it again when it crashed"), pol.Restart)}
+            ${opt("always", t("Always start it again"), pol.Restart)}
+          </select>
+          <p class="zx-help">${ZxUI.esc(t("Zoraxy waits 1 second before the first restart and doubles the wait after each further failure, up to 5 minutes. After 5 exits within 10 minutes it stops trying until you press Start."))}</p>
+        </div>
+        <div class="zx-field">
+          <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-health-${pid}">${ZxUI.esc(t("Health check"))}</label></div>
+          <select class="zx-select" id="pmset-health-${pid}" data-key="health_check">
+            ${opt("off", t("Off (default)"), pol.HealthCheck)}
+            ${opt("report", t("Check and show the result"), pol.HealthCheck)}
+            ${opt("restart", t("Check, and restart the plugin after 3 failed checks"), pol.HealthCheck)}
+          </select>
+          <p class="zx-help">${ZxUI.esc(healthHow)} ${ZxUI.esc(t("Restarting needs a restart policy."))}</p>
+        </div>
+        <div class="zx-field">
+          <label class="pm-check"><input type="checkbox" data-key="readiness_gate" ${pol.ReadinessGate ? "checked" : ""}> <span><strong>${ZxUI.esc(t("Wait for the plugin before sending it requests"))}</strong><br>${ZxUI.esc(t("After a start, requests go to the plugin only once its port is open. Until then they are handled as if the plugin was not running."))}</span></label>
+        </div>
+        ${num("capture_timeout_s", t("Answer timeout"), (pol.CaptureTimeoutMs || 0) / 1000, t("seconds"), t("0 = no timeout (default). How long the plugin may take to start answering a request it captured, or a request for its own page. Then the visitor gets a 504 page, and after 5 failures in a row a 503 page at once until the plugin answers again. Does not apply to filter calls, which have their own timeout, or to WebSockets."), true, 0.1)}
+      </div>
+      <p class="pm-settings__group">${ZxUI.esc(t("Output of the plugin"))}</p>
+      <div class="zx-form-grid">
+        <div class="zx-field">
+          <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-log-${pid}">${ZxUI.esc(t("Write the output to"))}</label></div>
+          <select class="zx-select" id="pmset-log-${pid}" data-key="log_target">
+            ${opt("main", t("The main Zoraxy log (default)"), pol.LogTarget)}
+            ${opt("file", t("A log file of its own"), pol.LogTarget)}
+          </select>
+          <p class="zx-help">${ZxUI.esc(t("Its own file is kept below the size limit: when it is full it is renamed and one old file is kept."))}</p>
+        </div>
+        ${num("log_max_kb", t("Size limit of its log file"), pol.LogMaxKB, "KiB", t("16 or more. On disk at most about twice this."), true)}
+        ${num("log_rate_limit", t("Output rate limit"), pol.LogRateLimit, t("lines per second"), t("0 = no limit (default). Lines over the limit are dropped and counted."), true)}
+      </div>
+      <p class="pm-settings__group">${ZxUI.esc(t("Limits (Linux only)"))}</p>
+      <p class="zx-help" style="margin: 0 0 var(--zx-space-2);">${ZxUI.esc(view.LimitsNote || "")}</p>
+      <div class="zx-form-grid">
+        ${num("memory_max_mb", t("Memory"), pol.MemoryMaxMB, "MB", t("0 = no limit. A plugin that goes over it is ended by the system."), cgroup)}
+        ${num("cpu_quota_percent", t("CPU"), pol.CPUQuotaPercent, "%", t("0 = no limit. 100 = one core."), cgroup)}
+        ${num("tasks_max", t("Processes and threads"), pol.TasksMax, "", t("0 = no limit."), cgroup)}
+        ${num("max_open_files", t("Open files"), pol.MaxOpenFiles, "", t("0 = unchanged."), rlimit)}
+      </div>
+      <div class="pm-settings__foot">
+        <button type="submit" class="ui primary button pm-settings__save">${ZxUI.esc(t("Save supervision settings"))}</button>
+        <p class="zx-help">${ZxUI.esc(t("The restart policy and the answer timeout apply at once. Health check, waiting for the port, output and limits apply the next time the plugin starts."))}${view.ConfigureVia == "stdin" ? "" : " " + ZxUI.esc(t("Note: this plugin receives its secrets on the command line, where other local users can read them. A plugin has to be built for the safer way."))}</p>
+      </div>
+    </form>`;
+}
+
+function loadPluginSettings(pluginId){
+  const row = $("#pluginTable tr.pm-detail").filter(function(){ return $(this).attr("data-pid") == pluginId; });
+  if (row.length == 0) return;
+  $.get('/api/plugins/policy?plugin_id=' + encodeURIComponent(pluginId), function(view){
+    if (!view || view.error != undefined){
+      row.find(".pm-detail__settings").html(`<span class="zx-muted">${ZxUI.esc((view && view.error) || t("The settings could not be loaded."))}</span>`);
+      return;
+    }
+    row.find(".pm-detail__settings").html(pluginSettingsHtml(view));
+  });
+}
+
+function savePluginSettings(form){
+  const pluginId = $(form).attr("data-pid");
+  const data = {plugin_id: pluginId};
+  $(form).find("[data-key]").each(function(){
+    const key = $(this).attr("data-key");
+    if (this.disabled) return;
+    if (this.type == "checkbox"){ data[key] = this.checked ? "true" : "false"; return; }
+    if (key == "capture_timeout_s"){ data["capture_timeout_ms"] = String(Math.round((parseFloat(this.value) || 0) * 1000)); return; }
+    data[key] = this.type == "number" ? String(Math.max(0, Math.round(parseFloat(this.value) || 0))) : this.value;
+  });
+  const btn = $(form).find(".pm-settings__save").addClass("disabled");
+  $.cjax({
+    url: '/api/plugins/policy',
+    type: 'POST',
+    data: data,
+    success: function(resp){
+      btn.removeClass("disabled");
+      if (resp.error != undefined){
+        msgbox(resp.error, false);
+        return;
+      }
+      msgbox(t("Supervision settings saved"), true);
+      loadPluginSettings(pluginId);
+      refreshPluginStatus(true);
+    },
+    error: function(){ btn.removeClass("disabled"); msgbox(t("The settings could not be saved."), false); }
+  });
+}
+
+//One policy value from a control outside the settings form (the fail-closed options next to the description)
+function setPluginPolicyValue(pluginId, values){
+  const data = {plugin_id: pluginId};
+  Object.keys(values).forEach(k => { data[k] = values[k] === true ? "true" : values[k] === false ? "false" : String(values[k]); });
+  $.cjax({
+    url: '/api/plugins/policy',
+    type: 'POST',
+    data: data,
+    success: function(resp){
+      if (resp.error != undefined){
+        msgbox(resp.error, false);
+      }else{
+        msgbox("Plugin setting updated", true);
+      }
+      initiatePluginList();
+    }
+  });
+}
+
+function loadPluginStatusDetail(pluginId){
+  const row = $("#pluginTable tr.pm-detail").filter(function(){ return $(this).attr("data-pid") == pluginId; });
+  if (row.length == 0) return;
+  //POST: the output of a plugin is for administrators only
+  $.cjax({
+    url: '/api/plugins/status',
+    type: 'POST',
+    data: {plugin_id: pluginId, probe: "true"}, //Details are only ever opened on this page
+    success: function(data){
+      //The live part is replaced on every refresh; the settings form below it is only
+      //drawn once, so a refresh never wipes what the administrator is typing
+      if (row.find(".pm-detail__live").length == 0){
+        row.find("td").html(`<div class="pm-detail__live"></div><div class="pm-detail__block pm-detail__settings"><span class="zx-muted">${ZxUI.esc(t("Loading..."))}</span></div>`);
+        loadPluginSettings(pluginId);
+      }
+      if (data.error != undefined){
+        row.find(".pm-detail__live").html(`<span class="zx-muted">${ZxUI.esc(data.error)}</span>`);
+        return;
+      }
+      const live = row.find(".pm-detail__live");
+      const scroll = live.find(".zx-codeblock").scrollTop();
+      live.html(pluginDetailHtml(data));
+      if (scroll){ live.find(".zx-codeblock").scrollTop(scroll); }
+    },
+    error: function(){
+      row.find("td").html(`<span class="zx-muted">${ZxUI.esc(t("The details could not be loaded."))}</span>`);
+    }
+  });
+}
+
+function togglePluginStatusDetail(pluginId, btn){
+  const mainRow = $(btn).closest("tr");
+  const next = mainRow.next("tr.pm-detail");
+  if (next.length){
+    next.remove();
+    delete plugin_detail_open[pluginId];
+    $(btn).attr("aria-expanded", "false").text(t("Details"));
+    return;
+  }
+  plugin_detail_open[pluginId] = true;
+  $(btn).attr("aria-expanded", "true").text(t("Hide details"));
+  const detailRow = $(`<tr class="pm-detail"><td colspan="6"><span class="zx-muted">${ZxUI.esc(t("Loading..."))}</span></td></tr>`);
+  detailRow.attr("data-pid", pluginId);
+  mainRow.after(detailRow);
+  loadPluginStatusDetail(pluginId);
+}
+
+//Stop is offered while the plugin runs, and while an automatic restart is waiting (it cancels the restart)
+function pluginCanStop(plugin){
+  return !!plugin.Enabled || (plugin.Status || {}).State == "restarting";
+}
+
+function initiatePluginList(){
+  loadPluginListWithStatus(function(data, statusData){
     $("#pluginTable").html("");
+    if (statusData){ renderPluginLoadFailures(statusData); }
+    renderPluginStatusSummary(data);
+    renderPluginAlerts(data);
 
     data.forEach(plugin => {
-      let authorContact = plugin.Spec.author_contact;
-      if(!authorContact.startsWith('http')){
+      let authorContact = String(plugin.Spec.author_contact || "");
+      if(!/^https?:\/\//i.test(authorContact)){
         authorContact = `mailto:${authorContact}`;
       }
+      const pid = ZxUI.esc(plugin.Spec.id);
 
       let versionString = `v${plugin.Spec.version_major}.${plugin.Spec.version_minor}.${plugin.Spec.version_patch}`;
       const row = `
-        <tr>
+        <tr data-pid="${pid}">
           <td data-label="Plugin">
             <h4 class="ui header">
-              <img src="/api/plugins/icon?plugin_id=${plugin.Spec.id}" class="ui image">
+              <img src="/api/plugins/icon?plugin_id=${encodeURIComponent(plugin.Spec.id)}" class="ui image" alt="">
               <div class="content">
                 ${ZxUI.esc(plugin.Spec.name)}
-                <div class="sub header">${versionString} by <a href="${authorContact}" target="_blank">${plugin.Spec.author}</a></div>
+                <div class="sub header">${ZxUI.esc(versionString)} by <a href="${ZxUI.esc(authorContact)}" target="_blank" rel="noopener">${ZxUI.esc(plugin.Spec.author)}</a></div>
               </div>
             </h4>
             </td>
-          <td data-label="Description">${ZxUI.esc(plugin.Spec.description)}<br>
+          <td data-label="Status" class="pm-status-cell">${pluginStatusCell(plugin)}</td>
+          <td data-label="Health" class="pm-health-cell">${pluginHealthCell(plugin)}</td>
+          <td data-label="Description"><div class="pm-desc">${ZxUI.esc(plugin.Spec.description)}<br>
           <a href="${ZxUI.esc(/^https?:\/\//i.test(plugin.Spec.url || "") ? plugin.Spec.url : "#")}" target="_blank" rel="noopener">${ZxUI.esc(plugin.Spec.url)}</a>
-          ${pluginHookControls(plugin)}</td>
+          ${pluginHookControls(plugin)}</div></td>
           <td data-label="Category">${plugin.Spec.type==0?"Router":"Utilities"}</td>
-          <td data-label="Action">
-            <button onclick="uninstallPlugin(this.dataset.pid, this.dataset.pname, this);" data-pid="${ZxUI.esc(plugin.Spec.id)}" data-pname="${ZxUI.esc(plugin.Spec.name)}" aria-label="Uninstall this plugin" class="ui basic red icon button">
+          <td data-label="Action"><div class="pm-actions-cell">
+            <button onclick="uninstallPlugin(this.dataset.pid, this.dataset.pname, this);" data-pid="${pid}" data-pname="${ZxUI.esc(plugin.Spec.name)}" aria-label="Uninstall this plugin" class="ui basic red icon button">
               <i class="trash icon"></i>
             </button>
-             <button onclick="getPluginInfo('${plugin.Spec.id}', this);" class="ui basic icon button" pluginid="${plugin.Spec.id}">
+             <button onclick="getPluginInfo(this.dataset.pid, this);" class="ui basic icon button" data-pid="${pid}" pluginid="${pid}" aria-label="Plugin information">
               <i class="info circle icon"></i>
             </button>
-            <button onclick="stopPlugin('${plugin.Spec.id}', this);" class="ui basic button pluginEnableButton" pluginid="${plugin.Spec.id}" ${plugin.Enabled ? '' : 'style="display:none;"'}>
+            <button onclick="stopPlugin(this.dataset.pid, this);" class="ui basic button pluginEnableButton" data-pid="${pid}" pluginid="${pid}" ${pluginCanStop(plugin) ? '' : 'style="display:none;"'}>
               <i class="stop circle icon"></i> Stop
             </button>
-            <button onclick="startPlugin('${plugin.Spec.id}', this);" class="ui basic button pluginDisableButton" pluginid="${plugin.Spec.id}" ${plugin.Enabled ? 'style="display:none;"' : ''}>
+            <button onclick="startPlugin(this.dataset.pid, this);" class="ui basic button pluginDisableButton" data-pid="${pid}" pluginid="${pid}" ${plugin.Enabled ? 'style="display:none;"' : ''}>
               <i class="play circle icon"></i> Start
             </button>
-            ${plugin.SupportHotRebuild ? `<button onclick="rebuildPlugin('${plugin.Spec.id}', this);" class="ui basic button pluginRebuildButton" pluginid="${plugin.Spec.id}">
+            <button onclick="restartPlugin(this.dataset.pid, this);" class="ui basic button pluginRestartButton" data-pid="${pid}" pluginid="${pid}" ${plugin.Enabled ? '' : 'style="display:none;"'}>
+              <i class="redo icon"></i> Restart
+            </button>
+            ${plugin.SupportHotRebuild ? `<button onclick="rebuildPlugin(this.dataset.pid, this);" class="ui basic button pluginRebuildButton" data-pid="${pid}" pluginid="${pid}">
               <i class="wrench icon"></i> Rebuild
             </button>` : ''}
-          </td>
+          </div></td>
         </tr>
       `;
-      $("#pluginTable").append(row);
+      const rowEl = $(row);
+      $("#pluginTable").append(rowEl);
+      if (plugin_detail_open[plugin.Spec.id]){
+        //Keep an open details row open across a refresh of the list
+        delete plugin_detail_open[plugin.Spec.id];
+        togglePluginStatusDetail(plugin.Spec.id, rowEl.find(".pm-status__more")[0]);
+      }
     });
 
     if (data.length == 0){
       $("#pluginTable").append(`
         <tr>
-          <td class="zx-empty-cell" colspan="4"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">${t("No plugins installed. Browse the App Store to add one.")}</p></div></td>
+          <td class="zx-empty-cell" colspan="6"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">${t("No plugins installed. Browse the App Store to add one.")}</p></div></td>
         </tr>
       `);
     }
-
-    console.log(data);
   });
 }
 
 initiatePluginList();
+
+//A plugin can stop by itself at any time: while this page is shown, refresh the status column
+//(only the status cells and the Start / Stop buttons, so nothing the administrator is doing is disturbed)
+function refreshPluginStatus(force){
+  if (force !== true && (!$("#pluginsPage").is(":visible") || document.hidden)) return;
+  loadPluginListWithStatus(function(data){
+    const rows = $("#pluginTable tr[data-pid]").not(".pm-detail");
+    if (rows.length != data.length){ initiatePluginList(); initPluginSideMenu(); return; }
+    let changed = false;
+    data.forEach(plugin => {
+      const row = rows.filter(function(){ return $(this).attr("data-pid") == plugin.Spec.id; });
+      if (row.length == 0){ changed = true; return; }
+      const cell = row.find(".pm-status-cell");
+      const before = cell.find(".pm-status").attr("data-state") + "/" + cell.find(".pm-status").attr("data-health");
+      const st = plugin.Status || {};
+      const now = (st.State || "") + "/" + (st.Health || "");
+      const open = !!plugin_detail_open[plugin.Spec.id];
+      cell.html(pluginStatusCell(plugin));
+      row.find(".pm-health-cell").html(pluginHealthCell(plugin));
+      if (open){
+        cell.find(".pm-status__more").attr("aria-expanded", "true").text(t("Hide details"));
+      }
+      if (before != now){
+        changed = true;
+        row.find(".pluginEnableButton").toggle(pluginCanStop(plugin));
+        row.find(".pluginDisableButton").toggle(!plugin.Enabled);
+        row.find(".pluginRestartButton").toggle(!!plugin.Enabled);
+      }
+      //An open details row follows the plugin: counters, exit history and output can change without a state change.
+      //It is only loaded again when something did change (each load is a POST, which the audit log records).
+      const sig = JSON.stringify([st.State, st.Health, st.StartCount, st.NextRestartAt, st.Counters]);
+      if (open && row.attr("data-sig") != sig){ loadPluginStatusDetail(plugin.Spec.id); }
+      row.attr("data-sig", sig);
+    });
+    renderPluginStatusSummary(data);
+    renderPluginAlerts(data);
+    if (changed){ initPluginSideMenu(); }
+  });
+}
+//Opening the page shows fresh status at once (the list was loaded with the admin UI, without the port probe)
+if (typeof tabSwitchEventBind != "undefined"){
+  tabSwitchEventBind["plugins"] = function(){ refreshPluginStatus(); };
+}
+if (window.pluginStatusTimer){ clearInterval(window.pluginStatusTimer); }
+window.pluginStatusTimer = setInterval(refreshPluginStatus, 10000);
 
 
 
@@ -676,6 +1380,27 @@ function stopPlugin(pluginId, btn=undefined) {
   });
 }
 
+function restartPlugin(pluginId, btn=undefined) {
+  if (btn) {
+    $(btn).html('<i class="spinner loading icon"></i> Restarting');
+    $(btn).addClass('disabled');
+  }
+  $.cjax({
+    url: '/api/plugins/restart',
+    type: 'POST',
+    data: {plugin_id: pluginId},
+    success: function(data){
+      if (data.error != undefined){
+        msgbox(data.error, false);
+      }else{
+        msgbox("Plugin restarted", true);
+      }
+      initiatePluginList();
+      initPluginSideMenu();
+    }
+  });
+}
+
 function rebuildPlugin(pluginId, btn=undefined) {
   if (btn) {
     $(btn).html('<i class="spinner loading icon"></i> Rebuilding');
@@ -710,7 +1435,7 @@ function showBuildErrorDialog(errorMessage) {
           <p>The plugin build process encountered an error. Please review the build output below:</p>
           <div class="ui form">
             <div class="field">
-              <textarea id="buildErrorOutput" readonly style="background-color: #000000; color: #ffffff; font-family: monospace; min-height: 300px; resize: vertical;">${errorMessage}</textarea>
+              <textarea id="buildErrorOutput" readonly style="background-color: #000000; color: #ffffff; font-family: monospace; min-height: 300px; resize: vertical;"></textarea>
             </div>
           </div>
         </div>
@@ -726,6 +1451,8 @@ function showBuildErrorDialog(errorMessage) {
   
   // Append and show the modal
   $('body').append(modalHtml);
+  // The build output is written by the Makefile and the sources of the plugin: set it as text, never as HTML
+  $('#buildErrorOutput').val(String(errorMessage == null ? "" : errorMessage));
   $('#buildErrorModal').modal('show');
 }
 

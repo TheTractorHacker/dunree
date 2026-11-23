@@ -239,6 +239,7 @@ def overview_ui(pg, ctx):
     if pg.is_visible("#hxFilterError"):
         fail("history", "Clear must remove the date range message")
     pg.set_viewport_size({"width": 1366, "height": 700})
+    pg.locator("#hxTimeline .hx-item .sy-more > summary").first.click()   # Restore and Export sit in the "more" menu of a version
     pg.locator("#hxTimeline .hx-item .hx-restore").first.click()
     pg.wait_for_selector("#hxRestoreModal.visible", timeout=5000)
     pg.wait_for_function("document.getElementById('hxPreview').innerText.includes('would change') || document.getElementById('hxPreview').innerText.includes('Nothing to restore')", timeout=8000)
@@ -294,10 +295,10 @@ def overview_ui(pg, ctx):
     pg.evaluate("openTabById('qstart')")
     settle(pg, 800)
     if not pg.locator("#qsStartBtn.disabled").count():
-        fail("quickstart", "Start Walkthrough must be disabled until a card is selected")
+        fail("quickstart", "Start walkthrough must be disabled until a card is selected")
     pg.click("#quickstart .serviceOption.homepage")
     if pg.locator("#qsStartBtn.disabled").count():
-        fail("quickstart", "selecting a card must enable Start Walkthrough")
+        fail("quickstart", "selecting a card must enable Start walkthrough")
 
     # ---- clean up what this scenario created ----
     for h in seeded:

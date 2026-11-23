@@ -1,593 +1,237 @@
+<!-- System > App Store (tag appstore). One column: stat row, the featured app (the one primary button of the page), a toolbar
+     (search, sort, source, grid / list), category chips with counts, then the apps. No sidebar: a category is picked once, with the chips.
+     Data and actions are unchanged (/api/plugins/store/*, /api/plugins/list); installed apps are managed in the Plugin Manager.
+     Help links (plugin documentation, request an app) are in the Related menu of the header. -->
 <style>
-  /* ===== App Store layout ===== */
-  #appstore .as-header{
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1em;
-  }
-  #appstore .as-header h2{
-    margin-bottom: 0.2em;
-  }
-  #appstore .as-header p{
-    color: var(--zx-text-muted);
-  }
+  #appstore .standardContainer > .zx-statrow { margin: 0 0 var(--zx-space-4); }
+  #appstore .zx-page-header__actions a.zx-btn--secondary { color: var(--zx-text); text-decoration: none; }
 
-  /* Stat tiles */
-  #appstore .as-stats{ display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--zx-space-3); margin: 0; }
-  #appstore .as-stats .as-stat-card{ background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); padding: var(--zx-space-3) var(--zx-space-4); }
-  #appstore .as-stat-title{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 600; }
-  #appstore .as-stat-value{ font-size: var(--zx-fs-2xl); font-weight: 700; color: var(--zx-text); line-height: 1.2; }
-  #appstore .as-stat-sub{ color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-  @media (max-width: 480px){ #appstore .as-stats{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  /* Toolbar */
-  #appstore .as-toolbar{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.8em;
-    margin-top: 1.2em;
-  }
-  #appstore .as-toolbar .as-search{
-    flex: 1;
-    min-width: 220px;
-    max-width: 420px;
-  }
-  #appstore .as-toolbar-right{
-    display: flex;
-    align-items: center;
-    gap: 0.6em;
-    flex-wrap: wrap;
-  }
+  /* Featured app: one card, the only primary button of the page */
+  #appstore .as-featured { display: none; margin: 0 0 var(--zx-space-4); }
+  #appstore .as-featured-inner { display: flex; align-items: center; gap: var(--zx-space-5); padding: var(--zx-card-pad); }
+  #appstore .as-featured-icon { flex: 0 0 auto; display: grid; place-items: center; width: 72px; height: 72px; border-radius: var(--zx-radius-lg); background: var(--zx-surface-2); border: 1px solid var(--zx-border); overflow: hidden; }
+  #appstore .as-featured-icon img { width: 48px; height: 48px; object-fit: contain; }
+  #appstore .as-featured-main { flex: 1 1 auto; min-width: 0; }
+  #appstore .as-featured-label { display: block; margin: 0 0 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+  #appstore .as-featured-title { margin: 0; font-size: var(--zx-fs-xl); font-weight: 700; line-height: 1.3; color: var(--zx-text); overflow-wrap: anywhere; }
+  /* two lines, always: the card keeps its height while the featured apps rotate */
+  #appstore .as-featured-desc { margin: 2px 0 var(--zx-space-3); max-width: 46rem; min-height: 3em; color: var(--zx-text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #appstore .as-featured-meta { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: var(--zx-space-2); text-align: right; }
+  #appstore .as-featured-version { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+  #appstore .as-featured-dots { display: flex; justify-content: center; gap: 2px; padding: 0 0 var(--zx-space-2); }
+  #appstore .as-featured-dots:empty { display: none; }
+  #appstore .as-featured-dot { display: grid; place-items: center; width: 24px; height: 24px; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+  #appstore .as-featured-dot::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--zx-border-strong); transition: background-color var(--zx-dur) var(--zx-ease); }
+  #appstore .as-featured-dot.active::before { background: var(--zx-primary); }
+  #appstore .as-featured-dot:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
 
-  /* Main area: sidebar + content */
-  #appstore .as-main{
-    display: flex;
-    align-items: flex-start;
-    gap: 1.2em;
-    margin-top: 1.2em;
-  }
-  #appstore .as-sidebar{
-    width: 220px;
-    flex-shrink: 0;
-  }
-  #appstore .as-content{
-    flex: 1;
-    min-width: 0;
-  }
-  #appstore .as-panel{
-    background-color: var(--zx-surface);
-    border: 1px solid var(--zx-border);
-    border-radius: 0.8em;
-    padding: 1em;
-    margin-bottom: 1em;
-  }
-  #appstore .as-panel-title{
-    font-weight: bold;
-    color: var(--zx-text);
-    margin-bottom: 0.6em;
-  }
-  #appstore .as-cat-item{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.45em 0.6em;
-    border-radius: 0.4em;
-    cursor: pointer;
-    color: var(--zx-text);
-  }
-  #appstore .as-cat-item:hover{
-    background-color: var(--zx-surface-2);
-  }
-  #appstore .as-cat-item.active{
-    background-color: var(--zx-primary-soft);
-    color: var(--zx-primary-soft-text);
-    font-weight: bold;
-  }
-  #appstore .as-count-chip{
-    background-color: var(--zx-surface-2);
-    color: var(--zx-text-muted);
-    border-radius: 0.8em;
-    font-size: var(--zx-fs-sm);
-    padding: 0.1em 0.7em;
-  }
-  #appstore .as-cat-item.active .as-count-chip{
-    background-color: var(--zx-surface);
-    color: var(--zx-primary-soft-text);
-  }
-  #appstore .as-source-item{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.3em 0;
-    color: var(--zx-text);
-  }
-  #appstore .as-source-item label{
-    cursor: pointer;
-    color: var(--zx-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 120px;
-  }
-  #appstore .as-compat-chip{
-    display: inline-block;
-    background-color: var(--zx-surface-2);
-    color: var(--zx-text-muted);
-    border-radius: 0.4em;
-    font-size: var(--zx-fs-sm);
-    padding: 0.25em 0.6em;
-    margin: 0 0.3em 0.3em 0;
-  }
+  /* Toolbar: search left, sort / source / view right, on one row */
+  #appstore .as-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
+  #appstore .as-search { position: relative; flex: 1 1 16rem; max-width: 26rem; min-width: 0; }
+  #appstore .as-search .zx-input { width: 100%; max-width: none; padding-left: 2.4rem; }
+  #appstore .as-search i.icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); margin: 0; height: auto; color: var(--zx-text-muted); pointer-events: none; }
+  #appstore .as-toolbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin-left: auto; }
+  #appstore .as-toolbar-right .zx-select { width: auto; min-width: 11rem; max-width: 100%; }
+  #appstore .as-toolbar-right [hidden] { display: none; }
+  #appstore .as-view .zx-segmented__item { min-width: 36px; padding: 0 8px; }
+  #appstore .as-view .zx-segmented__item i.icon { margin: 0; }
 
-  /* Featured banner */
-  #appstore .as-featured{
-    position: relative;
-    background: var(--zx-surface);
-    border: 1px solid var(--zx-border);
-    border-radius: 0.8em;
-    padding: 1.5em;
-    margin-bottom: 1.2em;
-    display: none;
-  }
-  #appstore .as-featured-inner{
-    display: flex;
-    align-items: center;
-    gap: 1.5em;
-  }
-  #appstore .as-featured-icon{
-    width: 72px;
-    height: 72px;
-    border-radius: 1em;
-    background-color: var(--zx-surface);
-    border: 1px solid var(--zx-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-  #appstore .as-featured-icon img{
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-  }
-  #appstore .as-featured-label{
-    display: inline-block;
-    background-color: var(--zx-info-bg);
-    color: var(--zx-info-text);
-    border-radius: var(--zx-radius-pill);
-    font-size: var(--zx-fs-sm);
-    font-weight: bold;
-    padding: 0.2em 0.8em;
-    margin-bottom: 0.4em;
-  }
-  #appstore .as-featured-title{
-    font-size: 1.4em;
-    font-weight: bold;
-    color: var(--zx-text);
-    margin: 0.1em 0 0.2em 0;
-  }
-  #appstore .as-featured-desc{
-    color: var(--zx-text-muted);
-    margin-bottom: 0.6em;
-  }
-  #appstore .as-featured-meta{
-    flex-shrink: 0;
-    text-align: right;
-  }
-  #appstore .as-featured-version{
-    color: var(--zx-text-muted);
-    font-size: 0.9em;
-    margin-bottom: 0.8em;
-  }
-  #appstore .as-featured-dots{
-    text-align: center;
-    margin-top: 1em;
-  }
-  #appstore .as-featured-dot{
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--zx-border);
-    margin: 0 3px;
-    cursor: pointer;
-  }
-  #appstore .as-featured-dot.active{
-    background-color: var(--zx-primary);
-  }
+  /* Categories: chips with a count; the chosen one is the selection colour */
+  #appstore .as-cats { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-3); }
+  #appstore .as-cat-item { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; margin: 0; padding: 0 12px; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-pill); background: var(--zx-surface); color: var(--zx-text); font: inherit; font-size: var(--zx-fs-sm); cursor: pointer; white-space: nowrap; transition: background-color var(--zx-dur) var(--zx-ease), border-color var(--zx-dur) var(--zx-ease); }
+  #appstore .as-cat-item:hover { background: var(--zx-surface-2); }
+  #appstore .as-cat-item:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+  #appstore .as-cat-item.active { background: var(--zx-primary-soft); border-color: var(--zx-primary); color: var(--zx-primary-soft-text); font-weight: 700; }
+  #appstore .as-count-chip { color: var(--zx-text-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+  #appstore .as-cat-item.active .as-count-chip { color: inherit; }
+  #appstore .as-result-line { margin: 0 0 var(--zx-space-3); }
 
   /* App cards */
-  #appstore .as-grid{
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 1em;
-  }
-  #appstore .as-grid.as-listview{
-    grid-template-columns: 1fr;
-  }
-  #appstore .as-app-card{
-    background-color: var(--zx-surface);
-    border: 1px solid var(--zx-border);
-    border-radius: 0.8em;
-    padding: 1.2em;
-    display: flex;
-    flex-direction: column;
-  }
-  #appstore .as-grid.as-listview .as-app-card{
-    flex-direction: row;
-    align-items: center;
-    gap: 1em;
-  }
-  #appstore .as-grid.as-listview .as-app-card .as-app-body{
-    flex: 1;
-  }
-  #appstore .as-app-head{
-    display: flex;
-    align-items: center;
-    gap: 0.8em;
-    margin-bottom: 0.6em;
-  }
-  #appstore .as-app-icon{
-    width: 42px;
-    height: 42px;
-    border-radius: 0.6em;
-    background-color: var(--zx-surface-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  #appstore .as-app-icon img{
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-  }
-  #appstore .as-app-name{
-    font-weight: bold;
-    color: var(--zx-text);
-    cursor: pointer;
-  }
-  #appstore .as-app-name:hover{
-    color: var(--zx-link);
-  }
-  #appstore .as-app-desc{
-    color: var(--zx-text-muted);
-    font-size: 0.9em;
-    margin-bottom: 0.8em;
-    flex: 1;
-    /* clamp to 2 lines so all cards line up */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  #appstore .as-app-tags{
-    margin-bottom: 0.8em;
-  }
-  #appstore .as-tag{
-    display: inline-block;
-    background-color: var(--zx-surface-2);
-    color: var(--zx-text-muted);
-    border-radius: 0.4em;
-    font-size: var(--zx-fs-sm);
-    padding: 0.2em 0.6em;
-    margin: 0 0.3em 0.3em 0;
-  }
-  #appstore .as-tag-preview{
-    background-color: var(--zx-warn-bg);
-    color: var(--zx-warn-text);
-    font-weight: bold;
-  }
-  #appstore .as-app-footer{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5em;
-  }
-  #appstore .as-app-version{
-    color: var(--zx-text-muted);
-    font-size: 0.85em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  #appstore .as-installed-label{
-    color: var(--zx-ok-text);
-    font-size: 0.9em;
-    font-weight: bold;
-    white-space: nowrap;
-  }
-  #appstore .as-loadmore{
-    text-align: center;
-    margin-top: 1.5em;
-  }
-  #appstore .as-noresult{
-    text-align: center;
-    color: var(--zx-text-muted);
-    padding: 3em 1em;
-  }
+  #appstore .as-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: var(--zx-space-4); }
+  #appstore .as-app-card { display: flex; flex-direction: column; min-width: 0; padding: var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); }
+  #appstore .as-app-body { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+  #appstore .as-app-head { display: flex; align-items: center; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-3); min-width: 0; }
+  #appstore .as-app-icon { flex: 0 0 auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--zx-radius-md); background: var(--zx-surface-2); border: 1px solid var(--zx-border); overflow: hidden; }
+  #appstore .as-app-icon img { width: 30px; height: 30px; object-fit: contain; }
+  #appstore .as-app-id { min-width: 0; }
+  #appstore .as-app-name { display: block; max-width: 100%; margin: 0; padding: 0; border: 0; background: none; color: var(--zx-text); font: inherit; font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.3; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+  #appstore .as-app-name:hover { color: var(--zx-link); text-decoration: underline; text-underline-offset: 3px; }
+  #appstore .as-app-name:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+  #appstore .as-app-author { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.4; overflow-wrap: anywhere; }
+  #appstore .as-app-desc { flex: 0 0 auto; margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #appstore .as-app-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: auto 0 var(--zx-space-3); }
+  #appstore .as-featured .as-app-tags { margin: 0; }
+  #appstore .as-app-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--zx-space-2); min-height: 28px; padding-top: var(--zx-space-3); border-top: 1px solid var(--zx-border); }
+  #appstore .as-app-version { color: var(--zx-text-muted); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); white-space: nowrap; }
+  /* list view: one row per app */
+  #appstore .as-grid.as-listview { grid-template-columns: minmax(0, 1fr); gap: 0; background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); box-shadow: var(--zx-shadow-1); }
+  #appstore .as-grid.as-listview .as-app-card { flex-direction: row; align-items: center; gap: var(--zx-space-4); padding: var(--zx-space-3) var(--zx-card-pad); border: 0; border-top: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; }
+  #appstore .as-grid.as-listview .as-app-card:first-child { border-top: 0; }
+  #appstore .as-grid.as-listview .as-app-body { flex-direction: row; align-items: center; gap: var(--zx-space-4); }
+  #appstore .as-grid.as-listview .as-app-head { flex: 0 0 16rem; margin: 0; }
+  #appstore .as-grid.as-listview .as-app-desc { margin: 0; -webkit-line-clamp: 2; }
+  #appstore .as-grid.as-listview .as-app-desc { flex: 1 1 auto; }
+  #appstore .as-grid.as-listview .as-app-tags { flex: 0 0 auto; margin: 0; max-width: 14rem; }
+  #appstore .as-grid.as-listview .as-app-footer { flex: 0 0 auto; padding: 0; border: 0; gap: var(--zx-space-4); }
+  #appstore .as-loadmore { display: flex; justify-content: center; margin-top: var(--zx-space-4); }
+  #appstore .as-compat { margin-top: var(--zx-space-5); }
+  #appstore .as-compat-list { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); }
+  #appstore .as-compat-list .zx-badge b { margin-left: 4px; font-variant-numeric: tabular-nums; }
+  #asSettingsModal .as-source-add { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-3); }
+  #asSettingsModal .as-source-add .zx-input { flex: 1 1 16rem; min-width: 0; max-width: none; }
+  #asSettingsModal td.as-source-url, #asAppDetailModal td.as-detail-value { overflow-wrap: anywhere; }
 
-  /* Footer cards */
-  #appstore .as-footer-cards{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1em;
-    margin-top: 1.5em;
+  @media (max-width: 900px) {
+    #appstore .as-grid.as-listview .as-app-card, #appstore .as-grid.as-listview .as-app-body { flex-direction: column; align-items: stretch; gap: 0; }
+    #appstore .as-grid.as-listview .as-app-head { flex: 0 0 auto; margin: 0 0 var(--zx-space-2); }
+    #appstore .as-grid.as-listview .as-app-desc, #appstore .as-grid.as-listview .as-app-tags { margin: 0 0 var(--zx-space-3); max-width: none; }
   }
-  #appstore .as-footer-card{
-    background-color: var(--zx-surface);
-    border: 1px solid var(--zx-border);
-    border-radius: 0.8em;
-    padding: 1.2em;
+  @media (max-width: 600px) {
+    #appstore .as-featured-inner { flex-direction: column; align-items: flex-start; gap: var(--zx-space-3); padding: var(--zx-space-4); }
+    #appstore .as-featured-icon { width: 56px; height: 56px; }
+    #appstore .as-featured-icon img { width: 36px; height: 36px; }
+    #appstore .as-featured-meta { flex-direction: row-reverse; align-items: center; justify-content: flex-end; align-self: stretch; text-align: left; }
+    #appstore .as-search { flex: 1 1 100%; max-width: none; }
+    #appstore .as-toolbar-right { flex: 1 1 100%; margin-left: 0; }
+    #appstore .as-toolbar-right .zx-select { flex: 1 1 8rem; min-width: 0; }
+    #appstore .as-view { display: none; }   /* one column on a phone: the two views would look the same */
+    /* the chips stay on one line and scroll sideways, like a tab strip */
+    #appstore .as-cats { flex-wrap: nowrap; overflow-x: auto; margin-left: calc(-1 * var(--zx-space-4)); margin-right: calc(-1 * var(--zx-space-4)); padding: 2px var(--zx-space-4); scrollbar-width: none; }
+    #appstore .as-cats::-webkit-scrollbar { display: none; }
+    #appstore .as-cat-item { min-height: 36px; flex: 0 0 auto; }
+    #appstore .as-grid { grid-template-columns: minmax(0, 1fr); gap: var(--zx-space-3); }
   }
-  #appstore .as-footer-card .title{
-    font-weight: bold;
-    color: var(--zx-text);
-    margin-bottom: 0.3em;
-  }
-  #appstore .as-footer-card p{
-    color: var(--zx-text-muted);
-    font-size: 0.9em;
-    margin-bottom: 0.5em;
-  }
-
-  @media screen and (max-width: 900px) {
-    #appstore .as-main{
-      flex-direction: column;
-    }
-    #appstore .as-sidebar{
-      width: 100%;
-    }
-    #appstore .as-featured-inner{
-      flex-direction: column;
-      text-align: center;
-    }
-    #appstore .as-featured-meta{
-      text-align: center;
-    }
-  }
-
-  /* Modal dark theme (modals are moved to body level by Semantic UI) */
-  body.darkTheme .ui.modal,
-  body.darkTheme .ui.modal > .header,
-  body.darkTheme .ui.modal > .content,
-  body.darkTheme .ui.modal > .actions{
-    background-color: var(--zx-surface);
-    color: var(--zx-text);
-  }
-  body.darkTheme .ui.modal > .header{
-    border-bottom: 1px solid var(--zx-border);
-  }
-  body.darkTheme .ui.modal > .actions{
-    border-top: 1px solid var(--zx-border);
-  }
-  body.darkTheme .ui.modal .table{
-    background-color: var(--zx-surface);
-    color: var(--zx-text);
-  }
-  body.darkTheme .ui.modal .table td{
-    border-color: var(--zx-border);
-  }
-  #appstore .as-app-name{ overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
-  #appstore .as-panel .zx-disclosure{ margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
-  #appstore .as-panel .zx-disclosure > summary{ padding: 0; font-weight: 700; }
-  #appstore .as-panel .zx-disclosure__body{ padding: var(--zx-space-3) 0 0; border: 0; }
-  #appstore .as-sidebar{ position: sticky; top: var(--zx-space-3); }
-  #appstore .as-toolbar, #appstore .as-main{ margin-top: var(--zx-space-4); }
-  #appstore .as-footer-links{ display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-5); margin-top: var(--zx-space-5); }
-  #appstore .as-footer-links a{ color: var(--zx-link); }
-  @media (max-width: 900px){ #appstore .as-sidebar{ position: static; } }
-  /* Phone: compact stats, one toolbar, filters behind a disclosure */
-  #appstore .as-filters > summary.as-filters-toggle{ display: none; }
-  #appstore .zx-page-header__actions{ align-self: flex-end; }
-  @media (max-width: 900px){
-    #appstore .as-filters > summary.as-filters-toggle{ display: flex; align-items: center; gap: var(--zx-space-2); cursor: pointer; min-height: var(--zx-touch); padding: 0 var(--zx-space-4); font-weight: 700; color: var(--zx-text); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
-    #appstore .as-filters[open] > summary.as-filters-toggle{ margin-bottom: var(--zx-space-3); }
-  }
-  @media (max-width: 600px){
-    #appstore .zx-page-header__actions{ align-self: stretch; }
-    #appstore .as-stats{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zx-space-2); }
-    #appstore .as-stats .as-stat-card{ padding: var(--zx-space-2) var(--zx-space-3); }
-    #appstore .as-stat-sub{ display: none; }
-    #appstore .as-stat-value{ font-size: var(--zx-fs-xl); }
-    #appstore .as-toolbar .as-search{ flex: 1 1 100%; max-width: none; }
-    #appstore .as-toolbar-right{ flex: 1 1 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--zx-space-2); }
-    #appstore .as-toolbar-right .ui.buttons{ display: none; }
-    #appstore .as-toolbar-right .ui.dropdown{ min-width: 0; width: 100%; }
-  }
-
+  @media (prefers-reduced-motion: reduce) { #appstore .as-cat-item, #appstore .as-featured-dot::before { transition: none; } }
 </style>
 <div class="standardContainer">
-  <div>
     <header class="zx-page-header">
       <div class="zx-page-header__main">
         <div class="zx-page-header__crumbs" data-zx-crumbs></div>
         <h2 class="zx-page-header__title">App Store</h2>
-        <p class="zx-page-header__sub">Extend Zoraxy with plugins and integrations.</p>
+        <p class="zx-page-header__sub">Add plugins from the official and community sources. Nothing is installed until you press Install; installed apps are switched on and off in the Plugin Manager.</p>
       </div>
-      <div class="zx-page-header__actions zx-btn-row">
-        <button class="ui button" onclick="asOpenSettings();"><i class="cog icon"></i> Settings</button>
-        <button id="asRefreshBtn" class="ui button" onclick="asResyncStore(this);"><i class="sync alternate icon"></i> Refresh</button>
+      <div class="zx-page-header__actions">
+        <button type="button" class="zx-btn zx-btn--secondary" onclick="asOpenSettings();"><i class="server icon" aria-hidden="true"></i> Sources</button>
+        <button type="button" id="asRefreshBtn" class="zx-btn zx-btn--secondary" onclick="asResyncStore(this);" title="Download the list of apps again from every source"><i class="sync alternate icon" aria-hidden="true"></i> Refresh</button>
       </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages and help">
+      <span class="zx-related__title">Related</span>
+      <ul>
+        <li><a href="#plugins" data-nav-open="plugins">Plugin Manager</a> <span>Switch installed apps on or off and assign them to sites</span></li>
+        <li><a href="https://zoraxy.aroz.org/plugins/html/" target="_blank" rel="noopener">Plugin documentation</a> <span>Build an app of your own (opens a new tab)</span></li>
+        <li><a href="https://github.com/aroz-online/zoraxy-official-plugins/issues" target="_blank" rel="noopener">Request an app</a> <span>Ask for one on GitHub (opens a new tab)</span></li>
+      </ul>
+    </aside>
 
-    <!-- Stat tiles -->
-    <div class="as-stats">
-      <div class="as-stat-card">
-        <div class="as-stat-title">Total apps</div>
-        <div class="as-stat-value" id="asStatTotal">-</div>
-        <div class="as-stat-sub">Community and official</div>
-      </div>
-      <div class="as-stat-card">
-        <div class="as-stat-title">Installed</div>
-        <div class="as-stat-value" id="asStatInstalled">-</div>
-        <div class="as-stat-sub">On this server</div>
-      </div>
-      <div class="as-stat-card">
-        <div class="as-stat-title">Updates available</div>
-        <div class="as-stat-value" id="asStatUpdates">-</div>
-        <div class="as-stat-sub">Apps with a newer version</div>
-      </div>
+    <div class="zx-statrow">
+      <div class="zx-stat"><span class="zx-stat__label">Available</span><span class="zx-stat__value" id="asStatTotal">-</span><span class="zx-stat__hint">Apps in your sources</span></div>
+      <div class="zx-stat"><span class="zx-stat__label">Installed</span><span class="zx-stat__value" id="asStatInstalled">-</span><span class="zx-stat__hint">On this server</span></div>
+      <div class="zx-stat"><span class="zx-stat__label">Updates available</span><span class="zx-stat__value" id="asStatUpdates">-</span><span class="zx-stat__hint" id="asStatUpdatesHint">Installed apps with a newer version</span></div>
     </div>
 
-    <!-- Toolbar -->
+    <!-- Featured app (hidden while a search or a category filter is active) -->
+    <section class="zx-card as-featured" id="asFeaturedBanner" aria-label="Featured app">
+      <div class="as-featured-inner">
+        <div class="as-featured-icon"><img id="asFeaturedIcon" src="img/plugin_icon.png" alt=""></div>
+        <div class="as-featured-main">
+          <span class="as-featured-label">Featured app</span>
+          <h3 class="as-featured-title" id="asFeaturedTitle"></h3>
+          <p class="as-featured-desc" id="asFeaturedDesc"></p>
+          <div class="as-app-tags" id="asFeaturedTags"></div>
+        </div>
+        <div class="as-featured-meta">
+          <div class="as-featured-version" id="asFeaturedVersion"></div>
+          <div id="asFeaturedAction"></div>
+        </div>
+      </div>
+      <div class="as-featured-dots" id="asFeaturedDots" role="group" aria-label="Featured apps"></div>
+    </section>
+
     <div class="as-toolbar">
-      <div class="as-search ui icon input">
-        <input id="asSearchInput" type="text" placeholder="Search apps...">
-        <i class="search icon"></i>
+      <div class="as-search">
+        <i class="search icon" aria-hidden="true"></i>
+        <input class="zx-input" id="asSearchInput" type="search" placeholder="Search apps by name, author or description" aria-label="Search apps" autocomplete="off">
       </div>
       <div class="as-toolbar-right">
-        <div id="asCategoryDropdown" class="ui selection dropdown">
-          <input type="hidden" name="category" value="all">
-          <i class="dropdown icon"></i>
-          <div class="default text">All Categories</div>
-          <div class="menu" id="asCategoryDropdownMenu">
-            <div class="item" data-value="all">All Categories</div>
-          </div>
-        </div>
-        <div id="asSortDropdown" class="ui selection dropdown">
-          <input type="hidden" name="sort" value="name_asc">
-          <i class="dropdown icon"></i>
-          <div class="default text">Sort by: Name</div>
-          <div class="menu">
-            <div class="item" data-value="name_asc">Sort by: Name (A-Z)</div>
-            <div class="item" data-value="name_desc">Sort by: Name (Z-A)</div>
-            <div class="item" data-value="version_desc">Sort by: Version</div>
-            <div class="item" data-value="author_asc">Sort by: Author</div>
-          </div>
-        </div>
-        <div class="ui basic icon buttons">
-          <button id="asGridViewBtn" class="ui active button" title="Grid view" onclick="asSetViewMode('grid');"><i class="th icon"></i></button>
-          <button id="asListViewBtn" class="ui button" title="List view" onclick="asSetViewMode('list');"><i class="list icon"></i></button>
+        <select class="zx-select" id="asSourceSelect" aria-label="Source" hidden></select>
+        <select class="zx-select" id="asSortSelect" aria-label="Sort apps">
+          <option value="name_asc">Name, A to Z</option>
+          <option value="name_desc">Name, Z to A</option>
+          <option value="version_desc">Highest version first</option>
+          <option value="author_asc">Author</option>
+        </select>
+        <div class="zx-segmented as-view" role="radiogroup" aria-label="View">
+          <button type="button" id="asGridViewBtn" class="zx-segmented__item" role="radio" aria-checked="true" title="Grid view" aria-label="Grid view" onclick="asSetViewMode('grid');"><i class="th large icon" aria-hidden="true"></i></button>
+          <button type="button" id="asListViewBtn" class="zx-segmented__item" role="radio" aria-checked="false" title="List view" aria-label="List view" onclick="asSetViewMode('list');"><i class="list icon" aria-hidden="true"></i></button>
         </div>
       </div>
     </div>
+    <div class="as-cats" id="asCategoryList" role="group" aria-label="Category"></div>
+    <p class="zx-help as-result-line" id="asResultLine" aria-live="polite"></p>
 
-    <!-- Main -->
-    <div class="as-main">
-      <!-- Sidebar -->
-      <div class="as-sidebar">
-       <details class="as-filters" id="asFilters" open>
-        <summary class="as-filters-toggle"><i class="filter icon"></i> Filters</summary>
-        <div class="as-panel">
-          <div class="as-panel-title">Categories</div>
-          <div id="asCategoryList"></div>
-        </div>
-        <div class="as-panel">
-          <div class="as-panel-title">Source</div>
-          <div id="asSourceList"></div>
-        </div>
-        <div class="as-panel">
-          <details class="zx-disclosure">
-            <summary>Compatibility</summary>
-            <div class="zx-disclosure__body" id="asCompatList"></div>
-          </details>
-        </div>
-       </details>
-      </div>
-
-      <!-- Content -->
-      <div class="as-content">
-        <!-- Featured app banner -->
-        <div class="as-featured" id="asFeaturedBanner">
-          <div class="as-featured-inner">
-            <div class="as-featured-icon"><img id="asFeaturedIcon" src="img/plugin_icon.png" alt=""></div>
-            <div style="flex: 1; min-width: 0;">
-              <span class="as-featured-label">Featured App</span>
-              <div class="as-featured-title" id="asFeaturedTitle"></div>
-              <div class="as-featured-desc" id="asFeaturedDesc"></div>
-              <div class="as-app-tags" id="asFeaturedTags"></div>
-            </div>
-            <div class="as-featured-meta">
-              <div class="as-featured-version" id="asFeaturedVersion"></div>
-              <div id="asFeaturedAction"></div>
-            </div>
-          </div>
-          <div class="as-featured-dots" id="asFeaturedDots"></div>
-        </div>
-
-        <!-- Apps grid -->
-        <div class="as-grid" id="asAppGrid"></div>
-        <div class="as-noresult" id="asNoResult" style="display: none;">
-          <i class="huge search icon" style="opacity: 0.3;"></i>
-          <p>No apps match your filters.</p>
-        </div>
-        <div class="as-loadmore" id="asLoadMoreWrapper" style="display: none;">
-          <button class="ui button" onclick="asLoadMore();">Load more apps <i class="chevron down icon"></i></button>
-        </div>
-      </div>
+    <div class="as-grid" id="asAppGrid"></div>
+    <div class="zx-empty" id="asNoResult" style="display: none;">
+      <div class="zx-empty__icon" aria-hidden="true"><i class="search icon"></i></div>
+      <div class="zx-empty__title">No apps match your filters</div>
+      <p class="zx-empty__text" id="asNoResultText">Try another word or category, or clear the filters to see every app.</p>
+      <button type="button" class="zx-btn zx-btn--secondary" onclick="asClearFilters();">Clear filters</button>
+    </div>
+    <div class="as-loadmore" id="asLoadMoreWrapper" style="display: none;">
+      <button type="button" class="zx-btn zx-btn--secondary" onclick="asLoadMore();">Show more apps</button>
     </div>
 
-    <!-- Help links -->
-    <div class="as-footer-links">
-      <a href="https://zoraxy.aroz.org/plugins/html/" target="_blank" rel="noopener"><i class="code icon"></i> Build an app</a>
-      <a href="https://github.com/aroz-online/zoraxy-official-plugins/issues" target="_blank" rel="noopener"><i class="comment outline icon"></i> Request an app</a>
-      <a href="https://zoraxy.aroz.org/plugins/html/" target="_blank" rel="noopener"><i class="question circle outline icon"></i> App Store help</a>
-    </div>
-  </div>
+    <details class="zx-disclosure as-compat">
+      <summary>Platforms these apps are built for</summary>
+      <div class="zx-disclosure__body">
+        <p class="zx-help" style="margin-top: 0;">How many apps offer a download for each platform. Zoraxy only installs the build that matches this server.</p>
+        <div class="as-compat-list" id="asCompatList"></div>
+      </div>
+    </details>
 </div>
 
-<!-- App Store Settings Modal -->
+<!-- Sources dialog -->
 <div class="ui small modal" id="asSettingsModal">
   <i class="close icon"></i>
-  <div class="header">App Store Settings</div>
-  <div class="content">
-    <h4 class="ui header">Plugin store sources</h4>
-    <p style="color: var(--text_color_secondary);">Apps are loaded from the sources below. You can add community plugin index URLs as additional sources.</p>
-    <table class="ui celled unstackable table">
+  <div class="header">App Store sources</div>
+  <div class="scrolling content">
+    <p class="zx-help" style="margin-top: 0;">Apps are loaded from the sources below. The official source is built in; add the address of a community plugin index to see its apps too. Only add sources you trust: an app runs on this server.</p>
+    <div class="zx-table-wrap"><table class="zx-table">
       <thead>
         <tr>
-          <th>Source URL</th>
-          <th class="collapsing">Type</th>
-          <th class="collapsing">Action</th>
+          <th>Source address</th>
+          <th>Type</th>
+          <th><span class="zx-sr-only">Actions</span></th>
         </tr>
       </thead>
       <tbody id="asSourceTable"></tbody>
-    </table>
-    <div class="ui fluid action input">
-      <input id="asNewSourceURL" type="text" placeholder="https://example.com/plugins/index.json">
-      <button class="ui primary button" onclick="asAddSource(this);"><i class="add icon"></i> Add source</button>
+    </table></div>
+    <div class="as-source-add">
+      <input class="zx-input" id="asNewSourceURL" type="url" placeholder="https://example.com/plugins/index.json" aria-label="Address of a plugin index">
+      <button type="button" class="zx-btn zx-btn--primary" onclick="asAddSource(this);"><i class="add icon" aria-hidden="true"></i> Add source</button>
     </div>
-    <small>The source URL must point to a plugin index JSON file following the Zoraxy plugin list format.</small>
+    <p class="zx-help">The address must point to a plugin index JSON file in the Zoraxy plugin list format.</p>
   </div>
   <div class="actions">
-    <button class="ui button" onclick="$('#asSettingsModal').modal('hide');">Close</button>
+    <button type="button" class="ui button" onclick="$('#asSettingsModal').modal('hide');">Close</button>
   </div>
 </div>
 
-<!-- App Details Modal -->
+<!-- App details dialog -->
 <div class="ui modal" id="asAppDetailModal">
   <i class="close icon"></i>
-  <div class="header" id="asAppDetailTitle">App Information</div>
-  <div class="content" style="max-height: 60vh; overflow-y: auto;">
-    <table class="ui celled unstackable table">
+  <div class="header" id="asAppDetailTitle">App information</div>
+  <div class="scrolling content">
+    <div class="zx-table-wrap"><table class="zx-table">
       <tbody id="asAppDetailTable"></tbody>
-    </table>
+    </table></div>
   </div>
   <div class="actions">
-    <button class="ui button" onclick="$('#asAppDetailModal').modal('hide');">Close</button>
+    <button type="button" class="ui button" onclick="$('#asAppDetailModal').modal('hide');">Close</button>
   </div>
 </div>
 
 <script>
-(function(){
-  function sync(){ var d = document.getElementById("asFilters"); if (!d) return; var wide = window.innerWidth > 900; if (d.dataset.wide !== String(wide)){ d.dataset.wide = String(wide); d.open = wide; } }
-  sync(); $(window).on("resize", sync);
-})();
-//Tag chips of an app: preview marker, category and kind; the kind is left out when it repeats the category
-function asTagsHtml(app, spec){
-  const cat = asGetAppCategory(app);
-  const kind = spec.type == 0 ? "Router" : "Utilities";
-  return (asIsPreviewApp(app) ? `<span class="as-tag as-tag-preview">Preview</span>` : "") +
-    `<span class="as-tag">${asEscapeHtml(cat)}</span>` +
-    (String(cat).toLowerCase() === kind.toLowerCase() ? "" : `<span class="as-tag">${kind}</span>`);
-}
-
   /*
     Zoraxy App Store
 
@@ -607,7 +251,7 @@ function asTagsHtml(app, spec){
   var asDisabledSources = {}; //Source URL => true if unchecked
   var asViewMode = "grid";
   var asShownCount = 0;
-  var AS_PAGE_SIZE = 8;
+  var AS_PAGE_SIZE = 12;
 
   //Featured apps (apps released by aroz.org, cycled in the banner)
   var asFeaturedApps = [];
@@ -639,7 +283,7 @@ function asTagsHtml(app, spec){
       }
     }
     //Fallback to plugin type
-    return spec.type == 0 ? "Traffic Management" : "Utilities";
+    return spec.type == 0 ? "Traffic management" : "Utilities";
   }
 
   function asGetVersionString(spec) {
@@ -729,7 +373,7 @@ function asTagsHtml(app, spec){
   /* ===== Filtering & sorting ===== */
   function asGetFilteredApps() {
     const query = $("#asSearchInput").val().toLowerCase().trim();
-    const sortMode = $("#asSortDropdown").dropdown("get value") || "name_asc";
+    const sortMode = $("#asSortSelect").val() || "name_asc";
 
     let apps = asAvailableApps.filter(app => {
       const spec = app.PluginIntroSpect;
@@ -777,6 +421,34 @@ function asTagsHtml(app, spec){
   }
 
   /* ===== Rendering ===== */
+  //Kit buttons show their own spinner; the old Fomantic buttons of the dialogs keep theirs
+  function asBusy(btn, on) {
+    if (btn === undefined || btn === null) { return; }
+    if ($(btn).hasClass("zx-btn")) { ZxUI.setLoading(btn, on); } else { $(btn).toggleClass("loading disabled", !!on); }
+  }
+
+  //Tag chips of an app: preview marker, an available update and the category
+  function asTagsHtml(app, spec) {
+    const updateInfo = asGetUpdateInfo(spec.id);
+    return (asIsPreviewApp(app) ? `<span class="zx-badge zx-badge--warn" title="${asEscapeHtml(t("This app has no icon of its own yet: it may still be unfinished."))}">${asEscapeHtml(t("Preview"))}</span>` : "") +
+      (asIsInstalled(spec.id) && updateInfo != undefined && updateInfo.updateAvailable ? `<span class="zx-badge zx-badge--info">${asEscapeHtml(tf("Update to v{0}", updateInfo.latestVersion))}</span>` : "") +
+      `<span class="zx-badge">${asEscapeHtml(t(asGetAppCategory(app)))}</span>`;
+  }
+
+  //The action of an app: Install (secondary on a card, primary for the featured app), Update, or the Installed state
+  function asActionHtml(spec, featured) {
+    const id = asEscapeAttr(spec.id), updateInfo = asGetUpdateInfo(spec.id);
+    const size = featured ? "" : " zx-btn--sm";
+    if (asIsInstalled(spec.id)) {
+      if (updateInfo != undefined && updateInfo.updateAvailable) {
+        return `<button type="button" class="zx-btn zx-btn--secondary${size}" data-as-update="${id}" title="${asEscapeAttr(tf("Update to v{0}", updateInfo.latestVersion))}"><i class="arrow alternate circle up outline icon" aria-hidden="true"></i> ${asEscapeHtml(t("Update"))}</button>`;
+      }
+      return `<span class="zx-badge zx-badge--dot zx-badge--ok">${asEscapeHtml(t("Installed"))}</span>`;
+    }
+    return `<button type="button" class="zx-btn ${featured ? "zx-btn--primary" : "zx-btn--secondary"}${size}" data-as-install="${id}" aria-label="${asEscapeAttr(tf("Install {0}", spec.name))}">${featured ? '<i class="download icon" aria-hidden="true"></i> ' : ""}${asEscapeHtml(t("Install"))}</button>`;
+  }
+  function asEscapeAttr(text) { return ZxUI.esc(text); }
+
   function asRenderAll() {
     asRenderStats();
     asRenderCategorySidebar();
@@ -788,105 +460,70 @@ function asTagsHtml(app, spec){
   }
 
   function asRenderStats() {
-    $("#asStatTotal").text(asAvailableApps.length);
+    const updates = asUpdateInfos.filter(u => u.updateAvailable).length;
+    $("#asStatTotal").text(asDedupeApps(asAvailableApps).length);
     $("#asStatInstalled").text(asInstalledApps.length);
-    $("#asStatUpdates").text(asUpdateInfos.filter(u => u.updateAvailable).length);
-
-    const categories = new Set(asAvailableApps.map(a => asGetAppCategory(a)));
-    $("#asStatCategories").text(categories.size);
+    $("#asStatUpdates").text(updates);
+    $("#asStatUpdatesHint").text(asInstalledApps.length == 0 ? t("Nothing installed yet") : (updates == 0 ? t("Everything installed is current") : t("Installed apps with a newer version")));
   }
 
+  //Category chips with a count (the id asCategoryList is kept from the former sidebar)
   function asRenderCategorySidebar() {
-    //Count apps per category
     let counts = {};
-    asAvailableApps.forEach(app => {
+    const all = asDedupeApps(asAvailableApps);
+    all.forEach(app => {
       const cat = asGetAppCategory(app);
       counts[cat] = (counts[cat] || 0) + 1;
     });
 
-    const catNames = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    const catNames = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
     if (asActiveCategory != "all" && !catNames.includes(asActiveCategory)) {
       asActiveCategory = "all";
     }
 
-    //Sidebar list
     const list = $("#asCategoryList");
     list.empty();
-    list.append(`
-      <div class="as-cat-item ${asActiveCategory == "all" ? "active" : ""}" data-category="all">
-        <span>All</span><span class="as-count-chip">${asAvailableApps.length}</span>
-      </div>
-    `);
-    catNames.forEach(cat => {
-      list.append(`
-        <div class="as-cat-item ${asActiveCategory == cat ? "active" : ""}" data-category="${asEscapeHtml(cat)}">
-          <span>${asEscapeHtml(cat)}</span><span class="as-count-chip">${counts[cat]}</span>
-        </div>
-      `);
-    });
-    list.find(".as-cat-item").on("click", function () {
-      asSetActiveCategory($(this).attr("data-category"));
-    });
-
-    //Toolbar dropdown
-    const menu = $("#asCategoryDropdownMenu");
-    menu.html(`<div class="item" data-value="all">All Categories</div>`);
-    catNames.forEach(cat => {
-      menu.append(`<div class="item" data-value="${asEscapeHtml(cat)}">${asEscapeHtml(cat)}</div>`);
-    });
-    $("#asCategoryDropdown").dropdown("refresh");
-    $("#asCategoryDropdown").dropdown("set selected", asActiveCategory);
+    const chip = function (value, label, count) {
+      const on = asActiveCategory == value;
+      return $(`<button type="button" class="as-cat-item${on ? " active" : ""}" aria-pressed="${on ? "true" : "false"}"></button>`).attr("data-category", value)
+        .append($("<span></span>").text(label), $('<span class="as-count-chip"></span>').text(count));
+    };
+    list.append(chip("all", t("All"), all.length));
+    catNames.forEach(cat => { list.append(chip(cat, t(cat), counts[cat])); });
+    list.toggle(catNames.length > 1);
   }
 
   function asSetActiveCategory(category) {
     asActiveCategory = category;
-    //Update sidebar highlight
-    $("#asCategoryList .as-cat-item").removeClass("active");
-    $(`#asCategoryList .as-cat-item[data-category="${category}"]`).addClass("active");
-    //Sync toolbar dropdown without retriggering the change handler
-    if ($("#asCategoryDropdown").dropdown("get value") != category) {
-      $("#asCategoryDropdown").dropdown("set selected", category);
-    }
+    $("#asCategoryList .as-cat-item").each(function () {
+      const on = $(this).attr("data-category") == category;
+      $(this).toggleClass("active", on).attr("aria-pressed", on ? "true" : "false");
+    });
     asShownCount = AS_PAGE_SIZE;
     asRenderAppGrid();
   }
 
+  //Source filter: a select, only shown when there is more than one source to choose from
+  function asSourceLabel(source) {
+    let hostname = "";
+    try { hostname = new URL(source.url).hostname; } catch (e) {}
+    return source.official ? t("Official") : (hostname != "" ? hostname : t("Community"));
+  }
   function asRenderSourceSidebar() {
-    const list = $("#asSourceList");
-    list.empty();
-    if (asStoreSources.length == 0) {
-      list.append(`<div style="color: var(--text_color_secondary); font-size: 0.9em;">No sources registered</div>`);
-      return;
-    }
+    const sel = $("#asSourceSelect"), chosen = sel.val() || "";
+    sel.empty().append($("<option></option>").attr("value", "").text(t("All sources")));
     asStoreSources.forEach(source => {
       const count = asAvailableApps.filter(a => a.Source == source.url).length;
-      let label = source.official ? "Official" : "Community";
-      let hostname = "";
-      try { hostname = new URL(source.url).hostname; } catch (e) {}
-      if (!source.official && hostname != "") {
-        label = hostname;
-      }
-      const checked = asDisabledSources[source.url] ? "" : "checked";
-      const item = $(`
-        <div class="as-source-item">
-          <div class="ui checkbox">
-            <input type="checkbox" ${checked}>
-            <label title="${asEscapeHtml(source.url)}">${asEscapeHtml(label)}</label>
-          </div>
-          <span class="as-count-chip">${count}</span>
-        </div>
-      `);
-      item.find("input").on("change", function () {
-        if (this.checked) {
-          delete asDisabledSources[source.url];
-        } else {
-          asDisabledSources[source.url] = true;
-        }
-        asShownCount = AS_PAGE_SIZE;
-        asRenderAppGrid();
-      });
-      list.append(item);
+      sel.append($("<option></option>").attr("value", source.url).text(asSourceLabel(source) + " (" + count + ")"));
     });
+    sel.val(asStoreSources.some(s => s.url == chosen) ? chosen : "");
+    sel.prop("hidden", asStoreSources.length < 2);
+    asApplySourceFilter();
+  }
+  function asApplySourceFilter() {
+    const chosen = $("#asSourceSelect").val() || "";
+    asDisabledSources = {};
+    if (chosen != "") { asStoreSources.forEach(s => { if (s.url != chosen) { asDisabledSources[s.url] = true; } }); }
   }
 
   function asRenderCompatSidebar() {
@@ -908,17 +545,17 @@ function asTagsHtml(app, spec){
     list.empty();
     const platforms = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
     if (platforms.length == 0) {
-      list.append(`<div class="zx-help">No platform info</div>`);
+      list.append(`<span class="zx-help">${asEscapeHtml(t("The sources do not say which platforms their apps support."))}</span>`);
       return;
     }
     platforms.forEach(platform => {
-      list.append(`<span class="as-compat-chip" title="${asEscapeHtml(platform)}">${asEscapeHtml(asPlatformName(platform))} <b>${counts[platform]}</b></span>`);
+      list.append(`<span class="zx-badge" title="${asEscapeAttr(platform)}">${asEscapeHtml(asPlatformName(platform))} <b>${counts[platform]}</b></span>`);
     });
   }
 
-  /* Featured apps banner (cycles through apps released by aroz.org) */
+  /* Featured apps (apps released by aroz.org, shown one at a time) */
   function asRenderFeatured() {
-    asFeaturedApps = asAvailableApps.filter(app => {
+    asFeaturedApps = asDedupeApps(asAvailableApps).filter(app => {
       return (app.PluginIntroSpect.author || "").toLowerCase().includes("aroz");
     });
 
@@ -938,11 +575,15 @@ function asTagsHtml(app, spec){
     }
     asShowFeaturedApp(asFeaturedIndex);
 
-    if (asFeaturedApps.length > 1) {
+    //Rotates quietly; stands still while it is pointed at or holds the focus, and for readers who asked for less motion
+    const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (asFeaturedApps.length > 1 && !calm) {
       asFeaturedTimer = setInterval(function () {
+        const box = document.getElementById("asFeaturedBanner");
+        if (!box || box.matches(":hover") || box.contains(document.activeElement) || document.hidden) { return; }
         asFeaturedIndex = (asFeaturedIndex + 1) % asFeaturedApps.length;
         asShowFeaturedApp(asFeaturedIndex);
-      }, 6000);
+      }, 8000);
     }
   }
 
@@ -954,35 +595,22 @@ function asTagsHtml(app, spec){
     const spec = app.PluginIntroSpect;
     $("#asFeaturedIcon").attr("src", asGetIconSrc(app));
     $("#asFeaturedTitle").text(spec.name);
-    $("#asFeaturedDesc").text(spec.description);
-    $("#asFeaturedVersion").html(`v${asEscapeHtml(asGetVersionString(spec))} by ${asEscapeHtml(spec.author)}`);
-    $("#asFeaturedTags").html(`
-      ${asTagsHtml(app, spec)}
-    `);
+    $("#asFeaturedDesc").text(spec.description).attr("title", spec.description);
+    $("#asFeaturedVersion").text(tf("v{0} by {1}", asGetVersionString(spec), spec.author));
+    $("#asFeaturedTags").html(asTagsHtml(app, spec));
+    $("#asFeaturedAction").html(asActionHtml(spec, true));
 
-    //Action button
-    const action = $("#asFeaturedAction");
-    action.empty();
-    const updateInfo = asGetUpdateInfo(spec.id);
-    if (asIsInstalled(spec.id)) {
-      if (updateInfo != undefined && updateInfo.updateAvailable) {
-        action.html(`<button class="ui orange button" onclick="asUpdateApp('${asEscapeHtml(spec.id)}', this);"><i class="arrow alternate circle up icon"></i> Update</button>`);
-      } else {
-        action.html(`<span class="as-installed-label"><i class="check circle icon"></i> Installed</span>`);
-      }
-    } else {
-      action.html(`<button class="ui blue button" onclick="asInstallApp('${asEscapeHtml(spec.id)}', this);"><i class="download icon"></i> Install</button>`);
-    }
-
-    //Dots
+    //Dots: one button per featured app
     const dots = $("#asFeaturedDots");
     dots.empty();
     if (asFeaturedApps.length > 1) {
-      asFeaturedApps.forEach((_, i) => {
-        const dot = $(`<span class="as-featured-dot ${i == index ? "active" : ""}"></span>`);
+      asFeaturedApps.forEach((other, i) => {
+        const dot = $(`<button type="button" class="as-featured-dot ${i == index ? "active" : ""}"></button>`)
+          .attr("aria-label", tf("Show {0}", other.PluginIntroSpect.name)).attr("aria-pressed", i == index ? "true" : "false");
         dot.on("click", function () {
           asFeaturedIndex = i;
           asShowFeaturedApp(i);
+          $("#asFeaturedDots .as-featured-dot").eq(i).trigger("focus");
         });
         dots.append(dot);
       });
@@ -995,62 +623,52 @@ function asTagsHtml(app, spec){
     const grid = $("#asAppGrid");
     grid.empty();
 
-    //The featured banner is for browsing: while a search or a category filter is active it would show an app
+    //The featured app is for browsing: while a search or a filter is active it would show an app
     //that has nothing to do with the result (or sit above "No apps match your filters")
-    const filtering = $("#asSearchInput").val().trim() != "" || asActiveCategory != "all";
+    const query = $("#asSearchInput").val().trim();
+    const filtering = query != "" || asActiveCategory != "all" || ($("#asSourceSelect").val() || "") != "";
     $("#asFeaturedBanner").toggle(!filtering && asFeaturedApps.length > 0);
 
     if (apps.length == 0) {
+      const empty = asAvailableApps.length == 0;
+      $("#asNoResult .zx-empty__title").text(empty ? t("No apps to show yet") : t("No apps match your filters"));
+      $("#asNoResultText").text(empty ? t("The list of apps could not be loaded, or your sources are empty. Press Refresh to download it again.") : t("Try another word or category, or clear the filters to see every app."));
+      $("#asNoResult button").toggle(!empty);
       $("#asNoResult").show();
       $("#asLoadMoreWrapper").hide();
+      $("#asResultLine").text("");
       return;
     }
     $("#asNoResult").hide();
+    const n = apps.length, shown = Math.min(n, asShownCount);
+    $("#asResultLine").text((asActiveCategory != "all" ? (n == 1 ? tf("1 app in {0}", t(asActiveCategory)) : tf("{0} apps in {1}", n, t(asActiveCategory))) : (n == 1 ? t("1 app") : tf("{0} apps", n))) +
+      (shown < n ? " · " + tf("showing the first {0}", shown) : ""));
 
-    const appsToShow = apps.slice(0, asShownCount);
-    appsToShow.forEach(app => {
+    apps.slice(0, asShownCount).forEach(app => {
       const spec = app.PluginIntroSpect;
-      const escapedId = asEscapeHtml(spec.id);
-      const updateInfo = asGetUpdateInfo(spec.id);
-
-      let actionHtml = "";
-      if (asIsInstalled(spec.id)) {
-        if (updateInfo != undefined && updateInfo.updateAvailable) {
-          actionHtml = `<button class="ui mini orange button" title="Update to v${asEscapeHtml(updateInfo.latestVersion)}" onclick="asUpdateApp('${escapedId}', this);"><i class="arrow alternate circle up icon"></i> Update</button>`;
-        } else {
-          actionHtml = `<span class="as-installed-label"><i class="check circle icon"></i> Installed</span>`;
-        }
-      } else {
-        actionHtml = `<button class="zx-btn zx-btn--primary zx-btn--sm" onclick="asInstallApp('${escapedId}', this);">Install</button>`;
-      }
-
+      const id = asEscapeAttr(spec.id);
       grid.append(`
-        <div class="as-app-card" data-appid="${escapedId}">
+        <article class="as-app-card" data-appid="${id}">
           <div class="as-app-body">
             <div class="as-app-head">
-              <div class="as-app-icon"><img src="${asEscapeHtml(asGetIconSrc(app))}" alt="${asEscapeHtml(spec.name)}"></div>
-              <div style="min-width: 0;">
-                <div class="as-app-name" title="${asEscapeHtml(spec.name)}" onclick="asShowAppDetails('${escapedId}');">${asEscapeHtml(spec.name)}</div>
+              <div class="as-app-icon"><img src="${asEscapeAttr(asGetIconSrc(app))}" alt="" loading="lazy"></div>
+              <div class="as-app-id">
+                <button type="button" class="as-app-name" data-as-details="${id}" title="${asEscapeAttr(t("Show details"))}">${asEscapeHtml(spec.name)}</button>
+                <span class="as-app-author">${asEscapeHtml(tf("by {0}", spec.author || t("an unknown author")))}</span>
               </div>
             </div>
-            <div class="as-app-desc">${asEscapeHtml(spec.description)}</div>
-            <div class="as-app-tags">
-              ${asTagsHtml(app, spec)}
-            </div>
+            <p class="as-app-desc" title="${asEscapeAttr(spec.description)}">${asEscapeHtml(spec.description)}</p>
+            <div class="as-app-tags">${asTagsHtml(app, spec)}</div>
           </div>
           <div class="as-app-footer">
-            <span class="as-app-version" title="by ${asEscapeHtml(spec.author)}">v${asEscapeHtml(asGetVersionString(spec))} · ${asEscapeHtml(spec.author)}</span>
-            ${actionHtml}
+            <span class="as-app-version">v${asEscapeHtml(asGetVersionString(spec))}</span>
+            ${asActionHtml(spec, false)}
           </div>
-        </div>
+        </article>
       `);
     });
 
-    if (apps.length > asShownCount) {
-      $("#asLoadMoreWrapper").show();
-    } else {
-      $("#asLoadMoreWrapper").hide();
-    }
+    $("#asLoadMoreWrapper").toggle(apps.length > asShownCount);
   }
 
   function asLoadMore() {
@@ -1058,23 +676,24 @@ function asTagsHtml(app, spec){
     asRenderAppGrid();
   }
 
+  function asClearFilters() {
+    $("#asSearchInput").val("");
+    $("#asSourceSelect").val("");
+    asApplySourceFilter();
+    asSetActiveCategory("all");
+  }
+
   function asSetViewMode(mode) {
     asViewMode = mode;
-    if (mode == "list") {
-      $("#asAppGrid").addClass("as-listview");
-      $("#asListViewBtn").addClass("active");
-      $("#asGridViewBtn").removeClass("active");
-    } else {
-      $("#asAppGrid").removeClass("as-listview");
-      $("#asGridViewBtn").addClass("active");
-      $("#asListViewBtn").removeClass("active");
-    }
+    $("#asAppGrid").toggleClass("as-listview", mode == "list");
+    $("#asListViewBtn").attr("aria-checked", mode == "list" ? "true" : "false");
+    $("#asGridViewBtn").attr("aria-checked", mode == "list" ? "false" : "true");
   }
 
   /* ===== App actions ===== */
   function asInstallApp(pluginID, btn = undefined) {
     if (btn !== undefined) {
-      $(btn).addClass("loading disabled");
+      asBusy(btn, true);
     }
     $.cjax({
       url: "/api/plugins/store/install",
@@ -1082,12 +701,12 @@ function asTagsHtml(app, spec){
       data: { "pluginID": pluginID },
       success: function (data) {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
         if (data.error != undefined) {
           msgbox(data.error, false);
         } else {
-          msgbox("App installed successfully", true);
+          msgbox(t("App installed"), true);
           asLoadData();
           //Also refresh the plugin manager views if loaded
           if (typeof (initiatePluginList) != "undefined") { initiatePluginList(); }
@@ -1096,9 +715,9 @@ function asTagsHtml(app, spec){
       },
       error: function () {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
-        msgbox("An error occurred while installing the app", false);
+        msgbox(t("The app could not be installed. Check the connection of this server and try again."), false);
       }
     });
   }
@@ -1107,17 +726,17 @@ function asTagsHtml(app, spec){
     const app = asAvailableApps.find(a => a.PluginIntroSpect.id == pluginID);
     const updateInfo = asGetUpdateInfo(pluginID);
     if (app === undefined || updateInfo === undefined) {
-      msgbox("App not found", false);
+      msgbox(t("App not found"), false);
       return;
     }
 
     //Ask the user to confirm before overwriting the installed app
-    confirmBox(`Update ${app.PluginIntroSpect.name} from v${updateInfo.installedVersion} to v${updateInfo.latestVersion}?`, function (choice) {
+    confirmBox(tf("Update {0} from v{1} to v{2}?", app.PluginIntroSpect.name, updateInfo.installedVersion, updateInfo.latestVersion), function (choice) {
       if (choice != true) {
         return;
       }
       if (btn !== undefined) {
-        $(btn).addClass("loading disabled");
+        asBusy(btn, true);
       }
       $.cjax({
         url: "/api/plugins/store/update",
@@ -1125,12 +744,12 @@ function asTagsHtml(app, spec){
         data: { "pluginID": pluginID },
         success: function (data) {
           if (btn !== undefined) {
-            $(btn).removeClass("loading disabled");
+            asBusy(btn, false);
           }
           if (data.error != undefined) {
             msgbox(data.error, false);
           } else {
-            msgbox(`${app.PluginIntroSpect.name} updated to v${updateInfo.latestVersion}`, true);
+            msgbox(tf("{0} updated to v{1}", app.PluginIntroSpect.name, updateInfo.latestVersion), true);
             asLoadData();
             //Also refresh the plugin manager views if loaded
             if (typeof (initiatePluginList) != "undefined") { initiatePluginList(); }
@@ -1139,9 +758,9 @@ function asTagsHtml(app, spec){
         },
         error: function () {
           if (btn !== undefined) {
-            $(btn).removeClass("loading disabled");
+            asBusy(btn, false);
           }
-          msgbox("An error occurred while updating the app", false);
+          msgbox(t("The app could not be updated. Check the connection of this server and try again."), false);
         }
       });
     });
@@ -1149,73 +768,75 @@ function asTagsHtml(app, spec){
 
   function asResyncStore(btn = undefined) {
     if (btn !== undefined) {
-      $(btn).addClass("loading disabled");
+      asBusy(btn, true);
     }
     $.cjax({
       url: "/api/plugins/store/resync",
       type: "POST",
       success: function (data) {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
         if (data.error != undefined) {
           msgbox(data.error, false);
         } else {
-          msgbox("App list updated", true);
+          msgbox(t("App list updated"), true);
           asLoadData();
         }
       },
       error: function () {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
-        msgbox("Failed to update app list", false);
+        msgbox(t("The app list could not be updated"), false);
       }
     });
   }
 
-  /* ===== App details modal ===== */
+  /* ===== App details dialog ===== */
   function asShowAppDetails(pluginID) {
     const app = asAvailableApps.find(a => a.PluginIntroSpect.id == pluginID);
     if (app === undefined) {
-      msgbox("App not found", false);
+      msgbox(t("App not found"), false);
       return;
     }
     const spec = app.PluginIntroSpect;
     $("#asAppDetailTitle").text(spec.name);
+    const none = `<span class="zx-help">${asEscapeHtml(t("Not given"))}</span>`;
+    const safeUrl = /^https?:\/\//i.test(spec.url || "");
 
     const rows = [
-      { label: "App ID", value: asEscapeHtml(spec.id) },
-      { label: "Author", value: asEscapeHtml(spec.author) },
-      { label: "Description", value: asEscapeHtml(spec.description) },
-      { label: "Version", value: asEscapeHtml(asGetVersionString(spec)) },
-      { label: "Category", value: asEscapeHtml(asGetAppCategory(app)) },
-      { label: "Type", value: spec.type == 0 ? "Router" : "Utilities" },
-      { label: "URL", value: spec.url ? `<a href="${asEscapeHtml(spec.url)}" target="_blank">${asEscapeHtml(spec.url)}</a>` : "N/A" },
-      { label: "Source", value: asEscapeHtml(app.Source || "N/A") },
+      { label: t("Description"), value: asEscapeHtml(spec.description) || none },
+      { label: t("Author"), value: asEscapeHtml(spec.author) || none },
+      { label: t("Version"), value: asEscapeHtml(asGetVersionString(spec)) },
+      { label: t("Category"), value: asEscapeHtml(t(asGetAppCategory(app))) },
+      { label: t("Kind"), value: asEscapeHtml(spec.type == 0 ? t("Router: can handle requests of the sites it is assigned to") : t("Utility: adds a tool, does not touch traffic")) },
+      { label: t("Website"), value: spec.url ? (safeUrl ? `<a href="${asEscapeAttr(spec.url)}" target="_blank" rel="noopener noreferrer">${asEscapeHtml(spec.url)}</a>` : asEscapeHtml(spec.url)) : none },
+      { label: t("Source"), value: asEscapeHtml(app.Source) || none },
+      { label: t("App ID"), value: `<span class="zx-mono">${asEscapeHtml(spec.id)}</span>` },
     ];
 
     if (app.DownloadURLs && Object.keys(app.DownloadURLs).length > 0) {
-      rows.push({ label: "Supported Platforms", value: Object.keys(app.DownloadURLs).map(p => asEscapeHtml(p)).join(", ") });
+      rows.push({ label: t("Supported platforms"), value: Object.keys(app.DownloadURLs).map(p => asEscapeHtml(p)).join(", ") });
     }
 
     if (spec.permitted_api_endpoints && spec.permitted_api_endpoints.length > 0) {
       const endpoints = spec.permitted_api_endpoints.map(ep =>
-        `<div><b>${asEscapeHtml(ep.method)}</b> ${asEscapeHtml(ep.endpoint)}${ep.reason ? " - " + asEscapeHtml(ep.reason) : ""}</div>`
+        `<div><b>${asEscapeHtml(ep.method)}</b> <span class="zx-mono">${asEscapeHtml(ep.endpoint)}</span>${ep.reason ? " - " + asEscapeHtml(ep.reason) : ""}</div>`
       ).join("");
-      rows.push({ label: "Permitted API Endpoints", value: endpoints });
+      rows.push({ label: t("Zoraxy API it may call"), value: endpoints });
     }
 
     const tbody = $("#asAppDetailTable");
     tbody.empty();
     rows.forEach(row => {
-      tbody.append(`<tr><td class="collapsing"><b>${row.label}</b></td><td style="word-break: break-all;">${row.value}</td></tr>`);
+      tbody.append(`<tr><th scope="row" style="white-space: nowrap;">${asEscapeHtml(row.label)}</th><td class="as-detail-value">${row.value}</td></tr>`);
     });
 
     $("#asAppDetailModal").modal("show");
   }
 
-  /* ===== Settings (source management) ===== */
+  /* ===== Sources dialog ===== */
   function asOpenSettings() {
     asRenderSourceTable();
     $("#asSettingsModal").modal("show");
@@ -1225,19 +846,19 @@ function asTagsHtml(app, spec){
     const tbody = $("#asSourceTable");
     tbody.empty();
     if (asStoreSources.length == 0) {
-      tbody.append(`<tr><td colspan="3" style="text-align: center;">No sources registered</td></tr>`);
+      tbody.append(`<tr><td class="zx-empty-cell" colspan="3">${asEscapeHtml(t("No sources yet. Add the address of a plugin index below."))}</td></tr>`);
       return;
     }
     asStoreSources.forEach(source => {
       const row = $(`
         <tr>
-          <td style="word-break: break-all;">${asEscapeHtml(source.url)}</td>
-          <td>${source.official ? `<span class="zx-badge zx-badge--info">Official</span>` : `<span class="zx-badge">Community</span>`}</td>
-          <td></td>
+          <td class="as-source-url zx-mono" data-label="${asEscapeAttr(t("Source address"))}">${asEscapeHtml(source.url)}</td>
+          <td data-label="${asEscapeAttr(t("Type"))}">${source.official ? `<span class="zx-badge zx-badge--info">${asEscapeHtml(t("Official"))}</span>` : `<span class="zx-badge">${asEscapeHtml(t("Community"))}</span>`}</td>
+          <td class="zx-num"></td>
         </tr>
       `);
       if (!source.official) {
-        const removeBtn = $(`<button class="ui basic mini red icon button" title="Remove source"><i class="trash icon"></i></button>`);
+        const removeBtn = $(`<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm sy-quiet-danger"></button>`).text(t("Remove")).attr("aria-label", tf("Remove the source {0}", source.url));
         removeBtn.on("click", function () {
           asRemoveSource(source.url, this);
         });
@@ -1250,11 +871,11 @@ function asTagsHtml(app, spec){
   function asAddSource(btn = undefined) {
     const url = $("#asNewSourceURL").val().trim();
     if (url == "") {
-      msgbox("Please enter a source URL", false);
+      msgbox(t("Enter the address of a plugin index first"), false);
       return;
     }
     if (btn !== undefined) {
-      $(btn).addClass("loading disabled");
+      asBusy(btn, true);
     }
     $.cjax({
       url: "/api/plugins/store/sources/add",
@@ -1262,12 +883,12 @@ function asTagsHtml(app, spec){
       data: { "url": url },
       success: function (data) {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
         if (data.error != undefined) {
           msgbox(data.error, false);
         } else {
-          msgbox("Source added", true);
+          msgbox(t("Source added"), true);
           $("#asNewSourceURL").val("");
           asLoadData(function () {
             asRenderSourceTable();
@@ -1276,16 +897,16 @@ function asTagsHtml(app, spec){
       },
       error: function () {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
-        msgbox("Failed to add source", false);
+        msgbox(t("The source could not be added"), false);
       }
     });
   }
 
   function asRemoveSource(url, btn = undefined) {
     if (btn !== undefined) {
-      $(btn).addClass("loading disabled");
+      asBusy(btn, true);
     }
     $.cjax({
       url: "/api/plugins/store/sources/remove",
@@ -1294,11 +915,11 @@ function asTagsHtml(app, spec){
       success: function (data) {
         if (data.error != undefined) {
           if (btn !== undefined) {
-            $(btn).removeClass("loading disabled");
+            asBusy(btn, false);
           }
           msgbox(data.error, false);
         } else {
-          msgbox("Source removed", true);
+          msgbox(t("Source removed"), true);
           delete asDisabledSources[url];
           asLoadData(function () {
             asRenderSourceTable();
@@ -1307,9 +928,9 @@ function asTagsHtml(app, spec){
       },
       error: function () {
         if (btn !== undefined) {
-          $(btn).removeClass("loading disabled");
+          asBusy(btn, false);
         }
-        msgbox("Failed to remove source", false);
+        msgbox(t("The source could not be removed"), false);
       }
     });
   }
@@ -1319,22 +940,22 @@ function asTagsHtml(app, spec){
     asShownCount = AS_PAGE_SIZE;
     asRenderAppGrid();
   });
-
-  //Note: index.html re-initializes every .ui.dropdown
-  // So we need to re-initialize the dropdowns after the App Store tab is loaded
-  $("#asCategoryDropdown").dropdown();
-  $("#asCategoryDropdown").on("change", function () {
-    const value = $(this).dropdown("get value");
-    if (value != "" && value != asActiveCategory) {
-      asSetActiveCategory(value);
-    }
-  });
-
-  $("#asSortDropdown").dropdown();
-  $("#asSortDropdown").on("change", function () {
+  $("#asSortSelect").on("change", function () {
     asShownCount = AS_PAGE_SIZE;
     asRenderAppGrid();
   });
+  $("#asSourceSelect").on("change", function () {
+    asApplySourceFilter();
+    asShownCount = AS_PAGE_SIZE;
+    asRenderAppGrid();
+  });
+  $("#asCategoryList").on("click", ".as-cat-item", function () {
+    asSetActiveCategory($(this).attr("data-category"));
+  });
+  //App ids come from the store index: they are carried in data attributes, never written into an onclick
+  $("#appstore").on("click", "[data-as-install]", function () { asInstallApp(this.dataset.asInstall, this); })
+    .on("click", "[data-as-update]", function () { asUpdateApp(this.dataset.asUpdate, this); })
+    .on("click", "[data-as-details]", function () { asShowAppDetails(this.dataset.asDetails); });
 
   //Refresh the data whenever the App Store tab is opened
   tabSwitchEventBind["appstore"] = function () {

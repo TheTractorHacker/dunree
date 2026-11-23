@@ -9,7 +9,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Rules</h2>
-            <p class="zx-page-header__sub">Decide what happens to a request: block it, redirect it or challenge it</p>
+            <p class="zx-page-header__sub">Your own rules for requests: WHEN a request looks a certain way (path, country, address, header), THEN block, redirect, challenge, rate limit or just log it. For one site or for all of them.</p>
         </div>
         <div class="zx-page-header__actions rb-headactions">
             <button type="button" class="zx-btn zx-btn--secondary" id="rbToggleTpl" aria-expanded="false" aria-controls="rbTemplatesCard">Templates</button>
@@ -122,16 +122,17 @@
     }
     #rbPage .rb-sum { font-size: var(--zx-fs-sm); margin-top: 2px; overflow-wrap: anywhere; max-width: 60ch; }
     #rbPage tr.rb-off .rb-namecell { opacity: .65; }
-    #rbPage .rb-modebtn { cursor: pointer; font: inherit; font-size: var(--zx-fs-xs); font-weight: 600; }
+    #rbPage .rb-modebtn { cursor: pointer; font: inherit; font-size: var(--zx-fs-xs); font-weight: 700; }
     #rbPage .rb-modebtn:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
     #rbPage .rb-spark { color: var(--zx-primary); display: block; }
     #rbPage .rb-sparkbox { margin-top: 2px; }
     #rbPage .rb-more { text-align: center; margin: var(--zx-space-3) 0; }
     #rbPage .rb-tpls { display: grid; gap: var(--zx-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); align-items: stretch; }
     #rbPage .rb-tpl { height: 100%; }
-    #rbPage .rb-tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface); color: var(--zx-text);
-        border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); font: inherit; cursor: pointer; }
-    #rbPage .rb-tpl:hover { background: var(--zx-surface-2); }
+    #rbPage .rb-tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface-2); color: var(--zx-text);
+        border: 1px solid transparent; border-radius: var(--zx-radius-md); font: inherit; cursor: pointer; transition: background-color var(--zx-dur) var(--zx-ease); }
+    /* flat tiles: the card around them is the only box */
+    #rbPage .rb-tpl:hover { background: var(--zx-surface-3); }
     #rbPage .rb-tpl:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
     #rbPage .rb-tpl i.icon { color: var(--zx-primary); margin: 0 0 2px; font-size: 1.3em; }
 
@@ -139,7 +140,7 @@
     #rbPage .zx-page-header__main .zx-btn { margin-bottom: var(--zx-space-2); padding-left: 0; }
     #rbPage #rbEditor > .zx-card, #rbPage #rbEditor > .rb-sumcard { margin-bottom: var(--zx-space-4); }
     #rbPage .rb-sumcard { position: sticky; top: 0; z-index: 3; background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-3) var(--zx-space-4); }
-    #rbPage .rb-sumlabel { font-size: var(--zx-fs-xs); text-transform: uppercase; letter-spacing: .04em; color: inherit; opacity: .85; }
+    #rbPage .rb-sumlabel { font-size: var(--zx-fs-xs); font-weight: 700; color: inherit; opacity: .85; }
     #rbPage .rb-sentence { font-size: var(--zx-fs-lg); line-height: 1.45; overflow-wrap: anywhere; }
     #rbPage .rb-group { border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); padding: var(--zx-space-3); background: var(--zx-surface); min-width: 0; }
     #rbPage .rb-group .rb-group { margin-left: var(--zx-space-3); background: var(--zx-surface-2); border-left: 4px solid var(--zx-primary); }
@@ -156,7 +157,7 @@
     #rbPage .rb-ctl { margin-left: auto; }
     #rbPage .zx-error { display: block; }
     #rbPage .zx-error[hidden], #rbPage .zx-error:empty { display: none; }
-    #rbPage .rb-swlabel { display: inline-flex; align-items: center; gap: var(--zx-space-2); cursor: pointer; font-weight: 600; }
+    #rbPage .rb-swlabel { display: inline-flex; align-items: center; gap: var(--zx-space-2); cursor: pointer; font-weight: 700; }
     #rbPage input.zx-switch { flex: 0 0 auto; width: 42px; height: 24px; min-width: 42px; }
     @media (max-width: 748px) { #rbPage input.zx-switch { width: 48px; height: 28px; min-width: 48px; } }
     #rbPage .rb-ghead .rb-gop { width: auto; max-width: 100%; }
@@ -172,7 +173,7 @@
     #rbPage .rb-noval { padding-top: 8px; }
     #rbPage .rb-rowerr { margin-top: 4px; }
     #rbPage .rb-exprbox { border-top: 1px solid var(--zx-border); padding-top: var(--zx-space-3); }
-    #rbPage .rb-expr { margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere; min-height: 2.6em; max-height: 14rem; overflow: auto; color: var(--zx-text); }
+    #rbPage .rb-expr { margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere; min-height: 2.6em; color: var(--zx-text); }
     #rbPage .rb-expr.is-stale { color: var(--zx-text-muted); }
     #rbPage .rb-status { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); }
     #rbPage .rb-status.is-ok { color: var(--zx-ok-text); }
@@ -189,15 +190,17 @@
     #rbPage .rb-fields { margin-top: var(--zx-space-3); }
     #rbPage .rb-prop { border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-3); margin-bottom: var(--zx-space-3); background: var(--zx-surface); }
     #rbPage .rb-prop.is-bad { background: var(--zx-surface-2); }
-    #rbPage .rb-prop .rb-expr { margin-top: var(--zx-space-2); max-height: 7rem; padding: var(--zx-space-2); }
+    #rbPage .rb-prop .rb-expr { margin-top: var(--zx-space-2); padding: var(--zx-space-2); }
     #rbPage .rb-importgo { margin: var(--zx-space-3) 0; }
     #rbPage .rb-items { font-family: var(--zx-font-mono); width: 100%; }
     @media (max-width: 748px) {
         #rbPage .rb-group .rb-group { margin-left: var(--zx-space-1); }
         #rbPage .rb-line .rb-field, #rbPage .rb-line .rb-op, #rbPage .rb-line .rb-key, #rbPage .rb-val { flex: 1 1 100%; }
         #rbPage .rb-ctl { margin-left: 0; }
-        #rbPage .rb-search, #rbPage .rb-scope { flex: 1 1 100%; max-width: none; }
-        #rbPage .rb-toolbtns { margin-left: 0; }
+        #rbPage .rb-scope { flex: 1 1 100%; max-width: none; }
+        /* search and refresh share one row */
+        #rbPage .rb-search { flex: 1 1 10rem; max-width: none; min-width: 0; }
+        #rbPage .rb-toolbtns { margin-left: 0; flex: 0 0 auto; }
     }
 </style>
 

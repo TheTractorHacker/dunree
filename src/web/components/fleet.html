@@ -1,48 +1,82 @@
+<!-- Fleet (tag fleet). A status header says what this Zoraxy is (on its own, the hub, a node) with the numbers that matter;
+     below it the view of that role: the two ways to start, the node's sync state, or the hub's sections (a sectioned navigation, #flTabs:
+     Nodes first, as rows that open the view of one node; Audit log and Settings under Advanced).
+     Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
 <div class="standardContainer" id="fleetPage">
     <style>
-        /* on a phone the tab strip scrolls sideways inside itself instead of widening the page */
-        #fleetPage #flTabs { overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; max-width: 100%; }
-        #fleetPage #flTabs .item { flex: 0 0 auto; white-space: nowrap; }
-        /* the two cards are equally tall; help text is readable */
-        #fleetPage .ui.two.column.stackable.grid > .column { display: flex; }
-        #fleetPage .ui.two.column.stackable.grid > .column > .ui.segment { flex: 1 1 auto; margin: 0; }
         #fleetPage .flChoice { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--zx-space-4); align-items: stretch; }
         #fleetPage .flChoice > .zx-card { margin: 0; display: flex; flex-direction: column; }
         #fleetPage .flChoice > .zx-card > .zx-card__body { flex: 1 1 auto; }
+        #fleetPage .flChoice .zx-field { margin-bottom: var(--zx-space-4); }
         #fleetPage .zx-page-header__sub .zx-whatis { vertical-align: middle; margin: -4px 0 -4px var(--zx-space-1); }
-        #fleetPage .flWhat { margin: 0 0 var(--zx-space-3); padding-left: 1.2em; color: var(--zx-text); }
-        #fleetPage .flWhat li { margin-bottom: var(--zx-space-1); }
-        #fleetPage #flTabs { background: linear-gradient(to right, var(--zx-bg) 30%, transparent) left center / 2em 100% no-repeat local, linear-gradient(to left, var(--zx-bg) 30%, transparent) right center / 2em 100% no-repeat local,
-            linear-gradient(to right, var(--zx-border-strong), transparent) left center / .8em 100% no-repeat scroll, linear-gradient(to left, var(--zx-border-strong), transparent) right center / .8em 100% no-repeat scroll; }
-        #fleetPage .flStats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--zx-space-3); margin-bottom: var(--zx-space-4); }
-        #fleetPage .flStats .zx-stat__value { font-size: var(--zx-fs-xl); }
         #fleetPage .fltab[hidden] { display: none; }
-        #fleetPage .flTwoCol { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--zx-space-5); }
-        #fleetPage .flSub { margin: var(--zx-space-4) 0 var(--zx-space-2); font-size: var(--zx-fs-md); font-weight: 700; }
+        #fleetPage .flTwoCol { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--zx-space-5) var(--zx-space-6); }
+        #fleetPage .flTwoCol > div { min-width: 0; }
+        #fleetPage .flSub { margin: var(--zx-space-5) 0 var(--zx-space-2); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
         #fleetPage .flSub:first-child { margin-top: 0; }
         #fleetPage .flMono, #fleetPage textarea.flMono { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); width: 100%; }
         #fleetPage .flErrs { overflow-wrap: anywhere; color: var(--zx-text-muted); }
         #fleetPage .flBreak { word-break: break-all; display: block; margin: var(--zx-space-1) 0; }
         #fleetPage .flScopes { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--zx-space-2) var(--zx-space-4); margin: var(--zx-space-2) 0 var(--zx-space-3); }
         #fleetPage .flScopes .ui.checkbox { margin: 0 !important; }
-        #fleetPage .flNodesTable td, #fleetPage .flNodesTable th { white-space: nowrap; }
-        #fleetPage .flNodesTable td .flSubline { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-        #fleetPage .flDiff { margin-top: var(--zx-space-4); padding: var(--zx-space-3); background: var(--zx-surface-2); border-radius: var(--zx-radius-md); }
-        #fleetPage .flDiff pre { overflow: auto; font-size: var(--zx-fs-sm); background: var(--zx-surface); color: var(--zx-text); padding: var(--zx-space-2); border-radius: var(--zx-radius-sm); }
-        #fleetPage .zx-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--zx-space-2); flex-wrap: wrap; }
-        #fleetPage .zx-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        #fleetPage [hidden] { display: none; }
+        #fleetPage .flNodesTable td { vertical-align: top; }
+        /* the Node column takes the slack; state columns are as wide as their words and never break inside one */
+        #fleetPage .flNodesTable th:nth-child(5) { width: 1%; }
+        #fleetPage .flNodesTable th, #fleetPage .flNodesTable td { padding-left: var(--zx-space-3); padding-right: var(--zx-space-3); }
+        #fleetPage .flNodesTable .flLine { white-space: nowrap; }
+        #fleetPage .flNodesTable td:first-child .cx-cell__main { white-space: nowrap; }
+        #fleetPage .flNodesTable .flLine i.icon { margin: 0 2px 0 0; height: auto; }
+        #fleetPage .flNodesTable td:nth-child(3) .cx-cell { min-width: 9.5rem; }
+        @media (max-width: 480px) { #fleetPage .flNodesTable .flLine { white-space: normal; } #fleetPage .flNodesTable td:nth-child(3) .cx-cell { min-width: 0; } }
+        #fleetPage .flNodesTable .flReason { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; max-width: 16rem; }
+        #fleetPage #flDrawer .zx-field { margin-bottom: var(--zx-space-3); }
+        #fleetPage #flDrawer .zx-toggle-row { border-bottom: 0; padding: 0; }
+        #fleetPage #flDrawer .zx-card__head .cx-toolbar { margin-left: auto; }
+        #fleetPage .flHeadRow { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-4); }
+        #fleetPage .flHeadRow > .zx-sectionhead { margin: 0; flex: 1 1 20rem; }
+        #fleetPage .flHeadRow > .zx-btn-row { margin: 0; flex: 0 0 auto; }
+        #fleetPage .flHistTable td:first-child { white-space: nowrap; }
+        #fleetPage .flHistTable td { vertical-align: top; }
+        #fleetPage .flNodesTable tr.flRow { cursor: pointer; }
+        #fleetPage .flNodesTable .flBad { color: var(--zx-danger-text); }
+        #fleetPage .flNodesTable td.zx-actions { white-space: nowrap; }
+        #fleetPage .flSubline { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+        #fleetPage #flDiff { margin-top: var(--zx-space-4); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+        #fleetPage #flDiff pre { margin: var(--zx-space-1) 0 var(--zx-space-3); white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--zx-fs-sm); background: var(--zx-surface); color: var(--zx-text); padding: var(--zx-space-2) var(--zx-space-3); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); }
+        #fleetPage .flDiffLine { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin-bottom: 4px; overflow-wrap: anywhere; }
+        #fleetPage .zx-card__head { justify-content: space-between; }
         #fleetPage .zx-callout code { word-break: break-all; }
         #fleetPage .flRollout { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); padding: var(--zx-space-3) 0; border-top: 1px solid var(--zx-border); }
         #fleetPage .flRollout:first-child { border-top: 0; padding-top: 0; }
+        #fleetPage .flRollout:last-child { padding-bottom: 0; }
         #fleetPage .flRollout .flRolloutMain { flex: 1 1 18rem; min-width: 0; }
+        #fleetPage .flRolloutTitle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); }
         #fleetPage small { font-size: var(--zx-fs-sm); opacity: 1 !important; color: var(--zx-text-muted); line-height: 1.4; display: block; margin-top: .3em; }
         #fleetPage small code { font-size: inherit; }
+        #fleetPage .flActions { display: grid; gap: var(--zx-space-3); margin: 0; padding: 0; list-style: none; }
+        #fleetPage .flActions > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--zx-space-3); }
+        #fleetPage .flActions .zx-help { margin: 0; }
+        #fleetPage .flActions b { display: block; color: var(--zx-text); }
+        #fleetPage .flMove { display: flex; gap: var(--zx-space-2); }
+        #fleetPage .flMove input { min-width: 0; width: 9rem; }
+        #fleetPage .flSteps { margin: 0 0 var(--zx-space-3); padding-left: 1.3em; color: var(--zx-text); line-height: var(--zx-lh); }
+        #fleetPage .flSteps li { margin-bottom: var(--zx-space-1); }
+        #fleetPage #flProbeBox { margin: 0; }
+        #fleetPage #flProbeBox code { display: block; margin: var(--zx-space-1) 0; word-break: break-all; }
+        #fleetPage #flNodeConflicts { margin-top: var(--zx-space-4); }
+        #fleetPage #flDrawer { scroll-margin-top: calc(var(--zx-topbar-h, 56px) + var(--zx-space-4)); }
+        @media (max-width: 480px) {
+            #fleetPage .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
+            #fleetPage .zx-card .zx-table tbody tr:last-child { border-bottom: 0; }
+            #fleetPage .flActions > li { grid-template-columns: minmax(0, 1fr); }
+        }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Fleet</h2>
-            <p class="zx-page-header__sub">Manage several Zoraxy nodes from one hub.
+            <p class="zx-page-header__sub">Manage several Zoraxy nodes from one hub: one place for their configuration, health and rollouts.
                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="flWhat" aria-label="How does Fleet work?">?</button></p>
             <div class="zx-popover" id="flWhat" role="note" hidden>The hub publishes versioned configuration for the scopes you choose. Nodes pull it with their own credentials and keep everything else local. The hub can only publish configuration and ask a node to sync: it can never run commands on a node.</div>
         </div>
@@ -55,15 +89,35 @@
         <a href="#cluster" data-nav-open="cluster">Cluster / HA</a>
     </nav>
 
+    <!-- status: the role of this Zoraxy and its numbers -->
+    <section class="zx-card cx-status" id="flStatus" aria-labelledby="flStatusTitle">
+        <div class="cx-status__top">
+            <span class="cx-status__icon" aria-hidden="true"><i class="cubes icon" id="flStatusIcon"></i></span>
+            <div class="cx-status__text">
+                <div class="cx-status__title" role="heading" aria-level="3"><span id="flStatusTitle">Fleet</span> <span class="zx-badge zx-badge--dot" id="flRoleBadge" hidden></span></div>
+                <p class="cx-status__desc" id="flStatusDesc"></p>
+            </div>
+            <div class="cx-status__action" id="flNodeActions" style="display:none;">
+                <button class="zx-btn zx-btn--secondary" id="flNodeSync"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
+                <button class="zx-btn zx-btn--danger-outline" id="flNodeLeave">Leave fleet</button>
+            </div>
+        </div>
+        <dl class="cx-facts" id="flAgg" aria-live="polite"></dl>
+    </section>
+
     <!-- standalone: choose -->
     <div id="flStandalone" style="display:none;">
+        <div id="flLegacyNote" class="zx-callout zx-callout--warn" role="note" style="display:none;margin-bottom:var(--zx-space-4);">
+            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+            <div class="zx-callout__body">This node uses the shared-secret cluster (Cluster / HA page). Switch it to standalone there before you start or join a fleet.</div>
+        </div>
         <div class="flChoice">
             <section class="zx-card">
                 <div class="zx-card__head"><h3 class="zx-card__title">Run this node as the hub</h3></div>
                 <p class="zx-card__desc">This Zoraxy becomes the management console for your other nodes.</p>
                 <div class="zx-card__body">
-                    <ul class="flWhat">
-                        <li>Publishes versioned configuration to the scopes you choose.</li>
+                    <ul class="flSteps">
+                        <li>Publishes versioned configuration for the scopes you choose.</li>
                         <li>Shows the health, version and sync state of every node.</li>
                         <li>Rolls out changes to one node first (canary) or to all at once.</li>
                         <li>Can never run commands on a node.</li>
@@ -74,114 +128,148 @@
             </section>
             <section class="zx-card">
                 <div class="zx-card__head"><h3 class="zx-card__title">Join a fleet</h3></div>
-                <p class="zx-card__desc">Connect this node to a hub that already exists.</p>
+                <p class="zx-card__desc">Connect this node to a hub that already exists. Check the hub's certificate first, then join. The result of the check shows up right here.</p>
                 <div class="zx-card__body">
-                    <div class="ui form">
-                        <div class="zx-field field"><label class="zx-field__label" for="flJoinUrl">Hub admin URL</label><input type="text" id="flJoinUrl" class="zx-input" placeholder="https://10.0.0.10:8000"><p class="zx-help">Outside the hub's network? Start the hub with a separate fleet port and use that address.</p></div>
-                        <div class="zx-field field"><label class="zx-field__label" for="flJoinToken">Join token</label><input type="password" id="flJoinToken" class="zx-input" autocomplete="off" placeholder="Paste the token from the hub"><p class="zx-help">Create it on the hub, under Join nodes.</p></div>
-                        <div id="flProbeBox" class="ui small info message" style="display:none;"></div>
-                    </div>
+                    <div class="zx-field"><label class="zx-field__label" for="flJoinUrl">Hub admin URL</label><input type="text" id="flJoinUrl" class="zx-input" placeholder="https://10.0.0.10:8000" autocomplete="off" spellcheck="false"><p class="zx-help">Outside the hub's network? Start the hub with a separate fleet port and use that address.</p></div>
+                    <div class="zx-field"><label class="zx-field__label" for="flJoinToken">Join token</label><input type="password" id="flJoinToken" class="zx-input" autocomplete="off" placeholder="Paste the token from the hub"><p class="zx-help">Create it on the hub, under Join nodes. It works once and for a short time.</p></div>
+                    <div id="flProbeBox" class="cx-result" role="status" aria-live="polite" hidden></div>
                 </div>
                 <div class="zx-card__foot">
-                    <button class="zx-btn zx-btn--secondary" id="flProbeBtn">Check hub certificate</button>
-                    <button class="zx-btn zx-btn--primary" id="flJoinBtn" disabled>Join</button>
+                    <button class="zx-btn zx-btn--secondary" id="flProbeBtn">1. Check hub certificate</button>
+                    <button class="zx-btn zx-btn--primary" id="flJoinBtn" disabled>2. Join</button>
                 </div>
             </section>
         </div>
-        <div id="flLegacyNote" class="zx-callout zx-callout--warn" style="display:none;margin-top:var(--zx-space-3);">This node uses the legacy shared-secret cluster (Cluster / HA page). Switch it to standalone there before joining a fleet.</div>
     </div>
 
     <!-- node -->
     <div id="flNode" style="display:none;">
         <section class="zx-card">
-            <div class="zx-card__head"><h3 class="zx-card__title">Managed by <span id="flNodeHub"></span></h3></div>
-            <p class="zx-card__desc">Objects of the managed scopes are read-only here. Leaving keeps the current files as ordinary local configuration.</p>
+            <div class="zx-card__head"><h3 class="zx-card__title">What the hub manages here</h3></div>
+            <p class="zx-card__desc">Objects of the managed scopes are read-only on this node. Leaving the fleet keeps the current files as ordinary local configuration. Hub: <span id="flNodeHub"></span></p>
             <div class="zx-card__body">
-                <div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table zx-table--kv"><tbody id="flNodeBody"></tbody></table></div>
-                <div id="flNodeConflicts" class="zx-callout zx-callout--warn" style="display:none;"></div>
-            </div>
-            <div class="zx-card__foot">
-                <button class="zx-btn zx-btn--primary" id="flNodeSync"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
-                <button class="zx-btn zx-btn--danger-outline" id="flNodeLeave">Leave fleet</button>
+                <dl class="cx-kvlist" id="flNodeBody"></dl>
+                <div id="flNodeConflicts" class="zx-callout zx-callout--warn" role="note" style="display:none;"></div>
             </div>
         </section>
     </div>
 
-    <!-- hub -->
+    <!-- hub: a sectioned navigation. Nodes is the summary it opens on; what a beginner can skip sits under Advanced. -->
     <div id="flHub" style="display:none;">
-        <div class="flStats" id="flAgg"></div>
-        <div class="zx-tabs" id="flTabs" role="tablist" aria-label="Fleet sections">
-            <button type="button" class="zx-tab item" data-tab="nodes" data-zx-panel="flPanelNodes" aria-selected="true">Nodes</button>
-            <button type="button" class="zx-tab item" data-tab="groups" data-zx-panel="flPanelGroups">Groups and rollout</button>
-            <button type="button" class="zx-tab item" data-tab="versions" data-zx-panel="flPanelVersions">Versions</button>
-            <button type="button" class="zx-tab item" data-tab="tokens" data-zx-panel="flPanelTokens">Join nodes</button>
-            <button type="button" class="zx-tab item" data-tab="audit" data-zx-panel="flPanelAudit">Audit log</button>
-            <button type="button" class="zx-tab item" data-tab="settings" data-zx-panel="flPanelSettings">Settings</button>
+      <div class="zx-sectioned">
+        <nav class="zx-sectionnav" id="flTabs" aria-label="Fleet sections">
+            <div class="zx-sectionnav__group">
+                <button type="button" class="zx-sectionnav__item item active" data-tab="nodes"><i class="server icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Nodes</span><span class="zx-sectionnav__desc" hidden>Every node that joined this hub: is it reachable, does it run what the hub published, is it healthy.</span></button>
+                <button type="button" class="zx-sectionnav__item item" data-tab="tokens"><i class="plus icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Join nodes</span><span class="zx-sectionnav__desc" hidden>Add a Zoraxy to this fleet with a join token that works once and for a short time.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="flGrpConfig">
+                <div class="zx-sectionnav__label" id="flGrpConfig">Configuration</div>
+                <button type="button" class="zx-sectionnav__item item" data-tab="groups"><i class="object group outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Rollout</span><span class="zx-sectionnav__desc" hidden>Publish this hub's configuration to a group of nodes, follow each rollout, and decide what every group receives.</span></button>
+                <button type="button" class="zx-sectionnav__item item" data-tab="versions"><i class="history icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Versions</span><span class="zx-sectionnav__desc" hidden>Every published configuration is kept as a version, so you can compare two of them and go back.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="flGrpAdvanced">
+                <div class="zx-sectionnav__label" id="flGrpAdvanced">Advanced</div>
+                <button type="button" class="zx-sectionnav__item item" data-tab="audit"><i class="list icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Audit log</span><span class="zx-sectionnav__desc" hidden>Who changed what on this hub.</span></button>
+                <button type="button" class="zx-sectionnav__item item" data-tab="settings"><i class="cog icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Settings</span><span class="zx-sectionnav__desc" hidden>How many versions the hub keeps, how often nodes report in, and turning the hub role off.</span></button>
+            </div>
+        </nav>
+        <div class="zx-sectioned__main">
+        <div class="flHeadRow">
+            <header class="zx-sectionhead" id="flHead"><h3 class="zx-sectionhead__title"></h3><p class="zx-sectionhead__desc"></p></header>
+            <div class="zx-btn-row" data-for-tab="nodes"><button type="button" class="zx-btn zx-btn--secondary" id="flAddNodeBtn"><i class="plus icon" aria-hidden="true"></i> Add a node</button></div>
+            <div class="zx-btn-row" data-for-tab="versions" hidden><button type="button" class="zx-btn zx-btn--secondary" id="flCapture"><i class="camera icon" aria-hidden="true"></i> Capture current configuration</button></div>
         </div>
 
-        <div class="fltab zx-tabpanel" data-tab="nodes" id="flPanelNodes">
-            <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Nodes</h3></div>
-                <p class="zx-card__desc">Every node that joined this hub. Select a row to see its details, variables and scopes.</p>
+        <div class="fltab" data-tab="nodes" id="flPanelNodes">
+            <section class="zx-card" id="flNodesCard">
                 <div class="zx-card__body">
-                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Nodes">
-                    <table class="zx-table zx-table--compact flNodesTable">
-                        <thead><tr><th>Node</th><th>Group</th><th>Status</th><th>Version</th><th>Uptime</th><th>Health</th><th class="zx-num">Rules</th><th>Cert expiry</th><th>WAF</th><th class="zx-num">Req/min</th><th class="zx-num">5xx/min</th><th>Config</th><th><span class="zx-sr-only">Actions</span></th></tr></thead>
+                    <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Nodes">
+                    <table class="zx-table zx-table--comfortable flNodesTable">
+                        <thead><tr><th scope="col">Node</th><th scope="col">Status</th><th scope="col">Configuration</th><th scope="col">Health</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
                         <tbody id="flNodes"></tbody>
                     </table>
                     </div>
                 </div>
             </section>
-            <section id="flDrawer" class="zx-card" style="display:none;">
-                <div class="zx-card__head"><h3 class="zx-card__title" id="flDrawerTitle"></h3>
-                    <button class="zx-btn zx-btn--secondary zx-btn--sm" id="flDrawerClose">Close</button></div>
-                <div class="zx-card__body">
-                  <div class="flTwoCol">
-                    <div>
-                        <h4 class="flSub">Sync</h4>
-                        <div class="zx-toggle-row ui toggle checkbox"><input type="checkbox" id="flNodeSync"><label>Sync configuration from the hub to this node</label></div>
-                        <p class="zx-help">Off: the hub sends this node nothing and never changes it. The node is still monitored, and you manage its rules and settings on the node itself (use <b>Open</b> below).</p>
-                        <h4 class="flSub">Node details</h4>
-                        <div class="ui form">
-                            <div class="zx-field field"><label for="flNodeName">Name</label><input type="text" id="flNodeName" maxlength="64"></div>
-                            <div class="zx-field field"><label for="flNodeUrl">Admin address of this node</label><input type="text" id="flNodeUrl" placeholder="https://10.1.0.25:3000" maxlength="200"></div>
-                            <div class="zx-field field"><label for="flNodeNotes">Notes</label><textarea id="flNodeNotes" rows="2" maxlength="500"></textarea></div>
-                        </div>
-                        <div class="zx-btn-row">
-                            <button class="zx-btn zx-btn--secondary zx-btn--sm" id="flSaveInfo">Save details</button>
-                            <button class="zx-btn zx-btn--secondary zx-btn--sm" id="flOpenNode"><i class="external alternate icon" aria-hidden="true"></i> Open</button>
-                        </div>
-                        <h4 class="flSub">Variables</h4>
-                        <p class="zx-help">JSON object, for example <code>{"upstream_ip":"10.0.0.5"}</code>. Used as <code>{{node.upstream_ip}}</code> in managed config. Allowed characters: letters, digits and . _ : / @ + - [ ]</p>
-                        <textarea id="flNodeVars" rows="4" class="flMono" aria-label="Variables (JSON)"></textarea>
-                        <div class="zx-btn-row"><button class="zx-btn zx-btn--secondary zx-btn--sm" id="flSaveVars">Save variables</button></div>
-                        <h4 class="flSub">Scopes for this node</h4>
-                        <div class="ui checkbox"><input type="checkbox" id="flNodeInherit"><label>Inherit from the group</label></div>
-                        <div id="flNodeScopes" class="flScopes"></div>
-                        <div class="zx-field"><input type="text" id="flNodeTags" placeholder="proxy tags (comma separated)" aria-label="Proxy tags"></div>
-                        <div class="zx-btn-row"><button class="zx-btn zx-btn--secondary zx-btn--sm" id="flSaveNodeScopes">Save scopes</button></div>
-                    </div>
-                    <div>
-                        <h4 class="flSub">Apply history</h4>
-                        <div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table zx-table--compact"><tbody id="flHist"></tbody></table></div>
-                        <h4 class="flSub">Last errors</h4>
-                        <div id="flErrs" class="flMono flErrs"></div>
-                        <h4 class="flSub">Local objects replaced by the hub</h4>
-                        <div id="flConf"></div>
-                    </div>
-                  </div>
+
+            <!-- one node: replaces the list while it is open (Escape or "All nodes" goes back to the row it was opened from) -->
+            <div id="flDrawer" style="display:none;" role="region" aria-labelledby="flDrawerTitle">
+                <div class="cx-back">
+                    <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="flDrawerClose"><i class="arrow left icon" aria-hidden="true"></i> All nodes</button>
+                    <span class="cx-back__hint">Esc goes back too</span>
                 </div>
-            </section>
+                <section class="zx-card">
+                    <div class="zx-card__head"><h4 class="zx-card__title"><span id="flDrawerTitle"></span> <span id="flDrawerState"></span></h4>
+                        <div class="cx-toolbar" id="flNodeQuick">
+                            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="flOpenNode"><i class="external alternate icon" aria-hidden="true"></i> Open its admin page</button>
+                            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="nodeSync"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
+                        </div></div>
+                    <p class="zx-card__desc" id="flDrawerDesc"></p>
+                    <div class="zx-card__body">
+                        <dl class="cx-kvlist" id="flNodeFacts"></dl>
+                    </div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head"><h4 class="zx-card__title">What the hub sends this node</h4></div>
+                    <p class="zx-card__desc">Its name and address on the hub, its own variables, and the scopes it receives. One button saves all of it.</p>
+                    <div class="zx-card__body">
+                      <div class="flTwoCol">
+                        <div>
+                            <label class="zx-check"><input type="checkbox" id="flNodeSyncOn"> <span>Sync configuration from the hub to this node</span></label>
+                            <p class="zx-help">Takes effect at once. Off: the hub sends this node nothing and never changes it. The node is still monitored, and you manage its rules and settings on the node itself.</p>
+                            <h5 class="flSub">Node details</h5>
+                            <div class="zx-field"><label class="zx-field__label" for="flNodeName">Name</label><input type="text" id="flNodeName" class="zx-input" maxlength="64"></div>
+                            <div class="zx-field"><label class="zx-field__label" for="flNodeUrl">Admin address of this node</label><input type="text" id="flNodeUrl" class="zx-input" placeholder="https://10.1.0.25:3000" maxlength="200"></div>
+                            <div class="zx-field"><label class="zx-field__label" for="flNodeNotes">Notes</label><textarea id="flNodeNotes" class="zx-textarea" rows="2" maxlength="500"></textarea></div>
+                        </div>
+                        <div>
+                            <h5 class="flSub">Scopes for this node</h5>
+                            <div class="ui checkbox"><input type="checkbox" id="flNodeInherit"><label>Inherit from the group</label></div>
+                            <div id="flNodeScopes" class="flScopes"></div>
+                            <div class="zx-field"><label class="zx-field__label" for="flNodeTags">Only proxy rules with these tags <span class="zx-field__optional">optional</span></label><input type="text" id="flNodeTags" class="zx-input" placeholder="edge, public"></div>
+                            <h5 class="flSub">Variables</h5>
+                            <p class="zx-help">JSON object, for example <code>{"upstream_ip":"10.0.0.5"}</code>. Used as <code>{{node.upstream_ip}}</code> in managed config. Allowed characters: letters, digits and . _ : / @ + - [ ]</p>
+                            <textarea id="flNodeVars" rows="4" class="zx-textarea flMono" aria-label="Variables (JSON)" spellcheck="false"></textarea>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="zx-card__foot"><button type="button" class="zx-btn zx-btn--primary" id="flSaveNode">Save node</button></div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head"><h4 class="zx-card__title">Recent activity</h4></div>
+                    <p class="zx-card__desc">What this node applied, what went wrong, and which of its local objects the hub replaced.</p>
+                    <div class="zx-card__body">
+                        <h5 class="flSub">Apply history</h5>
+                        <div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table zx-table--compact flHistTable"><tbody id="flHist"></tbody></table></div>
+                        <h5 class="flSub">Last errors</h5>
+                        <div id="flErrs" class="flMono flErrs"></div>
+                        <h5 class="flSub">Local objects replaced by the hub</h5>
+                        <div id="flConf" class="flErrs"></div>
+                    </div>
+                </section>
+                <section class="zx-card">
+                    <div class="zx-card__head"><h4 class="zx-card__title">Move, re-key or remove</h4></div>
+                    <p class="zx-card__desc">Each of these acts at once. Revoke and Remove ask first.</p>
+                    <div class="zx-card__body">
+                        <ul class="flActions" id="flNodeActs">
+                            <li><p class="zx-help"><b>Move to another group</b>The node then receives what that group manages.</p><span class="flMove"><input type="text" id="flNodeGroupIn" class="zx-input" list="flGroupList" aria-label="New group name" placeholder="Group name"><datalist id="flGroupList"></datalist><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="nodeGroup">Move</button></span></li>
+                            <li><p class="zx-help"><b>Rotate the node key</b>The node picks the new key up at its next sync.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="nodeRotate"><i class="key icon" aria-hidden="true"></i> Rotate key</button></li>
+                            <li><p class="zx-help"><b>Revoke</b>Its credentials stop working immediately. The node stays in the list.</p><button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm" data-act="nodeRevoke"><i class="ban icon" aria-hidden="true"></i> Revoke</button></li>
+                            <li><p class="zx-help"><b>Remove from the hub</b>The node keeps its current configuration but is no longer managed.</p><button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm" data-act="nodeRemove"><i class="trash icon" aria-hidden="true"></i> Remove</button></li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
         </div>
 
-        <div class="fltab zx-tabpanel" data-tab="groups" id="flPanelGroups" hidden>
+        <div class="fltab" data-tab="groups" id="flPanelGroups" hidden>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Rollouts</h3></div>
+                <div class="zx-card__head"><h4 class="zx-card__title">Rollouts</h4></div>
                 <p class="zx-card__desc">The latest rollout of every group and what it is waiting for.</p>
                 <div class="zx-card__body"><div id="flRollouts"></div></div>
             </section>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Publish</h3></div>
+                <div class="zx-card__head"><h4 class="zx-card__title">Publish</h4></div>
                 <p class="zx-card__desc">Send this hub's current configuration to the nodes of one group.</p>
                 <div class="zx-card__body">
                 <div class="ui form">
@@ -203,16 +291,16 @@
                 <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="flPublishBtn"><i class="upload icon" aria-hidden="true"></i> Publish this hub's current configuration</button></div>
             </section>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Groups</h3></div>
+                <div class="zx-card__head"><h4 class="zx-card__title">Groups</h4></div>
                 <p class="zx-card__desc">A group decides which parts of the configuration its nodes receive.</p>
                 <div class="zx-card__body">
-                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Groups">
-                    <table class="zx-table"><thead><tr><th>Group</th><th>Managed scopes</th><th>Variables</th><th>Stable version</th><th><span class="zx-sr-only">Actions</span></th></tr></thead><tbody id="flGroups"></tbody></table>
+                    <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Groups">
+                    <table class="zx-table"><thead><tr><th scope="col">Group</th><th scope="col">Managed scopes</th><th scope="col">Variables</th><th scope="col">Stable version</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead><tbody id="flGroups"></tbody></table>
                     </div>
                 </div>
             </section>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title" id="flGroupFormTitle">New group</h3></div>
+                <div class="zx-card__head"><h4 class="zx-card__title" id="flGroupFormTitle">New group</h4></div>
                 <p class="zx-card__desc">Choose what the group manages. Nothing outside these scopes is ever touched on the nodes.</p>
                 <div class="zx-card__body">
                 <div class="ui form">
@@ -220,7 +308,7 @@
                         <div class="zx-field field"><label for="flGName">Name</label><input type="text" id="flGName" placeholder="edge-eu"></div>
                         <div class="zx-field field"><label for="flGTags">Only proxy rules with these tags</label><input type="text" id="flGTags" placeholder="edge, public"><p class="zx-help">Empty means all proxy rules.</p></div>
                         <div class="zx-field field zx-field--wide"><label>Managed scopes</label><div id="flGScopes" class="flScopes"></div>
-                            <div class="zx-callout zx-callout--warn"><i class="key icon" aria-hidden="true"></i> <div>The <b>Certificates</b> scope sends TLS <b>private keys</b> to every node in the group. Enabling it asks for confirmation.</div></div></div>
+                            <div class="zx-callout zx-callout--warn" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span><div class="zx-callout__body">The <b>Certificates</b> scope sends TLS <b>private keys</b> to every node in the group. Enabling it asks for confirmation.</div></div></div>
                         <div class="zx-field field zx-field--wide"><label for="flGVars">Group variables (JSON)</label><textarea id="flGVars" rows="3" class="flMono" placeholder='{"upstream_ip": "10.0.0.5"}'></textarea><p class="zx-help">A JSON object with text values. Used as <code>{{node.name}}</code> in managed config.</p></div>
                     </div>
                 </div>
@@ -229,24 +317,21 @@
             </section>
         </div>
 
-        <div class="fltab zx-tabpanel" data-tab="versions" id="flPanelVersions" hidden>
+        <div class="fltab" data-tab="versions" id="flPanelVersions" hidden>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Versions</h3>
-                    <button class="zx-btn zx-btn--secondary" id="flCapture"><i class="camera icon" aria-hidden="true"></i> Capture current configuration</button></div>
-                <p class="zx-card__desc">Every published configuration is kept as a version, so you can compare and roll back.</p>
                 <div class="zx-card__body">
-                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Versions">
-                    <table class="zx-table"><thead><tr><th>Version</th><th>Created</th><th>By</th><th>Note</th><th>Scopes</th><th><span class="zx-sr-only">Actions</span></th></tr></thead><tbody id="flVersions"></tbody></table>
+                    <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Versions">
+                    <table class="zx-table"><thead><tr><th scope="col">Version</th><th scope="col">Created</th><th scope="col">By</th><th scope="col">Note</th><th scope="col">Scopes</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead><tbody id="flVersions"></tbody></table>
                     </div>
-                    <div id="flDiff" class="flDiff" style="display:none;"></div>
+                    <div id="flDiff" style="display:none;"></div>
                 </div>
             </section>
         </div>
 
-        <div class="fltab zx-tabpanel" data-tab="tokens" id="flPanelTokens" hidden>
+        <div class="fltab" data-tab="tokens" id="flPanelTokens" hidden>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Add a node</h3></div>
-                <p class="zx-card__desc">Create a one time join token (single use, short lived). On the new node open Fleet, enter this hub's admin URL and the token.</p>
+                <div class="zx-card__head"><h4 class="zx-card__title">Create a join token</h4></div>
+                <p class="zx-card__desc">The token works once and for a short time. On the new node open Fleet, enter this hub's admin URL and the token.</p>
                 <div class="zx-card__body">
                 <div class="ui form">
                     <div class="zx-form-grid">
@@ -255,8 +340,8 @@
                         <div class="zx-field field"><label for="flTokGroup">Group (optional)</label><input type="text" id="flTokGroup" placeholder="default"><p class="zx-help">Created when the node joins if it does not exist yet.</p></div>
                     </div>
                 </div>
-                <div id="flTokShow" class="zx-callout zx-callout--success" style="display:none;"><div>
-                    <strong>Join token (shown once)</strong>
+                <div id="flTokShow" class="zx-callout zx-callout--success" role="status" style="display:none;"><span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span><div class="zx-callout__body">
+                    <span class="zx-callout__title">Join token: copy it now, it is shown once</span>
                     <code id="flTokText" class="flBreak"></code>
                     <p class="zx-help">Hub admin certificate fingerprint to compare on the node: <code id="flHubFp" class="flBreak">-</code></p>
                 </div></div>
@@ -264,30 +349,30 @@
                 <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="flTokCreate">Create token</button></div>
             </section>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Tokens</h3></div>
+                <div class="zx-card__head"><h4 class="zx-card__title">Tokens</h4></div>
+                <p class="zx-card__desc">Every join token this hub created and what became of it.</p>
                 <div class="zx-card__body">
-                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Tokens">
-                    <table class="zx-table"><thead><tr><th>Id</th><th>State</th><th>Expires</th><th>Name</th><th>Group</th><th>Created by</th><th>Used by</th><th><span class="zx-sr-only">Actions</span></th></tr></thead><tbody id="flTokens"></tbody></table>
+                    <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Tokens">
+                    <table class="zx-table"><thead><tr><th scope="col">Id</th><th scope="col">State</th><th scope="col">Expires</th><th scope="col">For</th><th scope="col">Created by</th><th scope="col">Used by</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead><tbody id="flTokens"></tbody></table>
+                    </div>
+                </div>
+            </section>
+            <p class="zx-help">Before you add nodes: run NTP on the hub and every node, because tokens are only valid within 60 seconds of the clock. Turn on the admin HTTPS (<code>-webui_tls</code>) and join over https with the certificate fingerprint confirmed.</p>
+        </div>
+
+        <div class="fltab" data-tab="audit" id="flPanelAudit" hidden>
+            <section class="zx-card">
+                <div class="zx-card__body">
+                    <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Audit log">
+                    <table class="zx-table"><thead><tr><th scope="col">Time</th><th scope="col">Who</th><th scope="col">Action</th><th scope="col">Target</th><th scope="col">Detail</th></tr></thead><tbody id="flAudit"></tbody></table>
                     </div>
                 </div>
             </section>
         </div>
 
-        <div class="fltab zx-tabpanel" data-tab="audit" id="flPanelAudit" hidden>
+        <div class="fltab" data-tab="settings" id="flPanelSettings" hidden>
             <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Audit log</h3></div>
-                <p class="zx-card__desc">Who changed what on this hub.</p>
-                <div class="zx-card__body">
-                    <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Audit log">
-                    <table class="zx-table"><thead><tr><th>Time</th><th>Who</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody id="flAudit"></tbody></table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="fltab zx-tabpanel" data-tab="settings" id="flPanelSettings" hidden>
-            <section class="zx-card">
-                <div class="zx-card__head"><h3 class="zx-card__title">Hub settings</h3></div>
+                <div class="zx-card__head"><h4 class="zx-card__title">Versions and heartbeat</h4></div>
                 <p class="zx-card__desc">How many versions the hub keeps and how often nodes report in.</p>
                 <div class="zx-card__body">
                 <div class="ui form">
@@ -296,20 +381,21 @@
                         <div class="zx-field field"><label for="flSetHb">Heartbeat interval (s)</label><input type="number" id="flSetHb" min="5" max="300"></div>
                         <div class="zx-field field"><label for="flSetGrace">Canary unhealthy grace (s)</label><input type="number" id="flSetGrace" min="5" max="600"></div>
                         <div class="zx-field field zx-field--wide"><div class="zx-toggle-row ui checkbox"><input type="checkbox" id="flSetCerts"><label>Include certificates and private keys in captured versions (needed for the certificates scope; stored encrypted)</label></div>
-                            <div class="zx-callout zx-callout--warn"><i class="key icon" aria-hidden="true"></i> <div>Turning this on copies TLS private keys into the hub's version store and sends them to nodes that manage the Certificates scope. Enabling it asks for confirmation.</div></div></div>
+                            <div class="zx-callout zx-callout--warn" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span><div class="zx-callout__body">Turning this on copies TLS private keys into the hub's version store and sends them to nodes that manage the Certificates scope. Enabling it asks for confirmation.</div></div></div>
                     </div>
                 </div>
                 </div>
                 <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="flSetSave">Save settings</button></div>
             </section>
             <section class="zx-card zx-card--danger">
-                <div class="zx-card__head"><h3 class="zx-card__title">Turn the hub role off</h3></div>
-                <p class="zx-card__desc">Run NTP on the hub and every node: tokens are only valid within 60 seconds of the clock. Turn on the admin HTTPS (<code>-webui_tls</code>) and join over https with the certificate fingerprint confirmed.</p>
+                <div class="zx-card__head"><h4 class="zx-card__title">Turn the hub role off</h4></div>
+                <p class="zx-card__desc">This Zoraxy runs on its own again. Nodes keep their current configuration but stop receiving updates.</p>
                 <div class="zx-card__foot"><button class="zx-btn zx-btn--danger-outline" id="flBecomeStandalone">Turn the hub role off</button></div>
             </section>
         </div>
+        </div>
+      </div>
     </div>
-    <br><br>
 </div>
 
 <script>
@@ -317,7 +403,43 @@
     let ov = null, info = null, timer = null, openNode = null, probedFp = null, editGroup = "";
     function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
     function ts(u){ return u ? new Date(u * 1000).toLocaleString() : "-"; }
-    function ago(u){ if (!u) return "never"; let d = Math.max(0, Math.floor(Date.now()/1000 - u)); return d < 90 ? d + "s ago" : d < 5400 ? Math.round(d/60) + "m ago" : Math.round(d/3600) + "h ago"; }
+    function ago(u){ if (!u) return t("never"); let d = Math.max(0, Math.floor(Date.now()/1000 - u)); return d < 90 ? tf("{0}s ago", d) : d < 5400 ? tf("{0}m ago", Math.round(d/60)) : d < 172800 ? tf("{0}h ago", Math.round(d/3600)) : tf("{0}d ago", Math.round(d/86400)); }
+    function fact(label, value, cls, small){ return "<div class='cx-fact'><dt>" + esc(t(label)) + "</dt><dd" + (cls ? " class='is-" + cls + "'" : "") + ">" + esc(value) + (small ? "<small>" + esc(small) + "</small>" : "") + "</dd></div>"; }
+    function dot(kind, word){ return "<span class='zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "") + "'>" + esc(word) + "</span>"; }
+    /* Words for what the backend reports as lower-case codes. An unknown code is shown in sentence case, never raw. */
+    function plain(code){ code = String(code == null ? "" : code).replace(/[_-]+/g, " ").trim(); return code ? code.charAt(0).toUpperCase() + code.slice(1) : ""; }
+    //a sentence from the backend starts lower case: capitalise it, change nothing else
+    function cap(text){ text = String(text == null ? "" : text); return text.charAt(0).toUpperCase() + text.slice(1); }
+    //the result of a sync / apply: {kind, word}
+    function resultWord(r){
+        return {applied: {kind: "ok", word: t("Applied")}, unchanged: {kind: "ok", word: t("Up to date")}, error: {kind: "danger", word: t("Failed")}}[r] || {kind: "", word: plain(r)};
+    }
+    function rolloutWord(st){
+        return {complete: {kind: "ok", word: t("Complete")}, halted: {kind: "danger", word: t("Halted")}, aborted: {kind: "", word: t("Aborted")}, canary: {kind: "info", word: t("Canary running")},
+            pending_approval: {kind: "warn", word: t("Waiting for approval")}, awaiting_promotion: {kind: "warn", word: t("Canary healthy, waiting for approval")}}[st] || {kind: "", word: plain(st)};
+    }
+    function strategyWord(st){ return {immediate: t("all nodes at once"), canary: t("one node first"), manual: t("after manual approval")}[st] || plain(st).toLowerCase(); }
+    function tokenWord(st){ return {open: {kind: "ok", word: t("Open")}, used: {kind: "", word: t("Used")}, expired: {kind: "", word: t("Expired")}, revoked: {kind: "", word: t("Revoked")}}[st] || {kind: "", word: plain(st)}; }
+    function changeWord(c){ return {added: {kind: "ok", word: t("Added")}, removed: {kind: "danger", word: t("Removed")}, changed: {kind: "warn", word: t("Changed")}}[c] || {kind: "", word: plain(c)}; }
+    //a scope by its short name: the hub knows the labels, a node only the codes
+    function scopeWord(name){
+        var known = {proxy: t("Proxy rules"), redirect: t("Redirect rules"), access: t("Access rules"), pathrules: t("Path rules"), streamproxy: t("Stream proxies"), acme: t("ACME settings"),
+            ruleset: t("Rules engine"), waf: t("WAF policy"), certs: t("Certificates")};
+        if (known[name]) return known[name];
+        var s = ((ov && ov.scopes) || []).filter(function(x){ return x.name == name; })[0];
+        return s ? s.label : plain(name);
+    }
+    function scopeList(list){ return (list || []).map(scopeWord).join(", "); }
+    /* The status header: what this Zoraxy is. The icon tile shows the role (role = true: neutral blue, never a state colour);
+       the state is the dot badge next to the title: kind ok / warn / danger / "" plus the words. */
+    function setStatus(role, icon, title, badgeKind, badge, desc, facts){
+        $("#flStatus").attr("data-state", role ? "role" : null);
+        $("#flStatusIcon").attr("class", icon + " icon");
+        $("#flStatusTitle").text(title);
+        $("#flRoleBadge").attr("class", "zx-badge zx-badge--dot" + (badgeKind ? " zx-badge--" + badgeKind : "")).text(badge || "").prop("hidden", !badge);
+        $("#flStatusDesc").text(desc);
+        $("#flAgg").html(facts || "");
+    }
     function dur(s){ if (!s) return "-"; return s < 3600 ? Math.round(s/60) + "m" : s < 172800 ? Math.round(s/3600) + "h" : Math.round(s/86400) + "d"; }
     //Results are toasts (visible wherever the page is scrolled), not a banner that pushes the page down
     function msg(text, bad){ ZxUI.toast(text, {type: bad ? "error" : "success"}); }
@@ -331,7 +453,7 @@
             ok && ok(d);
         }, error: fail});
     }
-    function hub(action, data, ok){ post("./api/fleet/hub/" + action, data || {}, function(d){ ok ? ok(d) : msg("Done"); loadHub(); }); }
+    function hub(action, data, ok){ post("./api/fleet/hub/" + action, data || {}, function(d){ ok ? ok(d) : msg(t("Done")); loadHub(); }); }
     function checks(sel, target, chosen){
         let h = "";
         (ov.scopes || []).forEach(function(s){
@@ -344,7 +466,7 @@
     var CERT_WARN = "This sends TLS private keys to other machines: every node that manages the Certificates scope receives the private key of every certificate, and the hub stores them (encrypted) in its versions. Only enable it for nodes you fully trust, over a network you trust.";
     function withCertsAck(wasOn, nowOn, data, go){
         if (!nowOn || wasOn) { go(data); return; }
-        ask("Send TLS private keys to other machines?", CERT_WARN, "I understand, enable it", true).then(function(ok){
+        ask(t("Send TLS private keys to other machines?"), t(CERT_WARN), t("I understand, enable it"), true).then(function(ok){
             if (ok) { data.ackCerts = "true"; go(data); }
         });
     }
@@ -354,65 +476,99 @@
     /* ---------------- standalone / node ---------------- */
     function renderInfo(i){
         info = i;
-        $("#flStandalone, #flNode, #flHub").hide();
-        if (i.role == "hub") { $("#flHub").show(); loadHub(); return; }
+        $("#flStandalone, #flNode, #flHub, #flNodeActions").hide();
+        if (i.role == "hub") { $("#flHub").show(); if (!ov) setStatus(true, "sitemap", t("This Zoraxy is the hub"), "", "", t("It publishes configuration to the nodes that joined it and watches their health."), ""); loadHub(); return; }
         if (i.role == "node") {
-            let f = i.fleet || {};
-            $("#flNode").show();
-            $("#flNodeHub").text(f.hubHost || "hub");
+            let f = i.fleet || {}, res = resultWord(f.lastResult);
+            $("#flNode, #flNodeActions").show();
+            $("#flNodeHub").text(f.hubHost || t("hub"));
+            let kind = f.lastError ? "danger" : !f.lastResult ? "" : f.insecureTransport ? "warn" : "ok";
+            let word = f.lastError ? t("Last sync failed") : !f.lastResult ? t("Not synced yet") : f.insecureTransport ? t("In sync, but over plain http") : t("In sync with the hub");
+            setStatus(true, "cube", tf("Managed by the hub {0}", f.hubHost || ""), kind, word,
+                t("This Zoraxy pulls the configuration of its group from the hub and keeps everything else local. The hub can never run commands here."),
+                fact("Group", f.group || "-") +
+                fact("Applied version", f.appliedVersion ? "v" + f.appliedVersion : t("None yet")) +
+                fact("Last sync", f.lastResult ? res.word : t("Never"), f.lastError ? "danger" : "", f.lastSuccessAt ? tf("last success {0}", ago(f.lastSuccessAt)) : "") +
+                fact("Hub certificate", f.insecureTransport ? t("Plain http") : f.pinned ? t("Pinned") : t("Verified by a CA"), f.insecureTransport ? "danger" : "", f.insecureTransport ? t("not encrypted") : ""));
+            function kv(k, v, cls){ return "<dt>" + esc(t(k)) + "</dt><dd" + (cls ? " class='is-" + cls + "'" : "") + ">" + v + "</dd>"; }
             $("#flNodeBody").html(
-                "<tr><th scope='row'>Group</th><td>" + esc(f.group) + "</td></tr>" +
-                "<tr><th scope='row'>Managed scopes</th><td>" + esc((f.scopes || []).join(", ") || "none yet") + "</td></tr>" +
-                "<tr><th scope='row'>Managed proxy rules</th><td>" + esc((f.managedProxyRules || []).join(", ") || "-") + "</td></tr>" +
-                "<tr><th scope='row'>Applied version</th><td>" + esc(f.appliedVersion || "-") + "</td></tr>" +
-                "<tr><th scope='row'>Last result</th><td>" + esc(f.lastResult || "-") + " (" + ts(f.lastSuccessAt) + ")</td></tr>" +
-                "<tr><th scope='row'>Last error</th><td style='color:" + (f.lastError ? "var(--zx-danger-text)" : "var(--zx-text-muted)") + "'>" + esc(f.lastError || "none") + "</td></tr>" +
-                "<tr><th scope='row'>Hub certificate</th><td>" + (f.insecureTransport ? "<span style='color:var(--zx-danger-text)'>plain http, not encrypted</span>" : f.pinned ? "pinned" : "verified by CA") + "</td></tr>");
-            $("#flNodeConflicts").toggle(!!(f.conflicts && f.conflicts.length)).html("Local objects replaced by the hub (hub wins): " + esc((f.conflicts || []).map(function(c){ return c.key; }).join(", ")));
+                kv("Managed scopes", esc(scopeList(f.scopes) || t("None yet")), (f.scopes || []).length ? "" : "muted") +
+                kv("Managed proxy rules", esc((f.managedProxyRules || []).join(", ") || t("None")), (f.managedProxyRules || []).length ? "" : "muted") +
+                kv("Last result", f.lastResult ? dot(res.kind, res.word) + " <span class='zx-sub'>" + esc(f.lastSuccessAt ? tf("last success {0}", ts(f.lastSuccessAt)) : "") + "</span>" : esc(t("Never synced")), f.lastResult ? "" : "muted") +
+                kv("Last error", esc(f.lastError || t("None")), f.lastError ? "danger" : "muted"));
+            $("#flNodeConflicts").toggle(!!(f.conflicts && f.conflicts.length)).text(t("Local objects replaced by the hub (hub wins):") + " " + (f.conflicts || []).map(function(c){ return c.key; }).join(", "));
             return;
         }
+        ov = null;
+        setStatus(false, "cube", t("This Zoraxy runs on its own"), "", t("Fleet is off"), t("Fleet is off, which is the default. Make this node the hub that manages the others, or join a hub that already exists."), "");
         $("#flStandalone").show();
         $("#flLegacyNote").toggle(!!i.legacy);
-        $("#flBecomeHub, #flJoinBtn, #flProbeBtn").prop("disabled", !!i.legacy);
+        $("#flBecomeHub, #flProbeBtn").prop("disabled", !!i.legacy);
+        $("#flJoinBtn").prop("disabled", !!i.legacy || probedFp === null);   //Join stays locked until the hub certificate was checked
     }
     function loadInfo(){ $.ajax({url: "./api/fleet/node/info", method: "GET", success: renderInfo, error: fail}); }
 
     $("#flBecomeHub").on("click", function(){
-        ask("Turn this Zoraxy into a Fleet hub?", "This node becomes the management console. Its configuration is published to the nodes you add.", "Enable hub role").then(function(ok){
+        ask(t("Turn this Zoraxy into a Fleet hub?"), t("This node becomes the management console. Its configuration is published to the nodes you add."), t("Enable hub role")).then(function(ok){
             if (ok) post("./api/cluster/config", {role: "hub"}, function(){ loadInfo(); });
         });
     });
     $("#flBecomeStandalone").on("click", function(){
-        ask("Turn the hub role off?", "Nodes keep their current configuration but stop receiving updates.", "Turn the hub role off", true).then(function(ok){
+        ask(t("Turn the hub role off?"), t("Nodes keep their current configuration but stop receiving updates."), t("Turn the hub role off"), true).then(function(ok){
             if (ok) post("./api/cluster/config", {role: "standalone"}, function(){ loadInfo(); });
         });
     });
+    /* Step 1 of joining: ask the hub for its certificate. The result stays in the card (working, answered, plain http or
+       failed with the reason and what to check), so the step can be read again while the fingerprint is compared. */
+    function probeResult(state, icon, title, bodyHtml){
+        $("#flProbeBox").attr("data-state", state || null).prop("hidden", false).html(
+            "<span class='cx-result__icon' aria-hidden='true'>" + icon + "</span><div class='cx-result__body'><div class='cx-result__title' role='heading' aria-level='4'>" + esc(title) + "</div>" + bodyHtml + "</div>");
+    }
+    function probeFailed(reason){
+        probedFp = null;
+        $("#flJoinBtn").prop("disabled", true);
+        probeResult("danger", "<i class='times icon'></i>", t("The hub did not answer"),
+            "<p class='cx-result__text'>" + esc(t("Nothing was changed. The reason given:")) + "</p><div class='cx-result__detail'>" + esc(reason) + "</div><ul>" +
+            "<li>" + esc(t("Check the address and the port: it is the address you open the hub's admin page with.")) + "</li>" +
+            "<li>" + esc(t("From outside the hub's network the admin port is usually closed. Start the hub with a separate fleet port and use that address.")) + "</li>" +
+            "<li>" + esc(t("A firewall between this node and the hub must allow the port.")) + "</li></ul>");
+    }
     $("#flProbeBtn").on("click", function(){
-        post("./api/fleet/node/probe", {hubUrl: $("#flJoinUrl").val()}, function(p){
+        let url = $.trim($("#flJoinUrl").val());
+        if (!url) {
+            probedFp = null;
+            probeResult("danger", "<i class='times icon'></i>", t("Enter the hub admin URL first"), "<p class='cx-result__text'>" + esc(t("For example https://10.0.0.10:8000")) + "</p>");
+            $("#flJoinUrl").trigger("focus");
+            return;
+        }
+        probeResult("", "<span class='cx-spin'></span>", t("Asking the hub for its certificate ..."), "<p class='cx-result__text'>" + esc(url) + "</p>");
+        $("#flProbeBtn").prop("disabled", true);
+        $.cjax({method: "POST", url: "./api/fleet/node/probe", data: {hubUrl: url}, success: function(p){
+            if (!p || p.error) { probeFailed((p && p.error) || t("no answer")); return; }
             probedFp = p.https ? p.fingerprint : "";
-            let t;
-            if (!p.https) t = "<b style='color:var(--zx-danger-text)'>This URL is plain http: the token and the node key would be sent unencrypted.</b> Use https if you can.";
-            else t = "Hub certificate (" + esc(p.subject || "unknown subject") + ") SHA-256 fingerprint:<br><code style='word-break:break-all;'>" + esc(p.fingerprint) + "</code><br>" +
-                (p.trustedByCA ? "It is signed by a trusted CA." : "It is self-signed or not trusted by a CA.") +
-                " <b>Compare it with the fingerprint shown on the hub (Join nodes tab) before you join.</b> It will be pinned.";
-            $("#flProbeBox").html(t).show();
+            if (!p.https) probeResult("warn", "<i class='unlock icon'></i>", t("This URL is plain http: there is no certificate to check"), "<p class='cx-result__text'>" + esc(t("The hub was not contacted. Over plain http the join token and the node key are sent unencrypted. Use an https address if you can; Join asks once more before it sends them.")) + "</p>");
+            else probeResult("", "<i class='lock icon'></i>", tf("The hub answered with the certificate of {0}", p.subject || t("an unknown subject")),
+                "<p class='cx-result__text'>" + esc(t("SHA-256 fingerprint:")) + "</p><div class='cx-result__detail'>" + esc(p.fingerprint) + "</div>" +
+                "<p class='cx-result__text'>" + esc(p.trustedByCA ? t("It is signed by a trusted CA.") : t("It is self-signed or not trusted by a CA.")) +
+                " <b>" + esc(t("Compare it with the fingerprint shown on the hub (Join nodes) before you join.")) + "</b> " + esc(t("It will be pinned.")) + "</p>");
             $("#flJoinBtn").prop("disabled", false);
-        });
+        }, error: function(xhr){ probeFailed((xhr && xhr.responseJSON && xhr.responseJSON.error) || (xhr && xhr.statusText) || t("no answer")); },
+        complete: function(){ $("#flProbeBtn").prop("disabled", !!(info && info.legacy)); }});
     });
     $("#flJoinBtn").on("click", function(){
         let plain = probedFp === "";
         function doJoin(){
             post("./api/fleet/node/join", {hubUrl: $("#flJoinUrl").val(), token: $("#flJoinToken").val(), fingerprint: probedFp || "", allowHttp: plain ? "true" : "false"}, function(){
-                $("#flJoinToken").val(""); msg("Joined the fleet"); loadInfo();
+                $("#flJoinToken").val(""); $("#flProbeBox").prop("hidden", true).empty(); msg(t("Joined the fleet")); loadInfo();
             });
         }
         if (!plain) { doJoin(); return; }
-        ask("Join over plain http?", "The join token and node key are not encrypted on the wire.", "Join anyway", true).then(function(ok){ if (ok) doJoin(); });
+        ask(t("Join over plain http?"), t("The join token and node key are not encrypted on the wire."), t("Join anyway"), true).then(function(ok){ if (ok) doJoin(); });
     });
-    $("#flJoinUrl").on("input", function(){ probedFp = null; $("#flJoinBtn").prop("disabled", true); $("#flProbeBox").hide(); });
-    $("#flNodeSync").on("click", function(){ post("./api/fleet/node/syncNow", {}, function(){ msg("Synced"); loadInfo(); }); });
+    $("#flJoinUrl").on("input", function(){ probedFp = null; $("#flJoinBtn").prop("disabled", true); $("#flProbeBox").prop("hidden", true).empty(); });
+    $("#flNodeSync").on("click", function(){ post("./api/fleet/node/syncNow", {}, function(){ msg(t("Synced")); loadInfo(); }); });
     $("#flNodeLeave").on("click", function(){
-        ask("Leave the fleet?", "The current files stay as local configuration.", "Leave fleet", true).then(function(ok){
+        ask(t("Leave the fleet?"), t("The current files stay as local configuration."), t("Leave fleet"), true).then(function(ok){
             if (ok) post("./api/fleet/node/leave", {}, function(){ loadInfo(); });
         });
     });
@@ -431,176 +587,243 @@
         if (rows) { $wrap.show(); $e.remove(); return; }
         $wrap.hide();
         if (!$e.length) {
-            $e = $("<div class='zx-empty'><h4 class='zx-empty__title'></h4><p class='zx-empty__text'></p></div>").insertAfter($wrap);
+            $e = $("<div class='zx-empty'><div class='zx-empty__icon' aria-hidden='true'><i class='inbox icon'></i></div><h4 class='zx-empty__title'></h4><p class='zx-empty__text'></p></div>").insertAfter($wrap);
             $e.find(".zx-empty__title").text(t(title)); $e.find(".zx-empty__text").text(t(text));
             if (goTab) $("<button type='button' class='zx-btn zx-btn--secondary'></button>").text(t(goLabel)).on("click", function(){ $("#flTabs .item[data-tab=" + goTab + "]").trigger("click"); }).appendTo($e);
         }
     }
     function stBadge(s){
-        let c = {online: "green", degraded: "orange", offline: "red", revoked: "grey", "never-seen": "grey"}[s] || "grey";
-        return "<span class='ui " + c + " mini label'>" + esc(s) + "</span>";
+        let kind = {online: "ok", degraded: "warn", offline: "danger"}[s] || "";
+        let word = {online: t("Online"), degraded: t("Degraded"), offline: t("Offline"), revoked: t("Revoked"), "never-seen": t("Never seen")}[s] || s;
+        return dot(kind, word);
     }
+    function nodeById(id){ return ov.nodes.filter(function(n){ return n.id == id; })[0]; }
     function renderHub(){
-        let a = ov.aggregate, n = a.nodes || {};
-        function tile(label, value, cls){ return "<div class='zx-stat" + (cls ? " zx-stat--" + cls : "") + "'><span class='zx-stat__label'>" + esc(window.t(label)) + "</span><span class='zx-stat__value'>" + value + "</span></div>"; }
-        $("#flAgg").html(
-            tile("Online", (n.online || 0) + "/" + ov.nodes.length, n.online == ov.nodes.length && ov.nodes.length ? "ok" : "") +
-            tile("Requests / min", Math.round(a.reqPerMin)) +
-            tile("5xx rate", (a.errorRate * 100).toFixed(1) + "%", a.errorRate > 0.05 ? "danger" : "") +
-            tile("WAF events / min", Math.round(a.wafPerMin)) +
-            tile("Active rules", a.endpoints) +
-            tile("Drifting", a.drifting, a.drifting ? "warn" : ""));
+        let a = ov.aggregate, n = a.nodes || {}, total = ov.nodes.length, on = n.online || 0;
+        let down = total - on, drifting = a.drifting || 0;
+        let kind = !total ? "" : down ? "danger" : drifting ? "warn" : "ok";
+        let word = !total ? t("No nodes yet") : down ? (down == 1 ? t("1 node is not reachable") : tf("{0} nodes are not reachable", down))
+            : drifting ? (drifting == 1 ? t("1 node differs from what was published") : tf("{0} nodes differ from what was published", drifting)) : t("All nodes online and in sync");
+        setStatus(true, "sitemap", t("This Zoraxy is the hub"), kind, word,
+            total ? tf("It publishes configuration to {0} nodes in {1} groups and watches their health. It can never run commands on a node.", total, ov.groups.length)
+                  : t("No node has joined yet. Create a join token under Join nodes and enter it on the node you want to add."),
+            fact("Nodes online", tf("{0} of {1}", on, total), total ? (on == total ? "ok" : "danger") : "muted", total && on < total ? tf("{0} not reachable", total - on) : "") +
+            fact("Drifting", drifting, drifting ? "warn" : "", drifting ? t("differ from what was published") : t("all match the hub")) +
+            fact("Requests / min", Math.round(a.reqPerMin)) +
+            fact("5xx rate", (a.errorRate * 100).toFixed(1) + "%", a.errorRate > 0.05 ? "danger" : "") +
+            fact("WAF events / min", Math.round(a.wafPerMin)) +
+            fact("Active rules", a.endpoints));
+        nav.state("nodes", !total ? null : down ? "danger" : drifting ? "warn" : "on", total ? tf("{0} of {1}", on, total) : "");
+        let waiting = ov.groups.filter(function(x){ return x.rollout && (x.rollout.state == "pending_approval" || x.rollout.state == "awaiting_promotion"); }).length;
+        nav.state("groups", waiting ? "warn" : null, waiting ? t("Waiting") : "");
         let rows = "";
         ov.nodes.forEach(function(x){
             let days = x.certExpiry ? Math.floor((x.certExpiry - ov.now) / 86400) : null;
-            let sync = (x.paused ? "<span class='ui grey mini label' title='Sync is off for this node: the hub sends it nothing'>Not synced</span>" : "v" + esc(x.appliedVersion || 0) + (x.desiredVersion ? " / v" + x.desiredVersion : "")) +
-                (x.paused ? "" : x.drift ? " <i class='orange exclamation triangle icon' title='" + esc(x.driftReason) + "'></i>" : x.desiredVersion ? " <i class='green check icon' title='" + (x.syncState == "unchecked" ? "applied; content not compared (older node)" : "in sync with the hub") + "'></i>" : "") +
-                (!x.paused && x.driftScopes && x.driftScopes.length ? "<span class='flSubline' style='color:var(--zx-warn-text)'>drifted: " + esc(x.driftScopes.join(", ")) + "</span>" : "");
-            rows += "<tr data-id='" + esc(x.id) + "' class='flRow'><td data-label='Node'><b>" + esc(x.name) + "</b><span class='flSubline'>" + esc(x.addr || x.id) + "</span></td>" +
-                "<td data-label='Group'>" + esc(x.group) + "</td><td data-label='Status'>" + stBadge(x.status) + (x.keyRotating ? " <i class='sync icon' title='key rotation pending'></i>" : "") + "<span class='flSubline'>" + ago(x.lastSeen) + "</span></td>" +
-                "<td data-label='Version'>" + esc(x.version || "-") + "</td><td data-label='Uptime'>" + dur(x.uptime) + "</td>" +
-                "<td data-label='Health'>" + (x.health == "ok" ? "<i class='green check icon'></i> ok" : x.health ? "<i class='red times icon'></i>" + esc(x.health) : "-") + "</td>" +
-                "<td class='zx-num' data-label='Rules'>" + esc(x.endpoints) + "</td><td data-label='Cert expiry' style='color:" + (days != null && days < 14 ? "var(--zx-danger-text)" : "inherit") + "'>" + (days == null ? "-" : days + " d") + "</td>" +
-                "<td data-label='WAF'>" + esc(x.wafMode || "-") + "</td><td class='zx-num' data-label='Req/min'>" + Math.round(x.reqPerMin) + "</td><td class='zx-num' data-label='5xx/min'>" + Math.round(x.errPerMin) + "</td>" +
-                "<td data-label='Config'>" + sync + "</td>" +
-                "<td class='flActs zx-actions' data-label='Actions'><div class='zx-row-actions'>" + (x.adminUrl ? "<a class='ui mini basic icon button' href='" + esc(x.adminUrl) + "' target='_blank' rel='noopener' title='Open the admin UI of this node' aria-label='Open the admin UI of this node'><i class='external alternate icon'></i></a>" : "") + (x.status == "revoked" ? "" :
-                    "<button class='ui mini basic icon button' data-act='nodeSync' title='Sync now' aria-label='Sync now'><i class='sync icon'></i></button>" +
-                    "<button class='ui mini basic icon button' data-act='nodeRotate' title='Rotate node key' aria-label='Rotate node key'><i class='key icon'></i></button>" +
-                    "<button class='ui mini basic icon button' data-act='nodeGroup' title='Change group' aria-label='Change group'><i class='exchange icon'></i></button>" +
-                    "<button class='ui mini basic red icon button' data-act='nodeRevoke' title='Revoke' aria-label='Revoke'><i class='ban icon'></i></button>") +
-                "<button class='ui mini basic icon button' data-act='nodeRemove' title='Remove' aria-label='Remove'><i class='trash icon'></i></button></div></td></tr>";
+            let conf;
+            if (x.paused) conf = "<span class='cx-no'>" + esc(t("Sync off")) + "</span><span class='cx-cell__sub'>" + esc(t("the hub sends it nothing")) + "</span>";
+            else {
+                let state = x.drift ? "<span class='cx-cell__sub is-warn' title='" + esc(x.driftReason) + "'><i class='exclamation triangle icon' aria-hidden='true'></i> " + esc(x.driftScopes && x.driftScopes.length ? tf("Drifted: {0}", scopeList(x.driftScopes)) : (x.driftReason ? cap(x.driftReason) : t("Drifted"))) + "</span>"
+                    : x.desiredVersion ? "<span class='cx-cell__sub'>" + esc(x.syncState == "unchecked" ? t("Applied, content not compared (older node)") : t("In sync with the hub")) + "</span>"
+                    : "<span class='cx-cell__sub'>" + esc(t("Nothing published to its group")) + "</span>";
+                conf = "<span class='cx-cell__main'>v" + esc(x.appliedVersion || 0) + (x.desiredVersion && x.desiredVersion != x.appliedVersion ? " <span class='cx-cell__sub'>" + esc(tf("of v{0}", x.desiredVersion)) + "</span>" : "") + "</span>" + state;
+            }
+            //Health: the state as a dot badge, then the software, then the traffic. One cell, so the row stays two or three lines at laptop width.
+            let health = x.health == "ok" ? dot("ok", t("Healthy")) : x.health ? dot("danger", t("Unhealthy")) + "<span class='cx-cell__sub is-danger flReason' title='" + esc(x.health) + "'>" + esc(cap(x.health)) + "</span>" : "<span class='cx-no'>" + esc(t("No report yet")) + "</span>";
+            let soft = [x.version ? "v" + x.version : "", x.uptime ? tf("up {0}", dur(x.uptime)) : ""].filter(Boolean).map(function(v){ return "<span>" + esc(v) + "</span>"; }).join(" · ");
+            //a certificate is only mentioned in the row when it needs attention (30 days or less); the node view always shows it
+            let certLine = days != null && days <= 30 ? "<span class='cx-cell__sub flLine " + (days < 14 ? "is-danger" : "is-warn") + "' title='" + esc(t("The certificate of this node that expires first")) + "'><i class='certificate icon' aria-hidden='true'></i> " + esc(days <= 0 ? t("A certificate has expired") : days == 1 ? t("A certificate expires in 1 day") : tf("A certificate expires in {0} days", days)) + "</span>" : "";
+            let errs = Math.round(x.errPerMin || 0);
+            let traffic = x.lastSeen && x.status != "offline" && x.status != "revoked" ? "<span>" + esc(tf("{0} req/min", Math.round(x.reqPerMin || 0))) + "</span> · <span" + (errs > 0 ? " class='flBad'" : "") + ">" + esc(errs == 1 ? t("1 error/min") : tf("{0} errors/min", errs)) + "</span>" : "";
+            rows += "<tr data-id='" + esc(x.id) + "' class='flRow'>" +
+                "<td data-label='" + esc(t("Node")) + "'><div class='cx-cell'><span class='cx-cell__main'>" + esc(x.name) + "</span><span class='cx-cell__sub flLine' title='" + esc(x.id) + "'>" + esc([x.group, x.addr || String(x.id).slice(0, 8)].filter(Boolean).join(" · ")) + "</span></div></td>" +
+                "<td data-label='" + esc(t("Status")) + "'><div class='cx-cell cx-cell--words'>" + stBadge(x.status) + (x.lastSeen ? "<span class='cx-cell__sub flLine'>" + esc(tf("seen {0}", ago(x.lastSeen))) + "</span>" : "<span class='cx-cell__sub'>" + esc(t("has not reported in yet")) + "</span>") + (x.keyRotating ? "<span class='cx-cell__sub'>" + esc(t("key rotation pending")) + "</span>" : "") + "</div></td>" +
+                "<td data-label='" + esc(t("Configuration")) + "'><div class='cx-cell cx-cell--words'>" + conf + "</div></td>" +
+                "<td data-label='" + esc(t("Health")) + "'><div class='cx-cell cx-cell--words'>" + health + (soft ? "<span class='cx-cell__sub flLine'>" + soft + "</span>" : "") + (traffic ? "<span class='cx-cell__sub flLine'>" + traffic + "</span>" : "") + certLine + "</div></td>" +
+                "<td class='flActs zx-actions' data-label='" + esc(t("Actions")) + "'><div class='zx-row-actions'>" +
+                    (x.status == "revoked" ? "" : "<button type='button' class='zx-btn zx-btn--ghost zx-btn--sm cx-iconbtn' data-act='nodeSync' title='" + esc(t("Sync now")) + "' aria-label='" + esc(tf("Sync {0} now", x.name)) + "'><i class='sync icon' aria-hidden='true'></i></button>") +
+                    "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-open='1' aria-label='" + esc(tf("Details of {0}", x.name)) + "'>" + esc(t("Details")) + "</button></div></td></tr>";
         });
-        fillTable("#flNodes", rows, "No nodes yet", "Create a join token on the Join nodes tab, then enter it on the new node.", "tokens", "Add a node");
+        fillTable("#flNodes", rows, "No nodes yet", "Create a join token under Join nodes, then enter it on the new node.", "tokens", "Add a node");
         if (openNode) drawer(openNode, true);
 
         // groups
         let g = "", opts = "";
         ov.groups.forEach(function(x){
             opts += "<option>" + esc(x.name) + "</option>";
-            g += "<tr><td data-label='Group'><b>" + esc(x.name) + "</b></td><td data-label='Managed scopes'>" + esc((x.sel.scopes || []).join(", ") || "nothing managed") + (x.sel.proxyTags && x.sel.proxyTags.length ? "<span class='flSubline' style='display:block;color:var(--zx-text-muted)'>tags: " + esc(x.sel.proxyTags.join(", ")) + "</span>" : "") +
-                "</td><td data-label='Variables'>" + esc(Object.keys(x.vars || {}).join(", ") || "-") + "</td><td data-label='Stable version'>" + (x.desired ? "v" + x.desired : "none published") +
-                "</td><td class='zx-actions' data-label='Actions'><div class='zx-row-actions'><button class='ui mini basic button' data-g='edit' data-name='" + esc(x.name) + "'>Edit</button><button class='ui mini basic red button' data-g='del' data-name='" + esc(x.name) + "'>Delete</button>" +
-                (x.desired && x.rollout && x.rollout.prevVersion ? "<button class='ui mini basic orange button' data-g='rollback' data-name='" + esc(x.name) + "'>Roll back</button>" : "") + "</div></td></tr>";
+            g += "<tr><td data-label='" + esc(t("Group")) + "'><b>" + esc(x.name) + "</b></td><td data-label='" + esc(t("Managed scopes")) + "'>" + esc(scopeList(x.sel.scopes) || t("Nothing managed")) + (x.sel.proxyTags && x.sel.proxyTags.length ? "<span class='flSubline'>" + esc(tf("tags: {0}", x.sel.proxyTags.join(", "))) + "</span>" : "") +
+                "</td><td data-label='" + esc(t("Variables")) + "'>" + esc(Object.keys(x.vars || {}).join(", ") || "-") + "</td><td data-label='" + esc(t("Stable version")) + "'>" + (x.desired ? "v" + esc(x.desired) : esc(t("None published"))) +
+                "</td><td class='zx-actions' data-label='" + esc(t("Actions")) + "'><div class='zx-row-actions'>" + (x.desired && x.rollout && x.rollout.prevVersion ? "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-g='rollback' data-name='" + esc(x.name) + "'>" + esc(t("Roll back")) + "</button>" : "") +
+                "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-g='edit' data-name='" + esc(x.name) + "'>" + esc(t("Edit")) + "</button><button type='button' class='zx-btn zx-btn--ghost zx-btn--sm cx-iconbtn cx-iconbtn--danger' data-g='del' data-name='" + esc(x.name) + "' title='" + esc(t("Delete group")) + "' aria-label='" + esc(tf("Delete group {0}", x.name)) + "'><i class='trash icon' aria-hidden='true'></i></button>" + "</div></td></tr>";
         });
         fillTable("#flGroups", g, "No groups yet", "Create the first group below. Nodes join a group and receive what it manages.");
         let keepSel = $("#flPubGroup").val();
-        $("#flPubGroup").html(opts || "<option value=''>" + esc(window.t("No groups yet")) + "</option>").val(keepSel || $("#flPubGroup option:first").val());
+        $("#flPubGroup").html(opts || "<option value=''>" + esc(t("No groups yet")) + "</option>").val(keepSel || $("#flPubGroup option:first").val());
         $("#flPubGroup, #flPublishBtn").prop("disabled", !ov.groups.length); //nothing to publish to until a group exists
         fillCanary();
+        $("#flGroupList").html(ov.groups.map(function(x){ return "<option value='" + esc(x.name) + "'>"; }).join(""));
         if ($("#flGScopes").children().length == 0) checks(ov.scopes, "#flGScopes", []);
 
         // rollouts
         let r = "";
         ov.groups.forEach(function(x){
             let o = x.rollout; if (!o) return;
-            let col = {complete: "green", halted: "red", aborted: "grey", canary: "blue", pending_approval: "orange", awaiting_promotion: "orange"}[o.state] || "grey";
-            r += "<div class='flRollout'><div class='flRolloutMain'><span class='ui " + col + " label'>" + esc(o.state.replace("_", " ")) + "</span> <b>" + esc(x.name) + "</b> v" + o.version + " (" + esc(o.strategy) + ", from v" + o.prevVersion + ") " +
-                (o.canaryNode ? "canary: " + esc(o.canaryNode) : "") + "<p class='zx-help' style='margin:4px 0 0'>" + esc(o.reason || "") + " - " + ts(o.stateAt) + " by " + esc(o.by) + "</p></div><div class='zx-btn-row'>" +
-                ((o.state == "pending_approval" || o.state == "awaiting_promotion") ? "<button class='ui mini primary button' data-r='approve' data-name='" + esc(x.name) + "'>Approve</button>" : "") +
-                ((o.state == "pending_approval" || o.state == "awaiting_promotion" || o.state == "canary") ? "<button class='ui mini basic red button' data-r='abort' data-name='" + esc(x.name) + "'>Abort</button>" : "") + "</div></div>";
+            let w = rolloutWord(o.state);
+            let waits = o.state == "pending_approval" || o.state == "awaiting_promotion";
+            r += "<div class='flRollout'><div class='flRolloutMain'><div class='flRolloutTitle'><b>" + esc(x.name) + "</b> " + dot(w.kind, w.word) + "</div>" +
+                "<p class='zx-help' style='margin:4px 0 0'>" + esc(o.prevVersion ? tf("v{0} replaces v{1}, {2}", o.version, o.prevVersion, strategyWord(o.strategy)) : tf("v{0}, {1}", o.version, strategyWord(o.strategy))) + (o.canaryNode ? " · " + esc(tf("canary: {0}", (nodeById(o.canaryNode) || {}).name || o.canaryNode)) : "") + (o.reason ? " · " + esc(o.reason) : "") + " · " + esc(ts(o.stateAt)) + " · " + esc(o.by) + "</p></div><div class='zx-btn-row'>" +
+                (waits ? "<button type='button' class='zx-btn zx-btn--primary zx-btn--sm' data-r='approve' data-name='" + esc(x.name) + "'>" + esc(t("Approve")) + "</button>" : "") +
+                ((waits || o.state == "canary") ? "<button type='button' class='zx-btn zx-btn--danger-outline zx-btn--sm' data-r='abort' data-name='" + esc(x.name) + "'>" + esc(t("Abort")) + "</button>" : "") + "</div></div>";
         });
-        $("#flRollouts").html(r || "<div class='zx-empty zx-empty--inline'><p class='zx-empty__text'>" + esc(window.t("Nothing published yet. Use Publish below to send the first version to a group.")) + "</p></div>");
+        $("#flRollouts").html(r || "<div class='zx-empty zx-empty--inline'><p class='zx-empty__text'>" + esc(t("Nothing published yet. Use Publish below to send the first version to a group.")) + "</p></div>");
 
         // versions
         let v = "";
         ov.versions.slice().reverse().forEach(function(x, i, arr){
             let prev = arr[i + 1] ? arr[i + 1].id : 0;
-            v += "<tr><td data-label='Version'>v" + x.id + "</td><td data-label='Created'>" + ts(x.createdAt) + "</td><td data-label='By'>" + esc(x.createdBy) + "</td><td data-label='Note'>" + esc(x.note) + "</td><td data-label='Scopes'>" + esc((x.scopes || []).join(", ")) +
-                "</td><td class='zx-actions' data-label='Actions'><div class='zx-row-actions'><button class='ui mini basic button' data-v='diff' data-a='" + prev + "' data-b='" + x.id + "'>What changed</button>" +
-                "<button class='ui mini basic orange button' data-v='roll' data-b='" + x.id + "'>Publish this version</button></div></td></tr>";
+            v += "<tr><td data-label='" + esc(t("Version")) + "'><b>v" + esc(x.id) + "</b></td><td data-label='" + esc(t("Created")) + "'>" + esc(ts(x.createdAt)) + "</td><td data-label='" + esc(t("By")) + "'>" + esc(x.createdBy) + "</td><td data-label='" + esc(t("Note")) + "'>" + esc(x.note) + "</td><td data-label='" + esc(t("Scopes")) + "'>" + esc(scopeList(x.scopes)) +
+                "</td><td class='zx-actions' data-label='" + esc(t("Actions")) + "'><div class='zx-row-actions'><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-v='diff' data-a='" + prev + "' data-b='" + x.id + "'>" + esc(t("What changed")) + "</button>" +
+                "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-v='roll' data-b='" + x.id + "'>" + esc(t("Publish this version")) + "</button></div></td></tr>";
         });
         fillTable("#flVersions", v, "No versions yet", "Capture the current configuration to create the first version.");
 
         // tokens
-        let t = "";
+        let tk = "";
         ov.tokens.forEach(function(x){
-            t += "<tr><td data-label='Id'>" + esc(x.id) + "</td><td data-label='State'>" + esc(x.state) + "</td><td data-label='Expires'>" + ts(x.expiresAt) + "</td><td data-label='Name'>" + esc(x.nodeName || "-") + "</td><td data-label='Group'>" + esc(x.group || "-") +
-                "</td><td data-label='Created by'>" + esc(x.createdBy) + "</td><td data-label='Used by'>" + esc(x.usedBy || "-") + "</td><td class='zx-actions' data-label='Actions'>" + (x.state == "open" ? "<button class='ui mini basic red button' data-t='" + esc(x.id) + "'>Revoke</button>" : "") + "</td></tr>";
+            let w = tokenWord(x.state), who = [x.nodeName, x.group ? tf("group {0}", x.group) : ""].filter(Boolean).join(" · ");
+            tk += "<tr><td data-label='" + esc(t("Id")) + "'>" + esc(x.id) + "</td><td data-label='" + esc(t("State")) + "'>" + dot(w.kind, w.word) + "</td><td data-label='" + esc(t("Expires")) + "'>" + esc(ts(x.expiresAt)) + "</td><td data-label='" + esc(t("For")) + "'>" + esc(who || t("Any node")) +
+                "</td><td data-label='" + esc(t("Created by")) + "'>" + esc(x.createdBy) + "</td><td data-label='" + esc(t("Used by")) + "'>" + esc(x.usedBy || "-") + "</td><td class='zx-actions' data-label='" + esc(t("Actions")) + "'>" + (x.state == "open" ? "<button type='button' class='zx-btn zx-btn--danger-outline zx-btn--sm' data-t='" + esc(x.id) + "'>" + esc(t("Revoke")) + "</button>" : "") + "</td></tr>";
         });
-        fillTable("#flTokens", t, "No tokens yet", "Create a join token above to add a node.");
+        fillTable("#flTokens", tk, "No tokens yet", "Create a join token above to add a node.");
         if (!$("#flSetKeep").is(":focus")) {
             $("#flSetKeep").val(ov.settings.keepVersions); $("#flSetHb").val(ov.settings.heartbeatSecs);
             $("#flSetGrace").val(ov.settings.healthGraceSec); $("#flSetCerts").prop("checked", !!ov.settings.captureCerts);
         }
     }
     function fillCanary(){
-        let g = $("#flPubGroup").val(), o = "<option value=''>automatic</option>";
+        let g = $("#flPubGroup").val(), o = "<option value=''>" + esc(t("Automatic")) + "</option>";
         ov.nodes.forEach(function(n){ if (n.group == g && n.status != "revoked") o += "<option value='" + esc(n.id) + "'>" + esc(n.name) + "</option>"; });
         $("#flPubCanary").html(o);
     }
     $("#flPubGroup").on("change", fillCanary);
     $("#flPubStrategy").on("change", function(){ $(".canaryOnly").toggle($(this).val() == "canary"); }).trigger("change");
 
+    /* ---------------- one node (replaces the list while it is open) ---------------- */
+    let formSnap = null;
+    //the editable part of the node view as three strings, to see what changed since it was filled
+    function formState(){
+        return {
+            info: JSON.stringify([$("#flNodeName").val(), $.trim($("#flNodeUrl").val()), $("#flNodeNotes").val()]),
+            vars: $.trim($("#flNodeVars").val()),
+            scopes: JSON.stringify([$("#flNodeInherit").is(":checked"), picked("#flNodeScopes"), $.trim($("#flNodeTags").val())])
+        };
+    }
     function drawer(id, keep){
-        let x = ov.nodes.filter(function(n){ return n.id == id; })[0];
-        if (!x) { $("#flDrawer").hide(); openNode = null; return; }
+        let x = nodeById(id);
+        if (!x) { closeDrawer(false); return; }
+        let was = openNode == id && $("#flDrawer").is(":visible");
         openNode = id;
-        $("#flDrawerTitle").text(x.name + " (" + x.id + ") - " + x.status);
+        $("#flDrawerTitle").text(x.name);
+        $("#flDrawerState").html(stBadge(x.status));
+        $("#flDrawerDesc").text([tf("Group {0}", x.group), x.addr, x.id].filter(Boolean).join(" · "));
+        let res = (x.history || []).length ? resultWord(x.history[x.history.length - 1].result) : null;
+        let cdays = x.certExpiry ? Math.floor((x.certExpiry - ov.now) / 86400) : null;
+        function kv(k, v, cls){ return "<dt>" + esc(k) + "</dt><dd" + (cls ? " class='is-" + cls + "'" : "") + ">" + v + "</dd>"; }
+        $("#flNodeFacts").html(
+            kv(t("Last seen"), esc(ago(x.lastSeen)) + (x.lastSeen ? " <span class='zx-sub'>" + esc(ts(x.lastSeen)) + "</span>" : "")) +
+            kv(t("Configuration"), x.paused ? esc(t("Sync is off: the hub sends it nothing")) : esc(tf("Runs v{0}", x.appliedVersion || 0)) + (x.desiredVersion && x.desiredVersion != x.appliedVersion ? " " + esc(tf("of v{0}", x.desiredVersion)) : "") + (res ? " " + dot(res.kind, res.word) : ""), x.paused ? "muted" : "") +
+            kv(t("Health"), x.health == "ok" ? dot("ok", t("Healthy")) : x.health ? dot("danger", t("Unhealthy")) + " " + esc(cap(x.health)) : esc(t("No report yet")), x.health ? "" : "muted") +
+            kv(t("Software"), esc([x.version ? "Zoraxy v" + x.version : "", x.uptime ? tf("up {0}", dur(x.uptime)) : "", x.wafMode ? tf("WAF {0}", x.wafMode) : ""].filter(Boolean).join(" · ") || "-")) +
+            kv(t("Certificates"), x.certExpiry ? dot(cdays < 14 ? "danger" : cdays <= 30 ? "warn" : "ok", cdays <= 0 ? t("Expired") : cdays == 1 ? t("1 day left") : tf("{0} days left", cdays)) + " <span class='zx-sub'>" + esc(t("the one that expires first")) + "</span>" : esc(t("No report yet")), x.certExpiry ? "" : "muted") +
+            kv(t("Traffic"), esc([tf("{0} req/min", Math.round(x.reqPerMin || 0)), tf("{0} errors/min", Math.round(x.errPerMin || 0)), tf("{0} active rules", x.endpoints == null ? 0 : x.endpoints)].join(" · "))));
+        $("#flNodeActs").attr("data-id", x.id).find("[data-act=nodeRotate], [data-act=nodeRevoke], [data-act=nodeGroup]").prop("disabled", x.status == "revoked");
+        $("#flNodeQuick [data-act=nodeSync]").prop("disabled", x.status == "revoked");
         if (!keep) {
             $("#flNodeName").val(x.name);
             $("#flNodeUrl").val(x.adminUrl || "").attr("placeholder", x.addr ? "https://" + x.addr + ":3000" : "https://node:3000");
             $("#flNodeNotes").val(x.notes || "");
             $("#flNodeVars").val(JSON.stringify(x.vars || {}, null, 1));
             $("#flNodeInherit").prop("checked", !x.override);
+            $("#flNodeGroupIn").val("");
             checks(ov.scopes, "#flNodeScopes", (x.override && x.override.scopes) || []);
             $("#flNodeTags").val(((x.override && x.override.proxyTags) || []).join(", "));
+            formSnap = formState();
         }
-        $("#flNodeSync").prop("checked", !x.paused);
-        $("#flHist").html((x.history || []).slice().reverse().map(function(h){ return "<tr><td>" + ts(h.at) + "</td><td>v" + h.version + "</td><td>" + esc(h.result) + "</td><td>" + esc(h.error) + "</td></tr>"; }).join("") || "<tr><td>none</td></tr>");
-        $("#flErrs").html((x.errors || []).slice().reverse().map(function(h){ return esc(ts(h.at) + "  " + h.error); }).join("<br>") || "none");
-        $("#flConf").text((x.conflicts || []).map(function(c){ return c.scope + ": " + c.key; }).join(", ") || "none");
+        $("#flNodeSyncOn").prop("checked", !x.paused);
+        $("#flHist").html((x.history || []).slice().reverse().map(function(h){ let w = resultWord(h.result); return "<tr><td>" + esc(ts(h.at)) + "</td><td>v" + esc(h.version) + "</td><td>" + dot(w.kind, w.word) + "</td><td>" + esc(h.error) + "</td></tr>"; }).join("") || "<tr><td class='zx-muted'>" + esc(t("Nothing applied yet. An entry appears after the first version reaches this node.")) + "</td></tr>");
+        $("#flErrs").html((x.errors || []).slice().reverse().map(function(h){ return esc(ts(h.at) + "  " + h.error); }).join("<br>") || esc(t("None")));
+        $("#flConf").text((x.conflicts || []).map(function(c){ return scopeWord(c.scope) + ": " + c.key; }).join(", ") || t("None"));
+        if (was) return;
+        $("#flNodesCard").hide();
+        $("#fleetPage [data-for-tab=nodes]").prop("hidden", true);
         $("#flDrawer").show();
+        if (!keep) {
+            $("#flHead")[0].scrollIntoView({block: "start"});
+            $("#flDrawerClose").trigger("focus");
+        }
+    }
+    //back to the list; focus returns to the Details button of the row the view was opened from
+    function closeDrawer(refocus){
+        let id = openNode;
+        openNode = null; formSnap = null;
+        $("#flDrawer").hide();
+        $("#flNodesCard").show();
+        $("#fleetPage [data-for-tab=nodes]").prop("hidden", nav.current() != "nodes");
+        if (refocus !== false && id) {
+            let row = $("#flNodes tr.flRow").filter(function(){ return $(this).attr("data-id") == id; });
+            if (row.length) { row[0].scrollIntoView({block: "nearest"}); row.find("[data-open]").trigger("focus"); }
+        }
     }
     $("#flNodes").on("click", "tr.flRow", function(e){
-        if ($(e.target).closest(".flActs").length) return;
+        if ($(e.target).closest("[data-act], a").length) return;
         drawer($(this).attr("data-id"));
     });
-    $("#flNodes").on("click", "[data-act]", function(){
-        let id = $(this).closest("tr").attr("data-id"), act = $(this).data("act");
+    $("#flDrawerClose").on("click", function(){ closeDrawer(); });
+    //Escape closes the node view, unless a dialog, a popover or a menu is open (those take Escape first)
+    document.addEventListener("keydown", function(e){
+        if (e.key !== "Escape" || !openNode || e.defaultPrevented) return;
+        if (!document.getElementById("fleetPage") || !$("#flDrawer").is(":visible")) return;
+        if (document.querySelector(".zx-dialog, .zx-popover:not([hidden]), .sideWrapper.visible")) return;
+        e.preventDefault();
+        closeDrawer();
+    });
+    //Actions on one node, from its row or from the node view
+    function nodeAction(id, act){
         let data = {id: id};
         let question = {
-            nodeRevoke: ["Revoke this node?", "Its credentials stop working immediately.", "Revoke", true],
-            nodeRemove: ["Remove this node from the hub?", "The node keeps its current configuration but is no longer managed.", "Remove", true],
-            nodeRotate: ["Rotate the node key?", "The node picks the new key up at its next sync.", "Rotate key", false]
+            nodeRevoke: [t("Revoke this node?"), t("Its credentials stop working immediately."), t("Revoke"), true],
+            nodeRemove: [t("Remove this node from the hub?"), t("The node keeps its current configuration but is no longer managed."), t("Remove"), true],
+            nodeRotate: [t("Rotate the node key?"), t("The node picks the new key up at its next sync."), t("Rotate key"), false]
         }[act];
         if (act == "nodeGroup") {
-            let g = prompt("New group name:"); if (!g) return; data.group = g;
+            let g = $.trim($("#flNodeGroupIn").val());
+            if (!g) { msg(t("Enter the name of the group to move the node to"), true); $("#flNodeGroupIn").trigger("focus"); return; }
+            data.group = g;
             // moving a node into a group that syncs certificates starts the flow of private keys to it: ask first (ackCerts)
-            let nd = ov.nodes.filter(function(n){ return n.id == id; })[0] || {};
+            let nd = nodeById(id) || {};
             let oldG = ov.groups.filter(function(x){ return x.name == nd.group; })[0], newG = ov.groups.filter(function(x){ return x.name == g; })[0];
             let was = hasCerts(nd.override ? nd.override.scopes : (oldG ? oldG.sel.scopes : []));
             let will = nd.override ? was : hasCerts(newG ? newG.sel.scopes : []);
-            withCertsAck(was, will, data, function(d){ hub("nodeGroup", d); });
+            withCertsAck(was, will, data, function(d){ hub("nodeGroup", d, function(){ msg(t("Node moved")); $("#flNodeGroupIn").val(""); }); });
             return;
         }
+        if (act == "nodeSync") { hub(act, data, function(){ msg(t("Asked the node to sync")); }); return; }
         if (!question) { hub(act, data); return; }
-        ask(question[0], question[1], question[2], question[3]).then(function(ok){ if (ok) hub(act, data); });
-    });
-    $("#flDrawerClose").on("click", function(){ $("#flDrawer").hide(); openNode = null; });
-    $("#flNodeSync").on("change", function(){ hub("nodePaused", {id: openNode, paused: $(this).is(":checked") ? "false" : "true"}); });
-    $("#flSaveInfo").on("click", function(){ hub("nodeInfo", {id: openNode, name: $("#flNodeName").val(), adminUrl: $("#flNodeUrl").val(), notes: $("#flNodeNotes").val()}); });
+        ask(question[0], question[1], question[2], question[3]).then(function(ok){
+            if (!ok) return;
+            hub(act, data, function(){
+                if (act == "nodeRemove") { msg(t("Node removed")); closeDrawer(false); }
+                else if (act == "nodeRevoke") msg(t("Node revoked: its credentials no longer work"));
+                else msg(t("Key rotation started: the node picks the new key up at its next sync"));
+            });
+        });
+    }
+    $("#flNodes").on("click", "[data-act]", function(){ nodeAction($(this).closest("tr").attr("data-id"), $(this).data("act")); });
+    $("#flNodeActs, #flNodeQuick").on("click", "[data-act]", function(){ nodeAction(openNode, $(this).data("act")); });
+    $("#flAddNodeBtn").on("click", function(){ $("#flTabs .item[data-tab=tokens]").trigger("click"); $("#flTokName").trigger("focus"); });
+    $("#flNodeSyncOn").on("change", function(){ let on = $(this).is(":checked"); hub("nodePaused", {id: openNode, paused: on ? "false" : "true"}, function(){ msg(on ? t("Sync to this node is on") : t("Sync to this node is off")); }); });
     $("#flOpenNode").on("click", function(){
         let u = $.trim($("#flNodeUrl").val()) || $("#flNodeUrl").attr("placeholder");
         if (/^https?:\/\//i.test(u)) { window.open(u, "_blank", "noopener"); }
-    });
-    $("#flSaveVars").on("click", function(){ hub("nodeVars", {id: openNode, vars: $("#flNodeVars").val()}); });
-    $("#flSaveNodeScopes").on("click", function(){
-        let inherit = $("#flNodeInherit").is(":checked"), scopes = picked("#flNodeScopes"), nd = ov.nodes.filter(function(n){ return n.id == openNode; })[0] || {};
-        let grp = ov.groups.filter(function(g){ return g.name == nd.group; })[0];
-        let was = hasCerts(nd.override ? nd.override.scopes : (grp ? grp.sel.scopes : []));
-        withCertsAck(was, inherit ? hasCerts(grp ? grp.sel.scopes : []) : hasCerts(scopes.split(",")), {id: openNode, inherit: inherit ? "true" : "false", scopes: scopes, tags: $("#flNodeTags").val()}, function(d){ hub("nodeScopes", d); });
-    });
-
-    $("#flGroups").on("click", "[data-g]", function(){
-        let name = $(this).data("name"), a = $(this).data("g");
-        let g = ov.groups.filter(function(x){ return x.name == name; })[0];
-        if (a == "del") { ask(tf("Delete group {0}?", name), "Nodes in this group keep their current configuration.", "Delete group", true).then(function(ok){ if (ok) hub("groupDelete", {name: name}); }); return; }
-        if (a == "rollback") { ask(tf("Roll {0} back?", name), "The group returns to the version it ran before.", "Roll back", true).then(function(ok){ if (ok) hub("rollback", {group: name, strategy: "immediate"}, function(){ msg("Rolled back"); }); }); return; }
-        $("#flGroupFormTitle").text("Edit group " + name);
-        $("#flGName").val(name); $("#flGTags").val(((g.sel.proxyTags) || []).join(", "));
-        $("#flGVars").val(JSON.stringify(g.vars || {}, null, 1));
-        checks(ov.scopes, "#flGScopes", g.sel.scopes || []);
-        $("#flGName")[0].scrollIntoView();
     });
     function varsError(text){
         text = $.trim(text);
@@ -609,42 +832,81 @@
         catch (e) { return t("Variables must be a JSON object with text values, for example {\"upstream_ip\": \"10.0.0.5\"}"); }
         return "";
     }
-    $("#flSaveVars").off("click").on("click", function(){
+    /* One Save for the node: details, variables and scopes are three requests on the hub, sent one after the other and only
+       for the parts that changed. The first refusal stops the rest and is shown; the form keeps what was typed. */
+    $("#flSaveNode").on("click", function(){
+        let id = openNode, nd = nodeById(id), now = formState(), snap = formSnap || {};
+        if (!nd) return;
         let err = varsError($("#flNodeVars").val());
-        if (err) { msg(err, true); return; }
-        hub("nodeVars", {id: openNode, vars: $("#flNodeVars").val()}, function(){ msg("Variables saved"); });
+        if (err) { msg(err, true); $("#flNodeVars").trigger("focus"); return; }
+        let jobs = [];
+        if (now.info != snap.info) jobs.push(function(next){ post("./api/fleet/hub/nodeInfo", {id: id, name: $("#flNodeName").val(), adminUrl: $("#flNodeUrl").val(), notes: $("#flNodeNotes").val()}, function(){ snap.info = now.info; next(); }); });
+        if (now.vars != snap.vars) jobs.push(function(next){ post("./api/fleet/hub/nodeVars", {id: id, vars: $("#flNodeVars").val()}, function(){ snap.vars = now.vars; next(); }); });
+        if (now.scopes != snap.scopes) jobs.push(function(next){
+            let inherit = $("#flNodeInherit").is(":checked"), scopes = picked("#flNodeScopes");
+            let grp = ov.groups.filter(function(g){ return g.name == nd.group; })[0];
+            let was = hasCerts(nd.override ? nd.override.scopes : (grp ? grp.sel.scopes : []));
+            withCertsAck(was, inherit ? hasCerts(grp ? grp.sel.scopes : []) : hasCerts(scopes.split(",")), {id: id, inherit: inherit ? "true" : "false", scopes: scopes, tags: $("#flNodeTags").val()},
+                function(d){ post("./api/fleet/hub/nodeScopes", d, function(){ snap.scopes = now.scopes; next(); }); });
+        });
+        if (!jobs.length) { msg(t("Nothing to save: no field of this node was changed")); return; }
+        let btn = $("#flSaveNode").prop("disabled", true);
+        setTimeout(function(){ btn.prop("disabled", false); }, 4000);   //a refused or cancelled step leaves the button usable again
+        (function run(i){
+            if (i < jobs.length) { jobs[i](function(){ run(i + 1); }); return; }
+            btn.prop("disabled", false);
+            formSnap = snap;
+            msg(t("Node saved"));
+            loadHub();
+        })(0);
+    });
+
+    $("#flGroups").on("click", "[data-g]", function(){
+        let name = $(this).data("name"), a = $(this).data("g");
+        let g = ov.groups.filter(function(x){ return x.name == name; })[0];
+        if (a == "del") { ask(tf("Delete group {0}?", name), t("Nodes in this group keep their current configuration."), t("Delete group"), true).then(function(ok){ if (ok) hub("groupDelete", {name: name}); }); return; }
+        if (a == "rollback") { ask(tf("Roll {0} back?", name), t("The group returns to the version it ran before."), t("Roll back"), true).then(function(ok){ if (ok) hub("rollback", {group: name, strategy: "immediate"}, function(){ msg(t("Rolled back")); }); }); return; }
+        $("#flGroupFormTitle").text(tf("Edit group {0}", name));
+        $("#flGName").val(name); $("#flGTags").val(((g.sel.proxyTags) || []).join(", "));
+        $("#flGVars").val(JSON.stringify(g.vars || {}, null, 1));
+        checks(ov.scopes, "#flGScopes", g.sel.scopes || []);
+        $("#flGName")[0].scrollIntoView({block: "center"});
+        $("#flGName").trigger("focus");
     });
     $("#flGSave").on("click", function(){
         let err = varsError($("#flGVars").val());
         if (err) { msg(err, true); return; }
         let gname = $.trim($("#flGName").val()), scopes = picked("#flGScopes"), old = ov.groups.filter(function(g){ return g.name == gname; })[0];
         withCertsAck(!!old && hasCerts(old.sel.scopes), hasCerts(scopes.split(",")), {name: $("#flGName").val(), scopes: scopes, tags: $("#flGTags").val(), vars: $("#flGVars").val()},
-            function(d){ hub("groupSet", d, function(){ msg("Group saved"); }); });
+            function(d){ hub("groupSet", d, function(){ msg(t("Group saved")); }); });
     });
     $("#flPublishBtn").on("click", function(){
         let s = $("#flPubStrategy").val();
         hub("publish", {group: $("#flPubGroup").val(), strategy: s, canaryNode: $("#flPubCanary").val(), healthySeconds: $("#flPubHealthy").val(),
-            hold: $("#flPubHold").is(":checked") ? "true" : "false", note: $("#flPubNote").val()}, function(){ msg("Published (" + s + ")"); });
+            hold: $("#flPubHold").is(":checked") ? "true" : "false", note: $("#flPubNote").val()}, function(){ msg(tf("Published: {0}", strategyWord(s))); });
     });
-    $("#flRollouts").on("click", "[data-r]", function(){ hub($(this).data("r"), {group: $(this).data("name")}); });
-    $("#flCapture").on("click", function(){ hub("capture", {note: "manual capture"}, function(d){ msg(d.created ? "Captured v" + d.version : "Nothing changed since v" + d.version); }); });
+    $("#flRollouts").on("click", "[data-r]", function(){ let a = $(this).data("r"); hub(a, {group: $(this).data("name")}, function(){ msg(a == "approve" ? t("Approved") : t("Rollout aborted")); }); });
+    $("#flCapture").on("click", function(){ hub("capture", {note: "manual capture"}, function(d){ msg(d.created ? tf("Captured v{0}", d.version) : tf("Nothing changed since v{0}", d.version)); }); });
     $("#flVersions").on("click", "[data-v]", function(){
         let b = $(this).data("b"), a = $(this).data("a");
         if ($(this).data("v") == "roll") {
             let g = $("#flPubGroup").val();
-            ask(tf("Publish v{0} to group {1} now?", b, g), "All nodes of the group receive this version.", "Publish").then(function(ok){
-                if (ok) hub("publish", {group: g, version: b, strategy: "immediate", note: "re-publish v" + b}, function(){ msg("Published v" + b); });
+            if (!g) { msg(t("Create a group first: a version is published to a group."), true); return; }
+            ask(tf("Publish v{0} to group {1} now?", b, g), t("All nodes of the group receive this version."), t("Publish")).then(function(ok){
+                if (ok) hub("publish", {group: g, version: b, strategy: "immediate", note: "re-publish v" + b}, function(){ msg(tf("Published v{0}", b)); });
             });
             return;
         }
         $.ajax({url: "./api/fleet/hub/diff?a=" + a + "&b=" + b, success: function(d){
             if (d && d.error) { msg(d.error, true); return; }
-            let h = "<h4 class='flSub'>v" + (a || "(empty)") + " to v" + b + "</h4>";
+            let h = "<h5 class='flSub'>" + esc(a ? tf("What changed from v{0} to v{1}", a, b) : tf("What v{0} contains", b)) + "</h5>";
             (d || []).forEach(function(x){
-                h += "<div style='margin-bottom:4px'><span class='ui " + (x.change == "added" ? "green" : x.change == "removed" ? "red" : "orange") + " mini label'>" + x.change + "</span> " + esc(x.scope) + " / " + esc(x.path) + "</div>";
+                let w = changeWord(x.change);
+                h += "<div class='flDiffLine'>" + dot(w.kind, w.word) + " <span>" + esc(scopeWord(x.scope)) + " / " + esc(x.path) + "</span></div>";
                 if (x.change == "changed" && (x.old || x.new)) h += "<pre class='themed-pre'>- " + esc(x.old) + "\n+ " + esc(x.new) + "</pre>";
             });
-            $("#flDiff").html(h + ((d || []).length ? "" : "<p class='zx-help'>No differences.</p>")).show();
+            $("#flDiff").html(h + ((d || []).length ? "" : "<p class='zx-help'>" + esc(t("No differences.")) + "</p>")).show();
+            $("#flDiff")[0].scrollIntoView({block: "nearest"});
         }, error: fail});
     });
     $("#flTokCreate").on("click", function(){
@@ -653,21 +915,31 @@
         if (mins !== "" && (!/^\d+$/.test(mins) || Number(mins) < 1 || Number(mins) > 1440)) { msg(t("Valid for must be a whole number of minutes between 1 and 1440"), true); $("#flTokMin").trigger("focus"); return; }
         hub("tokenCreate", {minutes: $("#flTokMin").val(), name: $("#flTokName").val(), group: $("#flTokGroup").val()}, function(d){
             $("#flTokText").text(d.token); $("#flTokShow").show();
-            $.ajax({url: "./api/fleet/hub/joinInfo", success: function(j){ $("#flHubFp").text(j.tlsFingerprint || "none (admin port is plain http)"); }});
+            $.ajax({url: "./api/fleet/hub/joinInfo", success: function(j){ $("#flHubFp").text(j.tlsFingerprint || t("none (the admin port is plain http)")); }});
         });
     });
-    $("#flTokens").on("click", "[data-t]", function(){ hub("tokenRevoke", {id: $(this).data("t")}); });
+    $("#flTokens").on("click", "[data-t]", function(){ hub("tokenRevoke", {id: $(this).data("t")}, function(){ msg(t("Token revoked")); }); });
     $("#flSetSave").on("click", function(){
         let cap = $("#flSetCerts").is(":checked");
         withCertsAck(!!ov.settings.captureCerts, cap, {keepVersions: $("#flSetKeep").val(), heartbeatSecs: $("#flSetHb").val(), healthGraceSec: $("#flSetGrace").val(), captureCerts: cap ? "true" : "false"},
-            function(d){ hub("settings", d, function(){ msg("Saved"); }); });
+            function(d){ hub("settings", d, function(){ msg(t("Settings saved")); }); });
     });
     function loadAudit(){
         $.ajax({url: "./api/fleet/hub/audit", success: function(d){
-            fillTable("#flAudit", (d || []).map(function(a){ return "<tr><td data-label='Time'>" + ts(a.at) + "</td><td data-label='Who'>" + esc(a.actor) + "</td><td data-label='Action'>" + esc(a.action) + "</td><td data-label='Target'>" + esc(a.target) + "</td><td class='zx-cell-long' data-label='Detail'><div class='zx-longvalue' tabindex='0'>" + esc(a.detail) + "</div></td></tr>"; }).join(""), "Nothing logged yet", "Changes made on this hub will show up here.");
+            fillTable("#flAudit", (d || []).map(function(a){ return "<tr><td data-label='" + esc(t("Time")) + "'>" + esc(ts(a.at)) + "</td><td data-label='" + esc(t("Who")) + "'>" + esc(a.actor) + "</td><td data-label='" + esc(t("Action")) + "'>" + esc(plain(a.action)) + "</td><td data-label='" + esc(t("Target")) + "'>" + esc(a.target) + "</td><td class='zx-cell-long' data-label='" + esc(t("Detail")) + "'><div class='zx-longvalue' tabindex='0'>" + esc(a.detail) + "</div></td></tr>"; }).join(""), "Nothing logged yet", "Changes made on this hub will show up here.");
         }, error: fail});
     }
-    ZxUI.tabs("#flTabs", {onChange: function(name, tab){ if (tab.getAttribute("data-tab") == "audit") loadAudit(); }});
+    /* The hub's sections: a sectioned navigation (#flTabs keeps its id and its items their class "item" and data-tab, so
+       $("#flTabs .item[data-tab=tokens]").trigger("click") still opens a section). Nodes is the section it opens on. */
+    var nav = ZxUI.sectionNav("#flTabs", {attr: "data-tab", head: "#flHead"});
+    function showSection(name){
+        nav.select(name);
+        $("#fleetPage .fltab").each(function(){ this.hidden = this.getAttribute("data-tab") != name; });
+        $("#fleetPage [data-for-tab]").each(function(){ this.hidden = this.getAttribute("data-for-tab") != name || (name == "nodes" && !!openNode); });
+        if (name == "audit") loadAudit();
+    }
+    $("#flTabs").on("click", ".zx-sectionnav__item", function(){ showSection(this.getAttribute("data-tab")); });
+    showSection("nodes");
 
     loadInfo();
     timer = setInterval(function(){

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"imuslab.com/zoraxy/mod/blocklog"
+	"imuslab.com/zoraxy/mod/errorpages"
 )
 
 /*
@@ -112,6 +113,10 @@ func keepBlock(s, open, close string, keep bool) string {
 // writeForbiddenPage writes a block page with the reference ID header and placeholders filled in.
 // The page is the built-in one (localized by the caller) or an operator template.
 func (router *Router) writeForbiddenPage(w http.ResponseWriter, r *http.Request, status int, page []byte, region bool) {
+	// The owner's 403 page, when one was saved and enabled (errorpages_hook.go); otherwise nothing changes
+	if router.serveCustomErrorPage(w, r, status, errorpages.ClassForbidden) {
+		return
+	}
 	ref := router.requestRef(r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if ref != "" {

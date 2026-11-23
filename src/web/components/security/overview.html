@@ -1,54 +1,117 @@
-<!-- Security Center > Overview: one page, one request (GET /api/security/overview), refreshed every 10 s while it is visible -->
+<!-- Security Center > Overview: the posture of this Zoraxy on one page. One request (GET /api/security/overview) refreshed every 10 s while
+     visible, plus three small read-only ones (auto-ban, bot rules, blocked summary) every 30 s.
+     Order: score and today's numbers, what needs attention, every protection as a checklist, the baseline, traffic and offenders, the system. -->
 <style>
-    #ovPage .ov-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
-    /* masonry: cards of different height pack into columns, no empty stretched areas */
-    #ovPage .ov-grid { display: block; column-width: 19rem; column-gap: var(--zx-space-3); }
-    #ovPage .ov-grid[hidden] { display: none; }
-    #ovPage .ov-card { margin: 0 0 var(--zx-space-3); min-width: 0; break-inside: avoid; }
-    #ovPage .ov-card.wide { column-span: all; }
-    #ovPage .ov-card .zx-card__body > .zx-sub { margin-top: var(--zx-space-2); }
-    #ovPage .ov-warn .ov-ev { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    #ovPage .zx-card__title { font-size: var(--zx-fs-md); }
-    #ovPage .ov-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: var(--zx-space-2); margin: 0 0 var(--zx-space-2); }
-    #ovPage .ov-tiles .zx-stat { padding: var(--zx-space-2) var(--zx-space-3); box-shadow: none; }
-    #ovPage .ov-tiles .zx-stat__value { font-size: var(--zx-fs-xl); }
-    #ovPage .ov-tiles .ov-txt .zx-stat__value { font-size: var(--zx-fs-md); overflow-wrap: normal; word-break: keep-all; }   /* words (Standalone, Running) must not break mid-word */
-    #ovPage .ov-list { list-style: none; margin: 0; padding: 0; }
-    #ovPage .ov-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--zx-space-2); padding: 4px 0; border-top: 1px solid var(--zx-border); min-width: 0; font-size: var(--zx-fs-sm); }
-    #ovPage .ov-list li:first-child { border-top: 0; }
-    #ovPage .ov-list .grow { flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
-    #ovPage .ov-list .muted, #ovPage .ov-muted { color: var(--zx-text-muted); }
-    #ovPage .ov-warn { align-items: flex-start; }
-    #ovPage .ov-warn .grow { flex: 1 1 16rem; }
-    #ovPage .ov-warn .ov-ev { display: block; color: var(--zx-text-muted); }
-    #ovPage .ov-more { margin-top: var(--zx-space-2); }
-    #ovPage .ov-foot { margin-top: var(--zx-space-2); font-size: var(--zx-fs-sm); }
-    #ovPage .ov-foot a { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+    #ovPage { display: flex; flex-direction: column; gap: var(--zx-space-4); }
+    #ovPage > .zx-card, #ovPage .ov-card { margin: 0; min-width: 0; }
+    #ovPage #ovGrid { display: contents; }
+    #ovPage #ovGrid[hidden], #ovPage [hidden] { display: none; }
+    #ovPage .ov-o1 { order: 1; } #ovPage .ov-o2 { order: 2; } #ovPage .ov-o3 { order: 3; } #ovPage #blCard { order: 4; } #ovPage .ov-o5 { order: 5; } #ovPage .ov-o6 { order: 6; } #ovPage .ov-o7 { order: 7; } #ovPage .ov-lead { order: 9; }
+    #ovPage #ovError { order: 0; margin: 0; } #ovPage #ovSkel { order: 1; }
+    /* hero: score, sentence, refresh; today's numbers underneath */
+    #ovPage .ov-hero__top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--zx-space-4) var(--zx-space-5); padding: var(--zx-card-pad); }
+    #ovPage .ov-ring { position: relative; width: 92px; height: 92px; }
+    #ovPage .ov-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    #ovPage .ov-ring .track { fill: none; stroke: var(--zx-surface-3); stroke-width: 10; }
+    #ovPage .ov-ring .arc { fill: none; stroke-width: 10; stroke-linecap: round; stroke: var(--zx-text-muted); }
+    #ovPage .ov-ring.is-ok .arc { stroke: var(--zx-ok-solid); } #ovPage .ov-ring.is-warn .arc { stroke: var(--zx-warn-solid); } #ovPage .ov-ring.is-danger .arc { stroke: var(--zx-danger-solid); }
+    #ovPage .ov-ring__num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+    #ovPage .ov-ring__num b { font-size: var(--zx-fs-2xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+    #ovPage .ov-ring__num span { margin-top: 3px; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); }
+    #ovPage .ov-hero__title { margin: 0; font-size: var(--zx-fs-xl); font-weight: 700; line-height: 1.25; color: var(--zx-text); }
+    #ovPage .ov-hero__desc { margin: var(--zx-space-1) 0 0; color: var(--zx-text-muted); line-height: var(--zx-lh); max-width: 44rem; }
+    #ovPage .ov-hero__tools { display: flex; flex-direction: column; align-items: flex-end; gap: var(--zx-space-2); }
+    #ovPage .ov-hero__tools .zx-help { margin: 0; white-space: nowrap; }
+    @media (max-width: 640px) {
+        #ovPage .ov-hero__top { grid-template-columns: auto minmax(0, 1fr); }
+        #ovPage .ov-hero__tools { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+    #ovPage .ov-muted { color: var(--zx-text-muted); }
     #ovPage .ov-go { color: var(--zx-link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
-    #ovPage .ov-go:focus-visible, #ovPage .ov-foot a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
-    #ovPage svg.ov-chart { display: block; width: 100%; height: 56px; background: var(--zx-surface-2); border-radius: var(--zx-radius-sm); }
-    #ovPage .ov-allowed { fill: var(--zx-info-solid); }
+    #ovPage .ov-go:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
+    #ovPage .ov-go.ov-btn { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); background: var(--zx-surface); color: var(--zx-text); font-size: var(--zx-fs-sm); font-weight: 700; text-decoration: none; white-space: nowrap; }
+    #ovPage .ov-go.ov-btn:hover { background: var(--zx-surface-2); }
+    #ovPage .zx-card__head > .zx-badge { flex: 0 0 auto; }
+    #ovPage .zx-card__head > .ov-go { margin-left: auto; font-size: var(--zx-fs-sm); }
+    /* lists */
+    #ovPage .ov-list { list-style: none; margin: 0; padding: 0; }
+    #ovPage .ov-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--zx-space-3); padding: 7px 0; border-top: 1px solid var(--zx-border); min-width: 0; }
+    #ovPage .ov-list li:first-child { border-top: 0; padding-top: 0; }
+    #ovPage .ov-list li:last-child { padding-bottom: 0; }
+    #ovPage .ov-list .grow { flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
+    #ovPage .ov-list .muted { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-variant-numeric: tabular-nums; }
+    #ovPage .ov-list code { font-size: var(--zx-fs-sm); }
+    #ovPage .ov-list li.ov-warn { display: grid; grid-template-columns: 5.6rem minmax(0, 1fr) auto; align-items: start; gap: 2px var(--zx-space-3); padding: 10px 0; }
+    #ovPage .ov-list li.ov-warn:first-child { padding-top: 0; }
+    #ovPage .ov-warn > .zx-badge { justify-self: start; margin-top: 1px; }
+    #ovPage .ov-warn .ov-ev { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 1px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-warn .ov-how { display: block; margin-top: 3px; color: var(--zx-text); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-warn .ov-how b { color: var(--zx-text-muted); font-weight: 400; }
+    #ovPage .ov-warn > .ov-go { align-self: center; }
+    #ovPage .ov-evt { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) auto; align-items: baseline; gap: 2px var(--zx-space-3); }
+    #ovPage .ov-list li.ov-evt { display: grid; }
+    #ovPage .ov-evt .ov-evt__by { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-evt .ov-evt__t { margin-left: var(--zx-space-2); color: var(--zx-text); overflow-wrap: anywhere; }
+    @media (max-width: 640px) { #ovPage .ov-evt { grid-template-columns: minmax(0, 1fr) auto; } #ovPage .ov-evt > .muted { grid-column: 1 / -1; } }
+    #ovPage .ov-more { margin-top: var(--zx-space-3); }
+    /* protections checklist */
+    #ovPage .ov-prot { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--zx-space-5); }
+    #ovPage .ov-prot li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; gap: 1px var(--zx-space-3); padding: 11px 0; border-top: 1px solid var(--zx-border); min-width: 0; }
+    #ovPage .ov-prot li:nth-child(-n+2) { border-top: 0; padding-top: 0; }
+    #ovPage .ov-prot__ic { grid-row: 1 / span 2; margin-top: 1px; font-size: 1.1rem; color: var(--zx-text-faint); }
+    #ovPage .ov-prot__ic i.icon { margin: 0; }
+    #ovPage .ov-prot li.is-on .ov-prot__ic { color: var(--zx-ok-solid); } #ovPage .ov-prot li.is-warn .ov-prot__ic { color: var(--zx-warn-solid); } #ovPage .ov-prot li.is-danger .ov-prot__ic { color: var(--zx-danger-solid); }
+    #ovPage .ov-prot__name { grid-column: 2; font-weight: 700; color: var(--zx-text); }
+    #ovPage .ov-prot__name .zx-badge { margin-left: var(--zx-space-1); font-weight: 700; }
+    #ovPage .ov-prot__what { grid-column: 2; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.4; overflow-wrap: anywhere; }
+    #ovPage .ov-prot li > .ov-go { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+    @media (max-width: 1100px) { #ovPage .ov-prot { grid-template-columns: minmax(0, 1fr); } #ovPage .ov-prot li:nth-child(2) { border-top: 1px solid var(--zx-border); padding-top: 11px; } }
+    /* traffic */
+    #ovPage .ov-kpis { display: flex; flex-wrap: wrap; gap: var(--zx-space-3) var(--zx-space-6); margin: 0 0 var(--zx-space-4); }
+    #ovPage .ov-kpi { min-width: 0; }
+    #ovPage .ov-kpi b { display: block; font-size: var(--zx-fs-2xl); font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--zx-text); }
+    #ovPage .ov-kpi.is-warn b { color: var(--zx-warn-text); } #ovPage .ov-kpi.is-danger b { color: var(--zx-danger-text); } #ovPage .ov-kpi.is-ok b { color: var(--zx-ok-text); }
+    #ovPage .ov-kpi span { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-kpis--sm { gap: var(--zx-space-2) var(--zx-space-5); margin-bottom: var(--zx-space-3); }
+    #ovPage .ov-kpis--sm .ov-kpi b { font-size: var(--zx-fs-xl); }
+    #ovPage svg.ov-chart { display: block; width: 100%; height: 64px; background: var(--zx-surface-2); border-radius: var(--zx-radius-md); }
+    #ovPage .ov-allowed { fill: var(--zx-border-strong); }
     #ovPage .ov-blocked { fill: var(--zx-danger-solid); }
-    #ovPage .ov-legend { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-3); font-size: var(--zx-fs-xs); color: var(--zx-text-muted); margin: 2px 0 var(--zx-space-2); }
+    #ovPage .ov-legend { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-3); font-size: var(--zx-fs-xs); color: var(--zx-text-muted); margin: var(--zx-space-1) 0 0; }
     #ovPage .ov-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-    #ovPage .ov-skel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); }
+    #ovPage .ov-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--zx-space-4) var(--zx-space-5); margin-top: var(--zx-space-4); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+    #ovPage .ov-cols h4, #ovPage .ov-h4 { margin: 0 0 var(--zx-space-2); font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); }
+    #ovPage .ov-bars { list-style: none; margin: 0; padding: 0; }
+    #ovPage .ov-bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--zx-space-3); padding: 4px 0; font-size: var(--zx-fs-sm); }
+    #ovPage .ov-bars .k { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text); }
+    #ovPage .ov-bars .n { color: var(--zx-text-muted); font-variant-numeric: tabular-nums; }
+    #ovPage .ov-bars .bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--zx-surface-3); overflow: hidden; }
+    #ovPage .ov-bars .bar i { display: block; height: 100%; border-radius: 2px; background: var(--zx-danger-solid); }
+    #ovPage .ov-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--zx-space-4); }
+    @media (max-width: 900px) { #ovPage .ov-two { grid-template-columns: minmax(0, 1fr); } }
+    #ovPage .ov-two .zx-card__title, #ovPage .ov-o7 .zx-card__title, #ovPage .ov-o5 .zx-card__title, #ovPage .ov-o3 .zx-card__title, #ovPage .ov-o2 .zx-card__title { font-size: 1.071rem; }
+    #ovPage .ov-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-3); }
+    #ovPage .ov-foot { margin-top: var(--zx-space-3); font-size: var(--zx-fs-sm); color: var(--zx-text-muted); }
+    #ovPage .ov-sub { margin: var(--zx-space-2) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-chips { display: flex; flex-wrap: wrap; gap: var(--zx-space-1); }
+    #ovPage .ov-lead { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ovPage .ov-skel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-4); }
     #ovPage .ov-skel > div { height: 9rem; border-radius: var(--zx-radius-lg); background: linear-gradient(90deg, var(--zx-surface-2), var(--zx-surface-3), var(--zx-surface-2)); background-size: 200% 100%; animation: ovsk 1.4s linear infinite; }
     @keyframes ovsk { from { background-position: 0 0; } to { background-position: -200% 0; } }
-    #ovPage .bl-card { margin: 0 0 var(--zx-space-3); }
-    #ovPage .zx-subhead { margin: var(--zx-space-4) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 600; color: var(--zx-text-muted); }
-    #ovPage .zx-card__body > .zx-subhead:first-child { margin-top: 0; }
+    @media (prefers-reduced-motion: reduce) { #ovPage .ov-skel > div { animation: none; } }
+    /* enterprise baseline */
     #ovPage .bl-more { margin-top: var(--zx-space-1); }
-    #ovPage .bl-more > summary { cursor: pointer; color: var(--zx-link); font-size: var(--zx-fs-sm); width: fit-content; }
     #ovPage .bl-more > .bl-why { margin-top: var(--zx-space-1); }
-    #ovPage .bl-list li > span:first-child { padding-top: 1px; }
-    #ovPage .bl-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); }
-    #ovPage .bl-head h3 { margin: 0; flex: 1 1 12rem; min-width: 0; }
-    #ovPage .bl-list { list-style: none; margin: var(--zx-space-2) 0 0; padding: 0; }
-    #ovPage .bl-list li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 2px var(--zx-space-3); padding: var(--zx-space-2) 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); align-items: start; }
-    #ovPage .bl-list li:first-child { border-top: 0; }
+    #ovPage .bl-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); flex: 1 1 100%; }
+    #ovPage .bl-head h3 { margin: 0; flex: 1 1 12rem; min-width: 0; font-size: 1.071rem; }
+    #ovPage .bl-head h3 i.icon { display: none; }
+    #ovPage .bl-list { list-style: none; margin: var(--zx-space-4) 0 0; padding: 0; }
+    #ovPage .bl-list li { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 2px var(--zx-space-3); padding: 10px 0; border-top: 1px solid var(--zx-border); align-items: start; }
     #ovPage .bl-list .bl-txt { min-width: 0; overflow-wrap: anywhere; }
-    #ovPage .bl-list .bl-why, #ovPage .bl-note { display: block; color: var(--zx-text-muted); }
-    #ovPage .bl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-3); }
+    #ovPage .bl-list .bl-txt .ov-go { margin-left: var(--zx-space-2); font-size: var(--zx-fs-sm); }
+    #ovPage .bl-list .bl-why, #ovPage .bl-note { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ovPage .bl-list .bl-why { margin-top: 1px; }
+    #ovPage .bl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-4); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
     #ovPage .bl-actions .bl-note { flex: 1 1 14rem; min-width: 0; }
     .bl-prev { list-style: none; margin: var(--zx-space-3) 0 0; padding: 0; }
     .bl-prev li { padding: var(--zx-space-2) 0; border-top: 1px solid var(--zx-border); min-width: 0; overflow-wrap: anywhere; }
@@ -56,29 +119,42 @@
     .bl-prev .bl-vals { display: block; margin-top: 2px; }
     .bl-prev .bl-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; }
     @media (max-width: 748px) {
-        #ovPage .ov-warn .grow { flex: 1 1 10rem; }
-        /* chip left, text and the fix link in one column to its right (the link used to drop to the left edge) */
-        #ovPage .ov-list li.ov-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; column-gap: var(--zx-space-2); }
-        #ovPage .ov-warn > :nth-child(n+3) { grid-column: 2; }
-        #ovPage .ov-warn > :first-child { grid-row: 1; }
+        #ovPage .bl-list li { grid-template-columns: minmax(0, 1fr); }
+        #ovPage .ov-list li.ov-warn { grid-template-columns: minmax(0, 1fr); }
+        #ovPage .ov-warn > .ov-go { justify-self: start; margin-top: var(--zx-space-1); }
+        #ovPage .ov-prot li { grid-template-columns: 22px minmax(0, 1fr); }
+        #ovPage .ov-prot li > .ov-go { grid-column: 2; grid-row: 3; justify-self: start; margin-top: var(--zx-space-1); }
     }
-    @media (max-width: 748px) { #ovPage .bl-list li { grid-template-columns: minmax(0, 1fr); } }
-    @media (prefers-reduced-motion: reduce) { #ovPage .ov-skel > div { animation: none; } }
-    @media (max-width: 748px), (pointer: coarse) { #ovPage .ov-go { display: inline-block; min-height: 32px; line-height: 32px; } }
+    @media (max-width: 748px), (pointer: coarse) { #ovPage .ov-go:not(.ov-btn) { display: inline-block; min-height: 32px; line-height: 32px; } #ovPage .ov-go.ov-btn { min-height: 36px; } }
 </style>
 <div id="ovPage">
-    <div class="ov-bar">
-        <p class="zx-help" id="ovStampLead" style="flex:1 1 12rem;margin:0">Everything here comes from this Zoraxy itself; no outside service is contacted. It refreshes every 10 seconds while you look at it.</p>
-        <span class="zx-help" id="ovStamp" role="status" aria-live="polite"></span>
-        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ovRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
-    </div>
-    <section id="blCard" tabindex="-1" class="zx-card bl-card" aria-labelledby="blTitle" aria-busy="true"></section>
     <div id="ovError" class="zx-callout zx-callout--danger" role="alert" hidden>
         <span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span>
         <div class="zx-callout__body"><span class="zx-callout__title">The overview could not be loaded</span><span id="ovErrorText"></span> <a href="#" id="ovRetry" class="ov-go">Try again</a></div>
     </div>
+    <section class="zx-card sx-status ov-card ov-hero ov-o1" id="ovHero">
+        <div class="ov-hero__top">
+            <div class="ov-ring" id="ovRing" role="img" aria-label="Security score"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="52"></circle><circle class="arc" cx="60" cy="60" r="52" stroke-dasharray="0 327"></circle></svg><div class="ov-ring__num"><b id="ovScore">-</b><span>of 100</span></div></div>
+            <div>
+                <h4 class="ov-hero__title" id="ovHeroTitle">Checking this Zoraxy...</h4>
+                <p class="ov-hero__desc" id="ovHeroDesc">Every protection of this Zoraxy at a glance.</p>
+            </div>
+            <div class="ov-hero__tools">
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ovRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
+                <span class="zx-help" id="ovStamp" role="status" aria-live="polite"></span>
+            </div>
+        </div>
+        <dl class="sx-facts">
+            <div class="sx-fact"><dt>Blocked today</dt><dd id="ovFBlocked">-</dd></div>
+            <div class="sx-fact"><dt>Allowed today</dt><dd id="ovFAllowed">-</dd></div>
+            <div class="sx-fact"><dt>Sites</dt><dd id="ovFSites">-</dd></div>
+            <div class="sx-fact"><dt>Servers behind them</dt><dd id="ovFBack">-</dd></div>
+        </dl>
+    </section>
     <div id="ovSkel" class="ov-skel" aria-busy="true"><div></div><div></div><div></div><div></div></div>
-    <div id="ovGrid" class="ov-grid" hidden></div>
+    <div id="ovGrid" hidden></div>
+    <section id="blCard" tabindex="-1" class="zx-card bl-card" aria-labelledby="blTitle" aria-busy="true"></section>
+    <p class="ov-lead" id="ovStampLead">Everything here comes from this Zoraxy itself; no outside service is contacted. It refreshes every 10 seconds while you look at it.</p>
 </div>
 <script>
 (function () {
@@ -86,6 +162,7 @@
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function num(n) { return Number(n || 0).toLocaleString(); }
     function rel(ts) { return ts ? new Date(ts * 1000).toLocaleString() : "-"; }
+    function clock(ts) { return ts ? new Date(ts * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "-"; }
     function fmtUp(sec) {
         var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
         if (d > 0) { return t("{0}d {1}h").replace("{0}", d).replace("{1}", h); }
@@ -93,25 +170,26 @@
         return t("{0} min").replace("{0}", m);
     }
     var root = document.getElementById("ovPage");
-    var inflight = false, timer = null, last = null, showAllWarn = false;
+    var inflight = false, timer = null, last = null, showAllWarn = false, ticks = 0;
+    var extra = { abuse: null, bots: null, blocked: null };
 
     function badge(kind, text) { return '<span class="zx-badge zx-badge--' + kind + '">' + esc(text) + "</span>"; }
-    function stat(label, value, kind, hint) {
-        return '<div class="zx-stat' + (kind ? " zx-stat--" + kind : "") + (isNaN(value) ? " ov-txt" : "") + '"><span class="zx-stat__label">' + esc(label) + '</span><span class="zx-stat__value">' + esc(value) + "</span>" +
-            (hint ? '<span class="zx-stat__hint">' + esc(hint) + "</span>" : "") + "</div>";
+    function dot(kind, text) { return '<span class="zx-badge zx-badge--dot' + (kind ? " zx-badge--" + kind : "") + '">' + esc(text) + "</span>"; }   // the state of a thing: quiet pill, coloured dot, the word
+    function kpi(label, value, kind) { return '<div class="ov-kpi' + (kind ? " is-" + kind : "") + '"><b>' + esc(value) + "</b><span>" + esc(label) + "</span></div>"; }
+    function go(page, anchor, label, btn) {
+        return '<a href="#" class="ov-go' + (btn ? " ov-btn" : "") + '" data-page="' + esc(page) + '" data-anchor="' + esc(anchor || "") + '">' + esc(label) + "</a>";
     }
-    function go(page, anchor, label) {
-        return '<a href="#" class="ov-go" data-page="' + esc(page) + '" data-anchor="' + esc(anchor || "") + '">' + esc(label) + "</a>";
-    }
-    function card(title, icon, body, foot, wide) {
-        return '<section class="zx-card ov-card' + (wide ? " wide" : "") + '"><div class="zx-card__head"><h3 class="zx-card__title"><i class="' + icon + ' icon" aria-hidden="true"></i> ' + esc(title) + "</h3></div>" +
-            '<div class="zx-card__body">' + body + (foot ? '<div class="ov-foot">' + foot + "</div>" : "") + "</div></section>";
+    function card(title, body, o) {
+        o = o || {};
+        return '<section class="zx-card ov-card ' + (o.cls || "") + '"' + (o.id ? ' data-ov="' + o.id + '"' : "") + '><div class="zx-card__head"><h3 class="zx-card__title">' + esc(title) + "</h3>" + (o.head || "") +
+            (o.desc ? '<p class="zx-card__desc">' + esc(o.desc) + "</p>" : "") + "</div>" +
+            '<div class="zx-card__body">' + body + (o.foot ? '<div class="ov-foot">' + o.foot + "</div>" : "") + "</div></section>";
     }
     function empty(text) { return '<p class="ov-muted" style="margin:0">' + esc(text) + "</p>"; }
 
     /* ---- one chart: stacked columns, allowed (info) and blocked (danger) ---- */
     function bars(total, blocked, label) {
-        var n = total.length, W = 300, H = 56, bw = W / n, max = 1, i;
+        var n = total.length, W = 300, H = 64, bw = W / n, max = 1, i;
         for (i = 0; i < n; i++) { max = Math.max(max, total[i]); }
         var out = '<svg class="ov-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(label) + '"><title>' + esc(label) + "</title>";
         for (i = 0; i < n; i++) {
@@ -122,45 +200,129 @@
         }
         return out + "</svg>";
     }
-    function onlyBlocked(series, label) { return bars(series, series, label); }
+    function barList(items, emptyText) {
+        if (!items || !items.length) { return empty(emptyText); }
+        var max = items.reduce(function (m, x) { return Math.max(m, x.n); }, 1);
+        return '<ul class="ov-bars">' + items.slice(0, 5).map(function (x) {
+            return '<li><span class="k" title="' + esc(x.key) + '">' + esc(x.label || x.key) + '</span><span class="n">' + num(x.n) + '</span><span class="bar"><i style="width:' + Math.max(4, Math.round(x.n / max * 100)) + '%"></i></span></li>';
+        }).join("") + "</ul>";
+    }
 
-    var SEV = { fail: ["danger", N_("Fail")], warn: ["warn", N_("Warning")], unknown: ["info", N_("Unknown")] };
+    var SEV = { fail: ["danger", N_("Failing")], warn: ["warn", N_("Warning")], unknown: ["", N_("Unknown")] };
+    // a finding whose remedy is a section of this page: the check id says which one
+    var SEC_OF = [[/^abuse\.autoban|^security\.autoban|^abuse\.ban/, "abuse"], [/^bot/, "bots"], [/^crowdsec/, "crowdsec"], [/^auth\.|^authaudit/, "authaudit"], [/^netplan/, "netplan"], [/^deploy|^role\./, "deployment"],
+        [/^admin\.(allow|exposure)|^destguard|^exposure/, "exposure"], [/^audit/, "auditlog"], [/^basicauth/, "basicauth"], [/^header/, "headers"], [/^user|^account|^session/, "users"], [/^abuse/, "abuse"]];
+    function secOf(x) {
+        if (x.anchor && $("#secTabs .item[data-sec='" + x.anchor + "']").length) { return x.anchor; }
+        for (var i = 0; i < SEC_OF.length; i++) { if (SEC_OF[i][0].test(x.id || "")) { return SEC_OF[i][1]; } }
+        return "";
+    }
+    function secName(sec) { return $.trim($("#secTabs .item[data-sec='" + sec + "'] .zx-sectionnav__text").text()) || sec; }
+    var REASON = { waf: N_("WAF"), captcha: N_("CAPTCHA"), bot: N_("Bot rule"), abuse: N_("Auto-ban"), ratelimit: N_("Rate limit"), access: N_("Access rule"), crowdsec: N_("CrowdSec"), exploit: N_("Exploit filter"), geo: N_("Country rule") };
+    function reason(k) { return REASON[k] ? t(REASON[k]) : k; }
+
+    function hero(d) {
+        var sc = d.score, w = d.warnings || {}, items = w.items || [], t0 = d.traffic || {}, r = d.routes || {}, b = d.backends || {};
+        var nFail = items.filter(function (x) { return x.status === "fail"; }).length + 0, kind = !sc ? "" : (sc.value >= 80 ? "ok" : (sc.value >= 50 ? "warn" : "danger"));
+        var C = 2 * Math.PI * 52, v = sc ? Math.max(0, Math.min(100, sc.value)) : 0;
+        $("#ovRing").attr("class", "ov-ring" + (kind ? " is-" + kind : "")).attr("aria-label", sc ? t("Security score {0} out of 100").replace("{0}", v) : t("Security score"));
+        $("#ovRing .arc").attr("stroke-dasharray", (C * v / 100).toFixed(1) + " " + C.toFixed(1));
+        $("#ovScore").text(sc ? v : "-");
+        var open = items.length + (w.more || 0);
+        $("#ovHeroTitle").text(!sc ? t("Protection of this Zoraxy") : (sc.label || "") + (sc.grade && sc.grade !== "?" ? " · " + t("grade {0}").replace("{0}", sc.grade) : ""));
+        $("#ovHeroDesc").html(esc(!w.available ? t("The checks could not be run just now.") : (open ? (open === 1 ? t("1 thing needs attention.") : t("{0} things need attention.").replace("{0}", open)) : t("Nothing needs attention.")) + " " +
+            t("{0} checks pass, {1} do not apply to this setup.").replace("{0}", w.ok || 0).replace("{1}", w.notApplicable || 0)) + " " + go("secoverview", "", t("How the score is computed")));
+        ZxSec.fact("#ovFBlocked", num(t0.blockedToday), t("{0} in the last minute").replace("{0}", num(t0.blockedPerMin)), t0.blockedToday ? "warn" : "");
+        ZxSec.fact("#ovFAllowed", num(t0.allowedToday), t("{0} requests a minute now").replace("{0}", num(t0.requestsPerMin)));
+        ZxSec.fact("#ovFSites", num(r.total), t("{0} ask for a login").replace("{0}", r.withAuth || 0));
+        var watched = b.monitored && b.total;   // "All up" is only true when something is watched
+        ZxSec.fact("#ovFBack", !watched ? t("Not monitored") : (b.down ? t("{0} down").replace("{0}", b.down) : t("All up")), !watched ? "" : t("{0} monitored").replace("{0}", b.total), watched ? (b.down ? "danger" : "ok") : "");
+        if (!watched) { $("#ovFBack").append("<small>" + go("utm", "", t("Set up the uptime monitor")) + "</small>"); }
+        if (!r.total) { ZxSec.fact("#ovFSites", t("No site yet")); $("#ovFSites").append("<small>" + go("httprp", "", t("Add one on HTTP Proxy")) + "</small>"); }
+    }
 
     function cWarnings(d) {
-        var w = d.warnings || { items: [] }, items = w.items || [], sc = d.score;
-        var head = "";
-        if (sc) { head = '<p style="margin:0 0 var(--zx-space-2)">' + badge(sc.value >= 80 ? "ok" : (sc.value >= 50 ? "warn" : "danger"), t("Score {0}").replace("{0}", sc.value + (sc.grade ? " (" + sc.grade + ")" : ""))) +
-            ' <span class="ov-muted">' + esc(t("{0} checks passed, {1} do not apply to this setup.").replace("{0}", w.ok || 0).replace("{1}", w.notApplicable || 0)) + "</span> " + go("secoverview", "", t("How the score is computed")) + "</p>"; }
-        if (!w.available) { return card(t("Configuration warnings"), "exclamation triangle", empty(t("The checks could not be run just now.")), "", true); }
+        var w = d.warnings || { items: [] }, items = w.items || [];
+        var o = { cls: "ov-o2", id: "warnings", desc: t("The checks of the Security Overview that fail or warn, most important first.") };
+        if (!w.available) { return card(t("Needs attention"), empty(t("The checks could not be run just now.")), o); }
         if (!items.length) {
-            return card(t("Configuration warnings"), "exclamation triangle", head + '<div class="zx-callout zx-callout--success"><span class="zx-callout__icon"><i class="check circle icon"></i></span><div class="zx-callout__body">' + esc(t("No open findings. Every check that applies to this setup passes.")) + "</div></div>", "", true);
+            o.head = dot("ok", t("All clear"));
+            return card(t("Needs attention"), '<div class="zx-callout zx-callout--success" style="margin:0"><span class="zx-callout__icon"><i class="check circle icon"></i></span><div class="zx-callout__body">' + esc(t("No open findings. Every check that applies to this setup passes.")) + "</div></div>", o);
         }
         var shown = showAllWarn ? items : items.slice(0, 6);
         var li = shown.map(function (x) {
             var s = SEV[x.status] || SEV.unknown;
-            return '<li class="ov-warn">' + badge(s[0], t(s[1])) + '<span class="grow"><b>' + esc(t(x.title)) + '</b><span class="ov-ev">' + esc(x.evidence) + "</span></span>" +
-                (x.page ? go(x.page, x.anchor, t("Fix: {0}").replace("{0}", t(x.fix))) : '<span class="ov-muted">' + esc(x.fix) + "</span>") + "</li>";
+            // the remedy: a button when a page fixes it (a section of this page is named, never "Open Security Center"), otherwise one "How to fix" line
+            var sec = x.page === "seccenter" ? secOf(x) : "", act = "", how = "";
+            if (x.page === "seccenter") { if (sec) { act = go("seccenter", sec, t("Open {0}").replace("{0}", secName(sec)), true); } else { how = t(x.fix); } }
+            else if (x.page) { act = go(x.page, x.anchor, t(x.fix), true); }
+            else { how = t(x.fix); }
+            return '<li class="ov-warn">' + dot(s[0], t(s[1])) + '<span class="grow"><b>' + esc(t(x.title)) + '</b><span class="ov-ev">' + esc(x.evidence) + "</span>" +
+                (how ? '<span class="ov-how"><b>' + esc(t("How to fix:")) + "</b> " + esc(how) + "</span>" : "") + "</span>" + act + "</li>";
         }).join("");
         var more = items.length > 6 ? '<button type="button" class="zx-btn zx-btn--ghost zx-btn--sm ov-more" id="ovWarnToggle">' + esc(showAllWarn ? t("Show fewer") : t("Show all {0}").replace("{0}", items.length + (w.more || 0))) + "</button>" : "";
-        return card(t("Configuration warnings"), "exclamation triangle", head + '<ul class="ov-list">' + li + "</ul>" + more, go("secoverview", "", t("All checks with explanations in Security Overview")), true);
+        o.head = badge(items.some(function (x) { return x.status === "fail"; }) ? "danger" : "warn", String(items.length + (w.more || 0)));
+        o.foot = go("secoverview", "", t("All checks with explanations in Security Overview"));
+        return card(t("Needs attention"), '<ul class="ov-list">' + li + "</ul>" + more, o);
     }
 
-    function cStatus(d) {
-        var s = d.status || {}, r = d.role || {};
-        var roleName = { standalone: t("Standalone"), external: t("External proxy"), internal: t("Internal proxy") }[r.role] || r.role;
-        var body = '<div class="ov-tiles">' + stat(t("Role"), roleName, "", r.role === "standalone" ? t("default") : (r.hardenActive ? t("headers hardened") : "")) +
-            stat(t("Uptime"), fmtUp(s.uptimeSeconds || 0), "", "v" + (s.version || "?")) +
-            stat(t("Reverse proxy"), s.proxyRunning ? t("Running") : t("Stopped"), s.proxyRunning ? "ok" : "danger") + "</div>";
-        body += '<ul class="ov-list">' + (s.listeners || []).map(function (l) {
-            return '<li><span class="grow">' + esc(l.name) + ' <code>' + esc(l.addr) + "</code></span>" + badge(l.tls ? "ok" : "warn", l.tls ? "HTTPS" : "HTTP") + "</li>";
-        }).join("") + "</ul>";
-        var extra = [];
-        if (r.role === "internal") { extra.push(r.peerGateActive ? t("Peer gate on: {0} refused since start.").replace("{0}", num(r.gateRejected)) : t("Peer gate off.")); }
-        if (s.offline) { extra.push(t("Offline mode: no outside service is contacted.")); }
-        if (s.clusterRole && s.clusterRole !== "standalone") { extra.push(t("Cluster role: {0}").replace("{0}", s.clusterRole)); }
-        (r.warnings || []).forEach(function (x) { extra.push(x); });
-        if (extra.length) { body += '<div class="zx-sub" style="margin-top:var(--zx-space-2)">' + extra.map(function (x) { return esc(t(x)); }).join("<br>") + "</div>"; }
-        return card(t("Deployment and status"), "server", body, go("seccenter", "deployment", t("Deployment settings")));
+    /* every protection, one line each: is it on, what does it do now, where to change it */
+    function prot(id, kind, name, word, what, link) {
+        var ic = { on: "check circle", warn: "exclamation circle", danger: "times circle", info: "dot circle outline", off: "circle outline" }[kind] || "circle outline";
+        return '<li class="is-' + kind + '" data-ov="' + id + '"><span class="ov-prot__ic" aria-hidden="true"><i class="' + ic + ' icon"></i></span><span class="ov-prot__name">' + esc(name) + " " + dot({ on: "ok", warn: "warn", danger: "danger" }[kind] || "", word) + '</span><span class="ov-prot__what">' + esc(what) + "</span>" + link + "</li>";
+    }
+    function cProtections(d) {
+        var r = d.routes || {}, waf = r.waf || {}, rl = d.ratelimit || {}, c = d.crowdsec || {}, x = d.trusted || {}, e = d.events || {}, certs = d.certs || {}, li = "";
+        var a = extra.abuse, bt = extra.bots && extra.bots.Config;
+        if (a) {
+            var nDet = Object.keys(a.Detectors || {}).filter(function (k) { return a.Detectors[k] && a.Detectors[k].Enabled; }).length;
+            li += prot("abuse", a.Enabled ? (nDet ? "on" : "warn") : "off", t("Auto-ban"), a.Enabled ? t("On") : t("Off"), a.Enabled ? t("Bans repeat offenders for {0}; {1} kinds of events are watched.").replace("{0}", ZxSec.dur(a.BanSeconds)).replace("{1}", nDet) : t("Nobody is banned automatically."), go("seccenter", "abuse", a.Enabled ? t("Open") : t("Set up"), true));
+        }
+        if (bt) {
+            var nCat = Object.keys(bt.Categories || {}).filter(function (k) { return bt.Categories[k] && bt.Categories[k].Enabled; }).length;
+            li += prot("bots", bt.Enabled ? "on" : "off", t("Bot rules"), bt.Enabled ? t("On") : t("Off"), bt.Enabled ? t("{0} bot lists and {1} rules of your own are checked on every site.").replace("{0}", nCat).replace("{1}", (bt.Custom || []).length) : t("Crawlers and scripts are not filtered by name."), go("seccenter", "bots", bt.Enabled ? t("Open") : t("Set up"), true));
+        }
+        var nBlock = waf.block || 0, nDetect = waf.detection_only || 0, nOff = waf.off || 0;
+        li += prot("waf", nBlock ? (nOff ? "warn" : (nDetect ? "info" : "on")) : (nDetect ? "info" : "off"), t("WAF"), nBlock ? (nOff || nDetect ? t("Blocking on {0} of {1}").replace("{0}", nBlock).replace("{1}", nBlock + nDetect + nOff) : t("Blocking")) : (nDetect ? t("Detecting only") : t("Off")),
+            t("{0} sites block attacks, {1} only log them, {2} are not inspected.").replace("{0}", nBlock).replace("{1}", nDetect).replace("{2}", nOff), go("waf", "", t("Open"), true));
+        li += prot("ratelimit", rl.enforcedRules ? "on" : (rl.dryRunRules ? "info" : "off"), t("Rate limits"), rl.enforcedRules ? t("On for {0}").replace("{0}", rl.enforcedRules) : (rl.dryRunRules ? t("Dry run") : t("Off")),
+            !rl.limitedRules ? t("No proxy rule has a rate limit.") : t("{0} sites enforce a limit, {1} only measure. Rejected in the last 5 minutes: {2}.").replace("{0}", rl.enforcedRules || 0).replace("{1}", rl.dryRunRules || 0).replace("{2}", num(rl.deniedEnforced)), go("httprp", "", t("Set a limit on a proxy rule"), true));
+        li += prot("routes", !r.total ? "off" : (r.withAuth ? (r.withAuth >= r.total ? "on" : "info") : "off"), t("Login on sites"), !r.total ? t("No sites") : t("{0} of {1}").replace("{0}", r.withAuth || 0).replace("{1}", r.total),
+            !r.total ? t("No proxy rule yet.") : t("{0} of {1} proxy rules ask for a login before the site answers.").replace("{0}", r.withAuth || 0).replace("{1}", r.total), go("seccenter", "authaudit", t("Auth audit"), true));
+        var ck = { ok: "on", starting: "info", degraded: "warn", down: "danger", off: "off" }[c.state] || "off";
+        var cn = { ok: t("OK"), starting: t("Starting"), degraded: t("Degraded"), down: t("Down"), off: t("Off") }[c.state] || c.state;
+        if (c.enabled && c.state === "ok" && c.mode !== "enforce") { ck = "info"; cn = t("Log only"); }
+        li += prot("crowdsec", ck, "CrowdSec", cn, !c.enabled ? t("CrowdSec is switched off. Nothing is checked.") :
+            t("{0} decisions in memory, {1} visitors blocked, {2} matched in log-only mode.").replace("{0}", num(c.cacheSize)).replace("{1}", num(c.enforced)).replace("{2}", num(c.logOnly)) + (c.lastError ? " " + t("Last error: {0}").replace("{0}", c.lastError) : ""), go("seccenter", "crowdsec", t("CrowdSec settings"), true));
+        var clean = !!(x.sanitiseClientIP || x.hardenActive);
+        li += prot("trusted", x.trustAll ? "danger" : (clean ? "on" : "off"), t("Client address clean-up"), x.trustAll ? t("Everyone trusted") : (clean ? t("On") : t("Off")),
+            x.trustAll ? t("The list contains a catch-all range: every visitor can forge their address.") : (clean ? t("Forwarded address headers are only believed from the {0} trusted proxies.").replace("{0}", x.count || 0) : t("Forwarded address headers are passed on as sent. {0} proxies are trusted.").replace("{0}", x.count || 0)), go("trustproxy", "", t("Trusted Proxies"), true));
+        li += prot("certs", certs.expired ? "danger" : (certs.expiringSoon ? "warn" : (certs.total ? "on" : "off")), t("Certificates"), certs.expired ? t("{0} expired").replace("{0}", certs.expired) : (certs.expiringSoon ? t("{0} expiring").replace("{0}", certs.expiringSoon) : (certs.total ? t("Valid") : t("None"))),
+            certs.total ? t("{0} certificates stored, {1} expire within 30 days.").replace("{0}", certs.total).replace("{1}", certs.expiringSoon || 0) : t("No certificate is stored yet."), go("cert", "", t("Certificates"), true));
+        li += prot("audit", e.auditAvailable ? "on" : "danger", t("Audit log"), e.auditAvailable ? t("Recording") : t("Not recording"), e.auditAvailable ? t("Every security-relevant change is written down with who made it.") : t("The security audit log is not available."), go("seccenter", "auditlog", t("Open"), true));
+        return card(t("Protections"), '<ul class="ov-prot">' + li + "</ul>", { cls: "ov-o3", id: "protections", desc: t("What guards your sites right now, and where to change it.") });
+    }
+
+    function cTraffic(d) {
+        var t0 = d.traffic || {}, bl = t0.blockLog, sum = extra.blocked, e = d.events || {}, b = e.blocked || [];
+        var body = "";
+        var any = (t0.series || []).filter(function (v) { return v > 0; }).length >= 2;   // one lone bar is a sliver, not a chart
+        if (any) {
+            body += bars(t0.series, t0.blockedSeries, t("Requests per minute over the last 30 minutes, blocked ones in red")) +
+                '<div class="ov-legend"><span><i style="background:var(--zx-border-strong)"></i>' + esc(t("Allowed")) + '</span><span><i style="background:var(--zx-danger-solid)"></i>' + esc(t("Blocked")) + "</span><span>" + esc(t("per minute, last 30 minutes")) + "</span></div>";
+        } else if (bl && bl.enabled && (bl.hourly || []).filter(function (v) { return v > 0; }).length >= 2) {
+            body += bars(bl.hourly, bl.hourly, t("Blocked requests per hour over the last 24 hours")) + '<div class="ov-legend"><span><i style="background:var(--zx-danger-solid)"></i>' + esc(t("blocked per hour, last 24 hours")) + "</span></div>";
+        } else { body += empty(t("Not enough traffic in the last 30 minutes to draw a chart yet.")); }
+        if (bl && !bl.enabled) { body += '<p class="ov-sub">' + esc(t("The blocked request log is switched off.")) + "</p>"; }
+        var reasons = ((sum && sum.reasons) || (bl && bl.reasons) || []).map(function (x) { return { key: x.key, n: x.n, label: reason(x.key) }; });
+        body += '<div class="ov-cols"><div><h4>' + esc(t("Why requests were blocked")) + "</h4>" + barList(reasons, t("Nothing was blocked recently.")) + "</div>" +
+            "<div><h4>" + esc(t("Top blocked addresses")) + "</h4>" + barList(sum && sum.topIPs, t("Nothing was blocked recently.")) + "</div>" +
+            "<div><h4>" + esc(t("Most targeted sites")) + "</h4>" + barList(sum && sum.topHosts, t("Nothing was blocked recently.")) + "</div></div>";
+        body += '<div class="ov-cols" style="grid-template-columns:minmax(0,1fr)"><div><h4>' + esc(t("Latest blocked requests")) + "</h4>";
+        if (!b.length) { body += empty(t("Nothing was blocked recently.")); }
+        else { body += '<ul class="ov-list">' + b.slice(0, 6).map(function (x) { return '<li><span class="muted" style="flex:0 0 9.5rem;white-space:nowrap">' + esc(clock(x.time)) + '</span><span class="grow"><code>' + esc(x.ip) + "</code> &rarr; " + esc(x.host) + "</span>" + dot("danger", reason(x.reason)) + "</li>"; }).join("") + "</ul>"; }
+        body += "</div></div>";
+        return card(t("Blocked and allowed requests"), body, { cls: "ov-o5", id: "traffic", head: go("status", "", t("Blocked requests on Status")), foot: go("stats", "", t("Statistics")) + " &middot; " + go("access", "", t("Ban an address in Access Rules")) });
     }
 
     function cBackends(d) {
@@ -169,113 +331,78 @@
         if (!b.monitored) { body = empty(t("The uptime monitor is not running, so backend health is unknown.")); }
         else if (!b.total) { body = empty(t("No upstream is monitored yet.")); }
         else {
-            body = '<div class="ov-tiles">' + stat(t("Up"), (b.total - b.down), "ok") + stat(t("Down"), b.down, b.down ? "danger" : "") + stat(t("Monitored"), b.total) + "</div>" +
+            body = '<div class="ov-kpis ov-kpis--sm">' + kpi(t("Up"), (b.total - b.down), b.total - b.down ? "ok" : "") + kpi(t("Down"), b.down, b.down ? "danger" : "") + kpi(t("Monitored"), b.total) + "</div>" +
                 '<ul class="ov-list">' + items.slice(0, 5).map(function (u) {
-                    return "<li>" + badge(u.online ? "ok" : "danger", u.online ? t("Up") : t("Down")) + '<span class="grow">' + esc(u.name) + '</span><span class="muted">' + (u.online ? esc(u.latencyMs) + " ms" : esc(u.status || "")) + "</span></li>";
-                }).join("") + "</ul>" + (b.total > items.length ? '<div class="zx-sub">' + esc(t("Worst first. {0} more are up.").replace("{0}", b.total - items.length)) + "</div>" : "") + (items.length > 5 ? '<div class="zx-sub">' + esc(t("Showing the worst 5 of {0}.").replace("{0}", b.total)) + "</div>" : "");
+                    return "<li>" + dot(u.online ? "ok" : "danger", u.online ? t("Up") : t("Down")) + '<span class="grow">' + esc(u.name) + '</span><span class="muted">' + (u.online ? esc(u.latencyMs) + " ms" : (u.status ? esc(u.status) : "")) + "</span></li>";
+                }).join("") + "</ul>" + (b.total > items.length ? '<p class="ov-sub">' + esc(t("Worst first. {0} more are up.").replace("{0}", b.total - items.length)) + "</p>" : "") + (items.length > 5 ? '<p class="ov-sub">' + esc(t("Showing the worst 5 of {0}.").replace("{0}", b.total)) + "</p>" : "");
         }
-        return card(t("Backend health"), "heartbeat", body, go("utm", "", t("Uptime monitor")));
-    }
-
-    function cRoutes(d) {
-        var r = d.routes || {}, waf = r.waf || {};
-        var body = '<div class="ov-tiles">' + stat(t("Routes"), r.total || 0, "", t("{0} enabled").replace("{0}", r.enabled || 0)) + stat(t("With login"), r.withAuth || 0) + stat(t("Rate limited"), r.rateLimited || 0) + "</div>";
-        var w = [];
-        ["block", "detection_only", "off"].forEach(function (k) { if (waf[k]) { w.push(badge(k === "block" ? "ok" : (k === "off" ? "warn" : "info"), {block: t("WAF blocking"), detection_only: t("WAF detecting"), off: t("WAF off")}[k] + " " + waf[k])); } });
-        if (w.length) { body += '<p style="margin:0 0 var(--zx-space-2)"><span class="zx-chips">' + w.join("") + "</span></p>"; }
-        if ((r.busiest || []).length) {
-            body += '<ul class="ov-list">' + r.busiest.map(function (x) { return '<li><span class="grow">' + esc(x.domain) + '</span><span class="muted">' + esc(t("{0} req/s avg, {1} peak").replace("{0}", x.avgRps).replace("{1}", x.peakRps)) + "</span></li>"; }).join("") + "</ul>";
-        } else if (!r.total) { body += empty(t("No proxy rule yet.")); }
-        return card(t("Proxy routes"), "sitemap", body, go("httprp", "", t("HTTP Proxy")) + (r.defaultSite ? ' <span class="ov-muted">&middot; ' + esc(t("Default site: {0}").replace("{0}", r.defaultSite)) + "</span>" : ""));
+        return card(t("Backend health"), body, { id: "backends", head: go("utm", "", t("Uptime monitor")) });
     }
 
     function cCerts(d) {
         var c = d.certs || {}, items = c.items || [];
-        var body = '<div class="ov-tiles">' + stat(t("Certificates"), c.total || 0) + stat(t("Expiring in 30 days"), c.expiringSoon || 0, c.expiringSoon ? "warn" : "") + stat(t("Expired"), c.expired || 0, c.expired ? "danger" : "") + "</div>";
-        if ((c.issues || []).length) { body += '<ul class="ov-list">' + c.issues.map(function (x) { return '<li><span class="grow">' + esc(x) + "</span></li>"; }).join("") + "</ul>"; }
+        var body = '<div class="ov-kpis ov-kpis--sm">' + kpi(t("Certificates"), c.total || 0) + kpi(t("Expiring in 30 days"), c.expiringSoon || 0, c.expiringSoon ? "warn" : "") + kpi(t("Expired"), c.expired || 0, c.expired ? "danger" : "") + "</div>";
         if (items.length) {
             body += '<ul class="ov-list">' + items.map(function (x) {
-                return '<li>' + badge(x.expired ? "danger" : (x.daysLeft <= 30 ? "warn" : "ok"), x.expired ? t("Expired") : t("{0} days").replace("{0}", x.daysLeft)) + '<span class="grow">' + esc(x.name) + "</span></li>";
+                return "<li>" + dot(x.expired ? "danger" : (x.daysLeft <= 30 ? "warn" : "ok"), x.expired ? t("Expired") : t("{0} days").replace("{0}", x.daysLeft)) + '<span class="grow">' + esc(x.name) + "</span></li>";
             }).join("") + "</ul>";
         } else { body += empty(t("No certificate is stored yet.")); }
-        return card(t("TLS certificates"), "lock", body, go("cert", "", t("Certificates")) + " &middot; " + go("ech", "", t("Encrypted Client Hello")));
-    }
-
-    function cCrowd(d) {
-        var c = d.crowdsec || {};
-        var kind = { ok: "ok", starting: "info", degraded: "warn", down: "danger", off: "info" }[c.state] || "info";
-        var name = { ok: t("OK"), starting: t("Starting"), degraded: t("Degraded"), down: t("Down"), off: t("Off") }[c.state] || c.state;
-        var body = "<p style=\"margin:0 0 var(--zx-space-2)\">" + badge(kind, name) + " ";
-        if (!c.enabled) { body += '<span class="ov-muted">' + esc(t("CrowdSec is switched off. Nothing is checked.")) + "</span></p>"; }
-        else {
-            body += '<span class="ov-muted">' + esc(c.mode === "enforce" ? t("Enforce") : t("Log only")) + "</span></p>" +
-                '<div class="ov-tiles">' + stat(t("Decisions in memory"), num(c.cacheSize)) + stat(t("Blocked"), num(c.enforced), "") + stat(t("Log only matches"), num(c.logOnly)) + "</div>" +
-                '<div class="zx-sub">' + esc(t("Last successful pull: {0}").replace("{0}", rel(c.lastSuccess))) + " &middot; " + esc(t("Errors since start: {0}").replace("{0}", num(c.totalErrors))) + "</div>";
-            if (c.failClosedActive) { body += '<div class="zx-sub">' + esc(t("Fail-closed is active: visitors are refused while the LAPI is down.")) + "</div>"; }
-            if (c.lastError) { body += '<div class="zx-sub">' + esc(t("Last error: {0}").replace("{0}", c.lastError)) + "</div>"; }
-            (c.warnings || []).forEach(function (x) { body += '<div class="zx-sub">' + esc(t(x)) + "</div>"; });
-        }
-        return card("CrowdSec", "shield", body, go("seccenter", "crowdsec", t("CrowdSec settings")));
-    }
-
-    function cRate(d) {
-        var r = d.ratelimit || {}, items = r.items || [];
-        var body;
-        if (!r.limitedRules) { body = empty(t("No proxy rule has a rate limit.")); }
-        else {
-            body = '<div class="ov-tiles">' + stat(t("Enforced rules"), r.enforcedRules || 0) + stat(t("Dry-run rules"), r.dryRunRules || 0, r.dryRunRules ? "warn" : "") +
-                stat(t("Rejected (5 min)"), num(r.deniedEnforced), r.deniedEnforced ? "warn" : "", t("would reject in dry run: {0}").replace("{0}", num(r.wouldDeny))) + "</div>" +
-                '<ul class="ov-list">' + items.map(function (x) {
-                    return "<li>" + badge(x.dryRun ? "info" : "ok", x.dryRun ? t("Dry run") : t("Enforced")) + '<span class="grow">' + esc(x.domain) + '</span><span class="muted">' +
-                        esc((x.dryRun ? t("{0}/s, {1} would be rejected") : t("{0}/s, {1} rejected")).replace("{0}", x.rate).replace("{1}", num(x.denied))) + "</span></li>";
-                }).join("") + "</ul>" + (r.stale ? '<div class="zx-sub">' + esc(t("The live counters have not updated for a moment.")) + "</div>" : "");
-        }
-        return card(t("Rate limits"), "tachometer alternate", body, go("httprp", "", t("Set a limit on a proxy rule")));
-    }
-
-    function cTraffic(d) {
-        var t0 = d.traffic || {}, bl = t0.blockLog;
-        var body = '<div class="ov-tiles">' + stat(t("Allowed today"), num(t0.allowedToday)) + stat(t("Blocked today"), num(t0.blockedToday), t0.blockedToday ? "warn" : "") + stat(t("Requests / min"), t0.requestsPerMin) + "</div>";
-        var any = (t0.series || []).filter(function (v) { return v > 0; }).length >= 2;   // one lone bar is a sliver, not a chart
-        if (any) {
-            body += bars(t0.series, t0.blockedSeries, t("Requests per minute over the last 30 minutes, blocked ones in red")) +
-                '<div class="ov-legend"><span><i style="background:var(--zx-info-solid)"></i>' + esc(t("Allowed")) + '</span><span><i style="background:var(--zx-danger-solid)"></i>' + esc(t("Blocked")) + "</span><span>" + esc(t("last 30 minutes")) + "</span></div>";
-        } else { body += empty(t("Not enough traffic in the last 30 minutes to draw a chart yet.")); }
-        if (bl && bl.enabled && (bl.hourly || []).filter(function (v) { return v > 0; }).length >= 2) {
-            body += onlyBlocked(bl.hourly, t("Blocked requests per hour over the last 24 hours")) + '<div class="ov-legend"><span>' + esc(t("blocked per hour, last 24 hours")) + "</span></div>";
-            body += '<span class="zx-chips">' + (bl.reasons || []).map(function (x) { return badge("info", x.key + " " + x.n); }).join("") + "</span>";
-        } else if (bl && !bl.enabled) { body += '<div class="zx-sub">' + esc(t("The blocked request log is switched off.")) + "</div>"; }
-        return card(t("Blocked and allowed requests"), "chart bar", body, go("stats", "", t("Statistics")) + " &middot; " + go("status", "", t("Status")));
-    }
-
-    function cEvents(d) {
-        var e = d.events || {}, a = e.audit || [], b = e.blocked || [];
-        var body = '<h4 class="zx-subhead">' + esc(t("Configuration changes")) + "</h4>";
-        if (!e.auditAvailable) { body += empty(t("The security audit log is not available.")); }
-        else if (!a.length) { body += empty(t("No security-relevant change recorded yet.")); }
-        else { body += '<ul class="ov-list">' + a.map(function (x) { return '<li><span class="muted">' + esc(rel(x.time)) + '</span><span class="grow"><b>' + esc(x.event) + "</b> " + esc(x.target) + '</span><span class="muted">' + esc(x.actor) + (x.outcome && x.outcome !== "ok" ? " (" + esc(x.outcome) + ")" : "") + "</span></li>"; }).join("") + "</ul>"; }
-        body += '<h4 class="zx-subhead">' + esc(t("Latest blocked requests")) + "</h4>";
-        if (!b.length) { body += empty(t("Nothing was blocked recently.")); }
-        else { body += '<ul class="ov-list">' + b.map(function (x) { return '<li><span class="muted">' + esc(rel(x.time)) + '</span><span class="grow">' + esc(x.ip) + " &rarr; " + esc(x.host) + "</span>" + badge("info", x.reason) + "</li>"; }).join("") + "</ul>"; }
-        return card(t("Recent security events"), "history", body, go("seccenter", "auditlog", t("Audit log")) + " &middot; " + go("status", "", t("Blocked requests on Status")), true);
+        if ((c.issues || []).length) { body += c.issues.map(function (x) { return '<p class="ov-sub" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden" title="' + esc(x) + '">' + esc(x) + "</p>"; }).join(""); }
+        return card(t("TLS certificates"), body, { id: "certs", head: go("cert", "", t("Certificates")), foot: go("ech", "", t("Encrypted Client Hello")) });
     }
 
     function cTrusted(d) {
         var x = d.trusted || {};
-        var body = '<div class="ov-tiles">' + stat(t("Trusted proxies"), x.count || 0, x.trustAll ? "danger" : "") + stat(t("Gating"), x.gating ? t("On") : t("Off"), x.gating ? "ok" : "warn") +
-            stat(t("Header clean-up"), (x.sanitiseClientIP || x.hardenActive) ? t("On") : t("Off"), (x.sanitiseClientIP || x.hardenActive) ? "ok" : "") + "</div>";
+        var body = '<div class="ov-state">' + dot(x.gating ? "ok" : "", x.gating ? t("Gating on") : t("Gating off")) + dot((x.sanitiseClientIP || x.hardenActive) ? "ok" : "", (x.sanitiseClientIP || x.hardenActive) ? t("Header clean-up on") : t("Header clean-up off")) + "</div>";
         if (x.trustAll) { body += '<div class="zx-callout zx-callout--danger"><span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body">' + esc(t("The list contains a catch-all range: every visitor can forge their address.")) + "</div></div>"; }
-        else if (x.broad) { body += '<div class="zx-sub">' + esc(t("{0} very broad ranges are trusted.").replace("{0}", x.broad)) + "</div>"; }
+        else if (x.broad) { body += '<p class="ov-sub" style="margin:0 0 var(--zx-space-2)">' + esc(t("{0} very broad ranges are trusted.").replace("{0}", x.broad)) + "</p>"; }
         if ((x.entries || []).length) {
-            body += '<span class="zx-chips">' + x.entries.map(function (e) { return '<span class="zx-badge" title="' + esc(e.desc) + '">' + esc(e.ip) + "</span>"; }).join("") + (x.count > x.entries.length ? '<span class="ov-muted">' + esc(t("... and {0} more").replace("{0}", x.count - x.entries.length)) + "</span>" : "") + "</span>";
+            body += '<span class="ov-chips">' + x.entries.map(function (e) { return '<span class="zx-badge" title="' + esc(e.desc) + '">' + esc(e.ip) + "</span>"; }).join("") + "</span>" + (x.count > x.entries.length ? '<p class="ov-sub">' + esc(t("... and {0} more").replace("{0}", x.count - x.entries.length)) + "</p>" : "");
         } else { body += empty(t("The trusted proxy list is empty: forwarded client addresses are ignored.")); }
-        return card(t("Trusted proxies"), "handshake", body, go("trustproxy", "", t("Trusted Proxies")) + " &middot; " + go("seccenter", "netplan", t("Network plan")));
+        return card(t("Trusted proxies"), body, { id: "trusted", head: '<span class="zx-badge">' + esc(String(x.count || 0)) + "</span>" + go("trustproxy", "", t("Trusted Proxies")), foot: go("seccenter", "netplan", t("Network plan")) });
+    }
+
+    function cStatus(d) {
+        var s = d.status || {}, r = d.role || {};
+        var roleName = { standalone: t("Standalone"), external: t("External proxy"), internal: t("Internal proxy") }[r.role] || r.role;
+        var body = '<ul class="ov-list"><li><span class="grow">' + esc(t("Reverse proxy")) + "</span>" + dot(s.proxyRunning ? "ok" : "danger", s.proxyRunning ? t("Running") : t("Stopped")) + "</li>" +
+            '<li><span class="grow">' + esc(t("Role")) + '</span><span class="muted">' + esc(roleName) + (r.role === "standalone" ? " (" + esc(t("default")) + ")" : (r.hardenActive ? " (" + esc(t("headers hardened")) + ")" : "")) + "</span></li>" +
+            '<li><span class="grow">' + esc(t("Version")) + '</span><span class="muted">v' + esc(s.version || "?") + " · " + esc(t("up {0}").replace("{0}", fmtUp(s.uptimeSeconds || 0))) + "</span></li>" +
+            (s.listeners || []).map(function (l) {
+                return '<li><span class="grow">' + esc(l.name) + ' <code>' + esc(l.addr) + "</code></span>" + dot(l.tls ? "ok" : "warn", l.tls ? "HTTPS" : "HTTP") + "</li>";
+            }).join("") + "</ul>";
+        var extraLines = [];
+        if (r.role === "internal") { extraLines.push(r.peerGateActive ? t("Peer gate on: {0} refused since start.").replace("{0}", num(r.gateRejected)) : t("Peer gate off.")); }
+        if (s.offline) { extraLines.push(t("Offline mode: no outside service is contacted.")); }
+        if (s.clusterRole && s.clusterRole !== "standalone") { extraLines.push(t("Cluster role: {0}").replace("{0}", s.clusterRole)); }
+        (r.warnings || []).forEach(function (x) { extraLines.push(x); });
+        if (d.routes && d.routes.defaultSite) { extraLines.push(t("Default site: {0}").replace("{0}", d.routes.defaultSite)); }
+        if (extraLines.length) { body += '<p class="ov-sub">' + extraLines.map(function (x) { return esc(t(x)); }).join("<br>") + "</p>"; }
+        return card(t("Deployment and status"), body, { id: "status", head: go("seccenter", "deployment", t("Deployment settings")) });
+    }
+
+    function cEvents(d) {
+        var e = d.events || {}, a = e.audit || [];
+        var body;
+        if (!e.auditAvailable) { body = empty(t("The security audit log is not available.")); }
+        else if (!a.length) { body = empty(t("No security-relevant change recorded yet.")); }
+        else {
+            // changes only (a list that was merely opened is not an event), in the words of the Audit log
+            var ch = a.filter(function (x) { return !ZxSec.audit(x.event).read; }).slice(0, 8);
+            body = !ch.length ? empty(t("No security-relevant change recorded yet.")) : '<ul class="ov-list">' + ch.map(function (x) {
+                var oc = ZxSec.auditOutcome(x.outcome);
+                return '<li class="ov-evt"><span class="muted">' + esc(clock(x.time)) + '</span><span><b title="' + esc(x.event) + '">' + esc(ZxSec.audit(x.event).label) + "</b>" + (x.target ? '<span class="ov-evt__t">' + esc(x.target) + "</span>" : "") +
+                    '<span class="ov-evt__by">' + esc(t("by {0}").replace("{0}", x.actor || t("unknown"))) + "</span></span>" + dot(oc[0], oc[1]) + "</li>";
+            }).join("") + "</ul>";
+        }
+        return card(t("Recent security events"), body, { cls: "ov-o7", id: "events", desc: t("The latest changes to security settings, and who made them."), head: go("seccenter", "auditlog", t("Open the audit log")) });
     }
 
     function render(d) {
-        var html = cWarnings(d) + cStatus(d) + cBackends(d) + cRoutes(d) + cCerts(d) + cCrowd(d) + cRate(d) + cTraffic(d) + cTrusted(d) + cEvents(d);
+        hero(d);
+        var html = cWarnings(d) + cProtections(d) + cTraffic(d) + '<div class="ov-two ov-o6">' + cBackends(d) + cCerts(d) + cTrusted(d) + cStatus(d) + "</div>" + cEvents(d);
         if ((d.errors || []).length) {
-            html = '<div class="zx-callout zx-callout--warn ov-card wide" style="grid-column:1/-1"><span class="zx-callout__icon"><i class="info circle icon"></i></span><div class="zx-callout__body">' +
+            html = '<div class="zx-callout zx-callout--warn ov-o1" style="margin:0"><span class="zx-callout__icon"><i class="info circle icon"></i></span><div class="zx-callout__body">' +
                 esc(t("Some cards could not be filled and are left out: {0}.").replace("{0}", d.errors.join(", "))) + "</div></div>" + html;
         }
         $("#ovGrid").html(html).prop("hidden", false);
@@ -283,6 +410,13 @@
         $("#ovStamp").text(t("Updated {0}").replace("{0}", new Date(d.generated * 1000).toLocaleTimeString()));
     }
 
+    // the three small extras: read-only, every 30 s; a failure just leaves that line out
+    function loadExtra() {
+        function again() { if (last) { render(last); } }
+        $.ajax({ url: "/api/abuse/config", dataType: "json", cache: false }).done(function (c) { if (c && !c.error) { extra.abuse = c; again(); } });
+        $.ajax({ url: "/api/botrules/get", dataType: "json", cache: false }).done(function (c) { if (c && c.Config) { extra.bots = c; again(); } });
+        $.ajax({ url: "/api/blocked/summary", dataType: "json", cache: false }).done(function (c) { if (c && !c.error) { extra.blocked = c; again(); } });
+    }
     function load() {
         if (inflight) { return; }
         inflight = true;
@@ -297,13 +431,13 @@
     function fail(msg) {
         $("#ovErrorText").text(msg || t("The server returned an error."));
         $("#ovError").prop("hidden", false);
-        if (!last) { $("#ovSkel").hide(); }   // keep the last good data on screen when a refresh fails
+        if (!last) { $("#ovSkel").hide(); $("#ovHeroTitle").text(t("The overview could not be loaded")); }   // keep the last good data on screen when a refresh fails
     }
 
     function visible() { return document.visibilityState === "visible" && document.body.contains(root) && $(root).is(":visible"); }
     function tick() {
         if (!document.body.contains(root)) { clearInterval(timer); timer = null; return; }   // the tab was left: stop polling
-        if (visible()) { load(); }
+        if (visible()) { load(); if (++ticks % 3 === 0) { loadExtra(); } }
     }
     if (window.__ovTimer) { clearInterval(window.__ovTimer); }
     timer = window.__ovTimer = setInterval(tick, 10000);
@@ -312,7 +446,7 @@
         if (document.visibilityState === "visible") { load(); }
     });
 
-    $("#ovRefresh").on("click", load);
+    $("#ovRefresh").on("click", function () { load(); loadExtra(); });
     $("#ovRetry").on("click", function (e) { e.preventDefault(); load(); });
     $(root).on("click", "#ovWarnToggle", function () { showAllWarn = !showAllWarn; if (last) { render(last); } });
     $(root).on("click", ".ov-go", function (e) {
@@ -326,7 +460,7 @@
         openTabById(page);
         if (anchor) { setTimeout(function () { $("#" + page).find('[data-tab="' + anchor + '"],[data-sec="' + anchor + '"]').first().trigger("click"); }, 450); }
     });
-    load();
+    load(); loadExtra();
 })();
 </script>
 
@@ -338,16 +472,17 @@
     var root = document.getElementById("blCard");
     var cur = null, busy = false, opening = false;
 
-    function badge(kind, text) { return '<span class="zx-badge zx-badge--' + kind + '">' + esc(text) + "</span>"; }
+    function badge(kind, text) { return '<span class="zx-badge' + (kind && kind !== "info" ? " zx-badge--" + kind : "") + '">' + esc(text) + "</span>"; }
+    function dot(kind, text) { return '<span class="zx-badge zx-badge--dot' + (kind && kind !== "info" ? " zx-badge--" + kind : "") + '">' + esc(text) + "</span>"; }   // the state of a thing: quiet pill, coloured dot (none = neutral), the word
     function chip(it) {
-        if (it.status === "on") { return badge("ok", t("On")); }
-        if (it.status === "off") { return badge("warn", t("Off")); }
-        if (it.status === "skipped") { return badge("info", t("Not applied")); }
+        if (it.status === "on") { return dot("ok", t("On")); }
+        if (it.status === "off") { return dot("warn", t("Off")); }
+        if (it.status === "skipped") { return dot("info", t("Not applied")); }
         var c = it.current || "";
-        if (c === "recording") { return badge("ok", t("Recording")); }
-        if (c === "not configured") { return badge("warn", t("Not configured")); }
-        if (c.indexOf("on") === 0) { return badge("ok", t(c)); }
-        return badge("info", t(c));
+        if (c === "recording") { return dot("ok", t("Recording")); }
+        if (c === "not configured") { return dot("warn", t("Not configured")); }
+        if (c.indexOf("on") === 0) { return dot("ok", t(c)); }
+        return dot("info", t(c));
     }
     function openLink(it, label) {
         return ' <a href="#" class="ov-go" data-page="' + esc(it.page) + '" data-anchor="' + esc(it.anchor || "") + '">' + esc(label) + "</a>";
@@ -362,8 +497,9 @@
         var allOn = changeable.length > 0 && on === changeable.length;
         var notApplied = changeable.filter(function (i) { return i.status === "skipped"; }).length;
         var h = '<div class="zx-card__head"><div class="bl-head"><h3 class="zx-card__title" id="blTitle"><i class="shield alternate icon" aria-hidden="true"></i> ' + esc(t("Enterprise baseline")) + "</h3>" +
-            badge(allOn ? "ok" : (d.pending ? "warn" : "info"), allOn ? t("All applicable settings are on") : t("{0} of {1} settings on").replace("{0}", on).replace("{1}", changeable.length)) + "</div></div>";
-        h += '<div class="zx-card__body"><p class="zx-sub" style="margin:0">' + esc(t("A short list of safe security settings. Nothing in it blocks traffic, limits who can log in or changes a site you already have. Everything can be undone.")) + "</p>";
+            dot(allOn ? "ok" : (d.pending ? "warn" : "info"), allOn ? t("All applicable settings are on") : t("{0} of {1} settings on").replace("{0}", on).replace("{1}", changeable.length)) + "</div>" +
+            '<p class="zx-card__desc">' + esc(t("A short list of safe security settings. Nothing in it blocks traffic, limits who can log in or changes a site you already have. Everything can be undone.")) + "</p></div>";
+        h += '<div class="zx-card__body">';
         (d.warnings || []).forEach(function (w) {
             h += '<div class="zx-callout zx-callout--warn" role="alert"><span class="zx-callout__icon"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body">' + esc(t(w)) + "</div></div>";
         });
@@ -372,7 +508,7 @@
             var eff = '<span class="bl-why">' + esc(t(it.effect)) + "</span>";
             var reason = (it.status === "skipped" && it.reason) ? '<span class="bl-why"><b>' + esc(t("Why not applied:")) + "</b> " + esc(t(it.reason)) + "</span>" : "";
             var label = it.info && it.current === "not configured" ? t("Configure") : t("Open");
-            var more = '<details class="bl-more"><summary>' + esc(t("Learn more")) + "</summary>" + eff + "</details>";
+            var more = '<details class="bl-more sx-more-d"><summary>' + esc(t("Learn more")) + "</summary>" + eff + "</details>";
             return "<li><span>" + chip(it) + '</span><span class="bl-txt"><b>' + esc(t(it.title)) + "</b>" + openLink(it, label) + why + reason + more + "</span></li>";
         }).join("") + "</ul>";
         var st = d.state || {};

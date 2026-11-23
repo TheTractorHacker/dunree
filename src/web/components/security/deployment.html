@@ -1,25 +1,69 @@
+<!-- Security Center > Deployment (advanced). Status (the role in effect), the role as three pictures of the chain,
+     then what the role changes. The select #drRole stays the form control (visually hidden); the cards drive it. -->
 <div class="ui form" id="drForm">
+    <section class="zx-card sx-status" id="drStatusCard" data-state="off">
+        <div class="sx-status__top">
+            <span class="sx-status__icon" aria-hidden="true"><i class="sitemap icon"></i></span>
+            <div class="sx-status__text">
+                <h4 class="sx-status__title"><span class="sx-status__name">Deployment</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+                <p class="sx-status__desc">Where Zoraxy sits in your network. The default, Standalone, changes nothing. Zoraxy never changes your firewall.</p>
+            </div>
+        </div>
+        <dl class="sx-facts">
+            <div class="sx-fact"><dt>Role</dt><dd id="drFRole">-</dd></div>
+            <div class="sx-fact"><dt>Forwarded address headers</dt><dd id="drFHarden">-</dd></div>
+            <div class="sx-fact"><dt>Trusted proxies</dt><dd id="drFTrusted">-</dd></div>
+            <div class="sx-fact"><dt>Peer gate</dt><dd id="drFGate">-</dd></div>
+        </dl>
+    </section>
+    <div id="drWarn"></div>
+
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Where Zoraxy sits in your network</h3>
-            <p class="zx-card__desc">The default, Standalone, changes nothing. The other roles are for a chain of two proxies (internet, external proxy, internal proxy, servers) and handle client address headers more strictly. Zoraxy does not change your firewall.</p>
+            <h3 class="zx-card__title" id="drRoleLbl">Role of this Zoraxy</h3>
+            <p class="zx-card__desc">Most installations are Standalone. The other two are for a chain of two proxies, where the outer one faces the internet and the inner one sits next to your servers.</p>
         </div>
         <div class="zx-card__body">
-            <div class="field zx-field">
-                <label for="drRole">Role of this Zoraxy</label>
-                <select id="drRole">
+            <div class="dr-roles" id="drRoles" role="radiogroup" aria-labelledby="drRoleLbl">
+                <button type="button" class="dr-role" role="radio" data-role="standalone" aria-checked="true">
+                    <span class="dr-role__name">Standalone <span class="zx-badge">Default</span></span>
+                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><b>Zoraxy</b><i>Servers</i></span>
+                    <span class="dr-role__desc">One proxy between the internet (or your CDN) and your servers. Nothing is hardened unless you switch it on below.</span>
+                </button>
+                <button type="button" class="dr-role" role="radio" data-role="external" aria-checked="false">
+                    <span class="dr-role__name">External proxy</span>
+                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><b>Zoraxy</b><i>Internal proxy</i><i>Servers</i></span>
+                    <span class="dr-role__desc">Faces the internet and forwards to an internal proxy. Passes on only client address headers it built itself.</span>
+                </button>
+                <button type="button" class="dr-role" role="radio" data-role="internal" aria-checked="false">
+                    <span class="dr-role__name">Internal proxy</span>
+                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><i>External proxy</i><b>Zoraxy</b><i>Servers</i></span>
+                    <span class="dr-role__desc">Receives traffic from the external proxy. Believes a client address only when it comes from that proxy, and can refuse everyone else.</span>
+                </button>
+            </div>
+            <div class="zx-sr-only"><label for="drRole">Role of this Zoraxy</label>
+                <select id="drRole" tabindex="-1">
                     <option value="standalone">Standalone (default, no change)</option>
                     <option value="external">External proxy (faces the internet, forwards to an internal proxy)</option>
                     <option value="internal">Internal proxy (receives traffic from the external proxy)</option>
-                </select>
-                <p class="zx-help" id="drRoleHelp"></p>
-            </div>
+                </select></div>
+            <p class="dr-rolehelp" id="drRoleHelp" aria-live="polite"></p>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Client address headers</h3>
+            <p class="zx-card__desc">A visitor can write X-Forwarded-For and similar headers themselves to fake their address. Hardening removes them unless they come from a proxy you trust.</p>
+        </div>
+        <div class="zx-card__body">
             <label class="zx-toggle-row" for="drHarden">
                 <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Harden forwarded client address headers</span><span class="zx-toggle-row__desc">Always on in the External and Internal roles. A connection that is not from a <a href="#trustproxy" data-nav-open="trustproxy">trusted proxy</a> loses its X-Forwarded-For and similar client address headers. List your CDN or external proxy under Trusted Proxies first, or every visitor will look like a direct client.</span></span>
                 <input type="checkbox" class="zx-switch" role="switch" id="drHarden">
             </label>
         </div>
     </section>
+
     <section class="zx-card" id="drGateBox" style="display:none">
         <div class="zx-card__head">
             <h3 class="zx-card__title">Peer gate</h3>
@@ -31,19 +75,37 @@
                 <input type="checkbox" class="zx-switch" role="switch" id="drGate">
             </label>
             <div class="field zx-field"><label for="drCidrs">Networks that may connect directly</label>
-                <textarea id="drCidrs" rows="3" placeholder="192.168.10.0/24"></textarea>
+                <textarea id="drCidrs" rows="3" placeholder="192.168.10.0/24" spellcheck="false"></textarea>
                 <p class="zx-help">One IP address or range (CIDR) per line, for example your management network or monitoring host. 0.0.0.0/0 is refused.</p></div>
         </div>
     </section>
-    <div id="drWarn"></div>
-    <div id="drMsg" class="ui negative message" style="display:none"></div>
-    <section class="zx-card">
-        <div class="zx-card__foot" style="border-top:0;display:flex;align-items:center;gap:var(--zx-space-4);flex-wrap:wrap">
-            <button class="ui primary button" id="drSave"><i class="save icon"></i> Save</button>
-            <span class="zx-help" id="drStatus" style="margin:0"></span>
-        </div>
-    </section>
+    <div id="drMsg" class="ui negative message" style="display:none" role="alert"></div>
+    <div class="sx-actions">
+        <button type="button" class="zx-btn zx-btn--primary" id="drSave"><i class="save icon" aria-hidden="true"></i> Save deployment</button>
+        <span class="zx-help" id="drStatus"></span>
+    </div>
 </div>
+<style>
+    #drForm .dr-roles { display: grid; gap: var(--zx-space-2); }
+    #drForm .dr-role { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 2px var(--zx-space-3); min-width: 0; padding: var(--zx-space-3) var(--zx-space-4); text-align: left; font: inherit; color: var(--zx-text); background: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-lg); cursor: pointer; transition: border-color var(--zx-dur, 140ms) var(--zx-ease, ease), background-color var(--zx-dur, 140ms) var(--zx-ease, ease); }
+    #drForm .dr-role::before { content: ""; grid-row: 1 / span 2; align-self: start; margin-top: 3px; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--zx-border-strong); background: var(--zx-surface); box-sizing: border-box; }
+    #drForm .dr-role[aria-checked="true"]::before { border: 5px solid var(--zx-primary); }
+    #drForm .dr-role:hover { background: var(--zx-surface-2); }
+    #drForm .dr-role:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #drForm .dr-role[aria-checked="true"] { background: var(--zx-primary-soft); border-color: var(--zx-primary); }
+    #drForm .dr-role__name { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); font-size: 1.071rem; font-weight: 700; }
+    #drForm .dr-role[aria-checked="true"] .dr-role__name { color: var(--zx-primary-soft-text); }
+    #drForm .dr-role__desc { grid-column: 2; grid-row: 2; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.4; }
+    #drForm .dr-chain { grid-column: 3; grid-row: 1 / span 2; display: flex; align-items: center; gap: 14px; }
+    #drForm .dr-chain > * { position: relative; display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-sm); background: var(--zx-surface); color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-style: normal; font-weight: 400; white-space: nowrap; }
+    #drForm .dr-chain > b { background: var(--zx-primary); border-color: var(--zx-primary); color: var(--zx-surface); font-weight: 700; }
+    #drForm .dr-chain > * + *::before { content: ""; position: absolute; left: -15px; top: 50%; width: 14px; height: 1px; background: var(--zx-border-strong); }
+    #drForm .dr-rolehelp { margin: var(--zx-space-3) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #drForm #drWarn .zx-callout { margin: 0 0 var(--zx-space-4); }
+    @media (max-width: 900px) { #drForm .dr-role { grid-template-columns: 18px minmax(0, 1fr); } #drForm .dr-chain { grid-column: 2; grid-row: 3; margin-top: var(--zx-space-2); flex-wrap: wrap; gap: 6px 14px; } }
+    @media (max-width: 480px) { #drForm .dr-chain { flex-wrap: nowrap; gap: 10px; } #drForm .dr-chain > * { padding: 2px 5px; font-size: 11px; } #drForm .dr-chain > * + *::before { left: -11px; width: 10px; } }
+    @media (prefers-reduced-motion: reduce) { #drForm .dr-role { transition: none; } }
+</style>
 <script>
 (function () {
     var HELP = {
@@ -51,6 +113,7 @@
         external: N_("Client address headers from anyone who is not a trusted proxy are removed, and the chain to the internal proxy carries only values Zoraxy built itself."),
         internal: N_("Believes the client address only when the connection comes from a trusted proxy (the external proxy). The peer gate below can refuse everyone else.")
     };
+    var ROLE = { standalone: N_("Standalone"), external: N_("External proxy"), internal: N_("Internal proxy") };
     function N_(s) { return s; }
     var gateWas = false;
     //The administrator's own "harden headers" choice. The role forces the box on for display, but that forced state is
@@ -60,6 +123,7 @@
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
     function sync() {
         var role = $("#drRole").val();
+        $("#drRoles .dr-role").each(function () { var on = $(this).attr("data-role") === role; $(this).attr("aria-checked", String(on)).attr("tabindex", on ? "0" : "-1"); });
         $("#drRoleHelp").text(t(HELP[role] || ""));
         var forced = role !== "standalone";
         $("#drHarden").prop("checked", forced ? true : ownHarden);
@@ -69,17 +133,27 @@
     }
     function load() {
         $.get("/api/deployrole/get", function (d) {
-            $("#drRole").val(d.role || "standalone");
+            var role = d.role || "standalone";
+            $("#drRole").val(role);
             ownHarden = !!d.hardenHeaders;
             $("#drGate").prop("checked", !!d.peerGate);
             gateWas = !!d.peerGate;
             $("#drCidrs").val((d.directCIDRs || []).join("\n"));
             sync();
             var w = (d.warnings || []).map(function (x) { return "<li>" + esc(t(x)) + "</li>"; }).join("");
-            $("#drWarn").html(w ? '<div class="zx-callout zx-callout--warn" role="note"><ul class="list">' + w + "</ul></div>" : "");
+            $("#drWarn").html(w ? '<div class="zx-callout zx-callout--warn" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"><ul class="list">' + w + "</ul></div></div>" : "");
             var s = t("Trusted proxies listed: {0}.").replace("{0}", d.trustedProxies);
             if (d.peerGateActive) { s += " " + t("Connections refused by the peer gate since start: {0}.").replace("{0}", d.gateRejected); }
             $("#drStatus").text(s);
+            var hard = role !== "standalone" || !!d.hardenHeaders;
+            ZxSec.fact("#drFRole", t(ROLE[role] || role), role === "standalone" ? t("default") : "");
+            ZxSec.fact("#drFHarden", hard ? t("Hardened") : t("As sent"), hard ? t("only from trusted proxies") : t("default"));
+            ZxSec.fact("#drFTrusted", d.trustedProxies, "", hard && !d.trustedProxies ? "warn" : "");
+            ZxSec.fact("#drFGate", role !== "internal" ? t("Not used") : (d.peerGateActive ? t("On") : t("Off")), d.peerGateActive ? t("{0} refused since start").replace("{0}", d.gateRejected) : (role !== "internal" ? t("internal proxy only") : ""));
+            ZxSec.status("#drStatusCard", role === "standalone"
+                ? { state: hard ? "on" : "off", badge: t("Standalone"), title: t("This Zoraxy runs on its own"), desc: hard ? t("Client address headers are only believed from trusted proxies.") : t("The default: nothing about forwarded headers is changed. Zoraxy never changes your firewall.") }
+                : { state: (w ? "warn" : "on"), badge: t(ROLE[role]), title: role === "external" ? t("This Zoraxy is the external proxy of a chain") : t("This Zoraxy is the internal proxy of a chain"),
+                    desc: role === "external" ? t("It faces the internet and passes on only client address headers it built itself.") : (d.peerGateActive ? t("It believes client addresses only from the external proxy, and refuses everyone else.") : t("It believes client addresses only from the external proxy. The peer gate is off, so others can still connect.")) });
         });
     }
     function save() {
@@ -93,11 +167,18 @@
             load();
         } });
     }
-    $("#drRole").on("change", sync);
+    $("#drRole").on("change input", sync);
+    $("#drRoles").on("click", ".dr-role", function () { $("#drRole").val($(this).attr("data-role")).trigger("change"); });
+    $("#drRoles").on("keydown", ".dr-role", function (e) {
+        var all = $("#drRoles .dr-role"), i = all.index(this), n = e.key === "ArrowRight" || e.key === "ArrowDown" ? i + 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp" ? i - 1 : -9);
+        if (n === -9) { return; }
+        e.preventDefault();
+        all.eq((n + all.length) % all.length).trigger("click").trigger("focus");
+    });
     $("#drHarden").on("change", function () { if (!$(this).prop("disabled")) { ownHarden = $(this).prop("checked"); } });
     $("#drSave").on("click", function () {
         if ($("#drGate").prop("checked") && !gateWas) {
-            ZxUI.confirm({ title: "Enable the peer gate?", message: "Connections from anything that is not a trusted proxy or a listed network are refused. Check that the external proxy is listed under Trusted Proxies.", confirmLabel: "Enable" }).then(function (ok) { if (ok) { save(); } });
+            ZxUI.confirm({ title: t("Enable the peer gate?"), message: t("Connections from anything that is not a trusted proxy or a listed network are refused. Check that the external proxy is listed under Trusted Proxies."), confirmLabel: t("Enable") }).then(function (ok) { if (ok) { save(); } });
             return;
         }
         save();

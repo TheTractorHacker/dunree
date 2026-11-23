@@ -1,15 +1,28 @@
-<div id="salWarn" class="ui warning message" style="display:none"></div>
-<section class="zx-card">
-    <div class="zx-card__head">
-        <h3 class="zx-card__title">Security audit log</h3>
-        <p class="zx-card__desc">Who changed a security setting, from which address, and what. Passwords, tokens, cookies and private keys are never written.</p>
+<!-- Security Center > Audit log. Status (is it recording, the last change, the integrity check), then one toolbar (filters left),
+     a two-line row per entry (what + target / who, from), details on request, 25 per page. -->
+<section class="zx-card sx-status" id="salStatus" data-state="off">
+    <div class="sx-status__top">
+        <span class="sx-status__icon" aria-hidden="true"><i class="list icon"></i></span>
+        <div class="sx-status__text">
+            <h4 class="sx-status__title"><span class="sx-status__name">Audit log</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+            <p class="sx-status__desc">Every change to a security setting is written down with who made it and from which address. Always on; there is nothing to configure.</p>
+        </div>
+        <div class="sx-status__action"><button class="zx-btn zx-btn--secondary" id="salVerify" type="button"><i class="check icon" aria-hidden="true"></i> Check log integrity</button></div>
     </div>
+    <dl class="sx-facts sx-facts--3">
+        <div class="sx-fact"><dt>Last change</dt><dd id="salFLast">-</dd></div>
+        <div class="sx-fact"><dt>Refused attempts shown</dt><dd id="salFDenied">-</dd></div>
+        <div class="sx-fact"><dt>Tamper check</dt><dd id="salFCheck">Not run yet</dd></div>
+    </dl>
+    <div id="salWarn" class="zx-callout zx-callout--warn" role="alert" style="display:none"></div>
+</section>
+<div id="salVerifyMsg" class="ui message" style="display:none" role="status"></div>
+<section class="zx-card" id="salCard">
     <div class="zx-card__body">
-        <div class="ui form">
-            <div class="zx-form-grid">
-                <div class="field zx-field">
-                    <label for="salEvent">Show</label>
-                    <select id="salEvent">
+        <div class="sal-bar">
+            <div class="zx-field">
+                <label class="zx-field__label" for="salEvent">Show</label>
+                <select id="salEvent" class="zx-select">
                         <option value="">Everything</option>
                         <option value="deployrole.*">Deployment role</option>
                         <option value="crowdsec.*">CrowdSec</option>
@@ -26,60 +39,83 @@
                         <option value="ratelimit.*">Rate limits</option>
                         <option value="config.*">Configuration import, export, restore</option>
                         <option value="restapi.*">Changes through the REST API</option>
-                    </select>
-                </div>
-                <div class="field zx-field">
-                    <label for="salActor">Who</label>
-                    <input type="text" id="salActor" placeholder="user name or token name" autocomplete="off">
-                </div>
-                <div class="zx-field zx-field--btn zx-btn-row">
-                    <button class="zx-btn zx-btn--secondary" id="salRefresh" type="button"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
-                    <button class="zx-btn zx-btn--secondary" id="salVerify" type="button"><i class="check icon" aria-hidden="true"></i> Check log integrity</button>
-                </div>
+                </select>
+            </div>
+            <div class="zx-field">
+                <label class="zx-field__label" for="salActor">Who</label>
+                <input type="text" id="salActor" class="zx-input" placeholder="user name or token name" autocomplete="off">
+            </div>
+            <div class="sal-bar__actions">
+                <button class="zx-btn zx-btn--secondary" id="salRefresh" type="button"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
             </div>
         </div>
-        <div id="salVerifyMsg" class="ui message" style="display:none"></div>
-        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Security audit log">
-            <table class="zx-table zx-table--compact">
-                <thead><tr><th>Time</th><th>Who</th><th>From</th><th>Event</th><th>Target</th><th>Result</th><th>Details</th></tr></thead>
-                <tbody id="salRows"><tr><td colspan="7" class="zx-empty-cell">Loading...</td></tr></tbody>
+        <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Security audit log">
+            <table class="zx-table sal-table">
+                <thead><tr><th>Time</th><th>Change</th><th>Result</th></tr></thead>
+                <tbody id="salRows"><tr><td colspan="3" class="zx-empty-cell">Loading...</td></tr></tbody>
             </table>
         </div>
-        <p class="zx-help">Kept in conf/security_audit.log (5 files of 5 MiB), not part of configuration exports. Addresses are the direct connection, not forwarded headers. Sign-ins and accounts are listed under Admin accounts.</p>
+        <div class="sal-more" id="salFoot" style="display:none"><button class="zx-btn zx-btn--secondary" id="salMore" type="button">Show more</button></div>
     </div>
-    <div class="zx-card__foot" id="salFoot" style="display:none"><button class="zx-btn zx-btn--secondary" id="salMore" type="button" style="display:none">Load older entries</button></div>
 </section>
+<details class="sx-group">
+    <summary><span class="sx-group__title">What is recorded, and where it is kept</span><span class="sx-group__desc">Secrets are never written. The file, its size and what the tamper check can prove.</span></summary>
+    <div class="sx-group__body">
+        <ul class="sal-facts">
+            <li>Passwords, tokens, cookies and private keys are never written.</li>
+            <li>Kept in <code>conf/security_audit.log</code> (5 files of 5 MiB). It is not part of configuration exports.</li>
+            <li>Addresses are those of the direct connection, not of forwarded headers.</li>
+            <li>The tamper check proves that no entry was edited or removed. A rewrite of the whole file cannot be detected from here.</li>
+            <li>Sign-ins and account changes are listed under <a href="#" id="salGoUsers">Admin accounts</a>.</li>
+        </ul>
+    </div>
+</details>
 <style>
+    #salCard .sal-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--zx-space-3) var(--zx-space-4); margin: 0 0 var(--zx-space-4); }
+    #salCard .sal-bar .zx-field { flex: 0 1 16rem; min-width: 11rem; margin: 0; }
+    #salCard .sal-bar .zx-field__label { display: block; margin-bottom: var(--zx-space-1); }
+    #salCard .sal-bar .zx-field > .zx-input, #salCard .sal-bar .zx-field > .zx-select { width: 100%; max-width: none; }
+    #salCard .sal-bar__actions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-left: auto; }
+    #salCard .sal-table { table-layout: fixed; width: 100%; }
+    #salCard .sal-table th:nth-child(1) { width: 9.5rem; }
+    #salCard .sal-table th:nth-child(3) { width: 7.5rem; }
     #salRows td { vertical-align: top; }
-    #salRows .sal-time { white-space: nowrap; }
-    #salRows details.sal-detail summary { cursor: pointer; display: block; max-width: 32rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text); }
-    #salRows details.sal-detail[open] summary { white-space: normal; margin-bottom: var(--zx-space-2); color: var(--zx-text-muted); }
-    #salRows details.sal-detail pre { margin: 0; padding: var(--zx-space-2) var(--zx-space-3); max-height: 16rem; overflow: auto; background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--zx-text); }
-    #salRows details.sal-detail summary::before { content: "\25B8  "; color: var(--zx-text-muted); }
-    #salRows details.sal-detail[open] summary::before { content: "\25BE  "; }
-    #salRows .sal-ctx { display: none; }
-    @media (max-width: 480px) {
-        #salRows td.sal-c { display: none; }
-        #salRows .sal-ctx { display: block; }
-        #salRows .sal-plain:not(:empty) + .sal-ctx { margin-top: var(--zx-space-1); }
-        #salRows td { padding: 4px 12px; }
-        #salRows td.zx-cell-long { display: block; text-align: left; }
-        #salRows td.zx-cell-long::before { content: none; }
-        #salRows details.sal-detail summary { max-width: 100%; }
+    #salRows .sal-time { color: var(--zx-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    #salRows .sal-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--zx-space-2); min-width: 0; }
+    #salRows .sal-event { font-weight: 700; color: var(--zx-text); }
+    #salRows .sal-target { color: var(--zx-text); overflow-wrap: anywhere; min-width: 0; }
+    #salRows .sal-by { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #salRows .sal-plain { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #salRows details.sal-detail { margin-top: 2px; }
+    #salRows tr.is-read .sal-event { font-weight: 400; color: var(--zx-text-muted); }
+    /* the detail grows with its content: the page is the only scroller */
+    #salRows details.sal-detail pre { margin: var(--zx-space-2) 0 var(--zx-space-1); padding: var(--zx-space-2) var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--zx-text); }
+    #salCard .sal-more { display: flex; justify-content: center; padding: var(--zx-space-3) 0 0; }
+    #salCard .zx-help { margin: var(--zx-space-4) 0 0; max-width: 62rem; }
+    #salVerifyMsg { margin: 0 0 var(--zx-space-4); }
+    .sal-facts { margin: 0; padding-left: 1.2em; color: var(--zx-text-muted); line-height: var(--zx-lh); }
+    .sal-facts li { margin: 0 0 var(--zx-space-1); }
+    .sal-facts a { color: var(--zx-link); }
+    @media (max-width: 640px) {
+        #salCard .sal-bar .zx-field { flex: 1 1 100%; }
+        #salCard .sal-bar__actions { margin-left: 0; }
+        #salCard .sal-table { table-layout: auto; }
     }
-    #salVerifyMsg { margin-bottom: var(--zx-space-3); }
+    @media (max-width: 480px) {   /* phone cards: time, the change, the result; no label column */
+        #salRows td, #salRows td.zx-cell-long { display: block; text-align: left; padding: 2px 12px; max-width: none; }
+        #salRows td:first-child { padding-top: 10px; font-size: var(--zx-fs-sm); }
+        #salRows td:last-child { padding-bottom: 10px; padding-top: 6px; }
+        #salRows td::before { content: none; }
+        #salRows td { border: 0; }
+        #salRows td.zx-empty-cell::before { content: "\f01c"; }
+    }
 </style>
 <script>
 (function () {
     var next = 0;
-    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
-    var AREAS = { deployrole: "Deployment role", crowdsec: "CrowdSec", trustedproxy: "Trusted proxies", access: "Access rules", blacklist: "Blacklist", whitelist: "Whitelist", adminallow: "Admin allow-list", destguard: "Destination restriction", upstream: "Upstream certificate trust", apitoken: "API tokens", waf: "WAF", abuse: "Auto-ban", ratelimit: "Rate limits", config: "Configuration", restapi: "REST API", proxy: "Proxy rule" };
     function tr(s) { return typeof window.t === "function" ? window.t(s) : s; }
-    function nice(ev) {   // "waf.endpoint.set" -> "WAF: endpoint set" (the raw name stays in the tooltip)
-        var p = String(ev || "").split(".");
-        var area = AREAS[p[0]] ? tr(AREAS[p[0]]) : p[0];
-        return p.length > 1 ? area + ": " + p.slice(1).join(" ").replace(/_/g, " ") : area;
-    }
+    function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
+    function nice(ev) { return ZxSec.audit(ev).label; }   // "waf.endpoint.set" -> "WAF mode changed for a site" (the internal name stays in the tooltip)
     function pretty(v) {
         if (typeof v === "string" && /^\s*[\[{]/.test(v)) { try { return JSON.stringify(JSON.parse(v), null, 2); } catch (e) { return v; } }
         if (v !== null && typeof v === "object") { return JSON.stringify(v, null, 2); }
@@ -87,37 +123,46 @@
     }
     function plain(v) { return typeof v === "object" && v !== null ? JSON.stringify(v) : String(v); }
     function row(e) {
-        var d = e.detail || {}, keys = Object.keys(d).filter(function (k) { return k.charAt(0) !== "@"; });
-        var line = keys.map(function (k) { return k + "=" + plain(d[k]); }).join(", ");
-        var ctx = tr("Who") + ": " + (e.actor || "-") + "\n" + tr("From") + ": " + (e.ip || "-") + "\n" + tr("Target") + ": " + (e.target || "-");
-        var det = "-", short = line.length <= 48 && !keys.some(function (k) { return /^\s*[\[{]/.test(plain(d[k])); });
-        if (keys.length && short) { det = esc(line); }
+        // what is worth a line: values that are set and do not repeat the target; empty ones ("reason=") are left out
+        var d = e.detail || {}, keys = Object.keys(d).filter(function (k) { var v = plain(d[k]); return k.charAt(0) !== "@" && v !== "" && v !== "[]" && v !== "{}" && v !== "null" && v !== String(e.target || ""); });
+        var line = keys.map(function (k) { return ZxSec.auditKey(k) + ": " + plain(d[k]); }).join(" \u00b7 ");
+        var a = ZxSec.audit(e.event);
+        // one plain line when every value has a name a reader knows; anything else (raw field names, JSON) waits behind "What was sent"
+        var det = "", short = line.length <= 110 && !keys.some(function (k) { return ZxSec.auditKey(k) === k || /^\s*[\[{]/.test(plain(d[k])); });
+        if (a.read) { keys = []; }
+        if (keys.length && short) { det = '<span class="sal-plain">' + esc(line) + "</span>"; }
         else if (keys.length) {
-            var names = keys.slice(0, 3).join(", ") + (keys.length > 3 ? ", ..." : "");
-            var full = ctx + "\n\n" + keys.map(function (k) { return k + ": " + pretty(d[k]); }).join("\n");
-            det = '<details class="sal-detail"><summary title="' + esc(line) + '">' + esc(names) + "</summary><pre>" + esc(full) + "</pre></details>";
+            var full = keys.map(function (k) { return ZxSec.auditKey(k) + ": " + pretty(d[k]); }).join("\n");
+            det = '<details class="sal-detail sx-more-d"><summary>' + esc(t("What was sent")) + "</summary><pre>" + esc(full) + "</pre></details>";
         }
-        if (!keys.length || short) {   // phones hide Who, From and Target: keep them one tap away
-            det = '<span class="sal-plain">' + det + '</span><details class="sal-detail sal-ctx"><summary>' + esc(tr("More")) + "</summary><pre>" + esc(ctx) + "</pre></details>";
-        }
-        var badge = e.outcome === "ok" ? "zx-badge--ok" : (e.outcome === "denied" ? "zx-badge--danger" : "zx-badge--warn");
-        return "<tr><td class=\"sal-time\" data-label=\"" + esc(tr("Time")) + "\">" + esc(new Date(e.ts * 1000).toLocaleString()) + "</td><td class=\"sal-c\" data-label=\"" + esc(tr("Who")) + "\">" + esc(e.actor) + "</td><td class=\"sal-c\" data-label=\"" + esc(tr("From")) + "\">" + esc(e.ip) +
-            "</td><td data-label=\"" + esc(tr("Event")) + "\" title=\"" + esc(e.event) + "\">" + esc(nice(e.event)) + "</td><td class=\"sal-c\" data-label=\"" + esc(tr("Target")) + "\">" + esc(e.target) + "</td><td data-label=\"" + esc(tr("Result")) + "\"><span class=\"zx-badge " + badge + "\">" + esc(e.outcome) +
-            "</span></td><td class=\"zx-cell-long\" data-label=\"" + esc(tr("Details")) + "\">" + det + "</td></tr>";
+        var oc = a.read && (!e.outcome || e.outcome === "ok") ? ["", t("Viewed")] : ZxSec.auditOutcome(e.outcome);
+        var by = t("{0} from {1}").replace("{0}", e.actor || t("unknown")).replace("{1}", e.ip || t("unknown address"));
+        return '<tr' + (a.read ? ' class="is-read"' : "") + '><td class="sal-time" data-label="' + esc(t("Time")) + '" title="' + esc(new Date(e.ts * 1000).toLocaleString()) + '">' + esc(new Date(e.ts * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })) + "</td>" +
+            '<td class="zx-cell-long" data-label="' + esc(t("Change")) + '"><span class="sal-what"><span class="sal-event" title="' + esc(e.event) + '">' + esc(a.label) + "</span>" +
+            (e.target ? '<span class="sal-target">' + esc(e.target) + "</span>" : "") + '</span><span class="sal-by">' + esc(by) + "</span>" + det + "</td>" +
+            '<td data-label="' + esc(t("Result")) + '"><span class="zx-badge zx-badge--dot' + (oc[0] ? " zx-badge--" + oc[0] : "") + '">' + esc(oc[1]) + "</span></td></tr>";
     }
     function load(append) {
-        var q = { event: $("#salEvent").val(), actor: $.trim($("#salActor").val()), limit: (window.matchMedia && window.matchMedia("(max-width: 480px)").matches) ? 20 : 50 };
+        var q = { event: $("#salEvent").val(), actor: $.trim($("#salActor").val()), limit: 25 };
         if (append && next) { q.before = next; }
         $.get("./api/security/audit/list", q, function (d) {
-            if (d && d.error) { $("#salRows").html('<tr><td colspan="7" class="zx-empty-cell">' + esc(tr("The log could not be read. Try Refresh.")) + "</td></tr>"); return; }
+            if (d && d.error) { $("#salRows").html('<tr><td colspan="3" class="zx-empty-cell">' + esc(tr("The log could not be read. Try Refresh.")) + "</td></tr>"); return; }
             var st = d.stats || {};
-            if (!d.available) { $("#salWarn").text(tr("The audit log could not be opened; nothing is being recorded. See the system log.")).show(); }
-            else if (st.queued || st.dropped) { $("#salWarn").text("The log file cannot be written right now: " + (st.queued || 0) + " entries are waiting in memory" + (st.dropped ? ", " + st.dropped + " were lost." : ".")).show(); }
-            else { $("#salWarn").hide(); }
+            var warn = "";
+            if (!d.available) { warn = tr("The audit log could not be opened; nothing is being recorded. See the system log."); }
+            else if (st.queued || st.dropped) { warn = t("The log file cannot be written right now: {0} entries are waiting in memory").replace("{0}", st.queued || 0) + (st.dropped ? ", " + t("{0} were lost.").replace("{0}", st.dropped) : "."); }
+            if (warn) { $("#salWarn").html('<span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"></div>').show().find(".zx-callout__body").text(warn); } else { $("#salWarn").hide(); }
+            ZxSec.status("#salStatus", !d.available ? { state: "danger", badge: t("Not recording"), title: t("The audit log is not recording") } : (warn ? { state: "warn", badge: t("Delayed"), title: t("The audit log is behind") } : { state: "on", badge: t("Recording"), title: t("Security changes are being recorded") }));
+            if (!append && !q.event && !q.actor) {
+                var first = (d.entries || []).filter(function (x) { return !ZxSec.audit(x.event).read; })[0];
+                ZxSec.fact("#salFLast", first ? ZxSec.ago(first.ts) : t("None yet"), first ? nice(first.event) : "");
+            }
             var html = (d.entries || []).map(row).join("");
-            if (append) { $("#salRows").append(html); } else { $("#salRows").html(html || '<tr><td colspan="7" class="zx-empty-cell">No entries yet. Security changes you make will be listed here.</td></tr>'); }
+            if (append) { $("#salRows").append(html); } else { $("#salRows").html(html || '<tr><td colspan="3" class="zx-empty-cell">No entries yet. Security changes you make will be listed here.</td></tr>'); }
+            var denied = $("#salRows .zx-badge--danger").length;
+            ZxSec.fact("#salFDenied", denied, tr("of {0} entries loaded").replace("{0}", $("#salRows .sal-event").length), denied ? "warn" : "");
             next = d.next || 0;
-            $("#salMore").toggle(!!next); $("#salFoot").toggle(!!next);
+            $("#salFoot").toggle(!!next);
         });
     }
     $("#salRefresh, #salEvent").on("click change", function (e) { if (e.type === "change" || this.id === "salRefresh") { load(false); } });
@@ -126,10 +171,11 @@
     $("#salVerify").on("click", function () {
         $.get("./api/security/audit/verify", function (v) {
             var box = $("#salVerifyMsg").removeClass("positive negative").show();
-            if (v.ok) { box.addClass("positive").text("The log is consistent: " + v.entries + " entries, no entry was edited or removed (a rewrite of the whole file cannot be detected here)."); }
-            else { box.addClass("negative").text("The log was changed: entry " + v.badSeq + " - " + v.problem); }
+            if (v.ok) { box.addClass("positive").text(t("The log is consistent: {0} entries, no entry was edited or removed (a rewrite of the whole file cannot be detected here).").replace("{0}", v.entries)); ZxSec.fact("#salFCheck", t("Consistent"), t("{0} entries, checked just now").replace("{0}", v.entries), "ok"); }
+            else { box.addClass("negative").text(t("The log was changed: entry {0}").replace("{0}", v.badSeq) + " - " + v.problem); ZxSec.fact("#salFCheck", t("Changed"), t("entry {0}").replace("{0}", v.badSeq), "danger"); }
         });
     });
+    $("#salGoUsers").on("click", function (e) { e.preventDefault(); ZxSec.go("users"); });
     load(false);
 })();
 </script>

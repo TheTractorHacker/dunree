@@ -87,9 +87,10 @@ def phase4_ui(pg, ctx):
 
     def sec_tab(name, ready):
         js("openTabById('seccenter')")
-        pg.wait_for_selector("#secTabs .item[data-sec='%s']" % name, timeout=10000)
-        pg.click("#secTabs .item[data-sec='%s']" % name, timeout=6000)
+        pg.wait_for_selector("#secTabs .item[data-sec='%s']" % name, state="attached", timeout=10000)
+        pg.dispatch_event("#secTabs .item[data-sec='%s']" % name, "click", timeout=6000)
         pg.wait_for_selector(ready, timeout=15000)
+        js("document.querySelectorAll('#secPane details.sx-group, #secPane details.zx-disclosure').forEach(d => { d.open = true; })")   # settings a beginner can skip sit in collapsed groups: open them so the fields can be used
 
     def layout_bad(scope):
         """elements of the page pane that stick out of the viewport (unless inside a scroller) and card pairs that overlap"""
@@ -204,7 +205,8 @@ def phase4_ui(pg, ctx):
         sec_tab("overview", "#ovGrid:not([hidden]) .ov-card")
         pg.wait_for_timeout(600)
         titles = js("[...document.querySelectorAll('#ovGrid .zx-card__title')].map(e => e.innerText.trim())")
-        want = ["Configuration warnings", "Deployment and status", "Backend health", "Proxy routes", "TLS certificates", "CrowdSec", "Rate limits",
+        # design v2: one card per question; routes, CrowdSec and rate limits are rows of the Protections checklist
+        want = ["Needs attention", "Protections", "Deployment and status", "Backend health", "TLS certificates",
                 "Blocked and allowed requests", "Trusted proxies", "Recent security events"]
         for w in want:
             if w not in titles:
@@ -220,9 +222,15 @@ def phase4_ui(pg, ctx):
         def card_text(title):
             return js("""t => { const c = [...document.querySelectorAll('#ovGrid .zx-card')].find(c => c.querySelector('.zx-card__title').innerText.trim() === t); return c ? c.innerText : ''; }""", title)
 
-        routes = card_text("Proxy routes")
+        def prot_text(key):
+            return js("k => { const li = document.querySelector('#ovGrid .ov-prot li[data-ov=\"' + k + '\"]'); return li ? li.innerText : ''; }", key)
+
+        for key in ("waf", "ratelimit", "routes", "crowdsec", "trusted", "certs", "audit"):
+            if not prot_text(key).strip():
+                fail("phase4-overview", f"the Protections checklist has no row {key!r}")
+        routes = prot_text("routes") + " " + js("document.getElementById('ovFSites').innerText")
         if str(data["routes"]["total"]) not in routes or data["routes"]["total"] < 3:
-            fail("phase4-overview", f"the Proxy routes card does not show the real rule count ({data['routes']['total']}): {routes[:120]!r}")
+            fail("phase4-overview", f"the overview does not show the real rule count ({data['routes']['total']}): {routes[:120]!r}")
         back = card_text("Backend health")
         if P4_DOWN not in back or "Down" not in back:
             fail("phase4-overview", f"the Backend health card must list the unreachable upstream {P4_DOWN} as down: {back[:200]!r}")
@@ -235,14 +243,14 @@ def phase4_ui(pg, ctx):
         certs = card_text("TLS certificates")
         if P4_CERT not in certs:
             fail("phase4-overview", f"the TLS certificates card does not list the uploaded certificate: {certs[:200]!r}")
-        if "switched off" not in card_text("CrowdSec"):
-            fail("phase4-overview", "the CrowdSec card of a fresh instance must say it is switched off")
+        if "switched off" not in prot_text("crowdsec"):
+            fail("phase4-overview", "the CrowdSec row of a fresh instance must say it is switched off")
         warns = js("[...document.querySelectorAll('#ovGrid .ov-warn')].map(e => e.innerText.replace(/\\s+/g, ' '))")
         if not warns:
             fail("phase4-overview", "the warnings card lists nothing: a throw-away instance has open findings (no TLS on the admin panel, ...)")
         if any(not (x.get("fix") or "").strip() or not (x.get("evidence") or "").strip() for x in data["warnings"]["items"]):
             fail("phase4-overview", "every warning must carry its evidence and its one-line fix")
-        if not any("Fix:" in w for w in warns):
+        if not js("document.querySelectorAll('#ovGrid .ov-warn .ov-go').length"):   # the remedy is a button named after the page ("Open Certificates"); no "Fix:" prefix
             fail("phase4-overview", "no warning offers a link to the page that fixes it")
         if len(warns) != min(6, len(data["warnings"]["items"])):
             fail("phase4-overview", f"the warnings card shows {len(warns)} rows for {len(data['warnings']['items'])} findings (first six expected)")
@@ -307,7 +315,7 @@ def phase4_ui(pg, ctx):
         pg.wait_for_timeout(1500)
         if len(overview_reqs) <= n1:
             fail("phase4-overview-refresh", "becoming visible again must refresh at once")
-        pg.click("#secTabs .item[data-sec='netplan']")
+        pg.dispatch_event("#secTabs .item[data-sec='netplan']", "click")
         pg.wait_for_selector("#npPage", timeout=8000)
         pg.wait_for_timeout(1000)
         n2 = len(overview_reqs)
@@ -374,7 +382,7 @@ def phase4_ui(pg, ctx):
         open_rows = js("[...document.querySelectorAll('#npResult > .np-list > li')].map(li => li.innerText.replace(/\\s+/g, ' '))")
         zone_row = [r for r in open_rows if "inside the declared application network" in r]
         port_row = [r for r in open_rows if "permitted application ports" in r]
-        if not zone_row or P4_OK not in zone_row[0] or "Check" not in zone_row[0] and "Mismatch" not in zone_row[0]:
+        if not zone_row or P4_OK not in zone_row[0] or "Warning" not in zone_row[0] and "Failing" not in zone_row[0]:
             fail("phase4-netplan", f"the rule outside the plan ({P4_OK}) must produce the 'inside the declared application network' warning: {open_rows}")
         if zone_row and (P4_MATCH in zone_row[0]):
             fail("phase4-netplan", f"the rule inside the plan ({P4_MATCH}) must not be named in the warning: {zone_row[0]}")
@@ -459,9 +467,9 @@ def phase4_ui(pg, ctx):
         current["page"] = "phase4-export"
         js("openTabById('utils')")
         pg.wait_for_timeout(800)
-        pg.click("#utilities .menu .item[data-tab=utiltab4], .menu .item[data-tab=utiltab4]")
+        pg.dispatch_event("#utNav [data-zx-section=backup]", "click")   # Utilities > Backup & restore (sectioned page since design v2)
         pg.wait_for_timeout(300)
-        pg.click("text=Open Config Tools")
+        pg.click("#utConfigToolsBtn")
         fr = None
         for _ in range(40):
             for f in pg.frames:

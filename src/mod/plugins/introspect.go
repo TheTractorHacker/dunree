@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
@@ -44,12 +45,18 @@ func (m *Manager) LoadPluginSpec(pluginPath string) (*Plugin, error) {
 		m.logf(nil, "plugin "+pluginSpec.ID+": "+warn, nil)
 	}
 
-	return &Plugin{
+	for _, warn := range sanitizeSupervisionSpec(pluginSpec) {
+		m.logf(nil, "plugin "+pluginSpec.ID+": "+warn, nil)
+	}
+
+	loaded := &Plugin{
 		RootDir:           pluginPath,
 		Spec:              pluginSpec,
 		Enabled:           false,
 		SupportHotRebuild: checkSupportHotRebuild(pluginPath),
-	}, nil
+	}
+	m.loadPluginPolicy(loaded) //what the administrator set for this plugin ID (restart policy, limits, ...)
+	return loaded, nil
 }
 
 // GetPluginEntryPoint returns the plugin entry point
@@ -74,4 +81,29 @@ func (m *Manager) GetPluginSpec(entryPoint string) (*zoraxyPlugin.IntroSpect, er
 	}
 
 	return &pluginSpec, nil
+}
+
+// sanitizeSupervisionSpec checks the optional supervision fields of a manifest
+// (health_path, configure_via). An invalid value is dropped, never guessed.
+func sanitizeSupervisionSpec(spec *zoraxyPlugin.IntroSpect) []string {
+	var warns []string
+	if hp := spec.HealthPath; hp != "" {
+		ok := len(hp) <= 256 && strings.HasPrefix(hp, "/") && !strings.Contains(hp, "//")
+		for _, r := range hp {
+			if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("/-_.~", r)) {
+				ok = false
+			}
+		}
+		if !ok {
+			warns = append(warns, "health_path in the manifest is not a plain absolute path, the health check will use a TCP connect")
+			spec.HealthPath = ""
+		}
+	}
+	switch spec.ConfigureVia {
+	case "", zoraxyPlugin.ConfigureViaStdin:
+	default:
+		warns = append(warns, "configure_via in the manifest has an unknown value, the configuration is passed on the command line")
+		spec.ConfigureVia = ""
+	}
+	return warns
 }

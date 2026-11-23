@@ -3,6 +3,7 @@ package dynamicproxy
 import (
 	"errors"
 	"fmt"
+	"imuslab.com/zoraxy/mod/errorpages"
 	"imuslab.com/zoraxy/mod/metrics"
 	"net/http"
 	"strings"
@@ -203,7 +204,9 @@ func (router *Router) handleRateLimit(w http.ResponseWriter, r *http.Request, pe
 			//nothing is blocked, logged as blocked or counted as rate limited
 			return nil
 		}
-		w.WriteHeader(429)
+		if !router.serveCustomErrorPage(w, r, 429, errorpages.ClassRateLimit) { //the owner's 429 page, if any (errorpages_hook.go)
+			w.WriteHeader(429)
+		}
 		router.Option.Metrics.Event(metrics.EventRateLimited, pe.RootOrMatchingDomain, "limit")
 		return errors.New("rate limit exceeded")
 	}

@@ -83,6 +83,7 @@ var routeTable = []routeLabel{
 	{"/api/utm/", "Uptime monitor changed"},
 	{"/api/geodb/", "GeoIP settings changed"},
 	{"/api/zrok/", "Tunnel settings changed"},
+	{"/api/errorpages/", "Error pages changed"},
 	{"/api/conf/import", "Configuration imported"},
 	{"/api/v1/proxy-rules", "Proxy rule changed through the REST API"},
 }
@@ -98,6 +99,7 @@ var skipPrefixes = []string{
 	"/api/proxy/templates/preview", "/api/proxy/ops/errorpreview", "/api/proxy/captcha/preview",
 	"/api/waf/validate", "/api/security/posture/preview", "/api/i18n/", "/api/docker/", "/api/mdns/", "/api/conf/export",
 	"/api/cert/download", "/api/authaudit/", "/api/crowdsec/test", "/api/crowdsec/manage/", "/api/conf/importcheck",
+	"/api/errorpages/preview",
 }
 
 // labelFields name the request fields that identify the changed object.

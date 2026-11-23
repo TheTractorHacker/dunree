@@ -1,21 +1,36 @@
+<!-- Cluster / HA (tag cluster). Shared-secret mode: a status header (role, secret, followers or last sync, health endpoint), the role as a
+     guided choice of three, the secret, the sync state of this role and the health endpoint. Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
 <style>
     #clusterPage code.nobreak { white-space: nowrap; }
-    #clusterPage .zx-table-wrap { border: 0; }
-    #clusterPage .clSecretRow { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin-top: var(--zx-space-3); }
-    #clusterPage .clSecretRow .ui.action.input { flex: 1 1 18em; min-width: 0; gap: var(--zx-space-2); }
-    #clusterPage .clSecretRow .ui.action.input .button { margin-left: 0 !important; }
-    #clusterPage .clSecretRow .ui.action.input input { min-width: 0 !important; }
-    #clusterPage .zx-card__body > .ui.message, #clusterPage .zx-card__body > .zx-callout { margin-top: var(--zx-space-3); }
+    #clusterPage .zx-page-header__sub .zx-whatis { vertical-align: middle; margin: -4px 0 -4px var(--zx-space-1); }
+    #clusterPage [hidden] { display: none; }
+    #clusterPage .clPaste { display: flex; gap: var(--zx-space-2); }
+    #clusterPage .clPaste input { flex: 1 1 auto; min-width: 0; }
+    #clusterPage .zx-card__body > .zx-callout { margin-top: var(--zx-space-4); }
+    #clusterPage .zx-card__body > .zx-callout:first-child { margin-top: 0; margin-bottom: var(--zx-space-4); }
+    #clusterPage .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
     #clusterPage .zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
-    #clusterPage .zx-toggle-row > .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
+    #clusterPage .zx-toggle-row { border-bottom: 0; }
     #clusterPage .clSecretState { color: var(--zx-text-muted); }
+    #clusterPage .clSecretLine { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-4); }
+    #clusterPage #clSecretOnce { display: block; margin: var(--zx-space-2) 0 var(--zx-space-3); word-break: break-all; user-select: all; }
+    #clusterPage .clNodes td { vertical-align: top; }
+    #clusterPage .clHealthAddr { margin: 0 0 var(--zx-space-4); color: var(--zx-text-muted); }
+    #clusterPage .clHealthAddr code { color: var(--zx-text); overflow-wrap: anywhere; }
+    #clusterPage .cx-path .zx-form-grid .zx-field { margin-bottom: 0; }
+    @media (max-width: 480px) {
+        #clusterPage .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
+        #clusterPage .zx-card .zx-table tbody tr:last-child { border-bottom: 0; }
+    }
 </style>
 <div class="standardContainer" id="clusterPage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Cluster / HA</h2>
-            <p class="zx-page-header__sub">Run two or more Zoraxy nodes behind a load balancer.</p>
+            <p class="zx-page-header__sub">Run two or more Zoraxy nodes behind a load balancer: they share one secret, and a primary can copy its configuration to followers.
+                <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="clModeWhat" aria-label="More about shared-secret mode">?</button></p>
+            <div class="zx-popover" id="clModeWhat" role="note" hidden>The shared secret makes visitor sessions (CAPTCHA, load balancer stickiness) valid on every node. Followers pull a signed, encrypted snapshot of the primary's proxy configuration. Standalone nodes (the default) are unaffected. Fleet, the other tab, adds per-node credentials, groups and staged rollouts; a node uses one of the two modes.</div>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Cluster"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -26,111 +41,141 @@
         <a href="#cluster" data-nav-open="cluster" aria-current="page">Cluster / HA</a>
     </nav>
 
-    <div class="zx-callout zx-callout--info" role="note">
-        <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-        <div class="zx-callout__body"><span class="zx-callout__title">Shared-secret mode</span>
-            Nodes that share a secret accept each other's visitor sessions, and a primary can copy its configuration to followers. For central management use <a href="#" onclick="$('[tag=fleet]').first().click(); return false;">Fleet</a>; a node uses one of the two modes.
-            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="clModeWhat" aria-label="More about shared-secret mode">?</button>
-            <span class="zx-popover" id="clModeWhat" role="note" hidden>The shared secret makes visitor sessions (CAPTCHA, load balancer stickiness) valid on every node. Followers pull a signed, encrypted snapshot of the primary's proxy configuration. Standalone nodes (the default) are unaffected. Fleet adds per-node credentials, groups and staged rollouts.</span>
-            <span id="clFleetRole" style="display:none;"></span></div>
-    </div>
+    <!-- status: role, secret, peers, health endpoint -->
+    <section class="zx-card cx-status" id="clStatus" aria-labelledby="clStatusTitle">
+        <div class="cx-status__top">
+            <span class="cx-status__icon" aria-hidden="true"><i class="server icon"></i></span>
+            <div class="cx-status__text">
+                <div class="cx-status__title" role="heading" aria-level="3"><span id="clStatusTitle">Cluster</span> <span class="zx-badge zx-badge--dot" id="clRoleBadge" hidden></span></div>
+                <p class="cx-status__desc" id="clStatusDesc"></p>
+            </div>
+        </div>
+        <div id="clRestart" class="zx-callout zx-callout--warn" role="note" style="display:none;">
+            <span class="zx-callout__icon" aria-hidden="true"><i class="redo icon"></i></span>
+            <div class="zx-callout__body">Restart Zoraxy to switch session cookies to the new secret.</div>
+        </div>
+        <div id="clReadOnly" class="zx-callout zx-callout--warn" role="note" style="display:none;">
+            <span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span>
+            <div class="zx-callout__body">This node is a follower. Proxy rules, redirects, access rules, stream proxies, path rules, trusted proxies and ACME
+            settings are managed by the primary and read-only here. Other changes made here are overwritten by the next primary change
+            (primary wins). Start with <code class="nobreak">-cluster_allow_local_edits</code> to lift the restriction.</div>
+        </div>
+        <dl class="cx-facts" id="clFacts" aria-live="polite"></dl>
+    </section>
 
     <!-- Role -->
     <section class="zx-card">
-        <div class="zx-card__head"><h3 class="zx-card__title">Role</h3></div>
-        <p class="zx-card__desc">What this node does in the cluster.</p>
+        <div class="zx-card__head"><h3 class="zx-card__title">Role of this node</h3></div>
+        <p class="zx-card__desc">What this node does in the cluster. Default: standalone.</p>
         <div class="zx-card__body">
-            <div id="clFleetLock" class="zx-callout zx-callout--warn" style="display:none;"><i class="lock icon" aria-hidden="true"></i> <span id="clFleetLockText"></span></div>
-            <div class="ui form">
-                <div class="inline fields">
-                    <div class="field"><div class="ui radio checkbox"><input type="radio" name="clRole" value="standalone"><label>Standalone</label></div></div>
-                    <div class="field"><div class="ui radio checkbox"><input type="radio" name="clRole" value="primary"><label>Primary</label></div></div>
-                    <div class="field"><div class="ui radio checkbox"><input type="radio" name="clRole" value="follower"><label>Follower</label></div></div>
-                </div>
-                <div id="clFollowerFields" style="display:none;">
-                    <div class="zx-form-grid">
-                        <div class="zx-field field zx-field--wide">
-                            <label class="zx-field__label" for="clPrimaryUrl">Primary admin URL</label>
-                            <input type="text" id="clPrimaryUrl" class="zx-input" placeholder="https://10.0.0.1:8000">
-                            <p class="zx-help">Use HTTPS if possible. The snapshot is encrypted and signed either way.</p>
-                        </div>
-                        <div class="zx-field field">
-                            <label class="zx-field__label" for="clPrimaryFp">Primary certificate fingerprint (optional)</label>
-                            <input type="text" id="clPrimaryFp" class="zx-input" placeholder="SHA-256 of the primary's admin certificate">
-                            <p class="zx-help">Pins a self-signed admin certificate.</p>
-                        </div>
-                        <div class="zx-field field">
-                            <label class="zx-field__label" for="clInterval">Sync interval (seconds)</label>
-                            <input type="number" id="clInterval" class="zx-input" min="10" max="3600" value="60">
-                            <p class="zx-help">10 to 3600 seconds.</p>
-                        </div>
+            <div id="clFleetLock" class="zx-callout zx-callout--warn" role="note" style="display:none;"><span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span><div class="zx-callout__body"><span id="clFleetLockText"></span><span id="clFleetRole" hidden></span></div></div>
+            <fieldset class="cx-choice" id="clRoleChoice">
+                <legend class="zx-sr-only">Role of this node</legend>
+                <label class="cx-choice__item">
+                    <input type="radio" name="clRole" value="standalone">
+                    <span class="cx-choice__icon" aria-hidden="true"><i class="cube icon"></i></span>
+                    <span class="cx-choice__title">Standalone</span>
+                    <span class="cx-choice__desc">Works on its own and keeps its own configuration. With the shared secret it still accepts sessions of the other nodes.</span>
+                </label>
+                <label class="cx-choice__item">
+                    <input type="radio" name="clRole" value="primary">
+                    <span class="cx-choice__icon" aria-hidden="true"><i class="star icon"></i></span>
+                    <span class="cx-choice__title">Primary</span>
+                    <span class="cx-choice__desc">The node you configure. It offers a signed, encrypted snapshot of its proxy configuration to the followers.</span>
+                </label>
+                <label class="cx-choice__item">
+                    <input type="radio" name="clRole" value="follower">
+                    <span class="cx-choice__icon" aria-hidden="true"><i class="clone outline icon"></i></span>
+                    <span class="cx-choice__title">Follower</span>
+                    <span class="cx-choice__desc">Copies the configuration of a primary on a schedule. Managed settings become read-only here.</span>
+                </label>
+            </fieldset>
+            <div class="cx-path" id="clFollowerFields" style="display:none;">
+                <div class="zx-form-grid">
+                    <div class="zx-field zx-field--wide">
+                        <label class="zx-field__label" for="clPrimaryUrl">Primary admin URL</label>
+                        <input type="text" id="clPrimaryUrl" class="zx-input" placeholder="https://10.0.0.1:8000" autocomplete="off" spellcheck="false">
+                        <p class="zx-help">Use HTTPS if possible. The snapshot is encrypted and signed either way.</p>
                     </div>
-                </div>
-                <div id="clPrimaryFields" style="display:none;">
-                    <div class="zx-toggle-row">
-                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Sync certificates</span>
-                            <span class="zx-toggle-row__desc">Sends TLS private keys to every follower, so the primary should be the only ACME issuer. Turning it on asks for confirmation.</span></span>
-                        <div class="ui toggle checkbox"><input type="checkbox" id="clSyncCerts" aria-label="Sync certificates"><label></label></div>
+                    <div class="zx-field">
+                        <label class="zx-field__label" for="clPrimaryFp">Primary certificate fingerprint <span class="zx-field__optional">optional</span></label>
+                        <input type="text" id="clPrimaryFp" class="zx-input" placeholder="SHA-256 of the primary's admin certificate" autocomplete="off" spellcheck="false">
+                        <p class="zx-help">Pins a self-signed admin certificate.</p>
+                    </div>
+                    <div class="zx-field">
+                        <label class="zx-field__label" for="clInterval">Sync interval (seconds)</label>
+                        <input type="number" id="clInterval" class="zx-input zx-input--short" min="10" max="3600" value="60">
+                        <p class="zx-help">10 to 3600 seconds. Default: 60.</p>
                     </div>
                 </div>
             </div>
-            <div id="clReadOnly" class="zx-callout zx-callout--warn" style="display:none;">
-                This node is a follower. Proxy rules, redirects, access rules, stream proxies, path rules, trusted proxies and ACME
-                settings are managed by the primary and read-only here. Other changes made here are overwritten by the next primary change
-                (primary wins). Start with <code class="nobreak">-cluster_allow_local_edits</code> to lift the restriction.
+            <div class="cx-path" id="clPrimaryFields" style="display:none;">
+                <div class="zx-toggle-row">
+                    <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Sync certificates</span>
+                        <span class="zx-toggle-row__desc">Off by default. Sends TLS private keys to every follower, so the primary should be the only ACME issuer. Turning it on asks for confirmation.</span></span>
+                    <div class="ui toggle checkbox"><input type="checkbox" id="clSyncCerts" aria-label="Sync certificates"><label></label></div>
+                </div>
             </div>
         </div>
-        <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="clSaveBtn"><i class="save icon" aria-hidden="true"></i> Save</button></div>
+        <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="clSaveBtn">Save role</button></div>
     </section>
 
     <!-- Secret -->
     <section class="zx-card">
         <div class="zx-card__head"><h3 class="zx-card__title">Cluster secret</h3></div>
-        <p class="zx-card__desc">Every node of a cluster needs the same secret of at least 32 characters.</p>
+        <p class="zx-card__desc">Every node of a cluster needs the same secret of at least 32 characters. It is stored on this server and never shown again after it was generated. Changing it needs a restart of every node before session cookies use it.</p>
         <div class="zx-card__body">
-            <p class="zx-help" style="margin-top:0;">Status: <b id="clSecretState">-</b> <span id="clSecretFp" class="clSecretState"></span></p>
-            <p class="zx-help">It is stored on this server and never shown again after it was generated. Changing it needs a restart of every node before session cookies use it.</p>
-            <div id="clRestart" class="zx-callout zx-callout--warn" style="display:none;">Restart Zoraxy to switch session cookies to the new secret.</div>
-            <div class="clSecretRow">
-                <button class="zx-btn zx-btn--secondary" id="clGenBtn"><i class="key icon" aria-hidden="true"></i> Generate new secret</button>
-                <div class="ui action input">
-                    <input type="password" id="clSecretIn" placeholder="Paste the secret of the other nodes" aria-label="Secret of the other nodes" autocomplete="off">
-                    <button class="ui basic button" id="clSetSecretBtn">Set</button>
-                </div>
-            </div>
-            <div id="clShowOnce" class="zx-callout zx-callout--success" style="display:none; margin-top: var(--zx-space-3);">
+            <p class="clSecretLine"><span class="zx-badge zx-badge--dot" id="clSecretBadge"><span id="clSecretState">-</span></span> <span id="clSecretFp" class="clSecretState"></span></p>
+            <div id="clShowOnce" class="zx-callout zx-callout--success" role="status" style="display:none; margin: 0 0 var(--zx-space-4);">
+                <span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span>
                 <div class="zx-callout__body"><span class="zx-callout__title">Copy this secret now. It will not be shown again.</span>
-                <p><code id="clSecretOnce" style="word-break:break-all; user-select:all;"></code></p>
+                <code id="clSecretOnce"></code>
                 <div class="zx-btn-row">
                     <button class="zx-btn zx-btn--secondary zx-btn--sm" id="clCopyBtn"><i class="copy icon" aria-hidden="true"></i> Copy</button>
                     <button class="zx-btn zx-btn--secondary zx-btn--sm" id="clHideBtn">I have saved it</button>
                 </div></div>
             </div>
+            <div class="cx-either">
+                <div>
+                    <span class="cx-either__title">First node of the cluster</span>
+                    <p class="zx-help">Create a secret here, then give it to the other nodes.</p>
+                    <button class="zx-btn zx-btn--secondary" id="clGenBtn"><i class="key icon" aria-hidden="true"></i> Generate new secret</button>
+                </div>
+                <div class="cx-either__or" aria-hidden="true">or</div>
+                <div>
+                    <span class="cx-either__title">Joining an existing cluster</span>
+                    <p class="zx-help">Paste the secret the other nodes already use.</p>
+                    <div class="clPaste">
+                        <input type="password" id="clSecretIn" class="zx-input" placeholder="Paste the secret of the other nodes" aria-label="Secret of the other nodes" autocomplete="off">
+                        <button class="zx-btn zx-btn--secondary" id="clSetSecretBtn">Set</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Sync status -->
+    <!-- Sync status (follower) -->
     <section class="zx-card" id="clStatusWrap" style="display:none;">
-        <div class="zx-card__head"><h3 class="zx-card__title">Sync status</h3></div>
-        <p class="zx-card__desc">When this follower last pulled the primary's configuration.</p>
+        <div class="zx-card__head"><h3 class="zx-card__title">Sync with the primary</h3></div>
+        <p class="zx-card__desc">When this follower last pulled the primary's configuration, and what came of it.</p>
         <div class="zx-card__body">
-            <div class="zx-table-wrap"><table class="zx-table zx-table--compact"><tbody id="clStatusBody"></tbody></table></div>
+            <dl class="cx-kvlist" id="clStatusBody"></dl>
         </div>
         <div class="zx-card__foot">
+            <button class="zx-btn zx-btn--secondary" id="clSyncBtn"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
             <button class="zx-btn zx-btn--secondary" id="clForceBtn" title="Accept an older snapshot version, for example after the primary was rebuilt">Force sync</button>
-            <button class="zx-btn zx-btn--primary" id="clSyncBtn"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
         </div>
     </section>
 
     <!-- Nodes (primary) -->
     <section class="zx-card" id="clNodesWrap" style="display:none;">
-        <div class="zx-card__head"><h3 class="zx-card__title">Followers seen by this primary</h3></div>
-        <p class="zx-card__desc">Current snapshot version: <b id="clSnapVer">-</b></p>
+        <div class="zx-card__head"><h3 class="zx-card__title">Followers</h3></div>
+        <p class="zx-card__desc">The followers that pull from this primary and whether they run its current snapshot, version <b id="clSnapVer">-</b>.</p>
         <div class="zx-card__body">
-            <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Followers">
-                <table class="zx-table zx-table--compact">
-                    <thead><tr><th>Node</th><th>Address</th><th>Version</th><th>Applied snapshot</th><th>Last seen</th><th>Last error</th></tr></thead>
-                    <tbody id="clNodes"><tr><td colspan="6" class="zx-empty-cell">No followers have reported in yet</td></tr></tbody>
+            <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Followers">
+                <table class="zx-table zx-table--comfortable clNodes">
+                    <thead><tr><th scope="col">Node</th><th scope="col">Snapshot</th><th scope="col">Last seen</th><th scope="col">Last error</th></tr></thead>
+                    <tbody id="clNodes"></tbody>
                 </table>
             </div>
         </div>
@@ -139,21 +184,20 @@
     <!-- Health -->
     <section class="zx-card">
         <div class="zx-card__head"><h3 class="zx-card__title">Health endpoint</h3></div>
-        <p class="zx-card__desc">A status address for load balancers and keepalived scripts.
+        <p class="zx-card__desc">A status address for load balancers and keepalived scripts. On by default, open to everyone.
             <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="clHealthWhat" aria-label="What does the health endpoint return?">?</button>
             <span class="zx-popover" id="clHealthWhat" role="note" hidden>It is served on the proxy listeners before host routing and answers 200 with the status, version, uptime and number of active endpoints, or 503 if the proxy is not running. It exposes no secrets. Use <code class="nobreak">-health_port</code> for a separate listener.</span></p>
         <div class="zx-card__body">
-            <p class="zx-help" style="margin-top:0;">Address: <code id="clHealthUrl"></code></p>
-            <div class="ui form">
-                <div class="zx-field field">
-                    <label class="zx-field__label" for="clHealthAllow">Allowed clients</label>
-                    <textarea id="clHealthAllow" class="zx-textarea" rows="2" placeholder="10.0.0.0/24, 192.168.1.5"></textarea>
-                    <p class="zx-help">One IP or CIDR per line, or separated by commas. Leave empty to allow everyone.</p>
-                </div>
-                <div class="zx-toggle-row">
-                    <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Disable the health endpoint</span></span>
-                    <div class="ui toggle checkbox"><input type="checkbox" id="clHealthOff" aria-label="Disable the health endpoint"><label></label></div>
-                </div>
+            <p class="clHealthAddr">Address: <code id="clHealthUrl"></code></p>
+            <div class="zx-field">
+                <label class="zx-field__label" for="clHealthAllow">Allowed clients</label>
+                <textarea id="clHealthAllow" class="zx-textarea" rows="2" placeholder="10.0.0.0/24, 192.168.1.5" spellcheck="false"></textarea>
+                <p class="zx-help">One IP or CIDR per line, or separated by commas. Leave empty to allow everyone.</p>
+            </div>
+            <div class="zx-toggle-row">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Disable the health endpoint</span>
+                    <span class="zx-toggle-row__desc">The address then answers like any unknown path.</span></span>
+                <div class="ui toggle checkbox"><input type="checkbox" id="clHealthOff" aria-label="Disable the health endpoint"><label></label></div>
             </div>
         </div>
         <div class="zx-card__foot"><button class="zx-btn zx-btn--secondary" id="clHealthSave">Save health settings</button></div>
@@ -169,6 +213,56 @@
         return (xhr && xhr.statusText) || "request failed";
     }
     function ts(u){ return u ? new Date(u * 1000).toLocaleString() : "-"; }
+    function ago(u){ if (!u) return t("never"); let d = Math.max(0, Math.floor(Date.now()/1000 - u)); return d < 90 ? tf("{0}s ago", d) : d < 5400 ? tf("{0}m ago", Math.round(d/60)) : d < 172800 ? tf("{0}h ago", Math.round(d/3600)) : tf("{0}d ago", Math.round(d/86400)); }
+    function fact(label, value, cls, small){ return "<div class='cx-fact'><dt>" + esc(t(label)) + "</dt><dd" + (cls ? " class='is-" + cls + "'" : "") + ">" + esc(value) + (small ? "<small>" + esc(small) + "</small>" : "") + "</dd></div>"; }
+    //The result of a sync as words: the backend reports a lower-case code
+    function resultWord(r){
+        let known = {applied: {kind: "ok", word: t("Applied")}, unchanged: {kind: "ok", word: t("Up to date")}, error: {kind: "danger", word: t("Failed")}}[r];
+        if (known) return known;
+        r = String(r == null ? "" : r).replace(/[_-]+/g, " ").trim();
+        return {kind: "", word: r ? r.charAt(0).toUpperCase() + r.slice(1) : ""};
+    }
+    function dot(kind, word){ return "<span class='zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "") + "'>" + esc(word) + "</span>"; }
+    //The status header: role in words, then secret, peers and the health endpoint as facts
+    function renderStatus(s){
+        let fleetManaged = s.role == "hub" || s.role == "node", nodes = s.nodes || [], f = s.follower || {};
+        let behind = nodes.filter(function(n){ return s.snapshotVersion && n.appliedVersion != s.snapshotVersion; }).length;
+        let title = {standalone: t("This node runs on its own"), primary: t("This node is the primary"), follower: t("This node follows a primary")}[s.role] || t("The role of this node is managed by Fleet");
+        let desc = {standalone: t("The default. It keeps its own configuration. Give every node the same secret and they accept each other's visitor sessions."),
+            primary: t("You configure this node. Followers pull a signed, encrypted snapshot of its proxy configuration."),
+            follower: t("It copies the configuration of the primary on a schedule. The settings the primary manages are read-only here.")}[s.role] || t("This Zoraxy is part of a fleet, so the shared-secret roles do not apply. The secret and the health endpoint below still work.");
+        //the icon tile shows the role (neutral blue for primary and follower, never a state colour); the state is the dot badge in words
+        let kind = "", word = "";
+        if (s.role == "primary") {
+            if (!s.secretSet) { kind = "warn"; word = t("No secret set"); }
+            else if (!nodes.length) { word = t("No follower yet"); }
+            else if (behind) { kind = "warn"; word = behind == 1 ? t("1 follower is behind") : tf("{0} followers are behind", behind); }
+            else { kind = "ok"; word = t("All followers up to date"); }
+        } else if (s.role == "follower") {
+            if (f.lastError) { kind = "danger"; word = t("Last sync failed"); }
+            else if (!s.secretSet) { kind = "warn"; word = t("No secret set"); }
+            else if (!f.lastResult) { word = t("Not synced yet"); }
+            else { kind = "ok"; word = t("In sync with the primary"); }
+        }
+        $("#clStatus").attr("data-state", (s.role == "primary" || s.role == "follower") ? "role" : null);
+        $("#clStatus .cx-status__icon i").attr("class", ({primary: "star", follower: "clone outline", standalone: "cube"}[s.role] || "sitemap") + " icon");
+        $("#clStatusTitle").text(title);
+        $("#clRoleBadge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).text(word).prop("hidden", !word);
+        $("#clStatusDesc").text(desc);
+        let needSecret = s.role == "primary" || s.role == "follower";
+        let facts = fact("Cluster secret", s.secretSet ? t("Set") : t("Not set"), s.secretSet ? "" : (needSecret ? "danger" : "muted"), s.secretSet ? tf("fingerprint {0}", s.secretFingerprint) : (needSecret ? t("needed for this role") : t("only needed for a cluster")));
+        if (s.role == "primary") {
+            facts += fact("Followers", nodes.length, nodes.length ? "" : "muted", nodes.length ? "" : t("none has reported in yet")) +
+                fact("Behind the primary", behind, behind ? "warn" : "", behind ? t("do not run the current snapshot") : (nodes.length ? t("all run the current snapshot") : "")) +
+                fact("Snapshot version", s.snapshotVersion || "-");
+        } else if (s.role == "follower") {
+            facts += fact("Last sync", f.lastResult ? resultWord(f.lastResult).word : t("Never synced"), f.lastError ? "danger" : "", f.lastSuccessAt ? tf("last success {0}", ago(f.lastSuccessAt)) : "") +
+                fact("Applied snapshot", f.appliedVersion || "-") +
+                fact("Sync interval", tf("{0} s", s.syncInterval));
+        }
+        facts += fact("Health endpoint", s.healthDisabled ? t("Off") : t("On"), s.healthDisabled ? "muted" : "", s.healthDisabled ? "" : ((s.healthAllow || []).length ? tf("{0} allowed clients", s.healthAllow.length) : t("open to everyone")));
+        $("#clFacts").html(facts);
+    }
     //Results are toasts (visible wherever the page is scrolled). Backend messages start lower case: show them capitalised.
     function msg(text, bad){ text = String(text); ZxUI.toast(text.charAt(0).toUpperCase() + text.slice(1), {type: bad ? "error" : "success"}); }
     //HTTP failures are already reported by the global ajax error toast (script/uxkit.js) with the server's reason
@@ -188,15 +282,13 @@
 
     function render(s){
         st = s;
-        if (s.role == "hub" || s.role == "node") {
-            $("#clFleetRole").show().text(" This node is a Fleet " + s.role + "; the roles below do not apply.");
-        } else $("#clFleetRole").hide();
+        renderStatus(s);
         let fleetManaged = s.role == "hub" || s.role == "node";
         $("#clSaveBtn").prop("disabled", fleetManaged);
         //Fleet owns the role: the radios and fields must not look editable
         $("input[name=clRole], #clPrimaryUrl, #clPrimaryFp, #clInterval, #clSyncCerts").prop("disabled", fleetManaged);
         $("#clFleetLock").toggle(fleetManaged);
-        $("#clFleetLockText").text(fleetManaged ? tf("This node is a Fleet {0}. Its role is managed on the Fleet page and cannot be changed here.", s.role) : "");
+        $("#clFleetLockText").text(fleetManaged ? (s.role == "hub" ? t("This node is a Fleet hub. Its role is managed on the Fleet page and cannot be changed here.") : t("This node is a Fleet node. Its role is managed on the Fleet page and cannot be changed here.")) : "");
         if (!dirty) {
         $("input[name=clRole][value=" + s.role + "]").prop("checked", true);
         showRoleFields();
@@ -208,22 +300,25 @@
         if (!dirty) $("#clHealthAllow").val((s.healthAllow || []).join(", "));
         if (!dirty) $("#clHealthOff").prop("checked", !!s.healthDisabled);
         $("#clHealthUrl").text(location.protocol + "//<proxy-host>" + s.healthPath);
-        $("#clSecretState").text(s.secretSet ? "set" : "not set");
-        $("#clSecretFp").text(s.secretSet ? "(fingerprint " + s.secretFingerprint + ")" : "");
+        $("#clSecretState").text(s.secretSet ? t("Secret set") : t("No secret set"));
+        $("#clSecretBadge").toggleClass("zx-badge--ok", !!s.secretSet);
+        $("#clSecretFp").text(s.secretSet ? tf("Fingerprint {0}. Compare it on the other nodes: it must be the same.", s.secretFingerprint) : t("Generate one here or paste the secret of the other nodes."));
         $("#clRestart").toggle(!!s.restartRequired);
         $("#clReadOnly").toggle(!!s.readOnly);
-        if (s.secretFromFlag) { $("#clGenBtn, #clSetSecretBtn, #clSecretIn").prop("disabled", true); $("#clSecretFp").append(" - set by -cluster_secret"); }
+        if (s.secretFromFlag) { $("#clGenBtn, #clSetSecretBtn, #clSecretIn").prop("disabled", true); $("#clSecretFp").append(document.createTextNode(" " + t("Set by the start flag -cluster_secret, so it cannot be changed here."))); }
 
         $("#clStatusWrap").toggle(s.role == "follower");
         if (s.role == "follower" && s.follower) {
             let f = s.follower;
+            function kv(k, v, cls, html){ return "<dt>" + esc(t(k)) + "</dt><dd" + (cls ? " class='is-" + cls + "'" : "") + ">" + (html ? v : esc(v)) + "</dd>"; }
+            let res = resultWord(f.lastResult);
             $("#clStatusBody").html(
-                "<tr><td>Last result</td><td>" + esc(f.lastResult || "never synced") + "</td></tr>" +
-                "<tr><td>Applied snapshot version</td><td>" + esc(f.appliedVersion || "-") + "</td></tr>" +
-                "<tr><td>Applied at</td><td>" + ts(f.appliedAt) + "</td></tr>" +
-                "<tr><td>Last attempt</td><td>" + ts(f.lastAttemptAt) + "</td></tr>" +
-                "<tr><td>Last success</td><td>" + ts(f.lastSuccessAt) + "</td></tr>" +
-                "<tr><td>Last error</td><td style='color:" + (f.lastError ? "#c00" : "grey") + "'>" + esc(f.lastError || "none") + "</td></tr>");
+                (f.lastResult ? kv("Last result", dot(res.kind, res.word), "", true) : kv("Last result", t("Never synced"), "muted")) +
+                kv("Applied snapshot version", f.appliedVersion || "-") +
+                kv("Applied at", ts(f.appliedAt)) +
+                kv("Last attempt", ts(f.lastAttemptAt)) +
+                kv("Last success", ts(f.lastSuccessAt)) +
+                kv("Last error", f.lastError || t("None"), f.lastError ? "danger" : "muted"));
         }
         $("#clNodesWrap").toggle(s.role == "primary");
         if (s.role == "primary") {
@@ -231,12 +326,12 @@
             let rows = "";
             (s.nodes || []).forEach(function(n){
                 let behind = s.snapshotVersion && n.appliedVersion != s.snapshotVersion;
-                rows += "<tr><td>" + esc(n.name || n.id) + "<div style='color:grey;font-size:0.85em;'>" + esc(n.id) + "</div></td><td>" + esc(n.addr) +
-                    "</td><td>" + esc(n.version) + "</td><td>" + esc(n.appliedVersion || "-") +
-                    (behind ? " <i class='yellow exclamation triangle icon' title='behind the primary'></i>" : " <i class='green check icon'></i>") +
-                    "</td><td>" + ts(n.lastSeen) + "</td><td>" + esc(n.lastError) + "</td></tr>";
+                rows += "<tr><td data-label='" + esc(t("Node")) + "'><div class='cx-cell'><span class='cx-cell__main'>" + esc(n.name || n.id) + "</span><span class='cx-cell__sub'>" + esc([n.addr, n.version ? "v" + n.version : "", n.name ? n.id : ""].filter(Boolean).join(" · ")) + "</span></div></td>" +
+                    "<td data-label='" + esc(t("Snapshot")) + "'><div class='cx-cell'>" + dot(behind ? "warn" : "ok", behind ? t("Behind") : t("Up to date")) + "<span class='cx-cell__sub'>" + esc(tf("runs version {0}", n.appliedVersion || "-")) + "</span></div></td>" +
+                    "<td data-label='" + esc(t("Last seen")) + "'><div class='cx-cell'><span>" + esc(ago(n.lastSeen)) + "</span><span class='cx-cell__sub'>" + esc(ts(n.lastSeen)) + "</span></div></td>" +
+                    "<td data-label='" + esc(t("Last error")) + "'>" + (n.lastError ? "<span class='cx-cell__sub is-danger'>" + esc(String(n.lastError).charAt(0).toUpperCase() + String(n.lastError).slice(1)) + "</span>" : "<span class='cx-no'>" + esc(t("None")) + "</span>") + "</td></tr>";
             });
-            $("#clNodes").html(rows || "<tr><td colspan='6'>No followers have reported in yet</td></tr>");
+            $("#clNodes").html(rows || "<tr><td colspan='4' class='zx-empty-cell'>" + esc(t("No follower has reported in yet. A follower shows up here after its first sync with this primary.")) + "</td></tr>");
         }
     }
 
@@ -254,12 +349,12 @@
             data.primaryFingerprint = $("#clPrimaryFp").val();
             data.syncInterval = $("#clInterval").val();
         }
-        function save(){ post("./api/cluster/config", data, function(){ dirty = false; msg("Saved"); load(); }); }
+        function save(){ post("./api/cluster/config", data, function(){ dirty = false; msg(t("Role saved")); load(); }); }
         if (role() == "primary") {
             data.syncCerts = $("#clSyncCerts").is(":checked");
             if (data.syncCerts && !(st && st.syncCerts)) {
                 //private keys leave this machine: confirm, and tell the API we asked
-                ZxUI.confirm({title: "Send TLS private keys to the followers?", message: "Sync certificates copies the private key of every certificate to every follower. Only enable it for followers you fully trust, over a network you trust.", confirmLabel: "I understand, enable it", danger: true}).then(function(ok){
+                ZxUI.confirm({title: t("Send TLS private keys to the followers?"), message: t("Sync certificates copies the private key of every certificate to every follower. Only enable it for followers you fully trust, over a network you trust."), confirmLabel: t("I understand, enable it"), danger: true}).then(function(ok){
                     if (ok) { data.ackSyncCerts = "true"; save(); }
                 });
                 return;
@@ -277,34 +372,34 @@
             });
         }
         if (!(st && st.secretSet)) { gen(); return; }
-        ZxUI.confirm({title: "Replace the current cluster secret?", message: "Every other node must be given the new one.", confirmLabel: "Generate new secret", danger: true}).then(function(ok){ if (ok) gen(); });
+        ZxUI.confirm({title: t("Replace the current cluster secret?"), message: t("Every other node must be given the new one."), confirmLabel: t("Generate new secret"), danger: true}).then(function(ok){ if (ok) gen(); });
     });
     $("#clCopyBtn").on("click", function(){
         let t = $("#clSecretOnce").text();
-        if (navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ msg("Copied"); }, function(){ msg("Select and copy manually", true); });
-        else msg("Select and copy manually", true);
+        if (navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ msg(window.t("Copied")); }, function(){ msg(window.t("Select and copy manually"), true); });
+        else msg(window.t("Select and copy manually"), true);
     });
     $("#clHideBtn").on("click", function(){ $("#clSecretOnce").text(""); $("#clShowOnce").hide(); });
     $("#clSetSecretBtn").on("click", function(){
         let v = $("#clSecretIn").val();
         if (!v) return;
-        post("./api/cluster/config", {secret: v}, function(){ $("#clSecretIn").val(""); dirty = false; msg("Secret saved"); load(); });
+        post("./api/cluster/config", {secret: v}, function(){ $("#clSecretIn").val(""); dirty = false; msg(t("Secret saved")); load(); });
     });
 
     function syncNow(force){
-        $("#clSyncBtn, #clForceBtn").addClass("loading disabled");
+        $("#clSyncBtn, #clForceBtn").prop("disabled", true).attr("aria-busy", "true");
         $.cjax({method: "POST", url: "./api/cluster/syncNow", data: {force: force ? "true" : "false"}, success: function(d){
-            if (d && d.error) msg(d.error, true); else msg("Sync finished: " + (d.lastResult || "ok"));
-        }, error: fail, complete: function(){ $("#clSyncBtn, #clForceBtn").removeClass("loading disabled"); load(); }});
+            if (d && d.error) msg(d.error, true); else msg(tf("Sync finished: {0}", resultWord(d.lastResult || "applied").word));
+        }, error: fail, complete: function(){ $("#clSyncBtn, #clForceBtn").prop("disabled", false).removeAttr("aria-busy"); load(); }});
     }
     $("#clSyncBtn").on("click", function(){ syncNow(false); });
     $("#clForceBtn").on("click", function(){
-        ZxUI.confirm({title: "Force sync?", message: "Accept the primary's snapshot even if its version is older than the one applied here.", confirmLabel: "Force sync", danger: true}).then(function(ok){ if (ok) syncNow(true); });
+        ZxUI.confirm({title: t("Force sync?"), message: t("Accept the primary's snapshot even if its version is older than the one applied here."), confirmLabel: t("Force sync"), danger: true}).then(function(ok){ if (ok) syncNow(true); });
     });
 
     $("#clHealthSave").on("click", function(){
         post("./api/cluster/config", {healthAllow: $("#clHealthAllow").val(), healthDisabled: $("#clHealthOff").is(":checked")},
-            function(){ dirty = false; msg("Health settings saved"); load(); });
+            function(){ dirty = false; msg(t("Health settings saved")); load(); });
     });
 
     load();

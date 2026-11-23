@@ -617,6 +617,178 @@
         return { select: function (i) { select(tabs[i], true); } };
     };
 
+    /*
+        ZxUI.fitFrame(iframe, {min, max, escape}) -> the frame grows to the height of its document, so an embedded editor page
+        has no scrollbar of its own inside the scrolling page (design v2: one scroller). Same-origin frames only; a frame
+        that cannot be read keeps its CSS height. Follows later changes (ResizeObserver + MutationObserver). Call it once,
+        before or after the frame has loaded.
+          min / max   limits in px (default 80 / 6000)
+          escape      true: Esc inside the frame is handed to the parent document (to close the drawer the frame sits in),
+                      unless the frame is using Esc for one of its own dropdowns or dialogs
+    */
+    ZxUI.fitFrame = function (f, o) {
+        o = o || {};
+        f = window.jQuery(f)[0];
+        if (!f || f.getAttribute("data-fit")) { return; }
+        f.setAttribute("data-fit", "1");
+        var min = o.min || 80, max = o.max || 6000;
+        function fit() {
+            try {
+                var d = f.contentDocument, b = d && d.body;
+                if (!b) { return; }
+                var cs = d.defaultView.getComputedStyle(b);
+                var h = Math.ceil(b.scrollHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0));
+                d.documentElement.style.overflowY = h <= max ? "hidden" : "";   // no scrollbar of its own while it fits
+                h = Math.min(Math.max(h, min), max);
+                if (Math.abs(f.offsetHeight - h) > 2) { f.style.height = h + "px"; }
+            } catch (e) { /* not readable: keep the fixed height */ }
+        }
+        function bind() {
+            fit();
+            try {
+                var d = f.contentDocument;
+                if (!d || !d.body || d.__zxFitBound) { return; }
+                d.__zxFitBound = true;
+                if (o.escape) {
+                    d.addEventListener("keydown", function (e) {
+                        if (e.key === "Escape" && !e.defaultPrevented && !d.querySelector(".ui.dropdown.active, .ui.modal.visible, .ui.modal.active")) {
+                            e.preventDefault();
+                            document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+                        }
+                    }, true);
+                }
+                if (window.ResizeObserver) { new ResizeObserver(fit).observe(d.body); }
+                new MutationObserver(fit).observe(d.body, { subtree: true, childList: true, attributes: true, characterData: true });
+            } catch (e) { }
+            setTimeout(fit, 400); setTimeout(fit, 1500);   // rows are added after the page's own requests return
+        }
+        f.addEventListener("load", bind);
+        try { if (f.contentDocument && f.contentDocument.readyState === "complete" && f.contentDocument.body && f.contentDocument.body.childNodes.length) { bind(); } } catch (e) { }
+    };
+
+    /*
+        ZxUI.sectionNav(navEl, {attr, head, onSelect(name, item)}) -> {select(name), current(), state(name, kind, word), items}
+        Sectioned navigation (.zx-sectionnav, CSS and markup in ui/zxui.css): a sub-navigation column on wide screens and one
+        native <select> (groups = optgroups, label "Section") when the page column is narrower than about 1000px. The page
+        owns the switching: a click on an item (or a choice in the select, which clicks the item) is the page's cue to load
+        the section and then call select(name), so a page can refuse to leave a section with unsaved changes. Without
+        onSelect / own click handler nothing else is needed: pass {auto: true} and every click selects.
+          attr    attribute that names the section on an item (default "data-zx-section")
+          head    element (.zx-sectionhead) that shows the title and the one-line purpose of the current section
+        state(name, kind, word): shows the state of a section in the navigation (dot + word): kind "on" | "off" | "warn" |
+          "danger", word = the translated word ("On", "Off", "Log only"); kind null removes it.
+        Keys: ONE Tab stop (the current section, roving tabindex); Up / Down / Home / End move the focus, Enter / Space open.
+    */
+    var sectionNavSeq = 0;
+    ZxUI.sectionNav = function (nav, o) {
+        o = o || {};
+        var el = window.jQuery(nav)[0], attr = o.attr || "data-zx-section";
+        var head = o.head ? window.jQuery(o.head)[0] : null;
+        var items = Array.prototype.slice.call(el.querySelectorAll(".zx-sectionnav__item"));
+        var current = null;
+        function nameOf(it) { return it.getAttribute(attr); }
+        function textOf(it, cls) { var n = it.querySelector(cls); return n ? n.textContent.replace(/\s+/g, " ").trim() : ""; }
+        // the "Advanced" tag is decoration for the eye; assistive technology hears ", advanced" once
+        items.forEach(function (it) {
+            var tag = it.querySelector(".zx-sectionnav__tag");
+            if (tag && !tag.hasAttribute("aria-hidden")) {
+                tag.setAttribute("aria-hidden", "true");
+                var sr = document.createElement("span");
+                sr.className = "zx-sr-only zx-sectionnav__tagsr";
+                sr.textContent = ", " + textOf(it, ".zx-sectionnav__tag").toLowerCase();
+                it.insertBefore(sr, tag);
+            }
+        });
+        // the picker for narrow screens
+        var picker = document.createElement("div");
+        picker.className = "zx-sectionnav__picker";
+        var sel = document.createElement("select");
+        sel.className = "zx-select";
+        sel.id = "zxSectionPick" + (++sectionNavSeq);
+        sel.setAttribute("data-zx-ignore", "");
+        var plabel = document.createElement("label");
+        plabel.setAttribute("for", sel.id);
+        plabel.textContent = tr(N_("Section"));
+        function optionText(it) {
+            var s = textOf(it, ".zx-sectionnav__text"), tag = textOf(it, ".zx-sectionnav__tag"), st = textOf(it, ".zx-sectionnav__state");
+            if (tag) { s += " (" + tag.toLowerCase() + ")"; }
+            if (st) { s += " \u00b7 " + st; }
+            return s;
+        }
+        function fillPicker() {
+            plabel.textContent = tr(N_("Section"));
+            sel.textContent = "";
+            Array.prototype.forEach.call(el.querySelectorAll(".zx-sectionnav__group"), function (g) {
+                var lab = g.querySelector(".zx-sectionnav__label"), box = sel;
+                if (lab) { box = document.createElement("optgroup"); box.label = lab.textContent.replace(/\s+/g, " ").trim(); sel.appendChild(box); }
+                Array.prototype.forEach.call(g.querySelectorAll(".zx-sectionnav__item"), function (it) {
+                    var op = document.createElement("option");
+                    op.value = nameOf(it);
+                    op.textContent = optionText(it);
+                    box.appendChild(op);
+                });
+            });
+            if (current) { sel.value = current; }
+        }
+        picker.appendChild(plabel);
+        picker.appendChild(sel);
+        el.insertBefore(picker, el.firstChild);
+        el.classList.add("has-picker");
+        fillPicker();
+        sel.addEventListener("mousedown", fillPicker);   // labels follow a language change
+        sel.addEventListener("focus", fillPicker);
+        sel.addEventListener("change", function () {
+            var want = sel.value;
+            sel.value = current || "";   // the page decides (it may ask about unsaved changes); select() moves the picker
+            var it = items.filter(function (x) { return nameOf(x) === want; })[0];
+            if (it) { it.click(); }
+        });
+        function select(name) {
+            current = name;
+            items.forEach(function (it) {
+                var on = nameOf(it) === name;
+                it.classList.toggle("active", on);
+                it.tabIndex = on ? 0 : -1;   // roving tabindex: one Tab stop for the whole navigation
+                if (on) { it.setAttribute("aria-current", "true"); } else { it.removeAttribute("aria-current"); }
+                if (on && head) {
+                    var ht = head.querySelector(".zx-sectionhead__title"), hd = head.querySelector(".zx-sectionhead__desc");
+                    if (ht) { ht.textContent = textOf(it, ".zx-sectionnav__text"); }
+                    if (hd) { hd.textContent = textOf(it, ".zx-sectionnav__desc"); }
+                }
+            });
+            sel.value = name;
+        }
+        function state(name, kind, word) {
+            var it = items.filter(function (x) { return nameOf(x) === name; })[0];
+            if (!it) { return; }
+            var st = it.querySelector(".zx-sectionnav__state");
+            if (!kind) { if (st) { st.remove(); } fillPicker(); return; }
+            if (!st) { st = document.createElement("span"); st.className = "zx-sectionnav__state"; it.appendChild(st); }
+            st.setAttribute("data-state", kind);
+            st.textContent = word || "";
+            if (sel !== document.activeElement) { fillPicker(); }
+        }
+        el.addEventListener("keydown", function (e) {
+            var i = items.indexOf(document.activeElement);
+            if (i < 0) { return; }
+            var n = items.length, next = -1;
+            if (e.key === "ArrowDown") { next = (i + 1) % n; } else if (e.key === "ArrowUp") { next = (i - 1 + n) % n; }
+            else if (e.key === "Home") { next = 0; } else if (e.key === "End") { next = n - 1; }
+            if (next < 0) { return; }
+            e.preventDefault();
+            items[next].focus();
+        });
+        el.addEventListener("click", function (e) {
+            var it = e.target.closest && e.target.closest(".zx-sectionnav__item");
+            if (!it || !el.contains(it)) { return; }
+            if (o.auto) { select(nameOf(it)); }
+            if (typeof o.onSelect === "function") { o.onSelect(nameOf(it), it); }
+        });
+        var start = items.filter(function (x) { return x.classList.contains("active") || x.getAttribute("aria-current") === "true"; })[0] || items[0];
+        if (start) { select(nameOf(start)); }
+        return { select: select, current: function () { return current; }, state: state, items: items };
+    };
+
     /* ZxUI.segmented(el, {onChange(value, item)}): <div class="zx-segmented" role="radiogroup"> <button class="zx-segmented__item" data-value=".."> */
     ZxUI.segmented = function (el, o) {
         o = o || {};

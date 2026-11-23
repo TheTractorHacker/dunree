@@ -116,15 +116,16 @@ var (
 	proxyH3MaxStreams = flag.Uint("h3_max_concurrent_streams", 0, "HTTP/3 max concurrent streams per connection (0 = quic-go default)")
 
 	/* Path Configuration Flags */
-	path_database  = flag.String("dbpath", "./sys.db", "Database path")
-	path_conf      = flag.String("conf", "./conf", "Configuration folder path")
-	path_tmp       = flag.String("tmp", "./tmp", "Temporary folder path")
-	path_uuid      = flag.String("uuid", "./sys.uuid", "sys.uuid file path")
-	path_logFile   = flag.String("log", "./log", "Log folder path")
-	path_webserver = flag.String("webroot", "./www", "Static web server root folder. Only allow change in start paramters")
-	path_plugin    = flag.String("plugin", "./plugins", "Plugin folder path")
-	plugin_user    = flag.String("plugin_user", "", "Run plugin processes as this OS user (name or uid, Unix only, Zoraxy must run as root). Default: same user as Zoraxy")
-	plugin_group   = flag.String("plugin_group", "", "Group for plugin processes started with -plugin_user (name or gid). Default: the user's primary group")
+	path_database     = flag.String("dbpath", "./sys.db", "Database path")
+	path_conf         = flag.String("conf", "./conf", "Configuration folder path")
+	path_tmp          = flag.String("tmp", "./tmp", "Temporary folder path")
+	path_uuid         = flag.String("uuid", "./sys.uuid", "sys.uuid file path")
+	path_logFile      = flag.String("log", "./log", "Log folder path")
+	path_webserver    = flag.String("webroot", "./www", "Static web server root folder. Only allow change in start paramters")
+	path_plugin       = flag.String("plugin", "./plugins", "Plugin folder path")
+	plugin_user       = flag.String("plugin_user", "", "Run plugin processes as this OS user (name or uid, Unix only, Zoraxy must run as root). Default: same user as Zoraxy")
+	plugin_group      = flag.String("plugin_group", "", "Group for plugin processes started with -plugin_user (name or gid). Default: the user's primary group")
+	plugin_port_probe = flag.Bool("plugin_port_probe", false, "Plugin status: open a TCP connection to the port of each running plugin whenever plugins are listed (at most once per 2 s per plugin) to show Starting / Not listening in every listing (API, side menu). Default: off, only the Plugin Manager page makes that connection, while it is shown")
 
 	/* Maintaince & Development Function Flags */
 	geoDbUpdate       = flag.Bool("update_geoip", false, "Download the latest GeoIP data and exit")

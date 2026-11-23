@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -56,6 +57,15 @@ func requestID(r *http.Request) string {
 // pluginsForRequest returns the enabled plugins that apply to a request with the
 // given tags (tagged + global, minus opt-outs), in deterministic priority order.
 func (m *Manager) pluginsForRequest(tags []string) []*Plugin {
+	active, _ := m.pluginsFor(tags)
+	return active
+}
+
+// pluginsFor returns the plugins that apply to a request with the given tags. active
+// are the ones in the request path, in deterministic priority order. down are
+// fail-closed plugins (declared and consented) that apply to the request but are not
+// running although they should be: see guardDown.
+func (m *Manager) pluginsFor(tags []string) (active []*Plugin, down []*Plugin) {
 	optOutGlobal := false
 	optOut := map[string]bool{}
 	for _, t := range tags {
@@ -69,11 +79,19 @@ func (m *Manager) pluginsForRequest(tags []string) []*Plugin {
 	seen := map[string]bool{}
 	var list []*Plugin
 	add := func(p *Plugin) {
-		if p == nil || p.Spec == nil || !p.Enabled || seen[p.Spec.ID] || optOut[p.Spec.ID] {
+		if p == nil || p.Spec == nil || seen[p.Spec.ID] || optOut[p.Spec.ID] {
 			return
 		}
-		seen[p.Spec.ID] = true
-		list = append(list, p)
+		switch p.pathState() {
+		case pathActive:
+			seen[p.Spec.ID] = true
+			list = append(list, p)
+		case pathDown:
+			if p.failsClosed() {
+				seen[p.Spec.ID] = true
+				down = append(down, p)
+			}
+		}
 	}
 
 	m.tagPluginListMutex.RLock()
@@ -88,7 +106,7 @@ func (m *Manager) pluginsForRequest(tags []string) []*Plugin {
 		var globals []*Plugin
 		m.loadedPluginsMutex.RLock()
 		for _, p := range m.LoadedPlugins {
-			if p.Enabled && p.Spec != nil && p.Spec.Type == zoraxyPlugin.PluginType_Router && p.isGlobal() {
+			if p.Spec != nil && p.Spec.Type == zoraxyPlugin.PluginType_Router && p.pathState() != pathOut && p.isGlobal() {
 				globals = append(globals, p)
 			}
 		}
@@ -101,7 +119,90 @@ func (m *Manager) pluginsForRequest(tags []string) []*Plugin {
 
 	//Stable: ties keep tag / group order, then globals by plugin ID
 	sort.SliceStable(list, func(i, j int) bool { return list[i].priority() < list[j].priority() })
-	return list
+	return list, down
+}
+
+// Where a plugin stands for the request path
+const (
+	pathOut    = iota //not running and not expected to: stopped by the administrator, never started
+	pathActive        //running and attached: it is called
+	pathDown          //should be running but is not: crashed, exited, failed to start, waiting for a restart, or not ready yet
+)
+
+func (p *Plugin) pathState() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	if p.Enabled {
+		if !p.notReady {
+			return pathActive
+		}
+		return pathDown //the readiness gate is still waiting for its port
+	}
+	if p.wantDown {
+		return pathOut //stopped on purpose, also when it had crashed before
+	}
+	switch p.status.state {
+	case StateCrashed, StateExited, StateFailedToStart, StateRestarting, StateCrashLoop:
+		return pathDown
+	}
+	return pathOut
+}
+
+// inRequestPath reports whether the plugin is running and attached to the request path
+func (p *Plugin) inRequestPath() bool { return p.pathState() == pathActive }
+
+const downLogEvery = time.Minute
+
+// guardStage says at which point of a request a down fail-closed plugin is accounted
+// for: the first request stage it registered for, "legacy" when it only has a
+// dynamic capture, "" when it has nothing in the request path.
+func guardStage(p *Plugin) string {
+	if h := p.Spec.Hooks; h != nil {
+		for _, st := range []zoraxyPlugin.HookStage{zoraxyPlugin.HookStagePreAuth, zoraxyPlugin.HookStagePostAuth, zoraxyPlugin.HookStageResponse} {
+			if h.HasStage(st) && h.PathForStage(st) != "" {
+				return string(st)
+			}
+		}
+	}
+	if p.AcceptDynamicRoute() {
+		return "legacy"
+	}
+	return ""
+}
+
+// guardDown handles the fail-closed plugins of a request that are not running.
+// Such a plugin was allowed by the administrator to block requests when it fails,
+// but a plugin that is not running cannot fail a call. By default the request
+// passes (as it always did) and is counted; with the per plugin option "block
+// while not running" (PluginPolicy.BlockWhenDown) it is refused.
+// It returns the plugin that blocks the request, or nil.
+func (m *Manager) guardDown(down []*Plugin, at string) *Plugin {
+	for _, p := range down {
+		if guardStage(p) != at {
+			continue
+		}
+		if p.policy().BlockWhenDown {
+			p.obs.blockedWhileDown.Add(1)
+			m.downLog(p, "requests are refused (503) while this fail-closed plugin is not running")
+			return p
+		}
+		p.obs.passedWhileDown.Add(1)
+		m.downLog(p, "requests pass unfiltered while this fail-closed plugin is not running (turn on \"block while not running\" for the plugin to refuse them instead)")
+	}
+	return nil
+}
+
+// downLog logs at most once per minute per plugin
+func (m *Manager) downLog(p *Plugin, msg string) {
+	now := time.Now().UnixNano()
+	last := p.obs.downLogAt.Load()
+	if last != 0 && time.Duration(now-last) < downLogEvery {
+		return
+	}
+	if !p.obs.downLogAt.CompareAndSwap(last, now) {
+		return
+	}
+	m.logf(p, fmt.Sprintf("%s (passed %d, refused %d since Zoraxy started)", msg, p.obs.passedWhileDown.Load(), p.obs.blockedWhileDown.Load()), nil)
 }
 
 func filterPluginsForStage(all []*Plugin, stage zoraxyPlugin.HookStage) []*Plugin {
@@ -151,7 +252,14 @@ func (m *Manager) RunRequestStage(w http.ResponseWriter, r *http.Request, tags [
 	if stage == zoraxyPlugin.HookStageResponse {
 		return StageResult{}
 	}
-	plugins := filterPluginsForStage(m.pluginsForRequest(tags), stage)
+	active, down := m.pluginsFor(tags)
+	if len(down) > 0 {
+		if p := m.guardDown(down, string(stage)); p != nil {
+			writePluginError(w, http.StatusServiceUnavailable, "Service temporarily unavailable")
+			return StageResult{Handled: true, Denied: true, Status: http.StatusServiceUnavailable, PluginID: p.Spec.ID, Reason: "fail_closed: plugin is not running"}
+		}
+	}
+	plugins := filterPluginsForStage(active, stage)
 	if len(plugins) == 0 {
 		return StageResult{}
 	}
@@ -201,7 +309,7 @@ func (m *Manager) RunRequestStage(w http.ResponseWriter, r *http.Request, tags [
 				m.logf(p, "capture verdict ignored at "+string(stage)+": capture would bypass authentication, register for post_auth instead", nil)
 				continue
 			}
-			if !p.AcceptDynamicRoute() || p.dynamicRouteProxy == nil {
+			if !p.AcceptDynamicRoute() || !p.hasDynamicProxy() {
 				m.logf(p, "capture verdict ignored: plugin declares no dynamic capture ingress", nil)
 				continue
 			}
@@ -288,11 +396,16 @@ func (m *Manager) previewBody(w http.ResponseWriter, r *http.Request, plugins []
 // the response header is sent. It returns w itself when no plugin registered for the
 // response stage for this request, so the cost is one map lookup in the common case.
 func (m *Manager) WrapResponse(w http.ResponseWriter, r *http.Request, tags []string, clientIP string) http.ResponseWriter {
-	plugins := filterPluginsForStage(m.pluginsForRequest(tags), zoraxyPlugin.HookStageResponse)
-	if len(plugins) == 0 {
+	active, down := m.pluginsFor(tags)
+	downBlock := false
+	if len(down) > 0 {
+		downBlock = m.guardDown(down, string(zoraxyPlugin.HookStageResponse)) != nil
+	}
+	plugins := filterPluginsForStage(active, zoraxyPlugin.HookStageResponse)
+	if len(plugins) == 0 && !downBlock {
 		return w
 	}
-	return &hookResponseWriter{ResponseWriter: w, m: m, r: r, plugins: plugins, clientIP: clientIP}
+	return &hookResponseWriter{ResponseWriter: w, m: m, r: r, plugins: plugins, clientIP: clientIP, downBlock: downBlock}
 }
 
 type hookResponseWriter struct {
@@ -304,6 +417,7 @@ type hookResponseWriter struct {
 
 	wroteHeader bool
 	suppress    bool
+	downBlock   bool //a fail-closed response plugin is not running and may block: answer 502 instead of the upstream response
 }
 
 func (h *hookResponseWriter) Unwrap() http.ResponseWriter { return h.ResponseWriter }
@@ -353,6 +467,10 @@ func (h *hookResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 func (h *hookResponseWriter) runHooks(code int) {
+	if h.downBlock {
+		h.failClosed()
+		return
+	}
 	reqID := requestID(h.r)
 	snapshot := zoraxyPlugin.EncodeForwardRequestPayload(h.r, h.clientIP)
 	hdr := h.ResponseWriter.Header()

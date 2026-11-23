@@ -136,6 +136,8 @@ def sites_ui(pg, ctx):
     if js("document.querySelectorAll('#redirectionRuleList tr').length") != 1:
         fail("redirect", "the redirection list does not show exactly the one valid rule")
     # duplicate through the form: an error message, no success banner, the typed values stay
+    pg.click("#redirAddBtn")   # the form opens from the header button
+    pg.wait_for_selector("#rurl", state="visible", timeout=5000)
     pg.fill("#rurl", "old.sitesfix.test")
     pg.fill("input[name=destination-url]", "other.sitesfix.test")
     pg.click("#addRedirectBtn")
@@ -154,12 +156,28 @@ def sites_ui(pg, ctx):
     if n != 1:
         fail("redirect", f"a double click created {n} rules")
     # labels
-    if "keep the path" not in js("document.querySelector('#redirectset table thead').innerText").lower():
-        fail("text", "the Redirection column should be called Keep the path")
+    if "keeps the path" not in js("document.querySelector('#redirectionRuleList').innerText").lower() or "keep the path" not in js("document.querySelector('#addRedirectCard').innerText").lower():
+        fail("text", "the Redirection rows and form should say Keep(s) the path")
     if js("[...document.querySelectorAll('#redirectionRuleList button')].filter(b => !b.getAttribute('aria-label')).length"):
         fail("a11y", "a Redirection row button has no aria-label")
     if js("[...document.querySelectorAll('#redirectset input[type=text]')].filter(i => !i.getAttribute('aria-label') && !i.labels.length).length"):
         fail("a11y", "a Redirection form input has no label")
+    # Edit shows Save only: with the Add button left visible, a click on it created a second rule instead of saving the change
+    pg.click("#redirectionRuleList tr:has-text('dbl.sitesfix.test') .redirectEditBtn")
+    pg.wait_for_timeout(300)
+    if pg.is_visible("#addRedirectBtn") or not pg.is_visible("#saveRedirectBtn"):
+        fail("redirect", "the edit form must show Save changes and hide Add redirection")
+    js("closeRedirectForm()")
+    # an empty submit marks the field and moves the focus there (no corner toast with a raw server text)
+    pg.click("#redirAddBtn")
+    pg.wait_for_selector("#rurl", state="visible", timeout=5000)
+    pg.fill("#rurl", "")
+    pg.fill("input[name=destination-url]", "")
+    pg.click("#addRedirectBtn")
+    pg.wait_for_timeout(300)
+    if js("document.getElementById('rurl').getAttribute('aria-invalid')") != "true" or js("document.activeElement.id") != "rurl":
+        fail("redirect", "an empty Redirect from field is not marked invalid and focused")
+    js("closeRedirectForm()")
     # deleting asks first (a ZxUI dialog, not window.confirm)
     pg.click("#redirectionRuleList tr:has-text('dbl.sitesfix.test') button[title='Delete redirection rule']")
     pg.wait_for_timeout(300)
@@ -199,16 +217,26 @@ def sites_ui(pg, ctx):
         fail("a11y", "a Stream Proxy form input has no label")
     shot("sites-stream-list.png")
     # invalid input through the form keeps what was typed and reports the reason
+    pg.click("#spAddBtn")   # the form opens from the header button
+    pg.wait_for_selector("#streamProxyForm input[name=name]", state="visible", timeout=5000)
     pg.fill("#streamProxyForm input[name=name]", "sitesfix-form")
     pg.fill("#streamProxyForm input[name=listenAddr]", "not an address")
     pg.fill("#streamProxyForm input[name=proxyAddr]", "127.0.0.1:22")
-    js("$('#streamProxyForm input[name=useTCP]').parent().checkbox('set checked')")
+    pg.click("#streamProxyForm label[for=spProtoTcp]")
+    if not js("document.querySelector('#streamProxyForm input[name=useTCP]').checked && !document.querySelector('#streamProxyForm input[name=useUDP]').checked"):
+        fail("stream", "choosing TCP does not set the protocol fields")
     pg.click("#addStreamProxyButton")
     pg.wait_for_timeout(600)
     if pg.input_value("#streamProxyForm input[name=listenAddr]") != "not an address":
         fail("stream", "the form was cleared although the add failed")
     if js("document.querySelectorAll('#proxyTable tbody tr.streamproxConfig').length") != 1:
         fail("stream", "an invalid config was added through the form")
+    # an empty Listen on field is marked in the form
+    pg.fill("#streamProxyForm input[name=listenAddr]", "")
+    pg.click("#addStreamProxyButton")
+    pg.wait_for_timeout(300)
+    if js("document.getElementById('spListen').getAttribute('aria-invalid')") != "true":
+        fail("stream", "an empty Listen on field is not marked invalid")
     # a double click on a valid config creates one
     pg.fill("#streamProxyForm input[name=listenAddr]", ":29219")
     pg.dblclick("#addStreamProxyButton")
@@ -216,14 +244,14 @@ def sites_ui(pg, ctx):
     if js("document.querySelectorAll('#proxyTable tbody tr.streamproxConfig').length") != 2:
         fail("stream", "a double click on Create did not create exactly one config")
     # delete asks first
-    pg.click("#proxyTable tbody tr:has-text('sitesfix-form') button[title='Delete Config']")
+    pg.click("#proxyTable tbody tr:has-text('sitesfix-form') button[title='Remove rule']")
     pg.wait_for_timeout(300)
     if js("document.querySelectorAll('#proxyTable tbody tr.streamproxConfig').length") != 2:
         fail("stream", "Delete removed the config without asking")
     js("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
     pg.wait_for_timeout(300)
     # edit scrolls the form into view
-    pg.click("#proxyTable tbody tr:has-text('sitesfix-ssh') button[title='Edit Config']")
+    pg.click("#proxyTable tbody tr:has-text('sitesfix-ssh') button[title='Edit rule']")
     pg.wait_for_timeout(900)
     if not js("(() => { const r = document.getElementById('addproxyConfig').getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; })()"):
         fail("stream", "Edit does not bring the form into view")
@@ -244,7 +272,8 @@ def sites_ui(pg, ctx):
     post("/api/waf/policy", {"policy": json.dumps(dict(orig_pol, Enabled=True, DefaultMode="block"))})
     js("openTabById('httprp')")
     pg.wait_for_timeout(900)
-    if "WAF (global)" not in js("document.getElementById('httpProxyList').innerText"):
+    # the Protection column is a row of icon chips; the name of a chip is its title / aria-label
+    if not js("[...document.querySelectorAll('#httpProxyList .ptBadge.waf')].some(b => (b.getAttribute('aria-label') || '').indexOf('global policy') >= 0)"):
         fail("list", "the Protection column shows no WAF although the global WAF is on and the rule follows it")
     js("""h => fetch('/api/proxy/list?type=host').then(r => r.json()).then(l => { initHttpProxyRuleEditorModal(l.filter(x => x.RootOrMatchingDomain === h)[0]); })""", SITES_HOSTS[0])
     pg.wait_for_selector("#httprpEditModalWrapper .hrp-main", state="visible", timeout=8000)

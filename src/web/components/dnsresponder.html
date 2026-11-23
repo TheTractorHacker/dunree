@@ -9,7 +9,10 @@
     #dnsrPanel .zx-textarea { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
     #dnsrPanel .dnsrLimits { grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); }
     @media (min-width: 1100px) { #dnsrPanel .dnsrLimits { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-    #dnsrPanel .zx-toggle-row { padding: 0 0 var(--zx-space-3); border: 0; }
+    /* switch on the left, like the switches of Listeners */
+    #dnsrPanel .zx-toggle-row { padding: 0 0 var(--zx-space-3); border: 0; flex-direction: row-reverse; justify-content: flex-end; align-items: flex-start; gap: var(--zx-space-3); }
+    #dnsrPanel .zx-toggle-row .zx-switch { margin-top: 2px; }
+    #dnsrPanel .zx-card__foot .zx-help { margin: 0 0 0 var(--zx-space-2); }
     #dnsrPanel .zx-form-grid { margin-bottom: var(--zx-space-3); }
     #dnsrPanel .zx-card__body > :last-child { margin-bottom: 0; }
     #dnsrPanel .zx-card__body > .zx-form-grid > .zx-field:last-child, #dnsrPanel .zx-form-grid .zx-field { margin-bottom: 0; }
@@ -17,19 +20,13 @@
     #dnsrPanel .zx-field.is-invalid input { border-color: var(--zx-danger-solid); }
 </style>
 <div id="dnsrPanel">
-    <div class="zx-callout zx-callout--info" role="note">
-        <div class="zx-callout__body">
-            A small DNS server that answers the names of your proxy rules, so devices on your network reach this proxy directly. It refuses every other name.
-            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="dnsrWhat" aria-label="What is this?">?</button>
-            <div class="zx-popover" id="dnsrWhat" role="note" hidden>It answers <b>A</b> and <b>AAAA</b> queries (plus minimal <b>NS</b> and <b>SOA</b> records) for the host names and aliases of your proxy rules, so clients on your network resolve your public names straight to this proxy. Wildcard rules such as <code>*.example.com</code> answer every matching name. It listens on UDP and TCP on one specific address (default port 5353; port 53 needs extra privileges). Per client rate limiting, response size limits and a TCP connection cap are always on. Off by default.</div>
-        </div>
-    </div>
-
     <section class="zx-card" aria-labelledby="dnsrRespTitle">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="dnsrRespTitle">Responder</h3>
-            <span class="zx-badge" id="dnsrStatus" role="status">Not running</span>
-            <p class="zx-card__desc">Turn the responder on and choose the address it listens on.</p>
+            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="dnsrWhat" aria-label="What is this?">?</button>
+            <span class="zx-badge zx-badge--dot" id="dnsrStatus" role="status">Off</span>
+            <p class="zx-card__desc">It answers the names of your proxy rules, so devices on your network reach this proxy directly, and refuses every other name. Turn it on and choose the address it listens on.</p>
+            <div class="zx-popover" id="dnsrWhat" role="note" hidden>It answers <b>A</b> and <b>AAAA</b> queries (plus minimal <b>NS</b> and <b>SOA</b> records) for the host names and aliases of your proxy rules, so clients on your network resolve your public names straight to this proxy. Wildcard rules such as <code>*.example.com</code> answer every matching name. It listens on UDP and TCP on one specific address (default port 5353; port 53 needs extra privileges). Per client rate limiting, response size limits and a TCP connection cap are always on. Off by default.</div>
         </div>
         <div class="zx-card__body">
             <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Enable the DNS responder</span><span class="zx-toggle-row__desc">Off by default. Answers only the names of your proxy rules.</span></span><input type="checkbox" class="zx-switch" role="switch" id="dnsrEnabled"></label>
@@ -105,19 +102,19 @@
                 <div class="zx-field field"><label class="zx-field__label" for="dnsrTcpTo">TCP timeout (s)</label><input type="number" class="zx-input" id="dnsrTcpTo" min="1" max="60"><p class="zx-help">Idle time before a connection closes.</p></div>
             </div>
         </div>
+        <div class="zx-card__foot">
+            <button type="button" class="zx-btn zx-btn--primary" id="dnsrSave">Save DNS responder</button>
+            <button type="button" class="zx-btn zx-btn--secondary" id="dnsrReload"><i class="refresh icon" aria-hidden="true"></i> Refresh status</button>
+            <p class="zx-help">Saves all four cards of this section and applies them at once.</p>
+        </div>
     </section>
-
-    <div class="zx-btn-row">
-        <button type="button" class="zx-btn zx-btn--primary" id="dnsrSave"><i class="save icon"></i> Apply</button>
-        <button type="button" class="zx-btn zx-btn--secondary" id="dnsrReload"><i class="refresh icon"></i> Refresh status</button>
-    </div>
 </div>
 <script>
 (function(){
     function lines(v){ return v.split(/[\n,]+/).map(function(x){return x.trim();}).filter(function(x){return x != "";}); }
     function load(){
         $.get("/api/tools/dnsresponder", function(d){
-            if (d.error != undefined){ $("#dnsrStatus").removeClass("zx-badge--ok zx-badge--danger").addClass("zx-badge--danger").text("Not running"); $("#dnsrStats").text(d.error); return; }
+            if (d.error != undefined){ $("#dnsrStatus").removeClass("zx-badge--ok zx-badge--danger").addClass("zx-badge--danger").text(t("Not running")); $("#dnsrStats").text(d.error); return; }
             var c = d.config, s = d.status;
             $("#dnsrEnabled").prop("checked", !!c.enabled);
             $("#dnsrAll").prop("checked", !!c.allowAllInterfaces);
@@ -126,16 +123,16 @@
             $("#dnsrTtl").val(c.ttl); $("#dnsrQps").val(c.rateLimitQps); $("#dnsrBurst").val(c.rateBurst);
             $("#dnsrUdp").val(c.maxUdpSize); $("#dnsrConns").val(c.maxTcpConns); $("#dnsrTcpTo").val(c.tcpTimeoutSec);
             $("#dnsrUp").val((c.upstreams || []).join("\n")); $("#dnsrCidr").val((c.allowedCidrs || []).join("\n"));
-            var box = $("#dnsrStatus").removeClass("zx-badge--ok zx-badge--danger zx-badge--dot"), stats = $("#dnsrStats").text("");
+            //the same words as the section navigation: On, Off, Not running
+            var box = $("#dnsrStatus").removeClass("zx-badge--ok zx-badge--danger"), stats = $("#dnsrStats").text("");
             if (s.running){
-                box.addClass("zx-badge--ok zx-badge--dot").text("Running on " + s.bound + " (UDP+TCP)");
-                stats.text("Queries: " + s.stats.queries + ", answered: " + s.stats.answered +
-                    ", refused: " + s.stats.refused + ", forwarded: " + s.stats.forwarded + ", rate limited: " + s.stats.rateLimited);
+                box.addClass("zx-badge--ok").text(t("On"));
+                stats.text(tf("Listening on {0} (UDP and TCP).", s.bound) + " " + tf("Queries: {0}, answered: {1}, refused: {2}, forwarded: {3}, rate limited: {4}", s.stats.queries, s.stats.answered, s.stats.refused, s.stats.forwarded, s.stats.rateLimited));
             }else if (s.error){
-                box.addClass("zx-badge--danger").text("Not running");
+                box.addClass("zx-badge--danger").text(t("Not running"));
                 stats.text(s.error);
             }else{
-                box.text("Not running");
+                box.text(c.enabled ? t("Not running") : t("Off"));
             }
         });
     }

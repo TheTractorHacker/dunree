@@ -1,30 +1,41 @@
-<div class="standardContainer">
+<!-- Network interfaces (tag iface): read-only list from /api/stats/listnic -->
+<style>
+    #ifacePage .ifName { display: block; font-weight: 700; color: var(--zx-text); font-family: var(--zx-font-mono); }
+    #ifacePage .ifSub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #ifacePage table.zx-table td { vertical-align: top; }
+    #ifacePage .ifAddr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 1px 0; }
+    #ifacePage .ifAddr code { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); background: none; padding: 0; color: var(--zx-text); word-break: keep-all; overflow-wrap: normal; min-width: 0; }   /* breaks only at the <wbr> after a colon */
+    #ifacePage .ifAddr span { color: var(--zx-text-muted); font-size: var(--zx-fs-xs); white-space: nowrap; }
+    #ifacePage .ifNone { color: var(--zx-text-muted); }
+</style>
+<div class="standardContainer" id="ifacePage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Network interfaces</h2>
-            <p class="zx-page-header__sub">The network cards and addresses of this machine.</p>
+            <p class="zx-page-header__sub">The network cards of this machine and the addresses they have right now.</p>
         </div>
         <div class="zx-page-header__actions">
-            <button class="zx-btn zx-btn--secondary" type="button" onclick="renderNICInfo(); msgbox('NIC information reloaded');"><i class="sync icon"></i> Refresh</button>
+            <button class="zx-btn zx-btn--secondary" type="button" onclick="renderNICInfo(true);"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
         </div>
     </header>
     <section class="zx-card" aria-labelledby="nicTitle">
         <div class="zx-card__head">
-            <h3 class="zx-card__title" id="nicTitle">Installed network cards</h3>
-            <p class="zx-card__desc">Each interface with the addresses it currently has.</p>
+            <h3 class="zx-card__title" id="nicTitle">Network cards <span class="zx-badge" id="nicCount" hidden></span></h3>
+            <p class="zx-card__desc">Use one of these addresses where a listener, a tunnel or the DNS responder should answer on one network card only. Nothing can be changed here.</p>
         </div>
-        <div class="zx-card__body"><div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Network interfaces">
+        <div class="zx-card__body"><div class="zx-table-wrap zx-table-wrap--flush">
             <table id="network-interfaces-table" class="zx-table">
                 <thead>
                     <tr>
-                        <th>Interface name</th>
-                        <th>IP addresses</th>
-                        <th class="zx-num">ID</th>
+                        <th>Interface</th>
+                        <th>IPv4 addresses</th>
+                        <th>IPv6 addresses</th>
+                        <th>State</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td class="zx-empty-cell" colspan="3">Loading...</td></tr>
+                    <tr><td class="zx-empty-cell" colspan="4">Loading the network cards of this machine.</td></tr>
                 </tbody>
             </table>
         </div></div>
@@ -34,52 +45,91 @@
 /*
     NIC Info
 */
-function renderNICInfo(){
-    $.get("/api/stats/listnic",function(data){
-        var tbody = document.querySelector("#network-interfaces-table tbody");
-        tbody.innerHTML = ""; // Clear existing rows
-        if (!Array.isArray(data) || data.length == 0){
-            var er = document.createElement("tr"), ec = document.createElement("td");
-            ec.className = "zx-empty-cell"; ec.colSpan = 3; ec.textContent = "No network interfaces were found on this machine.";
-            er.appendChild(ec); tbody.appendChild(er);
-            return;
-        }
-        data.forEach(function(item) {
-            var tr = document.createElement("tr");
-            var name = document.createElement("td");
-            name.setAttribute("data-label", "Interface name");
-            name.textContent = item.Name;
-            var id = document.createElement("td");
-            id.className = "zx-num";
-            id.setAttribute("data-label", "ID");
-            id.textContent = item.ID;
-            var ips = document.createElement("td");
-            ips.setAttribute("data-label", "IP addresses");
-            if (item.IPs == null || item.IPs.length == 0){
-                var nc = document.createElement("span");
-                nc.className = "zx-badge";
-                nc.textContent = "Not connected";
-                ips.appendChild(nc);
-            }else{
-                item.IPs.forEach(function(ip){
-                    var line = document.createElement("div");
-                    line.className = "zx-mono";
-                    line.textContent = ip;
-                    ips.appendChild(line);
-                });
-            }
-
-            tr.appendChild(name);
-            tr.appendChild(ips);
-            tr.appendChild(id);
-            tbody.appendChild(tr);
-        });
-    }).fail(function(){
-        var tbody = document.querySelector("#network-interfaces-table tbody");
+function renderNICInfo(announce){
+    var tbody = document.querySelector("#network-interfaces-table tbody");
+    function message(text){
         tbody.innerHTML = "";
         var er = document.createElement("tr"), ec = document.createElement("td");
-        ec.className = "zx-empty-cell"; ec.colSpan = 3; ec.textContent = "The list could not be loaded. Press Refresh to try again.";
+        ec.className = "zx-empty-cell"; ec.colSpan = 4; ec.textContent = text;
         er.appendChild(ec); tbody.appendChild(er);
+        $("#nicCount").prop("hidden", true);
+    }
+    //what kind of address this is, in a word
+    function scopeOf(ip){
+        var a = ip.split("/")[0].toLowerCase();
+        if (a.indexOf(":") >= 0){
+            if (a == "::1"){ return t("loopback"); }
+            if (/^fe[89ab]/.test(a)){ return t("link-local"); }
+            if (/^f[cd]/.test(a)){ return t("private"); }
+            return t("public");
+        }
+        var p = a.split(".").map(Number);
+        if (p[0] == 127){ return t("loopback"); }
+        if (p[0] == 169 && p[1] == 254){ return t("link-local"); }
+        if (p[0] == 10 || (p[0] == 172 && p[1] >= 16 && p[1] <= 31) || (p[0] == 192 && p[1] == 168)){ return t("private"); }
+        if (p[0] == 100 && p[1] >= 64 && p[1] <= 127){ return t("carrier NAT / VPN"); }
+        return t("public");
+    }
+    function addrCell(label, list){
+        var td = document.createElement("td");
+        td.setAttribute("data-label", label);
+        var box = document.createElement("div");
+        if (!list.length){
+            var none = document.createElement("span");
+            none.className = "ifNone"; none.textContent = t("None");
+            box.appendChild(none);
+        }
+        list.forEach(function(ip){
+            var line = document.createElement("div"), code = document.createElement("code"), scope = document.createElement("span");
+            line.className = "ifAddr";
+            //a long IPv6 address may wrap after a colon, never inside a group
+            ip.split(":").forEach(function(part, i, all){
+                code.appendChild(document.createTextNode(part + (i < all.length - 1 ? ":" : "")));
+                if (i < all.length - 1){ code.appendChild(document.createElement("wbr")); }
+            });
+            scope.textContent = scopeOf(ip);
+            line.appendChild(code); line.appendChild(scope);
+            box.appendChild(line);
+        });
+        td.appendChild(box);
+        return td;
+    }
+    $.get("/api/stats/listnic",function(data){
+        if (!Array.isArray(data) || data.length == 0){
+            message(t("No network interfaces were found on this machine."));
+            return;
+        }
+        tbody.innerHTML = "";
+        $("#nicCount").prop("hidden", false).text(data.length);
+        data.forEach(function(item) {
+            var ips = item.IPs || [];
+            var v4 = ips.filter(function(ip){ return ip.indexOf(":") < 0; }), v6 = ips.filter(function(ip){ return ip.indexOf(":") >= 0; });
+            var loopback = ips.length > 0 && ips.every(function(ip){ return /^127\.|^::1\//.test(ip); });
+            var tr = document.createElement("tr");
+
+            var name = document.createElement("td");
+            name.setAttribute("data-label", t("Interface"));
+            var nameBox = document.createElement("div"), n = document.createElement("span"), sub = document.createElement("span");
+            n.className = "ifName"; n.textContent = item.Name;
+            sub.className = "ifSub"; sub.textContent = (loopback ? t("Loopback, this machine only") : t("Network card")) + " · " + tf("index {0}", item.ID);
+            nameBox.appendChild(n); nameBox.appendChild(sub); name.appendChild(nameBox);
+
+            var state = document.createElement("td");
+            state.setAttribute("data-label", t("State"));
+            var badge = document.createElement("span");
+            badge.className = "zx-badge zx-badge--dot" + (ips.length ? " zx-badge--ok" : "");
+            badge.textContent = ips.length ? t("Connected") : t("No address");
+            state.appendChild(badge);
+
+            tr.appendChild(name);
+            tr.appendChild(addrCell(t("IPv4 addresses"), v4));
+            tr.appendChild(addrCell(t("IPv6 addresses"), v6));
+            tr.appendChild(state);
+            tbody.appendChild(tr);
+        });
+        if (announce === true){ msgbox(t("NIC information reloaded")); }
+    }).fail(function(){
+        message(t("The list could not be loaded. Press Refresh to try again."));
     });
 }
 renderNICInfo();

@@ -3,8 +3,8 @@ package plugins
 import (
 	_ "embed"
 	"net/http"
-	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"imuslab.com/zoraxy/mod/auth"
@@ -20,16 +20,32 @@ var noImg []byte
 type Plugin struct {
 	RootDir string                   //The root directory of the plugin
 	Spec    *zoraxyPlugin.IntroSpect //The plugin specification
-	Enabled bool                     //Whether the plugin is enabled
+	Enabled bool                     //Whether the plugin is enabled (its process is running). Guarded by mu once the plugin is loaded, use isEnabled()
 
-	//Runtime
+	//Runtime, guarded by mu (see status.go)
+	mu                sync.RWMutex
+	lifeMu            sync.Mutex                      //serialises StartPlugin / StopPlugin of this plugin
+	proc              *pluginProc                     //the running process, nil when not running
+	status            pluginStatusRecord              //read-only status shown by the API
+	obs               pluginObserved                  //last-seen and call counters (atomics)
+	startGrace        time.Duration                   //test override of defaultStartGrace
 	AssignedPort      int                             //The assigned port for the plugin
 	uiProxy           *dpcore.ReverseProxy            //The reverse proxy for the plugin UI
 	staticRouteProxy  map[string]*dpcore.ReverseProxy //Storing longest prefix => dpcore map for static route
 	dynamicRouteProxy *dpcore.ReverseProxy            //The reverse proxy for the dynamic route
-	process           *exec.Cmd                       //The process of the plugin
 	SupportHotRebuild bool                            //Whether the plugin source code exists in the plugin folder tree
 	hook              hookRuntime                     //Hook / filter runtime state (admin settings, circuit breaker, invoke token)
+
+	//Phase 1: supervision (see supervisor.go, policy.go)
+	mgr        *Manager        //guarded by mu: the manager that started the plugin last (for log lines from the event worker)
+	notReady   bool            //guarded by mu: the readiness gate of the running plugin still waits for its port, so it is not in the request path yet
+	wantDown   bool            //guarded by mu: the last thing the administrator (or an update / rebuild) did was stop the plugin, so it is not "down" for block-when-down
+	polMu      sync.RWMutex    //guards pol
+	pol        PluginPolicy    //what the administrator allows Zoraxy to do about this plugin, zero value = behaviour without supervision
+	sup        supervisorState //restart backoff, crash loop and exit history
+	capBreaker captureBreaker  //circuit breaker of the capture and UI paths (only enforced with a capture timeout)
+	evq        eventQueue      //bounded queue of events waiting to be sent to the plugin
+	logw       pluginLogFile   //per plugin log file (only with LogTarget = file)
 }
 
 type ManagerOptions struct {
@@ -57,6 +73,12 @@ type ManagerOptions struct {
 	/* API Key Management */
 	APIKeyManager *auth.APIKeyManager `json:"-"` //The API key manager for the plugins
 
+	/* Per plugin log files (only used by plugins whose policy says LogTarget = file). Empty = "plugins" inside the log folder of Logger, or ./log/plugins */
+	PluginLogDir string
+
+	/* Status */
+	ProbePluginPorts bool //Off by default. On: listing plugins opens one TCP connection to the port of every running plugin (cached 2 s) to tell "starting" / "not listening" from "running"
+
 	/* Development */
 	EnableHotReload       bool //Check if the plugin file is changed and reload the plugin automatically
 	EnablePluginAutoBuild bool //Enable automatic build for the plugin when the plugin is started
@@ -80,4 +102,13 @@ type Manager struct {
 	pluginReloadStop   chan bool    //Channel to stop the plugin reload ticker
 
 	hookCfg hookTunables //Circuit breaker tunables, zero value = defaults
+
+	stopGrace         time.Duration          //time a plugin gets to stop after SIGTERM, zero value = defaultStopGrace
+	loadFailuresMutex sync.Mutex             //Mutex for loadFailures
+	loadFailures      map[string]LoadFailure //plugin folders that could not be loaded, key is the folder name
+
+	exitDrainHook func() //tests only: runs in the exit watcher after the output drain
+
+	supCfg  supTunables //supervisor tunables, zero value = defaults (tests shorten them)
+	closing atomic.Bool //Close() was called: no automatic restart any more
 }

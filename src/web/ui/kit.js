@@ -106,7 +106,7 @@
     var EX = [];
     function ex(id, title, desc, markup, demo) { EX.push({ id: id, title: title, desc: desc, markup: markup.replace(/^\n/, ""), demo: demo }); }
 
-    ex("page-header", "Page header", "Title, subtitle, breadcrumbs (filled automatically from the menu definition when the element carries data-zx-crumbs) and primary actions. Use one per page; the page title is the only h2.",
+    ex("page-header", "Page header", "Breadcrumb, then the title with the actions on the same line, then a one-line subtitle (design v2: a grid, so the actions always sit on the title row; on phones they move under the subtitle). Breadcrumbs are filled from the menu definition when the element carries data-zx-crumbs. One per page; the title is the only h2. Order of actions: Related, History, secondary, the one primary action last.",
 `<header class="zx-page-header">
   <div class="zx-page-header__main">
     <div class="zx-page-header__crumbs" data-zx-crumbs></div>
@@ -195,6 +195,20 @@
   <button type="button" class="zx-btn zx-btn--primary"><i class="plus icon"></i> New proxy rule</button>
 </div>`);
 
+    ex("emptytable", "Empty table, state badges", "An empty table is one cell (td.zx-empty-cell with colspan): the header row hides and the cell shows the icon tile above a sentence that says when rows will appear. The state of a thing is always the dot badge: quiet pill, coloured dot, the word (page header, card title, table column, section navigation).",
+`<div class="zx-table-wrap">
+  <table class="zx-table">
+    <thead><tr><th>Address</th><th>Reason</th><th>Expires</th></tr></thead>
+    <tbody><tr><td colspan="3" class="zx-empty-cell">No active bans. Clients show up here when a detector bans them or you ban one below.</td></tr></tbody>
+  </table>
+</div>
+<p style="margin-top:12px" class="zx-chips">
+  <span class="zx-badge zx-badge--dot zx-badge--ok">Running</span>
+  <span class="zx-badge zx-badge--dot zx-badge--warn">Detection only</span>
+  <span class="zx-badge zx-badge--dot zx-badge--danger">Upstream down</span>
+  <span class="zx-badge zx-badge--dot">Disabled</span>
+</p>`);
+
     ex("table", "Data table", "Sticky header inside a scrolling region (give the wrapper a label and tabindex=0 so it scrolls with the keyboard), density modifiers .zx-table--compact / --comfortable, row actions, numbers right aligned. Below 480px every row becomes a card using the data-label of each cell.",
 `<div class="zx-table-wrap" style="--zx-table-max: 14rem" tabindex="0" role="region" aria-label="Proxy rules">
   <table class="zx-table zx-table--compact">
@@ -232,6 +246,75 @@
   <tr><td data-label="Time">12:01</td><td data-label="Details" class="zx-cell-long"><div class="zx-longvalue" tabindex="0">{"ip":"203.0.113.9","ua":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36","path":"/wp-login.php?redirect_to=https%3A%2F%2Fexample.com%2Fadmin"}</div></td></tr>
 </tbody></table></div>
 <div class="zx-empty zx-empty--inline" style="margin-top:12px"><h4 class="zx-empty__title">No bans yet</h4><p class="zx-empty__text">Banned clients appear here.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm">Add a ban</button></div>`);
+
+    ex("related", "Related menu (See also)", "Links to the pages that deal with the same job, each with the reason to go there. Write the plain list; on a page with a kit header script/zxpage.js turns it into ONE Related button in the header actions (icon from the menu definition, page name, reason). Arrow keys move, Esc closes. Without a kit header the same markup stays in place as a quiet row of chips (second example). Never write loose links under the title.",
+`<div data-zx-page>
+  <header class="zx-page-header">
+    <div class="zx-page-header__main">
+      <h2 class="zx-page-header__title">Security Center</h2>
+      <p class="zx-page-header__sub">Ban abusive clients, block bots and protect logins.</p>
+    </div>
+    <div class="zx-page-header__actions">
+      <button type="button" class="zx-btn zx-btn--secondary"><i class="history icon" aria-hidden="true"></i> History</button>
+    </div>
+  </header>
+  <aside class="zx-related" aria-label="Related pages">
+    <span class="zx-related__title">Related</span>
+    <ul>
+      <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Block countries and addresses by hand</span></li>
+      <li><a href="#waf" data-nav-open="waf">WAF</a> <span>Blocks attacks inside requests</span></li>
+      <li><a href="#sso" data-nav-open="sso">SSO / OAuth2</a> <span>login for your sites</span></li>
+    </ul>
+  </aside>
+</div>
+<p class="zx-help" style="margin:5rem 0 8px">Without a kit page header (fallback):</p>
+<aside class="zx-related" aria-label="Related pages">
+  <span class="zx-related__title">Related</span>
+  <ul>
+    <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Block countries and addresses by hand</span></li>
+    <li><a href="#waf" data-nav-open="waf">WAF</a> <span>Blocks attacks inside requests</span></li>
+  </ul>
+</aside>`, function (pane) {
+        $(pane).on("click", "a[data-nav-open]", function (e) { e.preventDefault(); ZxUI.toast("Would open: " + this.getAttribute("data-nav-open")); });
+    });
+
+    ex("sectionnav", "Sectioned navigation", "For a page with more than six sections, or sections that fall into groups (Security Center). Wide windows: a 12rem sub-navigation column that stays in view while the page scrolls. When the page column is narrower than about 1000px (window 1320px and less): one native select, labelled Section, with the groups as optgroups (resize the window). Order: the summary first without a group label, groups named for the job, and what a beginner can skip in a last group called Advanced (the pill tag marks a single advanced item inside another group). nav.state(name, kind, word) shows On / Off / Log only as a dot with the word. The section head repeats the name and says in one line what the section is for, so the first card must not repeat it. ZxUI.sectionNav(nav, {attr, head, auto, onSelect}) returns {select(name), current(), state(name, kind, word)}. One Tab stop; Up / Down / Home / End move the focus, Enter opens.",
+`<div class="zx-sectioned">
+  <nav class="zx-sectionnav" id="sn-nav" aria-label="Example sections">
+    <div class="zx-sectionnav__group">
+      <button type="button" class="zx-sectionnav__item active" data-zx-section="overview"><i class="tachometer alternate icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Overview</span><span class="zx-sectionnav__desc" hidden>Every protection at a glance.</span></button>
+    </div>
+    <div class="zx-sectionnav__group" role="group" aria-labelledby="sn-g1">
+      <div class="zx-sectionnav__label" id="sn-g1">Block abuse</div>
+      <button type="button" class="zx-sectionnav__item" data-zx-section="abuse"><i class="ban icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Auto-ban</span><span class="zx-sectionnav__desc" hidden>Ban addresses that keep failing logins or scanning.</span></button>
+      <button type="button" class="zx-sectionnav__item" data-zx-section="bots"><i class="bug icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Bot rules</span><span class="zx-sectionnav__tag">Beta</span><span class="zx-sectionnav__desc" hidden>Block or challenge crawlers and scripts.</span></button>
+    </div>
+    <div class="zx-sectionnav__group" role="group" aria-labelledby="sn-g2">
+      <div class="zx-sectionnav__label" id="sn-g2">Logins and accounts</div>
+      <button type="button" class="zx-sectionnav__item" data-zx-section="users"><i class="users icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Admin accounts</span><span class="zx-sectionnav__desc" hidden>Who can sign in to this admin panel.</span></button>
+    </div>
+    <div class="zx-sectionnav__group" role="group" aria-labelledby="sn-g3">
+      <div class="zx-sectionnav__label" id="sn-g3">Advanced</div>
+      <button type="button" class="zx-sectionnav__item" data-zx-section="headers"><i class="code icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Header rules</span><span class="zx-sectionnav__desc" hidden>Require a secret request header on a site.</span></button>
+      <button type="button" class="zx-sectionnav__item" data-zx-section="crowdsec"><i class="crosshairs icon" aria-hidden="true"></i><span class="zx-sectionnav__text">CrowdSec</span><span class="zx-sectionnav__desc" hidden>Use the ban list of a CrowdSec server you run.</span></button>
+    </div>
+  </nav>
+  <div class="zx-sectioned__main">
+    <header class="zx-sectionhead" id="sn-head"><h3 class="zx-sectionhead__title"></h3><p class="zx-sectionhead__desc"></p></header>
+    <div class="zx-card"><div class="zx-card__body">The content of the section. No card title that repeats the section head.</div></div>
+  </div>
+</div>
+<script>
+// simple page: every click selects
+var nav = ZxUI.sectionNav('#sn-nav', {auto: true, head: '#sn-head'});
+nav.state('abuse', 'on', 'On');  nav.state('crowdsec', 'warn', 'Log only');
+// page that loads the section itself (and may refuse to leave unsaved changes):
+// var nav = ZxUI.sectionNav('#secTabs', {attr: 'data-sec', head: '#secHead'});
+// $('#secTabs').on('click', '.zx-sectionnav__item', function () { load(this.getAttribute('data-sec')).then(function () { nav.select(name); }); });
+</script>`, function (pane) {
+        var nav = ZxUI.sectionNav($(pane).find(".zx-sectionnav")[0], { auto: true, head: $(pane).find(".zx-sectionhead")[0] });
+        nav.state("abuse", "on", "On"); nav.state("crowdsec", "warn", "Log only");
+    });
 
     ex("stat", "Stat tile", "A single number with a label and a hint. Tone modifiers .zx-stat--ok / --warn / --danger colour only the value text.",
 `<div class="zx-grid">

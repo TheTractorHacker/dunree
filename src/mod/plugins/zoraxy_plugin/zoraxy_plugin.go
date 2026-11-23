@@ -3,6 +3,7 @@ package zoraxy_plugin
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -115,7 +116,30 @@ type IntroSpect struct {
 		plugin, see hooks.go for details. Old Zoraxy versions ignore this field.
 	*/
 	Hooks *HookSettings `json:"hooks,omitempty"`
+
+	/*
+		Supervision (optional, old Zoraxy versions ignore these fields)
+
+		HealthPath: a path of your plugin that answers a GET with any 2xx status while
+		the plugin works (e.g. /health). Zoraxy only calls it when the administrator
+		turned the health check of the plugin on. Without it the health check is a
+		TCP connect to your port, which cannot see a plugin that accepts connections
+		but no longer answers.
+
+		ConfigureVia: set to ConfigureViaStdin and Zoraxy starts your plugin with the
+		flag -configure-stdin and writes the configure payload (one JSON document) to
+		its standard input instead of putting it on the command line, where every
+		local user can read your API key. RecvConfigureSpec handles both ways.
+	*/
+	HealthPath   string `json:"health_path,omitempty"`
+	ConfigureVia string `json:"configure_via,omitempty"`
 }
+
+const (
+	ConfigureViaStdin  = "stdin"            //value of IntroSpect.ConfigureVia
+	ConfigureStdinFlag = "-configure-stdin" //flag a plugin is started with when it declared ConfigureViaStdin
+	maxConfigureBytes  = 1 << 20
+)
 
 /*
 ServeIntroSpect Function
@@ -161,6 +185,18 @@ Place this function after ServeIntroSpect function in your plugin main function
 */
 func RecvConfigureSpec() (*ConfigureSpec, error) {
 	for i, arg := range os.Args {
+		if arg == ConfigureStdinFlag {
+			//The payload is on the standard input (see IntroSpect.ConfigureVia)
+			raw, err := io.ReadAll(io.LimitReader(os.Stdin, maxConfigureBytes))
+			if err != nil {
+				return nil, err
+			}
+			var configSpec ConfigureSpec
+			if err := json.Unmarshal(raw, &configSpec); err != nil {
+				return nil, err
+			}
+			return &configSpec, nil
+		}
 		if strings.HasPrefix(arg, "-configure=") {
 			var configSpec ConfigureSpec
 			if err := json.Unmarshal([]byte(arg[11:]), &configSpec); err != nil {

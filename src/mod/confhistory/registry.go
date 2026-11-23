@@ -299,6 +299,7 @@ func DefaultRegistry() *Registry {
 		{Path: "ruleset", Area: "ruleset", Exts: []string{".json"}, MaxDepth: 3},
 		{Path: "trusted_proxies.json", Area: "access"},
 		{Path: "waf_central.json", Area: "waf"},
+		{Path: "errorpages.json", Area: "settings"},
 		{Path: "botrules.json", Area: "security"},
 		{Path: "basicauth_lists.json", Area: "security"},
 		{Path: "blocklist_sources.json", Area: "security"},

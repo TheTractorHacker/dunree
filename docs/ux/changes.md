@@ -2,6 +2,11 @@
 
 Newest first within each area. Each item names the page and what a user notices; design background is in [audit-2026-11.md](audit-2026-11.md), the components in [components.md](components.md).
 
+## Sites: Error pages (new)
+* **Sites > Error pages** (new page): change what a visitor sees when Zoraxy blocks a request (403), answers 404 or 429, a server is down (521 / 504), the host is unknown or every server is busy (503). A **Theme** section (switch, name or logo, accent colour, footer, show the reference, show the visitor's address) and one section per page with a **Text** tab (title, message) and an **HTML** tab (three starter templates: Minimal, Branded, Friendly; a list of the values a template can use). A live preview follows what you type, "Send a test" opens the saved page with its real status code, one save bar saves everything, and a site can get its own pages ("Pages of").
+* **Off by default**: until "Use my error pages" is on and saved, and for every page you did not change, visitors get exactly the pages they got before. "Use the built-in page" clears one page, "Reset to built-in" removes everything.
+* Known limits (no scripts on these pages, no maintenance switch, English only, answers of your own servers are not covered, not synced between nodes) and the API are in [../errorpages.md](../errorpages.md).
+
 ## Status: realtime network charts
 * The two **Realtime Network Input / Output** charts have a fixed height (220px). They used to stretch to the height of the traffic map column, which grows with the number of proxy rules, so on a server with many sites each chart became several hundred pixels tall and the samples drew as a few thin vertical lines.
 
@@ -444,3 +449,97 @@ A collapsible **Set up CrowdSec** panel at the top of the tab (open until a LAPI
 ## Manage CrowdSec (Security Center > CrowdSec)
 
 New section **Manage CrowdSec**: connect a CrowdSec machine login (sealed, bound to the LAPI address, never shown), then list active bans with filter and **Remove ban**, **ban an address or range** (1 hour to 30 days, confirmation, refuses loopback, the server, trusted proxies and your own address), and read **alerts**. Endpoints `/api/crowdsec/manage/{status,login,decisions,alerts,ban,unban}` (admin only, viewer accounts denied, audited, not recorded as configuration changes). Checks: unit tests with a fake watcher LAPI (login, relogin on 401, address binding, tamper, payload, limits, rate limit), API test (no secret in any output), UI smoke scenario (wrong and right login, refused target, ban, list, alert, unban, audit log without the password, login removal). Payload checked against the published LAPI OpenAPI spec; not run against a real CrowdSec server.
+
+## Plugin Manager: status column (System > Plugin Manager)
+
+The plugin list now says what each plugin's process is doing, instead of only offering Start or Stop. A new **Status** column shows a badge (**Running**, **Starting**, **Not listening**, **Not responding**, **Crashed**, **Exited**, **Failed to start**, **Stopped**), one line of context ("Started 3 minutes ago", "Exit code 3 · 2 minutes ago", "Ended by a signal (killed)") and, when there is one, the problem in plain words. **Details** opens a row under the plugin with the process facts (process ID, started, last exit, last sign of life, starts since Zoraxy started, last problem), a hint what to do, and the last lines the plugin printed. A summary line above the table counts the states, worst first. Folders in the plugin directory that are not loadable plugins used to be invisible; they are now listed in a red notice with the reason. The column refreshes every 10 seconds while the page is shown, without redrawing the rest of the table.
+
+The side menu no longer says "No Plugins Installed" when plugins are installed but none is running: it says "N plugins installed, none running", or "N plugins stopped unexpectedly" with a warning icon when a plugin crashed, exited by itself or failed to start. Both lines open the Plugin Manager.
+
+All of this is read-only. Zoraxy still does not restart a plugin by itself, and requests are handled as before. Plugin names, authors, links and descriptions from a plugin manifest are now escaped everywhere on this page.
+
+### Known limits
+
+* "Not responding" is derived from failed calls while requests flow through the plugin; a hung plugin without traffic still shows "Running". "Not listening" is a TCP connect to the plugin's local port.
+* The status and the last output are kept in memory and are lost when Zoraxy restarts. The last output (40 lines) is only shown to administrators, not to read-only accounts.
+* New texts are English until the locale files are updated. The page that is shown for a moment while the admin UI loads still says "No Plugins Installed".
+* Checked in a throw-away instance with a headless browser at 1366 and 390 px, light and dark, with seven test plugins in different states (no horizontal overflow, no console errors). The full UI smoke was not run here.
+* Details: `docs/plugins/reliability-plan.md`, section "Phase 0 results and known limits".
+
+
+## Plugin Manager: fixes after the phase 0 review
+
+* **Stop on a plugin that already ended** (the Stop button can still be on screen for up to 10 seconds after a crash) no longer shows the error "plugin is not running". The stop is stored (the plugin will not start at the next Zoraxy start) and the message is "Plugin stopped".
+* **Build output is shown as text.** The dialog after a failed "Rebuild" put the output of the plugin's build into the page as HTML; it is now set as plain text.
+* **"Starting" and "Not listening" are shown by the Plugin Manager page, and nowhere else by default.** They need a TCP connection to the plugin's port, which Zoraxy did not make before. The Plugin Manager page asks for it while it is on screen (one loopback connect per running plugin, at most every 2 s; in practice every 10 s). Every other reader of the plugin list (the side menu, the API, plugins with the list permission) gets "Running" until calls to the plugin fail ("Not responding"); starting Zoraxy with `-plugin_port_probe` extends the probe to every listing. (This entry first said the two states need the flag; the page probe was added afterwards, see "Owner decisions" in `docs/plugins/reliability-plan.md`.)
+* **The "last problem" line** no longer quotes text from a rejected plugin answer; it says "invalid verdict (the answer of the plugin was rejected)".
+* **Store install** refuses a plugin whose folder already exists and is not empty, and a reinstall never inherits "start at boot" from an earlier install.
+
+### Known limits
+
+* The new scenario `tools/ui-smoke/plugins_run.sh` (hostile manifest, crashed plugin, folder that cannot be loaded, side menu wording) is stand-alone and not part of `run.sh`. It was run once here against a throw-away instance and passed; the full UI smoke was not run.
+* No new user-visible texts.
+
+
+## Plugin Manager: supervision (System > Plugin Manager)
+
+Zoraxy can now look after a plugin, if you ask it to. **Nothing changes for a plugin until you turn an option on.**
+
+The plugin list has a new **Health** column next to Status. It says whether a health check passes ("Check passing",
+"Check failing", or "Not checked" when you did not turn one on), which restart policy the plugin has, how often Zoraxy
+restarted it, and the numbers that mean trouble: failed calls, dropped events, and requests that passed unfiltered
+while a plugin that is allowed to block was down. Status has three new badges: **Restarting** (with the time of the
+next start), **Crash loop** (Zoraxy gave up after 5 exits in 10 minutes) and **Unhealthy**. A red notice above the
+table names plugins in a crash loop; a yellow one names fail-closed plugins that were down while requests passed.
+
+**Details** now also shows counters since Zoraxy started, an **exit history** (when the plugin ended, how, how long it
+had run, and what Zoraxy did about it) and a **Supervision** form:
+
+* **When the plugin stops by itself**: leave it stopped (default), start it again when it crashed, or always start it
+  again. Zoraxy waits 1 second, then 2, 4, 8 ... up to 5 minutes, and stops trying after 5 exits in 10 minutes.
+* **Health check**: off (default), check and show the result, or check and restart the plugin after 3 failed checks.
+* **Wait for the plugin before sending it requests** after a start.
+* **Answer timeout** for requests a plugin captures and for its own page: the visitor gets a 504 page instead of
+  waiting for ever, and a 503 page at once after 5 failures in a row.
+* **Output**: the main log (default) or a size-limited log file per plugin, and a limit of lines per second.
+* **Limits** (Linux with systemd): memory, CPU, processes, open files.
+
+There is a **Restart** button, and **Stop** also cancels a restart that is waiting. Under "Block requests if this
+plugin fails" there is a second checkbox, **Also block requests while this plugin is not running**. Until now that
+consent only worked while the plugin was hung; a crashed plugin let everything through. It still does by default, but
+it is now counted and shown, and you can choose to refuse those requests (503) instead.
+
+The page of a plugin that cannot be loaded now shows a short message ("The plugin is not running") instead of raw JSON.
+
+### Known limits
+
+* Everything above is English until the locale files are updated.
+* Health check, waiting for the port, output and limits take effect the next time the plugin starts; the form says so.
+* A health check can only tell a hung plugin from a healthy one when the plugin offers a health address. None of the
+  three installed plugins does yet, so for them it only tests that the port is open.
+* Limits need Linux with systemd. They were tested without root only. When a limit cannot be applied the plugin still
+  starts and the Details row says that the limit is not enforced.
+* The "Experimental feature" note is still shown.
+* Checked in a throw-away instance with headless Chromium at 1366 px (light and dark) and 390 px, with seven test
+  plugins in the states running, unhealthy, restarting, crash loop, crashed, killed at its memory limit and stopped.
+  The UI smoke suite was not run.
+* Details: `docs/plugins/reliability-plan.md`, section "Phase 1 results and known limits".
+
+## UI overhaul, round 2 (fork.29)
+
+A real redesign of the admin screens on a new shared shell (`docs/ux/design-v2.md`, `docs/ux/components.md` section 9). Backend behaviour and defaults are unchanged except where listed under "New features".
+
+* **Shared chrome**: pages sit in a centred column (wider for data pages); the loose "Related" links are one Related menu in the page header; tables and cards no longer scroll inside the page (one scroll per page); sectioned left navigation (select on narrow screens) replaces the long tab strips.
+* **Security Center**: 12 sections in four named groups with "Advanced" tags; each section has a status header, the basics first and advanced settings folded; the audit log and Security Overview speak plain words ("Address banned", not raw action names).
+* **WAF**: sectioned navigation; tuning suggestions show safe text (binary bytes as visible placeholders, long paths cut in the middle with copy/expand), risk notes and a plain sentence per suggestion.
+* **Zoraxy Auth, OAuth 2.0, Forward auth, CAPTCHA, Access rules, rule builder**: guided steps and status headers.
+* **Network**: Listeners as one page, network tools as a diagnostic console, ECH balanced; TLS cipher profile and trusted proxies aligned.
+* **Traffic**: Uptime rebuilt (summary strip, 30-day strips per site, incidents); Statistics and Visitors tidied.
+* **Certificates, ACME, Fleet and HA, Sites (HTTP Proxy list, default site, redirection, path routes, stream proxy, static web server), System (App Store, utilities, API tokens)**: restructured with status headers and consistent actions. "HTTP Proxy" keeps its name (recommendation: "Hosts" later).
+
+### New features (off by default)
+* **Error pages** (Sites > Error pages): your own HTML or a theme for 403, 404, 429, 5xx, unknown host and busy 503. Until you switch it on, every answer is byte-identical to before. See `docs/errorpages.md`.
+* **Plugin reliability, phases 0 and 1**: real status per plugin, fixes for lifecycle races, optional restart policy with backoff, answer timeouts and circuit breaker, limits (systemd scope), secrets off the command line for plugins that opt in. See `docs/plugins/reliability-plan.md`.
+
+### Known limits
+Not tested: Firefox/Safari, a real password manager, limits as root on a real install. Uptime and Statistics 7/30-day views depend on saved days only (backend). Plugin systemd binding was run only in a user manager.

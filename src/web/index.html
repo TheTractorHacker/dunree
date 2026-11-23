@@ -105,6 +105,7 @@
 
                 <!-- Set default site -->
                 <div id="setroot" class="functiontab" target="rproot.html"></div>
+                <div id="errorpages" class="functiontab" target="errorpages.html"></div> <!-- customisable error pages: tab container -->
 
                 <!-- Set TLS cert -->
                 <div id="cert" class="functiontab" target="cert.html"></div>
@@ -649,7 +650,7 @@
                 $.cjax({url: "./api/quickstart", method: "POST", data: {dismissed: dismissed}, success: function(s){
                     if (s && s.error){ msgbox(s.error, false); return; }
                     applyQuickStartState(s);
-                    msgbox(dismissed ? "Quick Start hidden. You can bring it back in System > Settings." : "Quick Start is back in the menu", true);
+                    msgbox(dismissed ? "Quick Start hidden. You can bring it back in System > Settings." : (s && s.show ? "Quick Start is back in the menu" : "Quick Start opened. It stays out of the menu while a proxy rule exists and the proxy is running."), true);
                     if (!dismissed) { openTabById("qstart"); }
                 }});
             }

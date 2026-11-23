@@ -61,7 +61,15 @@ func (m *Manager) handleLegacyCapture(w http.ResponseWriter, r *http.Request, ta
 
 	//Dynamic capture: tagged and global plugins in priority order
 	var dynamicRouteHandlers []*Plugin
-	for _, plugin := range m.pluginsForRequest(tags) {
+	active, down := m.pluginsFor(tags)
+	if len(down) > 0 {
+		//A fail-closed plugin with a dynamic capture that is not running, see guardDown
+		if m.guardDown(down, "legacy") != nil {
+			writePluginError(w, http.StatusServiceUnavailable, "Service temporarily unavailable")
+			return true
+		}
+	}
+	for _, plugin := range active {
 		if plugin.AcceptDynamicRoute() {
 			dynamicRouteHandlers = append(dynamicRouteHandlers, plugin)
 		}
@@ -82,7 +90,7 @@ func (m *Manager) handleLegacyCapture(w http.ResponseWriter, r *http.Request, ta
 			}
 			continue //fail open: let the next plugin handle the request
 		}
-		if accepted && plugin.dynamicRouteProxy != nil {
+		if accepted && plugin.hasDynamicProxy() {
 			plugin.serveDynamicCapture(w, r, reqID)
 			return true
 		}

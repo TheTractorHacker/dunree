@@ -6,87 +6,127 @@
     an untrusted peer is ignored.
 -->
 <style>
-    #visitorsPage .zx-statrow .zx-stat__hint { min-height: 1.2em; }
-    #visitorsPage .zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
-    #visitorsPage .zx-toggle-row > .ui.toggle.checkbox input:not(:checked) ~ label:before { background: var(--zx-surface-3); box-shadow: inset 0 0 0 1px var(--zx-border-strong); }
-    #visitorsPage .vToolbar{
-        display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin: 0 0 var(--zx-space-3);
-    }
-    #visitorsPage .vToolbar .ui.input{ flex: 1 1 14em; min-width: 10em; }
-    #visitorsPage .vToolbar select, #visitorsPage .vPager select{ width: auto; flex: 0 1 9em; min-width: 0; max-width: 10em; padding-left: 10px; padding-right: 28px; }
-    #visitorsPage .vToolbar .ui.input{ flex: 1 1 12em; min-width: 9em; }
-    #visitorsPage .vToolbar .zx-btn-row{ margin-left: auto; flex-wrap: nowrap; }
-    @media (min-width: 1100px){ #visitorsPage .vToolbar .zx-btn-row .zx-btn:not(.zx-btn--icon){ padding-left: 10px; padding-right: 10px; } }
-    #visitorsPage .vToolbar .vSpacer{ display: none; }
-    #visitorsPage .vPager select{ flex: 0 0 auto; }
-    #visitorsPage .vToolbar .vSpacer{ flex: 1 1 0; }
-    #visitorsPage .vTableWrap{ overflow-x: auto; }
-    #visitorsPage .vTableWrap--scroll{ max-height: 70vh; overflow-y: auto; }
-    #visitorsPage table.vTable th.sortable{ cursor: pointer; user-select: none; white-space: nowrap; }
-    #visitorsPage table.vTable td:nth-child(1), #visitorsPage table.vTable td:nth-child(2), #visitorsPage table.vTable td:nth-child(3), #visitorsPage table.vTable td:nth-child(4){ white-space: nowrap; }
-    #visitorsPage table.vTable tbody tr{ cursor: pointer; }
-    #visitorsPage .vMono{ font-family: var(--zx-font-mono); font-size: 0.95em; }
-    #visitorsPage .vUA{ max-width: 22em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text-muted); }
-    #visitorsPage .vHosts{ max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #visitorsPage .vChip, #visitorDrawer .vChip{
-        display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-xs); font-weight: 600; line-height: 1.5;
+    #visitorsPage .zx-statrow { grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); margin: 0 0 var(--zx-space-4); }
+    #visitorsPage .zx-statrow .zx-stat__hint { min-height: 1.3em; }
+    #visitorsPage .vOff { margin-bottom: var(--zx-space-4); }
+    /* filters left, actions right, one row */
+    #visitorsPage .vToolbar { display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-3); align-items: center; margin: 0 0 var(--zx-space-3); }
+    #visitorsPage .vSearch { position: relative; flex: 1 1 14rem; min-width: 11rem; max-width: 26rem; }
+    #visitorsPage .vFilters .zx-select { max-width: 13rem; }
+    #visitorsPage .vSearch > i.icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); margin: 0; color: var(--zx-text-muted); pointer-events: none; }
+    #visitorsPage .vSearch > .zx-input { width: 100%; max-width: none; padding-left: 32px; }
+    #visitorsPage .vToolbar .zx-select, #visitorsPage .vPager .zx-select { width: auto; flex: 0 1 auto; min-width: 0; max-width: 11rem; text-overflow: ellipsis; }
+    #visitorsPage .vToolbar .zx-check { white-space: nowrap; }
+    #visitorsPage .vToolbar .zx-btn-row { margin-left: auto; flex-wrap: nowrap; }
+    /* tables grow with their rows; columns that matter least leave first, nothing scrolls sideways */
+    #visitorsPage table.vTable { width: 100%; }
+    #visitorsPage table.vTable th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    #visitorsPage table.vTable th.sortable:hover { color: var(--zx-text); }
+    #visitorsPage table.vTable th.sortable:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #visitorsPage table.vTable .sortArrow { color: var(--zx-primary-soft-text); }
+    #visitorsPage table.vTable td.vcIp, #visitorsPage table.vTable td.vcCountry, #visitorsPage table.vTable td.vcTime { white-space: nowrap; }
+    #visitorsPage table.vTable tbody tr[data-ip] { cursor: pointer; }
+    #visitorsPage table.vTable tbody tr[data-ip]:focus-visible { outline: 2px solid var(--zx-primary); outline-offset: -2px; }
+    #visitorsPage .vUnit { display: none; }
+    /* Recent visits: host and request take what is left and cut with an ellipsis, so the table never needs to scroll sideways */
+    #visitorsPage table.vTable td.vcHost { width: 22%; max-width: 0; }
+    #visitorsPage table.vTable td.vcReq { width: 32%; max-width: 0; }
+    #visitorsPage table.vTable td.vcHost .vHosts, #visitorsPage table.vTable td.vcReq .vHosts { max-width: none; }
+    #visitorsPage .vMono { font-family: var(--zx-font-mono); font-size: 0.95em; }
+    #visitorsPage .vUA { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text-muted); }
+    #visitorsPage .vHosts { max-width: 15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #visitorsPage .vFaint, #visitorDrawer .vFaint { color: var(--zx-text-muted); }
+    #visitorsPage .vChip, #visitorDrawer .vChip {
+        display: inline-flex; align-items: center; padding: 0 8px; border-radius: var(--zx-radius-pill); font-size: var(--zx-fs-xs); font-weight: 700; line-height: 1.6;
         border: 1px solid var(--zx-neutral-line); background: var(--zx-neutral-bg); color: var(--zx-neutral-text); white-space: nowrap;
     }
-    #visitorsPage .vChip.cloudflare, #visitorDrawer .vChip.cloudflare{ background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
-    #visitorsPage .vChip.proxy, #visitorDrawer .vChip.proxy{ background: var(--zx-info-bg); color: var(--zx-info-text); border-color: var(--zx-info-line); }
-    #visitorsPage .vChip.new{ background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); margin-left: var(--zx-space-2); }
-    #visitorsPage .vChip.blocked, #visitorDrawer .vChip.blocked{ background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
-    #visitorsPage .vStatus2, #visitorDrawer .vStatus2{ color: var(--zx-ok-text); } #visitorsPage .vStatus3, #visitorDrawer .vStatus3{ color: var(--zx-info-text); }
-    #visitorsPage .vStatus4, #visitorDrawer .vStatus4{ color: var(--zx-warn-text); } #visitorsPage .vStatus5, #visitorDrawer .vStatus5{ color: var(--zx-danger-text); }
-    #visitorsPage .vPager{ display: flex; align-items: center; gap: 0.6em; margin-top: 0.8em; flex-wrap: wrap; }
-    #visitorsPage .vEmpty{ text-align: center; padding: var(--zx-space-6) var(--zx-space-4); color: var(--zx-text-muted); }
-    #visitorsPage .vEmpty i.icon{ font-size: 2.4em; color: var(--zx-text-muted); display: block; margin: 0 auto 0.4em; }
-    #visitorsPage .vSkel td > div{ height: 0.9em; border-radius: var(--zx-radius-sm); background: var(--zx-surface-3); animation: vPulse 1.4s ease-in-out infinite; }
-    @keyframes vPulse{ 50%{ opacity: 0.45; } }
-    @media (prefers-reduced-motion: reduce){ #visitorsPage .vSkel td > div{ animation: none; } }
-    #visitorsPage .vPrivacy{ font-size: 0.9em; }
-    /* soft edge on the side that has more tabs (scroll affordance) */
-    #visitorsPage .vTabs{ background: linear-gradient(to right, var(--zx-bg) 30%, transparent) left center / 2em 100% no-repeat local, linear-gradient(to left, var(--zx-bg) 30%, transparent) right center / 2em 100% no-repeat local,
-            linear-gradient(to right, var(--zx-border-strong), transparent) left center / .8em 100% no-repeat scroll, linear-gradient(to left, var(--zx-border-strong), transparent) right center / .8em 100% no-repeat scroll; }
-    #visitorsPage table.vTable td[colspan]{ white-space: normal; }
-    @media (max-width: 748px){
-        #visitorsPage .vKpis > .zx-stat:last-child:nth-child(odd){ grid-column: 1 / -1; }   /* no orphan tile */
-        #visitorsPage .vToolbar select{ flex: 1 1 calc(50% - .5em); max-width: none; min-width: 0; }
-        #visitorsPage .vToolbar > span[style]{ display: none; }
-        #visitorsPage .vToolbar > .button{ flex: 1 1 auto; margin: 0; }
-        #visitorsPage .vPager{ flex-wrap: nowrap; gap: .4em; }
-        #visitorsPage .vPager .button{ padding-left: .7em; padding-right: .7em; margin: 0; white-space: nowrap; }
-        #visitorsPage .vPager #vPageInfo{ flex: 1 1 auto; text-align: center; min-width: 0; }
-        /* the wide table scrolls sideways: keep the empty / error message inside the visible part */
-        #visitorsPage .vTableWrap .vEmpty{ position: sticky; left: 0; max-width: min(100%, 20em); margin: 0; box-sizing: border-box; }
+    #visitorsPage .vChip.cloudflare, #visitorDrawer .vChip.cloudflare { background: var(--zx-warn-bg); color: var(--zx-warn-text); border-color: var(--zx-warn-line); }
+    #visitorsPage .vChip.proxy, #visitorDrawer .vChip.proxy { background: var(--zx-info-bg); color: var(--zx-info-text); border-color: var(--zx-info-line); }
+    #visitorsPage .vChip.new { background: var(--zx-ok-bg); color: var(--zx-ok-text); border-color: var(--zx-ok-line); margin-left: var(--zx-space-2); }
+    #visitorsPage .vChip.blocked, #visitorDrawer .vChip.blocked { background: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
+    #visitorsPage .vStatus2, #visitorDrawer .vStatus2 { color: var(--zx-ok-text); } #visitorsPage .vStatus3, #visitorDrawer .vStatus3 { color: var(--zx-info-text); }
+    #visitorsPage .vStatus4, #visitorDrawer .vStatus4 { color: var(--zx-warn-text); } #visitorsPage .vStatus5, #visitorDrawer .vStatus5 { color: var(--zx-danger-text); }
+    #visitorsPage .vPager { display: flex; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin-top: var(--zx-space-3); flex-wrap: wrap; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #visitorsPage .vPager #vPageInfo, #visitorsPage .vPager #vrInfo { flex: 1 1 auto; margin: 0; }
+    #visitorsPage .vPager label { display: inline-flex; align-items: center; gap: var(--zx-space-2); }
+    #visitorsPage .vSkel td > div { height: 0.9em; border-radius: var(--zx-radius-sm); background: var(--zx-surface-3); animation: vPulse 1.4s ease-in-out infinite; }
+    @keyframes vPulse { 50% { opacity: 0.45; } }
+    @media (prefers-reduced-motion: reduce) { #visitorsPage .vSkel td > div { animation: none; } }
+    #visitorsPage #vrBody tr.vHide { display: none; }
+    #visitorsPage .vLive { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    #visitorsPage .vLive::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--zx-ok-solid); }
+    #visitorsPage .vLive.is-paused::before { background: var(--zx-text-faint); }
+    @media (max-width: 1500px) { #visitorsPage .vcUa { display: none; } }
+    @media (max-width: 1240px) { #visitorsPage .vcFirst, #visitorsPage .vcVia { display: none; } #visitorsPage .vHosts { max-width: 11rem; } }
+    @media (max-width: 1000px) {
+        #visitorsPage .vcHosts, #visitorsPage .vcCountry small, #visitorsPage .vcCountryCol { display: none; }
+        #visitorsPage table.vTable td.vcTime, #visitorsPage table.vTable td.vcCountry, #visitorsPage table.vTable th.sortable { white-space: normal; }
+        #visitorsPage table.vTable td.vcIp { white-space: normal; overflow-wrap: anywhere; }
     }
-    #visitorsPage .vPrivacy .header{ color: var(--text_color); }
+    @media (max-width: 748px) {
+        #visitorsPage .zx-statrow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        #visitorsPage .zx-statrow > .zx-stat:last-child:nth-child(odd) { grid-column: 1 / -1; }   /* no orphan tile */
+        #visitorsPage .vSearch { flex: 1 1 100%; max-width: none; }
+        #visitorsPage .vToolbar .zx-select { flex: 1 1 calc(50% - var(--zx-space-3)); max-width: none; }
+        #visitorsPage .vToolbar .zx-btn-row { margin-left: 0; flex: 1 1 100%; }
+    }
+    @media (max-width: 480px) {
+        /* phones: one visitor is a three line card. Line 1: address, "new", blocked count. Line 2: country, last seen, hits.
+           Line 3: its hosts, cut to one line. First seen, route and user agent are in the details (tap the card). */
+        #visitorsPage table.vTable tr[data-ip] { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 0; padding: 12px 14px; margin-bottom: var(--zx-space-2); }
+        #visitorsPage table.vTable tr[data-ip]::before { content: ""; flex: 0 0 100%; order: 2; height: 0; }
+        #visitorsPage table.vTable tr[data-ip] td { display: block; width: auto; flex: 0 0 auto; order: 3; padding: 0; border: 0; background: transparent; text-align: left; white-space: nowrap; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+        #visitorsPage table.vTable tr[data-ip] td::before { content: none; }
+        #visitorsPage table.vTable tr[data-ip]:active { background: var(--zx-surface-2); }
+        #visitorsPage table.vTable tr[data-ip] td.vcIp { order: 1; flex: 1 1 0; min-width: 0; color: var(--zx-text); font-size: var(--zx-fs-md); font-weight: 700; white-space: normal; overflow-wrap: anywhere; }
+        #visitorsPage table.vTable tr[data-ip] td.vcBlocked, #visitorsPage table.vTable tr[data-ip] td.vcStatus { order: 1; margin-left: var(--zx-space-3); }
+        #visitorsPage table.vTable tr[data-ip] td.vcStatus { font-weight: 700; }
+        #visitorsPage table.vTable tr[data-ip] td.vStatus2 { color: var(--zx-ok-text); } #visitorsPage table.vTable tr[data-ip] td.vStatus3 { color: var(--zx-info-text); }
+        #visitorsPage table.vTable tr[data-ip] td.vStatus4 { color: var(--zx-warn-text); } #visitorsPage table.vTable tr[data-ip] td.vStatus5 { color: var(--zx-danger-text); }
+        #visitorsPage table.vTable tr[data-ip] td.vcZero, #visitorsPage table.vTable tr[data-ip] td.vcFirst, #visitorsPage table.vTable tr[data-ip] td.vcVia, #visitorsPage table.vTable tr[data-ip] td.vcUa, #visitorsPage table.vTable tr[data-ip] td.vcCountryCol { display: none; }
+        #visitorsPage table.vTable tr[data-ip] td.vcLast::before, #visitorsPage table.vTable tr[data-ip] td.vcHits::before { content: "·"; margin: 0 6px; }
+        #visitorsPage table.vTable tr[data-ip] td.vcHosts, #visitorsPage table.vTable tr[data-ip] td.vcHost, #visitorsPage table.vTable tr[data-ip] td.vcReq { order: 4; flex: 0 0 100%; width: 100%; max-width: 100%; min-width: 0; color: var(--zx-text); }
+        #visitorsPage table.vTable tr[data-ip] td.vcReq { order: 5; color: var(--zx-text-muted); }
+        #visitorsPage table.vTable tr[data-ip] td.vcTimeR { order: 1; margin-right: var(--zx-space-2); font-weight: 400; }
+        #visitorsPage table.vTable tr[data-ip] .vHosts { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #visitorsPage .vUnit { display: inline; }
+        #visitorsPage .vcCountry small { display: none; }
+    }
 
-    /* detail drawer */
-    #visitorDrawer{
-        position: fixed; top: 0; right: 0; height: 100%; width: min(34em, 100%); z-index: 1100;
-        background: var(--theme_bg_primary); color: var(--text_color); border-left: 1px solid var(--divider_color);
-        box-shadow: -6px 0 24px rgba(0,0,0,0.25); overflow-y: auto; padding: 1.2em 1.2em 3em;
+    /* detail drawer: its own viewport, so it may scroll */
+    #visitorDrawer {
+        position: fixed; top: 0; right: 0; height: 100%; width: min(34rem, 100%); z-index: var(--zx-z-drawer, 1100);
+        background: var(--zx-surface); color: var(--zx-text); border-left: 1px solid var(--zx-border);
+        box-shadow: var(--zx-shadow-3); overflow-y: auto; padding: var(--zx-space-5) var(--zx-space-5) var(--zx-space-7);
         transform: translateX(105%); transition: transform 0.18s ease-out; visibility: hidden;
     }
-    #visitorDrawer.open{ transform: none; visibility: visible; }
-    @media (prefers-reduced-motion: reduce){ #visitorDrawer{ transition: none; } }
-    #visitorDrawer h3{ margin-top: 0; word-break: break-all; }
-    #visitorDrawer .vdKV{ display: grid; grid-template-columns: 8em 1fr; gap: 0.3em 0.8em; margin: 0.8em 0; font-size: 0.93em; }
-    #visitorDrawer .vdKV div:nth-child(odd){ color: var(--text_color_secondary); }
-    #visitorDrawer .vdList{ font-size: 0.9em; margin: 0.3em 0 1em; padding: 0; list-style: none; }
-    #visitorDrawer .vdList li{ display: flex; justify-content: space-between; gap: 1em; padding: 0.15em 0; border-bottom: 1px dashed var(--divider_color); }
-    #visitorDrawer .vdList li span:first-child{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #visitorDrawer .vdActions{ display: flex; flex-wrap: wrap; gap: 0.4em; margin: 0.8em 0; }
-    #visitorDrawer .vdActions .ui.button{ margin: 0; }
-    #visitorDrawer .vdStatus{ display: none; margin: 0 0 0.8em; padding: 0.55em 0.8em; border-radius: 0.3em; font-size: 0.92em; border: 1px solid; }
-    #visitorDrawer .vdStatus.show{ display: block; }
-    #visitorDrawer .vdStatus.ok{ background: rgba(33,186,69,0.12); border-color: rgba(33,186,69,0.5); }
-    #visitorDrawer .vdStatus.err{ background: rgba(219,40,40,0.12); border-color: rgba(219,40,40,0.5); }
-    #visitorDrawer .vdStatus a{ cursor: pointer; margin-left: 0.6em; font-weight: 700; }
-    #visitorDrawer .vdActions .ui.button.vdDone{ opacity: 0.75; }
-    #visitorDrawerShade{ position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1099; display: none; }
-    #visitorDrawerShade.open{ display: block; }
+    #visitorDrawer.open { transform: none; visibility: visible; }
+    @media (prefers-reduced-motion: reduce) { #visitorDrawer { transition: none; } }
+    #visitorDrawer .vdHead { display: flex; align-items: flex-start; gap: var(--zx-space-3); margin-bottom: var(--zx-space-4); }
+    #visitorDrawer h3 { flex: 1 1 auto; margin: 0; font-size: var(--zx-fs-xl); line-height: 1.3; word-break: break-all; }
+    #visitorDrawer .vMono { font-family: var(--zx-font-mono); }
+    #visitorDrawer h4 { margin: var(--zx-space-5) 0 var(--zx-space-2); font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); }
+    #visitorDrawer .vdKV { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 6px var(--zx-space-4); margin: var(--zx-space-4) 0; font-size: var(--zx-fs-sm); }
+    #visitorDrawer .vdKV div:nth-child(odd) { color: var(--zx-text-muted); }
+    #visitorDrawer .vdList { font-size: var(--zx-fs-sm); margin: 0; padding: 0; list-style: none; }
+    #visitorDrawer .vdList li { display: flex; justify-content: space-between; gap: var(--zx-space-4); padding: 5px 0; border-bottom: 1px solid var(--zx-border); }
+    #visitorDrawer .vdList li:last-child { border-bottom: 0; }
+    #visitorDrawer .vdList li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #visitorDrawer .vdList li span:last-child { color: var(--zx-text-muted); font-variant-numeric: tabular-nums; }
+    #visitorDrawer .vdActions { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-3); }
+    #visitorDrawer .vdStatus { display: none; margin: 0 0 var(--zx-space-3); padding: var(--zx-space-2) var(--zx-space-3); border-radius: var(--zx-radius-md); font-size: var(--zx-fs-sm); border: 1px solid; }
+    #visitorDrawer .vdStatus.show { display: block; }
+    #visitorDrawer .vdStatus.ok { background: var(--zx-ok-bg); border-color: var(--zx-ok-line); color: var(--zx-ok-text); }
+    #visitorDrawer .vdStatus.err { background: var(--zx-danger-bg); border-color: var(--zx-danger-line); color: var(--zx-danger-text); }
+    #visitorDrawer .vdStatus a { cursor: pointer; margin-left: var(--zx-space-2); font-weight: 700; color: inherit; text-decoration: underline; }
+    #visitorDrawer .vdActions .zx-btn.vdDone { background: var(--zx-surface-2); color: var(--zx-text-muted); }
+    #visitorDrawer .vdVisits { width: 100%; border-collapse: collapse; font-size: var(--zx-fs-sm); }
+    #visitorDrawer .vdVisits td { padding: 5px var(--zx-space-3) 5px 0; border-bottom: 1px solid var(--zx-border); vertical-align: top; }
+    #visitorDrawer .vdVisits td:nth-child(3) { overflow-wrap: anywhere; }
+    #visitorDrawer .vdVisits td:first-child { white-space: nowrap; color: var(--zx-text-muted); }
+    #visitorDrawer .vdEmpty { padding: var(--zx-space-6) 0; text-align: center; color: var(--zx-text-muted); }
+    #visitorDrawerShade { position: fixed; inset: 0; background: var(--zx-overlay); z-index: calc(var(--zx-z-drawer, 1100) - 1); display: none; }
+    #visitorDrawerShade.open { display: block; }
 </style>
 
 <div class="standardContainer" id="visitorsPage">
@@ -95,9 +135,17 @@
             <div class="zx-page-header__main">
                 <div class="zx-page-header__crumbs" data-zx-crumbs></div>
                 <h2 class="zx-page-header__title">Visitors</h2>
-                <p class="zx-page-header__sub">Who visited your sites, when and from where.</p>
+                <p class="zx-page-header__sub">Every client address that reached your sites: when it came, from where, and how often it was refused.</p>
             </div>
         </header>
+        <aside class="zx-related" aria-label="Related pages">
+            <span class="zx-related__title">Related</span>
+            <ul>
+                <li><a href="#stats" data-nav-open="stats">Statistics</a> <span>Traffic totals, and what was blocked and why</span></li>
+                <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Block or allow addresses and countries</span></li>
+                <li><a href="#status" data-nav-open="status">Status</a> <span>Live traffic and errors right now</span></li>
+            </ul>
+        </aside>
 
         <div class="zx-tabs vTabs" id="vTabs">
             <button type="button" class="zx-tab item active" data-vtab="list" aria-selected="true"><i class="users icon" aria-hidden="true"></i> Visitors</button>
@@ -105,18 +153,28 @@
             <button type="button" class="zx-tab item" data-vtab="settings" aria-selected="false"><i class="cog icon" aria-hidden="true"></i> Settings &amp; privacy</button>
         </div>
 
+        <div class="zx-callout zx-callout--warn vOff" id="vOff" role="note" hidden><span class="zx-callout__icon" aria-hidden="true"><i class="pause circle icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title">Recording is switched off</span> New visitors are not added; the lists show what was kept before. <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="vOffOpen">Open settings</button></div></div>
+
         <div class="zx-statrow vKpis" id="vKpis">
             <div class="zx-stat"><div class="zx-stat__label">Known IP addresses</div><div class="zx-stat__value" id="vkIps">-</div><div class="zx-stat__hint" id="vkIpsSub"></div></div>
-            <div class="zx-stat"><div class="zx-stat__label">Active, last 24 hours</div><div class="zx-stat__value" id="vkActive">-</div><div class="zx-stat__hint"></div></div>
+            <div class="zx-stat"><div class="zx-stat__label">Active, last 24 hours</div><div class="zx-stat__value" id="vkActive">-</div><div class="zx-stat__hint" id="vkActiveSub"></div></div>
             <div class="zx-stat"><div class="zx-stat__label">New in the last hour</div><div class="zx-stat__value" id="vkNew">-</div><div class="zx-stat__hint" id="vkNewSub"></div></div>
-            <div class="zx-stat"><div class="zx-stat__label">With blocked requests</div><div class="zx-stat__value" id="vkBlocked">-</div><div class="zx-stat__hint"></div></div>
-            <div class="zx-stat"><div class="zx-stat__label">Through Cloudflare / proxies</div><div class="zx-stat__value" id="vkVia">-</div><div class="zx-stat__hint" id="vkViaSub"></div></div>
+            <div class="zx-stat"><div class="zx-stat__label">With blocked requests</div><div class="zx-stat__value" id="vkBlocked">-</div><div class="zx-stat__hint">refused at least once</div></div>
+            <div class="zx-stat"><div class="zx-stat__label">Behind a proxy</div><div class="zx-stat__value" id="vkVia">-</div><div class="zx-stat__hint" id="vkViaSub"></div></div>
         </div>
 
         <!-- Visitors -->
         <div class="vPane" data-vpane="list">
             <div class="vToolbar">
-                <div class="ui small icon input"><input type="search" id="vSearch" placeholder="Search IP, host, country, user agent" aria-label="Search visitors" autocomplete="off"><i class="search icon"></i></div>
+                <div class="vSearch"><i class="search icon" aria-hidden="true"></i><input type="search" class="zx-input" id="vSearch" placeholder="Search IP, host, country, user agent" aria-label="Search visitors" autocomplete="off" spellcheck="false"></div>
+                <div class="zx-btn-row">
+                    <button type="button" class="zx-btn zx-btn--secondary zx-btn--icon" id="vRefresh" title="Refresh" aria-label="Refresh"><i class="sync icon" aria-hidden="true"></i></button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="vExportCsv" title="Download the listed visitors as CSV"><i class="download icon" aria-hidden="true"></i> CSV</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="vExportJson" title="Download the listed visitors as JSON"><i class="download icon" aria-hidden="true"></i> JSON</button>
+                </div>
+            </div>
+            <div class="vToolbar vFilters">
                 <select id="vSince" class="zx-select" aria-label="Time range">
                     <option value="0">All time</option><option value="1">Last hour</option><option value="24" selected>Last 24 hours</option>
                     <option value="168">Last 7 days</option><option value="720">Last 30 days</option>
@@ -124,57 +182,53 @@
                 <select id="vHost" class="zx-select" aria-label="Host"><option value="">All hosts</option></select>
                 <select id="vCountry" class="zx-select" aria-label="Country"><option value="">All countries</option></select>
                 <select id="vVia" class="zx-select" aria-label="Via"><option value="">Any route</option><option value="direct">Direct</option><option value="cloudflare">Cloudflare</option><option value="proxy">Other proxy</option></select>
-                <div class="ui checkbox" id="vBlockedBox"><input type="checkbox" id="vBlocked"><label>Blocked only</label></div>
-                <span class="vSpacer"></span>
-                <div class="zx-btn-row">
-                    <button class="zx-btn zx-btn--secondary zx-btn--icon" id="vRefresh" title="Refresh" aria-label="Refresh"><i class="sync icon" aria-hidden="true"></i></button>
-                    <button class="zx-btn zx-btn--secondary" id="vExportCsv"><i class="download icon" aria-hidden="true"></i> CSV</button>
-                    <button class="zx-btn zx-btn--secondary" id="vExportJson"><i class="download icon" aria-hidden="true"></i> JSON</button>
-                </div>
+                <label class="zx-check" id="vBlockedBox"><input type="checkbox" id="vBlocked"> <span>Blocked only</span></label>
             </div>
-            <div class="zx-table-wrap vTableWrap" tabindex="0" role="region" aria-label="Visitors">
+            <div class="zx-table-wrap vTableWrap">
                 <table class="zx-table zx-table--compact vTable" id="vTable">
                     <thead><tr>
                         <th class="sortable" data-sort="ip">IP address</th>
                         <th class="sortable" data-sort="country">Country</th>
-                        <th class="sortable" data-sort="first">First seen</th>
+                        <th class="sortable vcFirst" data-sort="first">First seen</th>
                         <th class="sortable" data-sort="last">Last seen</th>
                         <th class="sortable zx-num" data-sort="hits">Hits</th>
                         <th class="sortable zx-num" data-sort="blocked">Blocked</th>
-                        <th class="sortable" data-sort="hosts">Hosts</th>
-                        <th class="sortable" data-sort="via">Via</th>
-                        <th>User agent</th>
+                        <th class="sortable vcHosts" data-sort="hosts">Hosts</th>
+                        <th class="sortable vcVia" data-sort="via">Via</th>
+                        <th class="vcUa">User agent</th>
                     </tr></thead>
                     <tbody id="vBody"></tbody>
                 </table>
             </div>
             <div class="vPager">
-                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="vPrev"><i class="left chevron icon" aria-hidden="true"></i> Previous</button>
-                <span id="vPageInfo"></span>
-                <button class="zx-btn zx-btn--secondary zx-btn--sm" id="vNext">Next <i class="right chevron icon" aria-hidden="true"></i></button>
-                <select id="vSize" class="zx-select" aria-label="Rows per page"><option>25</option><option selected>50</option><option>100</option><option>200</option></select>
+                <span id="vPageInfo" role="status"></span>
+                <label>Rows per page <select id="vSize" class="zx-select" aria-label="Rows per page"><option selected>25</option><option>50</option><option>100</option><option>200</option></select></label>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="vPrev"><i class="left chevron icon" aria-hidden="true"></i> Previous</button>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="vNext">Next <i class="right chevron icon" aria-hidden="true"></i></button>
             </div>
         </div>
 
         <!-- Recent visits (live tail) -->
         <div class="vPane" data-vpane="recent" style="display:none;">
             <div class="vToolbar">
-                <div class="ui small icon input"><input type="search" id="vrSearch" placeholder="Filter the live list (IP, host, path, user agent)" aria-label="Filter recent visits" autocomplete="off"><i class="search icon"></i></div>
-                <div class="ui checkbox"><input type="checkbox" id="vrBlocked"><label>Blocked only</label></div>
-                <span class="vSpacer"></span>
+                <div class="vSearch"><i class="search icon" aria-hidden="true"></i><input type="search" class="zx-input" id="vrSearch" placeholder="Filter by IP, host, path or user agent" aria-label="Filter recent visits" autocomplete="off" spellcheck="false"></div>
+                <label class="zx-check"><input type="checkbox" id="vrBlocked"> <span>Blocked only</span></label>
                 <div class="zx-btn-row">
-                    <button class="zx-btn zx-btn--secondary" id="vrPause"><i class="pause icon" aria-hidden="true"></i> Pause</button>
-                    <button class="zx-btn zx-btn--secondary" id="vrExportCsv"><i class="download icon" aria-hidden="true"></i> CSV</button>
-                    <button class="zx-btn zx-btn--secondary" id="vrExportJson"><i class="download icon" aria-hidden="true"></i> JSON</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="vrPause"><i class="pause icon" aria-hidden="true"></i> Pause</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="vrExportCsv" title="Download the recent visits as CSV"><i class="download icon" aria-hidden="true"></i> CSV</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="vrExportJson" title="Download the recent visits as JSON"><i class="download icon" aria-hidden="true"></i> JSON</button>
                 </div>
             </div>
-            <div class="zx-table-wrap vTableWrap vTableWrap--scroll" tabindex="0" role="region" aria-label="Recent visits">
+            <div class="zx-table-wrap vTableWrap">
                 <table class="zx-table zx-table--compact vTable" id="vrTable">
-                    <thead><tr><th>Time</th><th>IP address</th><th>Country</th><th>Host</th><th>Request</th><th>Status</th><th>Via</th><th>User agent</th></tr></thead>
+                    <thead><tr><th>Time</th><th>IP address</th><th class="vcCountryCol">Country</th><th>Host</th><th>Request</th><th>Status</th><th class="vcVia">Via</th><th class="vcUa">User agent</th></tr></thead>
                     <tbody id="vrBody"></tbody>
                 </table>
             </div>
-            <p class="zx-help" id="vrInfo" style="margin-top: var(--zx-space-2);">Updates every few seconds while this page is open. The newest 200 visits are listed.</p>
+            <div class="vPager">
+                <p id="vrInfo"><span class="vLive" id="vrLive">Live</span> &middot; New visits appear at the top every few seconds. The newest 200 are kept in this list.</p>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="vrMore" hidden>Show more</button>
+            </div>
         </div>
 
         <!-- Settings and privacy -->
@@ -190,16 +244,16 @@
                     <div class="zx-card__head"><h3 class="zx-card__title">Recording</h3></div>
                     <p class="zx-card__desc">Choose whether Zoraxy keeps a list of the visitors of your sites.</p>
                     <div class="zx-card__body">
-                        <div class="zx-toggle-row">
+                        <label class="zx-toggle-row">
                             <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Record visitors</span>
                                 <span class="zx-toggle-row__desc">Stores the IP address, country, hosts and counts of each visitor.</span></span>
-                            <div class="ui toggle checkbox" id="vsEnabledBox"><input type="checkbox" id="vsEnabled" aria-label="Record visitors"><label></label></div>
-                        </div>
-                        <div class="zx-toggle-row">
+                            <input type="checkbox" class="zx-switch" role="switch" id="vsEnabled">
+                        </label>
+                        <label class="zx-toggle-row">
                             <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Keep URL query strings</span>
                                 <span class="zx-toggle-row__desc">They may contain tokens or personal data. Off by default.</span></span>
-                            <div class="ui toggle checkbox" id="vsQueryBox"><input type="checkbox" id="vsQuery" aria-label="Keep URL query strings"><label></label></div>
-                        </div>
+                            <input type="checkbox" class="zx-switch" role="switch" id="vsQuery">
+                        </label>
                     </div>
                 </section>
                 <section class="zx-card">
@@ -217,15 +271,15 @@
                     <div class="zx-card__head"><h3 class="zx-card__title">Notifications</h3></div>
                     <p class="zx-card__desc">Get told when someone shows up from a country you have not seen before.</p>
                     <div class="zx-card__body">
-                        <div class="zx-toggle-row">
+                        <label class="zx-toggle-row">
                             <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Notify about a new country</span>
                                 <span class="zx-toggle-row__desc">Also needs a subscription in the notification centre.</span></span>
-                            <div class="ui toggle checkbox" id="vsNotifyBox"><input type="checkbox" id="vsNotify" aria-label="Notify about a new country"><label></label></div>
-                        </div>
+                            <input type="checkbox" class="zx-switch" role="switch" id="vsNotify">
+                        </label>
                     </div>
                     <div class="zx-card__foot">
-                        <span id="vsMsg" role="status" aria-live="polite"></span>
                         <button class="zx-btn zx-btn--primary" id="vsSave"><i class="save icon" aria-hidden="true"></i> Save settings</button>
+                        <span id="vsMsg" role="status" aria-live="polite"></span>
                     </div>
                 </section>
             </div>
@@ -248,15 +302,15 @@
 
 <div id="visitorDrawerShade"></div>
 <aside id="visitorDrawer" role="dialog" aria-modal="true" aria-label="Visitor details" aria-hidden="true">
-    <button class="ui right floated basic icon button" id="vdClose" title="Close"><i class="times icon"></i></button>
-    <h3 id="vdTitle" class="vMono"></h3>
+    <div class="vdHead"><h3 id="vdTitle" class="vMono"></h3>
+        <button type="button" class="zx-btn zx-btn--ghost zx-btn--icon" id="vdClose" title="Close" aria-label="Close"><i class="times icon" aria-hidden="true"></i></button></div>
     <div id="vdBody"></div>
 </aside>
 
 <script>
 (function(){
     var P = "#visitorsPage ";
-    var V = {tab: "list", page: 0, size: 50, sort: "last", dir: "desc", total: 0, lastJSON: "", seq: 0, paused: false,
+    var V = {tab: "list", page: 0, size: 25, recentShown: 25, sort: "last", dir: "desc", total: 0, lastJSON: "", seq: 0, paused: false,
              summaryLoaded: false, hostsKey: "", countriesKey: "", rows: [], drawerIP: ""};
 
     function esc(t){ return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -268,11 +322,11 @@
         return String.fromCodePoint(A + u.charCodeAt(0) - a, A + u.charCodeAt(1) - a);
     }
     function country(cc){
-        if (!cc) return '<span style="color:var(--text_color_secondary)">unknown</span>';
-        if (isLocalZone(cc)) return '<span title="Private, loopback or other non-public address: no country applies"><i class="home icon"></i> Local network</span>';
+        if (!cc) return '<span class="vFaint">' + esc(t("Unknown")) + '</span>';
+        if (isLocalZone(cc)) return '<span title="Private, loopback or other non-public address: no country applies"><i class="home icon" aria-hidden="true"></i> Local network</span>';
         var name = "";
         try { name = getCountryName(cc); } catch (e) {}
-        return '<span title="' + esc(name) + '">' + flag(cc) + " " + esc(cc) + (name ? " <small style='color:var(--text_color_secondary)'>" + esc(name) + "</small>" : "") + "</span>";
+        return '<span title="' + esc(name) + '">' + flag(cc) + " " + esc(cc) + (name ? " <small class='vFaint'>" + esc(name) + "</small>" : "") + "</span>";
     }
     function ago(sec){
         var d = Math.max(0, Math.floor(Date.now() / 1000) - sec);
@@ -320,8 +374,11 @@
         api("./api/visitors/summary", function(d){
             var s = d.Summary, st = d.Stats;
             $("#vkIps").text(s.ips.toLocaleString());
-            $("#vkIpsSub").text(st.enabled ? "recording" : "recording is switched off");
+            $("#vkIpsSub").text(st.enabled ? t("recording") : t("recording is switched off"));
+            V.enabled = !!st.enabled;
+            $("#vOff").prop("hidden", V.enabled || V.tab === "settings");
             $("#vkActive").text(s.active24h.toLocaleString());
+            $("#vkActiveSub").text(s.ips ? tf("{0}% of all known", Math.round(100 * s.active24h / s.ips)) : "");
             $("#vkNew").text(s.new1h.toLocaleString());
             $("#vkNewSub").text(s.new24h + " in the last 24 hours");
             $("#vkBlocked").text(s.blockedIPs.toLocaleString());
@@ -363,29 +420,31 @@
             V.total = d.total;
             var now = Math.floor(Date.now() / 1000);
             if (d.items.length === 0){
-                $("#vBody").html('<tr><td colspan="9"><div class="vEmpty"><i class="user clock icon"></i>' +
-                    (V.total === 0 && !$("#vSearch").val() && $("#vSince").val() === "0" && !$("#vHost").val() && !$("#vCountry").val() && !$("#vVia").val() && !$("#vBlocked").prop("checked")
-                        ? "No visitors recorded yet. They show up here as soon as requests reach one of your proxy rules."
-                        : "No visitor matches these filters.") + "</div></td></tr>");
+                var noFilter = !$("#vSearch").val() && !$("#vHost").val() && !$("#vCountry").val() && !$("#vVia").val() && !$("#vBlocked").prop("checked");
+                $("#vBody").html('<tr><td colspan="9" class="zx-empty-cell">' + esc(
+                    noFilter && $("#vSince").val() === "0" ? t("No visitors recorded yet. They show up here as soon as requests reach one of your proxy rules.")
+                    : noFilter ? t("No visitor in this time range. Pick a longer range to see earlier ones.")
+                    : t("No visitor matches these filters. Clear the search or widen the filters.")) + "</td></tr>");
             } else {
                 var html = "";
                 d.items.forEach(function(v){
                     var hosts = Object.keys(v.hosts || {});
                     hosts.sort(function(a, b){ return v.hosts[b] - v.hosts[a]; });
-                    html += '<tr data-ip="' + esc(v.ip) + '">' +
-                        '<td class="vMono" data-label="IP address">' + esc(v.ip) + (now - v.first < 3600 ? '<span class="vChip new" title="First seen within the last hour">new</span>' : "") + "</td>" +
-                        '<td data-label="Country">' + country(v.country) + "</td>" +
-                        '<td data-label="First seen">' + when(v.first) + '</td><td data-label="Last seen">' + when(v.last) + "</td>" +
-                        "<td class='zx-num' data-label='Hits'>" + v.hits.toLocaleString() + "</td>" +
-                        "<td class='zx-num' data-label='Blocked'>" + (v.blocked ? '<span class="vChip blocked">' + v.blocked.toLocaleString() + "</span>" : "0") + "</td>" +
-                        '<td data-label="Hosts"><div class="vHosts" title="' + esc(hosts.join(", ")) + '">' + (hosts.length > 1 ? "<b>" + hosts.length + "</b> " : "") + esc(hosts.slice(0, 2).join(", ")) + "</div></td>" +
-                        '<td data-label="Via">' + viaChip(v.via, v.viaHeader) + "</td>" +
-                        '<td data-label="User agent"><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
+                    html += '<tr data-ip="' + esc(v.ip) + '" tabindex="0" aria-label="' + esc(tf("Details of {0}", v.ip)) + '">' +
+                        '<td class="vMono vcIp" data-label="IP address">' + esc(v.ip) + (now - v.first < 3600 ? '<span class="vChip new" title="First seen within the last hour">new</span>' : "") + "</td>" +
+                        '<td class="vcCountry" data-label="Country">' + country(v.country) + "</td>" +
+                        '<td class="vcTime vcFirst" data-label="First seen">' + when(v.first) + '</td><td class="vcTime vcLast" data-label="Last seen">' + when(v.last) + "</td>" +
+                        "<td class='zx-num vcHits' data-label='Hits'>" + v.hits.toLocaleString() + '<span class="vUnit"> ' + esc(v.hits === 1 ? t("hit") : t("hits")) + "</span></td>" +
+                        "<td class='zx-num vcBlocked" + (v.blocked ? "" : " vcZero") + "' data-label='Blocked'>" + (v.blocked ? '<span class="vChip blocked">' + v.blocked.toLocaleString() + '<span class="vUnit">&nbsp;' + esc(t("blocked")) + "</span></span>" : "0") + "</td>" +
+                        '<td class="vcHosts" data-label="Hosts"><div class="vHosts" title="' + esc(hosts.join(", ")) + '">' + (hosts.length > 1 ? "<b>" + hosts.length + "</b> " : "") + esc(hosts.slice(0, 2).join(", ")) + "</div></td>" +
+                        '<td class="vcVia" data-label="Via">' + viaChip(v.via, v.viaHeader) + "</td>" +
+                        '<td class="vcUa" data-label="User agent"><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
                 });
                 $("#vBody").html(html);
             }
             var pages = Math.max(1, Math.ceil(d.total / V.size));
-            $("#vPageInfo").text(d.total.toLocaleString() + " visitor" + (d.total === 1 ? "" : "s") + " - page " + (V.page + 1) + " of " + pages);
+            var firstRow = d.total ? V.page * V.size + 1 : 0, lastRow = Math.min(d.total, (V.page + 1) * V.size);
+            $("#vPageInfo").text(d.total === 0 ? "" : d.total === 1 ? t("1 visitor") : pages === 1 ? tf("{0} visitors", d.total.toLocaleString()) : tf("{0} to {1} of {2} visitors", firstRow.toLocaleString(), lastRow.toLocaleString(), d.total.toLocaleString()));
             $("#vPrev").prop("disabled", V.page <= 0);
             $("#vNext").prop("disabled", V.page + 1 >= pages);
             $("#vTable th.sortable").each(function(){
@@ -394,20 +453,27 @@
                 if (s === V.sort) $(this).append('<span class="sortArrow"> ' + (V.dir === "asc" ? "▲" : "▼") + "</span>");
             });
         }, function(err){
-            $("#vBody").html('<tr><td colspan="9"><div class="vEmpty"><i class="exclamation triangle icon"></i>Unable to load visitors (' + esc(err) + ")</div></td></tr>");
+            $("#vBody").html('<tr><td colspan="9" class="zx-empty-cell">' + esc(tf("The visitors could not be loaded ({0}). Use Refresh to try again.", err)) + "</td></tr>");
         });
     }
 
     /* ---------- recent visits ---------- */
     function visitRow(v){
-        return '<tr data-ip="' + esc(v.ip) + '"><td data-label="Time">' + when(v.t) + '</td><td class="vMono" data-label="IP address">' + esc(v.ip) + (v.new ? '<span class="vChip new">new</span>' : "") + '</td><td data-label="Country">' + country(v.country) + "</td>" +
-            '<td data-label="Host"><div class="vHosts" title="' + esc(v.host) + '">' + esc(v.host) + "</div></td><td class='vMono' data-label='Request'><div class='vHosts' title='" + esc(v.method + " " + v.path) + "'>" + esc(v.method) + " " + esc(v.path) + "</div></td>" +
-            "<td class='" + statusCls(v.status) + "' data-label='Status'>" + esc(v.status) + (v.blocked ? ' <span class="vChip blocked">blocked</span>' : "") + "</td>" +
-            '<td data-label="Via">' + viaChip(v.via, "") + '</td><td data-label="User agent"><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
+        return '<tr data-ip="' + esc(v.ip) + '" tabindex="0"><td class="vcTime vcTimeR" data-label="Time">' + when(v.t) + '</td><td class="vMono vcIp" data-label="IP address">' + esc(v.ip) + (v.new ? '<span class="vChip new">new</span>' : "") + '</td><td class="vcCountry vcCountryCol" data-label="Country">' + country(v.country) + "</td>" +
+            '<td class="vcHost" data-label="Host"><div class="vHosts" title="' + esc(v.host) + '">' + esc(v.host) + "</div></td><td class='vMono vcReq' data-label='Request'><div class='vHosts' title='" + esc(v.method + " " + v.path) + "'>" + esc(v.method) + " " + esc(v.path) + "</div></td>" +
+            "<td class='vcStatus " + statusCls(v.status) + "' data-label='Status'>" + esc(v.status) + (v.blocked ? ' <span class="vChip blocked">blocked</span>' : "") + "</td>" +
+            '<td class="vcVia" data-label="Via">' + viaChip(v.via, "") + '</td><td class="vcUa" data-label="User agent"><div class="vUA" title="' + esc(v.ua) + '">' + esc(v.ua) + "</div></td></tr>";
+    }
+    /* the live list grows with the page: 25 rows, then "Show more" (never a scroll box of its own) */
+    function trimRecent(){
+        var rows = $("#vrBody tr[data-ip]");
+        rows.each(function(i){ this.classList.toggle("vHide", i >= V.recentShown); });
+        var rest = rows.length - V.recentShown;
+        $("#vrMore").prop("hidden", rest <= 0).text(rest > 0 ? tf("Show {0} more", Math.min(25, rest)) : "");
     }
     function loadRecent(reset){
         if (V.paused && !reset) return;
-        if (reset){ V.seq = 0; $("#vrBody").html(skeleton(8, 5)); }
+        if (reset){ V.seq = 0; V.recentShown = 25; $("#vrBody").html(skeleton(8, 5)); }
         api("./api/visitors/recent?" + filterQuery("limit=" + (reset ? 200 : 100) + "&after=" + V.seq), function(d){
             if (reset) $("#vrBody").empty();
             if (d.Seq < V.seq){ V.seq = 0; }             // the store was purged
@@ -417,22 +483,26 @@
             var extra = $("#vrBody tr").length - 200;                           // keep the DOM small
             if (extra > 0) $("#vrBody tr").slice(-extra).remove();
             if ($("#vrBody tr").length === 0){
-                $("#vrBody").html('<tr><td colspan="8"><div class="vEmpty"><i class="list icon"></i>No visits recorded yet. New requests appear here live.</div></td></tr>');
+                $("#vrBody").html('<tr><td colspan="8" class="zx-empty-cell">' + esc($("#vrSearch").val().trim() || $("#vrBlocked").prop("checked") ? t("No recent visit matches this filter. New matching requests appear here as they arrive.") : t("No visits recorded yet. New requests appear here as they arrive.")) + "</td></tr>");
             } else {
-                $("#vrBody .vEmpty").closest("tr").remove();
+                $("#vrBody .zx-empty-cell").closest("tr").remove();
             }
+            trimRecent();
         }, function(err){
-            if (reset) $("#vrBody").html('<tr><td colspan="8"><div class="vEmpty"><i class="exclamation triangle icon"></i>Unable to load recent visits (' + esc(err) + ")</div></td></tr>");
+            if (reset) $("#vrBody").html('<tr><td colspan="8" class="zx-empty-cell">' + esc(tf("The recent visits could not be loaded ({0}).", err)) + "</td></tr>");
         });
     }
 
     /* ---------- drawer ---------- */
-    function openDrawer(ip){
+    var drawerOpener = null;
+    function openDrawer(ip, opener){
+        drawerOpener = opener || null;
         V.drawerIP = ip;
         $("#vdTitle").text(ip);
-        $("#vdBody").html('<div class="vEmpty"><i class="spinner loading icon"></i>Loading...</div>');
+        $("#vdBody").html('<div class="vdEmpty" role="status"><i class="notched circle loading icon" aria-hidden="true"></i> ' + esc(t("Loading")) + '</div>');
         $("#visitorDrawerShade").addClass("open");
         $("#visitorDrawer").addClass("open").attr("aria-hidden", "false");
+        document.getElementById("vdClose").focus();   /* the dialog takes the focus; Tab stays inside it until it closes */
         api("./api/visitors/detail?ip=" + encodeURIComponent(ip), function(d){
             var v = d.Visitor, hosts = Object.keys(v.hosts || {}), paths = Object.keys(v.paths || {});
             hosts.sort(function(a, b){ return v.hosts[b] - v.hosts[a]; });
@@ -445,12 +515,12 @@
             var spark = '<svg width="100%" height="48" viewBox="0 0 140 48" preserveAspectRatio="none" role="img" aria-label="hits per day, last 14 days">' +
                 bars.map(function(n, i){ var h = Math.max(n ? 3 : 1, 44 * n / max); return '<rect x="' + (i * 10 + 1) + '" y="' + (46 - h) + '" width="8" height="' + h + '" rx="1" style="fill:var(--zx-primary)" opacity="' + (n ? 0.9 : 0.25) + '"><title>' + n + " hits</title></rect>"; }).join("") + "</svg>";
             var html = '<div class="vdActions">' +
-                '<button class="ui small red basic button" data-act="blacklist"><i class="ban icon"></i> Blacklist</button>' +
-                '<button class="ui small green basic button" data-act="whitelist"><i class="check icon"></i> Whitelist</button>' +
-                '<button class="ui small orange basic button" data-act="ban"><i class="gavel icon"></i> Ban 24h</button>' +
-                '<button class="ui small basic button" data-act="exclude"><i class="eye slash icon"></i> Exclude from stats</button>' +
-                '<button class="ui small basic button" data-act="whois"><i class="search icon"></i> Whois / lookup</button>' +
-                '<button class="ui small basic button" data-act="delete"><i class="trash icon"></i> Delete record</button></div>' +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="blacklist"><i class="ban icon" aria-hidden="true"></i> Blacklist</button>' +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="whitelist"><i class="check icon" aria-hidden="true"></i> Whitelist</button>' +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="ban"><i class="gavel icon" aria-hidden="true"></i> Ban 24h</button>' +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="exclude"><i class="eye slash icon" aria-hidden="true"></i> Exclude from stats</button>' +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="whois"><i class="search icon" aria-hidden="true"></i> Whois / lookup</button>' +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="delete"><i class="trash icon" aria-hidden="true"></i> Delete record</button></div>' +
                 '<div id="vdStatus" class="vdStatus" role="status" aria-live="polite"></div>' +
                 '<div class="vdKV">' +
                 "<div>Country</div><div>" + country(v.country) + "</div>" +
@@ -462,19 +532,31 @@
                 "<div>User agent</div><div style='word-break:break-all'>" + esc(v.ua) + "</div></div>" +
                 "<h4>Hits per day (14 days)</h4>" + spark +
                 "<h4>Hosts</h4>" + list(hosts, v.hosts) + "<h4>Paths</h4>" + list(paths, v.paths) +
-                "<h4>Recent visits</h4><div class='vTableWrap'><table class='vTable'><tbody>" +
-                (d.Recent || []).slice(0, 50).map(function(r){ return "<tr style='cursor:default'><td>" + when(r.t) + "</td><td>" + esc(r.host) + "</td><td class='vMono'>" + esc(r.method) + " " + esc(r.path) + "</td><td class='" + statusCls(r.status) + "'>" + esc(r.status) + "</td></tr>"; }).join("") +
+                "<h4>Recent visits</h4><div><table class='vdVisits'><tbody>" +
+                (d.Recent || []).slice(0, 50).map(function(r){ return "<tr><td>" + when(r.t) + "</td><td>" + esc(r.host) + "</td><td class='vMono'>" + esc(r.method) + " " + esc(r.path) + "</td><td class='" + statusCls(r.status) + "'>" + esc(r.status) + "</td></tr>"; }).join("") +
                 "</tbody></table></div>";
             if (V.drawerIP === ip) $("#vdBody").html(html);
         }, function(err){
-            $("#vdBody").html('<div class="vEmpty"><i class="exclamation triangle icon"></i>' + esc(err) + "</div>");
+            $("#vdBody").html('<div class="vdEmpty">' + esc(tf("The details could not be loaded ({0}).", err)) + "</div>");
         });
     }
     function closeDrawer(){
         V.drawerIP = "";
         $("#visitorDrawer").removeClass("open").attr("aria-hidden", "true");
         $("#visitorDrawerShade").removeClass("open");
+        /* hand the focus back to where the drawer was opened from (the list may have been redrawn meanwhile) */
+        var back = drawerOpener; drawerOpener = null;
+        if (back && !document.body.contains(back)) back = $(P + '.vPane:visible tr[data-ip]').filter(function(){ return this.getAttribute("data-ip") === $(back).attr("data-ip"); })[0];
+        if (back && back.focus && $(back).is(":visible")) back.focus();
     }
+    document.getElementById("visitorDrawer").addEventListener("keydown", function(e){
+        if (e.key !== "Tab") return;
+        var f = $(this).find("a[href], a[tabindex], button, input, select, textarea, [tabindex]").filter(function(){ return !this.disabled && this.tabIndex >= 0 && $(this).is(":visible"); });
+        if (!f.length){ e.preventDefault(); return; }
+        var first = f[0], last = f[f.length - 1], at = document.activeElement;
+        if (e.shiftKey && (at === first || !this.contains(at))){ e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !this.contains(at))){ e.preventDefault(); first.focus(); }
+    });
     /* inline feedback inside the drawer: the page toast can be far away or behind it */
     function vdStatus(msg, ok, undo){
         var $s = $("#vdStatus").removeClass("ok err").addClass("show " + (ok ? "ok" : "err")).empty();
@@ -530,7 +612,7 @@
         }
         else if (act === "delete"){
             var $b = $('#vdBody [data-act="delete"]');
-            if (!$b.data("armed")){ $b.data("armed", true).addClass("red").html('<i class="trash icon"></i> Click again to delete'); setTimeout(function(){ $b.data("armed", false).removeClass("red").html('<i class="trash icon"></i> Delete record'); }, 4000); return; }
+            if (!$b.data("armed")){ $b.data("armed", true).removeClass("zx-btn--secondary").addClass("zx-btn--danger").html('<i class="trash icon" aria-hidden="true"></i> ' + esc(t("Click again to delete"))); setTimeout(function(){ $b.data("armed", false).removeClass("zx-btn--danger").addClass("zx-btn--secondary").html('<i class="trash icon" aria-hidden="true"></i> ' + esc(t("Delete record"))); }, 4000); return; }
             post("./api/visitors/delete", {ip: ip}, function(){ msgbox("Record deleted"); closeDrawer(); refreshAll(true); });
         }
     }
@@ -580,6 +662,7 @@
         $("#vTabs .item").removeClass("active").attr("aria-selected", "false").filter('[data-vtab="' + t + '"]').addClass("active").attr("aria-selected", "true");
         try { var at = $("#vTabs .item.active")[0]; if (at && at.scrollIntoView) at.scrollIntoView({block: "nearest", inline: "nearest"}); } catch (e) {}
         $("#vKpis").prop("hidden", t === "settings");
+        $("#vOff").prop("hidden", V.enabled !== false || t === "settings");
         $(P + ".vPane").hide().filter('[data-vpane="' + t + '"]').show();
         if (t === "list") loadList(true);
         if (t === "recent") loadRecent(true);
@@ -614,10 +697,14 @@
     $("#vrBlocked").on("change", function(){ loadRecent(true); });
     $("#vrPause").on("click", function(){
         V.paused = !V.paused;
-        $(this).html(V.paused ? '<i class="play icon" aria-hidden="true"></i> Resume' : '<i class="pause icon" aria-hidden="true"></i> Pause');
+        $(this).html(V.paused ? '<i class="play icon" aria-hidden="true"></i> ' + esc(t("Resume")) : '<i class="pause icon" aria-hidden="true"></i> ' + esc(t("Pause")));
+        $("#vrLive").toggleClass("is-paused", V.paused).text(V.paused ? t("Paused") : t("Live"));
         if (!V.paused) loadRecent(false);
     });
-    $("#vBody, #vrBody").on("click", "tr[data-ip]", function(){ openDrawer($(this).attr("data-ip")); });
+    $("#vrMore").on("click", function(){ V.recentShown += 25; trimRecent(); });
+    $("#vOffOpen").on("click", function(){ setTab("settings"); });
+    $("#vBody, #vrBody").on("click", "tr[data-ip]", function(){ openDrawer($(this).attr("data-ip"), this); })
+        .on("keydown", "tr[data-ip]", function(e){ if (e.target === this && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); openDrawer($(this).attr("data-ip"), this); } });
     $("#vdClose, #visitorDrawerShade").on("click", closeDrawer);
     $(document).on("keydown", function(e){ if (e.key === "Escape" && V.drawerIP) closeDrawer(); });
     $("#vdBody").on("click", "[data-act]", function(){ drawerAction($(this).attr("data-act")); });
@@ -627,9 +714,6 @@
     $("#vsPurgeYes").on("click", function(){
         post("./api/visitors/purge", {confirm: "yes"}, function(){ msgbox("All visitor data deleted"); $("#vsPurgeConfirm").hide(); $("#vsPurge").show(); V.lastJSON = ""; refreshAll(true); });
     });
-
-    // The checkbox widgets of Semantic UI
-    $(P + ".ui.checkbox, #vsEnabledBox").checkbox();
 
     // refresh only while this page is the active tab (perfkit.js also skips these timers otherwise)
     setInterval(function(){

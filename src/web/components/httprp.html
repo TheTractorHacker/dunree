@@ -1,94 +1,135 @@
 <div class="standardContainer" id="httprpPage">
     <style>
-        /* ---------- HTTP proxy rule list ---------- */
-        #httprpPage .ptHead{ display:flex; align-items:flex-start; justify-content:space-between; gap:1em; flex-wrap:wrap; margin-bottom:0.4em; }
-        #httprpPage .ptHead h2{ margin-bottom:0.2em; }
-        #httprpPage .ptHead p{ margin:0; opacity:0.75; max-width:46em; }
-        #httprpPage .ptTools{ display:flex; flex-wrap:wrap; gap:0.6em 0.8em; align-items:center; margin:1em 0 0.6em; }
-        #httprpPage .ptSearch{ flex:1 1 16em; max-width:26em; min-width:12em; }
-        #httprpPage .ptSeg{ display:inline-flex; border:1px solid var(--divider_color); border-radius:0.5em; overflow:hidden; background:var(--theme_bg_primary); }
-        #httprpPage .ptSeg button{ border:0; background:transparent; color:var(--text_color); padding:0.55em 0.85em; cursor:pointer; font:inherit; font-size:0.92em; border-right:1px solid var(--divider_color); white-space:nowrap; }
-        #httprpPage .ptSeg button:last-child{ border-right:0; }
-        #httprpPage .ptSeg button:hover{ background:var(--theme_bg_active); }
-        #httprpPage .ptSeg button.active{ background:#4b75ff; color:#fff; }
-        #httprpPage .ptSeg .n{ opacity:0.65; margin-left:0.25em; font-size:0.9em; }
-        #httprpPage .ptSeg button.hasErr:not(.active) .n{ color:#db2828; opacity:1; font-weight:700; }
-        #httprpPage .ptSpacer{ flex:1 1 0; }
-        #httprpPage .ptTagChips{ display:flex; flex-wrap:wrap; gap:0.4em; align-items:center; margin-bottom:0.7em; }
-        #httprpPage .ptChip{ border:1px solid var(--divider_color); background:var(--theme_bg_primary); color:var(--text_color); border-radius:2em; padding:0.2em 0.7em; font:inherit; font-size:0.85em; cursor:pointer; display:inline-flex; align-items:center; gap:0.4em; }
-        #httprpPage .ptChip:hover{ border-color:#4b75ff; }
-        #httprpPage .ptChip.on{ background:#4b75ff; border-color:#4b75ff; color:#fff; }
-        #httprpPage .ptChip .n{ opacity:0.6; }
-        #httprpPage .ptChipDot{ width:0.65em; height:0.65em; border-radius:50%; display:inline-block; }
-        #httprpPage .ptMoreTags{ border:1px dashed var(--divider_color); background:transparent; color:var(--text_color); border-radius:2em; padding:0.2em 0.5em; font-size:0.85em; }
-        #httprpPage .ptLink{ background:none; border:0; color:#4b75ff; cursor:pointer; font:inherit; padding:0 0.3em; }
-
-        /* bulk action bar: only exists while something is selected, sticks to the top while scrolling */
-        #bulkBar{ position:sticky; top:4em; /* below the fixed menu bar */ z-index:6; display:flex; flex-wrap:wrap; gap:0.4em; align-items:center; padding:0.55em 0.8em; margin:0 0 0.8em; border-radius:0.6em; background:#fff; color:#1b1c1d; border:1px solid #d4d4d5; border-left:4px solid #4183c4; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
-        #bulkBar[hidden]{ display:none !important; }
-        body.darkTheme #bulkBar{ background:#25262b; color:var(--text_color); border:1px solid var(--divider_color); border-left:4px solid #4183c4; box-shadow:0 6px 18px rgba(0,0,0,0.55); }
-        #bulkBar .bulkCount{ font-weight:700; margin-right:0.4em; color:#2185d0; }
-        body.darkTheme #bulkBar .bulkCount{ color:#6ab0f3; }
-        #bulkBar .bulkAllSel{ opacity:0.75; font-size:0.9em; margin-right:0.4em; }
-        #bulkBar .ui.button{ margin:0; background:rgba(127,127,127,0.18) !important; color:inherit !important; box-shadow:none !important; border:1px solid rgba(127,127,127,0.35) !important; }
-        #bulkBar .ui.button:hover{ background:rgba(65,131,196,0.18) !important; border-color:#4183c4 !important; }
-        #bulkBar .ui.button.danger{ color:#c92a2a !important; }
-        body.darkTheme #bulkBar .ui.button.danger{ color:#ff6b6b !important; }
-        #bulkBar .bulkSpacer{ flex:1 1 auto; }
-        #bulkBar .ui.mini.button{ padding:0.7em 0.75em; }
-        @media screen and (max-width:1500px){ #bulkBar .bulkHint{ display:none; } }
-        #bulkBar .bulkHint{ white-space:nowrap; }
-        #bulkBar .bulkHint{ opacity:0.6; font-size:0.85em; margin-left:0.3em; }
-        #bulkSelectMatching{ display:none; padding:0.45em 0.8em; margin-bottom:0.6em; border-radius:0.5em; background:var(--theme_bg_active); font-size:0.92em; }
-
-        #httpProxyTableWrapper{ width:100%; overflow-x:auto; border:1px solid var(--divider_color); border-radius:0.6em; background:var(--theme_bg_primary); }
-        table.ptTable{ width:100%; border-collapse:collapse; min-width:860px; }
-        table.ptTable .ptLiveTh, table.ptTable .ptLive{ width:9.5em; }
-        table.ptTable .ptLive{ white-space:nowrap; font-size:0.88em; line-height:1.25; }
-        table.ptTable .ptLive .ptLiveNum{ font-weight:600; font-variant-numeric:tabular-nums; }
-        table.ptTable .ptLive .ptLiveIdle, table.ptTable .ptLive .ptLiveOff{ color:var(--text_color_secondary); }
-        table.ptTable .ptLive .ptLiveRow{ display:flex; align-items:center; gap:0.5em; min-height:1.3em; }
-        table.ptTable .ptLive svg.ptSpark{ display:block; width:5.5em; height:1.3em; overflow:visible; }
-        table.ptTable .ptLive svg.ptSpark path{ fill:none; stroke:#2f5fe0; stroke-width:1.8; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
-        table.ptTable .ptLive svg.ptSpark path.fill{ fill:#2f5fe0; fill-opacity:0.16; stroke:none; }
-        body.darkTheme table.ptTable .ptLive svg.ptSpark path{ stroke:#7da2ff; }
-        body.darkTheme table.ptTable .ptLive svg.ptSpark path.fill{ fill:#7da2ff; fill-opacity:0.18; stroke:none; }
-        table.ptTable .ptLive .ptLiveErr{ color:#c0392b; font-weight:600; }
-        body.darkTheme table.ptTable .ptLive .ptLiveErr{ color:#ff7b72; }
-        table.ptTable .ptLive .ptLiveAct{ color:var(--text_color_secondary); }
-        table.ptTable th{ text-align:left; font-size:0.78em; text-transform:uppercase; letter-spacing:0.05em; color:var(--text_color_secondary); padding:0.7em 0.8em; border-bottom:1px solid var(--divider_color); background:var(--theme_advance); white-space:nowrap; user-select:none; }
-        table.ptTable th[data-sort]{ cursor:pointer; }
-        table.ptTable th[data-sort]:hover, table.ptTable th.sorted{ color:var(--text_color); }
-        table.ptTable th .ptArrow{ font-size:0.8em; margin-left:0.3em; }
-        table.ptTable td{ padding:0.65em 0.8em; border-bottom:1px solid var(--divider_color); vertical-align:middle; }
+        /* ---------- HTTP Proxy: the host list (design v2). The shared pieces (list card, chips, health, row menu, bulk bar)
+           are the zxs- classes in ui/zxpages.css, block "area: sites". Only the table itself is styled here. ---------- */
+        #httpProxyTableWrapper{ width:100%; }   /* no overflow: the table always fits, columns fold away instead of scrolling */
+        table.ptTable{ width:100%; border-collapse:separate; border-spacing:0; color:var(--zx-text); }
+        table.ptTable th{ text-align:left; font-size:var(--zx-fs-xs); font-weight:700; color:var(--zx-text-muted); padding:9px 12px; background:var(--zx-surface-2); border-bottom:1px solid var(--zx-border); white-space:nowrap; user-select:none; }
+        table.ptTable td{ padding:11px 12px; border-bottom:1px solid var(--zx-border); vertical-align:middle; }
+        table.ptTable th:first-child, table.ptTable td:first-child{ padding-left:var(--zx-space-4); }
+        table.ptTable th:last-child, table.ptTable td:last-child{ padding-right:var(--zx-space-4); }
         table.ptTable tbody tr:last-child td{ border-bottom:0; }
-        table.ptTable tbody tr.ptRow:hover{ background:var(--theme_bg_active); }
-        table.ptTable tr.isSel{ background:rgba(75,117,255,0.10); }
-        table.ptTable tr.isSel:hover{ background:rgba(75,117,255,0.16); }
-        table.ptTable tr.isOff .ptHost, table.ptTable tr.isOff .ptUps, table.ptTable tr.isOff .ptTagsCell{ opacity:0.55; }
-        table.ptTable .ptSel{ width:2.4em; text-align:center; padding-right:0; }
-        table.ptTable .ptSel input{ width:1.1em; height:1.1em; cursor:pointer; vertical-align:middle; }
-        table.ptTable .ptName{ min-width:14em; }
-        table.ptTable .ptName > .ptDot{ float:left; margin:0.5em 0.7em 0 0; }
-        table.ptTable .ptNameBody{ overflow:hidden; }
-        table.ptTable .ptHost{ font-weight:600; overflow-wrap:anywhere; }
-        table.ptTable .ptSub{ font-size:0.82em; color:var(--text_color_secondary); margin-top:0.15em; }
-        table.ptTable .ptSub .ptSep::after{ content:"\00b7"; margin:0 0.45em; opacity:0.6; }
-        table.ptTable .ptSub .icon{ margin-right:0.25em; }
-        table.ptTable .ptUps{ overflow-wrap:break-word; min-width:11em; font-size:0.93em; }
-        table.ptTable .ptMuted, #httprpPage .ptMuted{ opacity:0.5; }
-        table.ptTable .ptBad{ color:#db2828; }
-        table.ptTable .ptProt{ min-width:9em; }
-        table.ptTable .ptTagsCell{ min-width:6em; }
-        table.ptTable .ptAct{ white-space:nowrap; text-align:right; width:1%; }
-        table.ptTable .ptAct .ui.button{ margin:0 0 0 0.25em; }
-        table.ptTable .ptAct .ptDel{ box-shadow:none !important; }
-        .ptDot{ display:inline-block; width:0.7em; height:0.7em; border-radius:50%; background:#9aa0a6; flex:none; }
-        .ptDot.on{ background:#21ba45; box-shadow:0 0 0 3px rgba(33,186,69,0.18); }
-        .ptDot.err{ background:#db2828; box-shadow:0 0 0 3px rgba(219,40,40,0.18); }
-        .ptBadge{ display:inline-block; font-size:0.75em; line-height:1; padding:0.38em 0.6em; margin:0 0.3em 0.3em 0; border-radius:2em; border:1px solid var(--divider_color); background:var(--theme_advance); white-space:nowrap; }
-        .ptBadge .icon{ margin-right:0.3em !important; }
-        .ptBadge.waf{ border-color:rgba(33,186,69,0.5); }
+        table.ptTable thead[hidden]{ display:none !important; }
+        table.ptTable tbody tr.ptRow:hover td{ background:var(--zx-surface-2); }
+        table.ptTable tbody tr.isSel td, table.ptTable tbody tr.isSel:hover td{ background:var(--zx-primary-soft); }
+        table.ptTable [data-sort]{ cursor:pointer; border-radius:var(--zx-radius-sm); }
+        table.ptTable [data-sort]:hover, table.ptTable [data-sort].sorted{ color:var(--zx-text); }
+        table.ptTable [data-sort]:focus-visible{ outline:none; box-shadow:var(--zx-focus-ring); }
+        table.ptTable .ptArrow{ display:inline-block; width:0.9em; font-size:0.8em; margin-left:2px; }
+        table.ptTable .ptThAlt{ font-weight:400; margin-left:2px; }
+        table.ptTable .ptThAlt::before{ content:"/"; margin-right:6px; color:var(--zx-text-faint); }
+        table.ptTable .ptSel{ width:40px; padding-right:0; }
+        table.ptTable .ptSel input{ display:block; width:24px; height:24px; min-width:24px; margin:0; cursor:pointer; accent-color:var(--zx-primary); }
+        #httprpPage table.ptTable .ptSel input[type="checkbox"]{ width:24px; height:24px; min-height:24px; }   /* main.css sets every checkbox in a table to 1.1em */
+        table.ptTable .ptName{ min-width:13rem; }
+        table.ptTable .ptNameBody{ min-width:0; }
+        table.ptTable .ptSub .ptUp, table.ptTable .ptSub .ptAliasName{ display:inline-block; max-width:min(22rem, 100%); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
+        table.ptTable .ptSub .ptUps, table.ptTable .ptSub .ptAlias{ max-width:100%; min-width:0; white-space:nowrap; }
+        /* the facts under a host wrap as whole items; the dot belongs to the item it introduces, so a wrapped line never ends in a lone dot */
+        table.ptTable .ptSub{ display:flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; min-width:0; }
+        table.ptTable .ptSub > *{ min-width:0; }
+        table.ptTable .ptSub > .zxs-dotsep{ display:none; }
+        table.ptTable .ptSub > :not(.zxs-dotsep):not(:first-child)::before{ content:"\00b7"; margin-right:6px; color:var(--zx-text-faint); }
+        table.ptTable .ptSub .ptAlias{ display:inline-flex; align-items:baseline; }
+        table.ptTable .ptSub .ptAliasName{ flex:0 1 auto; min-width:0; }
+        table.ptTable .ptSub .ptMoreAlias{ margin-left:6px; flex:0 0 auto; }
+        table.ptTable .ptThProt .zx-whatis{ margin-left:6px; width:18px; height:18px; font-size:11px; vertical-align:1px; }
+        #ptProtWhat{ width:max-content; white-space:normal; }
+        table.ptTable .ptAct{ min-width:6.5rem; }
+        table.ptTable .ptHost i.icon{ margin:0 0 0 5px; font-size:0.72em; height:auto; width:auto; color:var(--zx-text-faint); opacity:0; transition:opacity var(--zx-dur) var(--zx-ease); vertical-align:1px; }
+        table.ptTable tr.ptRow:hover .ptHost i.icon, table.ptTable .ptHost:focus-visible i.icon{ opacity:1; }
+        table.ptTable tr.isOff .ptHost{ color:var(--zx-text-muted); }
+        table.ptTable tr.isOff .ptProt .zxs-prot, table.ptTable tr.isOff .ptTagsCell{ opacity:0.55; }
+        table.ptTable .ptUps{ font-family:var(--zx-font-mono); font-size:0.95em; }
+        table.ptTable .ptUps i.lock.icon{ font-size:0.85em; margin-left:3px; }
+        table.ptTable .ptTagsInline{ display:none; margin-top:6px; }
+        table.ptTable .ptLiveTh, table.ptTable .ptLive{ width:12.5rem; }
+        table.ptTable .ptLiveBox{ display:flex; align-items:center; gap:10px; min-width:0; }
+        table.ptTable .ptLiveText{ flex:1 1 auto; min-width:0; }
+        table.ptTable .ptLiveRow{ display:block; margin-top:2px; font-size:var(--zx-fs-sm); color:var(--zx-text-muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+        table.ptTable .ptLiveNum{ font-weight:700; color:var(--zx-text); }
+        table.ptTable .ptLiveErr{ color:var(--zx-danger-text); font-weight:700; }
+        table.ptTable svg.ptSpark{ flex:0 0 auto; display:block; width:64px; height:26px; overflow:visible; }
+        table.ptTable svg.ptSpark path{ fill:none; stroke:var(--zx-primary); stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+        table.ptTable svg.ptSpark path.fill{ fill:var(--zx-primary); fill-opacity:0.14; stroke:none; }
+        table.ptTable .ptProt{ white-space:nowrap; width:1%; }
+        table.ptTable .ptTagsCell{ width:15rem; max-width:15rem; }
+        table.ptTable .ptTagsCell .zxs-tag{ max-width:100%; }
+        table.ptTable .ptTagsCell .zxs-tag, table.ptTable .ptTagsInline .zxs-tag{ margin-top:2px; margin-bottom:2px; }
+        table.ptTable .ptStatusCell{ width:1%; white-space:nowrap; }
+        table.ptTable .ptStatusCell .zx-switch{ display:block; }
+        table.ptTable .ptAct{ width:1%; white-space:nowrap; text-align:right; }
+        table.ptTable tr.ptEmptyRow td{ padding:0; border-bottom:0; }
+        #httprpPage .ptFooter .ptPager{ display:inline-flex; align-items:center; gap:var(--zx-space-2); }
+        #httprpPage .ptFooter .zx-select{ min-height:30px; height:30px; width:auto; padding-top:0; padding-bottom:0; }
+        #httprpPage .ptFooter label{ margin:0; }
+        #httprpPage #ptPageNo{ font-variant-numeric:tabular-nums; min-width:5.5em; text-align:center; }
+        @keyframes ptFlash{ 0%,60%{ background:var(--zx-primary-soft); } 100%{ background:transparent; } }
+        table.ptTable tr.ptFlash td{ animation:ptFlash 3.5s ease-out; }
+        #ptToast{ position:fixed; left:50%; bottom:1.5em; transform:translate(-50%, 2em); opacity:0; pointer-events:none; z-index:2001; background:var(--theme_bg_inverted); color:var(--text_color_inverted); border-radius:var(--zx-radius-md); padding:0.7em 1em; box-shadow:var(--zx-shadow-3); display:flex; gap:1em; align-items:center; transition:opacity .2s, transform .2s; max-width:calc(100vw - 2em); }
+        #ptToast.show{ opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
+        #ptToast .ptToastAct{ border:0; background:transparent; color:inherit; text-decoration:underline; font:inherit; font-weight:700; cursor:pointer; padding:0; }
+        @media (prefers-reduced-motion: reduce){ #ptToast{ transition:none; } table.ptTable tr.ptFlash td{ animation:none; background:var(--zx-primary-soft); } }
+
+        /* columns fold away before the table would need a sideways scroll (window widths; the menu takes 240px above 1000px) */
+        @media screen and (max-width:1320px){
+            table.ptTable th.ptThTags, table.ptTable td.ptTagsCell{ display:none; }
+            table.ptTable .ptTagsInline{ display:block; }
+            table.ptTable .ptTagsInline:empty{ display:none; }
+        }
+        @media screen and (min-width:641px) and (max-width:1120px){
+            table.ptTable .ptLiveTh, table.ptTable .ptLive{ width:8.5rem; }
+            table.ptTable svg.ptSpark{ display:none; }
+            table.ptTable .ptName{ min-width:9rem; }
+        }
+        @media screen and (min-width:641px) and (max-width:860px){
+            table.ptTable .zxs-prot{ flex-wrap:wrap; max-width:64px; }
+            table.ptTable .ptProt{ white-space:normal; }
+        }
+        @media screen and (min-width:641px) and (max-width:1240px){
+            #httprpPage .zxs-statrow{ grid-template-columns:repeat(5, minmax(0, 1fr)); gap:var(--zx-space-2); }
+            #httprpPage .zxs-statrow .zx-stat{ padding:var(--zx-space-3); }
+            #httprpPage .zxs-statrow .zx-stat__hint{ display:none; }
+        }
+        /* phones: every row is a small card, nothing scrolls sideways */
+        @media screen and (max-width:640px){
+            table.ptTable, table.ptTable tbody{ display:block; }
+            table.ptTable thead{ display:block; }
+            table.ptTable thead tr{ display:flex; align-items:center; background:var(--zx-surface-2); border-bottom:1px solid var(--zx-border); }
+            table.ptTable thead th{ border:0; background:transparent; }
+            table.ptTable thead th:not(.ptSel):not(.ptThHost){ display:none; }
+            table.ptTable thead th.ptThHost{ flex:1; }
+            table.ptTable tr.ptRow{ display:grid; grid-template-columns:44px minmax(0,1fr) auto; grid-template-areas:"sel name stat" ". live live" ". prot act"; align-items:center; gap:8px 0; padding:12px 12px 12px 4px; border-bottom:1px solid var(--zx-border); }
+            table.ptTable tbody tr.ptRow:last-child{ border-bottom:0; }
+            table.ptTable tr.ptRow td{ display:block; border:0; padding:0; width:auto; background:transparent !important; }
+            table.ptTable tr.ptRow.isSel{ background:var(--zx-primary-soft); }
+            table.ptTable tr.ptRow td.ptTagsCell{ display:none; }
+            table.ptTable .ptSel{ grid-area:sel; align-self:start; padding:0 0 0 8px !important; }
+            table.ptTable .ptName{ grid-area:name; min-width:0; }
+            table.ptTable .ptLive{ grid-area:live; width:auto; }
+            table.ptTable .ptLiveText{ display:flex; flex-wrap:wrap; align-items:center; gap:2px 12px; }
+            table.ptTable .ptLiveRow{ margin:0; }
+            table.ptTable .ptProt{ grid-area:prot; width:auto; }
+            table.ptTable .ptStatusCell{ grid-area:stat; align-self:start; padding-left:8px !important; }
+            table.ptTable .ptAct{ grid-area:act; width:auto; }
+            table.ptTable .ptHost i.icon{ display:none; }
+            table.ptTable tr.ptEmptyRow, table.ptTable tr.ptEmptyRow td{ display:block; }
+            #httprpPage table.ptTable .ptSel input[type="checkbox"]{ width:26px; height:26px; min-height:26px; }
+            table.ptTable .ptAct .zx-btn--sm{ min-height:36px; }
+            #httprpPage .zxs-seg{ flex:1 1 0; min-width:0; }
+            #httprpPage .ptTools .zxs-list__grow{ display:none; }
+            #httprpPage .zxs-seg > button{ flex:1 1 0; justify-content:center; padding:0 6px; }
+            #httprpPage .zxs-statrow{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:var(--zx-space-2); }
+            #httprpPage .zxs-statrow .zx-stat{ padding:var(--zx-space-3); }
+            #httprpPage .zxs-statrow .zx-stat__hint{ display:none; }
+            #httprpPage .zxs-statrow .zx-stat__value{ font-size:var(--zx-fs-xl); }
+            #httprpPage .zxs-statrow .zx-stat:first-child{ grid-column:1 / -1; }
+            #httprpPage .zxs-statrow .zx-stat:last-child{ grid-column:auto; }
+            #httprpPage .ptFooter{ justify-content:center; }
+        }
+
+        /* site editor (kept from the earlier rounds; the editor itself is styled by ui/siteeditor.css) */
+        #httprpEditModal .hrp-btnrow--equal .ui.button{ flex:1 1 15rem; justify-content:center; min-height:var(--zx-control-h); }
         /* WAF response protection (outbound leak detection) of a single rule */
         .wafRespEditor .wafRespRow{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.3em 1em; padding:0.6em 0; border-top:1px solid rgba(128,128,128,0.25); }
         .wafRespEditor .wafRespRow:first-child{ border-top:0; }
@@ -97,229 +138,111 @@
         .wafRespEditor .wafRespRow .act select{ width:100%; }
         .wafRespEditor .wafRespWin{ display:flex; flex-wrap:wrap; align-items:center; gap:0.3em 1em; padding-top:0.6em; border-top:1px solid rgba(128,128,128,0.25); }
         .wafRespEditor .wafRespWin input{ width:7em; }
-        .ptBadge.auth{ border-color:rgba(75,117,255,0.5); }
-        .ptTag{ display:inline-block; font-size:0.75em; font-weight:700; padding:0.35em 0.65em; margin:0 0.3em 0.3em 0; border-radius:0.3em; text-decoration:none; }
-        .ptTag:hover{ opacity:0.8; text-decoration:underline; }
-        .ptPill{ display:inline-flex; align-items:center; gap:0.45em; border:1px solid var(--divider_color); border-radius:2em; padding:0.28em 0.8em 0.28em 0.6em; font:inherit; font-size:0.85em; cursor:pointer; background:var(--theme_advance); color:var(--text_color); transition:background-color .15s, border-color .15s; white-space:nowrap; }
-        .ptPill:hover{ border-color:#4b75ff; }
-        .ptPill .ptPillDot{ width:0.6em; height:0.6em; border-radius:50%; background:#9aa0a6; }
-        .ptPill.on{ border-color:rgba(33,186,69,0.55); background:rgba(33,186,69,0.10); }
-        .ptPill.on .ptPillDot{ background:#21ba45; }
-        .ptPill.err{ border-color:rgba(219,40,40,0.6); background:rgba(219,40,40,0.10); }
-        .ptPill.err .ptPillDot{ background:#db2828; }
-        .ptEmpty{ text-align:center; padding:3.5em 1em; color:var(--text_color_secondary); }
-        .ptEmpty > .icon{ font-size:2.6em; opacity:0.35; margin-bottom:0.4em; }
-        .ptEmpty h3{ color:var(--text_color); margin:0.2em 0; }
-        .ptFooter{ display:flex; flex-wrap:wrap; gap:0.6em 1em; align-items:center; justify-content:space-between; margin:0.8em 0 1.2em; font-size:0.92em; color:var(--text_color_secondary); }
-        .ptFooter .ptPager{ display:inline-flex; align-items:center; gap:0.5em; }
-        #httprpPage th:focus-visible{ outline:2px solid #4b75ff; outline-offset:-2px; }
-        @keyframes ptFlash{ 0%,60%{ background:rgba(75,117,255,0.28); } 100%{ background:transparent; } }
-        table.ptTable tr.ptFlash td{ animation:ptFlash 3.5s ease-out; }
-        #ptToast{ position:fixed; left:50%; bottom:1.5em; transform:translate(-50%, 2em); opacity:0; pointer-events:none; z-index:2001; background:var(--theme_bg_inverted); color:var(--text_color_inverted); border-radius:0.6em; padding:0.7em 1em; box-shadow:0 6px 20px rgba(0,0,0,0.3); display:flex; gap:1em; align-items:center; transition:opacity .2s, transform .2s; max-width:calc(100vw - 2em); }
-        #ptToast.show{ opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
-        #ptToast .ptToastAct{ border:0; background:transparent; color:#7aa2ff; font:inherit; font-weight:700; cursor:pointer; padding:0; }
-        @media (prefers-reduced-motion: reduce){ #ptToast{ transition:none; } table.ptTable tr.ptFlash td{ animation:none; background:rgba(75,117,255,0.2); } }
-        @media screen and (max-width: 640px){
-            #httprpPage .ptSearch{ max-width:none; flex-basis:100%; }
-            #httprpPage .ptSeg{ flex-wrap:wrap; max-width:100%; }
-            #httprpPage .ptHead > div:last-child{ display:flex; flex-direction:column; gap:0.5em; width:100%; }
-            #httprpPage .ptHead .ui.button{ width:100%; margin:0; }
-            #httprpPage .ptSeg button{ flex:1 1 auto; }
-            table.ptTable td.ptLive:has(.ptLiveIdle):not(:has(svg)){ display:none; }
-            #bulkBar{ top:3.9em; padding:0.4em 0.5em; }
-            #bulkBar .ui.button:not(.icon){ font-size:0; padding:1.05em 1.15em; }
-            #bulkBar .ui.button:not(.icon) > i.icon{ font-size:1rem; margin:0; }
-            #bulkBar .bulkHint, #bulkBar .bulkSpacer{ display:none; }
-            #bulkBar .bulkCount{ flex:1 0 100%; }
-            /* rows become cards: no sideways scrolling on a phone */
-            table.ptTable{ min-width:0; }
-            table.ptTable, table.ptTable tbody{ display:block; }
-            table.ptTable thead tr{ display:flex; align-items:center; border-bottom:1px solid var(--divider_color); }
-            table.ptTable thead th{ border:0; }
-            table.ptTable thead th:not(.ptSel):not([data-sort=host]):not([data-sort=status]){ display:none; }
-            table.ptTable thead th[data-sort=host]{ flex:1; }
-            table.ptTable tr.ptRow{ display:grid; grid-template-columns:2.4em 1fr auto; grid-template-areas:"sel name name" ". live live" ". ups ups" ". prot prot" ". tags tags" ". stat act"; padding:0.5em 0.3em; border-bottom:1px solid var(--divider_color); }
-            table.ptTable tr.ptRow:last-child{ border-bottom:0; }
-            table.ptTable tr.ptRow td{ display:block; border:0; padding:0.2em 0.4em; }
-            table.ptTable .ptSel{ grid-area:sel; padding-top:0.5em; }
-            table.ptTable .ptName{ grid-area:name; min-width:0; }
-            table.ptTable .ptLive{ grid-area:live; width:auto; }
-            table.ptTable .ptLive > div{ display:flex; align-items:center; gap:0.9em; }
-            table.ptTable .ptLive svg.ptSpark{ width:6em; }
-            table.ptTable td.ptLive:has(.ptLiveOff){ display:none; }
-            table.ptTable .ptUps{ grid-area:ups; }
-            table.ptTable .ptProt{ grid-area:prot; min-width:0; }
-            table.ptTable .ptTagsCell{ grid-area:tags; min-width:0; }
-            table.ptTable .ptStatusCell{ grid-area:stat; }
-            table.ptTable .ptAct{ grid-area:act; width:auto; }
-            table.ptTable td.ptProt:has(.ptMuted:only-child), table.ptTable td.ptTagsCell:empty{ display:none; }
-            table.ptTable tr.ptEmptyRow{ display:block; }
-            table.ptTable tr.ptEmptyRow td{ display:block; }
-        }
-
-        /* ---------- kit alignment of the list (tokens only, both themes) ---------- */
-        #httprpPage .ptHead{ display:flex; margin-bottom:var(--zx-space-4); }
-        #httprpPage .ptHead .zx-page-header__sub{ opacity:1; }
-        #httprpPage .ptSeg{ border-color:var(--zx-border-strong); border-radius:var(--zx-radius-md); background:var(--zx-surface); }
-        #httprpPage .ptSeg button{ color:var(--zx-text); border-right-color:var(--zx-border); min-height:var(--zx-control-h); }
-        #httprpPage .ptSeg button:hover{ background:var(--zx-surface-2); }
-        #httprpPage .ptSeg button.active{ background:var(--zx-primary); color:var(--zx-on-primary); font-weight:600; }
-        #httprpPage .ptSeg .n{ opacity:1; color:var(--zx-text-muted); }
-        #httprpPage .ptSeg button.active .n{ color:inherit; }
-        #httprpPage .ptSeg button.hasErr:not(.active) .n{ color:var(--zx-danger-text); }
-        #httprpPage .ptChip{ border-color:var(--zx-border-strong); background:var(--zx-surface); color:var(--zx-text); }
-        #httprpPage .ptChip:hover{ border-color:var(--zx-primary); }
-        #httprpPage .ptChip.on{ background:var(--zx-primary); border-color:var(--zx-primary); color:var(--zx-on-primary); }
-        #httprpPage .ptChip .n{ opacity:1; color:var(--zx-text-muted); }
-        #httprpPage .ptChip.on .n{ color:inherit; }
-        #httprpPage .ptLink{ color:var(--zx-link); }
-        #httprpPage .ptMoreTags{ border-color:var(--zx-border-strong); color:var(--zx-text); }
-        #bulkBar{ background:var(--zx-surface) !important; color:var(--zx-text) !important; border:1px solid var(--zx-border-strong) !important; border-left:4px solid var(--zx-primary) !important; box-shadow:var(--zx-shadow-2) !important; border-radius:var(--zx-radius-md); }
-        #bulkBar .bulkCount{ color:var(--zx-primary-soft-text) !important; }
-        #bulkBar .bulkAllSel, #bulkBar .bulkHint{ opacity:1; color:var(--zx-text-muted); }
-        #bulkBar .ui.button{ background:var(--zx-surface) !important; border:1px solid var(--zx-border-strong) !important; }
-        #bulkBar .ui.button:hover{ background:var(--zx-surface-2) !important; border-color:var(--zx-primary) !important; }
-        #bulkBar .ui.button.danger, body.darkTheme #bulkBar .ui.button.danger{ color:var(--zx-danger-text) !important; border-color:var(--zx-danger-line) !important; }
-        #bulkSelectMatching{ background:var(--zx-surface-2); color:var(--zx-text); }
-        #httpProxyTableWrapper{ border-color:var(--zx-border); background:var(--zx-surface); border-radius:var(--zx-radius-md); overflow-y:auto; max-height:none; }
-        table.ptTable th{ background:var(--zx-surface-2); color:var(--zx-text-muted); border-bottom-color:var(--zx-border); }
-        table.ptTable th[data-sort]:hover, table.ptTable th.sorted{ color:var(--zx-text); }
-        table.ptTable td{ border-bottom-color:var(--zx-border); }
-        table.ptTable tbody tr.ptRow:hover{ background:var(--zx-surface-2); }
-        table.ptTable tr.isSel, table.ptTable tr.isSel:hover{ background:var(--zx-primary-soft); }
-        table.ptTable .ptSub, table.ptTable .ptLive .ptLiveIdle, table.ptTable .ptLive .ptLiveOff, table.ptTable .ptLive .ptLiveAct{ color:var(--zx-text-muted); }
-        table.ptTable .ptMuted, #httprpPage .ptMuted{ opacity:1; color:var(--zx-text-muted); }
-        table.ptTable .ptBad, table.ptTable .ptLive .ptLiveErr{ color:var(--zx-danger-text); }
-        table.ptTable .ptHost{ color:var(--zx-link); }
-        table.ptTable .ptUp, table.ptTable .ptUps a{ color:var(--zx-link); }
-        table.ptTable .ptSel input{ width:24px; height:24px; accent-color:var(--zx-primary); }
-        table.ptTable .ptUps a.ptUp{ display:inline-block; padding:4px 0; }
-        table.ptTable .ptLive svg.ptSpark path, body.darkTheme table.ptTable .ptLive svg.ptSpark path{ stroke:var(--zx-primary); }
-        table.ptTable .ptLive svg.ptSpark path.fill, body.darkTheme table.ptTable .ptLive svg.ptSpark path.fill{ fill:var(--zx-primary); }
-        .ptBadge{ border-color:var(--zx-border-strong); background:var(--zx-neutral-bg); color:var(--zx-neutral-text); font-size:0.8em; }
-        .ptBadge.waf{ border-color:var(--zx-ok-line); background:var(--zx-ok-bg); color:var(--zx-ok-text); }
-        .ptBadge.auth{ border-color:var(--zx-info-line); background:var(--zx-info-bg); color:var(--zx-info-text); }
-        /* tag chips: neutral badges (the per tag fill colour is set inline by proxytable.js and is overridden here) */
-        .ptTag{ background:var(--zx-neutral-bg) !important; color:var(--zx-neutral-text) !important; border:1px solid var(--zx-neutral-line); border-radius:var(--zx-radius-pill); font-weight:600; font-size:0.8em; padding:0.3em 0.75em; }
-        .ptPill{ border-color:var(--zx-border-strong); background:var(--zx-surface); color:var(--zx-text); }
-        .ptPill.on{ border-color:var(--zx-ok-line); background:var(--zx-ok-bg); color:var(--zx-ok-text); }
-        .ptPill.err{ border-color:var(--zx-danger-line); background:var(--zx-danger-bg); color:var(--zx-danger-text); }
-        table.ptTable .ptAct .ptDel{ border:1px solid var(--zx-danger-line) !important; color:var(--zx-danger-text) !important; background:var(--zx-surface) !important; }
-        table.ptTable .ptAct .ptDel i.icon{ color:var(--zx-danger-text) !important; }
-        .ptEmpty > .icon{ opacity:1; color:var(--zx-text-faint); }
-        .ptFooter{ color:var(--zx-text-muted); }
-        @media screen and (max-width: 640px){
-            #httprpPage .ptSeg{ flex-wrap:nowrap; overflow-x:auto; max-width:100%; }
-            #httprpPage .ptSeg button{ flex:0 0 auto; }
-            table.ptTable .ptSel input{ width:26px; height:26px; }
-            table.ptTable .ptAct .ui.button{ min-height:36px; }
-        }
-
-        /* round 2: list polish */
-        #httprpEditModal .hrp-btnrow--equal .ui.button{ flex:1 1 15rem; justify-content:center; min-height:var(--zx-control-h); }
-        #httprpPage .ptTools{ margin-top:var(--zx-space-4); }
-        table.ptTable td.ptSel input.bulkSel, table.ptTable th.ptSel input#bulkSelectAll{ width:24px !important; height:24px !important; min-width:24px; }
-        table.ptTable .ptAct{ display:table-cell; }
-        table.ptTable .ptAct .ui.button{ min-height:32px; height:32px; padding:0 0.85em; display:inline-flex; align-items:center; justify-content:center; gap:0.35em; vertical-align:middle; }
-        table.ptTable .ptAct .ui.button > i.icon{ margin:0; }
-        table.ptTable .ptAct .ptDel{ padding:0; width:32px; }
-        #httprpPage .ptChipDot{ outline:1px solid var(--zx-border-strong); outline-offset:1px; }
-        body.darkTheme #httprpPage .ptChipDot{ filter:brightness(1.7) saturate(1.1); }
-        @media screen and (max-width: 640px){
-            #httprpPage .ptSeg{ border:0; background:transparent; overflow:visible; flex-wrap:wrap; gap:var(--zx-space-2); width:100%; }
-            #httprpPage .ptSeg button{ flex:1 1 auto; border:1px solid var(--zx-border-strong); border-radius:var(--zx-radius-pill); min-height:36px; }
-            #httprpPage .ptSeg button:last-child{ border-right:1px solid var(--zx-border-strong); }
-            #httprpPage .ptSeg button.active{ border-color:var(--zx-primary); }
-            table.ptTable tr.ptRow .ptAct{ justify-self:end; display:flex; gap:var(--zx-space-2); justify-content:flex-end; width:auto; padding-right:0.2em; }
-            table.ptTable .ptAct .ui.button{ margin:0; min-height:36px; height:36px; }
-            table.ptTable .ptAct .ptDel{ width:36px; }
-            #httprpPage #ptRefresh{ margin-left:auto; }
-            table.ptTable tr.ptRow{ grid-template-columns:2.4em minmax(0,1fr) auto; grid-template-areas:"sel name act" ". live live" ". ups ups" ". prot prot" ". tags tags" ". stat stat"; align-items:start; }
-            table.ptTable tr.ptRow .ptAct{ align-self:start; padding-top:0.1em; }
-            table.ptTable .ptSel{ padding-top:0.35em; }
-        }
-
     </style>
     <header class="zx-page-header ptHead">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">HTTP Proxy</h2>
-            <p class="zx-page-header__sub">Send requests for a domain to a server on your network</p>
+            <p class="zx-page-header__sub">Every host name Zoraxy answers for, and the server on your network that each one is sent to.</p>
         </div>
         <div class="zx-page-header__actions">
-            <button type="button" class="ui basic button" id="ptTemplates" onclick="openRuleTemplateManager();" title="Create and edit reusable rule templates"><i class="clone outline icon"></i> Templates</button>
-            <button type="button" class="ui primary button" id="ptNewRule" onclick="openNewRuleDialog();" title="Create a proxy rule (n)"><i class="plus icon"></i> New proxy rule</button>
+            <button type="button" class="zx-btn zx-btn--secondary" id="ptTemplates" onclick="openRuleTemplateManager();" title="Create and edit reusable rule templates"><i class="clone outline icon" aria-hidden="true"></i> Templates</button>
+            <button type="button" class="zx-btn zx-btn--primary" id="ptNewRule" onclick="openNewRuleDialog();" title="Create a proxy rule (n)"><i class="plus icon" aria-hidden="true"></i> New proxy rule</button>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#cert" data-nav-open="cert">Certificates</a> <span>The TLS certificate each host answers with</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Who may reach a host: countries, addresses, allow-lists</span></li>
+            <li><a href="#waf" data-nav-open="waf">WAF</a> <span>Blocks attacks inside requests, per host or for all</span></li>
+            <li><a href="#utm" data-nav-open="utm">Uptime Monitor</a> <span>Why a host shows "Down"</span></li>
+        </ul>
+    </aside>
 
-    <div class="ptTools">
-        <!-- Prevent the browser from filling the saved Zoraxy login account into the search input below -->
-        <input type="password" autocomplete="off" hidden/>
-        <div class="ui icon input ptSearch">
-            <input type="search" id="searchInput" placeholder="Search host, upstream, tag..." autocomplete="off" spellcheck="false" aria-label="Search proxy rules">
-            <i class="search icon"></i>
+    <!-- What needs attention. Every tile is also a filter of the list below. -->
+    <div class="zx-statrow zxs-statrow" id="ptStats" role="group" aria-label="Summary of all hosts. Choose a tile to filter the list." hidden>
+        <button type="button" class="zx-stat zxs-stat" data-stat="sites" data-f="all" aria-pressed="false"><span class="zx-stat__label">Hosts</span><span class="zx-stat__value">0</span><span class="zx-stat__hint" id="ptStatSitesHint">proxy rules</span></button>
+        <button type="button" class="zx-stat zxs-stat" data-stat="down" data-f="errors" aria-pressed="false" title="Enabled hosts without an active upstream or whose upstream is offline"><span class="zx-stat__label">Upstream down</span><span class="zx-stat__value">0</span><span class="zx-stat__hint">the server does not answer</span></button>
+        <button type="button" class="zx-stat zxs-stat" data-stat="notls" data-f="notls" aria-pressed="false"><span class="zx-stat__label">Without HTTPS</span><span class="zx-stat__value">0</span><span class="zx-stat__hint">plain HTTP is allowed</span></button>
+        <button type="button" class="zx-stat zxs-stat" data-stat="nowaf" data-f="nowaf" aria-pressed="false"><span class="zx-stat__label">Without WAF</span><span class="zx-stat__value">0</span><span class="zx-stat__hint">requests are not inspected</span></button>
+        <button type="button" class="zx-stat zxs-stat" data-stat="noauth" data-f="noauth" aria-pressed="false"><span class="zx-stat__label">Without login</span><span class="zx-stat__value">0</span><span class="zx-stat__hint">no sign-in in front</span></button>
+    </div>
+
+    <div class="zxs-list" id="ptList">
+        <div class="zxs-list__bar ptTools" id="ptTools">
+            <!-- Prevent the browser from filling the saved Zoraxy login account into the search input below -->
+            <input type="password" autocomplete="off" hidden/>
+            <div class="zxs-search ptSearch">
+                <i class="search icon" aria-hidden="true"></i>
+                <input type="search" class="zx-input" id="searchInput" placeholder="Search host, upstream or tag" autocomplete="off" spellcheck="false" aria-label="Search hosts">
+            </div>
+            <div class="zxs-seg ptSeg" id="ptSeg" role="group" aria-label="Filter by state">
+                <button type="button" data-f="all" aria-pressed="true">All <span class="n">0</span></button>
+                <button type="button" data-f="enabled" aria-pressed="false">Enabled <span class="n">0</span></button>
+                <button type="button" data-f="disabled" aria-pressed="false">Disabled <span class="n">0</span></button>
+            </div>
+            <span class="zx-badge" id="ptFilterNote" hidden></span>
+            <button type="button" class="zxs-linkbtn ptLink" id="ptClear" style="display:none;">Clear filters</button>
+            <span class="zxs-list__grow"></span>
+            <button type="button" class="zxs-iconbtn" id="ptRefresh" title="Reload the list" aria-label="Reload the list"><i class="refresh icon" aria-hidden="true"></i></button>
         </div>
-        <div class="ptSeg" id="ptSeg" role="group" aria-label="Filter by status">
-            <button type="button" data-f="all" aria-pressed="true">All <span class="n">0</span></button>
-            <button type="button" data-f="enabled" aria-pressed="false">Enabled <span class="n">0</span></button>
-            <button type="button" data-f="disabled" aria-pressed="false">Disabled <span class="n">0</span></button>
-            <button type="button" data-f="errors" aria-pressed="false" title="Enabled rules without an active upstream or whose upstream is offline">Errors <span class="n">0</span></button>
-            <button type="button" data-f="noauth" aria-pressed="false" title="Rules without any authentication">No auth <span class="n">0</span></button>
+        <div class="zxs-list__sub ptTagChips" id="ptTagChips" style="display:none;" role="group" aria-label="Filter by tag"></div>
+
+        <!-- Bulk actions: exists only while hosts are selected -->
+        <div id="bulkBar" class="zxs-bulk" role="toolbar" aria-label="Actions for the selected hosts" hidden>
+            <span class="zxs-bulk__count bulkCount">0 selected</span><span class="zxs-bulk__note bulkAllSel" style="display:none;">every matching host</span>
+            <button type="button" data-act="enable" title="Enable the selected hosts" aria-label="Enable the selected hosts"><i class="play icon" aria-hidden="true"></i><span>Enable</span></button>
+            <button type="button" data-act="disable" title="Disable the selected hosts" aria-label="Disable the selected hosts"><i class="pause icon" aria-hidden="true"></i><span>Disable</span></button>
+            <button type="button" data-act="tags" title="Add or remove tags on the selected hosts" aria-label="Tags of the selected hosts"><i class="tags icon" aria-hidden="true"></i><span>Tags</span></button>
+            <span class="zxs-bulk__sep" aria-hidden="true"></span>
+            <button type="button" data-act="more" id="bulkMore" aria-haspopup="menu" aria-expanded="false" title="Change a setting on all selected hosts"><i class="sliders horizontal icon" aria-hidden="true"></i><span>Change</span><i class="angle down icon" aria-hidden="true"></i></button>
+            <span class="zxs-bulk__grow"></span>
+            <button type="button" class="danger" data-act="delete" title="Delete the selected hosts" aria-label="Delete the selected hosts"><i class="trash alternate outline icon" aria-hidden="true"></i><span>Delete</span></button>
+            <span class="zxs-bulk__sep" aria-hidden="true"></span>
+            <kbd>Esc</kbd>
+            <button type="button" data-act="clear" title="Clear the selection (Esc)" aria-label="Clear the selection"><i class="times icon" aria-hidden="true"></i></button>
         </div>
-        <button type="button" class="ptLink" id="ptClear" style="display:none;">Clear filters</button>
-        <span class="ptSpacer"></span>
-        <button type="button" class="ui basic icon button" id="ptRefresh" title="Reload the list" aria-label="Reload the list"><i class="refresh icon"></i></button>
-    </div>
-    <div class="ptTagChips" id="ptTagChips" style="display:none;" aria-label="Filter by tag"></div>
+        <div id="bulkSelectMatching" class="zxs-bulkmore" style="display:none;">All hosts on this page are selected. <a href="#">Select all matching hosts</a></div>
 
-    <!-- Bulk actions: shown only while rules are selected -->
-    <div id="bulkBar" role="toolbar" aria-label="Actions for the selected rules" hidden>
-        <b class="bulkCount">0 selected</b><span class="bulkAllSel" style="display:none;">(every matching rule)</span>
-        <button type="button" class="ui mini button" data-act="enable" title="Enable the selected rules" aria-label="Enable the selected rules"><i class="toggle on icon"></i> Enable</button>
-        <button type="button" class="ui mini button" data-act="disable" title="Disable the selected rules" aria-label="Disable the selected rules"><i class="toggle off icon"></i> Disable</button>
-        <button type="button" class="ui mini button" data-act="tags" title="Add or remove tags on the selected rules" aria-label="Tags of the selected rules"><i class="tags icon"></i> Tags</button>
-        <button type="button" class="ui mini button" data-act="waf" title="Set the WAF of the selected rules" aria-label="WAF of the selected rules"><i class="shield alternate icon"></i> WAF</button>
-        <button type="button" class="ui mini button" data-act="rate" title="Set the rate limit of the selected rules" aria-label="Rate limit of the selected rules"><i class="tachometer alternate icon"></i> Rate limit</button>
-        <button type="button" class="ui mini button" data-act="auth" title="Set the authentication of the selected rules" aria-label="Authentication of the selected rules"><i class="key icon"></i> Authentication</button>
-        <button type="button" class="ui mini button" data-act="access" title="Choose the access rule of the selected rules" aria-label="Access rule of the selected rules"><i class="ban icon"></i> Access rule</button>
-        <button type="button" class="ui mini button" data-act="cert" title="Choose the certificate of the selected rules" aria-label="Certificate of the selected rules"><i class="lock icon"></i> Certificate</button>
-        <button type="button" class="ui mini button" data-act="template" title="Apply a template to the selected rules" aria-label="Apply a template to the selected rules"><i class="clone icon"></i> Template</button>
-        <span class="bulkSpacer"></span>
-        <button type="button" class="ui mini button danger" data-act="delete" title="Delete the selected rules" aria-label="Delete the selected rules"><i class="trash icon"></i> Delete</button>
-        <span class="bulkHint">Esc to clear</span>
-        <button type="button" class="ui mini icon button" data-act="clear" title="Clear selection (Esc)" aria-label="Clear selection"><i class="times icon"></i></button>
-    </div>
-    <div id="bulkSelectMatching">All rules on this page are selected. <a href="#">Select all matching rules</a></div>
+        <div id="httpProxyTableWrapper">
+            <table class="ptTable" id="httpProxyTable">
+                <thead>
+                    <tr>
+                        <th class="no-sort ptSel"><input type="checkbox" id="bulkSelectAll" title="Select every host on this page" aria-label="Select every host on this page"></th>
+                        <th class="no-sort ptThHost" data-sort="host" tabindex="0" aria-sort="none">Host <span class="ptArrow"></span><span class="ptThAlt" data-sort="upstream" tabindex="0" role="button" title="Sort by upstream address">Upstream <span class="ptArrow"></span></span></th>
+                        <th class="no-sort ptLiveTh" data-sort="status" tabindex="0" aria-sort="none" title="Is the server behind the host answering (uptime monitor), and the requests per second right now with the last two minutes. Click to put the hosts in trouble first.">Live <span class="ptArrow"></span></th>
+                        <th class="no-sort ptThProt">Protection<button type="button" class="zx-whatis" aria-expanded="false" aria-controls="ptProtWhat" aria-label="What do the protection icons mean?">?</button>
+                            <div class="zx-popover" id="ptProtWhat" hidden>
+                                <ul class="zxs-legend">
+                                    <li><span class="zxs-protchip is-on" aria-hidden="true"><i class="shield alternate icon"></i></span><span><b>On.</b> This protection is active for the host.</span></li>
+                                    <li><span class="zxs-protchip is-watch" aria-hidden="true"><i class="shield alternate icon"></i></span><span><b>Detection only.</b> The WAF records attacks but lets them through.</span></li>
+                                    <li><span class="zxs-protchip is-warn" aria-hidden="true"><i class="lock open icon"></i></span><span><b>Weaker than it could be.</b> For example plain HTTP is allowed.</span></li>
+                                    <li><span class="zxs-protchip is-off" aria-hidden="true"><i class="key icon"></i></span><span><b>Off.</b> Not used on this host.</span></li>
+                                </ul>
+                                <p class="zx-help" style="margin:8px 0 0;">The icons are HTTPS, WAF, login and rate limit. Point at one, or move to the set with Tab, to read what it does.</p>
+                            </div></th>
+                        <th class="no-sort ptThTags" data-sort="tags" tabindex="0" aria-sort="none">Tags <span class="ptArrow"></span></th>
+                        <th class="no-sort ptThOn">Enabled</th>
+                        <th class="no-sort ptThAct"><span class="zx-sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody id="httpProxyList">
+                    <tr class="ptEmptyRow"><td colspan="7"><div class="zx-empty"><div class="zx-empty__icon"><i class="notched circle loading icon" aria-hidden="true"></i></div><p class="zx-empty__text">Loading the hosts...</p></div></td></tr>
+                </tbody>
+            </table>
+        </div>
 
-    <div id="httpProxyTableWrapper">
-        <table class="ptTable" id="httpProxyTable">
-            <thead>
-                <tr>
-                    <th class="ptSel"><input type="checkbox" id="bulkSelectAll" title="Select every rule on this page" aria-label="Select every rule on this page"></th>
-                    <th data-sort="host" tabindex="0" aria-sort="none">Host <span class="ptArrow"></span></th>
-                    <th class="ptLiveTh" title="Requests per second right now, and the last two minutes">Live</th>
-                    <th data-sort="upstream" tabindex="0" aria-sort="none">Upstream <span class="ptArrow"></span></th>
-                    <th>Protection</th>
-                    <th data-sort="tags" tabindex="0" aria-sort="none">Tags <span class="ptArrow"></span></th>
-                    <th data-sort="status" tabindex="0" aria-sort="none">Status <span class="ptArrow"></span></th>
-                    <th><span class="ptSrOnly" style="position:absolute;left:-9999px;">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody id="httpProxyList">
-                <tr class="ptEmptyRow"><td colspan="8"><div class="ptEmpty"><i class="notched circle loading icon"></i><p>Loading proxy rules...</p></div></td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="ptFooter">
-        <span id="ptCount" aria-live="polite"></span>
-        <span class="ptPager" id="ptPager" style="display:none;">
-            <label for="ptPageSize">Rows</label>
-            <select id="ptPageSize"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
-            <button type="button" class="ui mini basic icon button" id="ptPrev" aria-label="Previous page"><i class="angle left icon"></i></button>
-            <span id="ptPageNo"></span>
-            <button type="button" class="ui mini basic icon button" id="ptNext" aria-label="Next page"><i class="angle right icon"></i></button>
-        </span>
+        <div class="zxs-list__foot ptFooter" id="ptFooter">
+            <span id="ptCount" aria-live="polite"></span>
+            <span class="ptPager" id="ptPager" style="display:none;">
+                <label for="ptPageSize">Rows</label>
+                <select id="ptPageSize" class="zx-select"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                <button type="button" class="zxs-iconbtn" id="ptPrev" aria-label="Previous page"><i class="angle left icon" aria-hidden="true"></i></button>
+                <span id="ptPageNo"></span>
+                <button type="button" class="zxs-iconbtn" id="ptNext" aria-label="Next page"><i class="angle right icon" aria-hidden="true"></i></button>
+            </span>
+        </div>
     </div>
 </div>
 
@@ -1307,6 +1230,7 @@
     /* A card that embeds an editor page (aliases, tags, header rules, access rule) sizes its frame to the page, so the editor
        has no second scrollbar of its own inside the scrolling window. Same origin, so the frame document is readable. */
     function hrpFitFrame(f){
+        if (window.ZxUI && ZxUI.fitFrame) { ZxUI.fitFrame(f, {escape: true, max: 4000}); return; }   // shared since design v2; the code below is the fallback
         if (!f || f.getAttribute("data-fit")) return;
         f.setAttribute("data-fit", "1");
         function fit(){
@@ -1911,7 +1835,7 @@
 
     function quickEditVdir(uuid){
         openTabById("vdir");
-        $("#vdirBaseRoutingRule").parent().dropdown("set selected", uuid);
+        if (typeof showVdirOfHost === "function"){ showVdirOfHost(uuid); }
     }
 
     //Open the load balance option

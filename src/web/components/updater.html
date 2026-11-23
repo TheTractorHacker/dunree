@@ -24,14 +24,18 @@
     .up-hero__why { margin-top: var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); max-width: var(--up-measure); }
     .up-hero__why:empty { display: none; }
     .up-tech { margin-top: var(--zx-space-3); font-size: var(--zx-fs-sm); color: var(--zx-text-muted); max-width: var(--up-measure); }
-    .up-tech summary { cursor: pointer; font-weight: 600; color: var(--zx-text-muted); }
+    /* every "show more" of this page is the kit disclosure; inside a card it has no rule of its own above it */
+    #upPage .zx-disclosure.up-tech, #upPage .zx-disclosure.up-more { border-top: 0; margin-bottom: 0; }
+    #upPage .zx-disclosure.up-tech > summary, #upPage .zx-disclosure.up-more > summary { padding: 0; min-height: 32px; }
+    #upPage .zx-disclosure.up-token { margin-top: var(--zx-space-2); }
+    #upPage .zx-disclosure > .zx-disclosure__body { padding-bottom: 0; }
     .up-tech summary:focus-visible, .up-more summary:focus-visible, .up-notes-sum:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
     .up-tech__text { margin-top: var(--zx-space-2); padding: var(--zx-space-2) var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md);
-        font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); color: var(--zx-text); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 12em; overflow: auto; }
+        font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); color: var(--zx-text); white-space: pre-wrap; overflow-wrap: anywhere; }
     .up-facts { display: grid; grid-template-columns: 1fr 1fr; margin: 0; border-top: 1px solid var(--zx-border); background: var(--zx-surface-2); }
     .up-fact { padding: var(--zx-space-3) var(--zx-space-5); min-width: 0; }
     .up-fact + .up-fact { border-left: 1px solid var(--zx-border); }
-    .up-fact dt { font-size: var(--zx-fs-xs); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; color: var(--zx-text-muted); }
+    .up-fact dt { font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); }
     .up-fact dd { margin: 2px 0 0; min-width: 0; overflow-wrap: anywhere; }
     .up-fact__value { font-size: var(--zx-fs-lg); font-weight: 700; color: var(--zx-text); }
     .up-fact__detail { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); margin-top: 2px; }
@@ -45,10 +49,14 @@
     .up-notes-sum i.icon { margin: 0; transition: transform .15s; color: var(--zx-text-muted); }
     .up-notes[open] > .up-notes-sum i.icon { transform: rotate(90deg); }
     .up-notes-sum span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-    .up-notes__body { padding: 0 var(--zx-space-4) var(--zx-space-4); }
-    #upNotes { max-height: 26em; overflow: auto; color: var(--zx-text); padding: var(--zx-space-3) var(--zx-space-4) 1.6em; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); line-height: 1.55; overflow-wrap: anywhere;
-        background: linear-gradient(var(--zx-surface-2) 30%, transparent) top / 100% 1.6em no-repeat local, linear-gradient(transparent, var(--zx-surface-2) 70%) bottom / 100% 1.6em no-repeat local,
-            radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.42), transparent) top / 100% .8em no-repeat scroll, radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.42), transparent) bottom / 100% .8em no-repeat scroll, var(--zx-surface-2); }
+    .up-notes__body { padding: 0 var(--zx-card-pad) var(--zx-card-pad); }
+    .up-notes-sum { padding-left: var(--zx-card-pad); padding-right: var(--zx-card-pad); }
+    /* the notes grow with the page (one scroller); long ones start folded and open with a button, never a scroll box */
+    #upNotes { position: relative; color: var(--zx-text); padding: 0; line-height: 1.55; overflow-wrap: anywhere; max-width: var(--up-measure); }
+    #upNotes.is-folded { max-height: 24em; overflow: hidden; }
+    #upNotes.is-folded::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5em; background: linear-gradient(transparent, var(--zx-surface)); pointer-events: none; }
+    .up-notes__more { margin-top: var(--zx-space-3); }
+    .up-notes__more[hidden] { display: none; }
     #upNotes > * { max-width: var(--up-measure); }
     #upNotes h4, #upNotes h5 { margin: 1.1em 0 .35em; font-size: 1.05em; font-weight: 700; color: var(--zx-text); line-height: 1.3; }
     #upNotes h5 { font-size: 1em; color: var(--zx-text); }
@@ -64,7 +72,7 @@
 
     /* ---- progress ---- */
     .up-steps { list-style: none; margin: 0 0 var(--zx-space-4); padding: 0; display: flex; gap: var(--zx-space-1); }
-    .up-step { flex: 1 1 0; min-width: 0; text-align: center; position: relative; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); font-weight: 600; line-height: 1.25; padding: 0 2px; }
+    .up-step { flex: 1 1 0; min-width: 0; text-align: center; position: relative; font-size: var(--zx-fs-xs); color: var(--zx-text-muted); font-weight: 700; line-height: 1.25; padding: 0 2px; }
     .up-step::before { content: ""; position: absolute; top: 13px; left: calc(-50% + 16px); right: calc(50% + 16px); height: 2px; background: var(--zx-border-strong); opacity: .5; }
     .up-step:first-child::before { display: none; }
     .up-step.is-done::before, .up-step.is-current::before, .up-step.is-failed::before { background: var(--zx-primary); opacity: 1; }
@@ -81,18 +89,16 @@
     .up-progress-text { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin: 0 0 var(--zx-space-3); }
     .up-progress-text:empty { display: none; }
     .up-more { margin-top: var(--zx-space-3); }
-    .up-more > summary { cursor: pointer; font-weight: 600; color: var(--zx-text-muted); min-height: 28px; }
-    #upLog { max-height: 18em; overflow: auto; margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere;
+    #upLog { margin: var(--zx-space-2) 0 0; padding: var(--zx-space-3); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere;
         background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); line-height: 1.5; }
     #upStage { font-weight: 400; color: var(--zx-text-muted); font-size: var(--zx-fs-md); }
 
     /* ---- settings ---- */
     .up-setting { display: flex; align-items: center; justify-content: space-between; gap: var(--zx-space-4); padding: var(--zx-space-3) 0; border-bottom: 1px solid var(--zx-border); }
     .up-setting__text { flex: 1 1 auto; min-width: 0; }
-    .up-setting__title { display: block; font-weight: 600; color: var(--zx-text); }
+    .up-setting__title { display: block; font-weight: 700; color: var(--zx-text); }
     .up-setting__desc { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: 2px; max-width: var(--up-measure); }
     .up-setting select.zx-input { width: auto; min-width: 13em; max-width: 100%; }
-    .up-more.up-token { border-top: 0; padding-top: var(--zx-space-3); margin-top: 0; }
     .up-token__row { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin-top: var(--zx-space-2); }
     .up-token__row input { flex: 1 1 14em; min-width: 0; max-width: 24em; }
     #upTokenState { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
@@ -101,14 +107,14 @@
     .up-ico-ok { color: var(--zx-ok-text); } .up-ico-warn { color: var(--zx-warn-text); } .up-ico-bad { color: var(--zx-danger-text); }
     #upPage .zx-table i.icon { margin: 0; }
     .up-checks-sum { display: flex; align-items: center; gap: var(--zx-space-3); flex-wrap: wrap; }
-    .up-checks-meta { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-3); overflow-wrap: anywhere; }
-    .up-checks-meta code { font-family: var(--zx-font-mono); color: var(--zx-text); }
+    #upPage .up-prefl-table td { color: var(--zx-text); font-size: var(--zx-fs-md); overflow-wrap: anywhere; }
+    #upPage .zx-card__title #upChecksBadge { margin-left: var(--zx-space-2); font-weight: 400; }
     .up-hist-ver { white-space: nowrap; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
     .up-hist-when { white-space: nowrap; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
     .up-hist-detail { overflow-wrap: anywhere; color: var(--zx-text); max-width: 34em; }
-    .up-danger { margin-top: var(--zx-space-4); padding: var(--zx-space-4); border: 1px solid var(--zx-danger-line); border-radius: var(--zx-radius-md); display: flex; flex-wrap: wrap; gap: var(--zx-space-3) var(--zx-space-4); align-items: center; justify-content: space-between; }
+    .up-danger { display: flex; flex-wrap: wrap; gap: var(--zx-space-3) var(--zx-space-4); align-items: center; justify-content: space-between; }
     .up-danger__text { flex: 1 1 18em; min-width: 0; }
-    .up-danger__title { font-weight: 700; color: var(--zx-danger-text); display: block; }
+    .up-danger__title { font-weight: 700; color: var(--zx-text); display: block; }
     .up-danger__desc { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); display: block; margin-top: 2px; }
     .up-reason { display: block; margin-top: var(--zx-space-1); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
     .up-reason:empty { display: none; }
@@ -148,10 +154,20 @@
 <div class="standardContainer" id="upPage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Update</h2>
             <p class="zx-page-header__sub">Install a signed Zoraxy release from GitHub. Nothing is installed until you confirm it.</p>
         </div>
     </header>
+
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#utils" data-nav-open="utils">Utilities</a> <span>Download a backup of the configuration first</span></li>
+            <li><a href="#history" data-nav-open="history">History</a> <span>Saved versions of the configuration</span></li>
+            <li><a href="#plugins" data-nav-open="plugins">Plugin Manager</a> <span>Plugins are updated on their own page</span></li>
+        </ul>
+    </aside>
 
     <!-- Status: one headline, one primary action -->
     <section class="up-hero" id="upHero" data-tone="neutral" aria-label="Update status">
@@ -161,9 +177,9 @@
                 <h3 class="up-hero__title" id="upHeadline" aria-live="polite">Checking for updates...</h3>
                 <p class="up-hero__sub" id="upSub"></p>
                 <div id="upReason" class="up-hero__note" style="display:none;"></div>
-                <details class="up-tech" id="upErrDetail" style="display:none;">
+                <details class="zx-disclosure up-tech" id="upErrDetail" style="display:none;">
                     <summary>Technical details</summary>
-                    <div class="up-tech__text" id="upRateLimit"></div>
+                    <div class="zx-disclosure__body"><div class="up-tech__text" id="upRateLimit"></div></div>
                 </details>
                 <div class="up-hero__actions" id="upActions">
                     <button type="button" class="zx-btn zx-btn--primary" id="upAppBtn" onclick="window.upConfirm('app');" style="display:none;"><i class="download icon" aria-hidden="true"></i> <span id="upAppBtnLabel">Update App</span></button>
@@ -178,7 +194,7 @@
                 <dd><div class="up-fact__value" id="upCurrent">-</div><div class="up-fact__detail" id="upCurrentDetail"></div></dd>
             </div>
             <div class="up-fact">
-                <dt>Latest on channel <span id="upChannelLabel">stable</span></dt>
+                <dt id="upLatestLabel">Latest stable release</dt>
                 <dd><div class="up-fact__value" id="upLatest">Not checked yet</div><div class="up-fact__detail" id="upLatestDetail"></div></dd>
             </div>
         </dl>
@@ -192,9 +208,9 @@
             <ol class="up-steps" id="upSteps"></ol>
             <div class="ui indicating progress" id="upProgress" style="display:none;"><div class="bar"></div></div>
             <p class="up-progress-text" id="upProgressText"></p>
-            <details class="up-more" id="upLogDetails">
+            <details class="zx-disclosure up-more" id="upLogDetails">
                 <summary>Technical log</summary>
-                <pre id="upLog"></pre>
+                <div class="zx-disclosure__body"><pre id="upLog"></pre></div>
             </details>
         </div>
     </section>
@@ -203,7 +219,8 @@
     <details class="zx-card up-card up-notes" id="upNotesWrap" style="display:none;">
         <summary class="up-notes-sum"><i class="chevron right icon" aria-hidden="true"></i><span id="upNotesTitle">Release notes</span></summary>
         <div class="up-notes__body">
-            <div id="upNotes" class="upNotes" tabindex="0" role="region" aria-label="Release notes"></div>
+            <div id="upNotes" class="upNotes" role="region" aria-label="Release notes"></div>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm up-notes__more" id="upNotesMore" aria-controls="upNotes" aria-expanded="false" hidden>Show all release notes</button>
         </div>
     </details>
 
@@ -236,9 +253,10 @@
                 </span>
                 <input type="checkbox" class="zx-switch" id="upAuto" onchange="window.upSetAuto(this.checked);">
             </label>
-            <details class="up-more up-token">
+            <details class="zx-disclosure up-more up-token">
                 <summary>GitHub access token (optional)</summary>
-                <p class="up-setting__desc" style="margin:var(--zx-space-2) 0 0;">Release checks use the anonymous GitHub API (60 requests per hour per IP address). A token without any scopes raises that limit.
+                <div class="zx-disclosure__body">
+                <p class="up-setting__desc" style="margin:0;">Release checks use the anonymous GitHub API (60 requests per hour per IP address). A token without any scopes raises that limit.
                     It is stored on this server with mode 0600, only sent to api.github.com and never shown again.</p>
                 <div class="up-token__row">
                     <input type="password" class="zx-input" id="upToken" autocomplete="off" placeholder="ghp_..." aria-label="GitHub access token">
@@ -246,6 +264,7 @@
                     <button type="button" class="zx-btn zx-btn--secondary" id="upTokenClear" onclick="window.upSetToken(true);">Remove</button>
                 </div>
                 <div style="margin-top:var(--zx-space-2);"><span id="upTokenState"></span></div>
+                </div>
             </details>
         </div>
     </section>
@@ -262,31 +281,40 @@
 
     <!-- Checks -->
     <section class="zx-card up-card">
-        <div class="zx-card__head"><h3 class="zx-card__title">Preflight checks</h3><span id="upChecksBadge"></span></div>
+        <div class="zx-card__head"><h3 class="zx-card__title">Preflight checks <span id="upChecksBadge"></span></h3>
+            <p class="zx-card__desc">What Zoraxy verifies on this server before it lets an update start: the way it restarts, write access and free disk space.</p></div>
         <div class="zx-card__body">
-            <details class="up-more" id="upChecksDetails" style="margin-top:0;">
+            <details class="zx-disclosure up-more" id="upChecksDetails" style="margin-top:0;">
                 <summary>Show all checks</summary>
-                <div class="zx-table-wrap zx-table-wrap--tall" style="margin-top:var(--zx-space-2);"><table class="zx-table up-prefl-table">
+                <div class="zx-disclosure__body">
+                <div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table up-prefl-table">
                     <thead><tr><th style="width:2.5em;"><span class="zx-sr-only">Status</span></th><th>Check</th><th>Detail</th></tr></thead>
                     <tbody id="upPreflight"><tr><td colspan="3">Loading...</td></tr></tbody>
                 </table></div>
+                </div>
             </details>
-            <div class="up-checks-meta">Restart method: <b id="upMethod">-</b> &nbsp; Binary: <code id="upExe">-</code></div>
         </div>
     </section>
 
-    <!-- History and rollback -->
+    <!-- Installed updates -->
     <section class="zx-card up-card">
-        <div class="zx-card__head"><h3 class="zx-card__title">History</h3></div>
+        <div class="zx-card__head"><h3 class="zx-card__title">Installed updates</h3>
+            <p class="zx-card__desc">Every update, database migration and rollback run from this page.</p></div>
         <div class="zx-card__body">
-            <div class="zx-table-wrap zx-table-wrap--tall"><table class="zx-table up-hist-table">
+            <div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table up-hist-table">
                 <thead><tr><th>Time</th><th>Action</th><th>Version</th><th>Result</th><th>Detail</th></tr></thead>
-                <tbody id="upHistory"><tr><td colspan="5">No history</td></tr></tbody>
+                <tbody id="upHistory"><tr><td class="zx-empty-cell" colspan="5">Loading...</td></tr></tbody>
             </table></div>
+        </div>
+    </section>
+
+    <!-- Danger zone: rollback -->
+    <section class="zx-card zx-card--danger up-card" aria-label="Danger zone">
+        <div class="zx-card__body">
             <div class="up-danger">
                 <div class="up-danger__text">
                     <span class="up-danger__title">Roll back to the previous version</span>
-                    <span class="up-danger__desc">Restores the previous binary and restarts Zoraxy. Configuration is not reverted.</span>
+                    <span class="up-danger__desc">Puts the previous Zoraxy program back and restarts. The configuration is not reverted. Asks before it runs.</span>
                     <span class="up-reason" id="upRbReason"></span>
                 </div>
                 <button type="button" class="zx-btn zx-btn--danger-outline" id="upRollbackBtn" onclick="window.upConfirm('rollback');"><i class="undo icon" aria-hidden="true"></i> Roll back</button>
@@ -413,7 +441,7 @@
         state.info = info;
         let s = info.settings || {}, p = info.preflight || {}, c = info.current || {};
         $("#upChannel").val(s.channel);
-        $("#upChannelLabel").text(s.channel);
+        $("#upLatestLabel").text(s.channel == "beta" ? T("Latest beta release") : T("Latest stable release"));
         $("#upBackup").prop("checked", s.backup_first);
         $("#upAuto").prop("checked", !!s.auto_check);
         $("#upTokenState").text(s.has_token ? "A token is configured." : "No token configured.");
@@ -421,8 +449,6 @@
         $("#upCurrent").text(c.tag ? c.tag : "v" + c.version);
         $("#upCurrentDetail").text(c.known ? "Installed by the updater, published " + fmtTime(c.published) :
             "Base version " + c.version + " (build date unknown: not installed by the updater yet)");
-        $("#upMethod").text(p.restart_method || "-");
-        $("#upExe").text(p.executable || "unknown");
         let rows = "", bad = 0, warn = 0;
         (p.checks || []).forEach(function(ch){
             let icon = ch.status == "ok" ? '<i class="check circle icon up-ico-ok"></i><span class="zx-sr-only">' + esc(T("OK")) + '</span>' :
@@ -471,6 +497,23 @@
         $("#upRbReason").text(rbR);
         renderHero();
     }
+
+    // Release notes: no scroll box. Notes taller than the fold start folded and open in place with a button.
+    function foldNotes(){
+        let box = document.getElementById("upNotes"), more = document.getElementById("upNotesMore");
+        if (!box || !more) return;
+        box.classList.remove("is-folded");
+        let long = box.scrollHeight > 440;
+        more.hidden = !long;
+        if (long){ box.classList.add("is-folded"); more.textContent = T("Show all release notes"); more.setAttribute("aria-expanded", "false"); }
+    }
+    $("#upNotesMore").on("click", function(){
+        let box = document.getElementById("upNotes"), open = box.classList.toggle("is-folded") === false;
+        this.textContent = open ? T("Show fewer release notes") : T("Show all release notes");
+        this.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.getElementById("upNotesWrap").addEventListener("toggle", function(){ if (this.open && !document.getElementById("upNotes").dataset.folded){ document.getElementById("upNotes").dataset.folded = "1"; foldNotes(); } });
+    if (window.MutationObserver){ new MutationObserver(function(){ delete document.getElementById("upNotes").dataset.folded; if (document.getElementById("upNotesWrap").open){ document.getElementById("upNotes").dataset.folded = "1"; foldNotes(); } }).observe(document.getElementById("upNotes"), {childList: true}); }
 
     function renderCheck(res){
         state.check = res; state.checkErr = null; state.checkedLocal = Date.now();
@@ -541,7 +584,7 @@
     var HIST_RESULT = {success: ["ok", "Success"], installed: ["ok", "Installed"], failed: ["danger", "Failed"], rolled_back: ["warn", "Rolled back"]};
     function loadHistory(){
         $.get("./api/updater/history", function(data){
-            if (!data || !data.length){ $("#upHistory").html("<tr><td colspan='5'>" + esc(T("No updates installed yet")) + "</td></tr>"); return; }
+            if (!data || !data.length){ $("#upHistory").html("<tr><td class='zx-empty-cell' colspan='5'>" + esc(T("No updates installed yet. Updates, migrations and rollbacks you run here are listed with their result.")) + "</td></tr>"); return; }
             let rows = "";
             data.forEach(function(h){
                 let rs = HIST_RESULT[h.result], badge = '<span class="zx-badge' + (rs ? " zx-badge--" + rs[0] : "") + '">' + esc(rs ? T(rs[1]) : h.result) + '</span>';

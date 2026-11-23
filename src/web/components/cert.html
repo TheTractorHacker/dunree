@@ -1,48 +1,77 @@
+<!-- Certificates (tag cert). Order: what needs attention (stat row, expiring callout), the certificate rows (expiry in days, covered names, issuer,
+     auto-renew), hosts without a certificate. "Add a certificate" is a guided choice of three paths (ACME, upload, self-signed), opened from the header.
+     Shared styles: ui/zxpages.css, block "area: certs" (cx-*). -->
 <style>
-    #certPage .certdate { white-space: nowrap; }
-    #certPage .certMissingHost code { background: var(--zx-surface-2); padding: 0 4px; border-radius: var(--zx-radius-sm); }
-    #certPage .zx-table td .zx-row-actions { display: flex; gap: var(--zx-space-1); flex-wrap: wrap; }
-    #certPage #certAddBody .ui.form .field { margin-bottom: var(--zx-space-3); }
-    #certPage .certFileHint { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    #certPage .zx-card .zx-table-wrap { border: 0; border-radius: 0; box-shadow: none; }
-    #certPage .certTools { margin-left: auto; }
-    #certPage .certDescFallback { position: relative; padding-bottom: var(--zx-space-3); }
-    #certPage .certDescFallback .zx-whatis { vertical-align: middle; margin-left: var(--zx-space-1); }
+    #certPage .zx-statrow { margin-top: 0; }
+    /* an element with the hidden attribute stays hidden, whatever display its kit class sets (.zx-field, .zx-btn-row) */
+    #certPage [hidden] { display: none; }
+    #certPage .certName { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--zx-space-2); max-width: 100%; font-weight: 700; color: var(--zx-text); }
+    #certPage .certName > .certNameText { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+    #certPage .certList { table-layout: fixed; }
+    #certPage .certList td { vertical-align: top; }
+    #certPage .certList td .cx-cell { max-width: 100%; }
+    #certPage .certList td .zx-longvalue { max-width: 100%; overflow-wrap: anywhere; }
+    /* the name column takes the slack; the others are as wide as their content needs */
+    #certPage .certList th:nth-child(2) { width: 10.5rem; }
+    #certPage .certList th:nth-child(3) { width: 12.6rem; }
+    #certPage .certList th:nth-child(4) { width: 9.5rem; }
+    #certPage .certList th:nth-child(5) { width: 17.5rem; }
+    #certPage .certList .zx-longvalue { -webkit-line-clamp: 2; }
+    /* a narrower page drops the least important column (Issuer) and the word on Renew, instead of squeezing the names */
+    @media (max-width: 1240px) and (min-width: 481px) {
+        #certPage .certList th:nth-child(3), #certPage .certList td:nth-child(3) { display: none; }
+        #certPage .certList th:nth-child(5) { width: 13.6rem; }
+        #certPage .certList .certRenewLabel { display: none; }
+        #certPage .certList .renewButton { min-width: var(--zx-control-h); padding-left: 0; padding-right: 0; justify-content: center; }
+        #certPage .certList .renewButton i.icon { margin: 0; }
+    }
+    @media (max-width: 1000px) and (min-width: 481px) {
+        #certPage .certList th:nth-child(4), #certPage .certList td:nth-child(4) { display: none; }
+        #certPage .certList th:nth-child(2) { width: 9.5rem; }
+        #certPage .certList th:nth-child(5) { width: 7.8rem; }
+        #certPage table.certList td.zx-actions { white-space: normal; }
+        #certPage table.certList td .zx-row-actions { flex-wrap: wrap; justify-content: flex-end; }
+    }
+    @media (max-width: 480px) { #certPage .certList { table-layout: auto; } }
+    #certPage #certAddCard { scroll-margin-top: calc(var(--zx-topbar-h, 56px) + var(--zx-space-4)); }
+    #certPage .certList td.zx-actions { white-space: nowrap; }
+    #certPage .certList .zx-row-actions { flex-wrap: nowrap; }
+    #certPage #certExpiringBox { margin-bottom: var(--zx-space-4); }
+    #certPage .certMissingExtra[hidden] { display: none !important; }
     #certPage input.certFile { padding: 4px; height: auto; min-height: var(--zx-control-h); }
     #certPage input.certFile::file-selector-button { margin-right: var(--zx-space-2); padding: 4px var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-sm); background: var(--zx-surface-2); color: var(--zx-text); font: inherit; cursor: pointer; }
-    #certPage .certAddActions { margin-top: var(--zx-space-3); }
-    #certPage .certMissingHost code { overflow-wrap: anywhere; }
-    #certPage .certToolRow { margin-bottom: var(--zx-space-3); }
-    #certPage .certMissingExtra[hidden] { display: none !important; }
-    /* an empty list shows its empty state, not a lonely table header */
-    #certPage .zx-table-wrap:has(.zx-empty) thead { display: none; }
+    #certPage #certPasteArea textarea { font-family: var(--zx-font-mono); font-size: var(--zx-fs-xs); line-height: 1.5; min-height: 9rem; }
+    #certPage #certPasteArea[hidden], #certPage #certFileFields[hidden], #certPage .certPathFoot > [hidden] { display: none; }
+    #certPage .certPasteGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--zx-space-4); }
+    #certPage .certPathFoot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin-top: var(--zx-space-4); }
+    #certPage #certAddCard .zx-card__head { justify-content: space-between; }
+    #certPage #certAddCard[data-done] #certPathChoice, #certPage #certAddCard[data-done] .cx-path { display: none; }
+    #certPage #certAddCard[data-done] > .zx-card__desc { display: none; }
+    #certPage #certAddCard[data-done] #certUploadSuccMsg { margin-top: 0; }
+    #certPage #certAddFor { color: var(--zx-text); font-weight: 700; }
+    #certPage .certSummary { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: var(--zx-lh); }
+    #certPage .certSummary b { color: var(--zx-text); }
+    #certPage .certListHead { justify-content: space-between; }
+    #certPage .zx-card__desc #certFallbackLine { color: var(--zx-text-muted); }
+    #certPage #renewLogBox { margin-top: var(--zx-space-4); }
+    @media (max-width: 700px) { #certPage .certPasteGrid { grid-template-columns: minmax(0, 1fr); } }
     @media (max-width: 480px) {
         /* rows of a list inside a card: dividers, not a box in a box */
         #certPage .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
         #certPage .zx-card .zx-table tbody tr:last-child { border-bottom: 0; }
-        #certPage .certMissingHost { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-2); padding: var(--zx-space-2) 0; }
-        #certPage .certMissingHost td { display: block; width: auto; border: 0; padding: 0; text-align: left; }
-        #certPage .certMissingHost td::before { content: none; }
-        #certPage .certMissingHost td:first-child { flex: 1 1 100%; }
-        #certPage .certMissingHost td.zx-actions { margin-left: auto; width: auto; }
+        #certPage .certList .zx-row-actions { flex-wrap: wrap; }
     }
-</style>
-<!-- Certificates (tag cert). Lead with what matters: expiry, expiring soon, hosts without a certificate; adding one is a collapsible card. -->
-<style>
-    /* the collapsed "Add a certificate" card: the description is the last thing in it, keep it off the card border */
-    #certAddCard > .zx-card__desc { padding-bottom: var(--zx-space-4); }
-    #certAddCard:has(#certAddBody:not([hidden])) > .zx-card__desc { padding-bottom: 0; }
 </style>
 <div class="standardContainer" id="certPage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">TLS / SSL Certificates</h2>
-            <p class="zx-page-header__sub">The certificates Zoraxy serves over HTTPS, when each one expires and which of your sites have none.</p>
+            <p class="zx-page-header__sub">The certificates Zoraxy serves over HTTPS: when each one expires, which names it covers and whether it renews by itself.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Certificate"><i class="history icon" aria-hidden="true"></i> History</button>
-            <button type="button" class="zx-btn zx-btn--primary" id="certAddOpenBtn"><i class="plus icon" aria-hidden="true"></i> Add a certificate</button>
+            <button type="button" class="zx-btn zx-btn--primary" id="certAddOpenBtn" aria-expanded="false" aria-controls="certAddCard"><i class="plus icon" aria-hidden="true"></i> Add a certificate</button>
         </div>
     </header>
 
@@ -53,21 +82,248 @@
 
     <div class="zx-statrow" id="certStats" aria-live="polite"></div>
 
+    <!-- Add a certificate: a guided choice. Each path shows only its own fields and ends in a result. -->
+    <section class="zx-card" id="certAddCard" aria-labelledby="certAddTitle" hidden>
+        <div class="zx-card__head">
+            <h3 class="zx-card__title" id="certAddTitle">Add a certificate</h3>
+            <button type="button" class="zx-btn zx-btn--ghost zx-btn--sm" id="certAddClose"><i class="close icon" aria-hidden="true"></i> Close</button>
+        </div>
+        <p class="zx-card__desc">Choose how to get it. Each way asks only for what it needs. <span id="certAddFor"></span></p>
+        <div class="zx-card__body" id="certAddBody">
+            <fieldset class="cx-choice" id="certPathChoice">
+                <legend class="zx-sr-only">How do you want to add the certificate?</legend>
+                <label class="cx-choice__item" data-cert-path="acme">
+                    <input type="radio" name="certPath" value="acme">
+                    <span class="cx-choice__icon" aria-hidden="true"><i class="magic icon"></i></span>
+                    <span class="cx-choice__title">Get a free certificate automatically <span class="cx-choice__tag">Recommended</span></span>
+                    <span class="cx-choice__desc">A trusted certificate from Let's Encrypt (ACME). Zoraxy requests it and can renew it for you. For a public domain that points at this server.</span>
+                </label>
+                <label class="cx-choice__item" data-cert-path="upload">
+                    <input type="radio" name="certPath" value="upload">
+                    <span class="cx-choice__icon" aria-hidden="true"><i class="upload icon"></i></span>
+                    <span class="cx-choice__title">Upload your own</span>
+                    <span class="cx-choice__desc">You already have a certificate and its private key, for example from your company, a paid authority or a Cloudflare origin certificate.</span>
+                </label>
+                <label class="cx-choice__item" data-cert-path="self">
+                    <input type="radio" name="certPath" value="self">
+                    <span class="cx-choice__icon" aria-hidden="true"><i class="pencil alternate icon"></i></span>
+                    <span class="cx-choice__title">Self-signed</span>
+                    <span class="cx-choice__desc">Zoraxy creates one here, for testing or names that only exist in your network. Browsers show a warning until you trust it.</span>
+                </label>
+            </fieldset>
+
+            <!-- path 1: ACME -->
+            <div class="cx-path" id="certPathAcme" hidden>
+                <div class="cx-path__grid">
+                    <div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="certAcmeDomains">Domain name</label>
+                            <input type="text" id="certAcmeDomains" class="zx-input" placeholder="app.example.com" autocomplete="off" spellcheck="false" aria-describedby="certAcmeDomainsHelp certAcmeDomainsErr">
+                            <p class="zx-help" id="certAcmeDomainsHelp">The name visitors type. For one certificate that covers several names, separate them with commas.</p>
+                            <p class="cx-fielderr" id="certAcmeDomainsErr" role="alert" hidden></p>
+                        </div>
+                        <div class="zx-field" id="certAcmeEmailField" hidden>
+                            <label class="zx-field__label" for="certAcmeEmail">Contact email</label>
+                            <input type="email" id="certAcmeEmail" class="zx-input" placeholder="admin@example.com" autocomplete="email" aria-describedby="certAcmeEmailHelp certAcmeEmailErr">
+                            <p class="zx-help" id="certAcmeEmailHelp">The authority sends expiry notices here. Asked once and saved as the ACME email.</p>
+                            <p class="cx-fielderr" id="certAcmeEmailErr" role="alert" hidden></p>
+                        </div>
+                        <p class="certSummary" id="certAcmeSummary"></p>
+                    </div>
+                    <aside class="cx-path__aside" aria-labelledby="certAcmeNeedsTitle">
+                        <div class="cx-path__title" role="heading" aria-level="4" id="certAcmeNeedsTitle">Before you request</div>
+                        <ul class="cx-needs">
+                            <li><i class="globe icon" aria-hidden="true"></i><span>The name already points at this server in public DNS.</span></li>
+                            <li><i class="plug icon" aria-hidden="true"></i><span>Port 80 is reachable from the internet. Zoraxy opens it for the check if it is closed.</span></li>
+                            <li><i class="clock outline icon" aria-hidden="true"></i><span>It takes about a minute. Keep this page open until you see the result.</span></li>
+                        </ul>
+                    </aside>
+                </div>
+                <div class="certPathFoot">
+                    <button type="button" class="zx-btn zx-btn--primary" id="certAcmeBtn"><i class="certificate icon" aria-hidden="true"></i> Get certificate</button>
+                    <button type="button" class="zx-btn zx-btn--secondary" id="certAcmeMoreBtn" title="Opens the full ACME tool">Wildcard, DNS challenge or another authority</button>
+                </div>
+            </div>
+
+            <!-- path 2: upload (files or pasted text) -->
+            <div class="cx-path" id="certPathUpload" hidden>
+                <div class="cx-path__grid">
+                    <div>
+                        <div class="zx-field">
+                            <span class="zx-field__label" id="certUploadModeLabel" style="display:block;">How do you have it?</span>
+                            <div class="zx-segmented" role="radiogroup" aria-labelledby="certUploadModeLabel">
+                                <button type="button" class="zx-segmented__item" role="radio" aria-checked="true" id="certFilesBtn"><i class="file outline icon" aria-hidden="true"></i> As files</button>
+                                <button type="button" class="zx-segmented__item" role="radio" aria-checked="false" id="certPasteBtn"><i class="paste icon" aria-hidden="true"></i> As text to paste</button>
+                            </div>
+                        </div>
+                        <div id="certFileFields">
+                            <div class="zx-field field">
+                                <label class="zx-field__label" for="pubkeySelector">Certificate (.pem or .crt)</label>
+                                <input type="file" id="pubkeySelector" class="zx-input certFile" accept=".pem,.crt,.cer,.cert,.txt" onchange="handleFileSelect(event, 'pub')">
+                                <p class="zx-help">The public part. With intermediates: your certificate first, then the chain.</p>
+                            </div>
+                            <div class="zx-field field">
+                                <label class="zx-field__label" for="prikeySelector">Private key (.key)</label>
+                                <input type="file" id="prikeySelector" class="zx-input certFile" accept=".key,.pem,.txt" onchange="handleFileSelect(event, 'pri')">
+                                <p class="zx-help">Stays on this server. It must not be protected by a password.</p>
+                            </div>
+                        </div>
+                        <div id="certPasteArea" hidden>
+                            <div class="certPasteGrid">
+                                <div class="zx-field field">
+                                    <label class="zx-field__label" for="pubkeyPasteContent">Certificate</label>
+                                    <textarea id="pubkeyPasteContent" class="zx-textarea" rows="8" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----" oninput="extractCommonNameFromPastedCert();"></textarea>
+                                </div>
+                                <div class="zx-field field">
+                                    <label class="zx-field__label" for="prikeyPasteContent">Private key</label>
+                                    <textarea id="prikeyPasteContent" class="zx-textarea" rows="8" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="zx-field field" id="certDomainField">
+                            <div class="zx-field__label-row"><label class="zx-field__label" for="certdomain">Server name</label>
+                                <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certSniWhat" aria-label="What are server names and SNI?">?</button></div>
+                            <input type="text" id="certdomain" class="zx-input" placeholder="app.example.com" autocomplete="off" spellcheck="false" aria-describedby="certdomainHelp certUploadErr">
+                            <div class="zx-popover" id="certSniWhat" role="note" hidden>
+    <strong>Server names and SNI.</strong> SNI is the host name a browser sends before the encrypted connection starts; Zoraxy uses it to pick the certificate.
+    <ul>
+        <li>For <code>a.example.com</code> and <code>b.example.com</code> a separate certificate for each answers fastest.</li>
+        <li>A wildcard certificate for <code>*.example.com</code> is added by entering <code>example.com</code> as the server name.</li>
+        <li>A certificate with several hosts: enter the first domain and Zoraxy matches the remaining CN/DNS names.</li>
+    </ul>
+</div>
+                            <p class="zx-help" id="certdomainHelp">Filled in from the certificate when it can be read. For a wildcard certificate (*.example.com) enter example.com.</p>
+                        </div>
+                        <p class="cx-fielderr" id="certUploadErr" role="alert" hidden></p>
+                    </div>
+                    <aside class="cx-path__aside" aria-labelledby="certUploadNeedsTitle">
+                        <div class="cx-path__title" role="heading" aria-level="4" id="certUploadNeedsTitle">What you need</div>
+                        <ul class="cx-needs">
+                            <li><i class="file alternate outline icon" aria-hidden="true"></i><span>The certificate in PEM format: text that starts with <code>-----BEGIN CERTIFICATE-----</code>.</span></li>
+                            <li><i class="key icon" aria-hidden="true"></i><span>The private key that belongs to it, also in PEM format.</span></li>
+                            <li><i class="exchange icon" aria-hidden="true"></i><span>A separate intermediate certificate? <a href="#" onclick="showSideWrapper('snippet/intermediateCertConv.html'); return false;">Open the conversion tool</a> to join them first.</span></li>
+                        </ul>
+                    </aside>
+                </div>
+                <div class="certPathFoot">
+                    <button type="button" id="certUploadBtn" class="zx-btn zx-btn--primary" onclick="handleDomainUploadByKeypress();"><i class="upload icon" aria-hidden="true"></i> Upload certificate</button>
+                    <button type="button" id="certPasteUploadBtn" class="zx-btn zx-btn--primary" onclick="handlePasteInBrowserAndUpload();" hidden><i class="upload icon" aria-hidden="true"></i> Upload certificate</button>
+                </div>
+            </div>
+
+            <!-- path 3: self-signed -->
+            <div class="cx-path" id="certPathSelf" hidden>
+                <div class="cx-path__grid">
+                    <div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="certSelfCN">Name</label>
+                            <input type="text" id="certSelfCN" class="zx-input" placeholder="nas.home.lan" autocomplete="off" spellcheck="false" aria-describedby="certSelfCNHelp certSelfCNErr">
+                            <p class="zx-help" id="certSelfCNHelp">The host name (or IP address) the certificate is for.</p>
+                            <p class="cx-fielderr" id="certSelfCNErr" role="alert" hidden></p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="certSelfSans">More names <span class="zx-field__optional">optional</span></label>
+                            <input type="text" id="certSelfSans" class="zx-input" placeholder="nas, 192.168.1.20" autocomplete="off" spellcheck="false" aria-describedby="certSelfSansHelp certSelfSansErr">
+                            <p class="zx-help" id="certSelfSansHelp">Other names or addresses the same certificate should cover, separated by commas.</p>
+                            <p class="cx-fielderr" id="certSelfSansErr" role="alert" hidden></p>
+                        </div>
+                        <label class="zx-check"><input type="checkbox" id="certSelfFallback"> <span>Also use it as the fallback certificate</span></label>
+                    </div>
+                    <aside class="cx-path__aside" aria-labelledby="certSelfNeedsTitle">
+                        <div class="cx-path__title" role="heading" aria-level="4" id="certSelfNeedsTitle">Good to know</div>
+                        <ul class="cx-needs">
+                            <li><i class="exclamation triangle icon" aria-hidden="true"></i><span>Browsers show a warning until the certificate is trusted on each device.</span></li>
+                            <li><i class="calendar outline icon" aria-hidden="true"></i><span>Valid for one year. It is not renewed automatically: create a new one before it expires.</span></li>
+                            <li><i class="lock icon" aria-hidden="true"></i><span>The key is created on this server and never leaves it.</span></li>
+                        </ul>
+                    </aside>
+                </div>
+                <div class="certPathFoot">
+                    <button type="button" class="zx-btn zx-btn--primary" id="certSelfBtn"><i class="pencil alternate icon" aria-hidden="true"></i> Create certificate</button>
+                </div>
+            </div>
+
+            <!-- result states: working / failed (certAddResult) and done (certUploadSuccMsg) -->
+            <div class="cx-result" id="certAddResult" role="status" aria-live="polite" hidden>
+                <span class="cx-result__icon" aria-hidden="true" id="certAddResultIcon"></span>
+                <div class="cx-result__body">
+                    <div class="cx-result__title" role="heading" aria-level="4" id="certAddResultTitle"></div>
+                    <p class="cx-result__text" id="certAddResultText"></p>
+                    <div class="cx-result__detail" id="certAddResultDetail" hidden></div>
+                    <ul id="certAddResultHints" hidden></ul>
+                    <div class="zx-btn-row" id="certAddResultActions" hidden>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="certAddRetryBtn">Change and try again</button>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="certAddToolBtn">Open the full ACME tool</button>
+                    </div>
+                </div>
+            </div>
+            <div class="cx-result" data-state="ok" id="certUploadSuccMsg" role="status" style="display:none;">
+                <span class="cx-result__icon" aria-hidden="true"><i class="check icon"></i></span>
+                <div class="cx-result__body">
+                    <div class="cx-result__title" role="heading" aria-level="4"><span id="certDoneLead">Certificate installed for</span> <span id="certUploadingDomain"></span></div>
+                    <p class="cx-result__text" id="certDoneText"></p>
+                    <div class="zx-btn-row">
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="certAddAnotherBtn">Add another</button>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="certAddDoneBtn">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- one line: how many need attention. The rows themselves (soonest expiry first) carry the state and the Renew button. -->
     <div id="certExpiringBox" class="zx-callout zx-callout--warn" role="note" hidden>
         <span class="zx-callout__icon" aria-hidden="true"><i class="clock outline icon"></i></span>
-        <div class="zx-callout__body"><span class="zx-callout__title">Expiring soon</span>
-            <span id="certExpiringText">These certificates expire within 30 days. ACME certificates renew themselves when auto renew is on. For the others, upload a new certificate or use Renew now to replace them with a free ACME certificate.</span>
-            <ul class="zx-itemlist" id="certExpiringList"></ul>
+        <div class="zx-callout__body"><span class="zx-callout__title" id="certExpiringTitle">Expiring soon</span>
+            <span id="certExpiringText">They are the first rows of the list below. Certificates issued here renew by themselves when auto-renew is on. For the others, upload a new certificate, or use Renew to replace them with a free ACME certificate.</span>
+        </div>
+    </div>
+
+    <div class="zx-card" tourstep="certTable">
+        <div class="zx-card__head certListHead">
+            <h3 class="zx-card__title">Certificates</h3>
+            <button type="button" class="zx-btn zx-btn--ghost zx-btn--sm" onclick="initManagedDomainCertificateList();"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
+        </div>
+        <div class="zx-card__desc">Soonest expiry first. <span id="certFallbackLine"></span>
+            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certFallbackWhat" aria-label="What is a fallback certificate?">?</button>
+            <div class="zx-popover" id="certFallbackWhat" role="note" hidden>A fallback certificate is used when the reverse proxy cannot find a matching certificate for the requested server name. If you are using Cloudflare full (strict) mode, you can also upload the Cloudflare origin certificate here and set it as the fallback.</div>
+        </div>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Certificates">
+                <table class="zx-table zx-table--comfortable certList">
+                    <thead>
+                    <tr>
+                        <th scope="col">Certificate and the names it covers</th>
+                        <th scope="col">Expires</th>
+                        <th scope="col">Issuer</th>
+                        <th scope="col">Auto-renew</th>
+                        <th scope="col" class="no-sort zx-actions" tourstep="defaultCertificate"><span class="zx-sr-only">Actions</span></th>
+                    </tr></thead>
+                    <tbody id="certifiedDomainList"></tbody>
+                </table>
+            </div>
+            <div id="renewLogBox" class="cx-result" role="status" aria-live="polite" style="display:none;">
+                <span class="cx-result__icon" aria-hidden="true" id="renewLogIcon"><span class="cx-spin"></span></span>
+                <div class="cx-result__body">
+                    <div class="cx-result__title" role="heading" aria-level="4" id="renewLogTitle">Renewal log</div>
+                    <pre class="cx-result__detail" id="renewLog"></pre>
+                    <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="renewLogClose">Close the log</button></div>
+                </div>
+            </div>
+        </div>
+        <div class="zx-card__foot">
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="showSideWrapper('snippet/certtools.html?t=' + Date.now());"><i class="wrench icon" aria-hidden="true"></i> CSR, certificate folder &amp; hooks</button>
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="showSideWrapper('snippet/acmeprofiles.html?t=' + Date.now());"><i class="cog icon" aria-hidden="true"></i> ACME profiles &amp; defaults</button>
         </div>
     </div>
 
     <div id="certMissingBox" class="zx-card" hidden>
-        <div class="zx-card__head"><h3 class="zx-card__title">Hosts without a certificate</h3></div>
-        <p class="zx-card__desc">Visitors to these hosts get the fallback certificate and a browser warning. Add a certificate that covers them or request one with ACME.</p>
+        <div class="zx-card__head"><h3 class="zx-card__title">Sites without a certificate</h3></div>
+        <p class="zx-card__desc">Visitors to these hosts get the fallback certificate and a browser warning. Add a certificate that covers the name.</p>
         <div class="zx-card__body">
-            <div class="zx-table-wrap" tabindex="0" role="region" aria-label="Hosts without a certificate">
+            <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Sites without a certificate">
                 <table class="zx-table zx-table--compact">
-                    <thead><tr><th scope="col">Host</th><th scope="col">Status</th><th scope="col" class="zx-actions">Action</th></tr></thead>
+                    <thead><tr><th scope="col">Host</th><th scope="col">Status</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Action</span></th></tr></thead>
                     <tbody id="certMissingList"></tbody>
                 </table>
             </div>
@@ -77,115 +333,11 @@
         </div>
     </div>
 
-    <div class="zx-card" tourstep="certTable">
-        <div class="zx-card__head">
-            <h3 class="zx-card__title">Certificates, expiring first</h3>
-            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm certTools" onclick="initManagedDomainCertificateList();"><i class="refresh icon" aria-hidden="true"></i> Refresh list</button>
-        </div>
-        <div class="zx-card__desc certDescFallback">Loaded certificates with the sites that use them. Select a name to download the certificate. A fallback certificate answers when no certificate matches the requested name.
-            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certFallbackWhat" aria-label="What is a fallback certificate?">?</button>
-            <div class="zx-popover" id="certFallbackWhat" role="note" hidden>A fallback certificate is used when the reverse proxy cannot find a matching certificate for the requested server name. If you are using Cloudflare full (strict) mode, you can also upload the Cloudflare origin certificate here and set it as the fallback.</div>
-        </div>
-        <div class="zx-card__body">
-            <div class="zx-btn-row certToolRow">
-                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showSideWrapper('snippet/certtools.html?t=' + Date.now());"><i class="wrench icon" aria-hidden="true"></i> CSR, certificate folder &amp; hooks</button>
-                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="showSideWrapper('snippet/acmeprofiles.html?t=' + Date.now());"><i class="cog icon" aria-hidden="true"></i> ACME profiles &amp; defaults</button>
-            </div>
-            <div class="zx-table-wrap zx-table-wrap--tall" tabindex="0" role="region" aria-label="Certificates">
-                <table class="zx-table zx-table--comfortable">
-                    <thead>
-                    <tr>
-                        <th scope="col">Domain</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Managed by</th>
-                        <th scope="col">Used by</th>
-                        <th scope="col">Fallback</th>
-                        <th scope="col" class="no-sort zx-actions" tourstep="defaultCertificate">Actions</th>
-                    </tr></thead>
-                    <tbody id="certifiedDomainList"></tbody>
-                </table>
-            </div>
-            <div id="renewLogBox" class="ui segment" style="display:none; margin-top:1em;">
-                <button type="button" class="ui mini basic right floated icon button" aria-label="Close the renewal log" onclick="$('#renewLogBox').hide();"><i class="close icon"></i></button>
-                <b id="renewLogTitle">Renewal log</b>
-                <pre id="renewLog" style="max-height: 18em; overflow:auto; white-space: pre-wrap; margin-top:0.6em;"></pre>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add a certificate: upload, paste. ACME requests have their own tab. -->
-    <div class="zx-card" id="certAddCard">
-        <div class="zx-card__head">
-            <button type="button" class="zx-collapse__toggle" id="certAddToggle" data-zx-toggle="certAddBody" aria-expanded="false" aria-controls="certAddBody">
-                <span class="zx-card__title">Add a certificate</span>
-                <i class="chevron down icon" aria-hidden="true"></i>
-            </button>
-        </div>
-        <p class="zx-card__desc">Upload a certificate and key pair, paste them, or request a free one with ACME.</p>
-        <div class="zx-card__body" id="certAddBody" hidden>
-            <div class="ui fluid form">
-                <div class="zx-form-grid">
-                    <div class="zx-field field">
-                        <div class="zx-field__label-row"><label class="zx-field__label" for="certdomain">Server name (domain)</label>
-                            <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certSniWhat" aria-label="What are server names and SNI?">?</button></div>
-                        <input type="text" id="certdomain" class="zx-input" placeholder="app.example.com">
-                        <div class="zx-popover" id="certSniWhat" role="note" hidden>
-    <strong>Server names and SNI.</strong> SNI is the host name a browser sends before the encrypted connection starts; Zoraxy uses it to pick the certificate.
-    <ul>
-        <li>For <code>a.example.com</code> and <code>b.example.com</code> a separate certificate for each answers fastest.</li>
-        <li>A wildcard certificate for <code>*.example.com</code> is added by entering <code>example.com</code> as the server name.</li>
-        <li>A certificate with several hosts: enter the first domain and Zoraxy matches the remaining CN/DNS names.</li>
-    </ul>
-</div>
-                        <p class="zx-help">Match it with the CN/DNS entry of the certificate for faster lookup.</p>
-                    </div>
-                    <div class="zx-field field">
-                        <label class="zx-field__label" for="pubkeySelector">Public key (.pem)</label>
-                        <input type="file" id="pubkeySelector" class="zx-input certFile" onchange="handleFileSelect(event, 'pub')">
-                        <p class="zx-help">Or a .crt file from other systems.</p>
-                    </div>
-                    <div class="zx-field field">
-                        <label class="zx-field__label" for="prikeySelector">Private key (.key)</label>
-                        <input type="file" id="prikeySelector" class="zx-input certFile" onchange="handleFileSelect(event, 'pri')">
-                        <p class="zx-help">Stays on this server.</p>
-                    </div>
-                </div>
-                <div class="zx-btn-row certAddActions">
-                    <button type="button" id="certUploadBtn" class="zx-btn zx-btn--primary showOnlyInCertUploadMode" onclick="handleDomainUploadByKeypress();"><i class="upload icon" aria-hidden="true"></i> Upload</button>
-                    <button type="button" id="certPasteBtn" class="zx-btn zx-btn--secondary showOnlyInCertUploadMode" onclick="togglePasteCertInterface();"><i class="paste icon" aria-hidden="true"></i> Paste certificate directly</button>
-                    <button type="button" class="zx-btn zx-btn--secondary" onclick="typeof openACMEManager === 'function' ? openACMEManager() : openTabById('acme');"><i class="certificate icon" aria-hidden="true"></i> Request a free certificate (ACME)</button>
-                </div>
-                <p class="zx-help showOnlyInCertUploadMode" style="margin-top: var(--zx-space-3);">Do you have an intermediate certificate? <a href="#" onclick="showSideWrapper('snippet/intermediateCertConv.html'); return false;">Open the conversion tool</a></p>
-            </div>
-            <div id="certPasteArea" style="display:none;">
-                <!-- Paste cert function implementation -->
-                <div class="ui fluid form" style="margin-top: 1em;">
-                    <div class="two fields">
-                        <div class="field">
-                            <label for="pubkeyPasteContent">Public key content (.pem / .crt)</label>
-                            <textarea id="pubkeyPasteContent" rows="8" placeholder="Paste your public key / certificate content here..." oninput="extractCommonNameFromPastedCert();"></textarea>
-                        </div>
-                        <div class="field">
-                            <label for="prikeyPasteContent">Private key content (.key)</label>
-                            <textarea id="prikeyPasteContent" rows="8" placeholder="Paste your private key content here..."></textarea>
-                        </div>
-                    </div>
-                    <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--primary" onclick="handlePasteInBrowserAndUpload();"><i class="upload icon" aria-hidden="true"></i> Upload from pasted content</button>
-                    <button type="button" class="zx-btn zx-btn--secondary" onclick="togglePasteCertInterface();">Cancel</button></div>
-                </div>
-            </div>
-            <div id="certUploadSuccMsg" class="ui green message" style="display:none; overflow-wrap:anywhere;" role="status">
-                <i class="ui checkmark icon"></i> Certificate for domain <span id="certUploadingDomain"></span> uploaded.
-            </div>
-        </div>
-    </div>
-
     <aside class="zx-related" aria-label="Related pages">
         <span class="zx-related__title">Related</span>
         <ul>
-            <li><a href="#acme" data-nav-open="acme">ACME Client</a> <span>request and renew free certificates automatically</span></li>
-            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>the sites that need a certificate</span></li>
-            <li><a href="#secoverview" data-nav-open="secoverview">Security Overview</a> <span>certificate and TLS checks</span></li>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>The sites that need a certificate</span></li>
+            <li><a href="#secoverview" data-nav-open="secoverview">Security Overview</a> <span>Certificate and TLS checks</span></li>
             <li><a href="#ech" data-nav-open="ech">Encrypted Client Hello</a> <span>ECH needs a certificate for its public name</span></li>
         </ul>
     </aside>
@@ -198,7 +350,7 @@
         const fileInput = document.getElementById('pubkeySelector');
         const file = fileInput.files[0];
         if (!file) {
-            msgbox("No certificate file selected", false, 4000);
+            msgbox(t("No certificate file selected"), false, 4000);
             return;
         }
         const reader = new FileReader();
@@ -211,12 +363,12 @@
                 success: function(data) {
                     if (data.error !== undefined) {
                         //Ignore error
-                        $("#certdomain").attr("value", "");
+                        
                     } else if (data) {
                         if (typeof data === "string" && data.startsWith("*.")) {
                             data = data.substring(2);
                         }
-                        $("#certdomain").attr("value", data);
+                        $("#certdomain").val(data);
                     }
                 },
                 error: function(xhr) {
@@ -242,7 +394,7 @@
                 }
             },
             error: function(xhr) {
-                msgbox('Failed to set fallback certificate', false, 5000);
+                msgbox(t('Failed to set fallback certificate'), false, 5000);
             }
         });
     }
@@ -254,7 +406,7 @@
             defaultCA = "Let's Encrypt";
         }
         //Get a new cert using ACME
-        msgbox("Requesting certificate via " + defaultCA  +"...");
+        msgbox(tf("Requesting certificate via {0}...", defaultCA));
 
         //Request ACME for certificate
         let buttonOriginalHTML = "";
@@ -296,46 +448,24 @@
     }
 
     /*
-        Obtain Certificate via ACME
+        Obtain a certificate via ACME (HTTP challenge unless dns is set) with the saved ACME email.
+        done(ok, message) is always called; message is the reason when it failed.
     */
-
-   // Obtain certificate from API, only support one domain
-   function obtainCertificate(domains, dns, usingCa = "Let's Encrypt", callback=undefined) {
-        //Load the ACME email from server side
-        let acmeEmail = "";
+    function requestAcmeCertificate(domains, dns, usingCa, done){
+        done = done || function(){};
+        usingCa = usingCa || "Let's Encrypt";
         $.get("/api/acme/autoRenew/email", function(data){
-            if (data != "" && data != undefined && data != null){
-                acmeEmail = data;
-            }
-
-            let filename = "";
-            let email = acmeEmail;
-            if (acmeEmail == ""){
-                msgbox("Unable to obtain certificate: ACME email not set", false, 8000);
-                if (callback != undefined){
-                    callback(false);
-                }
+            let email = (typeof data === "string") ? data : "";
+            if (email == ""){
+                done(false, t("Unable to obtain certificate: ACME email not set"));
                 return;
             }
-            if (filename.trim() == "" && !domains.includes(",")){
-                //Zoraxy filename are the matching name for domains.
-                //Use the same as domains
-                filename = domains;
-            }else if (filename != "" && !domains.includes(",")){
-                //Invalid settings. Force the filename to be same as domain
-                //if there are only 1 domain
-                filename = domains;
-            }else{
-                //Multiple domains (e.g. a host with aliases). The certificate store matches certs by the
-                //names inside the certificate, so name the file after the first (primary) domain.
-                filename = domains.split(",")[0].trim();
-                if (filename == ""){
-                    msgbox("Filename cannot be empty for certs containing multiple domains.")
-                    if (callback != undefined){
-                        callback(false);
-                    }
-                    return;
-                }
+            //Zoraxy file names are the matching name for domains. With several domains (a host with aliases) the certificate
+            //store matches by the names inside the certificate, so the file is named after the first (primary) domain.
+            let filename = domains.split(",")[0].trim();
+            if (filename == ""){
+                done(false, t("Filename cannot be empty for certs containing multiple domains."));
+                return;
             }
             //Filename cannot contain wildcards, and wildcards are possible with DNS challenges
             filename = filename.replace("*", "_");
@@ -354,25 +484,17 @@
                         dns: dns,
                     },
                     success: function(response) {
-                        if (response.error) {
+                        if (response && response.error) {
                             console.log("Error:", response.error);
-                            // Show error message
-                            msgbox(response.error, false, 12000);
-                            if (callback != undefined){
-                                callback(false);
-                            }
+                            done(false, response.error);
                         } else {
                             console.log("Certificate installed successfully");
-                            // Show success message
-                            msgbox("Certificate installed successfully");
-                            
-                            if (callback != undefined){
-                                callback(true);
-                            }
+                            done(true, "");
                         }
                     },
                     error: function(error) {
                         console.log("Failed to install certificate:", error);
+                        done(false, t("The request did not reach Zoraxy or took too long. Check the certificate list before you try again."));
                     }
                 });
             }
@@ -380,26 +502,42 @@
             if (usingCa == "custom"){
                 $.get("/api/acme/autoRenew/ca", function(data){
                     if (data.url == undefined || data.url.trim() == ""){
-                        msgbox("Custom ACME URL not set.", false);
-                        if (callback != undefined){
-                            callback(false);
-                        }
+                        done(false, t("Custom ACME URL not set."));
                         return;
                     }
                     requestCert(data.url.trim(), data.skipTLS);
-                })
+                }).fail(function(){ done(false, t("Custom ACME URL not set.")); });
             } else {
                 requestCert();
             }
+        }).fail(function(){ done(false, t("Unable to obtain certificate: ACME email not set")); });
+    }
 
-            
+    // Obtain certificate from API (used by the proxy rule pages as well): toast with the result, callback(true / false)
+    function obtainCertificate(domains, dns, usingCa = "Let's Encrypt", callback=undefined) {
+        requestAcmeCertificate(domains, dns, usingCa, function(ok, message){
+            if (ok){
+                msgbox(t("Certificate installed successfully"));
+            } else {
+                msgbox(message, false, 12000);
+            }
+            if (callback != undefined){
+                callback(ok);
+            }
         });
     }
 
 
     //Delete the certificate by its domain
     function deleteCertificate(domain){
-        ZxUI.confirm({title: "Delete this certificate?", message: "Delete the certificate for " + domain + "? Sites that use it fall back to the fallback certificate.", confirmLabel: t("Delete certificate"), danger: true}).then(function(ok){
+        //what visitors get afterwards depends on the fallback: another certificate, or the built-in self-signed placeholder
+        var entry = certList.filter(function(c){ return c.Filename == domain; })[0] || {};
+        var fallback = certList.filter(function(c){ return c.IsFallback && c.Filename != domain; })[0];
+        var sites = (certUsage[domain] || []).length;
+        var uses = sites == 0 ? t("No site uses it right now.") : (sites == 1 ? t("1 site uses it.") : tf("{0} sites use it.", sites));
+        var after = fallback ? tf("Names it covered get the fallback certificate ({0}) instead.", fallback.Domain || fallback.Filename)
+            : t("Names it covered get a self-signed placeholder and a browser warning, because no fallback certificate is set.");
+        ZxUI.confirm({title: t("Delete this certificate?"), message: tf("The certificate for {0} and its private key are removed from this server.", entry.Domain || domain) + " " + uses + " " + after, confirmLabel: t("Delete certificate"), danger: true}).then(function(ok){
             if (!ok){ return; }
             $.cjax({
                 url: "/api/cert/delete",
@@ -439,9 +577,14 @@
     }
 
     //Renew one certificate with the settings it was issued with and show the log
+    function setRenewLogState(state){
+        $("#renewLogBox").attr("data-state", state == "working" ? null : state);
+        $("#renewLogIcon").html(state == "working" ? '<span class="cx-spin"></span>' : (state == "ok" ? '<i class="check icon"></i>' : '<i class="times icon"></i>'));
+    }
     function renewCertNow(name, btn){
-        $("#renewLogTitle").text("Renewing " + name + " ...");
-        $("#renewLog").text("Contacting the CA, this can take a few minutes.");
+        $("#renewLogTitle").text(tf("Renewing {0} ...", name));
+        $("#renewLog").text(t("Contacting the CA, this can take a few minutes."));
+        setRenewLogState("working");
         $("#renewLogBox").show();
         $(btn).addClass("disabled");
         $.cjax({
@@ -451,29 +594,36 @@
             success: function(data){
                 $(btn).removeClass("disabled");
                 if (data.error != undefined){
-                    $("#renewLogTitle").text("Renewal of " + name + " failed");
+                    setRenewLogState("danger");
+                    $("#renewLogTitle").text(tf("Renewal of {0} failed", name));
                     $("#renewLog").text(data.error);
-                    msgbox(certEsc("Renewal of " + name + " failed: " + data.error), false, 8000);
+                    msgbox(certEsc(tf("Renewal of {0} failed", name) + ": " + data.error), false, 8000);
                     return;
                 }
-                $("#renewLogTitle").text(data.ok ? "Renewed " + name : "Renewal of " + name + " failed" + (data.error ? ": " + data.error : ""));
+                setRenewLogState(data.ok ? "ok" : "danger");
+                $("#renewLogTitle").text(data.ok ? tf("Renewed {0}", name) : tf("Renewal of {0} failed", name) + (data.error ? ": " + data.error : ""));
                 $("#renewLog").text((data.log || []).join("\n"));
                 initManagedDomainCertificateList();
             },
             error: function(){
                 $(btn).removeClass("disabled");
-                $("#renewLogTitle").text("Renewal request failed");
+                setRenewLogState("danger");
+                $("#renewLogTitle").text(t("Renewal request failed"));
             }
         });
     }
+    $("#renewLogClose").on("click", function(){ $("#renewLogBox").hide(); });
 
-    //List the stored certificates, sorted by expiry (soonest first), and work out which hosts have no certificate
+    //List the stored certificates, sorted by expiry (soonest first), with the names each one covers, the sites that use it
+    //and whether the auto-renewer looks after it. Four read-only requests; the list renders when all have answered.
     function initManagedDomainCertificateList(){
-        $.get("/api/cert/usage", function(usage){
-            renderManagedDomainCertificateList(usage || {});
-        }).fail(function(){
-            renderManagedDomainCertificateList({});
-        });
+        var ctx = {usage: {}, names: {}, renewOn: false, renewList: ["*"]}, pending = 4;
+        function done(){ if (--pending == 0){ renderManagedDomainCertificateList(ctx.usage, ctx); } }
+        function plain(d){ return d && typeof d === "object" && d.error === undefined; }
+        $.get("/api/cert/usage", function(d){ if (plain(d)){ ctx.usage = d; } }).always(done);
+        $.get("/api/cert/listdomains?compact=true", function(d){ if (plain(d)){ ctx.names = d; } }).always(done);
+        $.get("/api/acme/autoRenew/enable", function(d){ ctx.renewOn = (d === true); }).always(done);
+        $.get("/api/acme/autoRenew/listDomains", function(d){ if (Array.isArray(d)){ ctx.renewList = d; } }).always(done);
     }
 
     function daysLeftText(entry){
@@ -487,6 +637,22 @@
         return "zx-badge--ok";
     }
 
+    //"2026-12-02 02:55:41" as a date in the reader's format
+    function certDateText(s){
+        var d = new Date(String(s || "").replace(" ", "T"));
+        if (isNaN(d.getTime())){ return String(s || ""); }
+        return d.toLocaleDateString(undefined, {year: "numeric", month: "short", day: "numeric"});
+    }
+
+    function managedByText(entry){
+        switch (entry.ManagedBy){
+            case "acme": return t("Issued here");
+            case "mapdir": return t("From the certificate folder");
+            case "csr": return t("From a signing request");
+            default: return t("Uploaded");
+        }
+    }
+
     function managedByChip(entry){
         switch (entry.ManagedBy){
             case "acme": return `<span class="zx-badge zx-badge--info" title="Issued and renewed by Zoraxy via ACME">ACME</span>`;
@@ -496,15 +662,69 @@
         }
     }
 
+    var CERT_EARLY_RENEW_DAYS = 30;   // default of the -earlyrenew start flag
+
+    //Does the auto-renewer look after this certificate? {yes, why}
+    function certAutoRenewState(entry, ctx){
+        if (entry.ManagedBy == "mapdir" || entry.ManagedBy == "csr"){ return {yes: false, why: t("Managed outside Zoraxy")}; }
+        if (!ctx.renewOn){ return {yes: false, why: t("Auto-renew is off")}; }
+        var all = ctx.renewList.length == 1 && ctx.renewList[0] === "*";
+        if (!all && ctx.renewList.indexOf(entry.Filename) < 0){ return {yes: false, why: t("Not selected for auto-renew")}; }
+        var due = entry.RemainingDays - CERT_EARLY_RENEW_DAYS;
+        var when = due <= 0 ? t("Due at the next daily check") : (due == 1 ? t("Due in about 1 day") : tf("Due in about {0} days", due));
+        if (entry.ManagedBy != "acme"){ when = t("Becomes an ACME certificate") + ". " + when; }
+        return {yes: true, why: when};
+    }
+
     function renewButtonHtml(entry, label){
         if (!entry.Renewable){ return ""; }
         var title = entry.ManagedBy == "acme" ? t("Renew now with the settings this certificate was issued with (shows the log)") : t("This certificate was uploaded. Request a free ACME certificate for the same name to replace it (needs the ACME email, see the ACME page)");
-        return `<button type="button" title="${certEsc(title)}" aria-label="Renew ${certEsc(entry.Filename)} now" class="zx-btn zx-btn--secondary zx-btn--sm renewButton" data-act="renew" data-cert="${certEsc(entry.Filename)}"><i class="sync icon" aria-hidden="true"></i>${label ? " " + label : ""}</button>`;
+        return `<button type="button" title="${certEsc(title)}" aria-label="${certEsc(tf("Renew {0} now", entry.Filename))}" class="zx-btn zx-btn--secondary zx-btn--sm renewButton" data-act="renew" data-cert="${certEsc(entry.Filename)}"><i class="sync icon" aria-hidden="true"></i>${label ? ` <span class="certRenewLabel">${certEsc(label)}</span>` : ""}</button>`;
     }
 
+    /*
+        Host names as quiet chips (shared with the ACME Client page, which defines the same helper): natural order
+        (host2 before host10), at most three chips and about 70 characters shown, the rest behind "+N more" that
+        grows in place. A long name is cut with an ellipsis and keeps its full text as a tooltip.
+    */
+    window.cxHostChips = window.cxHostChips || function(list, label){
+        function e(v){ return String(v == undefined ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+        list = (list || []).slice().sort(function(a, b){ return String(a).localeCompare(String(b), undefined, {numeric: true, sensitivity: "base"}); });
+        if (list.length == 0){ return ""; }
+        var shown = 0, chars = 0;
+        while (shown < list.length && shown < 3 && (shown == 0 || chars + String(list[shown]).length <= 70)){ chars += String(list[shown]).length; shown++; }
+        var html = '<ul class="cx-hosts"' + (label ? ' aria-label="' + e(label) + '"' : "") + '>';
+        list.forEach(function(n, i){ html += '<li class="cx-host' + (i >= shown ? ' cx-host--extra" hidden' : '"') + ' title="' + e(n) + '">' + e(n) + '</li>'; });
+        if (list.length > shown){ html += '<li><button type="button" class="cx-host" data-cx-more="' + (list.length - shown) + '" aria-expanded="false">' + e(tf("+{0} more", list.length - shown)) + '</button></li>'; }
+        return html + "</ul>";
+    };
+    if (!window.cxHostChipsBound){
+        window.cxHostChipsBound = true;
+        $(document).on("click", ".cx-hosts [data-cx-more]", function(){
+            var b = $(this), open = b.attr("aria-expanded") === "true";
+            b.closest(".cx-hosts").find(".cx-host--extra").prop("hidden", open);
+            b.attr("aria-expanded", open ? "false" : "true").text(open ? tf("+{0} more", b.attr("data-cx-more")) : t("Show fewer"));
+        });
+    }
+
+    //The names a certificate covers besides its own name and the name it is stored under
+    function certCoveredHtml(entry, names){
+        var skip = [String(entry.Domain || "").toLowerCase(), String(entry.Filename || "").toLowerCase()];
+        return cxHostChips((names[entry.Filename] || []).filter(function(n){ return skip.indexOf(String(n).toLowerCase()) < 0; }), t("Also covers"));
+    }
+
+    //The name a certificate is stored under, when it differs from its own name. It can be 250 characters long:
+    //then it is a clamped value (two lines) that opens on hover or focus.
+    function certStoredHtml(name){
+        if (String(name).length <= 48){ return `<span class="cx-cell__sub">${certEsc(tf("Stored as {0}", name))}</span>`; }
+        return `<span class="cx-cell__sub">${certEsc(t("Stored as"))}</span><span class="zx-longvalue" tabindex="0" aria-label="${certEsc(tf("Stored as {0}", name))}">${certEsc(name)}</span>`;
+    }
+
+    var certUsage = {};
     var certList = [];
 
-    function renderManagedDomainCertificateList(usage){
+    function renderManagedDomainCertificateList(usage, ctx){
+        ctx = ctx || {usage: usage || {}, names: {}, renewOn: false, renewList: ["*"]};
         $.get("/api/cert/list?date=true", function(data){
             if (data.error != undefined){
                 msgbox(data.error, false, 5000);
@@ -512,57 +732,67 @@
             }
             data = (data || []).slice().sort(function(a, b){ return a.RemainingDays - b.RemainingDays; });
             certList = data;
+            certUsage = usage || {};
             var tbody = $("#certifiedDomainList").empty();
             data.forEach(function(entry){
                 let isExpired = entry.RemainingDays <= 0;
                 let usedBy = (usage[entry.Filename] || []);
-                let usedByHTML = usedBy.length == 0 ? "<span class='zx-sub'>unused</span>" : certEsc(usedBy.slice(0,3).join(", ")) + (usedBy.length > 3 ? ` <span class="zx-sub" title="${certEsc(usedBy.join(", "))}">+${usedBy.length-3} more</span>` : "");
+                let usedLine = usedBy.length == 0 ? t("Not used by a site") : (usedBy.length == 1 ? t("Serves 1 site") : tf("Serves {0} sites", usedBy.length));
                 let badge = `<span class="zx-badge zx-badge--dot ${expiryBadgeClass(entry.RemainingDays)}">${certEsc(daysLeftText(entry))}</span>`;
-                let issuer = [entry.Issuer, entry.KeyType].filter(Boolean).join(" · ");
+                let dateLine = isExpired ? tf("since {0}", certDateText(entry.ExpireDate)) : certDateText(entry.ExpireDate);
+                let facts = [managedByText(entry), entry.KeyType, entry.UseDNS ? t("DNS challenge") : ""].filter(Boolean).join(" · ");
+                let renew = certAutoRenewState(entry, ctx);
+                let stored = entry.Filename && entry.Domain && entry.Filename != entry.Domain ? certStoredHtml(entry.Filename) : "";
                 tbody.append(`<tr>
-                    <td data-label="Domain"><div><a href="#" data-act="download" data-cert="${certEsc(entry.Filename)}" title="Download certificate">${certEsc(entry.Domain)}</a>
-                        <span class="zx-sub">${certEsc(entry.Filename)}${issuer ? " · " + certEsc(issuer) : ""}</span></div></td>
-                    <td data-label="Status" class="certdate ${isExpired?"expired":"valid"}"><div>${badge}<span class="zx-sub">${certEsc(entry.ExpireDate)}</span></div></td>
-                    <td data-label="Managed by">${managedByChip(entry)}${entry.UseDNS ? "<span class='zx-sub'>DNS challenge</span>" : ""}</td>
-                    <td data-label="Used by"><div>${usedByHTML}</div></td>
-                    <td data-label="Fallback">${entry.IsFallback ? "<span class='zx-badge zx-badge--ok'>Fallback</span>" : ""}</td>
-                    <td data-label="Actions" class="zx-actions"><div class="zx-row-actions">
-                        <button type="button" title="Set as default / fallback certificate" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="fallback" data-cert="${certEsc(entry.Filename)}" ${entry.IsFallback ? "disabled" : ""}><i class="home icon" aria-hidden="true"></i> Fallback</button>
-                        ${renewButtonHtml(entry, "")}
-                        <button type="button" title="Delete key-pair" aria-label="Delete ${certEsc(entry.Filename)}" class="zx-btn zx-btn--danger-outline zx-btn--sm" data-act="delete" data-cert="${certEsc(entry.Filename)}" data-domain="${certEsc(entry.Domain)}"><i class="trash icon" aria-hidden="true"></i></button>
+                    <td data-label="${certEsc(t("Certificate"))}"><div class="cx-cell"><span class="certName"><span class="certNameText">${certEsc(entry.Domain || entry.Filename)}</span>${entry.IsFallback ? ` <span class="zx-badge zx-badge--info" title="${certEsc(t("Answers when no certificate matches the requested name"))}">${certEsc(t("Fallback"))}</span>` : ""}</span>
+                        ${stored}${certCoveredHtml(entry, ctx.names)}<span class="cx-cell__sub" title="${certEsc(usedBy.join(", "))}">${certEsc(usedLine)}</span></div></td>
+                    <td data-label="${certEsc(t("Expires"))}" class="certdate ${isExpired?"expired":"valid"}"><div class="cx-cell">${badge}<span class="zx-sub">${certEsc(dateLine)}</span></div></td>
+                    <td data-label="${certEsc(t("Issuer"))}"><div class="cx-cell"><span>${certEsc(entry.Issuer || t("Unknown"))}</span><span class="cx-cell__sub"${entry.ManagedBy == "mapdir" && entry.Source ? ` title="${certEsc(entry.Source)}"` : ""}>${certEsc(facts)}</span></div></td>
+                    <td data-label="${certEsc(t("Auto-renew"))}"><div class="cx-cell">${renew.yes ? `<span class="cx-yes"><i class="check icon" aria-hidden="true"></i>${certEsc(t("Yes"))}</span>` : `<span class="cx-no">${certEsc(t("No"))}</span>`}<span class="cx-cell__sub">${certEsc(renew.why)}</span></div></td>
+                    <td data-label="${certEsc(t("Actions"))}" class="zx-actions"><div class="zx-row-actions">
+                        ${renewButtonHtml(entry, t("Renew"))}
+                        <button type="button" title="${certEsc(t("Download the certificate"))}" aria-label="${certEsc(tf("Download {0}", entry.Filename))}" class="zx-btn zx-btn--ghost zx-btn--sm cx-iconbtn" data-act="download" data-cert="${certEsc(entry.Filename)}"><i class="download icon" aria-hidden="true"></i></button>
+                        <button type="button" title="${certEsc(entry.IsFallback ? t("This is the fallback certificate") : t("Use as the fallback certificate"))}" aria-label="${certEsc(tf("Use {0} as the fallback certificate", entry.Filename))}" class="zx-btn zx-btn--ghost zx-btn--sm cx-iconbtn" data-act="fallback" data-cert="${certEsc(entry.Filename)}" ${entry.IsFallback ? "disabled" : ""}><i class="home icon" aria-hidden="true"></i></button>
+                        <button type="button" title="${certEsc(t("Delete the certificate and its key"))}" aria-label="${certEsc(tf("Delete {0}", entry.Filename))}" class="zx-btn zx-btn--ghost zx-btn--sm cx-iconbtn cx-iconbtn--danger" data-act="delete" data-cert="${certEsc(entry.Filename)}" data-domain="${certEsc(entry.Domain)}"><i class="trash icon" aria-hidden="true"></i></button>
                     </div></td>
                 </tr>`);
             });
             if (data.length == 0){
-                tbody.append(`<tr><td colspan="6"><div class="zx-empty"><div class="zx-empty__title">No certificates yet</div>
-                    <p class="zx-empty__text">Sites served over HTTPS need a certificate. Upload one or request a free one with ACME.</p>
-                    <button type="button" class="zx-btn zx-btn--secondary" data-act="addcert">Add a certificate</button></div></td></tr>`);
+                tbody.append(`<tr><td colspan="5" class="zx-empty-cell"><strong>${certEsc(t("No certificates yet"))}</strong><br>${certEsc(t("A site served over HTTPS needs a certificate. Get a free one automatically, upload your own or create a self-signed one."))}<br>
+                    <button type="button" class="zx-btn zx-btn--primary" data-act="addcert"><i class="plus icon" aria-hidden="true"></i> ${certEsc(t("Add a certificate"))}</button></td></tr>`);
             }
-            renderCertSummary(data, usage);
+            renderCertSummary(data, usage, ctx);
         });
     }
 
-    //Stat tiles, "Expiring soon" callout and "Hosts without a certificate" panel
-    function renderCertSummary(data, usage){
+    //Stat tiles, "Expiring soon" callout and "Sites without a certificate" panel
+    function renderCertSummary(data, usage, ctx){
+        ctx = ctx || {renewOn: false, renewList: ["*"], names: {}};
         var expiring = data.filter(function(e){ return e.RemainingDays <= 30; });
         var expired = data.filter(function(e){ return e.RemainingDays <= 0; }).length;
         var fallback = data.filter(function(e){ return e.IsFallback; })[0];
+        var inUse = data.filter(function(e){ return (usage[e.Filename] || []).length > 0; }).length;
+        var renewing = data.filter(function(e){ return certAutoRenewState(e, ctx).yes; }).length;
         function tile(cls, label, value, hint){
             return `<div class="zx-stat ${cls}"><span class="zx-stat__label">${certEsc(label)}</span><span class="zx-stat__value">${certEsc(value)}</span><span class="zx-stat__hint">${certEsc(hint)}</span></div>`;
         }
-        $("#certStats").html(
-            tile("", t("Certificates"), data.length, t("loaded")) +
-            tile(expiring.length ? (expired ? "zx-stat--danger" : "zx-stat--warn") : "zx-stat--ok", t("Expiring in 30 days"), expiring.length, expired ? tf("{0} already expired", expired) : t("or sooner")) +
-            tile("", t("Fallback"), fallback ? fallback.Domain : t("built in"), fallback ? t("used when no name matches") : t("self-signed placeholder")));
-        var list = $("#certExpiringList").empty();
-        expiring.forEach(function(e){
-            list.append(`<li><strong>${certEsc(e.Domain)}</strong> <span class="zx-badge zx-badge--dot ${expiryBadgeClass(e.RemainingDays)}">${certEsc(daysLeftText(e))}</span>
-                <span class="zx-sub">${e.Renewable ? "" : (e.ManagedBy == "acme" ? "" : "replace it before it expires")}</span>${renewButtonHtml(e, t("Renew now"))}</li>`);
-        });
-        $("#certExpiringBox").prop("hidden", expiring.length == 0);
+        function tiles(missing){
+            var soon = expiring.length - expired;
+            $("#certStats").html(
+                tile("", t("Certificates"), data.length, data.length ? tf("{0} used by a site", inUse) : t("none loaded yet")) +
+                tile(expiring.length ? (expired ? "zx-stat--danger" : "zx-stat--warn") : (data.length ? "zx-stat--ok" : ""), t("Expiring in 30 days"), expiring.length, expired ? (soon ? tf("{0} already expired, {1} soon", expired, soon) : tf("{0} already expired", expired)) : (expiring.length ? t("renew or replace them") : t("nothing to do"))) +
+                tile("", t("Auto-renew"), ctx.renewOn ? t("On") : t("Off"), ctx.renewOn ? tf("looks after {0} of {1}", renewing, data.length) : t("nothing renews by itself")) +
+                tile(missing ? "zx-stat--warn" : "", t("Sites without a certificate"), missing === null ? "-" : missing, missing ? t("visitors see a warning") : t("every site is covered")));
+        }
+        $("#certFallbackLine").text(fallback ? tf("{0} is the fallback: it answers when no certificate matches the requested name.", fallback.Domain || fallback.Filename) : t("No fallback is set: a built-in self-signed placeholder answers when no certificate matches the requested name."));
+        var soonCount = expiring.length - expired, parts = [];
+        if (expired){ parts.push(expired == 1 ? t("1 expired") : tf("{0} expired", expired)); }
+        if (soonCount){ parts.push(soonCount == 1 ? t("1 expires within 30 days") : tf("{0} expire within 30 days", soonCount)); }
+        $("#certExpiringTitle").text((expiring.length == 1 ? t("1 certificate needs attention") : tf("{0} certificates need attention", expiring.length)) + ": " + parts.join(", "));
+        $("#certExpiringBox").toggleClass("zx-callout--danger", expired > 0).toggleClass("zx-callout--warn", expired == 0).prop("hidden", expiring.length == 0);
 
         $.get("/api/proxy/list?type=host", function(rules){
-            if (!rules || !rules.forEach){ return; }
+            if (!rules || !rules.forEach){ tiles(null); return; }
             var covered = {};
             Object.keys(usage).forEach(function(k){ usage[k].forEach(function(h){ covered[h] = true; }); });
             var missing = [];
@@ -577,15 +807,16 @@
             var cap = 5;
             missing.forEach(function(h, i){
                 ul.append(`<tr class="certMissingHost${i >= cap ? " certMissingExtra" : ""}"${i >= cap ? " hidden" : ""}>
-                    <td data-label="Host">${certEsc(h)}</td>
-                    <td data-label="Status"><span class="zx-badge zx-badge--warn">No certificate</span></td>
-                    <td data-label="Action" class="zx-actions"><div class="zx-row-actions"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="usehost" data-host="${certEsc(h)}" aria-label="${certEsc(tf("Add a certificate for {0}", h))}"><i class="plus icon" aria-hidden="true"></i> ${certEsc(t("Add"))}</button></div></td>
+                    <td data-label="${certEsc(t("Host"))}">${certEsc(h)}</td>
+                    <td data-label="${certEsc(t("Status"))}"><span class="zx-badge zx-badge--dot zx-badge--warn">${certEsc(t("No certificate"))}</span></td>
+                    <td data-label="${certEsc(t("Action"))}" class="zx-actions"><div class="zx-row-actions"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="usehost" data-host="${certEsc(h)}" aria-label="${certEsc(tf("Add a certificate for {0}", h))}"><i class="plus icon" aria-hidden="true"></i> ${certEsc(t("Add a certificate"))}</button></div></td>
                 </tr>`);
             });
             $("#certMissingMoreRow").prop("hidden", missing.length <= cap);
             $("#certMissingMore").attr("aria-expanded", "false").text(tf("Show all {0}", missing.length));
             $("#certMissingBox").prop("hidden", missing.length == 0);
-        });
+            tiles(missing.length);
+        }).fail(function(){ tiles(null); });
     }
 
     $(document).on("click", "#certPage [data-act]", function(e){
@@ -595,7 +826,7 @@
         else if (act == "renew"){ renewCertNow(cert, this); }
         else if (act == "delete"){ deleteCertificate(cert); }
         else if (act == "addcert"){ openCertAddCard(); }
-        else if (act == "usehost"){ openCertAddCard(); $("#certdomain").val(b.attr("data-host")).trigger("input").focus(); }
+        else if (act == "usehost"){ openCertAddCard("", b.attr("data-host")); }
     });
 
     $(document).on("click", "#certMissingMore", function(){
@@ -604,30 +835,216 @@
         $(this).attr("aria-expanded", open ? "false" : "true").text(open ? tf("Show all {0}", $(".certMissingHost").length) : t("Show fewer"));
     });
 
-    function openCertAddCard(){
-        $("#certAddToggle").attr("aria-expanded", "true");
-        $("#certAddBody").prop("hidden", false);
-        $("#certAddCard")[0].scrollIntoView({behavior: "smooth", block: "nearest"});
+    /*
+        Add a certificate: a guided choice of three paths (acme, upload, self). A path shows only its own fields,
+        checks them in place and ends in a result: working, failed (with the reason) or installed.
+    */
+    var certAcmeDefaults = {ca: "Let's Encrypt", email: ""};
+
+    function certFieldErr(id, text, input){
+        var e = $("#" + id);
+        if (text){ e.empty().append('<i class="exclamation circle icon" aria-hidden="true"></i>').append(document.createTextNode(text)).prop("hidden", false); }
+        else { e.prop("hidden", true).empty(); }
+        if (input){ $(input).toggleClass("cx-invalid", !!text).attr("aria-invalid", text ? "true" : null); }
     }
-    $("#certAddOpenBtn").on("click", function(){ openCertAddCard(); $("#certdomain").focus(); });
+
+    //state: working / danger; null hides it
+    function certSetResult(state, title, text, detail, hints, actions){
+        var box = $("#certAddResult");
+        if (!state){ box.prop("hidden", true); return; }
+        box.attr("data-state", state == "working" ? null : state).prop("hidden", false);
+        $("#certAddResultIcon").html(state == "working" ? '<span class="cx-spin"></span>' : '<i class="times icon"></i>');
+        $("#certAddResultTitle").text(title || "");
+        $("#certAddResultText").text(text || "");
+        $("#certAddResultDetail").text(detail || "").prop("hidden", !detail);
+        var ul = $("#certAddResultHints").empty().prop("hidden", !(hints && hints.length));
+        (hints || []).forEach(function(h){ ul.append($("<li>").text(h)); });
+        $("#certAddResultActions").prop("hidden", !actions);
+    }
+
+    function certAddBusy(busy){
+        $("#certAddCard .cx-path").find("input, textarea, button").prop("disabled", busy);
+        $("#certPathChoice input").prop("disabled", busy);
+    }
+
+    //Installed: the card shows only the result, the list below is re-read
+    function certAddDone(name, text){
+        certAddBusy(false);
+        certSetResult(null);
+        $("#certUploadingDomain").text(name);
+        $("#certDoneText").text(text || "");
+        $("#certAddCard").attr("data-done", "1");
+        $("#certUploadSuccMsg").stop(true, true).show();
+        initManagedDomainCertificateList();
+        initDefaultKeypairCheck();
+    }
+
+    function loadCertAcmeDefaults(){
+        function summary(){
+            var ca = certAcmeDefaults.ca == "custom" ? t("your custom ACME server") : certAcmeDefaults.ca;
+            var p = $("#certAcmeSummary").empty();
+            p.append($("<span>").text(tf("Issued by {0} and checked over HTTP on port 80.", ca) + " "));
+            if (certAcmeDefaults.email){ p.append($("<span>").text(tf("Expiry notices go to {0}.", certAcmeDefaults.email) + " ")); }
+            p.append($('<a href="#acme" data-nav-open="acme"></a>').text(t("Change the authority or email")));
+            $("#certAcmeEmailField").prop("hidden", certAcmeDefaults.email != "");
+        }
+        $.get("/api/acme/autoRenew/ca", function(data){ if (data && data.name){ certAcmeDefaults.ca = data.name; } }).always(function(){
+            $.get("/api/acme/autoRenew/email", function(data){ certAcmeDefaults.email = (typeof data === "string") ? data.trim() : ""; }).always(summary);
+        });
+    }
+
+    function setCertPath(path, focus){
+        $("#certPathChoice input[name=certPath]").each(function(){ this.checked = (this.value == path); });
+        $("#certPathAcme").prop("hidden", path != "acme");
+        $("#certPathUpload").prop("hidden", path != "upload");
+        $("#certPathSelf").prop("hidden", path != "self");
+        certSetResult(null);
+        if (path == "acme"){ loadCertAcmeDefaults(); }
+        if (focus){
+            var first = {acme: "#certAcmeDomains", upload: "#certFilesBtn", self: "#certSelfCN"}[path];
+            if (first){ $(first).trigger("focus"); }
+        }
+    }
+    $("#certPathChoice").on("change", "input[name=certPath]", function(){ setCertPath(this.value, false); });
+
+    function openCertAddCard(path, host){
+        var card = $("#certAddCard");
+        card.prop("hidden", false).removeAttr("data-done");
+        $("#certAddOpenBtn").attr("aria-expanded", "true");
+        $("#certUploadSuccMsg").hide();
+        certSetResult(null);
+        certAddBusy(false);
+        if (host){
+            $("#certAcmeDomains, #certdomain, #certSelfCN").val(host);
+            $("#certAddFor").text(tf("For {0}.", host));
+        }
+        if (path){ setCertPath(path, true); }
+        else {
+            var cur = $("#certPathChoice input:checked");
+            (cur.length ? cur : $("#certPathChoice input").first()).trigger("focus");
+        }
+        card[0].scrollIntoView({behavior: "smooth", block: "nearest"});
+    }
+    function closeCertAddCard(){
+        $("#certAddCard").prop("hidden", true);
+        $("#certAddFor").text("");
+        $("#certAddOpenBtn").attr("aria-expanded", "false").trigger("focus");
+    }
+    function resetCertAddForms(){
+        $("#certAcmeDomains, #certdomain, #certSelfCN, #certSelfSans, #pubkeyPasteContent, #prikeyPasteContent").val("");
+        $("#pubkeySelector, #prikeySelector").val("");
+        $("#certSelfFallback").prop("checked", false);
+        $("#certAddFor").text("");
+        uploadPendingPublicKey = undefined;
+        uploadPendingPrivateKey = undefined;
+        ["certAcmeDomainsErr", "certAcmeEmailErr", "certUploadErr", "certSelfCNErr", "certSelfSansErr"].forEach(function(id){ certFieldErr(id, ""); });
+        $("#certAddCard .cx-invalid").removeClass("cx-invalid").removeAttr("aria-invalid");
+    }
+    $("#certAddOpenBtn").on("click", function(){ openCertAddCard(); });
+    $("#certAddClose, #certAddDoneBtn").on("click", function(){ if ($("#certAddCard").attr("data-done")){ resetCertAddForms(); } closeCertAddCard(); });
+    $("#certAddAnotherBtn").on("click", function(){
+        resetCertAddForms();
+        $("#certUploadSuccMsg").hide();
+        $("#certAddCard").removeAttr("data-done");
+        var cur = $("#certPathChoice input:checked");
+        if (cur.length){ setCertPath(cur.val(), true); } else { $("#certPathChoice input").first().trigger("focus"); }
+    });
+    $("#certAddRetryBtn").on("click", function(){ certSetResult(null); $("#certAcmeDomains").trigger("focus"); });
+    $("#certAcmeMoreBtn, #certAddToolBtn").on("click", function(){ typeof openACMEManager === "function" ? openACMEManager() : openTabById("acme"); });
+
+    /* path 1: ACME over HTTP with the saved authority */
+    var CERT_PUBLIC_NAME = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
+    function certAcmeSubmit(){
+        certFieldErr("certAcmeDomainsErr", "", "#certAcmeDomains");
+        certFieldErr("certAcmeEmailErr", "", "#certAcmeEmail");
+        var names = $("#certAcmeDomains").val().split(/[\s,;]+/).map(function(n){ return n.trim().toLowerCase(); }).filter(Boolean), err = "";
+        if (names.length == 0){ err = t("Enter the domain name the certificate is for."); }
+        names.forEach(function(n){
+            if (err){ return; }
+            if (n.indexOf("*") >= 0){ err = t("A wildcard name needs the DNS challenge. Use \"Wildcard, DNS challenge or another authority\" below."); }
+            else if (!CERT_PUBLIC_NAME.test(n) || n.length > 253){ err = tf("{0} is not a public domain name. Example: app.example.com", n); }
+        });
+        if (err){ certFieldErr("certAcmeDomainsErr", err, "#certAcmeDomains"); $("#certAcmeDomains").trigger("focus"); return; }
+        var ca = certAcmeDefaults.ca || "Let's Encrypt", caLabel = ca == "custom" ? t("your custom ACME server") : ca;
+        function request(){
+            certAddBusy(true);
+            certSetResult("working", tf("Asking {0} for the certificate ...", caLabel), t("The authority checks that the name reaches this server. This usually takes less than a minute. Keep this page open."));
+            requestAcmeCertificate(names.join(","), false, ca, function(ok, message){
+                certAddBusy(false);
+                if (!ok){
+                    certSetResult("danger", t("The certificate was not issued"), t("Nothing was changed. The reason given:"), message, [
+                        t("Check that the name points at the public address of this server."),
+                        t("Check that port 80 reaches Zoraxy from the internet (router, firewall, CDN)."),
+                        t("After several failed tries the authority makes you wait before the next one.")], true);
+                    return;
+                }
+                ZxHistory.savedToast(t("Certificate installed"), "Certificate");
+                $.get("/api/acme/autoRenew/enable", function(on){
+                    certAddDone(names[0], on === true ? t("It is in the list below and renews by itself about 30 days before it expires.") : t("It is in the list below. Auto-renew is off, so it will not renew by itself: turn it on in ACME Client."));
+                }).fail(function(){ certAddDone(names[0], t("It is in the list below.")); });
+            });
+        }
+        if ($("#certAcmeEmailField").prop("hidden")){ request(); return; }
+        var email = $("#certAcmeEmail").val().trim();
+        if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)){
+            certFieldErr("certAcmeEmailErr", email == "" ? t("The authority needs a contact email.") : t("Enter a valid email address, for example admin@example.com"), "#certAcmeEmail");
+            $("#certAcmeEmail").trigger("focus");
+            return;
+        }
+        $.cjax({url: "/api/acme/autoRenew/email", method: "POST", data: {"set": email}, success: function(data){
+            if (data && data.error != undefined){ certFieldErr("certAcmeEmailErr", data.error, "#certAcmeEmail"); return; }
+            certAcmeDefaults.email = email;
+            $("#certAcmeEmail").val("");
+            loadCertAcmeDefaults();
+            request();
+        }});
+    }
+    $("#certAcmeBtn").on("click", certAcmeSubmit);
+    $("#certAcmeDomains, #certAcmeEmail").on("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); certAcmeSubmit(); } });
+
+    /* path 3: self-signed, created on this server */
+    function certSelfSubmit(){
+        certFieldErr("certSelfCNErr", "", "#certSelfCN");
+        certFieldErr("certSelfSansErr", "", "#certSelfSans");
+        var okName = /^(\*\.)?[A-Za-z0-9]([A-Za-z0-9._-]{0,251}[A-Za-z0-9])?$|^[0-9a-fA-F:]{3,39}$/;
+        var cn = $("#certSelfCN").val().trim();
+        if (cn == ""){ certFieldErr("certSelfCNErr", t("Enter the name the certificate is for."), "#certSelfCN"); $("#certSelfCN").trigger("focus"); return; }
+        if (!okName.test(cn)){ certFieldErr("certSelfCNErr", t("Use a host name such as nas.home.lan or an IP address: letters, digits, dots and dashes."), "#certSelfCN"); $("#certSelfCN").trigger("focus"); return; }
+        var sans = $("#certSelfSans").val().split(/[\s,;]+/).map(function(n){ return n.trim(); }).filter(Boolean);
+        var bad = sans.filter(function(n){ return !okName.test(n); })[0];
+        if (bad){ certFieldErr("certSelfSansErr", tf("{0} is not a host name or an IP address.", bad), "#certSelfSans"); $("#certSelfSans").trigger("focus"); return; }
+        var stored = cn.replace(/^\*/, "_"), makeFallback = $("#certSelfFallback").prop("checked");
+        function create(){
+            certAddBusy(true);
+            $.cjax({url: "/api/cert/selfsign?cn=" + encodeURIComponent(cn), method: "POST", data: {domains: JSON.stringify(sans)}, success: function(data){
+                certAddBusy(false);
+                if (data && data.error != undefined){ certFieldErr("certSelfCNErr", data.error, "#certSelfCN"); return; }
+                ZxHistory.savedToast(t("Self-signed certificate created"), "Certificate");
+                var text = t("It is in the list below, valid for one year. Browsers show a warning until it is trusted on each device.");
+                if (!makeFallback){ certAddDone(cn, text); return; }
+                $.cjax({url: "/api/cert/setDefault", method: "POST", data: {certname: stored}, success: function(r){
+                    certAddDone(cn, r && r.error != undefined ? text + " " + tf("It could not be made the fallback: {0}", r.error) : text + " " + t("It is now the fallback certificate."));
+                }, error: function(){ certAddDone(cn, text); }});
+            }, error: function(){ certAddBusy(false); }});
+        }
+        var exists = certList.some(function(c){ return c.Filename == stored; });
+        if (!exists){ create(); return; }
+        ZxUI.confirm({title: t("Replace the existing certificate?"), message: tf("A certificate is already stored as {0}. The self-signed one replaces it and its key.", stored), confirmLabel: t("Replace it"), danger: true}).then(function(ok){ if (ok){ create(); } });
+    }
+    $("#certSelfBtn").on("click", certSelfSubmit);
+    $("#certSelfCN, #certSelfSans").on("keydown", function(e){ if (e.key === "Enter"){ e.preventDefault(); certSelfSubmit(); } });
+
     initManagedDomainCertificateList();
     //the lists (expiry, hosts without a certificate) are re-read every time the page is opened
     document.addEventListener("zx:tabopen", function(e){ if (e.detail && e.detail.tag === "cert"){ initManagedDomainCertificateList(); } });
 
+    /* path 2: upload (files or pasted text) */
     function handleDomainUploadByKeypress(){
         handleDomainKeysUpload(function(){
-            //After uploaded, reset the file selector
-            document.getElementById('pubkeySelector').value = '';
-            document.getElementById('prikeySelector').value = '';
-            document.getElementById('certdomain').value = '';
-            $("#certdomain").attr("placeholder", "");
-            uploadPendingPublicKey = undefined;
-            uploadPendingPrivateKey = undefined;
-
-            //Show succ
-            $("#certUploadSuccMsg").stop().finish().slideDown("fast").delay(3000).slideUp("fast");
-            initManagedDomainCertificateList();
+            let domain = $("#certUploadingDomain").text();
             ZxHistory.savedToast(t("Certificate uploaded"), "Certificate");
+            resetCertAddForms();
+            certAddDone(domain, t("It is in the list below with its expiry date and the names it covers."));
         });
     }
 
@@ -671,28 +1088,40 @@
     var certUploadBusy = false;
     function setCertUploadBusy(busy){
         certUploadBusy = busy;
-        $("#certUploadBtn, #certPasteArea .ui.button").toggleClass("disabled", busy);
+        $("#certUploadBtn, #certPasteUploadBtn").toggleClass("disabled", busy).attr("aria-busy", busy ? "true" : null);
+    }
+
+    //A problem with the upload input: said next to the fields and as a toast
+    function certUploadProblem(text, ms){
+        certFieldErr("certUploadErr", text);
+        msgbox(certEsc(text), false, ms || 5000);
     }
 
     //Handle domain keys upload. callback runs only when BOTH files were stored; otherwise the server's reason is shown.
     //pasted = {pub, pri} text when the content came from the paste boxes (it is checked as typed).
     function handleDomainKeysUpload(callback=undefined, pasted=undefined){
         if (certUploadBusy) { return; }
+        certFieldErr("certUploadErr", "");
+        //first what is being uploaded (the files or the pasted text), then the name it is stored under
+        if (!(uploadPendingPublicKey && typeof uploadPendingPublicKey === 'object')) {
+            certUploadProblem(t("Choose the certificate file first."));
+            $("#pubkeySelector").trigger("focus");
+            return;
+        }
+        if (!(uploadPendingPrivateKey && typeof uploadPendingPrivateKey === 'object')) {
+            certUploadProblem(t("Choose the private key that belongs to the certificate."));
+            $("#prikeySelector").trigger("focus");
+            return;
+        }
         let domain = $("#certdomain").val().trim();
         if (domain == ""){
-            domain = ($("#certdomain").attr("placeholder") || "").trim();
-            if (domain == "") {
-                msgbox("Missing domain", false, 5000);
-                return;
-            }
-        }
-        if (!(uploadPendingPublicKey && uploadPendingPrivateKey && typeof uploadPendingPublicKey === 'object' && typeof uploadPendingPrivateKey === 'object')) {
-            msgbox('One or both of the files is missing or not a file object', false, 5000);
+            certUploadProblem(t("Enter the server name the certificate is for."));
+            $("#certdomain").trigger("focus");
             return;
         }
         const check = function(pubText, priText){
             const err = validateCertUploadInput(domain, pubText, priText);
-            if (err) { msgbox(err, false, 8000); return false; }
+            if (err) { certUploadProblem(err, 8000); return false; }
             return true;
         };
         const send = function(){
@@ -701,7 +1130,7 @@
                 setCertUploadBusy(false);
                 const bad = results.filter(function(r){ return !r.ok; });
                 if (bad.length > 0) {
-                    msgbox(certEsc(t("Certificate not uploaded") + ": " + bad[0].error), false, 8000);
+                    certUploadProblem(t("Certificate not uploaded") + ": " + bad[0].error, 8000);
                     initManagedDomainCertificateList();
                     return;
                 }
@@ -829,25 +1258,25 @@
         input.click();
     }
 
-    // Toggle the paste certificate interface visibility
-    function togglePasteCertInterface() {
-        const pasteArea = $("#certPasteArea");
-        const uploadFields = $("#pubkeySelector, #prikeySelector").closest('.field');
-
-        if (pasteArea.is(':visible')) {
-            // Hide paste area and show upload fields
-            pasteArea.slideUp("fast");
-            uploadFields.show();
-            $(".showOnlyInCertUploadMode").show();
-            // Clear paste textareas
+    // The upload path takes files or pasted text: mode = "files" / "paste"
+    function setCertUploadMode(mode){
+        var paste = mode == "paste";
+        $("#certFilesBtn").attr("aria-checked", paste ? "false" : "true");
+        $("#certPasteBtn").attr("aria-checked", paste ? "true" : "false");
+        $("#certFileFields, #certUploadBtn").prop("hidden", paste);
+        $("#certPasteArea, #certPasteUploadBtn").prop("hidden", !paste);
+        certFieldErr("certUploadErr", "");
+        if (!paste){
             $("#pubkeyPasteContent").val('');
             $("#prikeyPasteContent").val('');
-        } else {
-            // Show paste area and hide upload fields
-            pasteArea.slideDown("fast");
-            uploadFields.hide();
-            $(".showOnlyInCertUploadMode").hide();
         }
+    }
+    $("#certFilesBtn").on("click", function(){ setCertUploadMode("files"); });
+    $("#certPasteBtn").on("click", function(){ setCertUploadMode("paste"); });
+
+    // Toggle the paste certificate interface visibility (kept for callers of the old name)
+    function togglePasteCertInterface() {
+        setCertUploadMode($("#certPasteArea").prop("hidden") ? "paste" : "files");
     }
 
     // Extract common name from pasted certificate using backend API
@@ -897,59 +1326,31 @@
     function handlePasteInBrowserAndUpload() {
         const pubkeyContent = $("#pubkeyPasteContent").val().trim();
         const prikeyContent = $("#prikeyPasteContent").val().trim();
-        
+
         // Validate inputs
         if (pubkeyContent === '' || prikeyContent === '') {
-            msgbox('Please paste both public key and private key content', false, 5000);
+            certUploadProblem(t("Paste both parts: the certificate and its private key."));
             return;
         }
-        
-        // Get domain from input
-        let domain = $("#certdomain").val().trim();
-        if (domain === '') {
-            // Check if placeholder has value
-            if ($("#certdomain").attr("placeholder").trim() !== '') {
-                domain = $("#certdomain").attr("placeholder").trim();
-            } else {
-                msgbox("Missing domain", false, 5000);
-                return;
-            }
-        }
-        
+
         // Convert text content to File objects
         const publicKeyBlob = new Blob([pubkeyContent], { type: 'text/plain' });
         const privateKeyBlob = new Blob([prikeyContent], { type: 'text/plain' });
-        
+
         const publicKeyFile = new File([publicKeyBlob], 'publicKey.pem', { type: 'text/plain' });
         const privateKeyFile = new File([privateKeyBlob], 'privateKey.key', { type: 'text/plain' });
-        
+
         // Set the pending upload files
         uploadPendingPublicKey = publicKeyFile;
         uploadPendingPrivateKey = privateKeyFile;
-        
+
         // Reuse the existing upload logic
         handleDomainKeysUpload(function() {
-            $("#certUploadingDomain").text(domain);
-            
-            // Clear the paste textareas
-            $("#pubkeyPasteContent").val('');
-            $("#prikeyPasteContent").val('');
-            $("#certdomain").val('');
-            $("#certdomain").attr("placeholder", "");
-            
-            // Reset pending uploads
-            uploadPendingPublicKey = undefined;
-            uploadPendingPrivateKey = undefined;
-            
-            // Hide paste area and show upload fields again
-            togglePasteCertInterface();
-            
-            // Show success message
-            $("#certUploadSuccMsg").stop().finish().slideDown("fast").delay(3000).slideUp("fast");
-            
-            // Refresh certificate list
-            initManagedDomainCertificateList();
+            let domain = $("#certUploadingDomain").text();
             ZxHistory.savedToast(t("Certificate uploaded"), "Certificate");
+            resetCertAddForms();
+            setCertUploadMode("files");
+            certAddDone(domain, t("It is in the list below with its expiry date and the names it covers."));
         }, {pub: pubkeyContent, pri: prikeyContent});
     }
 </script>

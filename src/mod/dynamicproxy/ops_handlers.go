@@ -71,6 +71,7 @@ type opsState struct {
 	ep       *ProxyEndpoint
 	clientIP string
 	id       string
+	host     string      //Host as the visitor sent it (r.Host is rewritten before the upstream call)
 	armed    atomic.Bool //error pages only apply once the request is being proxied
 }
 
@@ -83,7 +84,7 @@ func (router *Router) opsBegin(w http.ResponseWriter, r *http.Request, sep *Prox
 	if id == "" {
 		id = rewrite.NewRequestID()
 	}
-	st := &opsState{ep: sep, id: id, clientIP: router.GetClientIPForEndpoint(r, sep)}
+	st := &opsState{ep: sep, id: id, host: r.Host, clientIP: router.GetClientIPForEndpoint(r, sep)}
 	vars := &rewrite.RequestVars{RequestID: id, RuleName: sep.RootOrMatchingDomain, ClientIP: st.clientIP}
 	*r = *rewrite.WithRequestVars(r, vars)
 	*r = *r.WithContext(contextWithOpsState(r, st))

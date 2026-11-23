@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"imuslab.com/zoraxy/mod/errorpages"
 	"imuslab.com/zoraxy/mod/metrics"
 	"imuslab.com/zoraxy/mod/pathmatch"
 )
@@ -439,7 +440,9 @@ func (h *ProxyHandler) handlePathRules(w http.ResponseWriter, r *http.Request, s
 				h.Parent.Option.Metrics.Event(metrics.EventRateLimited, sep.RootOrMatchingDomain, "path")
 				h.Parent.logRequest(r, false, 429, "path-rule-ratelimit", r.Host, "", sep)
 				w.Header().Set("Retry-After", "1")
-				w.WriteHeader(http.StatusTooManyRequests)
+				if !h.Parent.serveCustomErrorPage(w, r, http.StatusTooManyRequests, errorpages.ClassRateLimit) { //the owner's 429 page, if any
+					w.WriteHeader(http.StatusTooManyRequests)
+				}
 				return true
 			}
 			return false

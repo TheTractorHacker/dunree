@@ -65,7 +65,7 @@
         { label: N_("Whitelist mode"), page: "access", pre: ".accesscontrol.item[data-tab='tab_whitelist']", at: "#enableWhitelist", kw: "allow only ip country" },
         { label: N_("Quick ban list"), page: "access", pre: ".accesscontrol.item[data-tab='tab_quickban']", at: "#ipTable", kw: "ban ip temporary" },
         { label: N_("CAPTCHA challenge"), page: "captcha", at: "#cpGlobalBtn", kw: "turnstile recaptcha global default" },
-        { label: N_("Forward authentication"), page: "sso", text: "Forward Auth", kw: "authentik authelia sso" },
+        { label: N_("Forward authentication"), page: "sso", text: "Forward auth", kw: "authentik authelia sso" },
         // Certificates
         { label: N_("Upload a certificate"), page: "cert", pre: "#certAddOpenBtn", at: "#certdomain", kw: "pem key import ssl" },
         { label: N_("Auto renew certificates"), page: "acme", at: "#enableCertAutoRenew", kw: "acme lets encrypt renewal" },

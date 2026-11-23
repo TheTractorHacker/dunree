@@ -35,7 +35,7 @@ func (m *Manager) RebuildPlugin(pluginID string) error {
 	}
 
 	// Remember if the plugin was enabled
-	wasEnabled := plugin.Enabled
+	wasEnabled := plugin.IsRunning()
 
 	// Stop the plugin if it's running
 	if wasEnabled {

@@ -99,17 +99,51 @@ def certs_traffic_ui(pg, ctx):
         wrap = js("(() => { const w = document.querySelector('#certPage .zx-table-wrap'); return [w.scrollHeight, w.clientHeight]; })()")
         if wrap[0] > wrap[1] + 2:
             fail("cert-table", f"the certificate table hides rows in a nested scroll box (scrollHeight {wrap[0]} > {wrap[1]})")
-        titles = js("[...document.querySelectorAll('#certExpiringList button.renewButton')].map(b => b.title)")
+        # the rows carry the Renew button (the callout above is one line: how many need attention, and what Renew does)
+        titles = js("[...document.querySelectorAll('#certifiedDomainList button.renewButton')].map(b => b.title)")
         if titles and any("uploaded" not in t.lower() and "issued with" not in t.lower() for t in titles):
-            fail("cert-renew", f"Renew now has no explanation: {titles}")
-        if js("document.querySelectorAll('#certExpiringList button.renewButton').length") and "replace" not in js("document.getElementById('certExpiringText').innerText").lower():
-            fail("cert-renew", "the Expiring soon text does not say what Renew now does for non-ACME certificates")
-        pg.click("#certAddToggle")
+            fail("cert-renew", f"Renew has no explanation: {titles}")
+        if pg.is_visible("#certExpiringBox"):
+            if "replace" not in js("document.getElementById('certExpiringText').innerText").lower():
+                fail("cert-renew", "the callout does not say what Renew does for non-ACME certificates")
+            if not re.search(r"\d+ certificates? needs? attention", js("document.getElementById('certExpiringTitle').innerText")):
+                fail("cert-renew", "the callout does not say how many certificates need attention")
+            if js("document.querySelectorAll('#certExpiringBox button').length"):
+                fail("cert-renew", "the callout repeats the Renew buttons of the rows below it")
+        # chips never break inside a name: one line each, at most three shown, the rest behind "+N more"
+        tall = js("[...document.querySelectorAll('#certifiedDomainList .cx-host')].filter(c => c.offsetParent && c.getClientRects().length > 1 || c.offsetHeight > 30).map(c => c.textContent)")
+        if tall:
+            fail("cert-table", f"a host chip wraps inside the name: {tall[:3]}")
+        many = js("[...document.querySelectorAll('#certifiedDomainList .cx-hosts')].map(u => [...u.querySelectorAll('li.cx-host')].filter(c => c.offsetParent).length).filter(n => n > 3)")
+        if many:
+            fail("cert-table", f"a certificate row shows more than three host chips: {many}")
+        # the hidden attribute must win over the display of a kit class: with an ACME email saved the guided path does not
+        # ask for it again, and the buttons of the failed state are not there while a request runs
+        pg.route("**/api/acme/autoRenew/email", lambda r: r.fulfill(status=200, content_type="application/json", body='"ops@smoke.test"') if r.request.method == "GET" else r.continue_())
+        pg.click("#certAddOpenBtn")
         pg.wait_for_timeout(300)
-        if not pg.is_visible("#certPasteBtn"):
-            # the toggle can be clicked before its handler is attached; one more click opens the add area
-            pg.click("#certAddToggle")
+        if not pg.is_visible("#certPage label[data-cert-path=acme]"):
+            pg.click("#certAddOpenBtn")
+        pg.click("#certPage label[data-cert-path=acme]")
+        pg.wait_for_timeout(700)
+        if pg.is_visible("#certAcmeEmailField") or "ops@smoke.test" not in js("document.getElementById('certAcmeSummary').innerText"):
+            fail("cert-add", "the ACME path asks for the contact email although one is saved (the hidden field is visible)")
+        js("certSetResult('working', 'Asking for the certificate ...', 'Keep this page open.')")
+        if pg.is_visible("#certAddResultActions"):
+            fail("cert-add", "'Change and try again' is visible while the request is still running")
+        js("certSetResult(null)")
+        pg.unroute("**/api/acme/autoRenew/email")
+        pg.click("#certAddClose")
+        pg.wait_for_timeout(200)
+        # Add a certificate is a guided choice: open it, take the "Upload your own" path, then the paste mode
+        pg.click("#certAddOpenBtn")
+        pg.wait_for_timeout(300)
+        if not pg.is_visible("#certPage label[data-cert-path=upload]"):
+            # the button can be clicked before its handler is attached; one more click opens the card
+            pg.click("#certAddOpenBtn")
             pg.wait_for_timeout(300)
+        pg.click("#certPage label[data-cert-path=upload]")
+        pg.wait_for_timeout(200)
         pg.click("#certPasteBtn")
         # garbage: nothing is posted, no success box, one error toast
         before = len(posts)
@@ -117,7 +151,7 @@ def certs_traffic_ui(pg, ctx):
         pg.fill("#pubkeyPasteContent", "garbage pem")
         pg.fill("#prikeyPasteContent", "garbage key")
         clear_toasts()
-        pg.dblclick("#certPasteArea .zx-btn >> nth=0")
+        pg.dblclick("#certPasteUploadBtn")
         pg.wait_for_timeout(600)
         if len(posts) != before:
             fail("cert-upload", f"garbage input was posted to the server ({len(posts) - before} requests)")
@@ -134,7 +168,7 @@ def certs_traffic_ui(pg, ctx):
         pg.fill("#prikeyPasteContent", good_key)
         before = len(posts)
         clear_toasts()
-        pg.dblclick("#certPasteArea .zx-btn >> nth=0")
+        pg.dblclick("#certPasteUploadBtn")
         pg.wait_for_function("$('#certUploadSuccMsg').is(':visible')", timeout=8000)
         pg.wait_for_timeout(500)
         if len(posts) - before != 2:
@@ -214,10 +248,10 @@ def certs_traffic_ui(pg, ctx):
         current["page"] = "ct-mobile"
         pg.wait_for_timeout(300)
         check_horizontal(pg, "cert 390")
-        cell = js("""(() => { const td = document.querySelector('#certifiedDomainList td[data-label=Status]'); const r = td.getBoundingClientRect();
+        cell = js("""(() => { const td = document.querySelector('#certifiedDomainList td[data-label=Expires]'); const r = td.getBoundingClientRect();
             return {right: r.right, vw: innerWidth, kids: [...td.querySelectorAll('.zx-sub, .zx-badge')].map(e => { const b = e.getBoundingClientRect(); return b.right <= innerWidth + 1; })}; })()""")
         if not all(cell["kids"]) or cell["right"] > cell["vw"] + 1:
-            fail("layout", f"the Status cell is clipped at 390px: {cell}")
+            fail("layout", f"the Expires cell is clipped at 390px: {cell}")
         empty = js("""(() => { const tb = document.getElementById('certifiedDomainList'); const tr = document.createElement('tr'); tr.id = 'zxProbe';
             tr.innerHTML = '<td colspan="6"><div class="zx-empty"><div class="zx-empty__title">probe</div></div></td>'; tb.appendChild(tr);
             const td = tr.firstChild, cs = getComputedStyle(td), b = tr.getBoundingClientRect(), e = td.querySelector('.zx-empty').getBoundingClientRect();
@@ -291,27 +325,33 @@ def certs_traffic_ui(pg, ctx):
             pg.wait_for_timeout(300)
             js("hideSideWrapper()")
             pg.wait_for_timeout(600)
-        # chart colours follow the theme switch (a doughnut or bar chart needs data: draw one straight into the page's own helper)
+        # the client mix is drawn as share bars (HTML, themed by tokens) for the generated traffic
         js("document.querySelector('#sRange button[data-range=today]').click()")
         try:
-            pg.wait_for_function("typeof Chart !== 'undefined' && !!Chart.getChart(document.getElementById('stats_device'))", timeout=8000)
+            pg.wait_for_function("document.querySelectorAll('#stats_device .sShare__bar i').length > 0", timeout=8000)
         except Exception:
-            pass
-        has_chart = js("typeof Chart !== 'undefined' && !!Chart.getChart && !!Chart.getChart(document.getElementById('stats_device'))")
-        if not has_chart:
-            fail("stats", "no chart was drawn for the generated traffic (the theme check could not run)")
-        else:
-            theme(True)
-            pg.wait_for_timeout(300)
-            col = js("Chart.getChart(document.getElementById('stats_device')).options.plugins.legend.labels.color")
-            theme(False)
-            if col == "#475569":
-                fail("stats", "chart legends keep the light-theme colour after switching to the dark theme")
+            fail("stats", "no share bar was drawn for the generated traffic (Devices)")
+        if js("[...document.querySelectorAll('#statsPage .sShare__legend .k')].some(e => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow !== 'ellipsis')"):
+            fail("stats", "a share bar legend label is clipped without an ellipsis")
         # Blocked tab: recording off is stated on the page, the search box has a length limit
         js("document.querySelector('#statsPage .sTabs button[data-stab=blocked]').click()")
         pg.wait_for_timeout(800)
         if js("document.getElementById('sbSearch').maxLength") != 300:
             fail("stats", "the Blocked search box has no maxlength")
+        # chart colours follow the theme switch (the per-hour chart of the Blocked tab is drawn on a canvas)
+        try:
+            pg.wait_for_function("typeof Chart !== 'undefined' && !!Chart.getChart(document.getElementById('sbHourly'))", timeout=8000)
+        except Exception:
+            pass
+        if not js("typeof Chart !== 'undefined' && !!Chart.getChart && !!Chart.getChart(document.getElementById('sbHourly'))"):
+            fail("stats", "the Blocked per hour chart was not drawn (the theme check could not run)")
+        else:
+            theme(True)
+            pg.wait_for_timeout(300)
+            col = js("Chart.getChart(document.getElementById('sbHourly')).options.scales.x.ticks.color")
+            theme(False)
+            if col == "#475569":
+                fail("stats", "chart labels keep the light-theme colour after switching to the dark theme")
         was = js("document.getElementById('sbEnabled').checked")
         pg.set_checked("#sbEnabled", False)
         pg.wait_for_timeout(1200)
@@ -370,9 +410,13 @@ def certs_traffic_ui(pg, ctx):
             clear_toasts()
             pg.click("#utmHealthyStatusSave")
             pg.wait_for_timeout(500)
-            text = " ".join(toasts())
+            text = js("document.getElementById('utmHealthyStatusErr').innerText")   # the reason is shown at the field, not in a toast
             if "request failed" in text.lower() or "invalid status" not in text.lower():
                 fail("utm", f"status list {bad!r} reports {text!r} instead of the server's reason")
+            if js("document.getElementById('utmHealthyStatus').getAttribute('aria-invalid')") != "true":
+                fail("utm", f"status list {bad!r}: the field is not marked invalid")
+            if any("invalid status" in x.lower() for x in toasts()):
+                fail("utm", "a refused status list is reported in a toast as well as at the field")
         pg.fill("#utmHealthyStatus", "")
         if js("document.getElementById('utmEmpty') !== null") and js("document.querySelector('#utmEmpty .green.check') !== null"):
             fail("utm", "the empty state shows a green check mark")

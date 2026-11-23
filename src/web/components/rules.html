@@ -1,55 +1,121 @@
-<!-- Proxy Create Form-->
+<!--
+    Raw rule form: creates a site (HTTP proxy rule) with every creation option on one page (POST /api/proxy/add).
+    The quick dialog (script/newrule.js) asks for the two required fields only and hands over to this page for the rest.
+    Layout: the form on the left (two required fields, then the optional groups as disclosures), on the right a live summary of
+    what will be created and the examples. After a create the result card says what exists now and links to it.
+    newrule.js fills #rootname / #proxyDomain / #reqTls / #skipTLSValidation here: keep those ids and their Fomantic checkboxes.
+-->
 <style>
-    #rulesPage { max-width: 1100px; }
     #rulesPage .zx-card__foot { align-items: center; }
     #rulesPage .zx-card__foot .ui.button { margin: 0; }
     #rulesPage .zx-card__foot > [tourstep] { display: flex !important; }
-    #rulesPage .zxs-layout { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr) 21rem; align-items: start; }
+    #rulesPage .zx-card__foot .zx-help { margin: 0; flex: 1 1 14rem; }
+    #rulesPage [hidden] { display: none !important; }
+    #rulesPage .zxs-layout { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr) 23rem; align-items: start; }
     #rulesPage .zxs-layout > * { min-width: 0; }
     #rulesPage .zxs-layout .zx-card { margin-bottom: var(--zx-space-4); }
+    #rulesPage .zxs-side { position: sticky; top: calc(var(--zx-topbar-h) + var(--zx-space-3)); }
     #rulesPage .ui.checkbox label small, #rulesPage .ui.form .field > small, #rulesPage .ui.form .field small { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
     #rulesPage .ui.form .field > small { display: block; margin-top: var(--zx-space-1); }
     #rulesPage .ui.checkbox label small { display: block; font-weight: 400; margin-top: 2px; }
-    #rulesPage .zxs-group { margin: var(--zx-space-5) 0 var(--zx-space-3); padding-top: var(--zx-space-3); border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--zx-text-muted); }
     #rulesPage .zxs-examples dt { font-weight: 700; margin-top: var(--zx-space-3); }
     #rulesPage .zxs-examples dt:first-child { margin-top: 0; }
     #rulesPage .zxs-examples dd { margin: 2px 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    #rulesPage code { background: var(--zx-surface-2); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); font-size: .92em; }
-    #rulesPage .zx-disclosure { margin: var(--zx-space-3) 0 0; }
+    #rulesPage code { background: var(--zx-surface-2); color: var(--zx-text); padding: 1px 5px; border-radius: var(--zx-radius-sm); font-size: .92em; overflow-wrap: anywhere; }
+    #rulesPage .zx-disclosure { margin: 0; }
+    #rulesPage #matchingKeywordExamplesAccordion .zx-card__body { padding-top: 0; padding-bottom: var(--zx-space-2); }
     #rulesPage .zx-disclosure__body ul { padding-left: 1.3em; margin: var(--zx-space-1) 0; }
-    #rulesPage .zxs-form .zx-disclosure { margin: var(--zx-space-4) 0 0; }
-    #rulesPage .zxs-form .zx-disclosure__body { padding-top: var(--zx-space-3); color: var(--zx-text); font-size: var(--zx-fs-md); }
-    #rulesPage .zxs-form .ui.form .field { margin-bottom: var(--zx-space-4); }
-    @media (max-width: 1100px) { #rulesPage .zxs-layout { grid-template-columns: minmax(0, 1fr); } }
+    /* rsForm: the page's own name; the sites area's .zxs-form is a raised pop-open card and this one is the page */
+    #rulesPage .rsForm .zx-disclosure { margin: 0; }
+    #rulesPage .rsForm [hidden] { display: none; }
+    #rulesPage .rsForm .zx-disclosure__body { padding-top: var(--zx-space-3); color: var(--zx-text); font-size: var(--zx-fs-md); }
+    #rulesPage .rsForm .ui.form .field { margin-bottom: var(--zx-space-4); }
+    #rulesPage .zxs-opts { margin-top: var(--zx-space-5); }
+    #rulesPage .zxs-opts__title { margin: 0 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
+    #rulesPage .zxs-opts__desc { margin: 0 0 var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #rulesPage .zxs-opts summary .zx-badge { margin-left: var(--zx-space-2); font-weight: 400; }
+    #rulesPage .zxs-opts summary .zxs-sumhint { margin-left: var(--zx-space-2); color: var(--zx-text-muted); font-weight: 400; font-size: var(--zx-fs-sm); }
+    #rulesPage .zxs-fielderr { display: none; margin-top: var(--zx-space-1); color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 700; }
+    #rulesPage .field.error .zxs-fielderr { display: block; }
+    /* live summary: visitor -> Zoraxy -> upstream */
+    #rulesPage .zxs-flow { list-style: none; margin: 0; padding: 0; }
+    #rulesPage .zxs-flow li { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 var(--zx-space-3); padding-bottom: var(--zx-space-4); }
+    #rulesPage .zxs-flow li:last-child { padding-bottom: 0; }
+    #rulesPage .zxs-flow li::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--zx-border); }
+    #rulesPage .zxs-flow li:last-child::before { display: none; }
+    #rulesPage .zxs-flow__ic { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--zx-surface-2); border: 1px solid var(--zx-border); color: var(--zx-text-muted); position: relative; }
+    #rulesPage .zxs-flow__ic i.icon { margin: 0; font-size: .85rem; height: auto; }
+    #rulesPage .zxs-flow__k { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+    #rulesPage .zxs-flow__v { display: block; font-weight: 700; overflow-wrap: anywhere; }
+    #rulesPage .zxs-flow__v.is-empty { font-weight: 400; color: var(--zx-text-faint); }
+    #rulesPage .zxs-flow__s { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #rulesPage .zxs-chosen { margin: var(--zx-space-4) 0 0; padding: var(--zx-space-3) 0 0; border-top: 1px solid var(--zx-border); }
+    #rulesPage .zxs-chosen h4 { margin: 0 0 var(--zx-space-2); font-size: var(--zx-fs-xs); font-weight: 700; color: var(--zx-text-muted); }
+    #rulesPage .zxs-chosen ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--zx-space-1); }
+    #rulesPage .zxs-chosen p { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    /* result of a create */
+    #rulesPage #rulesResult { margin: 0 0 var(--zx-space-4); }
+    #rulesPage #rulesResult .zx-btn-row { margin-top: var(--zx-space-3); }
+    #rulesPage .zxs-recent { list-style: none; margin: var(--zx-space-3) 0 0; padding: 0; }
+    #rulesPage .zxs-recent li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: 6px 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); }
+    #rulesPage .zxs-recent b { overflow-wrap: anywhere; }
+    #rulesPage .zxs-recent span { color: var(--zx-text-muted); flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
+    @media (max-width: 640px) { #rulesPage .zxs-opts summary .zxs-sumhint { display: none; } }
+    @media (max-width: 1100px) { #rulesPage .zxs-layout { grid-template-columns: minmax(0, 1fr); } #rulesPage .zxs-side { position: static; } }
 </style>
 <div class="standardContainer" id="rulesPage">
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Raw rule form</h2>
-            <p class="zx-page-header__sub">Every option for a new site in one form</p>
+            <p class="zx-page-header__sub">Create a site with every option on one page. The quick form asks only for the address and the target; use this one to also set security, access and logging before the site goes live.</p>
         </div>
         <div class="zx-page-header__actions">
-            <button type="button" class="zx-btn zx-btn--secondary" onclick="openNewRuleDialog(); return false;"><i class="plus icon" aria-hidden="true"></i> Use the quick form</button>
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="openNewRuleDialog(); return false;"><i class="bolt icon" aria-hidden="true"></i> Use the quick form</button>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>The list of your sites: a site created here appears there</span></li>
+            <li><a href="#cert" data-nav-open="cert">Certificates</a> <span>Give the new site a TLS certificate</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>The block and allow lists a site can use</span></li>
+        </ul>
+    </aside>
+
+    <div class="zx-callout zx-callout--success" role="status" id="rulesResult" hidden>
+        <span class="zx-callout__icon" aria-hidden="true"><i class="check circle icon"></i></span>
+        <div class="zx-callout__body">
+            <span class="zx-callout__title" id="rulesResultTitle"></span>
+            <span id="rulesResultText"></span>
+            <div class="zx-btn-row">
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="rulesResultOpen"><i class="edit icon" aria-hidden="true"></i> Open its settings</button>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="rulesResultList"><i class="sitemap icon" aria-hidden="true"></i> Show it in HTTP Proxy</button>
+                <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="rulesResultCert" hidden><i class="lock icon" aria-hidden="true"></i> Request a certificate</button>
+                <button type="button" class="zx-btn zx-btn--ghost zx-btn--sm" id="rulesResultClose">Dismiss</button>
+            </div>
+        </div>
+    </div>
+
     <div class="zxs-layout">
-        <section class="zx-card zxs-form">
+        <section class="zx-card rsForm">
             <div class="zx-card__head">
                 <h3 class="zx-card__title">New site</h3>
-                <p class="zx-card__desc">Name the address visitors use and the server behind it. Everything else is optional.</p>
+                <p class="zx-card__desc">Two things are required: the address visitors use and the server that answers. Everything under "Options" can be left as it is and changed later in the site's settings.</p>
             </div>
             <div class="zx-card__body">
                 <div class="ui form">
                     <div class="field" tourstep="matchingkeyword">
                         <label for="rootname">Domain to match</label>
-                        <input type="text" id="rootname" placeholder="mydomain.com">
+                        <input type="text" id="rootname" placeholder="mydomain.com" autocomplete="off" spellcheck="false" aria-describedby="rootnameErr">
                         <small>Subdomains and wildcards work, for example s1.mydomain.com or *.test.mydomain.com. Separate alias host names with commas (,).</small>
+                        <div class="zxs-fielderr" id="rootnameErr">Enter the domain this site answers for.</div>
                     </div>
                     <div class="field" tourstep="targetdomain">
                         <label for="proxyDomain">Target address</label>
-                        <input type="text" id="proxyDomain" placeholder="192.168.0.101:8000" onchange="autoFillTargetTLS(this);">
+                        <input type="text" id="proxyDomain" placeholder="192.168.0.101:8000" onchange="autoFillTargetTLS(this);" autocomplete="off" spellcheck="false" aria-describedby="proxyDomainErr">
                         <small>An IP address or domain name with its port, for example 192.168.0.101:8000 or example.com. A local service can also be reached over a Unix socket with <code>unix:/run/app/app.sock</code> (plain HTTP, no TLS options).</small>
+                        <div class="zxs-fielderr" id="proxyDomainErr">Enter the server that answers for this site.</div>
                     </div>
                     <div class="field dockerOptimizations" style="display:none;">
                         <button class="ui basic small button" onclick="openDockerContainersList();"><i class="docker icon"></i> Pick from Docker containers</button>
@@ -57,13 +123,17 @@
                     <div class="field" tourstep="requireTLS">
                         <div class="ui checkbox">
                             <input type="checkbox" id="reqTls">
-                            <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://</small></label>
+                            <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://. Zoraxy checks the target when you leave the field and ticks it for you.</small></label>
                         </div>
                     </div>
-                    <!-- Advance configs -->
-                    <details id="advanceProxyRules" class="zx-disclosure">
-                        <summary>Advanced settings</summary>
+
+                    <div class="zxs-opts" id="advanceProxyRules">
+                    <h4 class="zxs-opts__title">Options</h4>
+                    <p class="zxs-opts__desc">Open a group to change it. A group that differs from the defaults says so.</p>
+                    <details class="zx-disclosure" data-zxs-group="upstream">
+                        <summary>Upstream, monitoring and tags<span class="zx-badge zx-badge--info" hidden></span><span class="zxs-sumhint">sticky session, uptime check, tags, template</span></summary>
                         <div class="zx-disclosure__body">
+
 
     <div class="field">
         <div class="ui checkbox">
@@ -94,7 +164,12 @@
         <select id="newProxyTemplate" class="ui dropdown"><option value="">None</option></select>
         <small>Optional defaults (HSTS, security headers, WAF, rate limit, tags and more) applied when the site is created. They override the matching options above.</small>
     </div>
-    <p class="zxs-group">Security</p>
+                            </div>
+                    </details>
+                    <details class="zx-disclosure" data-zxs-group="security">
+                        <summary>Security and WebSocket<span class="zx-badge zx-badge--info" hidden></span><span class="zxs-sumhint">certificate errors, WebSocket, plain HTTP, exploit blocking</span></summary>
+                        <div class="zx-disclosure__body">
+
     <div class="field" tourstep="skipTLSValidation">
         <div class="ui checkbox">
             <input type="checkbox" id="skipTLSValidation">
@@ -140,22 +215,23 @@
         </div>
     </div>
     <div class="field">
-        <label>Exploit protection</label>
         <div class="ui checkbox">
             <input type="checkbox" id="blockCommonExploits">
             <label>Block common exploits<br>
                 <small>Detect and block common exploit payloads (SQLi, XSS, path traversal, etc.)</small>
             </label>
         </div>
-        <br><br>
-        <div class="ui checkbox" >
+    </div>
+    <div class="field">
+        <div class="ui checkbox">
             <input type="checkbox" id="blockAICrawlers">
             <label>Block AI bots and crawlers<br>
                 <small>Block known crawlers and large-scale automated agents</small>
             </label>
         </div>
-        <br><br>
-        <label>When something is blocked</label>
+    </div>
+    <div class="field">
+        <label>When an exploit or crawler is blocked</label>
         <div class="ui fluid selection dropdown">
             <input type="hidden" id="mitigationAction" value="0">
             <i class="dropdown icon"></i>
@@ -171,7 +247,12 @@
         <small>How Zoraxy answers when an exploit or a crawler is detected.</small>
     </div>
 
-    <p class="zxs-group">Access Control</p>
+                            </div>
+                    </details>
+                    <details class="zx-disclosure" data-zxs-group="access">
+                        <summary>Access control<span class="zx-badge zx-badge--info" hidden></span><span class="zxs-sumhint">access rule, basic authentication, rate limit</span></summary>
+                        <div class="zx-disclosure__body">
+
     <div class="field">
         <label>Access rule</label>
         <div class="ui selection dropdown">
@@ -190,7 +271,7 @@
             <label>Require basic authentication<br><small>Visitors must sign in to see the site</small></label>
         </div>
     </div>
-    <div id="basicAuthCredentials" class="field">
+    <div id="basicAuthCredentials" class="field" hidden>
         <p class="zx-help" style="margin-bottom: var(--zx-space-2);">Add the user names and passwords that may open this site.</p>
         <div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table zx-table--compact">
             <thead>
@@ -201,7 +282,7 @@
             </tr></thead>
             <tbody id="basicAuthCredentialTable">
             <tr>
-                <td colspan="3" class="zx-empty-cell">No credentials entered yet</td>
+                <td colspan="3" class="zx-empty-cell">Nobody can sign in yet. Enter a user name and password below and press Add credential.</td>
             </tr>
             </tbody>
         </table></div>
@@ -233,7 +314,12 @@
         </div>
         <small>Visitors above the limit get a 429 error.</small>
     </div>
-    <p class="zxs-group">Logging</p>
+                            </div>
+                    </details>
+                    <details class="zx-disclosure" data-zxs-group="logging">
+                        <summary>Logging<span class="zx-badge zx-badge--info" hidden></span><span class="zxs-sumhint">request log, statistics</span></summary>
+                        <div class="zx-disclosure__body">
+
      <div class="field">
         <div class="ui checkbox">
             <input type="checkbox" id="disableLog">
@@ -248,22 +334,49 @@
             </label>
         </div>
     </div>
-                        </div>
+                                                </div>
                     </details>
+                    </div>
                 </div>
             </div>
             <div class="zx-card__foot">
                 <div tourstep="newProxyRule" style="display: inline-block;">
-                    <button class="ui primary button" onclick="newProxyEndpoint();"><i class="add icon"></i> Create site</button>
+                    <button class="ui primary button" id="rulesCreateBtn" onclick="newProxyEndpoint();"><i class="add icon"></i> Create site</button>
                 </div>
+                <span class="zx-help">The site starts answering at once. You find it on the HTTP Proxy page afterwards.</span>
             </div>
         </section>
+        <div class="zxs-side">
+        <aside class="zx-card" id="rulesSummary" aria-label="What this creates">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">What this creates</h3>
+                <p class="zx-card__desc">One site in HTTP Proxy. It follows what you type.</p>
+            </div>
+            <div class="zx-card__body" aria-live="polite">
+                <ol class="zxs-flow">
+                    <li><span class="zxs-flow__ic" aria-hidden="true"><i class="user icon"></i></span><div><span class="zxs-flow__k">Visitors open</span><span class="zxs-flow__v is-empty" id="rsHost" data-i18n-skip></span><span class="zxs-flow__s" id="rsAlias"></span></div></li>
+                    <li><span class="zxs-flow__ic" aria-hidden="true"><i class="shield alternate icon"></i></span><div><span class="zxs-flow__k">Zoraxy checks</span><span class="zxs-flow__s" id="rsChecks"></span></div></li>
+                    <li><span class="zxs-flow__ic" aria-hidden="true"><i class="server icon"></i></span><div><span class="zxs-flow__k">And forwards to</span><span class="zxs-flow__v is-empty" id="rsTarget" data-i18n-skip></span><span class="zxs-flow__s" id="rsTargetHow"></span></div></li>
+                </ol>
+                <div class="zxs-chosen">
+                    <h4>Changed from the defaults</h4>
+                    <ul id="rsChosen" hidden></ul>
+                    <p id="rsChosenNone">Nothing yet: the site is created with the default options.</p>
+                </div>
+                <div class="zxs-chosen" id="rsRecentBox" hidden>
+                    <h4>Created in this session</h4>
+                    <ul class="zxs-recent" id="rsRecent" style="display: block; margin-top: 0;"></ul>
+                </div>
+            </div>
+        </aside>
         <aside class="zx-card zx-card--flat" id="matchingKeywordExamplesAccordion" aria-label="Examples and help">
             <div class="zx-card__head">
-                <h3 class="zx-card__title">Domain examples</h3>
-                <p class="zx-card__desc">What you can type in "Domain to match".</p>
+                <h3 class="zx-card__title">Help</h3>
             </div>
             <div class="zx-card__body">
+                <details class="zx-disclosure" style="border-top: 0;">
+                    <summary>What can I type in "Domain to match"?</summary>
+                    <div class="zx-disclosure__body">
                 <dl class="zxs-examples">
                     <dt>Domain</dt>
                     <dd><code>aroz.org</code> sends every request for aroz.org to the target address.</dd>
@@ -272,6 +385,8 @@
                     <dt>Wildcard</dt>
                     <dd><code>*.aroz.org</code> sends every host name that matches to the target, such as <code>www.aroz.org</code> or <code>foo.bar.aroz.org</code>.</dd>
                 </dl>
+                    </div>
+                </details>
                 <details class="zx-disclosure">
                     <summary>What does "needs a TLS connection" mean?</summary>
                     <div class="zx-disclosure__body">
@@ -294,6 +409,7 @@
                 </details>
             </div>
         </aside>
+        </div>
     </div>
 </div>
 <script>
@@ -325,19 +441,14 @@
         let blockAICrawlers = $("#blockAICrawlers")[0].checked;
         let mitigationAction = $("#mitigationAction").val();
 
-        if (rootname.trim() == ""){
-            $("#rootname").parent().addClass("error");
+        // both required fields are checked together, each says what is missing
+        $("#rootname").parent().toggleClass("error", rootname.trim() == "");
+        $("#proxyDomain").parent().toggleClass("error", proxyDomain.trim() == "");
+        if (rootname.trim() == "" || proxyDomain.trim() == ""){
+            $(rootname.trim() == "" ? "#rootname" : "#proxyDomain").trigger("focus");
             return
-        }else{
-            $("#rootname").parent().removeClass("error");
         }
-
-        if (proxyDomain.trim() == ""){
-            $("#proxyDomain").parent().addClass("error");
-            return
-        }else{
-            $("#proxyDomain").parent().removeClass("error");
-        }
+        let createdSummary = rulesSummaryData();
 
         //Create the endpoint by calling add
         $.cjax({
@@ -386,37 +497,131 @@
                     $("#disableStatisticCollection").prop("checked", false);
                     credentials = [];
                     updateTable();
-                    reloadUptimeList();
-                    //Check if it is a new subdomain and TLS enabled
-                    if ($("#tls").checkbox("is checked")){
-                        confirmBox("Request new SSL Cert for this subdomain?", function(choice){
-                            if (choice == true){
-                                //Load the prefer CA from TLS page
-                                let defaultCA = $("#defaultCA").dropdown("get value");
-                                if (defaultCA.trim() == ""){
-                                    defaultCA = "Let's Encrypt";
-                                }
-                                //Get a new cert using ACME
-                                msgbox("Requesting certificate via " + defaultCA  +"...");
-                                console.log("Trying to get a new certificate via ACME");
-
-                                //Request ACME for certificate, see cert.html component
-                                obtainCertificate(rootname, false, defaultCA.trim(), function(){
-                                     // Renew the parent certificate list
-                                    initManagedDomainCertificateList();
-                                });
-                            }else{
-                                msgbox("Proxy Endpoint Added");
-                            }
-                        });
-                    }else{
-                        msgbox("Proxy Endpoint Added");
-                    }
+                    if (typeof reloadUptimeList === "function"){ reloadUptimeList(); }
+                    //Say what exists now and where to find it; a certificate is one click away when the TLS listener is on
+                    let tlsOn = false;
+                    try { tlsOn = $("#tls").checkbox("is checked") === true; } catch (ex) { tlsOn = false; }
+                    rulesShowResult(createdSummary, tlsOn);
+                    rulesUpdateSummary();
                 }
             }
         });
         
     }
+
+    /*
+        Result of a create: what was created, where it is, and the next steps
+    */
+    let rulesCreated = []; //sites created with this form in this session, newest first
+    function rulesOpenSite(host, editor){
+        if (typeof openTabById === "function"){ openTabById("httprp"); }
+        let go = function(){
+            if (!editor){ $("#searchInput").val(host); if (typeof filterProxyList === "function"){ filterProxyList(); } return; }
+            let r = (window.httpProxyList || []).filter(function(x){ return x.RootOrMatchingDomain === host; })[0];
+            if (r && typeof initHttpProxyRuleEditorModal === "function"){
+                let copy = JSON.parse(JSON.stringify(r));
+                Object.keys(copy).forEach(function(k){ if (k.charAt(0) === "_"){ delete copy[k]; } });
+                initHttpProxyRuleEditorModal(copy);
+            }
+        };
+        if (window.ProxyTable && ProxyTable.reload){ ProxyTable.reload(true).then(go); } else { go(); }
+    }
+    function rulesShowResult(sum, tlsOn){
+        rulesCreated.unshift(sum);
+        $("#rulesResultTitle").text(tf("Created {0}", sum.host));
+        let text = tf("It answers now and forwards to {0}.", sum.target + (sum.tls ? " (HTTPS)" : " (HTTP)"));
+        if (sum.aliases.length){ text += " " + tf("Aliases: {0}.", sum.aliases.join(", ")); }
+        text += " " + (sum.chosen.length ? tf("Set at creation: {0}.", sum.chosen.join(", ")) : t("All options are at their defaults."));
+        $("#rulesResultText").text(text);
+        let canCert = tlsOn && sum.host.indexOf("*") < 0 && /[a-z]/i.test(sum.host) && sum.host.indexOf(".") > 0;
+        $("#rulesResultCert").prop("hidden", !canCert);
+        $("#rulesResult").attr("data-host", sum.host).prop("hidden", false);
+        let list = $("#rsRecent").empty();
+        rulesCreated.slice(0, 5).forEach(function(c){
+            list.append($("<li></li>").append($("<b data-i18n-skip></b>").text(c.host)).append($("<span data-i18n-skip></span>").text(c.target))
+                .append($('<button type="button" class="zx-btn zx-btn--ghost zx-btn--sm rsRecentOpen"></button>').attr("data-host", c.host).text(t("Open"))));
+        });
+        $("#rsRecentBox").prop("hidden", false);
+        let el = document.getElementById("rulesResult");
+        if (el && el.scrollIntoView){ el.scrollIntoView({block: "center", behavior: "smooth"}); }
+        msgbox(tf("Created {0}", sum.host));
+    }
+    $("#rulesResultOpen").on("click", function(){ rulesOpenSite($("#rulesResult").attr("data-host"), true); });
+    $("#rulesResultList").on("click", function(){ rulesOpenSite($("#rulesResult").attr("data-host"), false); });
+    $("#rulesResultClose").on("click", function(){ $("#rulesResult").prop("hidden", true); });
+    $("#rulesPage").on("click", ".rsRecentOpen", function(){ rulesOpenSite($(this).attr("data-host"), true); });
+    $("#rulesResultCert").on("click", function(){
+        let host = $("#rulesResult").attr("data-host");
+        //Load the prefer CA from TLS page
+        let defaultCA = "";
+        try { defaultCA = $("#defaultCA").dropdown("get value") || ""; } catch (ex) { defaultCA = ""; }
+        if (defaultCA.trim() == ""){ defaultCA = "Let's Encrypt"; }
+        msgbox(tf("Requesting certificate via {0}...", defaultCA));
+        $(this).prop("hidden", true);
+        //Request ACME for certificate, see cert.html component
+        obtainCertificate(host, false, defaultCA.trim(), function(){
+            // Renew the parent certificate list
+            initManagedDomainCertificateList();
+        });
+    });
+
+    /*
+        Live summary: what the form creates right now, and which options differ from the defaults
+    */
+    function rulesChecked(id){ let el = document.getElementById(id); return !!(el && el.checked); }
+    function rulesSummaryData(){
+        let names = ($("#rootname").val() || "").split(",").map(function(x){ return x.trim(); }).filter(Boolean);
+        let target = ($("#proxyDomain").val() || "").trim();
+        let groups = {upstream: [], security: [], access: [], logging: []};
+        if (rulesChecked("useStickySessionLB")){ groups.upstream.push(t("Sticky session")); }
+        if (!rulesChecked("enableUtm")){ groups.upstream.push(t("No uptime monitor")); }
+        if (($("#utmURI").val() || "").trim()){ groups.upstream.push(tf("Check path {0}", $("#utmURI").val().trim())); }
+        if (($("#proxyTags").val() || "").trim()){ groups.upstream.push(tf("Tags: {0}", $("#proxyTags").val().trim())); }
+        if ($("#newProxyTemplate").val()){ groups.upstream.push(tf("Template {0}", $("#newProxyTemplate").val())); }
+        if (rulesChecked("skipTLSValidation")){ groups.security.push(t("Certificate errors ignored")); }
+        if (!rulesChecked("skipWebsocketOriginCheck")){ groups.security.push(t("WebSocket origin checked")); }
+        if (rulesChecked("disableWebSocket")){ groups.security.push(t("WebSocket off")); }
+        if ((parseInt($("#websocketTimeout").val()) || 0) > 0){ groups.security.push(tf("WebSocket timeout {0} s", parseInt($("#websocketTimeout").val()))); }
+        if (rulesChecked("enableTimeoutRefreshOnActivity")){ groups.security.push(t("Timeout refreshed on activity")); }
+        if (rulesChecked("bypassGlobalTLS")){ groups.security.push(t("Plain HTTP allowed")); }
+        if (rulesChecked("enableConnectSupport")){ groups.security.push(t("CONNECT tunneling")); }
+        if (rulesChecked("blockCommonExploits")){ groups.security.push(t("Exploits blocked")); }
+        if (rulesChecked("blockAICrawlers")){ groups.security.push(t("AI crawlers blocked")); }
+        let access = $("#newProxyRuleAccessFilter").val() || "default";
+        if (access !== "default"){ groups.access.push(tf("Access rule {0}", $.trim($("#newProxyRuleAccessList .item[data-value='" + String(access).replace(/'/g, "\\'") + "']").text()) || access)); }
+        if (rulesChecked("requireBasicAuth")){ groups.access.push(tf("Basic authentication ({0})", credentials.length)); }
+        if (rulesChecked("requireRateLimit")){ groups.access.push(tf("Rate limit {0}/s", $("#proxyRateLimit").val())); }
+        if (rulesChecked("disableLog")){ groups.logging.push(t("No request log")); }
+        if (rulesChecked("disableStatisticCollection")){ groups.logging.push(t("No statistics")); }
+        let chosen = [];
+        Object.keys(groups).forEach(function(k){ chosen = chosen.concat(groups[k]); });
+        return {host: names[0] || "", aliases: names.slice(1), target: target, tls: rulesChecked("reqTls"), groups: groups, chosen: chosen};
+    }
+    function rulesUpdateSummary(){
+        let d = rulesSummaryData();
+        $("#rsHost").text(d.host || t("the domain you enter")).toggleClass("is-empty", !d.host);
+        $("#rsAlias").text(d.aliases.length ? tf("Also: {0}", d.aliases.join(", ")) : (d.host.indexOf("*") >= 0 ? t("Every host name that matches the wildcard") : ""));
+        $("#rsTarget").text(d.target || t("the target you enter")).toggleClass("is-empty", !d.target);
+        $("#rsTargetHow").text(/^unix:/i.test(d.target) ? t("Over a Unix socket, plain HTTP") : (d.tls ? t("Over HTTPS (TLS to the target)") : t("Over plain HTTP")));
+        let checks = [];
+        if (d.groups.access.length){ checks = checks.concat(d.groups.access); }
+        if (rulesChecked("blockCommonExploits")){ checks.push(t("Exploits blocked")); }
+        if (rulesChecked("blockAICrawlers")){ checks.push(t("AI crawlers blocked")); }
+        $("#rsChecks").text(checks.length ? checks.join(", ") : t("Nothing extra: everyone may connect"));
+        let list = $("#rsChosen").empty();
+        d.chosen.forEach(function(c){ list.append($('<li class="zx-badge"></li>').text(c)); });
+        list.prop("hidden", d.chosen.length === 0);
+        $("#rsChosenNone").prop("hidden", d.chosen.length > 0);
+        $("#rulesPage details[data-zxs-group]").each(function(){
+            let n = d.groups[$(this).attr("data-zxs-group")].length;
+            $(this).find("> summary .zx-badge").prop("hidden", n === 0).text(n ? tf("{0} changed", n) : "");
+            $(this).find("> summary .zxs-sumhint").prop("hidden", n > 0);
+        });
+        if (d.host){ $("#rootname").parent().removeClass("error"); }
+        if (d.target){ $("#proxyDomain").parent().removeClass("error"); }
+    }
+    $("#rulesPage .rsForm").on("input change click", function(){ setTimeout(rulesUpdateSummary, 0); });
+    setInterval(function(){ if ($("#rulesPage").is(":visible")){ rulesUpdateSummary(); } }, 1500); //values set from code (quick form hand-over, Docker picker, TLS sniffing)
 
     //Clearn the proxy target value, make sure user do not enter http:// or https://
     //and auto select TLS checkbox if https:// exists
@@ -468,9 +673,10 @@
     function toggleBasicAuth() {
         var basicAuthDiv = document.getElementById('basicAuthOnly');
         if ($("#requireBasicAuth").parent().checkbox("is checked")) {
-            $("#basicAuthCredentials").removeClass("disabled");
+            $("#basicAuthCredentials").removeClass("disabled").prop("hidden", false);
         } else {
-            $("#basicAuthCredentials").addClass("disabled");
+            // nothing to fill in while basic authentication is off (entered credentials are kept for when it is ticked again)
+            $("#basicAuthCredentials").addClass("disabled").prop("hidden", true);
         }
     }
     $("#requireBasicAuth").on('change', toggleBasicAuth);
@@ -536,7 +742,7 @@
         tableBody.empty();
 
         if (credentials.length === 0) {
-            tableBody.append('<tr><td colspan="3" class="zx-empty-cell">No credentials entered yet</td></tr>');
+            tableBody.append($('<tr></tr>').append($('<td colspan="3" class="zx-empty-cell"></td>').text(t("Nobody can sign in yet. Enter a user name and password below and press Add credential."))));
         } else {
             for (var i = 0; i < credentials.length; i++) {
             var credential = credentials[i];
@@ -652,32 +858,8 @@
     }
     
     /* UI Element Initialization */
-    let accordionInitRetries = 0;
-    function initAdvanceSettingsAccordion(){
-        function hasClickEvent(element) {
-            var events = $._data(element, "events");
-            return events && events.click && events.click.length > 0;
-        }
-
-         $("#advanceProxyRules").accordion();
-        // $._data needs the DOM element, not the jQuery object (the old check was always false and
-        // re-initialised the widgets every 300 ms forever, which kept the whole UI busy)
-        if (!hasClickEvent($("#advanceProxyRules")[0]) && accordionInitRetries++ < 5){
-            // Not sure why sometime the accordion events are not binding
-            // to the DOM element. This makes sure the element is binded
-            // correctly by checking it again after 300ms
-            $("#advanceProxyRules").accordion();
-            $("#newProxyRuleAccessFilter").parent().dropdown();
-            $("#mitigationAction").parent().dropdown();
-            setTimeout(function(){
-                initAdvanceSettingsAccordion();
-            }, 300);
-        }
-    }
-    initAdvanceSettingsAccordion();
-   
- 
-   
+    $("#newProxyRuleAccessFilter").parent().dropdown();
+    $("#mitigationAction").parent().dropdown();
 
     //Rule templates for new hosts
     function loadNewProxyTemplates(){

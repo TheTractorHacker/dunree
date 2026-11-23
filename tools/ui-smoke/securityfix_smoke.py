@@ -97,11 +97,14 @@ def securityfix_ui(pg, ctx):
     # ================================================================ Auto-ban
     current["page"] = "securityfix-abuse"
     js("openTabById('seccenter')")
+    pg.wait_for_selector("#secTabs .item[data-sec='abuse']", state="attached", timeout=10000)
+    if not js("!!document.querySelector(\"#secTabs .item.active[data-sec='abuse']\")"):  # the Security Center opens on Overview
+        pg.dispatch_event("#secTabs .item[data-sec='abuse']", "click")
     pg.wait_for_function("document.getElementById('abBan') && document.getElementById('abBan').value !== ''", timeout=8000)
     slots = js("document.querySelectorAll('.zx-savebar-slot').length")
     for _ in range(3):  # revisiting sections must not pile up Save bars
         for s in ("bots", "abuse"):
-            pg.click(f"#secTabs .item[data-sec={s}]")
+            pg.dispatch_event(f"#secTabs .item[data-sec={s}]", "click")
             pg.wait_for_timeout(350)
         js("openTabById('status')")
         js("openTabById('seccenter')")
@@ -163,6 +166,7 @@ def securityfix_ui(pg, ctx):
     posts = []
     pg.on("request", lambda rq: "/api/abuse/setConfig" in rq.url and posts.append(rq.url))
     saved = lambda: "#seccenter .zx-savebar:not([hidden]) [data-zx-save]"
+    js("document.querySelectorAll('#secPane details.sx-group, #secPane details.zx-disclosure').forEach(d => { d.open = true; })")   # the IPv6 range sits in an Advanced group
     for sel, val, label in (("#abBan", "-1", "ban duration"), ("#abEsc", "0", "escalation factor"), ("#abV6", "200", "IPv6 prefix")):
         pg.fill(sel, val)
         pg.wait_for_selector(saved(), timeout=3000)
@@ -208,9 +212,10 @@ def securityfix_ui(pg, ctx):
 
     # remote API token: revoke and replace ask first
     post("/api/abuse/token", {"action": "generate"})
-    pg.click("#secTabs .item[data-sec=bots]")
-    pg.click("#secTabs .item[data-sec=abuse]")
+    pg.dispatch_event("#secTabs .item[data-sec=bots]", "click")
+    pg.dispatch_event("#secTabs .item[data-sec=abuse]", "click")
     pg.wait_for_function("document.getElementById('abTokenState') && document.getElementById('abTokenState').textContent.indexOf('A token is set') >= 0", timeout=5000)
+    js("document.querySelectorAll('#secPane details.sx-group, #secPane details.zx-disclosure').forEach(d => { d.open = true; })")   # the Remote API is an Advanced group
     pg.click("#abTokRevoke")
     pg.wait_for_selector(".zx-dialog", timeout=3000)
     pg.screenshot(path=os.path.join(args.out, "securityfix-abuse-token-confirm.png"))
@@ -230,13 +235,17 @@ def securityfix_ui(pg, ctx):
     pg.wait_for_function("document.getElementById('abTokenState').textContent.indexOf('No token set') >= 0", timeout=5000)
 
     # Basic auth: the Users textarea has a name
-    pg.click("#secTabs .item[data-sec=basicauth]")
+    pg.dispatch_event("#secTabs .item[data-sec=basicauth]", "click")
+    pg.wait_for_selector("#baNew", timeout=5000)
+    pg.wait_for_timeout(500)
+    if not pg.is_visible("#baUsers"):   # with lists present the editor opens from "New list"
+        pg.click("#baNew")
     pg.wait_for_selector("#baUsers", timeout=5000)
     if not js("document.getElementById('baUsers').labels.length") or not js("document.getElementById('baName').labels.length"):
         fail("a11y", "the Basic auth fields must have labels")
 
     # phone width: the detector table fits (cards) and nothing overflows
-    pg.click("#secTabs .item[data-sec=abuse]")
+    pg.dispatch_event("#secTabs .item[data-sec=abuse]", "click")
     pg.wait_for_selector("#abDetectors tr", timeout=5000)
     pg.set_viewport_size({"width": 390, "height": 800})
     pg.wait_for_timeout(400)
@@ -290,16 +299,15 @@ def securityfix_ui(pg, ctx):
     js("openTabById('aiassist')")
     settle(pg, 700)
     if not pg.is_checked("#aiEnabled"):
-        pg.click("#aiSuggest")
+        # while the assistant is off the actions cannot be pressed, and one sentence above them says what to do
+        if not pg.is_disabled("#aiSuggest") or not pg.is_disabled("#aiRule"):
+            fail("ai", "Suggest rules and Propose a rule must be disabled while the assistant is off")
+        pg.dispatch_event("#aiSuggest", "click")
         pg.wait_for_timeout(500)
         if pg.locator(".ui.modal.visible").count():
             fail("ai", "the preview and send dialog must not open while the assistant is off")
-        if "turned off" not in pg.inner_text("#aiResult"):
-            fail("ai", f"Suggest rules while off must explain what to do: {pg.inner_text('#aiResult')!r}")
-        pg.fill("#aiRuleText", "")
-        pg.click("#aiRule")
-        if "Describe the rule" not in pg.inner_text("#aiResult"):
-            fail("ai", "an empty rule description must ask for a description")
+        if not pg.is_visible("#aiAskNote") or "Turn the assistant on" not in pg.inner_text("#aiAskNote"):
+            fail("ai", f"the actions must explain what to do while the assistant is off: {pg.inner_text('#aiAskNote')!r}")
         pg.screenshot(path=os.path.join(args.out, "securityfix-ai-off.png"))
         pg.fill("#aiBudget", "99999999999")
         pg.click("#aiSave")
@@ -313,7 +321,9 @@ def securityfix_ui(pg, ctx):
     current["page"] = "securityfix-waf"
     js("openTabById('waf')")
     settle(pg, 800)
-    pg.click("#wafTabs .item[data-tab=waf-policy]") if pg.locator("#wafTabs .item[data-tab=waf-policy]").count() else None
+    # design v2: the WAF sections are a sectioned navigation (a select on narrow screens), so the item is clicked by event
+    pg.dispatch_event("#wafTabs .item[data-tab=waf-policy]", "click") if pg.locator("#wafTabs .item[data-tab=waf-policy]").count() else None
+    pg.wait_for_timeout(400)
     pol = get("/api/waf/policy")
     if pg.locator("#wafpThreshold").count() and pg.is_visible("#wafpThreshold"):
         pg.fill("#wafpThreshold", "-3")
@@ -325,8 +335,10 @@ def securityfix_ui(pg, ctx):
             fail("waf", "a negative anomaly threshold must be explained")
         if js("document.getElementById('wafpSave').innerText.trim().length") == 0:
             fail("waf", "the Save policy button must keep its label")
-    if js("(() => { const e = document.getElementById('wafTabs'), c = getComputedStyle(e); return e.scrollWidth > e.clientWidth + 1 && !(c.backgroundImage + (c.maskImage || c.webkitMaskImage || '') + e.className).match(/gradient|scroll-(start|end|fade)|zx-scroll/) })()"):
-        fail("waf", "the sideways scrolling tab strip needs a scroll hint")
+    if not js("(() => { const e = document.getElementById('wafTabs'); return !!e && e.classList.contains('zx-sectionnav') && e.scrollWidth <= e.clientWidth + 1 && document.querySelectorAll('#wafPage .wafPane:not([hidden])').length === 1 })()"):
+        fail("waf", "the WAF sections must be a sectioned navigation that does not scroll sideways, with one section shown")
+    if js("(() => [...document.querySelectorAll('#wafPage .zx-sectioned *')].some(e => { const c = getComputedStyle(e); return e.offsetParent && /(auto|scroll)/.test(c.overflowY) && c.maxHeight !== 'none'; }))()"):
+        fail("waf", "a WAF section has a scroll box inside the page (max-height with overflow)")
 
     # ================================================================ Security overview: contrast tokens, plugin iframe
     current["page"] = "securityfix-overview"

@@ -1,108 +1,110 @@
-<div class="standardContainer zxs-narrow" id="setrootPage">
+<div class="standardContainer" id="setrootPage">
     <style>
-        #setrootPage { max-width: 1100px; }
-        #setrootPage .zxs-opts .field { margin: 0 0 var(--zx-space-3); }
-        #setrootPage .zxs-opts .ui.checkbox label small, #setrootPage .ui.checkbox label small { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; margin-top: 2px; }
-        #setrootPage .zxs-detail { margin: var(--zx-space-2) 0 var(--zx-space-3) var(--zx-space-5); padding: var(--zx-space-3) var(--zx-space-4); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); }
-        #setrootPage .zxs-detail .field:last-child { margin-bottom: 0; }
-        #setrootPage .zxs-detail small, #setrootPage .zxs-detail .zx-help { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
-        #setrootPage .defaultSiteError { color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 600; margin-top: var(--zx-space-1); }
-        @media (max-width: 748px) { #setrootPage .zxs-detail { margin-left: 0; } }
-        #setrootPage .zx-card__foot { align-items: center; }
-        #setrootPage .zx-card__foot .ui.button { margin: 0; }
+        #setrootPage .defaultSiteError { color: var(--zx-danger-text); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+        #setrootPage .zxs-choices { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        @media (max-width: 1180px) { #setrootPage .zxs-choices { grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); } }
+        #setrootPage .zx-card__foot .zx-btn.disabled { opacity: .55; pointer-events: none; }
+        #setrootPage #rootDirty { margin-left: auto; }
+        #setrootPage .zxs-explain { margin: var(--zx-space-4) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: var(--zx-lh); max-width: 62rem; }
+        #setrootPage .zxs-explain b { color: var(--zx-text); }
     </style>
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Default Site</h2>
-            <p class="zx-page-header__sub">What Zoraxy answers when no site matches the address</p>
+            <p class="zx-page-header__sub">What visitors get when they reach Zoraxy with an address that none of your hosts use.</p>
         </div>
     </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#httprp" data-nav-open="httprp">HTTP Proxy</a> <span>The hosts that do match</span></li>
+            <li><a href="#webserv" data-nav-open="webserv">Static Web Server</a> <span>The built-in server the default site can show</span></li>
+            <li><a href="#vdir" data-nav-open="vdir">Path routes</a> <span>Send part of the default site somewhere else</span></li>
+        </ul>
+    </aside>
+
+    <!-- The saved state in one line: this is what happens right now, whatever is selected below -->
+    <div class="zxs-now" id="rootNow" role="status">
+        <span class="zxs-now__icon" id="rootNowIcon"><i class="home icon" aria-hidden="true"></i></span>
+        <span class="zxs-now__text">
+            <span class="zxs-now__label">Right now, an unknown address</span>
+            <span class="zxs-now__value" id="rootNowValue">...</span>
+            <span class="zxs-now__hint" id="rootNowHint"></span>
+        </span>
+        <span class="zx-badge zx-badge--dot" id="rootNowBadge">Checking</span>
+        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="rootNowAct" hidden></button>
+    </div>
 
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">When no site matches</h3>
-            <p class="zx-card__desc">Choose what visitors get when they reach Zoraxy with an address that none of your sites use.</p>
+            <h3 class="zx-card__title" id="rootChoiceTitle">Choose the answer</h3>
+            <p class="zx-card__desc">Scanners and mistyped addresses land here all day. Giving them nothing is the most private choice, a page or a redirect is the friendliest.</p>
         </div>
         <div class="zx-card__body">
-            <div class="ui form zxs-opts">
-                <div class="grouped fields" role="radiogroup" aria-label="When no site matches">
-                    <div class="field">
-                        <div class="ui radio defaultsite checkbox">
-                            <input type="radio" name="defaultsiteOption" checked="checked" value="webserver">
-                            <label>Internal static web server<br>
-                                <small>Serve files from the built-in web server, like Apache or Nginx would</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <div class="ui radio defaultsite checkbox">
-                            <input type="radio" name="defaultsiteOption" value="proxy">
-                            <label>Reverse proxy target<br>
-                                <small>Pass the request on to a server of your choice</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <div class="ui radio defaultsite checkbox">
-                            <input type="radio" name="defaultsiteOption" value="redirect">
-                            <label>Redirect<br>
-                                <small>Send the visitor to another address</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <div class="ui radio defaultsite checkbox">
-                            <input type="radio" name="defaultsiteOption" value="notfound">
-                            <label>Show a 404 page<br>
-                                <small>Answer with a "not found" page</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <div class="ui radio defaultsite checkbox">
-                            <input type="radio" name="defaultsiteOption" value="closeresp">
-                            <label>Close the connection<br>
-                                <small>Hang up without sending any answer</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
+            <div class="zxs-choices zxs-opts zx-legacy-off" role="radiogroup" aria-labelledby="rootChoiceTitle">
+                <label class="zxs-choice defaultsite">
+                    <input type="radio" name="defaultsiteOption" value="closeresp">
+                    <span class="zxs-choice__icon"><i class="ban icon" aria-hidden="true"></i></span>
+                    <span class="zxs-choice__title">Close the connection</span>
+                    <span class="zxs-choice__desc">Hang up without sending any answer</span>
+                    <span class="zxs-choice__tag">Most private</span>
+                </label>
+                <label class="zxs-choice defaultsite">
+                    <input type="radio" name="defaultsiteOption" value="notfound">
+                    <span class="zxs-choice__icon"><i class="file outline icon" aria-hidden="true"></i></span>
+                    <span class="zxs-choice__title">Show a 404 page</span>
+                    <span class="zxs-choice__desc">Answer with a "not found" page</span>
+                </label>
+                <label class="zxs-choice defaultsite">
+                    <input type="radio" name="defaultsiteOption" value="redirect">
+                    <span class="zxs-choice__icon"><i class="share icon" aria-hidden="true"></i></span>
+                    <span class="zxs-choice__title">Redirect</span>
+                    <span class="zxs-choice__desc">Send the visitor to another address</span>
+                </label>
+                <label class="zxs-choice defaultsite">
+                    <input type="radio" name="defaultsiteOption" value="proxy">
+                    <span class="zxs-choice__icon"><i class="exchange icon" aria-hidden="true"></i></span>
+                    <span class="zxs-choice__title">Reverse proxy target</span>
+                    <span class="zxs-choice__desc">Pass the request on to a server of your choice</span>
+                </label>
+                <label class="zxs-choice defaultsite">
+                    <input type="radio" name="defaultsiteOption" checked="checked" value="webserver">
+                    <span class="zxs-choice__icon"><i class="globe icon" aria-hidden="true"></i></span>
+                    <span class="zxs-choice__title">Static web server</span>
+                    <span class="zxs-choice__desc">Serve files from the built-in web server</span>
+                </label>
             </div>
 
+            <p class="zxs-explain" id="rootExplain" aria-live="polite"></p>
+
             <!-- Reverse Proxy as Default Site Options -->
-            <div id="defaultSiteProxyOptions" class="zxs-detail advanceoptions defaultSiteOptionDetails" style="display:none; ">
-                <div class="ui form">
-                    <div class="field">
-                        <label for="proxyRoot">Reverse proxy target</label>
-                        <input type="text" id="proxyRoot" onchange="checkRootRequireTLS(this.value);" aria-label="Reverse Proxy Target">
-                        <small>For example localhost:8080, 192.168.0.100:80 or example.com</small>
-                    </div>
-                    <div class="field">
-                        <div class="ui checkbox">
-                            <input type="checkbox" id="rootReqTLS">
-                            <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://</small></label>
-                        </div>
-                    </div>
+            <div id="defaultSiteProxyOptions" class="zxs-detail defaultSiteOptionDetails" hidden>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="proxyRoot">Reverse proxy target</label>
+                    <input type="text" class="zx-input" id="proxyRoot" onchange="checkRootRequireTLS(this.value);" placeholder="localhost:8080" spellcheck="false" autocomplete="off">
+                    <p class="zx-help">A host name or address with its port, for example localhost:8080, 192.168.0.100:80 or example.com</p>
                 </div>
+                <label class="zxs-check" style="margin-bottom:0;">
+                    <input type="checkbox" id="rootReqTLS">
+                    <span><b>The target needs a TLS connection</b><small>Tick this if the target address starts with https://. Zoraxy checks the target and ticks it for you when it can.</small></span>
+                </label>
             </div>
 
             <!-- Redirect as default site Options-->
-            <div id="defaultSiteRedirectOptions" class="zxs-detail advanceoptions defaultSiteOptionDetails" style="display:none;">
-                <div class="ui form">
-                    <div class="field">
-                        <label for="redirectDomain">Redirect to</label>
-                        <div class="ui input">
-                            <input id="redirectDomain" type="text" placeholder="http://example.com" aria-label="Redirect target domain">
-                        </div>
-                        <small>Visitors are sent to this address. Include the protocol, for example http:// or https://</small>
-                    </div>
+            <div id="defaultSiteRedirectOptions" class="zxs-detail defaultSiteOptionDetails" hidden>
+                <div class="field zx-field">
+                    <label class="zx-field__label" for="redirectDomain">Redirect to</label>
+                    <input id="redirectDomain" class="zx-input" type="text" placeholder="https://example.com" spellcheck="false" autocomplete="off">
+                    <p class="zx-help">Visitors are sent to this address. Include the protocol, for example http:// or https://</p>
                 </div>
             </div>
+
         </div>
         <div class="zx-card__foot">
-            <button class="ui primary button" onclick="setProxyRoot(this)"><i class="checkmark icon"></i> Apply Changes</button>
-            <button class="ui basic button" onclick="initRootInfo()"><i class="undo icon"></i> Reset</button>
+            <button type="button" class="zx-btn zx-btn--primary" onclick="setProxyRoot(this)"><i class="checkmark icon" aria-hidden="true"></i> Apply changes</button>
+            <button type="button" class="zx-btn zx-btn--secondary" onclick="initRootInfo()"><i class="undo icon" aria-hidden="true"></i> Reset</button>
+            <span class="zx-badge zx-badge--warn" id="rootDirty" hidden>Not applied yet</span>
         </div>
     </section>
 
@@ -110,7 +112,7 @@
     <section class="zx-card">
         <div class="zx-card__head">
             <h3 class="zx-card__title">Logging</h3>
-            <p class="zx-card__desc">This setting saves at once, you do not need to apply it.</p>
+            <p class="zx-card__desc">Useful to see who is knocking. Saves at once, you do not need to apply it.</p>
         </div>
         <div class="zx-card__body">
             <label class="zx-toggle-row" id="logDefaultSiteBox" for="logDefaultSite">
@@ -146,31 +148,114 @@
             }
         });
     });
-    $("#advanceRootSettings").accordion();
+
+    //What is saved on the server (the "Right now" strip and the "Not applied yet" badge compare against it)
+    var savedDefaultSite = null;
+    var DEFAULT_SITE_VALUES = ["webserver", "proxy", "redirect", "notfound", "closeresp"];
+    var DEFAULT_SITE_EXPLAIN = {
+        webserver: N_("Unknown addresses show the files of the built-in static web server. Applying this starts the web server if it is stopped."),
+        proxy: N_("Unknown addresses are passed on to the target below, as if it were one more host."),
+        redirect: N_("Unknown addresses are answered with a redirect to the address below."),
+        notfound: N_("Unknown addresses get the 404 page. You can replace it on the Error pages page."),
+        closeresp: N_("Unknown addresses get no answer: the connection is closed before anything is sent, so a scanner cannot tell what runs here.")
+    };
+    function N_(s){ return s; }
+
+    function renderDefaultSiteNow(){
+        if (!savedDefaultSite){ return; }
+        let opt = savedDefaultSite.option, val = savedDefaultSite.value;
+        let icon = ["globe", "exchange", "share", "file outline", "ban"][opt] || "home";
+        let text = [t("shows the static web server"), t("is passed on to {0}").replace("{0}", savedDefaultSite.origin || val), t("is redirected to {0}").replace("{0}", val),
+            t("gets the 404 page"), t("gets no answer: the connection is closed")][opt] || "";
+        let hint = [t("Files of the built-in web server, at {0}").replace("{0}", savedDefaultSite.origin), "", "", "", t("Nothing is sent back, so a scanner learns nothing.")][opt] || "";
+        $("#rootNowIcon i").attr("class", icon + " icon");
+        $("#rootNowValue").text(text);
+        $("#rootNowHint").text(hint).toggle(hint != "");
+        checkDefaultSiteNow(hint);
+    }
+
+    //The badge of the strip says whether the saved answer really works, so it is worked out, never assumed:
+    //the static web server must be running, a proxy target is judged by the uptime monitor when it knows the address.
+    function setDefaultSiteNowState(kind, word, hint, act){
+        $("#rootNow").attr("data-state", kind == "warn" ? "warn" : null);
+        $("#rootNowBadge").attr("class", "zx-badge zx-badge--dot" + (kind == "ok" ? " zx-badge--ok" : (kind == "warn" ? " zx-badge--warn" : ""))).text(word);
+        if (hint != undefined){ $("#rootNowHint").text(hint).toggle(hint != ""); }
+        let btn = $("#rootNowAct").off("click").prop("hidden", !act);
+        if (act){ btn.text(act.label).on("click", act.run); }
+    }
+    var defaultSiteNowSeq = 0;
+    function checkDefaultSiteNow(hint){
+        if (!savedDefaultSite){ return; }
+        let opt = savedDefaultSite.option, seq = ++defaultSiteNowSeq;
+        if (opt == 0){
+            $.get("/api/webserv/status", function(ws){
+                if (seq != defaultSiteNowSeq){ return; }
+                if (ws && ws.Running){ setDefaultSiteNowState("ok", t("Active"), hint); return; }
+                setDefaultSiteNowState("warn", t("Web server stopped"), t("The static web server is not running, so visitors with an unknown address get an error."), {label: t("Start the web server"), run: function(){
+                    $.get("/api/webserv/start", function(data){
+                        if (data && data.error != undefined){
+                            //the reason stays in the strip (a toast would be gone before it is read); the button stays for another try
+                            $("#rootNowHint").text(t("The web server did not start: {0}").replace("{0}", data.error) + ". " + t("Change its port on the Static Web Server page.")).show();
+                            return;
+                        }
+                        msgbox(t("Static web server started"));
+                        if (typeof updateWebServState == "function"){ updateWebServState(); }   //keeps the Static Web Server page in step; it calls back here
+                        else { renderDefaultSiteNow(); }
+                    });
+                }});
+            }).fail(function(){ if (seq == defaultSiteNowSeq){ setDefaultSiteNowState("", t("Not checked"), hint); } });
+        }else if (opt == 1){
+            let origin = String(savedDefaultSite.origin || savedDefaultSite.value || "").replace(/\/$/, "");
+            $.get("/api/utm/list", function(data){
+                if (seq != defaultSiteNowSeq){ return; }
+                let last = null;
+                if (data && typeof data === "object" && !data.error){
+                    Object.keys(data).forEach(function(id){
+                        (data[id] || []).forEach(function(rec){
+                            let u = String(rec.URL || "").replace(/^[a-z]+:\/\//i, "").replace(/\/$/, "");
+                            if ((u === origin || u.indexOf(origin + "/") === 0) && (!last || rec.Timestamp >= last.Timestamp)){ last = rec; }
+                        });
+                    });
+                }
+                if (!last){ setDefaultSiteNowState("", t("Target not checked"), t("The uptime monitor has no check for this address, so Zoraxy cannot tell whether it answers.")); }
+                else if (last.Online){ setDefaultSiteNowState("ok", t("Target answers"), t("The target answered the last uptime check.")); }
+                else { setDefaultSiteNowState("warn", t("Target does not answer"), t("The target failed the last uptime check, so visitors with an unknown address get an error.")); }
+            }).fail(function(){ if (seq == defaultSiteNowSeq){ setDefaultSiteNowState("", t("Target not checked"), ""); } });
+        }else{
+            setDefaultSiteNowState("ok", t("Active"), hint);
+        }
+    }
+
+    function updateDefaultSiteDirty(){
+        let sel = $('input[name="defaultsiteOption"]:checked').val();
+        $("#rootExplain").text(t(DEFAULT_SITE_EXPLAIN[sel] || ""));
+        if (!savedDefaultSite){ return; }
+        let dirty = sel != DEFAULT_SITE_VALUES[savedDefaultSite.option];
+        if (!dirty && sel == "proxy"){ dirty = $("#proxyRoot").val().trim() != savedDefaultSite.origin; }
+        if (!dirty && sel == "redirect"){ dirty = $("#redirectDomain").val().trim() != savedDefaultSite.value; }
+        $("#rootDirty").prop("hidden", !dirty);
+    }
+    $("#proxyRoot, #redirectDomain").on("input", updateDefaultSiteDirty);
 
     //Handle toggle events of option radio boxes
     function updateAvaibleDefaultSiteOptions(){
         let selectedDefaultSite = $('input[name="defaultsiteOption"]:checked').val();
 
-        $(".defaultSiteOptionDetails").hide();
-        $("#useRootProxyRouterForVdir").parent().addClass("disabled");
+        $(".defaultSiteOptionDetails").prop("hidden", true);
+        updateDefaultSiteDirty();
+        //Path routes on the default site only work while it serves the web server or a proxy target (see vdir.html)
+        window.defaultSiteTakesPathRoutes = (selectedDefaultSite == "webserver" || selectedDefaultSite == "proxy");
         if (selectedDefaultSite == "webserver"){
             //Use build in web server as target
             let staticWebServerURL = "127.0.0.1:" + $("#webserv_listenPort").val();
             $("#proxyRoot").val(staticWebServerURL);
-            $("#proxyRoot").parent().addClass("disabled");
-            $("#rootReqTLS").parent().checkbox("set unchecked");
-            $("#rootReqTLS").parent().addClass("disabled");
-            $("#useRootProxyRouterForVdir").parent().removeClass("disabled");
+            $("#rootReqTLS").prop("checked", false);
             currentDefaultSiteOption = 0;
         }else if (selectedDefaultSite == "proxy"){
-            $("#defaultSiteProxyOptions").show();
-            $("#rootReqTLS").parent().removeClass("disabled");
-            $("#proxyRoot").parent().removeClass("disabled");
-            $("#useRootProxyRouterForVdir").parent().removeClass("disabled");
+            $("#defaultSiteProxyOptions").prop("hidden", false);
             currentDefaultSiteOption = 1;
         }else if (selectedDefaultSite == "redirect"){
-            $("#defaultSiteRedirectOptions").show();
+            $("#defaultSiteRedirectOptions").prop("hidden", false);
             currentDefaultSiteOption = 2;
         }else if (selectedDefaultSite == "notfound"){
             currentDefaultSiteOption = 3;
@@ -211,10 +296,15 @@
                 }else if (proxyType == 4){
                     $radios.filter('[value=closeresp]').prop('checked', true);
                 }
+                setDefaultSiteError("#proxyRoot", "");
+                setDefaultSiteError("#redirectDomain", "");
+                let origin = (data.ActiveOrigins && data.ActiveOrigins[0]) ? data.ActiveOrigins[0].OriginIpOrDomain : "";
+                savedDefaultSite = {option: proxyType, value: data.DefaultSiteValue || "", origin: origin};
+                $("#proxyRoot").val(origin);
+                if (proxyType != 2){ $("#redirectDomain").val(""); }
                 updateAvaibleDefaultSiteOptions();
-                
-                $("#proxyRoot").val(data.ActiveOrigins[0].OriginIpOrDomain);
-                checkRootRequireTLS(data.ActiveOrigins[0].OriginIpOrDomain);
+                renderDefaultSiteNow();
+                checkRootRequireTLS(origin);
             }
 
             if (callback != undefined){
@@ -241,7 +331,7 @@
 
     //Bind event to tab switch
     tabSwitchEventBind["setroot"] = function(){
-        
+        renderDefaultSiteNow();   //the web server or the target may have changed state since the page was last shown
     }
 
     //Check if the given domain will redirect to https
@@ -262,9 +352,9 @@
                 if (data.error != undefined){
 
                 }else if (data == "https"){
-                    $("#rootReqTLS").parent().checkbox("set checked");
+                    $("#rootReqTLS").prop("checked", true);
                 }else if (data == "http"){
-                    $("#rootReqTLS").parent().checkbox("set unchecked");
+                    $("#rootReqTLS").prop("checked", false);
                 }
             }
        })
@@ -365,8 +455,10 @@
                                 //See webserv.html for details
                                 setWebServerRunningState(true);
                             }
-                            
-                            msgbox("Default Site Updated");
+                            if (typeof refreshWebservUsedBy == "function"){ refreshWebservUsedBy(); }
+                            setTimeout(renderDefaultSiteNow, 600);   //after the web server had time to start
+
+                            msgbox(t("Default site updated"));
                         })
                     });
                     
@@ -377,7 +469,7 @@
                 }
             },
             error: function(){
-                msgbox("Unknown error occured", false);
+                msgbox(t("The default site could not be saved: the server did not answer"), false);
                 if (btn != undefined){
                     $(btn).removeClass("disabled");
                 }

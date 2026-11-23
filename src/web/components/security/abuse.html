@@ -1,26 +1,60 @@
+<!-- Security Center > Auto-ban. Status first (is it on, what would it do), then who is banned right now (the table used most, with the manual ban),
+     then the things a beginner sets (what counts, how long, who is safe); Advanced is always last. One Save for the whole form (save bar). -->
 <div class="ui form" id="abuseForm">
-    <section class="zx-card">
+    <section class="zx-card sx-status" id="abStatus" data-state="off">
+        <div class="sx-status__top">
+            <span class="sx-status__icon" aria-hidden="true"><i class="ban icon"></i></span>
+            <div class="sx-status__text">
+                <h4 class="sx-status__title"><span class="sx-status__name">Auto-ban</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
+                <p class="sx-status__desc">Counts abusive requests per client address and bans repeat offenders for a limited, growing time.</p>
+            </div>
+            <div class="sx-status__action">
+                <label class="sx-switch" for="abEnabled"><span>Ban automatically</span><input type="checkbox" class="zx-switch" role="switch" id="abEnabled"></label>
+            </div>
+        </div>
+        <dl class="sx-facts">
+            <div class="sx-fact"><dt>Banned right now</dt><dd id="abFBans">-</dd></div>
+            <div class="sx-fact"><dt>Events watched</dt><dd id="abFDet">-</dd></div>
+            <div class="sx-fact"><dt>First ban lasts</dt><dd id="abFBan">-</dd></div>
+            <div class="sx-fact"><dt>Never banned</dt><dd id="abFAllow">-</dd></div>
+        </dl>
+    </section>
+
+    <section class="zx-card" id="abBansCard" data-zx-ignore>
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Automatic banning</h3>
-            <p class="zx-card__desc">Counts abusive requests per client address and bans repeat offenders for a limited, growing time. Off by default.</p>
+            <h3 class="zx-card__title">Banned right now</h3>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="abRefresh" aria-label="Refresh the list of active bans"><i class="refresh icon" aria-hidden="true"></i> Refresh</button>
+            <p class="zx-card__desc">Clients that are refused at this moment, whether a detector or you banned them. Unban lifts a ban at once.</p>
         </div>
         <div class="zx-card__body">
-            <label class="zx-toggle-row" for="abEnabled">
-                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Enable automatic banning</span><span class="zx-toggle-row__desc">Local, private and trusted proxy addresses, this server and the allow-list are never banned.</span></span>
-                <input type="checkbox" class="zx-switch" role="switch" id="abEnabled">
-            </label>
+            <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Active bans">
+                <table class="zx-table ab-bans">
+                    <thead><tr><th>Address</th><th>Why</th><th>Ends</th><th class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
+                    <tbody id="abBans"><tr><td colspan="4" class="zx-empty-cell">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="zx-card__body ab-manual">
+            <h4 class="zx-subhead">Ban an address yourself</h4>
+            <div class="sx-inline">
+                <div class="field zx-field"><label for="abNewIp">IP address</label><input type="text" id="abNewIp" placeholder="203.0.113.9"><p class="zx-error"></p></div>
+                <div class="field zx-field ab-secs"><label for="abNewSecs">For (seconds)</label><input type="number" id="abNewSecs" min="1" step="1" placeholder="3600"><p class="zx-error"></p></div>
+                <div class="field zx-field"><label for="abNewReason">Note</label><input type="text" id="abNewReason" maxlength="200" placeholder="Optional"></div>
+                <div class="sx-inline__btn"><button type="button" class="zx-btn zx-btn--secondary" id="abAdd"><i class="ban icon" aria-hidden="true"></i> Ban</button></div>
+            </div>
+            <p class="zx-help">Leave the duration empty for a ban that never ends. Works whether automatic banning is on or off.</p>
         </div>
     </section>
 
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Detectors</h3>
-            <p class="zx-card__desc">Ban a client that causes N of these events within T seconds.</p>
+            <h3 class="zx-card__title">What gets a client banned</h3>
+            <p class="zx-card__desc">Switch on the kinds of trouble that should count. A client is banned when it causes that many events within the time shown. Start with failed logins and scanning.</p>
         </div>
         <div class="zx-card__body">
-            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" tabindex="0" role="region" aria-label="Detectors">
-                <table class="zx-table zx-table--compact zx-table--det">
-                    <thead><tr><th>Enabled</th><th>Event</th><th>Events (N)</th><th>Within seconds (T)</th></tr></thead>
+            <div class="zx-table-wrap zx-table-wrap--flush zx-table-wrap--tall" role="region" aria-label="Detectors">
+                <table class="zx-table ab-det">
+                    <thead><tr><th>Count</th><th>Event</th><th>Ban after</th><th>Within</th></tr></thead>
                     <tbody id="abDetectors"></tbody>
                 </table>
             </div>
@@ -29,89 +63,170 @@
 
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Ban length and exceptions</h3>
-            <p class="zx-card__desc">How long a ban lasts, how it grows for repeat offenders and who is never banned.</p>
+            <h3 class="zx-card__title">How long a ban lasts</h3>
+            <p class="zx-card__desc">The first ban is short. Each time the same client is banned again the ban gets longer, up to the longest ban.</p>
         </div>
         <div class="zx-card__body">
             <div class="zx-form-grid">
-                <div class="field zx-field"><label for="abBan">Ban duration (seconds)</label><input type="number" id="abBan" min="1" step="1"><p class="zx-help">1 or more seconds</p></div>
-                <div class="field zx-field"><label for="abEsc">Growth per repeat ban</label><input type="number" id="abEsc" min="1" max="10" step="0.5"><p class="zx-help">Times longer each time, 1 to 10</p></div>
-                <div class="field zx-field"><label for="abMax">Longest ban (seconds)</label><input type="number" id="abMax" min="1" step="1"><p class="zx-help">At least the ban duration</p></div>
-                <div class="field zx-field"><label for="abV6">IPv6 range size (bits)</label><input type="number" id="abV6" min="32" max="128" step="1"><p class="zx-help">Addresses in the same range count as one client, 32 to 128</p></div>
-                <div class="field zx-field zx-field--wide"><label for="abAllow">Never ban these addresses</label><textarea id="abAllow" rows="3" placeholder="203.0.113.7&#10;198.51.100.0/24"></textarea><p class="zx-help">One IP address or range (CIDR) per line.</p></div>
-                <div class="field zx-field zx-field--wide"><label for="abExclude">Do not watch these proxy rules</label><textarea id="abExclude" rows="2" placeholder="app.example.com"></textarea><p class="zx-help">One host name per line.</p></div>
+                <div class="field zx-field"><label for="abBan">First ban</label><div class="zx-inputgroup"><input type="number" id="abBan" min="1" step="1"><span class="zx-inputgroup__unit">seconds</span></div><p class="zx-help" id="abBanHelp">1 or more seconds</p></div>
+                <div class="field zx-field"><label for="abEsc">Each repeat ban is</label><div class="zx-inputgroup"><input type="number" id="abEsc" min="1" max="10" step="0.5"><span class="zx-inputgroup__unit">times longer</span></div><p class="zx-help">1 (always the same) to 10</p></div>
+                <div class="field zx-field"><label for="abMax">Longest ban</label><div class="zx-inputgroup"><input type="number" id="abMax" min="1" step="1"><span class="zx-inputgroup__unit">seconds</span></div><p class="zx-help" id="abMaxHelp">At least the first ban</p></div>
             </div>
-            <label class="zx-toggle-row" for="abDrop">
-                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Drop banned connections silently</span><span class="zx-toggle-row__desc">Close the connection without an answer instead of showing a 403 page.</span></span>
-                <input type="checkbox" class="zx-switch" role="switch" id="abDrop">
-            </label>
+            <p class="ab-ladder" id="abLadder" aria-live="polite"></p>
+        </div>
+    </section>
+
+    <section class="zx-card">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Who is never banned</h3>
+            <p class="zx-card__desc">Local and private addresses, trusted proxies and this server are always safe. Add your own office or monitoring addresses so a typo in a password cannot lock you out.</p>
+        </div>
+        <div class="zx-card__body">
+            <div class="field zx-field zx-field--wide"><label for="abAllow">Never ban these addresses</label><textarea id="abAllow" rows="3" placeholder="203.0.113.7&#10;198.51.100.0/24"></textarea><p class="zx-help">One IP address or range (CIDR) per line.</p></div>
+        </div>
+    </section>
+
+    <h4 class="sx-label">Advanced</h4>
+    <details class="sx-group" id="abGrpScope">
+        <summary><span class="sx-group__title">Counting and scope</span><span class="sx-group__desc">Sites that are not watched, counting per site and how IPv6 clients are grouped.</span><span class="sx-group__now" id="abNowScope"></span></summary>
+        <div class="sx-group__body">
+            <div class="field zx-field zx-field--wide"><label for="abExclude">Do not watch these proxy rules</label><textarea id="abExclude" rows="2" placeholder="app.example.com"></textarea><p class="zx-help">One host name per line. Events on these sites never count.</p></div>
             <label class="zx-toggle-row" for="abPerEp">
                 <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Count per proxy rule</span><span class="zx-toggle-row__desc">Count and ban for each proxy rule on its own instead of across all of them.</span></span>
                 <input type="checkbox" class="zx-switch" role="switch" id="abPerEp">
+            </label>
+            <div class="field zx-field"><label for="abV6">IPv6 range size</label><div class="zx-inputgroup"><input type="number" id="abV6" min="32" max="128" step="1"><span class="zx-inputgroup__unit">bits</span></div><p class="zx-help">Addresses in the same range count as one client, 32 to 128. Home connections usually get a /64.</p></div>
+        </div>
+    </details>
+    <details class="sx-group" id="abGrpHow">
+        <summary><span class="sx-group__title">What a banned client sees</span><span class="sx-group__desc">Answer with the 403 page or close the connection, and whether private addresses can be banned.</span><span class="sx-group__now" id="abNowHow"></span></summary>
+        <div class="sx-group__body">
+            <label class="zx-toggle-row" for="abDrop">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Drop banned connections silently</span><span class="zx-toggle-row__desc">Close the connection without an answer instead of showing a 403 page.</span></span>
+                <input type="checkbox" class="zx-switch" role="switch" id="abDrop">
             </label>
             <label class="zx-toggle-row" for="abPriv">
                 <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Also ban local and private addresses</span><span class="zx-toggle-row__desc">Risky: you can lock yourself out of your own network.</span></span>
                 <input type="checkbox" class="zx-switch" role="switch" id="abPriv">
             </label>
         </div>
-    </section>
+    </details>
 </div>
-
-<section class="zx-card">
-    <div class="zx-card__head">
-        <h3 class="zx-card__title">Active bans</h3>
-        <button class="ui mini basic icon button" id="abRefresh" title="Refresh" aria-label="Refresh the list of active bans"><i class="refresh icon"></i></button>
-        <p class="zx-card__desc">Clients that are blocked right now. Unban removes a ban at once.</p>
-    </div>
-    <div class="zx-card__body">
-        <div class="zx-table-wrap zx-table-wrap--flush" tabindex="0" role="region" aria-label="Active bans">
-            <table class="zx-table">
-                <thead><tr><th>IP address or range</th><th>Scope</th><th>Reason</th><th>Since</th><th>Expires</th><th class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
-                <tbody id="abBans"><tr><td colspan="6" class="zx-empty-cell">Loading...</td></tr></tbody>
-            </table>
-        </div>
-        <h4 class="zx-subhead">Ban an address now</h4>
-        <div class="zx-form-grid ui form">
-            <div class="field zx-field"><label for="abNewIp">IP address</label><input type="text" id="abNewIp" placeholder="203.0.113.9"><p class="zx-error"></p></div>
-            <div class="field zx-field"><label for="abNewSecs">Duration (seconds)</label><input type="number" id="abNewSecs" min="1" step="1" placeholder="3600"><p class="zx-help">Leave empty for a permanent ban.</p><p class="zx-error"></p></div>
-            <div class="field zx-field"><label for="abNewReason">Reason</label><input type="text" id="abNewReason" maxlength="200" placeholder="Optional note"></div>
-            <div class="zx-field zx-field--btn"><button type="button" class="zx-btn zx-btn--primary" id="abAdd"><i class="ban icon" aria-hidden="true"></i> Ban</button></div>
-        </div>
-    </div>
-</section>
-
-<section class="zx-card">
-    <div class="zx-card__head">
-        <h3 class="zx-card__title">Remote API</h3>
-        <p class="zx-card__desc">Let scripts or fail2ban ban and unban addresses with a secret token. Off until you create a token.</p>
-    </div>
-    <div class="zx-card__body">
+<details class="sx-group" id="abGrpApi">
+    <summary><span class="sx-group__title">Remote API for scripts and fail2ban</span><span class="sx-group__desc">Let another program ban and unban addresses with a secret token. Off until you create a token.</span><span class="sx-group__now" id="abNowApi"></span></summary>
+    <div class="sx-group__body">
+        <p id="abTokenState" class="zx-tokenstate"></p>
         <div class="zx-codeblock"><code id="abCurl">curl -X POST -H "Authorization: Bearer TOKEN" -d "ip=203.0.113.9&amp;seconds=3600" https://admin-host/api/abuse/remote/ban</code><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-zx-copy="#abCurl">Copy</button></div>
         <p class="zx-help">The same address also has /unban and /list. Only a hash of the token is stored.</p>
-        <p id="abTokenState" class="zx-tokenstate"></p>
         <div class="zx-btn-row">
             <button type="button" class="zx-btn zx-btn--secondary" id="abTokGen">Generate new token</button>
             <button type="button" class="zx-btn zx-btn--danger-outline" id="abTokRevoke">Revoke token</button>
         </div>
         <div id="abTokShow" class="ui warning message" style="display:none"></div>
     </div>
-</section>
+</details>
+
+<style>
+    #abuseForm .ab-det td { vertical-align: middle; }
+    #abuseForm .ab-det th:nth-child(1) { width: 4.5rem; }
+    #abuseForm .ab-det th:nth-child(3), #abuseForm .ab-det th:nth-child(4) { width: 10.5rem; }
+    #abuseForm .det-ev b { display: block; }
+    #abuseForm .det-ev span { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #abuseForm .det-n .ab-num, #abuseForm .det-t .ab-num { display: inline-flex; align-items: center; gap: var(--zx-space-2); }
+    #abuseForm .det-n input, #abuseForm .det-t input { flex: 0 0 4.8rem; width: 4.8rem; min-width: 4.8rem; max-width: 4.8rem; padding-left: 10px; padding-right: 4px; }
+    #abuseForm tr.is-off .det-ev b, #abuseForm tr.is-off .sx-unit { color: var(--zx-text-muted); }
+    #abuseForm .zx-inputgroup input { max-width: 9rem; }
+    #abuseForm .ab-ladder { margin: 0; padding: var(--zx-space-3); background: var(--zx-surface-2); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #abuseForm .ab-ladder:empty { display: none; }
+    #abuseForm .ab-ladder b { color: var(--zx-text); }
+    #abBansCard .ab-manual { border-top: 1px solid var(--zx-border); }
+    #abBansCard .ab-manual .zx-subhead { margin-top: 0; font-size: 1.071rem; }
+    #abuseForm > .zx-card { margin-bottom: var(--zx-space-4); }
+    #abBansCard .ab-manual .zx-help { margin: var(--zx-space-2) 0 0; }
+    #abBansCard .ab-secs { flex: 0 1 9rem; }
+    #abBansCard .ab-bans th:nth-child(1) { width: 14rem; } #abBansCard .ab-bans th:nth-child(3) { width: 8rem; }
+    #abBansCard .ab-ends { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    #abBansCard .ab-why { color: var(--zx-text); }
+    #abBansCard .ab-ip { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #abBansCard .ab-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #secPane #abTokenState { margin: 0 0 var(--zx-space-3); }
+    @media (max-width: 480px) {   /* phone: one block per event (switch + name, then the two numbers), one block per ban; no label column */
+        #abDetectors tr { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: var(--zx-space-2) var(--zx-space-3); align-items: center; margin: 0; padding: var(--zx-space-3) 0; border: 0; border-top: 1px solid var(--zx-border); border-radius: 0; overflow: visible; }
+        #abDetectors tr:first-child { border-top: 0; padding-top: 0; }
+        #abDetectors td { display: block; width: auto; padding: 0; border: 0; text-align: left; }
+        #abDetectors td::before, #abBans td:not(.zx-empty-cell)::before { content: none; }
+        #abDetectors .det-en { grid-column: 1; grid-row: 1; align-self: start; }
+        #abDetectors .det-ev { grid-column: 2 / -1; grid-row: 1; }
+        #abDetectors .det-n { grid-column: 2; grid-row: 2; } #abDetectors .det-t { grid-column: 3; grid-row: 2; }
+        #abuseForm #abDetectors .det-n input, #abuseForm #abDetectors .det-t input { flex: 0 0 4.4rem; width: 4.4rem; min-width: 4.4rem; max-width: 4.4rem; }
+        #abBans tr { padding: var(--zx-space-3); }
+        #abBans td:not(.zx-empty-cell) { display: block; padding: 0 0 var(--zx-space-2); text-align: left; border: 0; }
+        #abBans td.zx-actions { padding-bottom: 0; text-align: left; }
+        #abBansCard .ab-secs { flex: 1 1 11rem; }
+    }
+</style>
 
 <script>
 (function () {
+    function N_(s) { return s; }
+    // name of the event and what it means in one line
     var KINDS = {
-        unauthorized: "401 Unauthorized responses (failed basic auth)", forbidden: "403 Forbidden responses",
-        not_found: "404 Not Found (scanners)", rate_limited: "Rate limit rejections (429)", waf_block: "WAF blocks",
-        exploit_block: "Exploit detector blocks", bot_block: "Bot rule blocks", captcha_fail: "Failed CAPTCHA",
-        login_fail: "Failed admin panel logins"
+        unauthorized: [N_("Failed site logins"), N_("401 answers, such as a wrong basic auth password")],
+        forbidden: [N_("Refused requests"), N_("403 answers from an access rule or the site itself")],
+        not_found: [N_("Scanning for pages"), N_("404 answers: a client probing for paths that do not exist")],
+        rate_limited: [N_("Hitting a rate limit"), N_("429 answers from a rate limit")],
+        waf_block: [N_("WAF blocks"), N_("Requests the WAF stopped")],
+        exploit_block: [N_("Exploit attempts"), N_("Requests the exploit detector stopped")],
+        bot_block: [N_("Bot rule blocks"), N_("Requests a bot rule stopped")],
+        captcha_fail: [N_("Failed CAPTCHA"), N_("A visitor that keeps failing the challenge")],
+        login_fail: [N_("Failed admin sign-ins"), N_("A wrong password on this admin panel")]
     };
-    var cfg = null;
+    var cfg = null, banCount = null;
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function lines(v) { return v.split("\n").map(function (x) { return x.trim(); }).filter(Boolean); }
     function t(s) { return typeof window.t === "function" ? window.t(s) : s; }
-    function tf(s, a) { return typeof window.tf === "function" ? window.tf(s, a) : s.replace("{0}", a); }
     function toast(m, ok) { if (window.parent && window.parent.msgbox) { window.parent.msgbox(m, ok); } else if (window.msgbox) { msgbox(m, ok); } }
-    function fmt(t) { return t ? new Date(t * 1000).toLocaleString() : "never"; }
+    function whole(v) { return /^-?\d+$/.test(String(v).trim()); }
+
+    /* the status header and the summaries of the closed groups follow the form, saved or not */
+    function summary() {
+        if (!document.getElementById("abuseForm")) { return; }   // an answer that arrives after the section was left
+        var on = $("#abEnabled").prop("checked"), saved = !!(cfg && cfg.Enabled);
+        var det = $("#abDetectors .dEn"), nOn = det.filter(":checked").length;
+        var ban = $("#abBan").val(), max = $("#abMax").val(), esc_ = +$("#abEsc").val();
+        var okBan = whole(ban) && +ban >= 1, okMax = whole(max) && +max >= 1;
+        ZxSec.fact("#abFDet", t("{0} of {1}").replace("{0}", nOn).replace("{1}", det.length), "", on && !nOn ? "warn" : "");
+        ZxSec.fact("#abFBan", okBan ? ZxSec.dur(ban) : "-", okMax ? t("up to {0}").replace("{0}", ZxSec.dur(max)) : "");
+        var allow = lines($("#abAllow").val()).length;
+        ZxSec.fact("#abFAllow", allow ? t("{0} of your own").replace("{0}", allow) : t("Built-in only"), t("plus local and trusted"));
+        if (banCount !== null) { ZxSec.fact("#abFBans", banCount, banCount ? "" : t("nobody"), banCount ? "warn" : ""); }
+        $("#abBanHelp").text(okBan ? "= " + ZxSec.dur(ban) : t("1 or more seconds"));
+        $("#abMaxHelp").text(okMax ? "= " + ZxSec.dur(max) : t("At least the first ban"));
+        var ladder = "";
+        if (okBan && okMax && esc_ >= 1 && esc_ <= 10 && +max >= +ban) {
+            var steps = [], v = +ban, i;
+            for (i = 0; i < 4; i++) { steps.push(ZxSec.dur(Math.min(v, +max))); if (v >= +max) { break; } v = v * esc_; }
+            ladder = esc(t("A repeat offender is banned for")) + " <b>" + steps.map(esc).join("</b>, " + esc(t("then")) + " <b>") + "</b>" + (esc_ > 1 && steps.length > 1 ? ", " + esc(t("never longer than {0}.").replace("{0}", ZxSec.dur(max))) : ".");
+        }
+        $("#abLadder").html(ladder);
+        var st;
+        if (saved && on) {
+            st = nOn ? { state: "on", badge: t("On"), title: t("Auto-ban is on"), desc: t("A client that trips one of the {0} watched events is banned for {1}, longer each time it comes back.").replace("{0}", nOn).replace("{1}", okBan ? ZxSec.dur(ban) : "-") }
+                : { state: "warn", badge: t("On, nothing watched"), title: t("Auto-ban is on but watches nothing"), desc: t("Switch on at least one event below, otherwise nobody is ever banned automatically.") };
+        } else if (on) {
+            st = { state: "info", badge: t("Not saved yet"), title: t("Auto-ban will switch on when you save"), desc: nOn ? t("{0} events are watched. The first ban lasts {1}.").replace("{0}", nOn).replace("{1}", okBan ? ZxSec.dur(ban) : "-") : t("Switch on at least one event below, otherwise nobody is ever banned automatically.") };
+        } else {
+            st = { state: "off", badge: saved ? t("Off when you save") : t("Off"), title: t("Auto-ban is off"), desc: t("Nobody is banned automatically. Bans you add yourself below still work. Switch it on, pick what counts, and save.") };
+        }
+        ZxSec.status("#abStatus", st);
+        $("#abDetectors tr").each(function () { $(this).toggleClass("is-off", !$(this).find(".dEn").prop("checked")); });
+        var ex = lines($("#abExclude").val()).length, scope = [];
+        if (ex) { scope.push(t("{0} sites not watched").replace("{0}", ex)); }
+        if ($("#abPerEp").prop("checked")) { scope.push(t("per site")); }
+        $("#abNowScope").text(scope.join(", ") || t("All sites, counted together"));
+        $("#abNowHow").text(($("#abDrop").prop("checked") ? t("Connection closed") : t("403 page")) + ($("#abPriv").prop("checked") ? ", " + t("private addresses too") : ""));
+        $("#abNowApi").text(cfg && cfg.RemoteTokenSet ? t("Token set") : t("Off"));
+    }
 
     function loadConfig() {
         $.get("/api/abuse/config", function (c) {
@@ -122,32 +237,41 @@
             $("#abDrop").prop("checked", c.DropConnection); $("#abPerEp").prop("checked", c.PerEndpoint); $("#abPriv").prop("checked", c.BanPrivate);
             var rows = "";
             (c.AllKinds || []).forEach(function (k) {
-                var d = c.Detectors[k] || {};
-                rows += '<tr data-k="' + esc(k) + '"><td data-label="Enabled"><input type="checkbox" class="dEn zx-switch" role="switch" aria-label="Enable detector ' + esc(KINDS[k] || k) + '"' + (d.Enabled ? " checked" : "") + '></td><td data-label="Event">' + esc(KINDS[k] || k) +
-                    '</td><td data-label="Events (N)"><input type="number" class="dTh" aria-label="Threshold" min="1" step="1" value="' + esc(d.Threshold) + '"></td><td data-label="Within seconds (T)"><input type="number" class="dWin" aria-label="Window in seconds" min="1" step="1" value="' + esc(d.WindowSec) + '"></td></tr>';
+                var d = c.Detectors[k] || {}, name = KINDS[k] ? t(KINDS[k][0]) : k, sub = KINDS[k] ? t(KINDS[k][1]) : "";
+                rows += '<tr data-k="' + esc(k) + '"><td class="det-en" data-label="' + esc(t("Count")) + '"><input type="checkbox" class="dEn zx-switch" role="switch" aria-label="' + esc(t("Count: {0}").replace("{0}", name)) + '"' + (d.Enabled ? " checked" : "") + '></td>' +
+                    '<td class="det-ev" data-label="' + esc(t("Event")) + '"><b>' + esc(name) + "</b><span>" + esc(sub) + "</span></td>" +
+                    '<td class="det-n" data-label="' + esc(t("Ban after")) + '"><span class="ab-num"><input type="number" class="dTh" aria-label="' + esc(t("Events before a ban: {0}").replace("{0}", name)) + '" min="1" step="1" value="' + esc(d.Threshold) + '"><span class="sx-unit">' + esc(t("events")) + "</span></span></td>" +
+                    '<td class="det-t" data-label="' + esc(t("Within")) + '"><span class="ab-num"><input type="number" class="dWin" aria-label="' + esc(t("Within seconds: {0}").replace("{0}", name)) + '" min="1" step="1" value="' + esc(d.WindowSec) + '"><span class="sx-unit">' + esc(t("seconds")) + "</span></span></td></tr>";
             });
             $("#abDetectors").html(rows);
-            $("#abTokenState").html(c.RemoteTokenSet ? "A token is set." : "No token set (remote API disabled).");
+            $("#abTokenState").text(c.RemoteTokenSet ? t("A token is set.") : t("No token set (remote API disabled)."));
+            $("#abTokRevoke").prop("disabled", !c.RemoteTokenSet);
             if (window.zxSecBar) { window.zxSecBar.reset(); }
+            summary();
         });
     }
     function loadBans() {
         $.get("/api/abuse/list", function (r) {
-            var h = "";
-            (r.Bans || []).forEach(function (b) {
-                h += '<tr><td data-label="' + esc(t("IP address or range")) + '">' + esc(b.IP) + '</td><td data-label="' + esc(t("Scope")) + '">' + esc(b.Scope || "all") + '</td><td data-label="' + esc(t("Reason")) + '" class="zx-cell-long"><div class="zx-longvalue" tabindex="0">' + esc(b.Reason) + " (" + esc(b.Source) + ", level " + esc(b.Level) + ')</div></td><td data-label="' + esc(t("Since")) + '">' +
-                    esc(fmt(b.Created)) + '</td><td data-label="' + esc(t("Expires")) + '">' + esc(fmt(b.Expires)) + '</td><td class="zx-actions"><div class="zx-row-actions"><button class="ui mini basic button abUnban" data-ip="' + esc(b.IP) + '" data-scope="' + esc(b.Scope) + '">Unban</button></div></td></tr>';
+            var h = "", list = r.Bans || [];
+            list.forEach(function (b) {
+                var scope = b.Scope && b.Scope !== "all" ? '<span class="ab-sub">' + esc(t("only on {0}").replace("{0}", b.Scope)) + "</span>" : "";
+                var src = b.Source === "manual" ? t("banned by hand") : (b.Source ? t("banned automatically: {0}").replace("{0}", KINDS[b.Source] ? t(KINDS[b.Source][0]).toLowerCase() : b.Source) : "");
+                var given = b.Reason && b.Reason !== "manual ban";   // the server's filler for an empty note
+                var meta = [src, +b.Level > 1 ? t("repeat ban {0}").replace("{0}", b.Level) : "", t("since {0}").replace("{0}", ZxSec.ago(b.Created))].filter(Boolean).join(" · ");
+                h += '<tr><td data-label="' + esc(t("Address")) + '"><span class="ab-ip">' + esc(b.IP) + "</span>" + scope + '</td><td data-label="' + esc(t("Why")) + '"><span class="ab-why sx-clamp"' + (given ? ' title="' + esc(b.Reason) + '"' : "") + ">" + esc(given ? b.Reason : t("No reason given")) + '</span><span class="ab-sub">' + esc(meta) + '</span></td><td class="ab-ends" data-label="' + esc(t("Ends")) + '"' + (b.Expires ? ' title="' + esc(new Date(b.Expires * 1000).toLocaleString()) + '"' : "") + ">" +
+                    esc(b.Expires ? ZxSec.ago(b.Expires) : t("Never")) +
+                    '</td><td class="zx-actions"><div class="zx-row-actions"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm abUnban" data-ip="' + esc(b.IP) + '" data-scope="' + esc(b.Scope) + '">' + esc(t("Unban")) + "</button></div></td></tr>";
             });
-            $("#abBans").html(h || '<tr><td colspan="6" class="zx-empty-cell">No active bans. Clients show up here when a detector bans them or you ban one below.</td></tr>');
+            $("#abBans").html(h || '<tr><td colspan="4" class="zx-empty-cell">' + esc(t("No active bans. Clients show up here when a detector bans them or you ban one below.")) + "</td></tr>");
+            banCount = list.length; summary();
         });
     }
     // Out-of-range numbers are shown next to the field instead of being silently rewritten by the server.
-    function whole(v) { return /^-?\d+$/.test(String(v).trim()); }
     function checkForm() {
         var bad = [];
         function need(sel, ok, msg) {
             var f = ZxUI.field(sel);
-            if (ok) { f.clearError(); } else { f.setError(t(msg)); bad.push(sel); }
+            if (ok) { f.clearError(); } else { ZxSec.reveal(sel); f.setError(t(msg)); bad.push(sel); }
         }
         var ban = $("#abBan").val(), esc_ = $("#abEsc").val(), max = $("#abMax").val(), v6 = $("#abV6").val();
         need("#abBan", whole(ban) && +ban >= 1, "Enter a whole number of seconds, 1 or more");
@@ -205,11 +329,13 @@
     });
     $("#abNewIp, #abNewSecs").on("input", function () { ZxUI.field(this).clearError(); });
     $("#abuseForm").on("input", "input", function () { ZxUI.field(this).clearError(); $(this).removeAttr("aria-invalid"); });
+    $("#abuseForm").on("input change", summary);
+    $(document).off("click.abDiscard").on("click.abDiscard", "#seccenter .zx-savebar [data-zx-discard]", function () { if (!document.getElementById("abuseForm")) { $(document).off("click.abDiscard"); return; } setTimeout(summary, 50); });
     $("#abRefresh").on("click", loadBans);
     $("#abTokGen").on("click", function () {
         function gen() {
             $.cjax({ type: "POST", url: "/api/abuse/token", data: { action: "generate" }, success: function (d) {
-                if (d && d.token) { $("#abTokShow").text("Token (shown once): " + d.token).show(); loadConfig(); } else { toast((d && d.error) || "failed", false); }
+                if (d && d.token) { $("#abTokShow").text(t("Token (shown once):") + " " + d.token).show(); loadConfig(); } else { toast((d && d.error) || "failed", false); }
             } });
         }
         if (cfg && cfg.RemoteTokenSet) {

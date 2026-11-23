@@ -50,6 +50,9 @@ ap.add_argument("--enterprise-only", action="store_true", help="run only the Pha
 ap.add_argument("--crowdsec-only", action="store_true", help="run only the CrowdSec bouncer + hardened security headers GUI scenario (crowdsec_smoke.py: starts a fake LAPI on UI port + 3 and an upstream on + 2, the proxy port must be UI port + 1; changes and restores instance-wide settings)")
 ap.add_argument("--phase4-only", action="store_true", help="run only the Phase 4 GUI scenario (phase4_smoke.py: Security overview, Network plan, Config Tools export / import dry run, Fleet certs confirmation; UI port + 2 must be free; creates and removes its own rules, plan and certificate, run it on a throw-away instance)")
 ap.add_argument("--baseline-only", action="store_true", help="run only the enterprise baseline card scenario (baseline_smoke.py: preview, Apply, Undo on an existing-style throw-away instance; changes and restores instance-wide settings; the fresh-start check is baseline_fresh_check.py)")
+ap.add_argument("--errorpages-only", action="store_true", help="run only the Sites > Error pages scenario (errorpages_smoke.py: theme, page text and HTML, preview, save bar, per site pages, reset; saves and resets the error page settings, run it on a throw-away instance)")
+ap.add_argument("--plugins-only", action="store_true", help="run only the Plugin Manager scenario (plugins_smoke.py: status badges, Details row, escaping of a hostile manifest, Supervision form; the plugin API is mocked, so any instance works)")
+ap.add_argument("--plugins-live", action="store_true", help="with --plugins-only: the instance was prepared by plugins_run.sh (three real chaos plugins); the part against the real plugin API must run")
 ap.add_argument("--zrok-fake", default=os.environ.get("SMOKE_ZROK_FAKE", ""), help="path of a fake zrok script; enables the zrok flow (the instance needs -allow_external_tools)")
 ap.add_argument("--allow", action="append", default=[], help="regex of messages whose failure is tolerated")
 args = ap.parse_args()
@@ -387,7 +390,8 @@ def proxy_ux(pg, ctx):
             fail("select", f"the bulk bar does not stay visible below the menu bar while scrolling (top {top:.0f}px)")
         pg.evaluate("window.scrollTo(0, 0)")
         pg.wait_for_timeout(200)
-        pg.click("#bulkBar button[data-act=waf]")
+        pg.click("#bulkBar button[data-act=more]")   # the per-setting actions sit in the Change menu of the bulk bar
+        pg.click(".zxs-menu [data-act=waf]")
         pg.wait_for_selector("#bulkModal", state="visible", timeout=5000)
         pg.select_option("#bulkWafSrc", "detection_only")
         pg.click("#bulkModal .actions button:has-text('Preview')")
@@ -395,7 +399,8 @@ def proxy_ux(pg, ctx):
         pg.screenshot(path=out("httprp-bulk-preview.png"))
         pg.click("#bulkModal .actions button:has-text('Cancel')")
         pg.wait_for_timeout(600)
-        pg.click("#bulkBar button[data-act=access]")
+        pg.click("#bulkBar button[data-act=more]")
+        pg.click(".zxs-menu [data-act=access]")
         pg.wait_for_selector("#bulkAccess", state="visible", timeout=5000)
         pg.click("#bulkModal .actions button:has-text('Preview')")
         pg.wait_for_function("document.querySelector('#bulkModal .content').innerText.indexOf('rule(s)') > -1", timeout=8000)
@@ -724,7 +729,7 @@ def nav_palette(pg, ctx):
     pg.fill("#idleTimeoutInput", str(int(old["idleTimeout"]) + 3))
     pg.wait_for_timeout(300)
     bar_txt = pg.inner_text("#globalsettings .zx-savebar")
-    if "2 unsaved changes" not in bar_txt or "Read Header Timeout" not in bar_txt:
+    if "2 unsaved changes" not in bar_txt or "read header timeout" not in bar_txt.lower():
         fail("listeners", f"save bar should count and name the two changed fields: {bar_txt!r}")
     pg.screenshot(path=out("listeners-savebar-light.png"))
     pg.click("#globalsettings [data-zx-save]")
@@ -1017,7 +1022,7 @@ def waf_graduated_ui(pg):
     pg.set_viewport_size({"width": 1366, "height": 900})
     orig = api("/api/waf/policy")
     try:
-        pg.click("#wafTabs .item[data-tab=waf-policy]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-policy]", "click")
         settle(pg, 600)
         for sel in ("#wafpChallenge", "#wafpChallengeTTL", "#wafpBands"):
             if not pg.is_visible(sel):
@@ -1049,17 +1054,17 @@ def waf_graduated_ui(pg):
         r = api("/api/waf/policy", {"policy": json.dumps(dict(pol, Enabled=True, DefaultMode="block"))})
         if isinstance(r, dict) and r.get("error"):
             fail("waf-bands", f"could not enable the policy: {r['error']}")
-        pg.click("#wafTabs .item[data-tab=waf-coverage]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-coverage]", "click")
         settle(pg, 900)
-        pg.click("#wafTabs .item[data-tab=waf-policy]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-policy]", "click")
         settle(pg, 600)
         if not pg.is_visible("#wafpBandWarn") or "CAPTCHA provider" not in pg.inner_text("#wafpBandWarn"):
             fail("waf-bands", "no provider warning although a Block rule has no CAPTCHA provider")
-        pg.click("#wafTabs .item[data-tab=waf-overview]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-overview]", "click")
         settle(pg, 900)
         if "CAPTCHA provider" not in pg.inner_text("#wafNeeds"):
             fail("waf-bands", "the overview does not flag the challenge band without a provider")
-        pg.click("#wafTabs .item[data-tab=waf-policy]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-policy]", "click")
         settle(pg, 500)
         pg.locator("#wafpBandBox").scroll_into_view_if_needed()
         shot("waf-bands-light.png")
@@ -1078,7 +1083,7 @@ def waf_graduated_ui(pg):
         pg.set_viewport_size({"width": 1366, "height": 900})
 
         # profile editor fields
-        pg.click("#wafTabs .item[data-tab=waf-profiles]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-profiles]", "click")
         settle(pg, 500)
         pg.click("#wafPrNew")
         pg.wait_for_timeout(300)
@@ -1087,7 +1092,7 @@ def waf_graduated_ui(pg):
         shot("waf-bands-profile.png")
         pg.click("#wafprClose")
         # events filter
-        pg.click("#wafTabs .item[data-tab=waf-events]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-events]", "click")
         settle(pg, 500)
         opts = pg.evaluate("[...document.querySelectorAll('#wafevAction option')].map(o => o.value)")
         if "challenged" not in opts or "challenge_passed" not in opts:
@@ -1162,21 +1167,32 @@ def waf_tuning_ui(pg):
         pg.set_viewport_size({"width": 1366, "height": 900})
         pg.evaluate("openTabById('waf')")
         settle(pg, 900)
-        pg.click("#wafTabs .item[data-tab=waf-tuning]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-tuning]", "click")
         pg.wait_for_selector("#wafTuneList .wafTuneCard", timeout=8000)
         if pg.locator("#wafTuneList .wafTuneCard").count() != 4:
             fail("waf-tuning", "expected 4 suggestion cards")
+        # design v2: a card is compact (rule, site, how often, an example, the buttons) and says in plain words what was flagged
+        # ("the cookie ph_*_posthog"); the reasoning opens in place with Details, the raw variable name is under Technical details
+        compact = pg.inner_text("#wafTuneList")
+        if "Why it matters" in compact:
+            fail("waf-tuning", "the reasoning of a card should be closed until Details is pressed")
+        pg.evaluate("document.querySelectorAll('#wafTuneList .wafSug__toggle').forEach(b => b.click())")
         txt = pg.inner_text("#wafTuneList")
-        for want in ("942290", "REQUEST_COOKIES:ph_*_posthog", "Probably an attack", "Low risk", "Check first", "Apply to this proxy rule", "Apply globally", "Ignore"):
+        for want in ("942290", "the cookie", "ph_*_posthog", "What it saw", "Why it matters", "If you apply it", "Probably an attack", "Low risk", "Check first", "Apply to this proxy rule", "Apply to all proxy rules", "Dismiss", "Keep the rule"):
             if want not in txt:
                 fail("waf-tuning", f"card text misses {want!r}")
+        if "REQUEST_COOKIES:ph_*_posthog" not in pg.evaluate("document.querySelector('#wafTuneList .wafTuneCard .wafSug__tech').textContent"):
+            fail("waf-tuning", "the raw variable name is missing from the technical details")
         pg.screenshot(path=out("waf-tuning-light.png"), full_page=True)
 
         # confirmation dialog shows exactly what is excluded
         pg.click("#wafTuneList .wafTuneCard:nth-child(1) .wafTuneApply[data-scope=global]")
         pg.wait_for_selector("#wafTuneDlg .wafTuneEffect", timeout=4000)
-        dlg = pg.inner_text("#wafTuneDlg")
-        for want in ("942290", "REQUEST_COOKIES:/^ph_.+_posthog$/", "every proxy rule", "every path", "no longer inspect this variable"):
+        # the dialog speaks the card's plain words ("the cookie ph_*_posthog"); the rule engine's own name is in its Technical details
+        dlg = pg.text_content("#wafTuneDlg")
+        if "REQUEST_COOKIES" in pg.inner_text("#wafTuneDlg"):
+            fail("waf-tuning", "the confirmation shows the raw variable name outside Technical details")
+        for want in ("942290", "the cookie", "REQUEST_COOKIES:/^ph_.+_posthog$/", "every proxy rule", "every path", "no longer inspect this request part"):
             if want not in dlg:
                 fail("waf-tuning", f"confirmation misses {want!r}: {dlg[:200]!r}")
         pg.screenshot(path=out("waf-tuning-confirm-light.png"))
@@ -1203,6 +1219,10 @@ def waf_tuning_ui(pg):
             fail("waf-tuning", "dialog still open after applying")
 
         # an attack-like suggestion warns before it applies; the endpoint scope names the proxy rule
+        # on a card whose advice is to keep the rule, applying sits behind "Apply anyway"
+        if pg.is_visible("#wafTuneList .wafTuneCard:nth-child(4) .wafTuneApply"):
+            fail("waf-tuning", "an attack-like card offers Apply at first sight")
+        pg.click("#wafTuneList .wafTuneCard:nth-child(4) .wafSug__anyBtn")
         pg.click("#wafTuneList .wafTuneCard:nth-child(4) .wafTuneApply[data-scope=endpoint]")
         pg.wait_for_selector("#wafTuneDlg .wafTuneWarn", timeout=4000)
         d2 = pg.inner_text("#wafTuneDlg")
@@ -1236,7 +1256,7 @@ def waf_tuning_ui(pg):
 
         # Events drawer: exclude only this variable
         posted.clear()
-        pg.click("#wafTabs .item[data-tab=waf-events]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-events]", "click")
         pg.wait_for_selector("#wafEventsBody tr.wafEvRow", timeout=8000)
         pg.click("#wafEventsBody tr.wafEvRow")
         pg.wait_for_selector("#wafDrawer .wafDxVar", timeout=4000)
@@ -1269,7 +1289,7 @@ def waf_tuning_ui(pg):
         r = api("/api/waf/tuning/apply", {"scope": "global", "suggestion": sug})
         if r != "OK":
             fail("waf-tuning", f"real apply failed: {r}")
-        pg.click("#wafTabs .item[data-tab=waf-exclusions]")
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-exclusions]", "click")
         pg.wait_for_timeout(1200)
         if "REQUEST_COOKIES:/^ph_.+_posthog$/" not in pg.inner_text("#wafxBody"):
             fail("waf-tuning", "variable exclusion is not listed in the Exclusions tab")
@@ -1458,6 +1478,7 @@ def history_ui(pg, ctx):
         fail("history", "diff of the deletion should show the removed rule")
     shot("history-light.png")
     # the version that still had the rule: dry run preview, typed confirmation
+    added.locator(".sy-more > summary").click()   # Restore and Export sit in the "more" menu of a version
     added.locator(".hx-restore").click()
     pg.wait_for_selector("#hxRestoreModal.visible", timeout=5000)
     pg.wait_for_function("document.getElementById('hxPreview').innerText.includes('would change')", timeout=8000)
@@ -1542,8 +1563,10 @@ def ai_assistant_ui(pg, ctx):
         settle(pg, 900)
         if pg.is_checked("#aiEnabled"):
             fail("ai", "the assistant must be off by default")
-        if pg.is_visible("#aiAuditCard"):
-            fail("ai", "the audit card must stay hidden until the posture module exists")
+        if pg.is_visible("#aiAuditCard") and not pg.is_disabled("#aiAudit"):
+            fail("ai", "the audit action must be disabled while the assistant is off")
+        if not pg.is_disabled("#aiSuggest") or not pg.is_visible("#aiAskNote"):
+            fail("ai", "the actions must be disabled, with a sentence that says why, while the assistant is off")
         pg.screenshot(path=os.path.join(args.out, "ai-disabled.png"))
         check_horizontal(pg, "ai desktop")
 
@@ -2463,35 +2486,41 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     if abs(crumb - title) > 2:
         fail("layout", f"Network Tools heading is not aligned with the breadcrumb ({title} vs {crumb})")
     shot("networktools-misleading-subtitle-cluster-nodes-and-misaligned")
-    # traceroute / ping / whois: no dead buttons
-    pg.click("#networktool button:has-text('Start Tracing')")
-    pg.wait_for_function("document.getElementById('traceroute_domain').closest('.field').classList.contains('error')", timeout=3000)
-    if pg.evaluate("document.activeElement.id") != "traceroute_domain":
+    # the console (design v2): one target field, the tool is the section; no dead buttons
+    pg.evaluate("ntConsole.open('trace')")
+    pg.fill("#ntTarget", "")
+    pg.click("#ntRunBtn")
+    pg.wait_for_function("document.getElementById('ntTarget').closest('.zx-field').classList.contains('is-invalid')", timeout=3000)
+    if pg.evaluate("document.activeElement.id") != "ntTarget":
         fail("netools", "an empty traceroute target must focus the field")
-    wait_msgbox("enter a target")
     shot("networktools-traceroute-empty-target-no-feedback")
-    pg.fill("#traceroute_domain", "no-such-host.invalid")
-    pg.click("#networktool button:has-text('Ping')")
-    pg.wait_for_function("document.getElementById('traceroute_results').value.toLowerCase().includes('cannot resolve')", timeout=20000)
-    if "Reply from :" in pg.input_value("#traceroute_results"):
-        fail("netools", "Ping prints 'Reply from :' with an empty address")
-    pg.fill("#traceroute_domain", "127.0.0.1")
-    pg.click("#networktool button:has-text('Start Tracing')")
-    pg.wait_for_function("v => { const r = document.getElementById('traceroute_results').value; return r && r != 'Loading...' }", timeout=40000)
-    res = pg.input_value("#traceroute_results")
+    pg.evaluate("ntConsole.open('ping')")
+    pg.fill("#ntTarget", "no-such-host.invalid")
+    pg.click("#ntRunBtn")
+    pg.wait_for_function("document.getElementById('ntResult').innerText.toLowerCase().includes('cannot resolve')", timeout=20000)
+    if "Reply from :" in pg.inner_text("#ntResult"):
+        fail("netools", "ping of an unresolvable host must not print empty replies")
+    pg.evaluate("ntConsole.open('trace')")
+    pg.fill("#ntTarget", "127.0.0.1")
+    pg.click("#ntRunBtn")
+    pg.wait_for_selector("#ntResActions:not([hidden])", state="attached", timeout=40000)
+    res = pg.inner_text("#ntResult")
     if "not permitted" in res and "CAP_NET_RAW" not in res:
         fail("netools", "the raw ICMP error needs the CAP_NET_RAW hint: " + res)
     shot("networktools-traceroute-raw-go-ICMP-error-toast")
-    pg.fill("#whoisdomain", "")
-    pg.evaluate("performWhoisLookup()")
-    pg.wait_for_function("document.getElementById('whoisdomain').closest('.ui.input').classList.contains('error')", timeout=3000)
+    if pg.locator("#ntRuns .ntRunItem").count() < 2:
+        fail("netools", "the recent runs list must show the runs just made")
+    pg.evaluate("ntConsole.open('whois')")
+    pg.fill("#ntTarget", "")
+    pg.click("#ntRunBtn")
+    pg.wait_for_function("document.getElementById('ntTarget').closest('.zx-field').classList.contains('is-invalid')", timeout=3000)
     # forward proxy port
-    pg.click("#networktool .menu .nettools.item[data-tab=tab2]")
+    pg.evaluate("ntConsole.open('fwd')")
     pg.wait_for_timeout(400)
     fwd_before = pg.evaluate("$.get('/api/tools/fwdproxy/port')")
     for bad in ("99999", admin_port, ""):
         pg.fill("#forwardProxyPort", bad)
-        pg.click("#networktool button:has-text('Apply')")
+        pg.click("#forwardProxyPortSave")
         pg.wait_for_timeout(900)
         t = toast_text()
         if "updated" in t.lower() and "invalid" not in t.lower():
@@ -2502,34 +2531,38 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     if not isinstance(r["body"], dict) or not r["body"].get("error"):
         fail("fwdproxy", f"the server must refuse the management port as forward proxy port: {r}")
     pg.fill("#forwardProxyPort", "99999")
-    pg.click("#networktool button:has-text('Apply')")
+    pg.click("#forwardProxyPortSave")
     wait_msgbox("invalid port")
     shot("networktools-forward-proxy-port-99999-says-updated")
     # diagnostics
-    pg.click("#networktool .menu .nettools.item[data-tab=tab3]")
+    pg.evaluate("ntConsole.open('http')")
     pg.wait_for_timeout(400)
-    pg.fill("#diagHttpUrl", args.url + "/")
-    pg.click("#networktool button:has-text('Send')")
+    pg.fill("#ntTarget", args.url + "/")
+    pg.click("#ntRunBtn")
     pg.wait_for_selector("#diagHttpResult", state="visible", timeout=15000)
-    pg.fill("#diagHttpUrl", "javascript:alert(1)")
-    pg.click("#networktool button:has-text('Send')")
-    pg.wait_for_timeout(1200)
-    if pg.is_visible("#diagHttpResult"):
+    pg.fill("#ntTarget", "javascript:alert(1)")
+    pg.click("#ntRunBtn")
+    # refused in the browser: an error at the field, nothing sent, and the previous result is gone
+    pg.wait_for_function("document.getElementById('ntTarget').closest('.zx-field').classList.contains('is-invalid')", timeout=8000)
+    if pg.locator("#diagHttpResult").count():
         fail("netools", "a refused URL must not leave the previous HTTP result visible")
     shot("networktools-diagnostics-http-invalid-url-leaves-stale-result")
-    pg.fill("#diagDnsHost", "")
-    pg.click("#networktool button:has-text('Lookup')")
-    pg.wait_for_function("document.getElementById('diagDnsHost').closest('.field').classList.contains('error')", timeout=3000)
-    if pg.evaluate("document.activeElement.id") != "diagDnsHost":
+    pg.evaluate("ntConsole.open('dns')")
+    pg.fill("#ntTarget", "")
+    pg.click("#ntRunBtn")
+    pg.wait_for_function("document.getElementById('ntTarget').closest('.zx-field').classList.contains('is-invalid')", timeout=3000)
+    if pg.evaluate("document.activeElement.id") != "ntTarget":
         fail("netools", "an empty DNS host must focus the field")
     shot("networktools-diagnostics-dns-empty-host-no-feedback")
-    pg.fill("#diagDnsHost", "no-such-host.invalid")
-    pg.click("#networktool button:has-text('Lookup')")
-    pg.wait_for_selector("#diagDnsNote, #diagDnsResult:visible", timeout=30000)
-    if pg.is_visible("#diagDnsResult") and pg.locator("#diagDnsResult tbody tr").count() >= 6 and not pg.locator("#diagDnsNote").count():
+    pg.fill("#ntTarget", "no-such-host.invalid")
+    pg.click("#ntRunBtn")
+    pg.wait_for_selector("#diagDnsNote, #diagDnsResult", timeout=30000)
+    if pg.locator("#diagDnsResult").count() and not pg.locator("#diagDnsNote").count():
         fail("netools", "six 'no records' rows are not an answer")
+    if not pg.is_visible("#ntCopyBtn"):
+        fail("netools", "a result needs its Copy result button")
     # DNS responder: negative TTL
-    pg.click("#networktool .menu .nettools.item[data-tab=tab5]")
+    pg.evaluate("ntConsole.open('dnsr')")
     pg.wait_for_selector("#dnsrTtl", state="visible", timeout=5000)
     pg.fill("#dnsrTtl", "-1")
     pg.click("#dnsrSave")
@@ -2559,21 +2592,34 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
         fail("mdns-popup", f"two rows look identical (the port must tell services of one host apart): {rows}")
     pop.screenshot(path=os.path.join(after or args.out, "ISSUE-networktools-mdns-popup-404-ao_module-after.png"))
     pop.close()
-    # 390px: tab bars that scroll show a cue
+    # 390px: Network Tools has a sectioned navigation (one select on phones); the Utilities tab bar scrolls and shows a cue
     pg.set_viewport_size({"width": 390, "height": 800})
-    for tab, label in (("networktool", "Network Tools"), ("utils", "Utilities")):
+    go("networktool", 700)
+    pick = pg.evaluate("""() => { const p = document.querySelector('#ntNav .zx-sectionnav__picker select'); const it = document.querySelector('#ntNav .zx-sectionnav__item');
+        return {picker: !!p && p.offsetParent !== null, items: !!it && it.offsetParent !== null, options: p ? p.options.length : 0} }""")
+    if not pick["picker"] or pick["items"] or pick["options"] < 13:
+        fail("overflow", f"Network Tools: the sections must be one select at 390px: {pick}")
+    check_horizontal(pg, "Network Tools 390")
+    pg.select_option("#ntNav .zx-sectionnav__picker select", "ping")
+    pg.evaluate("$('#messageBox').stop(true, true).hide(); window.scrollTo(0, 0)")
+    pg.wait_for_timeout(300)
+    if not pg.is_visible("#ntRunBtn"):
+        fail("netools", "choosing Ping in the section select must show the console")
+    shot("networktools-390-tabs-cut-off")
+    for tab, label in (("utils", "Utilities"),):
+        # Utilities is a sectioned page since design v2: at 390px the sections are one select, not a tab bar that scrolls sideways
         go(tab, 700)
-        cue = pg.evaluate("""t => { const m = document.querySelector('#' + t + ' .ui.tabular.menu'); return {scroll: m.scrollWidth > m.clientWidth + 2, cue: m.classList.contains('zx-scroll-end')} }""", tab)
-        if cue["scroll"] and not cue["cue"]:
-            fail("overflow", f"{label}: the tab bar scrolls sideways but shows no cue at 390px")
-        if not cue["scroll"]:
-            fail("overflow", f"{label}: precondition, the tab bar should overflow at 390px")
+        pick = pg.evaluate("""() => { const n = document.querySelector('#utNav'), s = n.querySelector('.zx-sectionnav__picker select');
+            return {select: !!s && s.offsetParent !== null, options: s ? s.options.length : 0, items: [...n.querySelectorAll('.zx-sectionnav__item')].filter(b => b.offsetParent !== null).length} }""")
+        if not pick["select"] or pick["options"] < 8 or pick["items"]:
+            fail("overflow", f"{label}: the sections must be one select at 390px: {pick}")
         check_horizontal(pg, f"{label} 390")
-        if tab == "networktool":
-            pg.click("#networktool .menu .nettools.item[data-tab=tab1]")
-            pg.evaluate("$('#messageBox').stop(true, true).hide(); window.scrollTo(0, 0)")
-            pg.wait_for_timeout(300)
-            shot("networktools-390-tabs-cut-off")
+        pg.select_option("#utNav .zx-sectionnav__picker select", "logs")
+        pg.wait_for_timeout(300)
+        if not pg.is_visible("#logRotationEnabled"):
+            fail("utils", "choosing Logs in the section select must show log rotation")
+        check_horizontal(pg, f"{label} 390 Logs")
+        pg.select_option("#utNav .zx-sectionnav__picker select", "overview")
     pg.set_viewport_size({"width": 1366, "height": 1000})
 
     # ================= Tunnels (zrok) and ECH =================
@@ -2648,7 +2694,9 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     # ================= Utilities =================
     current["page"] = "netsys/utils"
     go("utils", 1000)
-    pg.click("#utils .utils.item[data-tab=utiltab4]")
+    if not pg.is_visible("#utOvVersion") or pg.inner_text("#utOvVersion").strip() in ("", "-"):
+        fail("utils", "Utilities must open on its Overview with the running version")
+    pg.dispatch_event("#utNav [data-zx-section=info]", "click")
     pg.wait_for_timeout(600)
     boot = pg.inner_text("#zoraxyinfo .boottime")
     if "1970" in boot or boot.strip() == "":
@@ -2657,11 +2705,11 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
         fail("utils", "Host UUID says Unauthorized under -noauth")
     pg.locator("#zoraxyinfo").scroll_into_view_if_needed()
     shot("utilities-system-running-since-1-Jan-1970")
-    pg.click("#utils .utils.item[data-tab=utiltab3]")
+    pg.dispatch_event("#utNav [data-zx-section=calc]", "click")
     pg.wait_for_timeout(400)
     pg.fill("#startIpInput", "::1")
     pg.fill("#endIpInput", "::ffff")
-    pg.click("#utils button:has-text('Convert') >> nth=0")
+    pg.click("#utilsPage [data-pane=calc] button:has-text('Convert') >> nth=0")
     pg.wait_for_function("document.getElementById('cidrOutput').innerText.includes('CIDR:')", timeout=5000)
     txt = pg.inner_text("#cidrOutput")
     if "0.0.0.0" in txt or "/128" not in txt:
@@ -2680,22 +2728,34 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
         if "false" in txt or "0.0.0.0" in txt or "End IP" in txt:
             fail("utils", f"CIDR {bad!r} must give an error, not a bogus range: {txt!r}")
     shot("utilities-toolbox-ipv6-converter-wrong-and-End-IP-false")
+    pg.dispatch_event("#utNav [data-zx-section=network]", "click")   # the Geo-IP lookup sits with the Geo-IP database
+    pg.wait_for_timeout(400)
     pg.fill("#geoipInput", "999.1.1.1")
     pg.click("#geoipInput + button")
     pg.wait_for_function("document.getElementById('geoipError').offsetParent !== null", timeout=5000)
     if pg.is_visible("#geoipResult"):
         fail("utils", "Geo-IP lookup of an invalid address must not show a result table")
     shot("utilities-toolbox-geoip-invalid-ip-no-error")
+    # the destructive actions live in one place, and the account menu / palette shortcuts still reach their section
+    pg.dispatch_event("#utNav [data-zx-section=danger]", "click")
+    pg.wait_for_timeout(300)
+    if not pg.is_visible("#utilsPage .zx-card--danger button:has-text('Reset all statistics')"):
+        fail("utils", "Reset all statistics must be in the Danger zone section")
+    pg.evaluate("document.querySelector('#utilsPage b[data-ut-go=backup]').classList.add('zx-flash')")   # what the palette does to its target
+    pg.wait_for_timeout(300)
+    if not pg.is_visible("#utConfigToolsBtn"):
+        fail("utils", "the palette entry 'Backup and restore' must open the Backup & restore section")
+    pg.evaluate("ZxUtils.go('overview')")
 
     # ================= API tokens =================
     current["page"] = "netsys/apitokens"
     go("apitokens")
-    rows_before = pg.locator("#atRows tr").count()
+    rows_before = pg.locator("#atRows > li.at-row").count()
     pg.fill("#atName", "netsys")
     pg.fill("#atDays", "-5")
     pg.click("#apiTokensPage button:has-text('Create token')")
     pg.wait_for_selector("#atFormError", state="visible", timeout=3000)
-    if pg.evaluate("document.querySelector('#atShowModal').classList.contains('active')") or pg.locator("#atRows tr").count() != rows_before:
+    if pg.evaluate("document.querySelector('#atReveal').hidden") is not True or pg.locator("#atRows > li.at-row").count() != rows_before:
         fail("apitokens", "a negative expiry must not create a token")
     pg.fill("#atDays", "")
     pg.fill("#atCidrs", "not-a-cidr")
@@ -2706,21 +2766,31 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     pg.fill("#atName", "x" * 64)
     pg.fill("#atDays", "30")
     pg.click("#apiTokensPage button:has-text('Create token')")
-    pg.wait_for_selector("#atShowModal.active", timeout=8000)
-    pg.click("#atShowModal .positive.button")
+    # the token is shown once, in the page (copy-once reveal), and is gone after "I have saved it"
+    pg.wait_for_selector("#atReveal:not([hidden])", timeout=8000)
+    shown = pg.inner_text("#atTokenValue").strip()
+    if len(shown) < 20:
+        fail("apitokens", f"the new token must be shown once after creating it: {shown!r}")
+    shot("apitokens-copy-once-reveal")
+    pg.click("#atRevealDone")
     pg.wait_for_timeout(600)
-    wrap = pg.evaluate("""() => { const w = document.querySelector('#apiTokensPage .zx-table-wrap'), b = [...document.querySelectorAll('#atRows button')].map(x => x.getBoundingClientRect().right);
-        return {sw: w.scrollWidth, cw: w.clientWidth, wr: w.getBoundingClientRect().right, maxBtn: Math.max(...b)} }""")
-    if wrap["maxBtn"] > wrap["wr"] + 1 or wrap["sw"] > wrap["cw"] + 2:
-        fail("apitokens", f"a long unbroken token name pushes Status/Revoke out of view: {wrap}")
+    if pg.is_visible("#atReveal") or pg.inner_text("#atTokenValue").strip() != "":
+        fail("apitokens", "the token must leave the page after 'I have saved it'")
+    row = pg.evaluate("""() => { const w = document.querySelector('#atRows'), b = [...document.querySelectorAll('#atRows button')].map(x => x.getBoundingClientRect().right);
+        const li = [...document.querySelectorAll('#atRows > li.at-row')].find(x => x.innerText.includes('xxxxxxxx'));
+        return {sw: w.scrollWidth, cw: w.clientWidth, wr: w.getBoundingClientRect().right, maxBtn: Math.max(...b), text: li ? li.innerText : ''} }""")
+    if row["maxBtn"] > row["wr"] + 1 or row["sw"] > row["cw"] + 2:
+        fail("apitokens", f"a long unbroken token name pushes Revoke out of view: {row}")
+    for must in ("Active", "Read only", "Created", "Never used", "Expires"):
+        if must not in row["text"]:
+            fail("apitokens", f"a token row must show state, scope, created, last used and expiry; {must!r} is missing: {row['text']!r}")
     check_horizontal(pg, "apitokens desktop")
     shot("apitokens-negative-days-never-huge-days-Invalid-Date-long-name-breaks-table")
     pg.set_viewport_size({"width": 390, "height": 800})
     pg.wait_for_timeout(300)
-    lab = pg.evaluate("""() => { const td = document.querySelector('#atRows tr td'); return {disp: getComputedStyle(td).display, before: getComputedStyle(td, '::before').content,
-        head: getComputedStyle(document.querySelector('#apiTokensPage thead')).position} }""")
-    if lab["disp"] != "flex" or "Name" not in lab["before"]:
-        fail("apitokens", f"at 390px every cell must carry its own label: {lab}")
+    fit = pg.evaluate("""() => { const vw = document.documentElement.clientWidth; return [...document.querySelectorAll('#atRows > li.at-row *')].filter(e => e.offsetParent !== null && e.getBoundingClientRect().right > vw + 1).length }""")
+    if fit:
+        fail("apitokens", f"at 390px {fit} parts of a token row leave the screen")
     check_horizontal(pg, "apitokens 390")
     pg.locator("#atRows").scroll_into_view_if_needed()
     shot("apitokens-390-table-headers-stacked-apart-from-rows")
@@ -2858,6 +2928,8 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ente
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "crowdsec_smoke.py")).read(), "crowdsec_smoke.py", "exec"))  # defines crowdsec_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "phase4_smoke.py")).read(), "phase4_smoke.py", "exec"))  # defines phase4_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "baseline_smoke.py")).read(), "baseline_smoke.py", "exec"))  # defines baseline_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugins_smoke.py")).read(), "plugins_smoke.py", "exec"))  # defines plugins_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "errorpages_smoke.py")).read(), "errorpages_smoke.py", "exec"))  # defines errorpages_ui
 
 
 def main():
@@ -2880,6 +2952,14 @@ def main():
 
         if args.db_usage_only:
             dbusage_ui(pg, ctx)
+            b.close()
+            return
+        if args.plugins_only:
+            plugins_ui(pg, ctx)
+            b.close()
+            return
+        if args.errorpages_only:
+            errorpages_ui(pg, ctx)
             b.close()
             return
         if args.topnav_only:
@@ -2942,6 +3022,8 @@ def main():
             return
         if args.securityfix_only:
             securityfix_ui(pg, ctx)
+            b.close()
+            return
         if args.central_captcha_only:
             central_captcha_ui(pg, ctx)
             b.close()
@@ -2986,6 +3068,8 @@ def main():
         certs_traffic_ui(pg, ctx)
         central_captcha_ui(pg, ctx)
         enterprise_ui(pg, ctx)
+        plugins_ui(pg, ctx)  # mocked plugin API (works without plugins); the part with real plugins runs in plugins_run.sh
+        errorpages_ui(pg, ctx)  # Sites > Error pages: saves a customisation and resets it at the end
         tabs = pg.eval_on_selector_all("#mainmenu .item[tag]", "els => els.map(e => e.getAttribute('tag'))")
         tabs = list(dict.fromkeys(tabs))
         if args.no_page_sweep:
@@ -3051,7 +3135,7 @@ def main():
         settle(pg)
         for sec in pg.eval_on_selector_all("#secTabs .item", "els => els.map(e => e.getAttribute('data-sec'))"):
             current["page"] = f"seccenter/{sec}"
-            pg.click(f"#secTabs .item[data-sec='{sec}']")
+            pg.dispatch_event(f"#secTabs .item[data-sec='{sec}']", "click")
             settle(pg, 900)
             if pg.evaluate("document.getElementById('secPane').innerText.trim().length") < 20:
                 fail("tab", f"security tab {sec} is empty")
@@ -3462,7 +3546,7 @@ def main():
                 pg.click(f"#wafTabs .item[data-tab=waf-{t}]")
                 settle(pg, 700)
                 pg.screenshot(path=os.path.join(args.out, f"waf-{t}.png"), full_page=True)
-            pg.click("#wafTabs .item[data-tab=waf-exclusions]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-exclusions]", "click")
             pg.fill("#wafxRule", "942999")
             pg.click("#wafxAdd")
             for _ in range(80):  # up to 8 s: the save is a GET + POST + reload of the policy and a history snapshot follows
@@ -3492,7 +3576,7 @@ def main():
                     pg.wait_for_timeout(300)
             pg.evaluate("openTabById('waf')")
             settle(pg, 700)
-            pg.click("#wafTabs .item[data-tab=waf-response]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-response]", "click")
             settle(pg, 900)
             if pg.locator("#wafRespPolicyBox .wafRespSel").count() != 5:
                 fail("waf-response", "response protection tab does not show the five groups")
@@ -3505,9 +3589,9 @@ def main():
             rc = pol.get("Response") or {}
             if (rc.get("Groups") or {}).get("stacktrace") != "log" or (rc.get("Groups") or {}).get("headers") != "strip" or rc.get("WindowKiB") != 32:
                 fail("waf-response", f"policy response settings were not saved: {rc}")
-            pg.click("#wafTabs .item[data-tab=waf-events]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-events]", "click")
             settle(pg, 500)
-            pg.click("#wafTabs .item[data-tab=waf-response]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-response]", "click")
             settle(pg, 700)
             if pg.input_value("#wafRespPolicyBox .wafRespSel[data-g=stacktrace]") != "log" or pg.input_value("#wafRespPolicyBoxWin") != "32":
                 fail("waf-response", "saved response settings were not shown again")
@@ -3527,7 +3611,7 @@ def main():
             resp_theme(False)
             pg.screenshot(path=os.path.join(args.out, "waf-response-light-390.png"), full_page=True)
             # the profile editor carries the same section, with an Inherit choice
-            pg.click("#wafTabs .item[data-tab=waf-profiles]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-profiles]", "click")
             settle(pg, 600)
             pg.click("#wafPrNew")
             settle(pg, 400)
@@ -3555,7 +3639,7 @@ def main():
                 data: {type: 'host', rootname: host, ep: '127.0.0.1:9', tls: false, tlsval: false, bypassGlobalTLS: false}, success: res, error: res}))""", api_host)
             pg.evaluate("openTabById('waf')")
             settle(pg, 900)
-            pg.click("#wafTabs .item[data-tab=waf-api]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-api]", "click")
             pg.wait_for_selector("#wafApiPolicy .wfa", timeout=5000)
             settle(pg, 700)
             if pg.locator("#wafApiPolicy .wfaN").count() < 12:
@@ -3629,14 +3713,17 @@ def main():
             # events tab has the type filter; 390px view of the policy tab in both themes
             pg.evaluate("openTabById('waf')")
             settle(pg, 700)
-            pg.click("#wafTabs .item[data-tab=waf-events]")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-events]", "click")
             settle(pg, 500)
-            if not pg.is_visible("div.ui.dropdown:has(> #wafevKind)"):
+            if not pg.is_visible("#wafevKind"):
+                pg.click("#wafevMoreBtn")
+                settle(pg, 300)
+            if not pg.is_visible("#wafevKind"):
                 fail("waf-api", "events type filter is missing")
-            pg.evaluate("$('#wafevKind').dropdown('set selected', 'api')")
+            pg.select_option("#wafevKind", "api")
             settle(pg, 500)
-            pg.evaluate("$('#wafevKind').dropdown('set selected', '')")
-            pg.click("#wafTabs .item[data-tab=waf-api]")
+            pg.select_option("#wafevKind", "")
+            pg.dispatch_event("#wafTabs .item[data-tab=waf-api]", "click")
             settle(pg, 500)
             pg.set_viewport_size({"width": 390, "height": 800})
             pg.wait_for_timeout(400)
@@ -3743,10 +3830,22 @@ def main():
             pg.click(".ssoTabs .item[data-tab='oauth2_tab']")
             pg.click("#oauth2ProviderList tr[data-id='idpa'] .oauth2EditBtn")
             pg.click("#oauth2Clear")
-            pg.wait_for_timeout(900)
+            # the page says why before it asks the server: a dialog that names the site, with no delete button
+            pg.wait_for_selector(".zx-dialog", timeout=4000)
+            dlg = pg.inner_text(".zx-dialog")
+            if hostA not in dlg or "in use" not in dlg:
+                fail("sso-providers", "deleting a provider in use does not name the site that uses it: " + dlg[:160])
+            if pg.locator(".zx-dialog .zx-btn--danger").count():
+                fail("sso-providers", "the dialog for a provider in use offers a delete button")
+            pg.screenshot(path=os.path.join(args.out, "sso-provider-delete-refused.png"))
+            pg.click(".zx-dialog [data-zx-cancel]")
+            pg.wait_for_timeout(600)
             if pg.locator("#oauth2ProviderList tr[data-id='idpa']").count() != 1:
                 fail("sso-providers", "a provider in use was deleted")
-            pg.screenshot(path=os.path.join(args.out, "sso-provider-delete-refused.png"))
+            # the server refuses as well, whatever the page does
+            refused = pg.evaluate("() => new Promise(res => $.cjax({url: '/api/sso/OAuth2/providers?id=idpa', method: 'DELETE', success: res, error: e => res({error: 'http ' + e.status})}))")
+            if not (refused or {}).get("error"):
+                fail("sso-providers", "the API deleted a provider that a rule uses")
             used = pg.evaluate("fetch('/api/sso/OAuth2/providers').then(r => r.json())")
             if not any(p["id"] == "idpa" and hostA in (p.get("usedBy") or []) for p in used):
                 fail("sso-providers", "usedBy does not list the rule that uses the provider")

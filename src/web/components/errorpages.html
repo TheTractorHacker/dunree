@@ -1,0 +1,634 @@
+<!-- Error pages (tag errorpages): what a visitor sees when Zoraxy itself answers with an error (403 block pages, 404, 429, 5xx, unknown host, 503).
+     Kit page header, Related menu, sectioned navigation (#epNav), ONE save bar (ZxUI.saveBar on #epForm).
+     API: /api/errorpages/* (src/errorpagesapi.go). Off by default: nothing a visitor gets changes until the switch in "Theme" is on and saved.
+     State model: the theme controls are real form controls; the page of each class (title, message, HTML) is kept as JSON in a hidden input
+     (#epPage_CLASS, tracked by the save bar) and edited through ONE visible editor (data-zx-ignore) that shows the class chosen in the navigation. -->
+<div class="standardContainer" id="errorPagesPage">
+    <style>
+        #errorPagesPage .ep-grid { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+        @media (min-width: 1500px) { #errorPagesPage .ep-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+        #errorPagesPage .ep-grid > * { min-width: 0; margin: 0; }
+        #errorPagesPage .ep-stack { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr); }
+        #errorPagesPage .ep-stack > * { margin: 0; min-width: 0; }
+        #errorPagesPage .ep-toolbar { display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-4); align-items: flex-end; margin: 0 0 var(--zx-space-4); }
+        #errorPagesPage .ep-toolbar .zx-field { margin: 0; flex: 0 1 22rem; min-width: min(100%, 14rem); }
+        #errorPagesPage .ep-toolbar .zx-field .zx-select { width: 100%; }
+        #errorPagesPage .ep-when { margin: 0 0 var(--zx-space-4); color: var(--zx-text-muted); display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+        #errorPagesPage .ep-when span:last-child { flex: 1 1 16rem; min-width: 0; }
+        #errorPagesPage #epTemplate { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); line-height: 1.5; min-height: 22rem; width: 100%; max-width: none; tab-size: 2; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+        #errorPagesPage .ep-starters { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin: 0 0 var(--zx-space-3); }
+        #errorPagesPage .ep-starters > span { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+        #errorPagesPage .ep-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--zx-space-2); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+        #errorPagesPage .ep-vars { width: 100%; border-collapse: collapse; font-size: var(--zx-fs-sm); }
+        #errorPagesPage .ep-vars td { padding: 6px 12px 6px 0; vertical-align: top; border-top: 1px solid var(--zx-border); }
+        #errorPagesPage .ep-vars tr:first-child td { border-top: 0; }
+        #errorPagesPage .ep-vars code { white-space: nowrap; }
+        #errorPagesPage .ep-preview { display: block; width: 100%; height: 600px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md, 8px); background: #fff; }
+        #errorPagesPage .ep-preview-note { margin: var(--zx-space-2) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+        #errorPagesPage .ep-color { display: flex; gap: var(--zx-space-2); align-items: center; }
+        #errorPagesPage .ep-color input[type=color] { width: 3rem; height: var(--zx-control-h, 36px); padding: 2px; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md, 8px); background: var(--zx-surface); cursor: pointer; }
+        #errorPagesPage .ep-logo-row { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+        #errorPagesPage .ep-logo-row .zx-input { flex: 1 1 14rem; min-width: 0; }
+        #errorPagesPage [hidden] { display: none !important; }
+        #errorPagesPage .zx-callout { margin: 0 0 var(--zx-space-4); }
+        #errorPagesPage .ep-testhint { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    </style>
+
+    <header class="zx-page-header">
+        <div class="zx-page-header__main">
+            <div class="zx-page-header__crumbs" data-zx-crumbs></div>
+            <h2 class="zx-page-header__title">Error pages</h2>
+            <p class="zx-page-header__sub">Choose what visitors see when Zoraxy blocks a request or a site is down. Until you switch this on, everybody gets the built-in pages.</p>
+        </div>
+        <div class="zx-page-header__actions">
+            <span class="zx-badge zx-badge--dot" id="epStatus">Off</span>
+            <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Error pages"><i class="history icon" aria-hidden="true"></i> History</button>
+            <button type="button" class="zx-btn zx-btn--danger-outline" id="epResetAll"><i class="undo icon" aria-hidden="true"></i> Reset to built-in</button>
+        </div>
+    </header>
+    <aside class="zx-related" aria-label="Related pages">
+        <span class="zx-related__title">Related</span>
+        <ul>
+            <li><a href="#setroot" data-nav-open="setroot">Default Site</a> <span>What answers a host name nobody configured</span></li>
+            <li><a href="#stats" data-nav-open="stats">Statistics</a> <span>Find a blocked request by the reference on the page</span></li>
+            <li><a href="#access" data-nav-open="access">Access Rules</a> <span>Who is blocked and sees the 403 page</span></li>
+            <li><a href="#settings" data-nav-open="settings">Settings</a> <span>Replace error answers that come from your own servers</span></li>
+        </ul>
+    </aside>
+
+    <div class="zx-sectioned">
+        <nav class="zx-sectionnav" id="epNav" aria-label="Error page sections">
+            <div class="zx-sectionnav__group">
+                <button type="button" class="zx-sectionnav__item active" data-ep="theme"><i class="paint brush icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Theme</span><span class="zx-sectionnav__desc" hidden>Switch customised pages on and give them your look: logo, colour and footer. Off until you switch it on.</span></button>
+            </div>
+            <div class="zx-sectionnav__group" role="group" aria-labelledby="epGrpPages">
+                <div class="zx-sectionnav__label" id="epGrpPages">Pages</div>
+                <button type="button" class="zx-sectionnav__item" data-ep="403"><i class="ban icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Access denied</span><span class="zx-sectionnav__desc" hidden>The page a blocked visitor gets. It carries the reference you can look up under Statistics.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="404"><i class="search icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Not found</span><span class="zx-sectionnav__desc" hidden>The page for a 404 that Zoraxy answers for one of your sites.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="429"><i class="hourglass half icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Too many requests</span><span class="zx-sectionnav__desc" hidden>The page a visitor gets after reaching a rate limit. Built in, this answer is empty.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="5xx"><i class="plug icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Server error</span><span class="zx-sectionnav__desc" hidden>The page a visitor gets while the server behind a site is down or too slow.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="nohost"><i class="question circle outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">No such host</span><span class="zx-sectionnav__desc" hidden>The page for a host name nobody configured, when the Default Site shows a "not found" page.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="maintenance"><i class="wrench icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Busy or maintenance</span><span class="zx-sectionnav__desc" hidden>The page for a 503 that Zoraxy answers when every server of a site is busy.</span></button>
+            </div>
+        </nav>
+
+        <div class="zx-sectioned__main">
+            <header class="zx-sectionhead" id="epHead"><h3 class="zx-sectionhead__title"></h3><p class="zx-sectionhead__desc"></p></header>
+
+            <div class="zx-callout zx-callout--danger" id="epLoadError" role="alert" hidden>
+                <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                <div class="zx-callout__body"><span id="epLoadErrorText"></span> <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="epRetry">Try again</button></div>
+            </div>
+
+            <form id="epForm" onsubmit="return false;" autocomplete="off">
+                <!-- the pages of the chosen scope, one JSON value per class (see the comment at the top) -->
+                <input type="hidden" id="epPage_403" data-ep-store="403" data-zx-label="Access denied page">
+                <input type="hidden" id="epPage_404" data-ep-store="404" data-zx-label="Not found page">
+                <input type="hidden" id="epPage_429" data-ep-store="429" data-zx-label="Too many requests page">
+                <input type="hidden" id="epPage_5xx" data-ep-store="5xx" data-zx-label="Server error page">
+                <input type="hidden" id="epPage_nohost" data-ep-store="nohost" data-zx-label="No such host page">
+                <input type="hidden" id="epPage_maintenance" data-ep-store="maintenance" data-zx-label="Busy or maintenance page">
+
+                <div class="ep-grid">
+                    <div class="ep-stack">
+                        <!-- ============ Theme ============ -->
+                        <div class="ep-stack" id="epThemePanel">
+                            <section class="zx-card">
+                                <div class="zx-card__body">
+                                    <label class="zx-toggle-row" for="epEnabled">
+                                        <span class="zx-toggle-row__text">
+                                            <span class="zx-toggle-row__title">Use my error pages</span>
+                                            <span class="zx-toggle-row__desc">On: visitors get the pages you changed here. A page you did not change stays the built-in one. Off: everybody gets the built-in pages, and what you saved here is kept.</span>
+                                        </span>
+                                        <input id="epEnabled" type="checkbox" class="zx-switch" role="switch" data-zx-label="Use my error pages">
+                                    </label>
+                                    <label class="zx-toggle-row" for="epApplyBuiltin">
+                                        <span class="zx-toggle-row__text">
+                                            <span class="zx-toggle-row__title">Use this look for every page</span>
+                                            <span class="zx-toggle-row__desc">On: all six pages use the theme below, also the ones you did not write a text for. Off: only the pages you changed do.</span>
+                                        </span>
+                                        <input id="epApplyBuiltin" type="checkbox" class="zx-switch" role="switch" data-zx-label="Use this look for every page">
+                                    </label>
+                                </div>
+                            </section>
+                            <section class="zx-card">
+                                <div class="zx-card__head">
+                                    <h3 class="zx-card__title">Look</h3>
+                                    <p class="zx-card__desc">Shown on every customised page. Everything is optional.</p>
+                                </div>
+                                <div class="zx-card__body">
+                                    <div class="zx-form-grid">
+                                        <div class="zx-field">
+                                            <label class="zx-field__label" for="epLogoText">Name</label>
+                                            <input type="text" class="zx-input" id="epLogoText" maxlength="500" placeholder="Example Ltd.">
+                                            <p class="zx-help">Shown at the top when there is no logo, and read aloud instead of the logo.</p>
+                                        </div>
+                                        <div class="zx-field">
+                                            <label class="zx-field__label" for="epAccent">Accent colour</label>
+                                            <div class="ep-color"><input type="color" id="epAccent" value="#2563eb" data-zx-label="Accent colour"><code id="epAccentCode">#2563eb</code></div>
+                                            <p class="zx-help">Used for the status line and the top border.</p>
+                                        </div>
+                                        <div class="zx-field zx-field--wide">
+                                            <label class="zx-field__label" for="epLogoURL">Logo</label>
+                                            <div class="ep-logo-row">
+                                                <input type="text" class="zx-input" id="epLogoURL" placeholder="https://example.com/logo.svg" spellcheck="false" autocapitalize="off">
+                                                <button type="button" class="zx-btn zx-btn--secondary" id="epLogoPick" data-zx-ignore><i class="upload icon" aria-hidden="true"></i> Use an image file</button>
+                                                <input type="file" id="epLogoFile" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" hidden data-zx-ignore>
+                                            </div>
+                                            <p class="zx-help">An address that starts with https://, or a small image file (up to 64 KB) that is stored inside the page. Zoraxy never downloads the logo: the visitor's browser loads it.</p>
+                                            <p class="zx-error" id="epLogoError" role="alert"></p>
+                                        </div>
+                                        <div class="zx-field zx-field--wide">
+                                            <label class="zx-field__label" for="epFooter">Footer</label>
+                                            <input type="text" class="zx-input" id="epFooter" maxlength="500" placeholder="Questions? Write to support@example.com">
+                                        </div>
+                                    </div>
+                                    <label class="zx-toggle-row" for="epShowRequestID">
+                                        <span class="zx-toggle-row__text">
+                                            <span class="zx-toggle-row__title">Show the reference</span>
+                                            <span class="zx-toggle-row__desc">A blocked visitor can tell you the reference (ZX-XXXX-XXXX), and you find the request under Statistics. It says nothing about your rules.</span>
+                                        </span>
+                                        <input id="epShowRequestID" type="checkbox" class="zx-switch" role="switch" data-zx-label="Show the reference">
+                                    </label>
+                                    <label class="zx-toggle-row" for="epShowClientIP">
+                                        <span class="zx-toggle-row__text">
+                                            <span class="zx-toggle-row__title">Show the visitor's address</span>
+                                            <span class="zx-toggle-row__desc">Off by default. On: the page shows the visitor their own IP address, which helps when they report a problem.</span>
+                                        </span>
+                                        <input id="epShowClientIP" type="checkbox" class="zx-switch" role="switch" data-zx-label="Show the visitor's address">
+                                    </label>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- ============ One page class (the visible editor; its values live in the hidden inputs above) ============ -->
+                        <div class="ep-stack" id="epClassPanel" hidden data-zx-ignore>
+                            <div>
+                                <div class="zx-callout zx-callout--info" id="epOffNote" role="note" hidden>
+                                    <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+                                    <div class="zx-callout__body">Your error pages are switched off, so visitors get the built-in page. You can prepare this page now and switch it on later. <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="epGoTheme">Open Theme</button></div>
+                                </div>
+                                <div class="ep-toolbar">
+                                    <div class="zx-field">
+                                        <label class="zx-field__label" for="epScope">Pages of</label>
+                                        <select id="epScope" class="zx-select" data-zx-ignore></select>
+                                    </div>
+                                    <button type="button" class="zx-btn zx-btn--ghost" id="epScopeRemove" hidden><i class="trash alternate outline icon" aria-hidden="true"></i> Remove the pages of this site</button>
+                                </div>
+                                <p class="ep-when"><span class="zx-badge" id="epStatuses"></span><span class="zx-badge zx-badge--dot" id="epClassState"></span><span id="epWhen"></span></p>
+                            </div>
+                            <section class="zx-card">
+                                <div class="zx-card__body">
+                                    <div class="zx-tabs" id="epTabs" aria-label="How to edit this page">
+                                        <button type="button" class="zx-tab" data-zx-panel="epPanelSimple" aria-selected="true">Text</button>
+                                        <button type="button" class="zx-tab" data-zx-panel="epPanelHTML">HTML <span class="zx-badge" id="epHTMLBadge" hidden>In use</span></button>
+                                    </div>
+                                    <div id="epPanelSimple" class="zx-tabpanel">
+                                        <div class="zx-callout zx-callout--info" id="epSimpleNote" role="note" hidden>
+                                            <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+                                            <div class="zx-callout__body">This page has its own HTML. The title and the message are only shown where the HTML uses <code>{{.Title}}</code> and <code>{{.Message}}</code>.</div>
+                                        </div>
+                                        <div class="zx-field zx-field--wide">
+                                            <label class="zx-field__label" for="epTitle">Title</label>
+                                            <input type="text" class="zx-input" id="epTitle" maxlength="500">
+                                        </div>
+                                        <div class="zx-field zx-field--wide">
+                                            <label class="zx-field__label" for="epMessage">Message</label>
+                                            <textarea class="zx-textarea" id="epMessage" rows="3" maxlength="500"></textarea>
+                                            <p class="zx-help">Leave both empty to keep the built-in text. The page uses the look from Theme.</p>
+                                        </div>
+                                    </div>
+                                    <div id="epPanelHTML" class="zx-tabpanel" hidden>
+                                        <div class="ep-starters" id="epStarters"><span>Start from</span></div>
+                                        <div class="zx-field zx-field--wide">
+                                            <label class="zx-field__label" for="epTemplate">HTML of this page</label>
+                                            <textarea class="zx-textarea" id="epTemplate" rows="18" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" placeholder="Empty: the themed built-in page is used."></textarea>
+                                            <div class="ep-meta"><span id="epSize"></span><span>Scripts do not run on error pages. Styles and images do.</span></div>
+                                            <p class="zx-error" id="epTemplateError" role="alert"></p>
+                                        </div>
+                                        <details class="zx-disclosure" id="epVarsBox">
+                                            <summary>Values you can use</summary>
+                                            <div class="zx-disclosure__body">
+                                                <p class="zx-help">Write a value in double braces. Whatever it holds is escaped for the place where it stands, so a host name or a title can never become markup. <code>{{if .RequestID}} ... {{end}}</code> shows a part only when the value is there.</p>
+                                                <table class="ep-vars"><tbody id="epVars"></tbody></table>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+                                <div class="zx-card__foot">
+                                    <a class="zx-btn zx-btn--secondary" id="epTest" href="#" target="_blank" rel="noopener"><i class="external alternate icon" aria-hidden="true"></i> Send a test</a>
+                                    <button type="button" class="zx-btn zx-btn--ghost" id="epClassReset"><i class="undo icon" aria-hidden="true"></i> Use the built-in page</button>
+                                    <span class="ep-testhint" id="epTestHint">The test opens the saved page in a new tab, with the status code a visitor gets.</span>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- ============ Preview ============ -->
+                    <section class="zx-card" id="epPreviewCard" data-zx-ignore>
+                        <div class="zx-card__head">
+                            <h3 class="zx-card__title">Preview</h3>
+                            <p class="zx-card__desc" id="epPreviewDesc">What a visitor would see, with sample values. It follows what you type; nothing is saved until you save.</p>
+                        </div>
+                        <div class="zx-card__body">
+                            <div class="zx-callout zx-callout--warn" id="epPreviewError" role="alert" hidden>
+                                <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                                <div class="zx-callout__body"><b>This cannot be shown yet.</b> <span id="epPreviewErrorText"></span></div>
+                            </div>
+                            <iframe class="ep-preview" id="epPreview" title="Preview of the error page" sandbox="allow-same-origin" referrerpolicy="no-referrer"></iframe>
+                            <p class="ep-preview-note" id="epPreviewNote"></p>
+                        </div>
+                    </section>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    "use strict";
+    var CLASSES = ["403", "404", "429", "5xx", "nohost", "maintenance"];
+    var meta = { classes: {}, variables: [], starters: [], limits: { templateBytes: 262144 } };
+    var saved = null;          // the answer of /api/errorpages/get
+    var scope = "";            // "" = all sites, else a host name
+    var section = "theme";
+    var hosts = [];            // host names of the proxy rules
+    var bar = null, nav = null;
+    var previewTimer = null, previewSeq = 0;
+    var $page = $("#errorPagesPage");
+
+    function esc(s) { return ZxUI.esc(s); }
+    function store(c) { return document.getElementById("epPage_" + c); }
+    function emptyPage() { return { Title: "", Message: "", Template: "" }; }
+    function readStore(c) {
+        try { var p = JSON.parse(store(c).value || "{}"); return { Title: p.Title || "", Message: p.Message || "", Template: p.Template || "" }; }
+        catch (e) { return emptyPage(); }
+    }
+    function canon(p) { return JSON.stringify({ Title: p.Title || "", Message: p.Message || "", Template: p.Template || "" }); }
+    function isCustom(p) { return !!(p.Title || p.Message || p.Template); }
+    function bytes(s) { return new Blob([s]).size; }
+    function kb(n) { return (n / 1024).toFixed(n < 10240 ? 1 : 0) + " KB"; }
+
+    function themeFromForm() {
+        return {
+            ApplyToBuiltin: $("#epApplyBuiltin").prop("checked"),
+            LogoURL: $("#epLogoURL").val().trim(),
+            LogoText: $("#epLogoText").val(),
+            AccentColor: $("#epAccent").val(),
+            FooterText: $("#epFooter").val(),
+            ShowRequestID: $("#epShowRequestID").prop("checked"),
+            ShowClientIP: $("#epShowClientIP").prop("checked")
+        };
+    }
+    function pagesOfScope(cfg) {
+        if (!cfg) { return {}; }
+        return (scope === "" ? cfg.Pages : (cfg.Hosts || {})[scope]) || {};
+    }
+
+    // ---- fill the form from the saved state (programmatic: the save bar is re-baselined afterwards) ----
+    function fillForm() {
+        var th = saved.Theme || {};
+        $("#epEnabled").prop("checked", !!saved.Enabled);
+        $("#epApplyBuiltin").prop("checked", !!th.ApplyToBuiltin);
+        $("#epLogoText").val(th.LogoText || "");
+        $("#epLogoURL").val(th.LogoURL || "");
+        $("#epAccent").val(/^#[0-9a-fA-F]{6}$/.test(th.AccentColor || "") ? th.AccentColor : "#2563eb");
+        $("#epAccentCode").text($("#epAccent").val());
+        $("#epFooter").val(th.FooterText || "");
+        $("#epShowRequestID").prop("checked", !!th.ShowRequestID);
+        $("#epShowClientIP").prop("checked", !!th.ShowClientIP);
+        var pages = pagesOfScope(saved);
+        CLASSES.forEach(function (c) { store(c).value = canon(pages[c] || emptyPage()); });
+        if (bar) { bar.reset(); }
+        fillScope();
+        showSection(section);
+        refreshStates();
+    }
+
+    function fillScope() {
+        var sel = document.getElementById("epScope");
+        sel.textContent = "";
+        function opt(parent, value, text) { var o = document.createElement("option"); o.value = value; o.textContent = text; parent.appendChild(o); return o; }
+        opt(sel, "", t("All sites"));
+        var own = Object.keys((saved && saved.Hosts) || {}).sort();
+        if (scope !== "" && own.indexOf(scope) < 0) { own.push(scope); own.sort(); }
+        if (own.length) {
+            var g1 = document.createElement("optgroup");
+            g1.label = t("Sites with their own pages");
+            own.forEach(function (h) { opt(g1, h, h); });
+            sel.appendChild(g1);
+        }
+        var rest = hosts.filter(function (h) { return own.indexOf(h) < 0; });
+        if (rest.length) {
+            var g2 = document.createElement("optgroup");
+            g2.label = t("Give a site its own pages");
+            rest.forEach(function (h) { opt(g2, h, h); });
+            sel.appendChild(g2);
+        }
+        sel.value = scope;
+        $("#epScopeRemove").prop("hidden", scope === "" || !((saved && saved.Hosts) || {})[scope]);
+    }
+
+    function refreshStates() {
+        var on = $("#epEnabled").prop("checked");
+        var savedOn = !!(saved && saved.Enabled);
+        $("#epStatus").text(savedOn ? t("On") : t("Off")).toggleClass("zx-badge--ok", savedOn);
+        if (nav) {
+            nav.state("theme", on ? "on" : "off", on ? t("On") : t("Off"));
+            CLASSES.forEach(function (c) {
+                var custom = isCustom(readStore(c));
+                nav.state(c, custom ? "on" : null, custom ? t("Custom") : "");
+            });
+        }
+        $("#epOffNote").prop("hidden", on);
+        if (section !== "theme") {
+            var p = readStore(section), custom = isCustom(p), all = $("#epApplyBuiltin").prop("checked");
+            var word = custom ? (p.Template ? t("Own HTML") : t("Own text")) : (scope !== "" ? t("Same as all sites") : (all ? t("Themed built-in page") : t("Built-in page")));
+            $("#epClassState").text(word).toggleClass("zx-badge--ok", custom);
+            $("#epHTMLBadge").prop("hidden", !p.Template);
+            $("#epSimpleNote").prop("hidden", !p.Template);
+            $("#epClassReset").prop("disabled", !custom);
+        }
+        var dirty = bar && bar.isDirty();
+        $("#epTestHint").text(dirty ? t("Save first: the test shows the saved page, not what you are typing.") : t("The test opens the saved page in a new tab, with the status code a visitor gets."));
+    }
+
+    // ---- sections ----
+    function showSection(name) {
+        var changed = name !== section;
+        section = name;
+        var isTheme = name === "theme";
+        $("#epThemePanel").prop("hidden", !isTheme);
+        $("#epClassPanel").prop("hidden", isTheme);
+        if (nav) { nav.select(name); }
+        if (!isTheme) {
+            var info = meta.classes[name] || {}, p = readStore(name);
+            $("#epStatuses").text(t("Status") + " " + (info.statuses || ""));
+            $("#epWhen").text(info.when ? t(info.when) : "");
+            $("#epTitle").val(p.Title).attr("placeholder", info.title ? t(info.title) : "");
+            $("#epMessage").val(p.Message).attr("placeholder", info.message ? t(info.message) : "");
+            $("#epTemplate").val(p.Template);
+            $("#epTemplateError").text("");
+            // a page with its own HTML opens on the HTML tab, every other one on Text (a click selects without moving the focus)
+            if (changed) { $("#epTabs .zx-tab")[p.Template ? 1 : 0].click(); }
+            $("#epTest").attr("href", "/api/errorpages/test?class=" + encodeURIComponent(name) + (scope ? "&host=" + encodeURIComponent(scope) : ""));
+            updateSize();
+        }
+        $("#epPreviewDesc").text(isTheme
+            ? t("The \"Access denied\" page with this theme and sample values. It follows what you change; nothing is saved until you save.")
+            : t("What a visitor would see, with sample values. It follows what you type; nothing is saved until you save."));
+        refreshStates();
+        schedulePreview(0);
+    }
+
+    function updateSize() {
+        var n = bytes($("#epTemplate").val()), max = meta.limits.templateBytes;
+        $("#epSize").text(n ? kb(n) + " " + t("of") + " " + kb(max) : "");
+        var over = n > max;
+        $("#epTemplateError").text(over ? t("The HTML is larger than the limit. Shorten it, or move images to an address the browser can load.") : "").closest(".zx-field").toggleClass("is-invalid", over);
+    }
+
+    // the visible editor writes into the hidden input of its class; the event tells the save bar
+    function commitEditor() {
+        if (section === "theme") { return; }
+        var el = store(section);
+        var next = canon({ Title: $("#epTitle").val(), Message: $("#epMessage").val(), Template: $("#epTemplate").val() });
+        if (el.value === next) { return; }
+        el.value = next;
+        if (bar) { bar.tracker.commit([]); }   // a value changed from code: tell the save bar to look again
+        refreshStates();
+    }
+
+    // ---- preview ----
+    function schedulePreview(ms) {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(runPreview, ms === undefined ? 350 : ms);
+    }
+    function runPreview() {
+        if (!saved) { return; }
+        var cls = section === "theme" ? "403" : section;
+        var seq = ++previewSeq;
+        var data = { "class": cls, host: scope, page: JSON.stringify(readStore(cls)), theme: JSON.stringify(themeFromForm()) };
+        $.cjax({ url: "/api/errorpages/preview", method: "POST", data: data }).done(function (d) {
+            if (seq !== previewSeq) { return; }
+            if (!d || d.error) {
+                $("#epPreviewErrorText").text((d && d.error) || t("The server did not answer."));
+                $("#epPreviewError").prop("hidden", false);
+                return;
+            }
+            $("#epPreviewError").prop("hidden", true);
+            var f = document.getElementById("epPreview");
+            f.style.height = "";
+            f.srcdoc = d.html;
+            $("#epPreviewNote").text(t("Sample values: host app.example.com, reference ZX-7K2M-9QXD. Light or dark follows your browser."));
+        }).fail(function (x) {
+            if (seq !== previewSeq) { return; }
+            $("#epPreviewErrorText").text(x && x.status === 403 ? t("This account can only read: the preview needs an admin account.") : t("The server did not answer."));
+            $("#epPreviewError").prop("hidden", false);
+        });
+    }
+    // The preview is one static document without scripts: after it loaded, grow the frame once to the page's height
+    // (up to 1400px) so it does not scroll inside the scrolling page. Measured once per load, never observed.
+    document.getElementById("epPreview").addEventListener("load", function () {
+        var f = this;
+        try {
+            var d = f.contentDocument;
+            if (!d || !d.documentElement) { return; }
+            var h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
+            if (h > f.clientHeight + 2) { f.style.height = Math.min(h + 2, 1400) + "px"; }
+        } catch (e) { /* not readable: keep the fixed height */ }
+    });
+
+    // ---- loading ----
+    function loadError(text) {
+        $("#epLoadErrorText").text(text);
+        $("#epLoadError").prop("hidden", false);
+        $("#epForm").prop("hidden", true);
+    }
+    function load() {
+        $("#epLoadError").prop("hidden", true);
+        $("#epForm").prop("hidden", false);
+        $.when($.get("/api/errorpages/classes"), $.get("/api/errorpages/get")).done(function (a, b) {
+            var m = a[0], cfg = b[0];
+            if (!m || m.error || !cfg || cfg.error) { loadError((m && m.error) || (cfg && cfg.error) || t("The error page settings could not be loaded.")); return; }
+            meta.classes = {};
+            (m.classes || []).forEach(function (c) { meta.classes[c.id] = c; });
+            meta.variables = m.variables || [];
+            meta.starters = m.starters || [];
+            meta.limits = m.limits || meta.limits;
+            saved = cfg;
+            saved.Pages = saved.Pages || {};
+            saved.Hosts = saved.Hosts || {};
+            if (scope !== "" && !saved.Hosts[scope] && hosts.indexOf(scope) < 0) { scope = ""; }
+            renderHelp();
+            fillForm();
+        }).fail(function () { loadError(t("The error page settings could not be loaded.")); });
+        $.get("/api/proxy/list?type=host", function (list) {
+            if (!Array.isArray(list)) { return; }
+            hosts = list.map(function (e) { return String(e.RootOrMatchingDomain || "").toLowerCase(); })
+                .filter(function (h) { return /^(\*\.)?[a-z0-9_]([a-z0-9_.-]*[a-z0-9_])?$/.test(h); }).sort();
+            if (saved) { fillScope(); }
+        });
+    }
+    function renderHelp() {
+        var rows = $("#epVars").empty();
+        meta.variables.forEach(function (v) {
+            rows.append("<tr><td><code>" + esc(v.name) + "</code></td><td>" + esc(t(v.desc)) + "</td></tr>");
+        });
+        var box = $("#epStarters");
+        box.find("button").remove();
+        meta.starters.forEach(function (s) {
+            var b = $("<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm'></button>").text(t(s.name)).attr("title", t(s.desc)).attr("data-ep-starter", s.id);
+            box.append(b);
+        });
+    }
+
+    // ---- wiring ----
+    nav = ZxUI.sectionNav("#epNav", { attr: "data-ep", head: "#epHead" });
+    $("#epNav").on("click", ".zx-sectionnav__item", function () { commitEditor(); showSection(this.getAttribute("data-ep")); });
+    ZxUI.tabs("#epTabs");
+    $("#epGoTheme").on("click", function () { showSection("theme"); });
+    $("#epRetry").on("click", load);
+
+    $("#epTitle, #epMessage, #epTemplate").on("input", function () {
+        if (this.id === "epTemplate") { updateSize(); }
+        commitEditor();
+        schedulePreview();
+    });
+    // Tab in the HTML editor indents instead of leaving the field (Esc, then Tab, leaves it)
+    var tabLeaves = false;
+    $("#epTemplate").on("keydown", function (e) {
+        if (e.key === "Escape") { tabLeaves = true; return; }
+        if (e.key !== "Tab" || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || tabLeaves) { tabLeaves = false; return; }
+        e.preventDefault();
+        var s = this.selectionStart, v = this.value;
+        this.value = v.slice(0, s) + "  " + v.slice(this.selectionEnd);
+        this.selectionStart = this.selectionEnd = s + 2;
+        $(this).trigger("input");
+    }).on("blur", function () { tabLeaves = false; });
+
+    $("#epStarters").on("click", "[data-ep-starter]", function () {
+        var id = this.getAttribute("data-ep-starter");
+        var s = meta.starters.filter(function (x) { return x.id === id; })[0];
+        if (!s) { return; }
+        function apply() { $("#epTemplate").val(s.html).trigger("input").focus(); }
+        if (!$("#epTemplate").val().trim()) { apply(); return; }
+        ZxUI.confirm({ title: t("Replace the HTML of this page?"), message: t("The starter template replaces what is in the editor now. Nothing is saved until you save."),
+            confirmLabel: t("Replace") }).then(function (ok) { if (ok) { apply(); } });
+    });
+
+    $("#epClassReset").on("click", function () {
+        $("#epTitle, #epMessage, #epTemplate").val("");
+        updateSize();
+        commitEditor();
+        schedulePreview(0);
+        ZxUI.toast(t("This page uses the built-in page again once you save."));
+    });
+
+    $("#epTest").on("click", function (e) {
+        if (bar && bar.isDirty()) {
+            e.preventDefault();
+            ZxUI.toast(t("Save first: the test shows the saved page, not what you are typing."), { type: "error" });
+        }
+    });
+
+    // theme controls: live preview, state words
+    $("#epThemePanel").on("input change", "input", function () {
+        $("#epAccentCode").text($("#epAccent").val());
+        $("#epLogoError").text("").closest(".zx-field").removeClass("is-invalid");
+        refreshStates();
+        schedulePreview();
+    });
+    $("#epLogoPick").on("click", function () { $("#epLogoFile").trigger("click"); });
+    $("#epLogoFile").on("change", function () {
+        var f = this.files && this.files[0];
+        this.value = "";
+        if (!f) { return; }
+        function bad(msg) { $("#epLogoError").text(msg).closest(".zx-field").addClass("is-invalid"); }
+        if (!/^image\/(png|jpeg|gif|webp|svg\+xml)$/.test(f.type)) { bad(t("Choose a PNG, JPEG, GIF, WebP or SVG image.")); return; }
+        if (f.size > 64 * 1024) { bad(t("This image is larger than 64 KB. Use a smaller file, or put the image on a web server and enter its https:// address.")); return; }
+        var rd = new FileReader();
+        rd.onload = function () {
+            var el = document.getElementById("epLogoURL");
+            el.value = String(rd.result);
+            bar.tracker.commit([]);   // changed from code (after the file was read): tell the save bar to look again
+            refreshStates();
+            schedulePreview(0);
+        };
+        rd.onerror = function () { bad(t("The file could not be read.")); };
+        rd.readAsDataURL(f);
+    });
+
+    // scope: the pages of all sites, or of one site
+    function switchScope(next) {
+        scope = next;
+        var pages = pagesOfScope(saved);
+        CLASSES.forEach(function (c) { store(c).value = canon(pages[c] || emptyPage()); });
+        bar.reset();
+        fillScope();
+        showSection(section);
+    }
+    $("#epScope").on("change", function () {
+        var next = this.value;
+        if (next === scope) { return; }
+        if (!bar.isDirty()) { switchScope(next); return; }
+        this.value = scope;
+        ZxUI.confirm({ title: t("Leave without saving?"), message: t("The changes on this page are not saved yet. Switching to another site discards them."),
+            confirmLabel: t("Discard changes"), danger: true }).then(function (ok) { if (ok) { bar.discard(); switchScope(next); } });
+    });
+    $("#epScopeRemove").on("click", function () {
+        var host = scope;
+        ZxUI.confirm({ title: t("Remove the pages of this site?"), message: host + ": " + t("this site then uses the pages of all sites again."),
+            confirmLabel: t("Remove"), danger: true }).then(function (ok) {
+            if (!ok) { return; }
+            $.cjax({ url: "/api/errorpages/template/delete", method: "POST", data: { host: host } }).done(function (d) {
+                if (d && d.error) { ZxUI.toast(d.error, { type: "error" }); return; }
+                scope = "";
+                ZxUI.toast(t("The pages of this site were removed."));
+                load();
+            });
+        });
+    });
+
+    $("#epResetAll").on("click", function () {
+        ZxUI.confirm({ title: t("Reset all error pages to built-in?"), message: t("This removes your theme, every text and every HTML page, for all sites. Visitors get the built-in pages again. You can bring a version back from History."),
+            confirmLabel: t("Reset everything"), danger: true }).then(function (ok) {
+            if (!ok) { return; }
+            $.cjax({ url: "/api/errorpages/reset", method: "POST", data: {} }).done(function (d) {
+                if (d && d.error) { ZxUI.toast(d.error, { type: "error" }); return; }
+                scope = "";
+                ZxUI.toast(t("All error pages are the built-in ones again."));
+                load();
+            });
+        });
+    });
+
+    bar = ZxUI.saveBar({
+        form: "#epForm",
+        id: "errorpages",
+        historyObject: "Error pages",
+        onSave: function () {
+            commitEditor();
+            var pages = {};
+            CLASSES.forEach(function (c) { var p = readStore(c); if (isCustom(p)) { pages[c] = p; } });
+            var theme = themeFromForm(), enabled = $("#epEnabled").prop("checked");
+            return $.cjax({ url: "/api/errorpages/save", method: "POST",
+                data: { host: scope, pages: JSON.stringify(pages), enabled: enabled ? "true" : "false", theme: JSON.stringify(theme) } }).then(function (d) {
+                if (d && d.error) { return d; }
+                saved.Enabled = enabled;
+                saved.Theme = theme;
+                if (scope === "") { saved.Pages = pages; }
+                else if (Object.keys(pages).length) { saved.Hosts[scope] = pages; }
+                else { delete saved.Hosts[scope]; }
+                setTimeout(function () { fillScope(); refreshStates(); }, 0);
+                return d;
+            });
+        },
+        onDiscard: function () { showSection(section); }
+    });
+    bar.tracker.onChange(refreshStates);
+
+    tabSwitchEventBind["errorpages"] = function () { if (!bar.isDirty()) { load(); } };
+    load();
+})();
+</script>
