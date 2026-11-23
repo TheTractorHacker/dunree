@@ -22,8 +22,9 @@ import (
 const dbKeyCustomStoreURLs = "custom_store_urls"
 
 type StoreSource struct {
-	URL      string `json:"url"`      //The plugin store index URL
-	Official bool   `json:"official"` //Whether this is a built-in (official) source
+	URL          string `json:"url"`      //The plugin store index URL
+	Official     bool   `json:"official"` //Whether this is a built-in (official) source
+	SourceStatus        //What the last sync found out about the index (format, signature, serial)
 }
 
 // getCustomStoreURLs returns the user-defined plugin store URLs from database
@@ -67,11 +68,11 @@ func (m *Manager) GetAllStoreURLs() []string {
 func (m *Manager) ListStoreSources() []*StoreSource {
 	sources := []*StoreSource{}
 	for _, url := range m.Options.PluginStoreURLs {
-		sources = append(sources, &StoreSource{URL: url, Official: true})
+		sources = append(sources, &StoreSource{URL: url, Official: true, SourceStatus: m.sourceStatusOf(url)})
 	}
 	for _, customURL := range m.getCustomStoreURLs() {
 		if !m.isOfficialStoreURL(customURL) {
-			sources = append(sources, &StoreSource{URL: customURL, Official: false})
+			sources = append(sources, &StoreSource{URL: customURL, Official: false, SourceStatus: m.sourceStatusOf(customURL)})
 		}
 	}
 	return sources

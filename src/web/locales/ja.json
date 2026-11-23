@@ -3,8 +3,8 @@
   "language": "Japanese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 10.0,
-  "coreCoverage": 18.5
+  "coverage": 9.6,
+  "coreCoverage": 17.5
  },
  "strings": {
   "\"Add Redirection Rule\"": "「リダイレクトルールを追加」",
@@ -263,7 +263,6 @@
   "Clear": "クリア",
   "Clear filters": "フィルターをクリア",
   "Clear form": "フォームをクリア",
-  "Clear selection": "選択を解除",
   "Click \"Connect\" and enter your Zoraxy admin credentials": "「接続」をクリックし、Zoraxyの管理者認証情報を入力します",
   "Click again to delete": "もう一度クリックして削除",
   "Client": "クライアント",

@@ -244,22 +244,19 @@ html body .contentWindow .ui.radio.checkbox:not(.toggle):not(.slider) input:chec
 html body .contentWindow .ui.radio.checkbox input:checked ~ label::after, html body .contentWindow .ui.radio.checkbox input:checked:focus ~ label::after { background-color: var(--zx-primary) !important; color: var(--zx-primary) !important; }
 html body .contentWindow .ui.checkbox input:focus-visible ~ label::before { box-shadow: var(--zx-focus-ring) !important; }
 html body .contentWindow .ui.checkbox.disabled, html body .contentWindow .ui.disabled.checkbox { opacity: 0.6; }
-/* raw checkboxes / radios (tables, plain forms): same box, readable in both themes */
-html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *),
+/* raw checkboxes / radios (tables, plain forms). A raw checkbox is drawn by the kit (ui/zxui.css, "checkbox"); here: the gap to its text, and the radio */
+html body .contentWindow :not(.ui.checkbox):not(.zx-check) > input[type="checkbox"]:not(.zx-switch):not(.zx-check):not(.hidden):not(.zx-legacy-off *) { margin: 0 0.4em 0 0; }
 html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):not(.zx-legacy-off *) {
     appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 18px; height: 18px; margin: 0 0.4em 0 0; vertical-align: middle; cursor: pointer;
-    background: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-sm); position: relative;
-}
-html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden) { border-radius: 50%; }
-html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):checked { background: var(--zx-primary); border-color: var(--zx-primary); }
-html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):checked::after {
-    content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid var(--zx-on-primary); border-width: 0 2px 2px 0; transform: rotate(45deg);
+    background: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: 50%; position: relative;
 }
 html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):checked { border-color: var(--zx-primary); background: radial-gradient(circle, var(--zx-primary) 0 4px, transparent 5px), var(--zx-surface); }
-html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):focus-visible, html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
-html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):disabled, html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):disabled { opacity: 0.5; cursor: not-allowed; }
+html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):disabled { opacity: 0.5; cursor: not-allowed; }
 @media (max-width: 748px), (pointer: coarse) {
-    html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(table *), html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):not(table *) { width: 22px; height: 22px; }
+    html body .contentWindow :not(.ui.checkbox) > input[type="radio"]:not(.hidden):not(table *) { width: 22px; height: 22px; }
+    html body .contentWindow :not(.ui.checkbox):not(.zx-check) > input[type="checkbox"]:not(.zx-switch):not(.zx-check):not(.hidden):not(table *):not(.zx-legacy-off *) { width: 20px; height: 20px; min-width: 20px; min-height: 20px; }   /* no hit area of its own */
+}
     html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(table *):checked::after { left: 7px; top: 2px; width: 6px; height: 12px; }
 }
 
@@ -303,7 +300,7 @@ html body .contentWindow table.ui.table:not(.zx-table) tbody td, html body .cont
 }
 html body .contentWindow table.ui.table:not(.zx-table) tbody tr:first-child td { border-top: 0 !important; }
 html body .contentWindow table.ui.table:not(.zx-table) tfoot th, html body .contentWindow table.ui.table:not(.zx-table) tfoot td { background: var(--zx-surface-2) !important; }
-html body .contentWindow table.ui.table:not(.zx-table) tbody tr:hover td { background: var(--zx-surface-2); }
+html body .contentWindow table.ui.table:not(.zx-table) tbody tr:hover td { background: var(--zx-row-hover); }
 html body .contentWindow table.ui.table.compact:not(.zx-table) :is(th, td) { padding: 6px 10px; }
 html body .contentWindow table.ui.basic.table:not(.zx-table), html body .contentWindow table.ui.very.basic.table:not(.zx-table) { border: 0 !important; background: transparent !important; }
 html body .contentWindow table.ui.table:not(.zx-table) tr.negative td, html body .contentWindow table.ui.table:not(.zx-table) td.negative { background: var(--zx-danger-bg) !important; color: var(--zx-danger-text) !important; }
@@ -597,6 +594,8 @@ button.zx-stat.zxs-stat[aria-pressed="true"] { border-color: var(--zx-primary); 
 .zxs-cell__main { display: block; font-weight: 700; color: var(--zx-text); overflow-wrap: anywhere; line-height: 1.35; }
 .functiontab a.zxs-cell__main:not(.item):not(.button):not(.ui):not(.label) { color: var(--zx-text); text-decoration: none; }
 .functiontab a.zxs-cell__main:not(.item):not(.button):not(.ui):not(.label):hover { color: var(--zx-link); text-decoration: underline; }
+/* a disabled row (tr.is-disabled, components.md 9.4): the name is muted like the rest of the row. Written to outweigh the link rule above */
+tr.is-disabled .zxs-cell__main, .functiontab tr.is-disabled a.zxs-cell__main:not(.item):not(.button):not(.ui):not(.label):not(:hover) { color: var(--zx-text-muted); }
 a.zxs-cell__main:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); border-radius: var(--zx-radius-sm); }
 .zxs-cell__sub { display: block; margin-top: 2px; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); line-height: 1.45; overflow-wrap: anywhere; }
 .functiontab .zxs-cell__sub a:not(.item):not(.button):not(.ui):not(.label) { color: inherit; text-decoration: none; }
@@ -679,20 +678,57 @@ a.zxs-tag:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
 @media (max-width: 748px), (pointer: coarse) { .zxs-menu__item { min-height: 44px; } .zxs-iconbtn { width: 36px; height: 36px; } }
 
 /* ---- bulk bar: exists only while something is selected, stays under the top bar while the page scrolls ---- */
-.zxs-bulk { position: sticky; top: calc(var(--zx-topbar-h, 52px) + 8px); z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px var(--zx-space-3) 6px var(--zx-space-4); margin: -1px; background: var(--zx-primary-soft); color: var(--zx-text); border: 1px solid var(--zx-primary); border-radius: var(--zx-radius-md); box-shadow: var(--zx-shadow-2); }
+/* Selection bar of a list. It exists only while rows are selected and stays under the top bar while the page scrolls (sticky: no scroller of its own).
+   Order: how many (chip), what you can do to them (__actions: quiet buttons, the destructive one last and apart), then the way out (Clear, Esc). */
+/* The bar takes the place of the list toolbar (zxBulkSwap in uxkit.js lays it over the toolbar, which keeps its room but is not shown):
+   nothing below moves when a selection starts or ends, so the pointer stays on the row it clicked. */
+.zxs-swapped { visibility: hidden; }
+.zxs-bulk { position: sticky; top: var(--zx-topbar-h, 52px); z-index: 6; display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: var(--zx-space-2) var(--zx-space-3); min-height: 48px; padding: 7px var(--zx-space-3) 7px var(--zx-space-4); background: var(--zx-surface); color: var(--zx-text); border-bottom: 1px solid var(--zx-border); box-shadow: 0 6px 10px -8px rgba(16, 24, 40, 0.28); }
 .zxs-bulk[hidden] { display: none; }
-.zxs-bulk__count { font-weight: 700; color: var(--zx-primary-soft-text); margin-right: var(--zx-space-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.zxs-bulk__note { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); margin-right: var(--zx-space-2); }
-.zxs-bulk__sep { width: 1px; align-self: stretch; margin: 4px 6px; background: var(--zx-border-strong); opacity: .6; }
+.zxs-list__bar.zxs-swapped + .zxs-bulk { border-radius: var(--zx-radius-lg) var(--zx-radius-lg) 0 0; }   /* it is the top of the list card now */
+.zxs-bulk__count { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); font-size: var(--zx-fs-sm); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zxs-bulk__actions { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; }
+.zxs-bulk__sep { flex: 0 0 auto; width: 1px; height: 18px; margin: 0 6px; background: var(--zx-border); }
 .zxs-bulk__grow { flex: 1 1 0; }
-.zxs-bulk button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; font: inherit; font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); background: transparent; border: 1px solid transparent; border-radius: var(--zx-radius-md); cursor: pointer; white-space: nowrap; }
-.zxs-bulk button i.icon { margin: 0; width: auto; height: auto; color: var(--zx-text-muted); }
-.zxs-bulk button:hover { background: var(--zx-surface); border-color: var(--zx-border-strong); }
+.zxs-bulk button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; font: inherit; font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); background: transparent; border: 1px solid transparent; border-radius: var(--zx-radius-md); cursor: pointer; white-space: nowrap; transition: background var(--zx-dur) var(--zx-ease), border-color var(--zx-dur) var(--zx-ease); }
+.zxs-bulk button i.icon { margin: 0; width: auto; height: auto; font-size: 0.92em; color: var(--zx-text-muted); }
+.zxs-bulk button i.angle.icon { margin-left: -2px; }
+.zxs-bulk button:hover, .zxs-bulk button[aria-expanded="true"] { background: var(--zx-surface-2); }
 .zxs-bulk button:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
-.zxs-bulk button.danger, .zxs-bulk button.danger i.icon { color: var(--zx-danger-text); }
-.zxs-bulk button.danger:hover { background: var(--zx-danger-bg); border-color: var(--zx-danger-line); }
-.zxs-bulk kbd { font-family: var(--zx-font); font-size: var(--zx-fs-xs); color: var(--zx-text-muted); border: 1px solid var(--zx-border-strong); border-radius: 4px; padding: 0 5px; background: var(--zx-surface); }
-.zxs-bulkmore { padding: var(--zx-space-2) var(--zx-space-4); border-bottom: 1px solid var(--zx-border); background: var(--zx-surface-2); font-size: var(--zx-fs-sm); color: var(--zx-text); }
+.zxs-bulk button.danger { color: var(--zx-danger-text); border-color: var(--zx-danger-line); }
+.zxs-bulk button.danger i.icon { color: inherit; }
+.zxs-bulk button.danger:hover { background: var(--zx-danger-bg); border-color: var(--zx-danger-text); }
+.zxs-bulk button.zxs-bulk__clear { color: var(--zx-text-muted); font-weight: 400; padding-right: 6px; }
+.zxs-bulk button.zxs-bulk__clear:hover { color: var(--zx-text); }
+.zxs-bulk kbd { font-family: var(--zx-font); font-size: 11px; line-height: 16px; color: var(--zx-text-muted); border: 1px solid var(--zx-border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--zx-surface); }
+/* "All 50 hosts on this page are selected. Select all 64 hosts": one slim line under the bar */
+/* "everything shown is selected, select the rest": sits in the bar next to the count, never on a line of its own (that would push the table down) */
+.zxs-bulkmore { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 2px; min-width: 0; font-size: var(--zx-fs-sm); color: var(--zx-text-muted); white-space: nowrap; }
+.zxs-bulkmore[hidden] { display: none; }
+.zxs-bulk .zxs-bulkmore button { min-height: 28px; padding: 0 6px; color: var(--zx-link); text-decoration: underline; text-underline-offset: 2px; }
+.zxs-bulk .zxs-bulkmore button:hover { background: transparent; text-decoration-thickness: 2px; }
+/* The bar fits the room of the toolbar it lies over. zxBulkSwap tries these forms in turn and keeps the first that is no taller
+   than the toolbar (data-fit on the bar), so it works for every width, column and language without a list of breakpoints:
+     (none)                 everything on one line
+     "brief"                without the sentence (the link says enough)
+     "brief words"          also without the icons of the actions and the Esc hint
+     "brief words twoline"  the count and Clear on the first line, the actions as words on the second (phones: the toolbar is two lines too)
+     "brief icons"          one line, the actions as icons (their names stay as the tooltip and for screen readers) */
+.zxs-bulk[data-fit~="brief"] .zxs-bulkmore > span { display: none; }
+.zxs-bulk[data-fit~="words"] kbd, .zxs-bulk[data-fit~="icons"] kbd { display: none; }
+.zxs-bulk[data-fit~="words"] .zxs-bulk__actions button:not(.danger) > i.icon:not(.angle) { display: none; }
+.zxs-bulk[data-fit~="words"] .zxs-bulk__actions .zxs-bulk__sep, .zxs-bulk[data-fit~="icons"] .zxs-bulk__actions .zxs-bulk__sep { margin: 0 2px; }
+.zxs-bulk[data-fit~="icons"] .zxs-bulk__actions button { min-width: 36px; padding: 0 8px; justify-content: center; }
+.zxs-bulk[data-fit~="icons"] .zxs-bulk__actions button > span, .zxs-bulk[data-fit~="icons"] .zxs-bulk__actions label > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.zxs-bulk[data-fit~="icons"] .zxs-bulk__actions button > i.icon { font-size: 1em; }
+.zxs-bulk[data-fit~="twoline"] .zxs-bulk__count { margin-right: auto; }
+.zxs-bulk[data-fit~="twoline"] .zxs-bulkmore button { min-height: 40px; }
+.zxs-bulk[data-fit~="twoline"] .zxs-bulk__actions { order: 2; flex: 1 0 100%; gap: 0; margin: 0 -6px; }
+.zxs-bulk[data-fit~="twoline"] > .zxs-bulk__sep, .zxs-bulk[data-fit~="twoline"] .zxs-bulk__actions .zxs-bulk__sep { display: none; }
+.zxs-bulk[data-fit~="twoline"] button { min-height: 40px; padding: 0 9px; justify-content: center; }
+.zxs-bulk[data-fit~="twoline"] .zxs-bulk__actions button.danger { min-width: 40px; margin-right: 6px; }   /* the bin alone: the row stays one line */
+.zxs-bulk[data-fit~="twoline"] .zxs-bulk__actions button.danger > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.zxs-bulk[data-fit~="twoline"] button.zxs-bulk__clear { font-weight: 700; padding: 0 9px; }
 
 /* ---- form card that the header button opens ---- */
 .zxs-form[hidden] { display: none !important; }
@@ -777,11 +813,7 @@ html body .contentWindow label.zxs-choice > input[type="radio"]:not(.hidden), ht
     .zxs-search { max-width: none; flex-basis: 100%; }
     .zxs-form__row { grid-template-columns: minmax(0, 1fr); }
     .zxs-form__arrow { display: none; }
-    .zxs-bulk { top: calc(var(--zx-topbar-h, 52px) + 4px); padding: 6px 8px; }
-    .zxs-bulk__grow, .zxs-bulk__sep, .zxs-bulk kbd { display: none; }
-    .zxs-bulk__count { flex: 1 0 100%; }
-    .zxs-bulk button { min-height: 40px; min-width: 40px; justify-content: center; }
-    .zxs-bulk button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .zxs-bulk { padding: 8px 12px; gap: 6px var(--zx-space-2); }   /* the two-line bar of phones: data-fit "twoline" above */
     .zxs-seg > button, .zxs-seg > label { min-height: 36px; }
     .zxs-chip { min-height: 32px; }
 }
@@ -936,3 +968,118 @@ html body .contentWindow label.zxs-choice > input[type="radio"]:not(.hidden), ht
 .zx-btn.sy-quiet-danger:hover, .zx-btn.sy-quiet-danger:focus-visible { --_fg: var(--zx-danger-text); --_bd: var(--zx-danger-line); --_hover: var(--zx-danger-bg); color: var(--zx-danger-text); border-color: var(--zx-danger-line); background: var(--zx-danger-bg); }
 @media (max-width: 600px) { .sy-more__item { min-height: var(--zx-touch); } .sy-row__end .zx-btn.sy-row__keep { flex: 0 0 auto; } }
 /* area: system end */
+
+/* area: errorpages start */
+/* Sites > Error pages (components/errorpages.html). Header: the master switch of the page as a one-line labelled control (the switch is
+   the state, no badge), then History and a "More actions" menu (sy-more) that holds the destructive reset. Body: sectioned navigation
+   with a state dot per page class, then editor and preview side by side with one top edge; the preview stays in view (sticky, no
+   scroll box) and its frame is as high as the page it shows. */
+#errorPagesPage [hidden] { display: none !important; }
+/* -- header: master switch. One line, as high as the buttons next to it (same border, radius and type), the switch is the state.
+   The plain-words line is the description and tooltip of the switch; it is shown on phones, where the control has the row. -- */
+#errorPagesPage .zx-page-header__title { white-space: nowrap; }
+#errorPagesPage .zx-page-header__actions { flex-wrap: nowrap; }
+#errorPagesPage .ep-master {
+    display: inline-flex; align-items: center; gap: var(--zx-space-2); min-height: var(--zx-control-h, 36px); margin: 0; padding: 0 var(--zx-space-3); box-sizing: border-box; flex: 0 0 auto;
+    background: var(--zx-surface); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); color: var(--zx-text); cursor: pointer; text-align: left;
+    font: inherit; transition: background var(--zx-dur) var(--zx-ease), border-color var(--zx-dur) var(--zx-ease);
+}
+#errorPagesPage .ep-master:hover { background: var(--zx-surface-2); }
+#errorPagesPage .ep-master:has(.zx-switch:disabled) { cursor: not-allowed; }
+#errorPagesPage .ep-master .zx-switch { flex: 0 0 auto; margin: 0; }
+#errorPagesPage .ep-master__text { display: block; min-width: 0; }
+#errorPagesPage .ep-master__title { display: block; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+#errorPagesPage .ep-master__sub { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#errorPagesPage .ep-master.is-pending { border-color: var(--zx-warn-line, var(--zx-warn-text)); }
+/* -- header: the reset is a menu entry, red as a word, not a red button at rest -- */
+#errorPagesPage #epMore > summary { display: inline-flex; }
+#errorPagesPage #epMore .sy-more__menu { min-width: 15rem; }
+#errorPagesPage #epMore .sy-more__item--danger, #errorPagesPage #epMore .sy-more__item--danger i.icon { color: var(--zx-danger-text); }
+#errorPagesPage #epMore .sy-more__item { white-space: nowrap; }
+/* the actions (about 30rem) leave no room for the title next to them: they go under the subtitle, as the kit does on phones */
+@media (max-width: 1000px) {
+    #errorPagesPage .zx-page-header { grid-template-columns: minmax(0, 1fr); grid-template-areas: "crumbs" "title" "sub" "actions"; }
+    #errorPagesPage .zx-page-header__actions { justify-content: flex-start; align-self: start; margin: var(--zx-space-3) 0 0; flex-wrap: wrap; }
+}
+/* next to the menu on a small window the row is a few pixels short: tighter buttons keep the four actions on one row */
+@media (min-width: 641px) and (max-width: 860px) {
+    #errorPagesPage .zx-page-header__actions > .zx-btn:not(.zx-btn--icon), #errorPagesPage .zx-page-header__actions > .zx-related > :is(summary, button).zx-btn { padding-inline: var(--zx-space-3); }
+    #errorPagesPage .ep-master { padding-inline: 10px; }
+}
+@media (max-width: 640px) {
+    #errorPagesPage .zx-page-header__title { white-space: normal; }
+    #errorPagesPage .ep-master { order: -1; flex: 1 1 100%; justify-content: flex-start; min-height: var(--zx-touch, 44px); padding: 6px var(--zx-space-3); }
+    #errorPagesPage .ep-master__text { flex: 1 1 auto; }
+    #errorPagesPage .ep-master__title { white-space: normal; }
+    #errorPagesPage .ep-master__sub { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; display: block; white-space: normal; font-size: var(--zx-fs-xs); line-height: 1.3; color: var(--zx-text-muted); }
+    #errorPagesPage .ep-master.is-pending .ep-master__sub { color: var(--zx-warn-text); }
+}
+/* -- navigation: one line per item, state dot at the end, the words in a legend -- */
+@media (min-width: 1321px) { #errorPagesPage .zx-sectioned { grid-template-columns: 14rem minmax(0, 1fr); } }
+#errorPagesPage #epNav .zx-sectionnav__text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#errorPagesPage #epNav .zx-sectionnav__state { font-size: 0; gap: 0; padding: 0 2px; }   /* the word stays in the markup (read aloud, shown in the picker and as tooltip) */
+#errorPagesPage #epNav .zx-sectionnav__state::before { width: 8px; height: 8px; }
+#errorPagesPage .ep-legend { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-3); margin: calc(-1 * var(--zx-space-2)) 0 0; padding: var(--zx-space-3) 10px 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-xs); color: var(--zx-text-muted); }
+#errorPagesPage .ep-legend__item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+#errorPagesPage .ep-legend__item::before { content: ""; width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid var(--zx-text-faint); }
+#errorPagesPage .ep-legend__item--on::before { background: var(--zx-ok-solid); border-color: var(--zx-ok-solid); }
+@media (max-width: 1320px) { #errorPagesPage .ep-legend { display: none; } }
+/* -- section head and the facts of a page class -- */
+/* the head starts on the line of the first navigation item (the legacy h3 margin would push it 16px down) */
+#errorPagesPage #epHead { scroll-margin-top: calc(var(--zx-topbar-h) + var(--zx-space-4)); padding-top: var(--zx-space-1); }
+#errorPagesPage #epHead .zx-sectionhead__title { margin: 0; }
+#errorPagesPage .ep-when { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--zx-space-2); margin: calc(-1 * var(--zx-space-1)) 0 var(--zx-space-4); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: var(--zx-lh); }
+#errorPagesPage .ep-when__text { flex: 1 1 20rem; min-width: 0; max-width: 62rem; }
+#errorPagesPage .zx-callout { margin: 0 0 var(--zx-space-4); }
+#errorPagesPage .zx-callout__body .zx-btn { margin-left: var(--zx-space-2); vertical-align: baseline; }
+/* -- composition: editor | preview, one top edge -- */
+#errorPagesPage .ep-grid { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+#errorPagesPage .ep-grid > * { min-width: 0; margin: 0; }
+#errorPagesPage .ep-stack { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr); }
+#errorPagesPage .ep-stack > * { margin: 0; min-width: 0; }
+@media (min-width: 1321px) {
+    #errorPagesPage .ep-grid { grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); }
+    /* sticky under the top bar while the editor column is longer; a preview taller than the window simply scrolls with the page */
+    #errorPagesPage #epPreviewCard { position: sticky; top: calc(var(--zx-topbar-h) + var(--zx-space-4)); }
+}
+/* -- theme -- */
+#errorPagesPage .ep-toggles > .zx-toggle-row:first-child { padding-top: 0; }
+#errorPagesPage .ep-toggles > .zx-toggle-row:last-child { padding-bottom: 0; border-bottom: 0; }
+#errorPagesPage .ep-color { display: flex; gap: var(--zx-space-2); align-items: center; }
+#errorPagesPage .ep-color input[type=color] { width: 3rem; height: var(--zx-control-h, 36px); padding: 2px; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); background: var(--zx-surface); cursor: pointer; }
+#errorPagesPage .ep-color input[type=color]:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+#errorPagesPage .ep-logo-row { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
+#errorPagesPage .ep-logo-row .zx-input { flex: 1 1 14rem; min-width: 0; max-width: none; }
+/* -- editor of one page class -- */
+#errorPagesPage .ep-scope { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-4); }
+#errorPagesPage .ep-scope .zx-field__label { margin: 0; flex: 0 0 auto; }
+#errorPagesPage .ep-scope .zx-select { flex: 1 1 12rem; min-width: 0; max-width: 22rem; }
+#errorPagesPage .ep-scope #epScopeRemove { margin-left: auto; }
+#errorPagesPage #epEditorCard .zx-tabs { margin-bottom: var(--zx-space-4); }
+#errorPagesPage #epEditorCard .zx-field--wide .zx-input, #errorPagesPage #epEditorCard .zx-field--wide .zx-textarea { max-width: none; width: 100%; }
+#errorPagesPage #epMessage { min-height: 6.5rem; resize: vertical; }
+#errorPagesPage #epTemplate { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); line-height: 1.5; min-height: 22rem; tab-size: 2; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+#errorPagesPage .ep-starters { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin: 0 0 var(--zx-space-3); }
+#errorPagesPage .ep-starters > span { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+#errorPagesPage .ep-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--zx-space-2); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
+#errorPagesPage .ep-vars { width: 100%; border-collapse: collapse; font-size: var(--zx-fs-sm); }
+#errorPagesPage .ep-vars td { padding: 6px 12px 6px 0; vertical-align: top; border-top: 1px solid var(--zx-border); }
+#errorPagesPage .ep-vars tr:first-child td { border-top: 0; }
+#errorPagesPage .ep-vars code { white-space: nowrap; }
+#errorPagesPage #epEditorCard .zx-card__foot { flex-wrap: wrap; align-items: center; }
+/* the last field of a card ends at the card inset, not 16px above it */
+#errorPagesPage .zx-card__body > .zx-form-grid:last-child > .zx-field:last-child, #errorPagesPage .zx-tabpanel > .zx-field:last-child { margin-bottom: 0; }
+#errorPagesPage .zx-tabpanel > .zx-field:last-child > .zx-help:last-child { margin-bottom: 0; }
+/* "Send a test" is a link that looks like a button: main.css colours and underlines every link of a page (specificity 0,6,1) */
+.functiontab #errorPagesPage a.zx-btn--secondary:not(.item):not(.button):not(.ui):not(.label) { color: var(--zx-text); }
+/* kit-wide, kept here because it was found here: the rule "links styled as controls never underline" in zxui.css (0,2,1) loses
+   against the hover underline of main.css inside a page, so the underline came back on hover. Same selector weight as main.css. */
+.functiontab a.zx-btn:not(.item):not(.button):not(.ui):not(.label):hover, .functiontab a.zx-btn:not(.item):not(.button):not(.ui):not(.label):focus,
+.functiontab a.zx-tab:not(.item):not(.button):not(.ui):not(.label):hover, .functiontab a.zx-badge:not(.item):not(.button):not(.ui):not(.label):hover,
+.functiontab a.zx-sectionnav__item:not(.item):not(.button):not(.ui):not(.label):hover { text-decoration: none; }
+#errorPagesPage .ep-testhint { flex: 1 1 100%; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+/* -- preview: the frame takes the height of its page (script); this is only the height before the first answer -- */
+#errorPagesPage .ep-preview { display: block; width: 100%; height: 280px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); background: #fff; }
+#errorPagesPage .ep-preview-note { margin: var(--zx-space-2) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+@media (prefers-reduced-motion: reduce) { #errorPagesPage .ep-master { transition: none; } }
+/* area: errorpages end */

@@ -91,6 +91,13 @@ type PluginStatus struct {
 	LimitsNote       string         //limits applied to the running process, in words
 	Policy           PluginPolicy   //what the administrator allows Zoraxy to do about this plugin
 	Counters         PluginCounters //since Zoraxy started
+
+	//Phase 2 (contract and permissions), additive
+	Contract    PluginContract    //contract version of the plugin and whether this Zoraxy supports it
+	Permissions PermissionSummary //API permissions: asked for, not approved, not granted
+
+	//Phase 2 (signed index, safe update): where the plugin came from and whether a previous version is kept
+	Install PluginInstallInfo
 }
 
 // PluginCounters counts what happened with a plugin since Zoraxy started
@@ -206,6 +213,13 @@ func unixOrZero(t time.Time) int64 {
 }
 
 /* Guarded accessors */
+
+// spec returns the manifest of the plugin (a store update replaces it)
+func (p *Plugin) spec() *zoraxyPlugin.IntroSpect {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.Spec
+}
 
 func (p *Plugin) isEnabled() bool {
 	p.mu.RLock()
@@ -390,6 +404,8 @@ func (p *Plugin) statusWith(probe bool) PluginStatus {
 	rec := p.status
 	port := p.AssignedPort
 	attached := !p.notReady
+	mgr := p.mgr
+	spec := p.Spec
 	p.mu.RUnlock()
 
 	st := PluginStatus{
@@ -414,6 +430,13 @@ func (p *Plugin) statusWith(probe bool) PluginStatus {
 	}
 	st.Policy = p.policy()
 	st.Counters = p.counters()
+	if mgr != nil {
+		st.Contract = contractOf(spec, mgr.Settings().ContractMode)
+		st.Permissions = mgr.permissionSummaryOf(p)
+		st.Install = mgr.installInfoOf(p)
+	} else {
+		st.Contract = contractOf(spec, ContractModeWarn)
+	}
 	st.ReadyAfterMs = -1
 	p.sup.mu.Lock()
 	st.CrashLoopLimit = intOr(p.sup.loopMax, defaultCrashLoopMax)

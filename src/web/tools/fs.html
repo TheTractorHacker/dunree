@@ -33,6 +33,7 @@
     </head>
     <body class="whiteTheme">
         <link rel="stylesheet" href="../darktheme.css">
+        <script src="../script/safestorage.js"></script>
         <script src="../script/darktheme.js"></script>
         <div id="navibar" class="navibar">
             <!-- File Opr Group-->
@@ -1005,7 +1006,7 @@
                 if (propertiesView){
                     $("#propertiesView").show();
                     $(object).addClass('active');
-                    localStorage.setItem("file_explorer/viewProperties", "true");
+                    zxStore.set("file_explorer/viewProperties", "true");
 
                     if ($(".fileObject.selected").length >= 1){
                         //Load the file properties
@@ -1019,7 +1020,7 @@
                 }else{
                     $("#propertiesView").hide();
                     $(object).removeClass('active');
-                    localStorage.setItem("file_explorer/viewProperties", "false");
+                    zxStore.set("file_explorer/viewProperties", "false");
                 }
             }
 

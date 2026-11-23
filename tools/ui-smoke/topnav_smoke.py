@@ -184,7 +184,7 @@ def topnav_ui(pg, ctx):
         ({"auto_check": True, "update_available": False, "latest": "v1", "current": "v1"}, False, "daily check on, up to date: no badge"),
     ):
         bp = ctx.new_page()
-        bp.route("**/api/updater/badge*", lambda rt, b=body: rt.fulfill(status=200, content_type="application/json", body=json.dumps(b)))
+        bp.route("**/api/updater/badge*", lambda rt, _rq=None, b=body: rt.fulfill(status=200, content_type="application/json", body=json.dumps(b)))
         bp.goto(base + "#status", wait_until="domcontentloaded", timeout=60000)
         bp.evaluate("localStorage.removeItem('zoraxy.topbar.update')")
         bp.reload(wait_until="domcontentloaded", timeout=60000)

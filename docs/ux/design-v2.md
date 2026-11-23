@@ -122,6 +122,10 @@ With sections (more than six, or grouped):
   `.zx-card__foot` (left aligned, primary first). A card that only reports (status) has no footer.
 * **Tables.** `.zx-table-wrap > table.zx-table`, sentence-case header, no inner scrolling, row actions right aligned.
   More than about 25 rows: paging or "Show more". Long values: `.zx-longvalue` (three lines, expands on hover and focus).
+* **Selecting rows.** A kit checkbox in the first column, the header box a dash while only some rows are selected. A selected
+  row is a subtle tint with an accent bar on its left edge, not a flood of blue; a disabled row mutes its contents and keeps
+  the background of the others. Actions for the selection sit in one bar that appears with it: count, actions, the
+  destructive one apart, Clear (Esc). Reference: components.md 9.4.
 * **Status.** `.zx-badge--dot --ok/--warn/--danger` for the state of a thing (white pill, coloured dot, the word);
   the filled badges for counts and results ("3 expiring", "No certificate").
 * **Empty.** `.zx-empty`: icon tile, what is missing, one sentence, the button that fixes it. `--inline` inside a card. An

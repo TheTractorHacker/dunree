@@ -39,12 +39,12 @@
     };
 
     try {
-        var saved = JSON.parse(localStorage.getItem("httprp_table") || "{}");
+        var saved = JSON.parse(zxStore.get("httprp_table") || "{}");
         if (saved.sort && saved.sort.key) { state.sort = saved.sort; }
         if (PAGE_SIZES.indexOf(saved.pageSize) > -1) { state.pageSize = saved.pageSize; }
     } catch (e) { /* storage may be blocked */ }
     function persist() {
-        try { localStorage.setItem("httprp_table", JSON.stringify({ sort: state.sort, pageSize: state.pageSize })); } catch (e) { }
+        try { zxStore.set("httprp_table", JSON.stringify({ sort: state.sort, pageSize: state.pageSize })); } catch (e) { }
     }
 
     function esc(s) {
@@ -232,8 +232,8 @@
 
         var tags = tagsHtml(r);
         var on = !r.Disabled;
-        return '<tr class="subdEntry ptRow ' + (r.Disabled ? "isOff " : "") + (state.sel[name] ? "isSel " : "") + (state.flash === name ? "ptFlash" : "") + '" eptuuid="' + e + '" data-ep="' + e + '">' +
-            '<td class="ptSel"><input type="checkbox" class="bulkSel" data-ep="' + e + '" aria-label="' + esc(fmt("Select {0}", name)) + '"' + (state.sel[name] ? " checked" : "") + '></td>' +
+        return '<tr class="subdEntry ptRow ' + (r.Disabled ? "isOff is-disabled " : "") + (state.sel[name] ? "isSel is-selected " : "") + (state.flash === name ? "ptFlash" : "") + '" eptuuid="' + e + '" data-ep="' + e + '">' +
+            '<td class="ptSel"><input type="checkbox" class="zx-check bulkSel" data-ep="' + e + '" aria-label="' + esc(fmt("Select {0}", name)) + '"' + (state.sel[name] ? " checked" : "") + '></td>' +
             '<td class="ptName"><div class="ptNameBody">' +
             '<a class="ptHost zxs-cell__main zxs-clamp2" href="' + esc(hostLink(r, name)) + '" target="_blank" rel="noopener" title="' + esc(name + "\n" + tr("Open this host in a new tab")) + '">' + e + '<i class="external alternate icon" aria-hidden="true"></i></a>' +
             '<span class="ptSub zxs-cell__sub">' + sub.join('<span class="zxs-dotsep"></span>') + '</span>' +
@@ -439,18 +439,35 @@
 
     function renderBulk() {
         var names = selNames(), n = names.length;
-        $("#bulkBar").prop("hidden", n === 0);
-        $("#bulkBar .bulkCount").text(fmt("{0} selected", n));
+        // the bar takes the place of the search row, so the table stays where it is (uxkit.js, zxBulkSwap)
+        if (!renderBulk.swap && window.zxBulkSwap) { renderBulk.swap = window.zxBulkSwap(document.getElementById("bulkBar"), document.getElementById("ptTools")); }
+        if (renderBulk.swap) { renderBulk.swap.set(n > 0); } else { $("#bulkBar").prop("hidden", n === 0); }
         // header checkbox reflects the rows on this page
         var start = (state.page - 1) * state.pageSize, pageRows = state.view.slice(start, start + state.pageSize);
         var onPage = pageRows.filter(function (r) { return state.sel[r.RootOrMatchingDomain]; }).length;
         var h = document.getElementById("bulkSelectAll");
         if (h) { h.checked = pageRows.length > 0 && onPage === pageRows.length; h.indeterminate = onPage > 0 && onPage < pageRows.length; }
-        // offer to extend the selection to every match when the filter spans more than this page
+        if (h) {
+            var some = h.indeterminate, tip = h.checked ? tr("Clear the selection on this page") : (some ? tr("Select the rest of this page") : tr("Select every host on this page"));
+            h.title = tip; h.setAttribute("aria-label", tip);
+        }
+        // The page is only part of the list (paging): when every row shown is selected, the bar offers the rest next to the count,
+        // and once everything is selected the count says so (it is then larger than what is on screen).
         var matching = state.view.length, allSel = state.view.filter(function (r) { return state.sel[r.RootOrMatchingDomain]; }).length;
-        var offer = pageRows.length > 0 && onPage === pageRows.length && matching > pageRows.length && allSel < matching;
-        $("#bulkSelectMatching").toggle(offer).find("a").text(fmt("Select all {0} matching hosts", matching));
-        $("#bulkBar .bulkAllSel").toggle(allSel === matching && matching > pageRows.length && n > 0);
+        var pageFull = pageRows.length > 0 && onPage === pageRows.length && matching > pageRows.length;
+        var filtered = matching !== state.list.length;
+        var $more = $("#bulkSelectMatching"), mode = !pageFull ? "" : (allSel < matching ? "offer" : "all");
+        $more.prop("hidden", mode !== "offer").attr("data-mode", mode);
+        var count = fmt("{0} selected", n);
+        if (mode === "offer") {
+            var here = fmt("All {0} hosts on this page are selected.", pageRows.length), rest = fmt(filtered ? "Select all {0} matching hosts" : "Select all {0} hosts", matching);
+            $more.find(".bulkMoreText").text(here);
+            $more.find(".bulkMoreBtn").text(fmt("Select all {0}", matching)).attr("title", here + " " + rest).attr("aria-label", rest);
+        } else if (mode === "all" && n === matching) {
+            count = fmt("All {0} selected", n);
+        }
+        $("#bulkBar .bulkCount").text(count).attr("title", mode === "all" ? fmt(filtered ? "All {0} matching hosts are selected." : "All {0} hosts are selected.", matching) : null);
+        if (renderBulk.swap) { renderBulk.swap.fit(); }
     }
 
     function render() {
@@ -611,7 +628,7 @@
     function syncChecks() {
         $("#httpProxyList tr.ptRow").each(function () {
             var name = $(this).attr("data-ep"), on = !!state.sel[name];
-            $(this).toggleClass("isSel", on).find(".bulkSel").prop("checked", on);
+            $(this).toggleClass("isSel is-selected", on).find(".bulkSel").prop("checked", on);
         });
         renderBulk();
     }
@@ -773,10 +790,22 @@
             state.view.slice(start, start + state.pageSize).forEach(function (r) { setSelected(r.RootOrMatchingDomain, on); });
             syncChecks();
         });
-        $page().on("click", "#bulkSelectMatching a", function (ev) {
-            ev.preventDefault();
+        $page().on("click", "#bulkSelectMatching .bulkMoreBtn", function () {
             state.view.forEach(function (r) { state.sel[r.RootOrMatchingDomain] = true; });
             syncChecks();
+            $("#bulkSelectAll").trigger("focus");   // the offer is gone now (the count says "All N selected"); the focus goes to the header box
+        });
+        // Up / Down move between the selection checkboxes of the rows (Space selects, Shift+Space a range), Home / End jump
+        $body.on("keydown", ".bulkSel", function (ev) {
+            if (ev.altKey || ev.ctrlKey || ev.metaKey) { return; }
+            var boxes = $body.find(".bulkSel").get(), i = boxes.indexOf(this), j = -1;
+            if (ev.key === "ArrowDown") { j = i + 1; } else if (ev.key === "ArrowUp") { j = i - 1; }
+            else if (ev.key === "Home") { j = 0; } else if (ev.key === "End") { j = boxes.length - 1; } else { return; }
+            ev.preventDefault();
+            if (j < 0) { $("#bulkSelectAll").trigger("focus"); } else if (boxes[j]) { boxes[j].focus(); }
+        });
+        $page().on("keydown", "#bulkSelectAll", function (ev) {
+            if (ev.key === "ArrowDown") { ev.preventDefault(); $body.find(".bulkSel").first().trigger("focus"); }
         });
         $page().on("click", "#bulkBar button", function () {
             var act = $(this).attr("data-act");

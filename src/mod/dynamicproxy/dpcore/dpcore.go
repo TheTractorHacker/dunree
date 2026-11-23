@@ -107,6 +107,10 @@ type ResponseRewriteRuleSet struct {
 	AllowConnect                   bool   //Allow HTTP CONNECT tunneling; when true the target is validated against ProxyDomain
 	AllowUpgrade                   bool   //Allow generic HTTP protocol upgrades (e.g. TS2021) to be forwarded to the upstream
 
+	/* Optional: called with the headers of an upstream 101 answer before they are written to the client.
+	An upgrade is tunnelled raw, so nothing that wraps the ResponseWriter sees these headers. nil = untouched */
+	UpgradeResponseHeaders func(http.Header)
+
 	/* System Information Payload */
 	DevelopmentMode bool   //Inject dev mode information to requests
 	Version         string //Version number of Zoraxy, use for X-Proxy-By
@@ -562,6 +566,9 @@ func (p *ReverseProxy) ProxyHTTP(rw http.ResponseWriter, req *http.Request, rrr 
 
 	// An upgraded connection is a raw byte tunnel, not a response body to be rewritten
 	if res.StatusCode == http.StatusSwitchingProtocols {
+		if rrr != nil && rrr.UpgradeResponseHeaders != nil {
+			rrr.UpgradeResponseHeaders(res.Header)
+		}
 		return p.handleUpgradeResponse(rw, reqUpType, res)
 	}
 

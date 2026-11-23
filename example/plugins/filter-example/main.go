@@ -29,6 +29,7 @@ import (
 
 const (
 	UI_PATH      = "/ui"
+	HEALTH_PATH  = "/health"
 	FILTER_PATH  = "/filter"
 	defaultRegex = `(?i)(sqlmap|nikto|masscan|badbot)`
 )
@@ -47,6 +48,13 @@ func main() {
 		VersionPatch:  0,
 
 		UIPath: UI_PATH,
+
+		// Receive the start configuration (invoke token, API key) on standard input,
+		// not on the command line where "ps" shows it to every local user
+		ConfigureVia: plugin.ConfigureViaStdin,
+
+		// Health address for the optional health check of Zoraxy (see below)
+		HealthPath: HEALTH_PATH,
 
 		Hooks: &plugin.HookSettings{
 			Version:           plugin.HookAPIVersion,
@@ -93,6 +101,10 @@ func main() {
 		}
 		return plugin.Allow()
 	}))
+
+	// Health address: a filter that sits in the request path should say when it
+	// cannot do its work. Here the only thing to check is that the plugin answers.
+	http.Handle(HEALTH_PATH, plugin.HealthHandler(nil))
 
 	http.HandleFunc(UI_PATH+"/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

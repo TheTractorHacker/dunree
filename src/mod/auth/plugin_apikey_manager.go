@@ -92,6 +92,28 @@ func (m *APIKeyManager) ValidateAPIKeyForEndpoint(endpoint string, method string
 	return nil, fmt.Errorf("endpoint not permitted for this API key")
 }
 
+// SetPermittedEndpointsForPlugin replaces the endpoints every live API key of a
+// plugin may call, and returns how many keys were changed. Used when an
+// administrator approves or withdraws a permission while the plugin is running.
+func (m *APIKeyManager) SetPermittedEndpointsForPlugin(pluginID string, permittedEndpoints []zoraxy_plugin.PermittedAPIEndpoint) int {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	changed := 0
+	for apiKey, pluginAPIKey := range m.keys {
+		if pluginAPIKey.PluginID != pluginID {
+			continue
+		}
+		// A new record, never a write into the old one: a request that is being
+		// checked right now reads the old record without the lock
+		next := *pluginAPIKey
+		next.PermittedEndpoints = append([]zoraxy_plugin.PermittedAPIEndpoint(nil), permittedEndpoints...)
+		m.keys[apiKey] = &next
+		changed++
+	}
+	return changed
+}
+
 // RevokeAPIKeysForPlugin revokes all API keys for a specific plugin
 func (m *APIKeyManager) RevokeAPIKeysForPlugin(pluginID string) error {
 	m.mutex.Lock()

@@ -1,0 +1,31 @@
+{
+ "id": "org.aroz.zoraxy.filter-example",
+ "name": "Filter Example",
+ "author": "aroz.org",
+ "author_contact": "https://aroz.org",
+ "description": "Example pre-auth User-Agent filter and response header adder using the Zoraxy hook API.",
+ "url": "https://zoraxy.aroz.org",
+ "type": 0,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": null,
+ "static_capture_ingress": "",
+ "dynamic_capture_sniff": "",
+ "dynamic_capture_ingress": "",
+ "ui_path": "/ui",
+ "subscription_path": "",
+ "subscriptions_events": null,
+ "permitted_api_endpoints": null,
+ "hooks": {
+  "version": 1,
+  "stages": [
+   "pre_auth",
+   "response"
+  ],
+  "filter_request_path": "/filter",
+  "priority": 10,
+  "timeout_ms": 500,
+  "failure_policy": "fail_open"
+ }
+}

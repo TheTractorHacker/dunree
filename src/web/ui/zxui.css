@@ -43,6 +43,12 @@
     --zx-primary-soft: #e6eefc;     /* tinted backgrounds (selected row, active tab) */
     --zx-primary-soft-text: #123f94;
 
+    /* rows of tables and lists: one system (hover < selected < selected + hover), all quieter than --zx-primary-soft */
+    --zx-row-hover: #f6f7f9;
+    --zx-row-selected: #f1f5fe;
+    --zx-row-selected-hover: #e8effd;
+    --zx-check-halo: rgba(26, 86, 196, 0.14);   /* soft ring around a checkbox under the pointer */
+
     /* semantic: *-solid = filled button/switch (white text), *-bg = tinted area, *-text = text on *-bg, *-line = border */
     --zx-ok-solid: #12703a;     --zx-ok-bg: #e5f5ec;     --zx-ok-text: #0d5a2e;     --zx-ok-line: #7cc79b;
     --zx-warn-solid: #8f5200;   --zx-warn-bg: #fff3d9;   --zx-warn-text: #6b3d00;   --zx-warn-line: #e5b25a;
@@ -120,6 +126,11 @@ body.darkTheme,
     --zx-on-primary: #0b1428;       /* dark text on the light blue: 6.7:1 */
     --zx-primary-soft: #1f2d4d;
     --zx-primary-soft-text: #b9cffd;
+
+    --zx-row-hover: #202025;
+    --zx-row-selected: #1a2030;
+    --zx-row-selected-hover: #1f283d;
+    --zx-check-halo: rgba(109, 155, 255, 0.24);
 
     --zx-ok-solid: #4cc77e;     --zx-ok-bg: #12301f;     --zx-ok-text: #8ee3ae;     --zx-ok-line: #2d6b47;
     --zx-warn-solid: #f0b341;   --zx-warn-bg: #3a2c0c;   --zx-warn-text: #f6cf7d;   --zx-warn-line: #7a5a17;
@@ -273,8 +284,86 @@ body.darkTheme,
 @media (forced-colors: active) { .zx-switch:checked { background: Highlight; } .zx-switch::after { background: CanvasText; } }
 @media (prefers-reduced-motion: reduce) { .zx-switch, .zx-switch::after { transition: none; } }
 
+/* ---- checkbox: 18px box, drawn tick, dash when indeterminate. Two ways to write it:
+        <input type="checkbox" class="zx-check" aria-label="Select app.example.com">           alone (row selection)
+        <label class="zx-check"><input type="checkbox"> <span>Follow redirects</span></label>   with a visible label
+      Indeterminate is a property, not an attribute: box.indeterminate = true (a "select all" box when only some rows are selected).
+      The third selector is the bridge for pages: a raw checkbox of a page (not a Fomantic ".ui.checkbox", not a switch) is drawn
+      the same way, so every table and list shows one checkbox. It is the one place this file styles an element without a zx class.
+      The edge is a whole pixel (--_zx-check-b): browsers snap a fractional border to the device grid, and the glyph is laid over the
+      border box by the same amount, so the tick and the dash fill the 18px box exactly at every pixel ratio. ---- */
 .zx-check { display: inline-flex; align-items: center; gap: var(--zx-space-2); cursor: pointer; }
-.zx-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--zx-primary); }
+label.zx-check:has(> input:disabled) { cursor: not-allowed; color: var(--zx-text-muted); }
+:where(input.zx-check, .zx-check > input[type="checkbox"]) { margin: 0; }
+input.zx-check,
+.zx-check > input[type="checkbox"],
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *) {
+    appearance: none; -webkit-appearance: none; position: relative; flex: 0 0 auto; box-sizing: border-box;
+    width: 18px; height: 18px; min-width: 18px; min-height: 18px; padding: 0; vertical-align: middle; cursor: pointer;
+    --_zx-check-b: 1px;
+    background: var(--zx-surface); border: var(--_zx-check-b) solid var(--zx-border-strong); border-radius: 5px; outline: none;
+    transition: background var(--zx-dur) var(--zx-ease), border-color var(--zx-dur) var(--zx-ease), box-shadow var(--zx-dur) var(--zx-ease);
+}
+/* the tick and the dash: one mask over the whole box, 2px round stroke */
+input.zx-check::after,
+.zx-check > input[type="checkbox"]::after,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *)::after {
+    content: ""; position: absolute; inset: calc(-1 * var(--_zx-check-b)); background: var(--zx-on-primary); opacity: 0; transform: scale(0.6);
+    -webkit-mask: var(--_zx-check-glyph, var(--zx-check-tick)) center / 100% 100% no-repeat; mask: var(--_zx-check-glyph, var(--zx-check-tick)) center / 100% 100% no-repeat;
+    transition: opacity var(--zx-dur) var(--zx-ease), transform var(--zx-dur) var(--zx-ease);
+}
+input.zx-check:checked,
+.zx-check > input[type="checkbox"]:checked,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):checked,
+input.zx-check:indeterminate,
+.zx-check > input[type="checkbox"]:indeterminate,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):indeterminate { background: var(--zx-primary); border-color: var(--zx-primary); }
+input.zx-check:checked::after,
+.zx-check > input[type="checkbox"]:checked::after,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):checked::after,
+input.zx-check:indeterminate::after,
+.zx-check > input[type="checkbox"]:indeterminate::after,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):indeterminate::after { opacity: 1; transform: none; }
+input.zx-check:indeterminate,
+.zx-check > input[type="checkbox"]:indeterminate,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):indeterminate { --_zx-check-glyph: var(--zx-check-dash); }
+input.zx-check:hover:not(:disabled),
+.zx-check > input[type="checkbox"]:hover:not(:disabled),
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):hover:not(:disabled) { border-color: var(--zx-text); box-shadow: 0 0 0 4px var(--zx-check-halo); }
+input.zx-check:checked:hover:not(:disabled),
+.zx-check > input[type="checkbox"]:checked:hover:not(:disabled),
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):checked:hover:not(:disabled),
+input.zx-check:indeterminate:hover:not(:disabled),
+.zx-check > input[type="checkbox"]:indeterminate:hover:not(:disabled),
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):indeterminate:hover:not(:disabled) { background: var(--zx-primary-hover); border-color: var(--zx-primary-hover); }
+input.zx-check:focus-visible,
+.zx-check > input[type="checkbox"]:focus-visible,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):focus-visible { box-shadow: var(--_zx-check-ring, var(--zx-focus-ring)); }
+input.zx-check:disabled,
+.zx-check > input[type="checkbox"]:disabled,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):disabled { cursor: not-allowed; background: var(--zx-surface-3); border-color: var(--zx-border); box-shadow: none; }
+input.zx-check:disabled:checked,
+.zx-check > input[type="checkbox"]:disabled:checked,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):disabled:checked,
+input.zx-check:disabled:indeterminate,
+.zx-check > input[type="checkbox"]:disabled:indeterminate,
+html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):disabled:indeterminate { background: var(--zx-text-faint); border-color: var(--zx-text-faint); opacity: 0.55; }
+/* a 32px target around the 18px box (44px on touch screens); only on boxes that carry the class, raw ones keep their own size */
+input.zx-check::before, .zx-check > input[type="checkbox"]::before { content: ""; position: absolute; inset: -8.5px; border-radius: 8px; }
+@media (max-width: 748px), (pointer: coarse) {
+    input.zx-check::before, .zx-check > input[type="checkbox"]::before { inset: -14.5px; }
+}
+@media (forced-colors: active) {
+    input.zx-check, .zx-check > input[type="checkbox"], html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *) { forced-color-adjust: none; background: Canvas; border-color: ButtonText; }
+    input.zx-check:checked, .zx-check > input[type="checkbox"]:checked, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):checked, input.zx-check:indeterminate, .zx-check > input[type="checkbox"]:indeterminate, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):indeterminate { background: Highlight; border-color: Highlight; }
+    input.zx-check::after, .zx-check > input[type="checkbox"]::after, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *)::after { background: HighlightText; }
+    input.zx-check:focus-visible, .zx-check > input[type="checkbox"]:focus-visible, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):focus-visible { box-shadow: none; outline: 2px solid Highlight; outline-offset: 2px; }
+    input.zx-check:disabled, .zx-check > input[type="checkbox"]:disabled, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):disabled { border-color: GrayText; background: Canvas; opacity: 1; }
+    input.zx-check:disabled:checked, .zx-check > input[type="checkbox"]:disabled:checked, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):disabled:checked, input.zx-check:disabled:indeterminate, .zx-check > input[type="checkbox"]:disabled:indeterminate, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *):disabled:indeterminate { background: GrayText; }
+}
+@media (prefers-reduced-motion: reduce) {
+    input.zx-check, .zx-check > input[type="checkbox"], html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *), input.zx-check::after, .zx-check > input[type="checkbox"]::after, html body .contentWindow :not(.ui.checkbox) > input[type="checkbox"]:not(.zx-switch):not(.hidden):not(.zx-legacy-off *)::after { transition: none; }
+}
 
 /* ===================================================================================== buttons */
 .zx-btn {
@@ -353,8 +442,31 @@ body.darkTheme,
     font-size: var(--zx-fs-xs); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; white-space: nowrap;
 }
 .zx-table tbody tr:last-child td { border-bottom: 0; }
-.zx-table tbody tr:hover td { background: var(--zx-surface-2); }
-.zx-table tbody tr.is-selected td { background: var(--zx-primary-soft); }
+/* ---- row states, one system for every table (".zx-rows" gives them to a table that is not a .zx-table):
+        hover                a very light neutral wash
+        tr.is-selected       a subtle tint and a 3px accent bar on the left edge (no flood); a little stronger under the pointer
+        tr.is-disabled       muted text and grey chips, the SAME background as every other row (never an opacity on a cell)
+        keyboard             a ring around the row that holds the focused selection checkbox, or around a focusable row
+      The background sits on the cells (the table has separate borders) and is the same on every cell of the row. ---- */
+:is(.zx-table, .zx-rows) > tbody > tr > td { transition: background var(--zx-dur) var(--zx-ease); }
+:is(.zx-table, .zx-rows) > tbody > tr:hover > td { background: var(--zx-row-hover); }
+:is(.zx-table, .zx-rows) > tbody > tr.is-selected > td { background: var(--zx-row-selected); }
+:is(.zx-table, .zx-rows) > tbody > tr.is-selected:hover > td { background: var(--zx-row-selected-hover); }
+:is(.zx-table, .zx-rows) > tbody > tr.is-selected > td:first-child { box-shadow: inset 3px 0 0 var(--zx-primary); }
+:is(.zx-table, .zx-rows) > tbody > tr.is-disabled > td { color: var(--zx-text-muted); }
+:is(.zx-table, .zx-rows) > tbody > tr.is-disabled > td :is(b, strong) { color: inherit; }   /* the name of the row is muted too (the link of a name: zxpages.css, ".zxs-cell__main") */
+:is(.zx-table, .zx-rows) > tbody > tr.is-disabled :is(.zx-badge, .zx-chip, .zx-tag) { filter: grayscale(1); opacity: 0.7; }
+:is(.zx-table, .zx-rows) > tbody > tr:focus-visible { outline: 2px solid var(--zx-focus); outline-offset: -2px; }
+:is(.zx-table, .zx-rows) > tbody > tr:has(> td > input.zx-check:focus-visible) { outline: 2px solid var(--zx-focus); outline-offset: -2px; }
+:is(.zx-table, .zx-rows) > tbody > tr:has(> td > input.zx-check:focus-visible) { --_zx-check-ring: 0 0 0 1px var(--zx-focus); }   /* the row carries the ring, the box only a firmer edge */
+.zx-table th.zx-selcol, .zx-table td.zx-selcol { width: 1%; padding-right: 0; white-space: nowrap; }   /* the column of the selection checkbox */
+.zx-table th.zx-selcol > input.zx-check, .zx-table td.zx-selcol > input.zx-check { display: block; }
+.zx-selcol__label { display: none; }   /* the words next to the header box; phones only (below) */
+@media (forced-colors: active) {
+    :is(.zx-table, .zx-rows) > tbody > tr.is-selected > td:first-child { box-shadow: none; border-left: 3px solid Highlight; }
+    :is(.zx-table, .zx-rows) > tbody > tr:focus-visible, :is(.zx-table, .zx-rows) > tbody > tr:has(> td > input.zx-check:focus-visible) { outline-color: Highlight; }
+}
+@media (prefers-reduced-motion: reduce) { :is(.zx-table, .zx-rows) > tbody > tr > td { transition: none; } }
 .zx-table--compact th, .zx-table--compact td { padding: 5px 10px; font-size: var(--zx-fs-sm); }
 .zx-table--comfortable th, .zx-table--comfortable td { padding: 14px 16px; }
 .zx-table .zx-num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -374,7 +486,15 @@ body.darkTheme,
     .zx-table td:not([data-label])::before { content: none; }
     .zx-table td { min-width: 0; }
     .zx-table td > :not(.zx-row-actions) { min-width: 0; overflow-wrap: anywhere; }
-    .zx-table tbody tr:hover td { background: transparent; }
+    .zx-table > tbody > tr:hover > td, .zx-table > tbody > tr.is-selected > td, .zx-table > tbody > tr.is-selected:hover > td { background: transparent; box-shadow: none; }
+    .zx-table > tbody > tr.is-selected { background: var(--zx-row-selected); border-color: var(--zx-primary); box-shadow: inset 3px 0 0 var(--zx-primary); }
+    .zx-table td.zx-selcol { display: block; width: 100%; padding: 10px 12px 0; text-align: left; border-bottom: 0; }   /* the box is the first line of the card */
+    /* a table with a selection column keeps "select all" (and its dash): the header stays as one slim line, the box with its words */
+    .zx-table thead:has(th.zx-selcol) { position: static; display: block; width: auto; height: auto; overflow: visible; clip: auto; }
+    .zx-table thead:has(th.zx-selcol) tr { display: flex; align-items: center; margin: 0 0 var(--zx-space-2); border: 0; border-radius: 0; background: transparent; overflow: visible; }
+    .zx-table thead:has(th.zx-selcol) th:not(.zx-selcol) { display: none; }
+    .zx-table thead th.zx-selcol { position: static; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 0 13px; border: 0; background: transparent; text-transform: none; letter-spacing: 0; }
+    .zx-selcol__label { display: inline-flex; align-items: center; align-self: stretch; margin: 0; font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text-muted); cursor: pointer; }
 }
 
 /* ===================================================================================== tabs / segmented control */
@@ -567,7 +687,6 @@ body.zx-has-savebar .zx-toasts { bottom: 6.5rem; }
     .zx-whatis::before { inset: -6px; }
     .zx-disclosure > summary { min-height: var(--zx-touch); }
     .zx-btn-row .zx-btn--block, .zx-btn-row--stack .zx-btn { flex: 1 1 100%; }
-    .zx-check input { width: 22px; height: 22px; }
     .zx-switch { width: 48px; height: 28px; }
     .zx-switch::after { width: 22px; height: 22px; }
     .zx-switch:checked::after { transform: translateX(20px); }
@@ -673,6 +792,9 @@ body.darkTheme .zx-field select, body.darkTheme .zx-field .ui.selection.dropdown
     --zx-fs-title: 1.714rem;        /* 24px page title */
     --zx-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
     --zx-dur: 0.14s;
+    /* the glyphs of the checkbox, used as masks (the colour comes from the box) */
+    --zx-check-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.6 9.4l2.9 2.9 5.9-6.3' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --zx-check-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 9h8' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 :root, .zx-scheme-light { --zx-shadow-1: 0 1px 2px rgba(16, 24, 40, 0.05); }
 @media (max-width: 748px) { :root, .zx-scheme-light, body.darkTheme, .zx-scheme-dark { --zx-card-pad: 16px; --zx-topbar-h: 3.6rem; } }
@@ -776,6 +898,9 @@ body.darkTheme .zx-field select, body.darkTheme .zx-field .ui.selection.dropdown
 }
 .zx-related a:hover { background: var(--zx-surface-2); border-color: var(--zx-border-strong); text-decoration: none; }
 .zx-related a:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+.zx-related a, .zx-related a:hover, .zx-related a:focus, .zx-related a:active, .zx-related a:visited, .zx-related a * { text-decoration: none !important; }   /* the legacy a:focus/a:hover underline must never reach the menu items */
+/* Links that are styled as controls never underline in any state: the legacy global a:hover / a:focus underline (specificity 0,1,1) used to win over the single-class rules */
+a.zx-btn, a.zx-btn:hover, a.zx-btn:focus, a.zx-btn:active, a.zx-btn:visited, a.zx-btn *, a.zx-iconbtn, a.zx-iconbtn:hover, a.zx-iconbtn:focus, a.zxs-iconbtn, a.zxs-iconbtn:hover, a.zxs-iconbtn:focus, a.zx-tab, a.zx-tab:hover, a.zx-tab:focus, a.zx-badge, a.zx-badge:hover, a.zx-sectionnav__item, a.zx-sectionnav__item:hover, a.zx-sectionnav__item:focus { text-decoration: none; }
 .zx-related li > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* chip form: the reason is the tooltip (and stays readable for screen readers) */
 .zx-related:not(.is-menu) .zx-related__desc { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

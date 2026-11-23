@@ -72,7 +72,7 @@ var skip = []string{
 	"/api/waf/validate", "/api/security/posture/preview", "/api/cert/download", "/api/history/list", "/api/history/get",
 	"/api/history/diff", "/api/abuse/remote/", "/api/cluster/status", "/api/cluster/nodes", "/api/fleet/node/info",
 	"/api/fleet/node/probe", "/api/sso/zorxauth/customization/preview", "/api/conf/importcheck",
-	"/api/errorpages/preview",
+	"/api/errorpages/preview", "/api/crowdsec/check",
 }
 
 // always are recorded for any method: reading them hands out secrets.

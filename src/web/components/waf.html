@@ -284,10 +284,16 @@
     @media (max-width: 480px) { #wafTuneDlg dl { grid-template-columns: minmax(0, 1fr); gap: 0; } #wafTuneDlg dt { margin-top: var(--zx-space-2); } }
 
     /* ---- coverage ---- */
-    #wafPage .wafBulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-4); padding: var(--zx-space-2) var(--zx-space-3); border-radius: var(--zx-radius-md); background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); }
-    #wafPage .wafBulk select { width: auto; max-width: 100%; }
+    /* the selection bar of Coverage is the shared one (.zxs-bulk, components.md 9.4); it lies over the filter row inside the card, so it is a box of its own here */
+    #wafPage .wafCovBulk { padding-left: var(--zx-space-3); border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md); box-shadow: var(--zx-shadow-1); }
+    #wafPage .wafCovBulk__set { display: inline-flex; align-items: center; gap: var(--zx-space-2); margin: 0; font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); white-space: nowrap; }
+    #wafPage .wafCovBulk select { width: auto; min-width: 0; max-width: 100%; min-height: 32px; height: 32px; padding-top: 0; padding-bottom: 0; font-size: var(--zx-fs-sm); font-weight: 400; }
+    #wafPage .wafCovOff { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); margin-top: 2px; }
+    #wafPage .wafCovBulk[data-fit~="twoline"] .zxs-bulk__actions { flex-wrap: nowrap; gap: 2px; }
+    #wafPage .wafCovBulk[data-fit~="twoline"] .wafCovBulk__set { flex: 1 1 0; min-width: 0; padding-left: 6px; }
+    #wafPage .wafCovBulk[data-fit~="twoline"] .wafCovBulk__set select { flex: 1 1 0; width: 0; min-height: 40px; height: 40px; }
     #wafPage .wafCovSel { width: 100%; min-width: 11rem; max-width: 18rem; }
-    #wafPage .wafCovCol { width: 1%; }
+    @media (min-width: 481px) { #wafPage .wafCovCol { width: 1%; } }   /* phones: the row is a card, the box its first line */
     #wafPage .wafCovWarn { display: block; color: var(--zx-warn-text); font-size: var(--zx-fs-xs); margin-top: 2px; }
 
     /* ---- policy ---- */
@@ -529,17 +535,24 @@
                         </div>
                     </div>
                 </div>
-                <div id="wafCovBulk" class="wafBulk" style="display:none">
-                    <span><b id="wafCovSel">0</b> selected: set to</span>
-                    <select class="zx-select" id="wafCovBulkSrc" aria-label="WAF source for the selected rules">
-                        <option value="inherit">Inherit the global policy</option><option value="detection_only">Detection only</option><option value="block">Block</option><option value="off">Off</option>
-                    </select>
-                    <button type="button" class="zx-btn zx-btn--primary zx-btn--sm" id="wafCovBulkApply">Apply</button>
-                    <button type="button" class="zx-btn zx-btn--ghost zx-btn--sm" id="wafCovBulkClear">Clear selection</button>
+                <!-- Selection bar: exists only while proxy rules are selected, in the place of the filter row above (zxBulkSwap), so the table does not move -->
+                <div id="wafCovBulk" class="zxs-bulk wafCovBulk" role="toolbar" aria-label="Actions for the selected proxy rules" hidden>
+                    <span class="zxs-bulk__count" id="wafCovSel" aria-live="polite">0 selected</span>
+                    <span id="wafCovBulkMore" class="zxs-bulkmore" hidden><span></span><button type="button"></button></span>
+                    <div class="zxs-bulk__actions">
+                        <label class="wafCovBulk__set"><span>Set WAF to</span>
+                            <select class="zx-select" id="wafCovBulkSrc" aria-label="WAF source for the selected rules">
+                                <option value="inherit">Inherit the global policy</option><option value="detection_only">Detection only</option><option value="block">Block</option><option value="off">Off</option>
+                            </select>
+                        </label>
+                        <button type="button" id="wafCovBulkApply" title="Change the WAF of the selected proxy rules"><i class="check icon" aria-hidden="true"></i><span>Apply</span></button>
+                    </div>
+                    <span class="zxs-bulk__sep" aria-hidden="true"></span>
+                    <button type="button" class="zxs-bulk__clear" id="wafCovBulkClear" title="Clear the selection (Esc)" aria-keyshortcuts="Escape"><span>Clear</span><kbd aria-hidden="true">Esc</kbd></button>
                 </div>
                 <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="WAF coverage by proxy rule">
                     <table class="zx-table">
-                        <thead><tr><th class="wafCovCol"><input type="checkbox" id="wafCovAll" aria-label="Select all"></th><th>Proxy rule</th><th>Mode</th><th>Where it comes from</th><th>Change</th></tr></thead>
+                        <thead><tr><th class="wafCovCol zx-selcol"><input type="checkbox" class="zx-check" id="wafCovAll" aria-label="Select every proxy rule shown"><label class="zx-selcol__label" for="wafCovAll" aria-hidden="true">Select all</label></th><th>Proxy rule</th><th>Mode</th><th>Where it comes from</th><th>Change</th></tr></thead>
                         <tbody id="wafCoverageBody"></tbody>
                     </table>
                 </div>
@@ -867,7 +880,7 @@
     var PAGE = $("#wafPage");
     /* phone card layout of the kit tables: give every cell the text of its column header (rows are built by script) */
     function labelCells(tb){
-        var tbl = $(tb).closest("table.zx-table"), heads = tbl.find("thead th").map(function(){ return $.trim($(this).text()); }).get();
+        var tbl = $(tb).closest("table.zx-table"), heads = tbl.find("thead th").map(function(){ return $(this).hasClass("zx-selcol") ? "" : $.trim($(this).text()); }).get();   // the selection column has no label: its box is the first line of the card
         $(tb).children("tr").each(function(){
             if (this.getAttribute("data-zx-labelled")) return;
             var tds = $(this).children("td");
@@ -1756,6 +1769,13 @@
                 if (fail(cov)) return;
                 S.cov = cov || [];
                 S.covShown = COV_PAGE;
+                // which proxy rules are switched off (the coverage list does not say): their rows are muted like on HTTP Proxy
+                $.getJSON("/api/proxy/list?type=host", function(list){
+                    var off = {};
+                    (Array.isArray(list) ? list : []).forEach(function(r){ if (r && r.Disabled) off[r.RootOrMatchingDomain] = 1; });
+                    S.covOff = off;
+                    if (Object.keys(off).length) renderCoverage();
+                });
                 renderBands();
                 renderStatus();
                 renderCoverage();
@@ -1795,6 +1815,11 @@
             return true;
         });
         S.covRows = rows;
+        // the selection is always part of what the list holds now: a rule the filter took away is not changed behind the user's back
+        var inRows = {};
+        rows.forEach(function(r){ inRows[r.Endpoint] = 1; });
+        Object.keys(S.covSel).forEach(function(ep){ if (!inRows[ep]) delete S.covSel[ep]; });
+        var covOff = S.covOff || {};
         var html = "";
         rows.slice(0, S.covShown).forEach(function(c){
             var cur = c.Source == "profile" ? "profile:" + c.Profile : c.Source;
@@ -1804,8 +1829,9 @@
             var sel = '<select class="zx-select wafCovSel" data-ep="' + esc(c.Endpoint) + '" aria-label="' + esc(t("WAF source for {0}").replace("{0}", c.Endpoint)) + '">' + opts.map(function(o){
                 return '<option value="' + esc(o[0]) + '"' + (o[0].toLowerCase() == String(cur).toLowerCase() ? " selected" : "") + '>' + esc(o[1]) + '</option>';
             }).join("") + '</select>';
-            html += '<tr><td class="wafCovCol"><input type="checkbox" class="wafCovCk" data-ep="' + esc(c.Endpoint) + '"' + (S.covSel[c.Endpoint] ? " checked" : "") + ' aria-label="' + esc(t("Select {0}").replace("{0}", c.Endpoint)) + '"></td><td><div><b data-i18n-skip>' + esc(c.Endpoint) + '</b>' +
-                (c.IsRoot ? '<span class="wafEvMore">' + esc(t("Default site")) + '</span>' : '') + '</div></td><td>' + modeBadge(c.Mode) + '</td><td><div>' + esc(originWord(c.Origin)) +
+            var isOff = !c.IsRoot && covOff[c.Endpoint];
+            html += '<tr class="' + (S.covSel[c.Endpoint] ? 'is-selected ' : '') + (isOff ? 'is-disabled' : '') + '"><td class="wafCovCol zx-selcol"><input type="checkbox" class="zx-check wafCovCk" data-ep="' + esc(c.Endpoint) + '"' + (S.covSel[c.Endpoint] ? " checked" : "") + ' aria-label="' + esc(t("Select {0}").replace("{0}", c.Endpoint)) + '"></td><td><div><b data-i18n-skip>' + esc(c.Endpoint) + '</b>' +
+                (c.IsRoot ? '<span class="wafEvMore">' + esc(t("Default site")) + '</span>' : '') + (isOff ? '<span class="wafCovOff">' + esc(t("Disabled proxy rule")) + '</span>' : '') + '</div></td><td>' + modeBadge(c.Mode) + '</td><td><div>' + esc(originWord(c.Origin)) +
                 (c.Warning ? '<span class="wafCovWarn">' + esc(c.Warning) + '</span>' : '') + '</div></td><td>' + sel + '</td></tr>';
         });
         $("#wafCoverageBody").html(html || '<tr><td colspan="5" class="zx-empty-cell">' + esc(cov.length ? t("No proxy rule matches the filter.") : t("No proxy rules yet. Create one under HTTP Proxy and it shows up here.")) + '</td></tr>');
@@ -1814,24 +1840,59 @@
         updateCovBulk();
     }
     $("#wafCovMore").on("click", function(){ S.covShown += COV_PAGE; renderCoverage(); });
+    var covSwap = null;
     function updateCovBulk(){
-        var n = Object.keys(S.covSel).length;
-        $("#wafCovSel").text(n);
-        $("#wafCovBulk").toggle(n > 0);
+        var n = Object.keys(S.covSel).length, all = (S.covRows || []).length;
+        // the bar takes the place of the filter row, so the table stays where it is (uxkit.js, zxBulkSwap)
+        if (!covSwap && window.zxBulkSwap) covSwap = window.zxBulkSwap(document.getElementById("wafCovBulk"), document.querySelector("#wafPage .wafPane[data-tab='waf-coverage'] .wafBar"));
+        if (covSwap) covSwap.set(n > 0); else $("#wafCovBulk").prop("hidden", n == 0);
+        // the rows show their state; the header box speaks for the rows shown: checked when all of them are selected, a dash while only some are
+        var boxes = $(".wafCovCk"), on = 0;
+        boxes.each(function(){ var sel = !!S.covSel[$(this).attr("data-ep")]; this.checked = sel; if (sel) on++; $(this).closest("tr").toggleClass("is-selected", sel); });
+        var full = boxes.length > 0 && on == boxes.length, head = document.getElementById("wafCovAll");
+        head.checked = full; head.indeterminate = on > 0 && !full;
+        var tip = full ? t("Clear the selection of the proxy rules shown") : (on ? t("Select the rest of the proxy rules shown") : t("Select every proxy rule shown"));
+        head.title = tip; head.setAttribute("aria-label", tip);
+        // "Show more" hides part of the list: with every row shown selected the bar offers the rest, and says so once all are selected
+        var offer = full && all > boxes.length && n < all, more = $("#wafCovBulkMore");
+        more.prop("hidden", !offer);
+        if (offer){
+            var here = t("All {0} shown are selected.").replace("{0}", boxes.length), rest = t("Select all {0} proxy rules").replace("{0}", all);
+            more.children("span").text(here);
+            more.children("button").text(t("Select all {0}").replace("{0}", all)).attr("title", here + " " + rest).attr("aria-label", rest);
+        }
+        $("#wafCovSel").text((n == all && all > boxes.length ? t("All {0} selected") : t("{0} selected")).replace("{0}", n));
+        $("#wafCovBulk").attr("data-count", n);
+        if (covSwap) covSwap.fit();
     }
+    function covClearSel(){ S.covSel = {}; updateCovBulk(); }
     PAGE.on("change", ".wafCovCk", function(){ var ep = $(this).attr("data-ep"); if (this.checked) S.covSel[ep] = 1; else delete S.covSel[ep]; updateCovBulk(); });
+    // the header box acts on the rows that are shown, never on rules still behind "Show more" (the bar offers those)
     $("#wafCovAll").on("change", function(){
         var on = this.checked;
-        (S.covRows || []).forEach(function(r){ if (on) S.covSel[r.Endpoint] = 1; else delete S.covSel[r.Endpoint]; });
-        $(".wafCovCk").prop("checked", on); updateCovBulk();
+        $(".wafCovCk").each(function(){ var ep = $(this).attr("data-ep"); if (on) S.covSel[ep] = 1; else delete S.covSel[ep]; });
+        updateCovBulk();
     });
-    $("#wafCovBulkClear").on("click", function(){ S.covSel = {}; $("#wafCovAll").prop("checked", false); $(".wafCovCk").prop("checked", false); updateCovBulk(); });
+    $("#wafCovBulkMore").on("click", "button", function(){
+        (S.covRows || []).forEach(function(r){ S.covSel[r.Endpoint] = 1; });
+        updateCovBulk();
+        $("#wafCovAll").trigger("focus");
+    });
+    $("#wafCovBulkClear").on("click", function(){ covClearSel(); $("#wafCovAll").trigger("focus"); });
+    // Esc clears the selection (unless a dialog, a menu or a field wants the key)
+    $(document).off("keydown.wafCovSel").on("keydown.wafCovSel", function(e){
+        if (e.key != "Escape" || e.isDefaultPrevented() || !Object.keys(S.covSel).length) return;
+        if (!$("#wafCovBulk").is(":visible") || $(".ui.modal.visible, .ui.modal.active, .zx-drawer-backdrop").length || $("[aria-modal='true']:visible").length) return;
+        var el = e.target;
+        if (el && /^(input|textarea|select)$/i.test(el.tagName) && el.type != "checkbox") return;
+        covClearSel();
+    });
     $("#wafCovBulkApply").on("click", function(){
         var src = $("#wafCovBulkSrc").val(), eps = Object.keys(S.covSel);
         var rootSel = (S.cov || []).filter(function(r){ return r.IsRoot && S.covSel[r.Endpoint]; }).map(function(r){ return r.Endpoint; });
         var hosts = eps.filter(function(e){ return rootSel.indexOf(e) < 0; });
         var btn = $(this); busy(btn, true);
-        var finish = function(){ busy(btn, false); S.covSel = {}; $("#wafCovAll").prop("checked", false); loadCoverage(); loadOverview(); };
+        var finish = function(){ busy(btn, false); covClearSel(); loadCoverage(); loadOverview(); };
         var doRoot = function(){
             var left = rootSel.length;
             if (!left){ finish(); return; }
@@ -1855,8 +1916,8 @@
 
     /* ---------- tuning assistant ---------- */
     var T = {items: [], info: null, cov: null};
-    function tuneIgnored(){ try { return JSON.parse(localStorage.getItem("wafTuneIgnored") || "{}") || {}; } catch (e){ return {}; } }
-    function tuneSetIgnored(o){ try { localStorage.setItem("wafTuneIgnored", JSON.stringify(o)); } catch (e){} }
+    function tuneIgnored(){ try { return JSON.parse(zxStore.get("wafTuneIgnored") || "{}") || {}; } catch (e){ return {}; } }
+    function tuneSetIgnored(o){ try { zxStore.set("wafTuneIgnored", JSON.stringify(o)); } catch (e){} }
     function loadTuneEndpoints(cb){
         $.getJSON("/api/waf/coverage", function(cov){
             if (fail(cov)) return;

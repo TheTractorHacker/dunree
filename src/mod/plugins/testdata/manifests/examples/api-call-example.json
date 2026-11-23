@@ -1,0 +1,26 @@
+{
+ "id": "org.aroz.zoraxy.api_call_example",
+ "name": "API Call Example Plugin",
+ "author": "Anthony Rubick",
+ "author_contact": "",
+ "description": "An example plugin for making API calls",
+ "url": "",
+ "type": 1,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": null,
+ "static_capture_ingress": "",
+ "dynamic_capture_sniff": "",
+ "dynamic_capture_ingress": "",
+ "ui_path": "/ui",
+ "subscription_path": "",
+ "subscriptions_events": null,
+ "permitted_api_endpoints": [
+  {
+   "method": "GET",
+   "endpoint": "/plugin/api/access/list",
+   "reason": "Used to display all configured Access Rules"
+  }
+ ]
+}

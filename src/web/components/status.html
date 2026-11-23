@@ -1938,8 +1938,8 @@
 
     /* ---- traffic map controls ---- */
     var frame = document.getElementById("trafficFlowDiagram");
-    function lsGet(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
-    function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
+    function lsGet(k){ try { return zxStore.get(k); } catch (e) { return null; } }
+    function lsSet(k, v){ try { zxStore.set(k, v); } catch (e) {} }
     function tell(msg){ try { frame.contentWindow.postMessage(Object.assign({type: "zoraxy-diagram"}, msg), window.location.origin); } catch (e) {} }
     function syncDiagramButtons(){
         var animOn = lsGet("zoraxy_trafficflow_anim") !== "off";

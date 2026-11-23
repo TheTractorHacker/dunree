@@ -2,6 +2,7 @@ package plugins
 
 import (
 	_ "embed"
+	"net"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -46,6 +47,9 @@ type Plugin struct {
 	capBreaker captureBreaker  //circuit breaker of the capture and UI paths (only enforced with a capture timeout)
 	evq        eventQueue      //bounded queue of events waiting to be sent to the plugin
 	logw       pluginLogFile   //per plugin log file (only with LogTarget = file)
+
+	//Phase 2: signed index (see store_verify.go)
+	binaryState string //guarded by mu: "" not looked at | ok | changed, set when the plugin is started
 }
 
 type ManagerOptions struct {
@@ -73,8 +77,22 @@ type ManagerOptions struct {
 	/* API Key Management */
 	APIKeyManager *auth.APIKeyManager `json:"-"` //The API key manager for the plugins
 
+	/* Security audit log (optional): called for things the plugin manager notices by itself, e.g. a plugin that asks for new API permissions after an update */
+	Audit func(event string, target string, detail map[string]string) `json:"-"`
+
 	/* Per plugin log files (only used by plugins whose policy says LogTarget = file). Empty = "plugins" inside the log folder of Logger, or ./log/plugins */
 	PluginLogDir string
+
+	/* Signed plugin index (store_verify.go). Path of a file with the ed25519 public key of the plugin index. Empty = the key of the plugin safety settings */
+	IndexPublicKeyFile string
+	/* Optional: the 32 bytes of the ed25519 key Zoraxy releases are verified with. That key is refused as the plugin index key (the index has a key of its own) */
+	ReleasePublicKey []byte `json:"-"`
+
+	/* Isolated plugin UI (ui_isolation.go), only used when the setting is turned on */
+	IsolatedUIDefaultListen string                          //listen address when the setting names none, e.g. ":8001"
+	UIListenerWrap          func(net.Listener) net.Listener `json:"-"` //optional: wraps the listener (TLS when the admin UI uses TLS)
+	UIHandlerWrap           func(http.Handler) http.Handler `json:"-"` //optional: wraps the handler (the allow-list of the admin listener)
+	UIStaticAssets          http.Handler                    `json:"-"` //optional: serves the public style and script files of the admin UI that plugin pages load by absolute path
 
 	/* Status */
 	ProbePluginPorts bool //Off by default. On: listing plugins opens one TCP connection to the port of every running plugin (cached 2 s) to tell "starting" / "not listening" from "running"
@@ -111,4 +129,11 @@ type Manager struct {
 
 	supCfg  supTunables //supervisor tunables, zero value = defaults (tests shorten them)
 	closing atomic.Bool //Close() was called: no automatic restart any more
+
+	settings settingsState //plugin manager settings (contract mode, permission approval), see contract.go
+	perm     permState     //approved API permissions per plugin ID, see permissions.go
+
+	store    storeState    //index status, replay protection and install records, see store_verify.go
+	storeCfg storeTunables //download and health check timeouts, zero value = defaults (tests shorten them)
+	uiIso    uiIsolation   //listener and tickets of the isolated plugin UI, see ui_isolation.go
 }

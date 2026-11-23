@@ -3,6 +3,8 @@ package zoraxy_plugin
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -11,9 +13,26 @@ import (
 	Plugins Includes.go
 
 	This file is copied from Zoraxy source code
-	You can always find the latest version under mod/plugins/includes.go
-	Usually this file are backward compatible
+	You can always find the latest version under mod/plugins/zoraxy_plugin
+	The package follows semantic versioning (SDKVersion below, CHANGELOG.md):
+	a plugin built with an older 1.x copy keeps working with a newer Zoraxy.
 */
+
+// SDK and contract version
+//
+// SDKVersion is the version of this package (semantic versioning, see CHANGELOG.md
+// next to this file). It changes with every release of the package.
+//
+// APIVersion is the version of the plugin contract this package implements: what
+// Zoraxy and a plugin say to each other (introspect, configure, calls, events).
+// It only changes when the contract itself changes in a way a plugin or Zoraxy has
+// to know about. The written contract is docs/plugins/contract.md in the Zoraxy
+// repository. A plugin that declares no api_version is a "legacy" plugin (version 0)
+// and keeps working.
+const (
+	SDKVersion = "1.1.0"
+	APIVersion = 1
+)
 
 type PluginType int
 
@@ -115,7 +134,41 @@ type IntroSpect struct {
 		plugin, see hooks.go for details. Old Zoraxy versions ignore this field.
 	*/
 	Hooks *HookSettings `json:"hooks,omitempty"`
+
+	/*
+		Supervision (optional, old Zoraxy versions ignore these fields)
+
+		HealthPath: a path of your plugin that answers a GET with any 2xx status while
+		the plugin works (e.g. /health). Zoraxy only calls it when the administrator
+		turned the health check of the plugin on. Without it the health check is a
+		TCP connect to your port, which cannot see a plugin that accepts connections
+		but no longer answers.
+
+		ConfigureVia: set to ConfigureViaStdin and Zoraxy starts your plugin with the
+		flag -configure-stdin and writes the configure payload (one JSON document) to
+		its standard input instead of putting it on the command line, where every
+		local user can read your API key. RecvConfigureSpec handles both ways.
+	*/
+	HealthPath   string `json:"health_path,omitempty"`
+	ConfigureVia string `json:"configure_via,omitempty"`
+
+	/*
+		Contract version (optional, old Zoraxy versions ignore this field)
+
+		The version of the plugin contract your plugin was built for. Leave it 0 and
+		ServeIntroSpect fills in the APIVersion of this package. A plugin without the
+		field is a legacy plugin: Zoraxy runs it exactly as before. Zoraxy warns the
+		administrator when a plugin was built for a newer contract than it supports,
+		and refuses to start it only when the administrator asked for that.
+	*/
+	APIVersion int `json:"api_version,omitempty"`
 }
+
+const (
+	ConfigureViaStdin  = "stdin"            //value of IntroSpect.ConfigureVia
+	ConfigureStdinFlag = "-configure-stdin" //flag a plugin is started with when it declared ConfigureViaStdin
+	maxConfigureBytes  = 1 << 20
+)
 
 /*
 ServeIntroSpect Function
@@ -128,7 +181,12 @@ Place this function at the beginning of your plugin main function
 func ServeIntroSpect(pluginSpect *IntroSpect) {
 	if len(os.Args) > 1 && os.Args[1] == "-introspect" {
 		//Print the intro spect and exit
-		jsonData, _ := json.MarshalIndent(pluginSpect, "", " ")
+		out := *pluginSpect
+		if out.APIVersion == 0 {
+			//Built with this package = speaks the contract version of this package
+			out.APIVersion = APIVersion
+		}
+		jsonData, _ := json.MarshalIndent(&out, "", " ")
 		fmt.Println(string(jsonData))
 		os.Exit(0)
 	}
@@ -148,7 +206,67 @@ type ConfigureSpec struct {
 	APIKey       string               `json:"api_key,omitempty"`      //API key for accessing Zoraxy APIs, if the plugin has permitted endpoints
 	ZoraxyPort   int                  `json:"zoraxy_port,omitempty"`  //The port that Zoraxy is running on, used for making API calls to Zoraxy
 	InvokeToken  string               `json:"invoke_token,omitempty"` //Secret that Zoraxy sends in the X-Zoraxy-Plugin-Token header on every call it makes to the plugin (filter / sniff). Use VerifyInvokeToken to check it
+
+	//Contract versions this Zoraxy supports (inclusive). Only sent to plugins that declared
+	//an api_version of 1 or more; APIVersionMax is 0 when Zoraxy did not send a range
+	//(an older Zoraxy, or a legacy plugin). See ContractSupported.
+	APIVersionMin int `json:"api_version_min,omitempty"`
+	APIVersionMax int `json:"api_version_max,omitempty"`
 	//To be expanded
+}
+
+// ContractKnown reports whether Zoraxy told the plugin which contract versions it supports.
+func (c *ConfigureSpec) ContractKnown() bool {
+	return c != nil && c.APIVersionMax > 0
+}
+
+// ContractSupported reports whether the contract version of this package (APIVersion)
+// is inside the range Zoraxy supports. It is true when Zoraxy sent no range (an older
+// Zoraxy): such a Zoraxy only speaks the legacy contract, which every version of this
+// package can still speak.
+func (c *ConfigureSpec) ContractSupported() bool {
+	if !c.ContractKnown() {
+		return true
+	}
+	return APIVersion >= c.APIVersionMin && APIVersion <= c.APIVersionMax
+}
+
+// SupportsAPIVersion reports whether this Zoraxy supports the given contract version.
+// Use it before relying on something a later contract version added. Without a range
+// from Zoraxy only version 0 (legacy) is certain.
+func (c *ConfigureSpec) SupportsAPIVersion(version int) bool {
+	if !c.ContractKnown() {
+		return version == 0
+	}
+	return version >= c.APIVersionMin && version <= c.APIVersionMax
+}
+
+// warnContract prints one line when Zoraxy does not support the contract of this package
+func warnContract(c *ConfigureSpec) {
+	if !c.ContractSupported() {
+		fmt.Fprintf(os.Stderr, "zoraxy_plugin: this plugin was built for plugin contract version %d (SDK %s), this Zoraxy supports %d to %d. It may not work as expected.\n", APIVersion, SDKVersion, c.APIVersionMin, c.APIVersionMax)
+	}
+}
+
+/*
+HealthHandler returns a handler for the path you declared as IntroSpect.HealthPath.
+
+It answers 200 "ok" while check returns nil and 503 otherwise (the text of the
+error is not sent). Pass nil when being able to answer is all there is to check.
+Keep check fast: Zoraxy gives a health check 2 seconds.
+*/
+func HealthHandler(check func() error) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		if check != nil {
+			if err := check(); err != nil {
+				http.Error(w, "unhealthy", http.StatusServiceUnavailable)
+				return
+			}
+		}
+		w.Write([]byte("ok"))
+	})
 }
 
 /*
@@ -161,11 +279,25 @@ Place this function after ServeIntroSpect function in your plugin main function
 */
 func RecvConfigureSpec() (*ConfigureSpec, error) {
 	for i, arg := range os.Args {
+		if arg == ConfigureStdinFlag {
+			//The payload is on the standard input (see IntroSpect.ConfigureVia)
+			raw, err := io.ReadAll(io.LimitReader(os.Stdin, maxConfigureBytes))
+			if err != nil {
+				return nil, err
+			}
+			var configSpec ConfigureSpec
+			if err := json.Unmarshal(raw, &configSpec); err != nil {
+				return nil, err
+			}
+			warnContract(&configSpec)
+			return &configSpec, nil
+		}
 		if strings.HasPrefix(arg, "-configure=") {
 			var configSpec ConfigureSpec
 			if err := json.Unmarshal([]byte(arg[11:]), &configSpec); err != nil {
 				return nil, err
 			}
+			warnContract(&configSpec)
 			return &configSpec, nil
 		} else if arg == "-configure" {
 			var configSpec ConfigureSpec
@@ -178,6 +310,7 @@ func RecvConfigureSpec() (*ConfigureSpec, error) {
 			} else {
 				return nil, fmt.Errorf("no port specified after -configure flag")
 			}
+			warnContract(&configSpec)
 			return &configSpec, nil
 		}
 	}

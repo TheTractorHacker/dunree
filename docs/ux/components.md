@@ -51,11 +51,12 @@ Markup of every component is on the kit page (copy button). Summary and the rule
 | Input with a unit | `.zx-inputgroup` > `.zx-input` + `.zx-inputgroup__unit` | A unit ("MiB", "sec") joined to a number input. Only for units, never for buttons. The field keeps a visible `<label for>` above it (the unit and the help are `aria-describedby`) |
 | Side view of the site editor | `ui/sideview.css`, switched on by `script/utils.js` (class `zx-sideview` on `<html>` when the page is the frame of `.editor_side_wrapper`) | The header row of the editor (Back button, name of the view, host) is the only title: the snippet marks its own page title with `zx-sideview-title` and it is not shown there. One gutter for every view (`--zx-space-4`, the left edge of the Back button), content left aligned, no centred Fomantic container. Opening moves the focus to Back and makes the editor behind it `inert`; Back / Esc return the focus to the button that opened the view. A new snippet for the side view needs `utils.js` in `<head>` and an entry in `SIDE_VIEW_TITLES` (`components/httprp.html`) |
 | Toggle row | `.zx-toggle-row` + `input.zx-switch[role=switch]` | Description says what happens when it is on |
+| Checkbox | `input.zx-check` (alone, with `aria-label`) or `label.zx-check > input` (visible label) | 18px box, 5px radius, drawn tick, dash for `indeterminate` (a property: `box.indeterminate = true`), hover halo, focus ring, 32px target (44px on touch) without a larger box, disabled, forced colours. For choosing rows and for options of a form; a setting that takes effect is a `.zx-switch`. A raw checkbox of a page (not Fomantic `.ui.checkbox`) is drawn the same way without the class. See 9.4 |
 | Buttons | `.zx-btn` + `--primary --secondary --danger --danger-outline --ghost --icon --sm --block`, `.is-loading` | `ZxUI.setLoading(btn, true)`. Icon buttons need `aria-label`. One primary per view |
 | Badge | `.zx-badge` + `--ok --warn --danger --info`, `--dot` | Text always present, colour is never the only signal |
 | Callout | `.zx-callout` + `--info --warn --danger --success` | `role="note"`; `role="alert"` only for messages that appear after an action |
 | Empty state | `.zx-empty` (`__icon`, `__title`, `__text`) | Always offers the next action |
-| Data table | `.zx-table-wrap > table.zx-table`, `--compact --comfortable`, `.zx-num`, `.zx-actions`, `.zx-row-actions` | No scroll area of its own since design v2 (the page scrolls; `.zx-table-wrap--scroll` only inside a drawer or dialog); give the wrapper `tabindex="0" role="region" aria-label`; `data-label` on every `td` for the 480px card layout |
+| Data table | `.zx-table-wrap > table.zx-table`, `--compact --comfortable`, `.zx-num`, `.zx-actions`, `.zx-row-actions`, `.zx-selcol`, row states `tr.is-selected`, `tr.is-disabled` (9.4) | No scroll area of its own since design v2 (the page scrolls; `.zx-table-wrap--scroll` only inside a drawer or dialog); give the wrapper `tabindex="0" role="region" aria-label`; `data-label` on every `td` for the 480px card layout |
 | Tabs | `.zx-tabs > .zx-tab[data-zx-panel]`, `ZxUI.tabs(el, {onChange})` | Arrow keys, Home/End, roving tabindex. Two to six flat choices; more, or grouped: sectioned navigation (section 9) |
 | Segmented control | `.zx-segmented > .zx-segmented__item[data-value]`, `ZxUI.segmented(el, {onChange})` | `role=radiogroup` |
 | Stat tile | `.zx-stat` (`__label`, `__value`, `__hint`), `--ok --warn --danger` | |
@@ -285,3 +286,50 @@ nav.state("abuse", "on", t("On"));          // dot + word in the navigation and 
 * Exemplar: Security Center (`components/security.html`): 12 sections, Overview + 4 groups, opens on Overview. Its ids are unchanged, so `$("#secTabs .item[data-sec='crowdsec']").trigger("click")`, the palette entries and deep links work as before. Items other than the current one are not Tab stops and on narrow screens the items are not visible: tests use `dispatch_event(selector, "click")` or the select, and click the section they need (the page no longer opens on Auto-ban).
 * A section that saves several cards with one button ends those cards with a `.zx-savefoot` row in the flow (button + one sentence saying what it saves); it is not sticky and never floats over fields.
 * The old group label inside a tab strip (`.zx-tabgroup`) is retired; do not use it.
+
+### 9.4 Selection: checkbox, row states, selection bar
+
+One system for every table and list. Live examples: kit page, "Checkbox" and "Data table". Exemplars: HTTP Proxy (`components/httprp.html`, `script/proxytable.js`) and WAF > Coverage (`components/waf.html`); both use the same bar, row states and header box. Checked by `tools/ui-smoke/smoke.py --proxy-ux-only`.
+
+**Checkbox** (`zxui.css`, "checkbox"). Markup in section 2. The edge is one whole pixel and the glyph is laid over the border box by the same amount (`--_zx-check-b`), so the tick fills the box exactly at every pixel ratio. Tokens: `--zx-border-strong` (edge), `--zx-primary` / `--zx-on-primary` (fill and tick), `--zx-check-halo` (hover), `--zx-check-tick` / `--zx-check-dash` (the glyphs, used as masks). Do not size it per page and do not set `accent-color`; the old page rules that did were removed.
+
+**Row states** (`.zx-table`, or any table with the class `.zx-rows`):
+
+| State | How | Looks like |
+|---|---|---|
+| Hover | automatic | a very light neutral wash, `--zx-row-hover` |
+| Selected | `tr.is-selected` | a subtle tint (`--zx-row-selected`) and a 3px `--zx-primary` bar on the left edge; never a flood of `--zx-primary-soft` |
+| Selected + hover | automatic | `--zx-row-selected-hover` |
+| Disabled | `tr.is-disabled` | muted text **including the name of the row** (`.zxs-cell__main`, also when it is a link; full colour again under the pointer), grey badges and chips, the same background as every other row. Fade the contents of a cell, never the cell (an opacity on a `td` also fades its background and the row turns patchy) |
+| Keyboard | automatic | a 2px ring around the row whose `td > input.zx-check` has the focus (the box itself only gets a firmer edge), and around a row that is focusable itself |
+
+States combine: a selected disabled row has the tint, the bar and the muted contents. The background is set on the cells and is the same on every cell of a row. Phone cards: the tint and the bar sit on the card.
+
+**Select all.** The header box (`th.zx-selcol > input.zx-check`) speaks for the rows that are shown: checked when every one of them is selected, a dash (`indeterminate`) when some are; a click on the dash selects the rest. It never selects rows that are not on screen (another page, or behind "Show more"). When every row shown is selected and more match, the bar offers the rest next to the count (`.zxs-bulkmore`: "All 50 hosts on this page are selected. Select all 64"; the sentence only where there is room, the link always). Once everything is selected the count says so ("All 64 selected"). The offer is never a line of its own: that would push the table down. The selection is always part of what the list holds: a row a filter took away is not changed behind the user's back. Phones: a `.zx-table` hides its header, but a table with a selection column keeps it as one slim line, the box with the words "Select all" (`<label class="zx-selcol__label" for="...">` after the box in `th.zx-selcol`).
+
+**Selection bar** (`.zxs-bulk` in `zxpages.css`): exists only while something is selected, sticky under the top bar (no scroller of its own). **It takes the place of the list toolbar** (the search and filter row), so nothing below moves when a selection starts or ends and the pointer stays on the row it clicked: put the bar right after the toolbar and call `zxBulkSwap(bar, toolbar).set(count > 0)` (`uxkit.js`) instead of toggling `hidden`. The toolbar keeps its room but is not shown; filtering comes back with Clear or Esc. The bar is never taller than the toolbar: `zxBulkSwap` picks the first form that fits (`data-fit`: one line in full, without the sentence, without icons, as icons only, or two lines where the toolbar has two), so no breakpoints are needed per page or language. Order: the count as a chip (`.zxs-bulk__count`), the actions in `.zxs-bulk__actions` (quiet buttons with an icon; rarely used ones in one "Change" menu; the destructive one last, apart and outlined in the danger colour), then "Clear" with the Esc hint (`.zxs-bulk__clear`). Narrow (`data-fit~="twoline"`): count and Clear on the first line, the actions as words on the second.
+
+**Keyboard** on the exemplar: Tab reaches the header box, Up / Down / Home / End move between the boxes of the rows, Space selects, Shift + click selects a range, Esc clears the selection.
+
+### 9.5 Dark theme and the legacy tag rules
+
+`darktheme.css` colours bare tags (`h1`-`h6`, `a`, `p`, `span`) for the legacy pages. Those rules are written with `:where(body.darkTheme)`, so they weigh no more than a tag selector and **any class wins** against them: a kit class or a page class sets a colour in the dark theme without `!important` and without repeating `body.darkTheme` in front.
+
+* Headings and links: a bare `h1`-`h6` / `a` gets `--text_color`; any class on it wins.
+* `p` and `span` weigh nothing at all, and the rule only applies **inside a Fomantic component** (any `.ui` ancestor): those carry dark text colours of their own (items, cards, lists), so the text inside is set to `--text_color`. Measured over every page, tab, side panel and tool window, the plugin store list is the one place that needs it today; the scope is kept wide for the legacy pages.
+* Everywhere else `p` and `span` inherit, so a `span` without a colour of its own follows its parent: muted help stays muted, a number in a danger pill stays in the danger colour. That covers: no `.ui` ancestor at all; an ancestor with a `zx-` or `zxs-` class (a kit component, also under a `.ui` wrapper); an ancestor with a `block__element` class (the blocks of a redesigned page: `hx-item__meta`, `up-row__main`; Fomantic and the legacy pages have no class with `__`); the group headers of the side menu.
+* A page block that sits in a `.ui` wrapper and matches none of these gives the element a class with a colour.
+* Do not raise the weight of those rules again, and do not load `darktheme.css` in a cascade layer on new pages. The Upstreams drawer still does: there the layer also keeps the legacy rules for bare form controls (`select`, `textarea`: border, radius, background) below the kit classes, so it is not only about text colour.
+* The rules of `darktheme.css` on Fomantic classes (`.ui.form .field label`, `.ui.table td`, ...) are `!important` on purpose and are untouched: they belong to the legacy components. A table cell is therefore the one place where a class cannot win: the kit's own cell (`td.zx-empty-cell`) is restored at the end of `darktheme.css`, and a page with coloured cells repeats them for the dark theme in its style block (`snippet/logsearch.html`, the status classes).
+
+Checked by `tools/ui-smoke/smoke.py --storage-only` (second part) and, for the Upstreams drawer, by `--sites-only`.
+
+### 9.6 Storage: `zxStore`
+
+`localStorage` and `sessionStorage` throw on every call when the browser blocks site data (strict privacy modes). Never call them directly: use `zxStore.get(key)`, `zxStore.set(key, value)`, `zxStore.remove(key)` (`zxStore.session.*` for the session store) from `script/safestorage.js`. They never throw; a value the browser refuses is kept in memory until the page is reloaded, and a side-panel frame shares the memory of the admin page, so the theme chosen there also holds in the frames.
+
+* `safestorage.js` is the first script of `index.html` and sits in front of `darktheme.js` on every page that loads it. `darktheme.js` and `i18n.js` also work without it (plugin pages include `darktheme.js` alone): they then fall back to guarded direct calls, without the memory.
+* Values are strings, as in the browser API: `JSON.parse(zxStore.get(key) || "[]")` inside `try`, since a stored value may be damaged.
+* Not covered: the bundled Fomantic scripts use `localStorage` in three optional features (nag, remote dropdown cache, API cache) that the admin UI does not use.
+
+Checked by `tools/ui-smoke/smoke.py --storage-only`: two fresh browser contexts in which storage throws (the methods, then the `window.localStorage` property itself); every menu page opens, menu groups, Recent, pins and the theme menu work, no console error.

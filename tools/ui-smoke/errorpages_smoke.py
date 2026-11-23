@@ -2,12 +2,16 @@
 settle, check_horizontal, allow); run alone with --errorpages-only on a THROW-AWAY instance: it saves error page settings and
 resets them at the end (and at the start, so a run that was interrupted does not poison the next one).
 
-Checks: default off (API, badge, the test link answers with the built-in page), the page opens on Theme with the sectioned
-navigation and six page classes, ONE save bar and one primary button, the live preview follows the theme and the text, hostile
+Checks: default off (API, switch, the test link answers with the built-in page), the header (Related, the master switch
+"Use my error pages": ONE state indicator, no badge, as high as the buttons, its plain-words line as description and tooltip; History;
+a "More actions" menu that holds the reset; the title stays on one line and the actions on one row at 1366, 1024 and 800), the page opens
+on Theme with the sectioned navigation and six page classes that each carry a state dot, ONE save bar and one primary button, the live preview follows the theme and the text, hostile
 markup typed as a title is shown as text in the preview and in the served page, the three starter templates, a broken template is
 reported in the preview and refused by Save, Save switches it on (API, badge, navigation state, served page with its status code,
-no-store and the Content-Security-Policy), the pages of one site (scope), "Use the built-in page", "Reset to built-in", and the
-layout (no horizontal overflow, the preview does not scroll inside the page) at 1366, 2000 and 390px, light and dark.
+no-store and the Content-Security-Policy), the pages of one site (scope), "Use the built-in page", "Switch on" of the note on a
+customised page (marks the page unsaved, never saves), "Reset everything to built-in" (the dialog names what is removed), and the
+layout (no horizontal overflow, the preview is as high as its page and does not scroll inside the page, navigation / editor /
+preview share their top edges and the preview is sticky on wide screens) at 1366, 2000 and 390px, light and dark.
 Screenshots are written to --out as errorpages-*.png."""
 
 import json
@@ -80,7 +84,22 @@ def errorpages_ui(pg, ctx):
             try {
                 const d = f.contentDocument;
                 if (d && d.documentElement && d.documentElement.scrollHeight > f.clientHeight + 4) msgs.push('the preview scrolls inside the page: document ' + d.documentElement.scrollHeight + 'px in a ' + f.clientHeight + 'px frame');
+                // ... and is not a tall empty frame: the built-in pages are short
+                const src = f.srcdoc || '';
+                if (d && src && !src.includes('What you can do') && f.clientHeight > 620) msgs.push('the preview frame is ' + f.clientHeight + 'px high for a short page');
             } catch (e) { msgs.push('the preview frame cannot be measured: ' + e); }
+            // composition on wide screens: navigation and section head start on one line, editor and preview cards too, the preview is sticky
+            if (window.innerWidth >= 1321) {
+                window.scrollTo(0, 0);   // sticky parts are compared where they start
+                const top = s => { const e = page.querySelector(s); return e && e.offsetParent !== null ? Math.round(e.getBoundingClientRect().top + window.scrollY) : null; };
+                const nav = top('#epNav'), head = top('#epHead'), prev = top('#epPreviewCard');
+                const left = top('#epThemePanel:not([hidden]) > .zx-card') ?? top('#epEditorCard');
+                if (nav === null || head === null || Math.abs(nav - head) > 1) msgs.push('navigation and section head do not start on one line: ' + nav + ' / ' + head);
+                if (left === null || prev === null || Math.abs(left - prev) > 1) msgs.push('editor and preview cards do not start on one line: ' + left + ' / ' + prev);
+                if (getComputedStyle(page.querySelector('#epPreviewCard')).position !== 'sticky') msgs.push('the preview is not sticky on a wide screen');
+                const pe = page.querySelector('#epPreviewCard').getBoundingClientRect(), le = (page.querySelector('#epThemePanel:not([hidden])') || page.querySelector('#epEditorCard')).getBoundingClientRect();
+                if (pe.left < le.right) msgs.push('the preview is not beside the editor');
+            }
             // nothing with its own scroll box except the HTML editor (a textarea) and the tab strip
             page.querySelectorAll('*').forEach(el => {
                 if (el.offsetParent === null || el.tagName === 'TEXTAREA' || el.classList.contains('zx-tabs')) return;
@@ -118,8 +137,43 @@ def errorpages_ui(pg, ctx):
     crumbs = pg.inner_text("#errorPagesPage .zx-page-header__crumbs")
     if "Sites" not in crumbs or "Error pages" not in crumbs:
         fail("errorpages", f"breadcrumb: {crumbs!r}")
-    if pg.inner_text("#epStatus").strip() != "Off":
-        fail("errorpages", "the page status must say Off")
+    # header: Related, the master switch (label, the switch is the only state indicator), History, More actions; the reset is not a header button
+    if pg.query_selector_all("#errorPagesPage .zx-page-header .zx-badge"):
+        fail("errorpages", "the header must not carry a state badge next to the switch (two indicators that can disagree)")
+    def header(label):
+        h = pg.evaluate("""() => {
+            const hd = document.querySelector('#errorPagesPage .zx-page-header'), r = e => e.getBoundingClientRect();
+            const kids = [...hd.querySelectorAll('.zx-page-header__actions > *')].map(e => e.matches('details') ? e.querySelector('summary') : e.matches('.zx-related') ? (e.querySelector('summary, button') || e) : e);
+            const title = hd.querySelector('.zx-page-header__title'), tr = r(title);
+            return { tops: kids.map(e => Math.round(r(e).top)), heights: kids.map(e => Math.round(r(e).height)),
+                     titleLines: Math.round(tr.height / parseFloat(getComputedStyle(title).lineHeight)), titleClipped: title.scrollWidth > title.clientWidth + 1 };
+        }""")
+        if len(set(h["heights"])) != 1 or max(h["tops"]) - min(h["tops"]) > 1:
+            fail("layout", f"{label}: the header actions are not one row of equal height: tops {h['tops']} heights {h['heights']}")
+        if h["titleLines"] != 1 or h["titleClipped"]:
+            fail("layout", f"{label}: the page title does not fit on one line: {h}")
+    for w in (1366, 1024, 1000, 800):
+        pg.set_viewport_size({"width": w, "height": 900})
+        pg.wait_for_timeout(250)
+        header(f"header/{w}")
+        check_horizontal(pg, f"header/{w}")
+        pg.screenshot(path=out(f"errorpages-header-{w}.png"), clip={"x": 0, "y": 0, "width": w, "height": 300})
+    pg.set_viewport_size({"width": 1366, "height": 900})
+    pg.wait_for_timeout(250)
+    order = pg.evaluate("""[...document.querySelectorAll('#errorPagesPage .zx-page-header__actions > *')].map(e =>
+        e.classList.contains('zx-related') ? 'related' : e.id === 'epMaster' ? 'master' : e.hasAttribute('data-zx-history') ? 'history' : e.id === 'epMore' ? 'more' : e.tagName)""")
+    if order != ["related", "master", "history", "more"]:
+        fail("errorpages", f"header actions: {order}")
+    if not pg.is_visible("#epMaster #epEnabled") or pg.is_checked("#epEnabled") or "Use my error pages" not in pg.inner_text("#epMaster"):
+        fail("errorpages", "the master switch must be in the page header, labelled and off")
+    if pg.text_content("#epStatusSub").strip() != "Visitors get the built-in pages" or pg.get_attribute("#epMaster", "title") != "Visitors get the built-in pages" \
+            or pg.get_attribute("#epEnabled", "aria-describedby") != "epStatusSub":
+        fail("errorpages", "the master switch must say in plain words what visitors get (description and tooltip): " + pg.text_content("#epStatusSub"))
+    if pg.is_visible("#epResetAll") or pg.evaluate("document.querySelectorAll('#errorPagesPage .zx-page-header__actions .zx-btn--danger-outline, #errorPagesPage .zx-page-header__actions .zx-btn--danger').length"):
+        fail("errorpages", "the reset must not be a button of the header (More actions menu)")
+    states = pg.eval_on_selector_all("#epNav .zx-sectionnav__item", "els => els.map(e => { const s = e.querySelector('.zx-sectionnav__state'); return s ? s.getAttribute('data-state') + ':' + s.textContent.trim() : '-'; })")
+    if states != ["-"] + ["off:Built-in"] * 6:
+        fail("errorpages", f"state dots of the navigation: {states}")
     items = pg.eval_on_selector_all("#epNav .zx-sectionnav__item", "els => els.map(e => e.getAttribute('data-ep'))")
     if items != ["theme", "403", "404", "429", "5xx", "nohost", "maintenance"]:
         fail("errorpages", f"sections: {items}")
@@ -152,6 +206,9 @@ def errorpages_ui(pg, ctx):
         fail("errorpages", "more than one save bar was created")
     if api_get().get("Enabled"):
         fail("errorpages", "the switch must not save by itself")
+    if not pg.is_checked("#epEnabled") or "when you save" not in pg.text_content("#epStatusSub") or "when you save" not in pg.get_attribute("#epMaster", "title") \
+            or not pg.evaluate("document.getElementById('epMaster').classList.contains('is-pending')"):
+        fail("errorpages", "a moved but unsaved switch must say that it applies with Save: " + pg.text_content("#epMaster"))
     # an invalid logo address is refused by Save with the reason, nothing is saved
     pg.fill("#epLogoURL", "javascript:alert(1)")
     pg.wait_for_timeout(500)
@@ -188,6 +245,24 @@ def errorpages_ui(pg, ctx):
     pg.click("#epStarters [data-ep-starter=friendly]")
     pg.wait_for_function("document.getElementById('epTemplate').value.includes('What you can do')", timeout=3000)
     wait_preview("What you can do", "friendly starter")
+    pg.wait_for_timeout(200)
+    caret = pg.evaluate("(() => { const e = document.getElementById('epTemplate'); return [document.activeElement === e, e.selectionStart, e.selectionEnd, e.scrollTop]; })()")
+    if caret != [True, 0, 0, 0]:
+        fail("errorpages", f"after a starter template the editor must have the focus at the start of the HTML, not scrolled: {caret}")
+    # the preview shows the version of the admin theme (a frame would follow the operating system and stay white on a dark page)
+    def preview_bg():
+        return pg.evaluate("(() => { const d = document.getElementById('epPreview').contentDocument; return getComputedStyle(d.body).backgroundColor; })()")
+    light_bg = preview_bg()
+    theme(True)
+    try:
+        pg.wait_for_function("l => { const d = document.getElementById('epPreview').contentDocument; return d && d.body && getComputedStyle(d.body).backgroundColor !== l; }", arg=light_bg, timeout=5000)
+    except Exception:
+        fail("errorpages", "in the dark admin theme the preview must show the dark version of the page, its background stays " + preview_bg())
+    theme(False)
+    try:
+        pg.wait_for_function("l => { const d = document.getElementById('epPreview').contentDocument; return d && d.body && getComputedStyle(d.body).backgroundColor === l; }", arg=light_bg, timeout=5000)
+    except Exception:
+        fail("errorpages", "back in the light admin theme the preview must be light again: " + preview_bg())
     pg.click("#epStarters [data-ep-starter=minimal]")  # the editor is not empty: asks first
     confirm(True)
     pg.wait_for_function("!document.getElementById('epTemplate').value.includes('What you can do')", timeout=3000)
@@ -230,9 +305,12 @@ def errorpages_ui(pg, ctx):
     cfg = api_get()
     if not cfg.get("Active") or cfg["Pages"]["403"]["Title"] != hostile or cfg["Theme"]["LogoText"] != "Smoke <b>Corp</b>" or not cfg["Pages"]["403"].get("Template"):
         fail("errorpages", f"not saved as entered: {json.dumps(cfg)[:600]}")
-    pg.wait_for_function("document.getElementById('epStatus').textContent.trim() === 'On'", timeout=3000)
-    if "Custom" not in pg.inner_text("#epNav .zx-sectionnav__item[data-ep='403']") or "On" not in pg.inner_text("#epNav .zx-sectionnav__item[data-ep='theme']"):
-        fail("errorpages", "the navigation does not show what is on")
+    pg.wait_for_function("document.getElementById('epStatusSub').textContent.trim() === 'Visitors see your pages' && !document.getElementById('epMaster').classList.contains('is-pending')", timeout=3000)
+    if pg.get_attribute("#epNav .zx-sectionnav__item[data-ep='403'] .zx-sectionnav__state", "data-state") != "on" or "Customised" not in pg.text_content("#epNav .zx-sectionnav__item[data-ep='403']") \
+            or pg.get_attribute("#epNav .zx-sectionnav__item[data-ep='404'] .zx-sectionnav__state", "data-state") != "off":
+        fail("errorpages", "the navigation does not show which pages are customised")
+    if not pg.is_checked("#epEnabled") or pg.text_content("#epStatusSub").strip() != "Visitors see your pages":
+        fail("errorpages", "the master switch does not show that the pages are on: " + pg.text_content("#epMaster"))
     status, headers, body = served("403")
     if status != 403 or headers.get("x-zoraxy-error-page") != "custom" or headers.get("cache-control") != "no-store" or "default-src 'none'" not in headers.get("content-security-policy", ""):
         fail("errorpages", f"served page: {status} {headers}")
@@ -270,6 +348,10 @@ def errorpages_ui(pg, ctx):
     if pg.input_value("#epTitle") != "":
         fail("errorpages", "the page of all sites shows the text of one site")
     pg.select_option("#epScope", "shop.smoke.example.com")
+    try:
+        pg.wait_for_function("document.getElementById('epPreviewNote').textContent.includes('host shop.smoke.example.com')", timeout=5000)
+    except Exception:
+        fail("errorpages", "the note under the preview must name the site that is shown: " + pg.inner_text("#epPreviewNote"))
     pg.wait_for_function("document.getElementById('epTitle').value === 'Shop page gone'", timeout=3000)
     if pg.get_attribute("#epTest", "href") != "/api/errorpages/test?class=404&host=shop.smoke.example.com":
         fail("errorpages", "the test link does not follow the site: " + str(pg.get_attribute("#epTest", "href")))
@@ -317,11 +399,61 @@ def errorpages_ui(pg, ctx):
     layout("phone/5xx")
     pg.set_viewport_size({"width": 1366, "height": 900})
 
-    # ---- reset everything ----
+    # ---- switched off with a customised page: the note offers "Switch on", which moves the header switch and does not save ----
+    current["page"] = "errorpages/switch-on"
+    pg.click("label[for=epEnabled]")
+    save()
+    if api_get().get("Enabled"):
+        fail("errorpages", "switching off was not saved")
+    section("5xx")
+    if pg.is_visible("#epOffNote"):
+        fail("errorpages", "the switched-off note must only show on a customised page")
+    pg.fill("#epTitle", "Back soon")
+    pg.wait_for_selector("#epOffNote:not([hidden])", timeout=3000)
+    pg.click("#epSwitchOn")
+    pg.wait_for_timeout(300)
+    if not pg.is_checked("#epEnabled") or bar_visible() != 1 or api_get().get("Enabled") or pg.is_visible("#epOffNote"):
+        fail("errorpages", "'Switch on' must move the header switch and leave saving to the save bar")
+    if "Use my error pages" not in pg.inner_text("#errorpages .zx-savebar"):
+        fail("errorpages", "the save bar does not name the master switch: " + pg.inner_text("#errorpages .zx-savebar"))
+    save()
+    if not api_get().get("Enabled") or (api_get().get("Pages") or {}).get("5xx", {}).get("Title") != "Back soon":
+        fail("errorpages", "the switch and the page were not saved together")
+
+    # ---- reset everything: in the More actions menu, the dialog names what is removed ----
     current["page"] = "errorpages/reset"
+    pg.click("#epMore > summary")
+    pg.wait_for_selector("#epResetAll", state="visible", timeout=3000)
+    pg.screenshot(path=out("errorpages-more-menu.png"))
+    pg.keyboard.press("Escape")
+    if pg.is_visible("#epResetAll"):
+        fail("errorpages", "Escape must close the More actions menu")
+    pg.click("#epMore > summary")
+    pg.click("#epResetAll")
+    pg.wait_for_selector(".zx-dialog [data-zx-ok]", timeout=5000)
+    said = pg.inner_text(".zx-dialog")
+    if "1 customised page" not in said or "your look" not in said or "History" not in said:
+        fail("errorpages", "the reset dialog must name what is removed: " + said)
+    pg.screenshot(path=out("errorpages-reset-dialog.png"))
+    confirm(False)
+    if not api_get().get("Enabled"):
+        fail("errorpages", "cancelling the reset changed something")
+    if not pg.evaluate("document.activeElement === document.querySelector('#epMore > summary')"):
+        fail("errorpages", "after cancelling the reset dialog the focus must be back on the More actions button, it is on " + pg.evaluate("document.activeElement.tagName + '#' + document.activeElement.id"))
+    pg.click("#epMore > summary")
+    pg.click("#epResetAll")
+    pg.wait_for_selector(".zx-dialog [data-zx-ok]", timeout=5000)
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(300)
+    if not pg.evaluate("document.activeElement === document.querySelector('#epMore > summary')"):
+        fail("errorpages", "after Escape in the reset dialog the focus must be back on the More actions button")
+    pg.click("#epMore > summary")
     pg.click("#epResetAll")
     confirm(True)
-    pg.wait_for_function("document.getElementById('epStatus').textContent.trim() === 'Off'", timeout=5000)
+    pg.wait_for_function("!document.getElementById('epEnabled').checked && document.getElementById('epStatusSub').textContent.trim() === 'Visitors get the built-in pages'", timeout=5000)
+    pg.wait_for_timeout(300)
+    if not pg.evaluate("document.activeElement === document.querySelector('#epMore > summary')"):
+        fail("errorpages", "after the reset the focus must be on the More actions button, not lost")
     cfg = api_get()
     if cfg.get("Enabled") or cfg.get("Pages") or cfg.get("Hosts") or cfg["Theme"].get("LogoText"):
         fail("errorpages", f"reset left something behind: {cfg}")

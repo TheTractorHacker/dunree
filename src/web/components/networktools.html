@@ -1203,7 +1203,7 @@ window.ntConsole = (function(){
     /* ---------- recent runs ---------- */
     function load(){
         try {
-            var raw = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+            var raw = JSON.parse(zxStore.get(STORE_KEY) || "[]");
             runs = Array.isArray(raw) ? raw.filter(function(r){ return r && r.q && R[r.q.tool]; }).slice(0, MAX_RUNS) : [];
         } catch (e) { runs = []; }
     }
@@ -1212,7 +1212,7 @@ window.ntConsole = (function(){
         var copy = runs.slice();
         for (var cut = copy.length; cut >= 0; cut--){
             try {
-                localStorage.setItem(STORE_KEY, JSON.stringify(copy.map(function(r, i){ return i < cut ? r : {id: r.id, q: r.q, at: r.at, took: r.took, ok: r.ok, summary: r.summary, gone: true}; })));
+                zxStore.set(STORE_KEY, JSON.stringify(copy.map(function(r, i){ return i < cut ? r : {id: r.id, q: r.q, at: r.at, took: r.took, ok: r.ok, summary: r.summary, gone: true}; })));
                 return;
             } catch (e) { /* quota or private mode: try with less, then give up silently */ }
         }
@@ -1273,7 +1273,7 @@ window.ntConsole = (function(){
             this.hidden = isConsole ? this.id != "ntConsole" : this.id != "ntPanel-" + name;
         });
         nav.select(name);
-        try { localStorage.setItem(STORE_SECTION, name); } catch (e) { /* private mode */ }
+        try { zxStore.set(STORE_SECTION, name); } catch (e) { /* private mode */ }
         if (!isConsole){ tool = name; return; }
         tool = name;
         $("#ntForm [data-tools], #networktool .ntRunChecks [data-tools]").each(function(){
@@ -1297,7 +1297,7 @@ window.ntConsole = (function(){
     $("#ntRuns").on("click", ".ntRunItem", function(){ openRun(this.getAttribute("data-run")); });
     $("#ntRunsClear").on("click", function(){
         runs = [];
-        try { localStorage.removeItem(STORE_KEY); } catch (e) { /* private mode */ }
+        try { zxStore.remove(STORE_KEY); } catch (e) { /* private mode */ }
         drawRuns();
         if (!busy){ showEmpty(); }
     });
@@ -1305,7 +1305,7 @@ window.ntConsole = (function(){
     load();
     drawRuns();
     var startAt = "ping";
-    try { startAt = localStorage.getItem(STORE_SECTION) || "ping"; } catch (e) { /* private mode */ }
+    try { startAt = zxStore.get(STORE_SECTION) || "ping"; } catch (e) { /* private mode */ }
     if (!$("#ntNav [data-nt='" + String(startAt).replace(/[^a-z]/g, "") + "']").length){ startAt = "ping"; }
     selectSection(startAt);
 

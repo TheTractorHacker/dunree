@@ -2,10 +2,13 @@
 exec()'d by smoke.py (namespace: fail, current, args, os, re, check_horizontal); run alone with --crowdsec-only. Needs UI port + 1 to be the
 instance's proxy port and UI port + 2 and + 3 free (a throw-away upstream and a fake CrowdSec LAPI, both started here on 127.0.0.1).
 
-Covers: defaults (off, nothing blocked); the CrowdSec tab (status card, form, Test connection against the fake LAPI with a good key, a wrong key and a
+Covers: defaults (off, nothing blocked); the CrowdSec tab (status header in plain words, the save bar, Test connection against the fake LAPI with a good key, a wrong key and a
 refused metadata address); enforcement end to end through a proxied site: log only never blocks (and the match is listed), Enforce (after the
 confirmation) returns the 403 for a banned address and still serves everyone else, a decision deleted at the LAPI unblocks within a pull, and with the
-LAPI killed the site keeps serving (fail open, the status card turns degraded then down); the API key is never visible in the page, in any API answer or
+LAPI killed the site keeps serving (fail open, the status card turns degraded then down); "see it in action": the timeline, the list of matched
+requests with path and outcome (log only shows what WOULD have been blocked), the top lists, what is loaded, Check an address (loaded decisions and the
+live answer of the LAPI); the policies: a source kept on Log only, the reach of a scenario entry, the allowlist, a rule for one site; a key the server refuses before
+the first pull (headline, no repeated error), the navigation item following a change made through the API and the "since <time>" counter labels; the API key is never visible in the page, in any API answer or
 in the security audit log; light / dark / 390 px layout of the tab without overflow; the "Hardened security headers" card of the site editor (off by
 default and no header sent, the preview table, save, the headers really arrive from the proxy, an upstream header is kept unless replacing is chosen).
 Console errors and failed requests are caught by the handlers smoke.py installs on the page.
@@ -29,6 +32,8 @@ CS_HOST = "crowdsec-smoke.demo.test"
 CS_BANNED = "203.0.113.77"
 CS_BANNED2 = "203.0.113.78"
 CS_CLEAN = "198.51.100.5"
+CS_CAPI = "203.0.113.90"   # a decision of the community blocklist (origin CAPI)
+CS_OWN = "203.0.113.91"    # a decision of a scenario (origin crowdsec)
 
 
 class FakeLAPI:
@@ -84,8 +89,8 @@ class FakeLAPI:
         self.srv = S(("127.0.0.1", port), H)
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
 
-    def ban(self, ident, ip, typ="ban"):
-        d = {"id": ident, "origin": "cscli", "type": typ, "scope": "Ip", "value": ip, "duration": "1h", "scenario": "smoke/manual ban"}
+    def ban(self, ident, ip, typ="ban", origin="cscli", scenario="smoke/manual ban"):
+        d = {"id": ident, "origin": origin, "type": typ, "scope": "Ip", "value": ip, "duration": "1h", "scenario": scenario}
         with self.lock:
             self.decisions[ident] = d
             self.pend_new.append(d)
@@ -194,7 +199,7 @@ def crowdsec_ui(pg, ctx):
         pg.wait_for_selector("#csForm", timeout=10000)
         pg.wait_for_function("document.getElementById('csUrl') && document.getElementById('csPoll').value !== ''", timeout=8000)
         pg.wait_for_timeout(600)
-        js("document.querySelectorAll('#secPane details.sx-group, #secPane details.zx-disclosure').forEach(d => { d.open = true; })")   # tuning, trust, the stored key and the management tools sit in collapsed groups
+        js("document.querySelectorAll('#secPane details.sx-group, #secPane details.zx-disclosure, #secPane details.sx-more-d').forEach(d => { d.open = true; })")   # tuning, trust, the stored key and the management tools sit in collapsed groups
 
     def type_into(sel, text):
         pg.click(sel)
@@ -204,6 +209,23 @@ def crowdsec_ui(pg, ctx):
     def set_toggle(sel_input, on):
         if js("s => document.querySelector(s).checked", sel_input) != on:
             pg.click("label[for='%s']" % sel_input.lstrip("#"))
+
+    def pick(sel, value):
+        """choose an option the way a person does: the save bar only counts changes that follow a pointer or key action"""
+        pg.dispatch_event("#csForm", "pointerdown")
+        pg.select_option(sel, value)
+
+    def save_bar(wait_gone=True):
+        """press Save changes on the save bar"""
+        pg.wait_for_selector(".zx-savebar:not([hidden]) [data-zx-save]", state="visible", timeout=6000)
+        pg.click(".zx-savebar:not([hidden]) [data-zx-save]")
+        pg.wait_for_timeout(400)
+
+    def bar_done(what):
+        return wait_for(lambda: js("!window.zxSecBar || !window.zxSecBar.isDirty()"), 10, "the save bar to finish: " + what)
+
+    def pane_text(sel):
+        return js("s => (document.querySelector(s) || {innerText: ''}).innerText", sel)
 
     def confirm(ok):
         pg.wait_for_selector(".zx-dialog [data-zx-ok]", timeout=5000)
@@ -253,6 +275,8 @@ def crowdsec_ui(pg, ctx):
             fail("crowdsec-defaults", f"the status of a switched-off CrowdSec must be 'off': {status()}")
         lapi.ban(1, CS_BANNED)
         lapi.ban(2, CS_BANNED2)
+        lapi.ban(3, CS_CAPI, origin="CAPI", scenario="crowdsecurity/http-probing")
+        lapi.ban(4, CS_OWN, origin="crowdsec", scenario="crowdsecurity/http-crawl-non_statics")
         if hit("/", CS_BANNED)[0] != 200:
             fail("crowdsec-defaults", "a request must be served while CrowdSec is off")
         if lapi.calls:
@@ -262,6 +286,10 @@ def crowdsec_ui(pg, ctx):
             fail("crowdsec-defaults", "the status card of the switched-off feature must say so: " + js("document.getElementById('csStatus').innerText"))
         if js("document.getElementById('csEnabled').checked") or js("document.getElementById('csMode').value") != "log":
             fail("crowdsec-defaults", "the form must show CrowdSec off in Log only mode")
+        if not js("document.getElementById('csSee').hidden") or not js("document.getElementById('csFacts').hidden"):
+            fail("crowdsec-defaults", "switched off: the activity cards and the counters must not be shown")
+        if js("[...document.querySelectorAll('#csOrigins .cs-pol')].some(e => e.value !== '')") or js("document.getElementById('csAllow').value + document.getElementById('csScen').value + document.getElementById('csSitesState').value.replace('{}', '')") != "":
+            fail("crowdsec-defaults", "by default every source follows the mode and there is no allowlist, scenario or site rule")
         shot("crowdsec-off.png")
 
         # ---------------------------------------------------------------- the form: Test connection (wrong key, refused address, good key)
@@ -288,7 +316,7 @@ def crowdsec_ui(pg, ctx):
         # invalid number: the server refuses, nothing is stored, the form says why
         type_into("#csPoll", "1")
         set_toggle("#csEnabled", True)
-        pg.click("#csSave")
+        save_bar()
         pg.wait_for_selector("#csMsg", state="visible", timeout=8000)
         if get("/api/crowdsec/get").get("enabled"):
             fail("crowdsec-form", "an invalid poll interval was stored")
@@ -298,40 +326,100 @@ def crowdsec_ui(pg, ctx):
 
         # ---------------------------------------------------------------- log only: enabled, the status card turns green, matches are listed, nobody is blocked
         current["page"] = "crowdsec-logonly"
-        pg.click("#csSave")
+        save_bar()
         pg.wait_for_function("!document.getElementById('csMsg') || document.getElementById('csMsg').style.display === 'none'", timeout=8000)
-        s = wait_for(lambda: (lambda x: x if x.get("state") == "ok" and x.get("cacheSize", 0) >= 2 else None)(status()), 40, "the status to become ok with 2 decisions in memory")
+        s = wait_for(lambda: (lambda x: x if x.get("state") == "ok" and x.get("cacheSize", 0) >= 4 else None)(status()), 40, "the status to become ok with 4 decisions in memory")
         if s is None:
             shot("crowdsec-never-ok.png")
             return
         if s.get("mode") != "log" or not s.get("keySet"):
             fail("crowdsec-logonly", f"saved as log only with a key: {s}")
-        code, _, _ = hit("/", CS_BANNED)
+        code, _, _ = hit("/wp-login.php?secret=hunter2", CS_BANNED)
         if code != 200:
             fail("crowdsec-logonly", f"log only must never block, the banned address got {code}")
+        hit("/wp-login.php?secret=hunter2", CS_BANNED)
+        hit("/", CS_CLEAN)
         s2 = status()
         if s2.get("logOnly", 0) < s.get("logOnly", 0) + 1 or s2.get("enforced", 0) != s.get("enforced", 0):
             fail("crowdsec-logonly", f"the match must be counted as log only and nothing enforced: {s2}")
         open_tab()
-        pg.wait_for_function("document.querySelector('#csMatches tbody td') && document.querySelector('#csMatches tbody td').innerText.indexOf('None yet') < 0", timeout=15000)
-        if CS_BANNED not in js("document.getElementById('csMatches').innerText") or "would block" not in js("document.getElementById('csMatches').innerText"):
-            fail("crowdsec-logonly", "Recent matches must list the banned address as 'would block (log only)'")
-        if CS_BANNED not in js("document.getElementById('csDecisions').innerText"):
-            fail("crowdsec-logonly", "Recent decisions must list the ban received from the LAPI")
-        if "OK" not in js("document.getElementById('csStatus').innerText") or not re.search(r"Decisions in memory:?\s*2\b", js("document.getElementById('csStatus').innerText")):
-            fail("crowdsec-logonly", "the status card must show OK and 2 decisions: " + js("document.getElementById('csStatus').innerText"))
+        # ---- see it in action, log only: the header says it in words, the list shows what WOULD have been blocked
+        pg.wait_for_function("document.getElementById('csFeed').innerText.indexOf('%s') >= 0" % CS_BANNED, timeout=15000)
+        feed = pane_text("#csFeed")
+        if "Would block" not in feed or "/wp-login.php" not in feed or "GET" not in feed or CS_HOST not in feed or "smoke/manual ban" not in feed:
+            fail("crowdsec-feed", "log only: the matched request must be listed with site, method, path, scenario and 'Would block': " + feed[:300])
+        if "hunter2" in feed or "secret" in feed:
+            fail("crowdsec-feed", "the query string of a request must never be listed")
+        if "2 requests" not in feed:
+            fail("crowdsec-feed", "two requests of the same visitor must be one entry with a count: " + feed[:300])
+        head = pane_text("#csStatus")
+        if "Watching only" not in head or "would have been blocked today" not in head or "4 decisions loaded" not in head or "synced" not in head:
+            fail("crowdsec-header", "log only: the header must say in words that it only watches, what is loaded and what would have been blocked: " + head[:300])
+        if pane_text("#csFMem").split()[0] != "4" or pane_text("#csFLog").split()[0] != "2" or pane_text("#csFBlocked").split()[0] != "0" or int(pane_text("#csFChecked").split()[0].replace(",", "")) < 3:
+            fail("crowdsec-header", "the counters of today are wrong: " + head[:300])
+        pg.wait_for_selector("#csChartBox svg.cs-chart rect.cs-b-would", state="attached", timeout=15000)
+        if js("document.querySelectorAll('#csChartBox svg.cs-chart rect.cs-b-blocked').length") != 0:
+            fail("crowdsec-chart", "log only: the timeline must not show blocked requests")
+        if not js("document.querySelector('#csChartBox svg.cs-strip rect.cs-b-checked')"):
+            fail("crowdsec-chart", "the timeline must show the requests that were checked")
+        tops = pane_text("#csTops")
+        if "smoke/manual ban" not in tops or CS_HOST not in tops or "added by hand" not in tops:
+            fail("crowdsec-tops", "the top lists must name the scenario, the source and the site: " + tops[:300])
+        pg.hover("#csChartBox svg.cs-chart rect.cs-hit >> nth=-1")
+        pg.wait_for_function("!document.getElementById('csTip').hidden && /Would block/.test(document.getElementById('csTip').innerText)", timeout=5000)
+        shot("crowdsec-chart-tip.png")
+        pg.mouse.move(5, 5)
+        loaded = pane_text("#csLoadedCard")
+        if not re.search(r"Community blocklist\s*1\b", loaded) or not re.search(r"Bans added by hand\s*2\b", loaded) or "crowdsecurity/http-probing" not in loaded:
+            fail("crowdsec-loaded", "What is loaded must count the decisions by source and name the scenarios: " + loaded[:400])
+        if "1 loaded" not in pane_text("#csOrigins"):
+            fail("crowdsec-loaded", "the source rows of the settings must show how many decisions each source has loaded")
+        pg.wait_for_function("document.getElementById('csDecisions').innerText.indexOf('%s') >= 0" % CS_BANNED, timeout=10000)
+        health = pane_text("#csGrpHealth")
+        if "Full list" not in health or "Starting to OK" not in health:
+            fail("crowdsec-health", "Connection health must list the pulls and the state changes: " + health[:400])
+        # ---- check an address: loaded decision, clean address, the live answer of the LAPI, and a click on an address in the list
+        current["page"] = "crowdsec-check"
+        pg.fill("#csCheckIp", CS_BANNED)
+        pg.click("#csCheckGo")
+        pg.wait_for_function("document.getElementById('csCheckOut').innerText.indexOf('Would be blocked') >= 0", timeout=8000)
+        out = pane_text("#csCheckOut")
+        if "This one decides" not in out or "the mode is Log only" not in out or "smoke/manual ban" not in out or "Seen by Zoraxy" not in out:
+            fail("crowdsec-check", "the check of a banned address must name the decision and say why it is not enforced: " + out[:400])
+        n_lookups = len([c for c in lapi.calls if c.startswith("/v1/decisions?ip=")])
+        pg.fill("#csCheckIp", CS_CLEAN)
+        pg.keyboard.press("Enter")
+        pg.wait_for_function("document.getElementById('csCheckOut').innerText.indexOf('No loaded decision applies') >= 0", timeout=8000)
+        if len([c for c in lapi.calls if c.startswith("/v1/decisions?ip=")]) != n_lookups:
+            fail("crowdsec-check", "a check without 'ask the server' must not contact the LAPI")
+        pg.fill("#csCheckIp", "not an address")
+        pg.click("#csCheckGo")
+        pg.wait_for_function("/Enter one IPv4 or IPv6 address/.test(document.getElementById('csCheckOut').innerText)", timeout=8000)
+        pg.click("#csFeed .cs-iplink >> nth=0")
+        pg.wait_for_function("document.getElementById('csCheckIp').value === '%s' && document.getElementById('csCheckOut').innerText.indexOf('Would be blocked') >= 0" % CS_BANNED, timeout=8000)
+        pg.click("label[for='csCheckLive']")
+        pg.click("#csCheckGo")
+        pg.wait_for_function("document.getElementById('csCheckOut').innerText.indexOf('What the CrowdSec server says right now') >= 0", timeout=10000)
+        if len([c for c in lapi.calls if c.startswith("/v1/decisions?ip=" + CS_BANNED)]) != 1 or "do not agree" in pane_text("#csCheckOut"):
+            fail("crowdsec-check", "'ask the server' must make exactly one lookup for the address and agree with the loaded decision: " + pane_text("#csCheckOut")[:400])
+        pg.click("label[for='csCheckLive']")
+        if status().get("logOnly", 0) != s2.get("logOnly", 0):
+            fail("crowdsec-check", "Check an address must not count as a request")
+        js("document.getElementById('csCheckCard').scrollIntoView({block: 'start'})")
+        shot("crowdsec-check.png")
+        js("window.scrollTo(0, 0)")
         if js("document.getElementById('csKey').value") != "" or not js("document.getElementById('csKeyBadge').offsetParent !== null"):
             fail("crowdsec-secret", "after saving, the key field must be empty and a 'Key set' badge shown")
         shot("crowdsec-logonly.png")
 
         # ---------------------------------------------------------------- enforce: confirmation first, then the banned address gets 403 and others are served
         current["page"] = "crowdsec-enforce"
-        pg.select_option("#csMode", "enforce")
-        pg.click("#csSave")
+        pick("#csMode", "enforce")
+        save_bar()
         confirm(False)  # cancelled: nothing changes
         if get("/api/crowdsec/get").get("mode") != "log" or hit("/", CS_BANNED)[0] != 200:
             fail("crowdsec-enforce", "cancelling the confirmation must leave the mode on log only")
-        pg.click("#csSave")
+        save_bar()
         confirm(True)
         wait_for(lambda: get("/api/crowdsec/get").get("mode") == "enforce", 8, "enforce mode to be stored")
         code, _, body = hit("/", CS_BANNED)
@@ -348,8 +436,89 @@ def crowdsec_ui(pg, ctx):
         if status().get("enforced", 0) <= s2.get("enforced", 0):
             fail("crowdsec-enforce", "the blocks must be counted")
         open_tab()
-        pg.wait_for_function("document.getElementById('csMatches').innerText.indexOf('blocked') >= 0", timeout=15000)
+        pg.wait_for_function("/Blocked/.test(document.getElementById('csFeed').innerText)", timeout=15000)
+        head = pane_text("#csStatus")
+        if "Blocking banned addresses" not in head or not re.search(r"\d+ requests? blocked today", head):
+            fail("crowdsec-header", "enforce: the header must say that it blocks and how many requests today: " + head[:300])
+        pg.wait_for_selector("#csChartBox svg.cs-chart rect.cs-b-blocked", state="attached", timeout=15000)
         shot("crowdsec-enforce.png")
+
+        # ---------------------------------------------------------------- policies: they only make Zoraxy block less
+        current["page"] = "crowdsec-policy"
+        if hit("/", CS_CAPI)[0] != 403 or hit("/", CS_OWN)[0] != 403:
+            fail("crowdsec-policy", "enforce: by default decisions of every source are enforced")
+        pick("#csPolCapi", "log")
+        save_bar()
+        bar_done("community blocklist on Log only")
+        if js("!!document.querySelector('.zx-dialog [data-zx-ok]')"):
+            fail("crowdsec-policy", "lowering what is enforced must not ask for a confirmation")
+        wait_for(lambda: (get("/api/crowdsec/get").get("originPolicy") or {}).get("capi") == "log", 8, "the source policy to be stored")
+        if hit("/capi-probe", CS_CAPI)[0] != 200:
+            fail("crowdsec-policy", "a source kept on Log only must not be enforced")
+        if hit("/", CS_OWN)[0] != 403 or hit("/", CS_BANNED)[0] != 403:
+            fail("crowdsec-policy", "the other sources must still be enforced")
+        pg.wait_for_function("(() => { const r = [...document.querySelectorAll('#csFeed tbody tr')].find(x => x.innerText.indexOf('%s') >= 0 && x.innerText.indexOf('/capi-probe') >= 0); return r && /Would block/.test(r.innerText) && /kept on Log only/.test(r.innerText) && /community blocklist/.test(r.innerText); })()" % CS_CAPI, timeout=15000)
+        # the reach of a "scenario kept on Log only" entry is shown while it is typed: "http" covers the two http scenarios of the four decisions
+        type_into("#csScen", "HTTP\nno-such-scenario\nab")
+        pg.wait_for_function("document.querySelectorAll('#csScenReach li').length === 3", timeout=8000)
+        reach = js("[...document.querySelectorAll('#csScenReach li')].map(e => e.innerText)")
+        if "matches 2 of the 4 loaded decisions" not in reach[0] or "2 scenarios" not in reach[0] or "crowdsecurity/http-probing" not in reach[0] or not js("document.querySelector('#csScenReach li').classList.contains('is-wide')"):
+            fail("crowdsec-policy", f"a scenario entry must show how many loaded decisions it matches and warn when that is half or more: {reach}")
+        if "matches none" not in reach[1] or "too short" not in reach[2]:
+            fail("crowdsec-policy", f"an entry that matches nothing and one that is too short must say so: {reach}")
+        js("document.getElementById('csGrpScen').scrollIntoView({block: 'center'})")
+        shot("crowdsec-scenario-reach.png")
+        pg.click("#csScen")
+        pg.keyboard.press("Control+A")
+        pg.keyboard.press("Delete")
+        if not js("document.getElementById('csScenReach').hidden"):
+            fail("crowdsec-policy", "without entries the reach list must be hidden")
+        # the allowlist: served whatever CrowdSec says, and listed
+        type_into("#csAllow", CS_BANNED2)
+        save_bar()
+        bar_done("the allowlist")
+        wait_for(lambda: hit("/allow-probe", CS_BANNED2)[0] == 200, 8, "the allowlisted address to be served")
+        pg.wait_for_function("(() => { const r = [...document.querySelectorAll('#csFeed tbody tr')].find(x => x.innerText.indexOf('/allow-probe') >= 0); return r && /allowlisted/i.test(r.innerText); })()", timeout=15000)
+        type_into("#csAllow", "0.0.0.0/0")
+        save_bar()
+        pg.wait_for_selector("#csMsg", state="visible", timeout=8000)
+        if "every address" not in pane_text("#csMsg") or get("/api/crowdsec/get").get("allowlist") != [CS_BANNED2]:
+            fail("crowdsec-policy", "an allowlist entry that covers every address must be refused: " + pane_text("#csMsg"))
+        pg.click("#csAllow")
+        pg.keyboard.press("Control+A")
+        pg.keyboard.press("Delete")
+        # a rule for one site: Log only on the test site while the mode is Enforce
+        pick("#csSiteAdd", CS_HOST)
+        pick("#csSiteAddMode", "log")
+        pg.click("#csSiteAddGo")
+        if CS_HOST not in pane_text("#csSiteRows"):
+            fail("crowdsec-policy", "the added site rule is not listed")
+        save_bar()
+        bar_done("the site rule")
+        g = get("/api/crowdsec/get")
+        if (g.get("siteOverrides") or {}).get(CS_HOST) != "log" or g.get("allowlist"):
+            fail("crowdsec-policy", f"site rule and emptied allowlist were not stored: {g}")
+        if hit("/site-probe", CS_BANNED)[0] != 200:
+            fail("crowdsec-policy", "a site on Log only must not block")
+        pg.wait_for_function("(() => { const r = [...document.querySelectorAll('#csFeed tbody tr')].find(x => x.innerText.indexOf('/site-probe') >= 0); return r && /this site is on Log only/.test(r.innerText); })()", timeout=15000)
+        pick("#csCheckSite", CS_HOST)
+        pg.fill("#csCheckIp", CS_BANNED)
+        pg.click("#csCheckGo")
+        pg.wait_for_function("/this site is on Log only/.test(document.getElementById('csCheckOut').innerText)", timeout=8000)
+        js("document.getElementById('csGrpSites').scrollIntoView({block: 'center'})")
+        shot("crowdsec-policy.png")
+        # back to "every source and site follows the mode": raising what is enforced asks first
+        pg.click("#csSiteRows .cs-site-rm")
+        pick("#csPolCapi", "")
+        save_bar()
+        confirm(True)
+        bar_done("the policies removed")
+        g = get("/api/crowdsec/get")
+        if g.get("siteOverrides") or g.get("originPolicy") or g.get("allowlist"):
+            fail("crowdsec-policy", f"the policies were not removed: {g}")
+        if hit("/", CS_BANNED)[0] != 403 or hit("/", CS_CAPI)[0] != 403 or hit("/", CS_BANNED2)[0] != 403:
+            fail("crowdsec-policy", "without policies every decision is enforced again")
+        js("window.scrollTo(0, 0)")
 
         # ---------------------------------------------------------------- a deleted decision unblocks
         current["page"] = "crowdsec-unban"
@@ -364,7 +533,8 @@ def crowdsec_ui(pg, ctx):
         page_html = js("document.documentElement.outerHTML") + js("document.body.innerText")
         inputs = js("[...document.querySelectorAll('input, textarea, select')].map(e => e.value).join('|')")
         pools = {"page": page_html, "form values": inputs, "get": json.dumps(get("/api/crowdsec/get")), "status": json.dumps(status()),
-                 "decisions": json.dumps(get("/api/crowdsec/decisions")), "audit": audit_text(), "storage": js("JSON.stringify([localStorage, sessionStorage])")}
+                 "decisions": json.dumps(get("/api/crowdsec/decisions")), "activity": json.dumps(get("/api/crowdsec/activity?window=7d")),
+                 "feed": json.dumps(get("/api/crowdsec/feed?limit=200")), "audit": audit_text(), "storage": js("JSON.stringify([localStorage, sessionStorage])")}
         for name, text in pools.items():
             if api_key in text:
                 fail("crowdsec-secret", f"the API key is visible in: {name}")
@@ -379,7 +549,7 @@ def crowdsec_ui(pg, ctx):
             if (theme == "dark") != js("document.body.classList.contains('darkTheme')"):
                 js("toggleTheme()")
                 pg.wait_for_timeout(500)
-            for (w, h, tag) in ((1366, 900, "desktop"), (390, 844, "390")):
+            for (w, h, tag) in ((1366, 900, "desktop"), (2000, 1200, "2000"), (390, 844, "390")):
                 current["page"] = f"crowdsec-layout/{theme}/{tag}"
                 pg.set_viewport_size({"width": w, "height": h})
                 pg.wait_for_timeout(500)
@@ -398,10 +568,67 @@ def crowdsec_ui(pg, ctx):
                       if (dark ? l < 0.25 : l > 0.3) out.push((e.className || e.tagName) + ' ' + e.innerText.trim().slice(0, 30)); }); return out.slice(0, 3); }""", theme == "dark")
                 if weak:
                     fail("crowdsec-contrast", f"{theme}: text too close to the background colour: {weak}")
+                nested = js("""() => [...document.querySelectorAll('#secPane *')].filter(e => { const c = getComputedStyle(e); return (c.overflowY === 'auto' || c.overflowY === 'scroll') && e.scrollHeight > e.clientHeight + 2 && e.tagName !== 'TEXTAREA' && e.tagName !== 'PRE'; }).map(e => e.tagName + '#' + e.id + '.' + e.className).slice(0, 3)""")
+                if nested:
+                    fail("crowdsec-layout", f"{theme} {tag}: a scroll box inside the page: {nested}")
                 shot(f"crowdsec-{theme}-{tag}.png")
+                pg.screenshot(path=os.path.join(args.out, f"crowdsec-{theme}-{tag}-full.png"), full_page=True)
         if js("document.body.classList.contains('darkTheme')"):
             js("toggleTheme()")
         pg.set_viewport_size({"width": 1366, "height": 900})
+
+        # ---------------------------------------------------------------- switched off and on behind the page's back, with a key the server refuses
+        # (the raw requests below are not jQuery requests: the page only learns of them from its own status polling)
+        current["page"] = "crowdsec-rejected"
+
+        def raw_set(cfg):
+            return pg.evaluate("""c => fetch('/api/crowdsec/set', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': document.getElementsByTagName('meta')['zoraxy.csrf.Token'].getAttribute('content')},
+                body: 'config=' + encodeURIComponent(JSON.stringify(c))}).then(r => r.json()).catch(e => ({error: String(e)}))""", cfg)
+
+        def nav_word():
+            return js("(document.querySelector(\"#secTabs .item[data-sec='crowdsec'] .zx-sectionnav__state\") || {innerText: ''}).innerText.trim()")
+
+        open_tab()
+        cfg_on = {k: v for k, v in get("/api/crowdsec/get").items() if k != "keySet"}
+        blocked_before = int(pane_text("#csFBlocked").split()[0].replace(",", ""))
+        if blocked_before < 1 or nav_word() != "On":
+            fail("crowdsec-rejected", f"before: enforcing with blocked requests and the navigation item 'On' expected, got {blocked_before} / {nav_word()!r}")
+        r = raw_set(dict(cfg_on, enabled=False))
+        if isinstance(r, dict) and r.get("error"):
+            fail("crowdsec-rejected", f"switching off through the API failed: {r}")
+        if wait_for(lambda: nav_word() == "Off", 25, "the navigation item to follow a switch-off made through the API") is None:
+            shot("crowdsec-nav-stale.png")
+        good_key, lapi.key = lapi.key, "rotated-" + secrets.token_hex(6)
+        r = raw_set(dict(cfg_on, graceSeconds=300))   # a long grace period: the state stays "starting" while the page is looked at
+        if isinstance(r, dict) and r.get("error"):
+            fail("crowdsec-rejected", f"switching on through the API failed: {r}")
+        s = wait_for(lambda: (lambda x: x if x.get("keyRejected") else None)(status()), 30, "the status to report the rejected key")
+        if s:
+            if s.get("state") != "starting" or s.get("lastSuccess") or not s.get("countingSince"):
+                fail("crowdsec-rejected", f"no pull has worked since the switch-on: state starting, no last success and a counting start expected: {s}")
+            pg.wait_for_function("/rejects the API key/.test(document.getElementById('csStatus').innerText)", timeout=25000)
+            head = pane_text("#csStatus")
+            if "Connecting" in head or "Waiting for the first pull" in head or "Starting" in head or "Key rejected" not in head:
+                fail("crowdsec-rejected", "a refused key before the first pull must be the headline, not 'Connecting': " + head[:400])
+            if head.lower().count("reject") > 2 or "Last error" in head or "took" in pane_text("#csFPull"):
+                fail("crowdsec-rejected", "the refused key must be said once (badge and headline), without a 'Last error' repeat or a pull duration: " + head[:400])
+            if "attempt" not in pane_text("#csFPull") or js("document.getElementById('csStatusCard').getAttribute('data-state')") != "danger":
+                fail("crowdsec-rejected", "the Last sync tile must show the failed attempts and the card must be in the danger state: " + pane_text("#csFPull"))
+            if wait_for(lambda: nav_word() == "On", 25, "the navigation item to follow a switch-on made through the API") is None:
+                shot("crowdsec-nav-stale.png")
+            labels = pane_text("#csFacts")
+            if "Blocked since" not in labels or "Would block since" not in labels or "Checked since" not in labels or "Blocked today" in labels or pane_text("#csFBlocked").split()[0] != "0":
+                fail("crowdsec-rejected", "after a switch-on today the counters start at 0 and must be labelled 'since <time>', not 'today': " + labels[:300])
+            shot("crowdsec-key-rejected.png")
+            if api_key in js("document.documentElement.outerHTML") or api_key in json.dumps(s):
+                fail("crowdsec-secret", "the key is visible after it was refused")
+        lapi.key = good_key
+        raw_set(cfg_on)   # the grace period of the scenario again
+        if wait_for(lambda: (lambda x: x if x.get("state") == "ok" and not x.get("keyRejected") and x.get("cacheSize", 0) >= 3 else None)(status()), 60, "the status to recover once the server accepts the key again") is None:
+            return
+        pg.wait_for_function("/Blocking banned addresses/.test(document.getElementById('csStatus').innerText)", timeout=25000)
+        if hit("/", CS_BANNED2)[0] != 403 or hit("/", CS_CLEAN)[0] != 200:
+            fail("crowdsec-rejected", "after the key works again the remaining ban must be enforced and others served")
 
         # ---------------------------------------------------------------- the LAPI dies: fail open, the card says so
         current["page"] = "crowdsec-lapidown"
@@ -435,8 +662,8 @@ def crowdsec_ui(pg, ctx):
         current["page"] = "crowdsec-off"
         set_toggle("#csEnabled", False)
         set_toggle("#csClearKey", True)
-        pg.select_option("#csMode", "log")
-        pg.click("#csSave")
+        pick("#csMode", "log")
+        save_bar()
         wait_for(lambda: not get("/api/crowdsec/get").get("enabled") and not get("/api/crowdsec/get").get("keySet"), 8, "CrowdSec to be switched off and the key removed")
         if hit("/", CS_BANNED2)[0] != 200:
             fail("crowdsec-off", "switched off: nobody may be blocked")

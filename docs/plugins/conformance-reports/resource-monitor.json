@@ -1,0 +1,197 @@
+{
+ "tool": "zoraxy-plugin-check",
+ "tool_version": "1.0.0",
+ "contract_version_checked": 1,
+ "time": "2026-11-23T20:17:17Z",
+ "binary": "~/plugins/Resource Monitor/Resource Monitor",
+ "sha256": "c355b6c0e062000472cb3420adfd33684441d4b837f73fcb1733cc5f56aefa52",
+ "size": 9274447,
+ "plugin": {
+  "id": "zoraxyresourcemonitor",
+  "name": "Resource Monitor",
+  "version": "1.0.3",
+  "type": 1,
+  "api_version": 0
+ },
+ "result": "pass",
+ "counts": {
+  "fail": 0,
+  "pass": 13,
+  "skip": 7,
+  "warn": 1
+ },
+ "checks": [
+  {
+   "id": "introspect",
+   "title": "Introspect answers with a manifest",
+   "status": "pass",
+   "detail": "Manifest in 5 ms.",
+   "ms": 5,
+   "data": {
+    "bytes": 586,
+    "stderr_bytes": 0
+   }
+  },
+  {
+   "id": "introspect_size",
+   "title": "Size of the introspect output",
+   "status": "pass",
+   "detail": "586 bytes.",
+   "ms": 5
+  },
+  {
+   "id": "manifest",
+   "title": "Fields of the manifest",
+   "status": "pass",
+   "detail": "legacy plugin (no api_version).",
+   "ms": 5
+  },
+  {
+   "id": "configure",
+   "title": "Starts with the configure payload",
+   "status": "pass",
+   "detail": "Started with -configure=\u003cjson\u003e.",
+   "ms": 22
+  },
+  {
+   "id": "secrets",
+   "title": "Secrets stay off the command line",
+   "status": "warn",
+   "detail": "The invoke token is on the command line, where every local user can read it. Declare configure_via \"stdin\" (SDK 1.1.0).",
+   "ms": 22
+  },
+  {
+   "id": "readiness",
+   "title": "Opens its port",
+   "status": "pass",
+   "detail": "Port open after 21 ms.",
+   "ms": 22,
+   "data": {
+    "ms": 21
+   }
+  },
+  {
+   "id": "bind",
+   "title": "Listens on the loopback address only",
+   "status": "pass",
+   "detail": "Not reachable on 10.1.0.25.",
+   "ms": 0
+  },
+  {
+   "id": "ui",
+   "title": "Answers on its page path",
+   "status": "pass",
+   "detail": "HTTP 200 in 0 ms.",
+   "ms": 0
+  },
+  {
+   "id": "health",
+   "title": "Health path",
+   "status": "skip",
+   "detail": "No health_path declared. The health check of Zoraxy can then only try a TCP connect, which does not see a plugin that accepts connections and no longer answers.",
+   "ms": 0
+  },
+  {
+   "id": "verdict",
+   "title": "Filter answers are valid verdicts",
+   "status": "skip",
+   "detail": "The plugin declares no filter hooks.",
+   "ms": 0
+  },
+  {
+   "id": "sniff",
+   "title": "Dynamic capture sniff answers",
+   "status": "skip",
+   "detail": "The plugin declares no dynamic capture.",
+   "ms": 0
+  },
+  {
+   "id": "events",
+   "title": "Acknowledges events",
+   "status": "skip",
+   "detail": "The plugin subscribes to no events.",
+   "ms": 0
+  },
+  {
+   "id": "token",
+   "title": "Refuses calls without the invoke token",
+   "status": "skip",
+   "detail": "The plugin has no filter, sniff or event path.",
+   "ms": 0
+  },
+  {
+   "id": "load",
+   "title": "Latency under load",
+   "status": "skip",
+   "detail": "The plugin has no filter hooks and no dynamic capture sniff: Zoraxy does not call it for visitor requests. (Static capture paths are not exercised by this kit.)",
+   "ms": 0
+  },
+  {
+   "id": "memory",
+   "title": "Memory after the calls",
+   "status": "pass",
+   "detail": "11.4 MiB after 1000 calls (requests for its page for the last 999), 6.6 MiB before the load, peak 11.4 MiB.",
+   "ms": 385,
+   "data": {
+    "after_mib": 11.4,
+    "before_mib": 6.6,
+    "calls": 1000,
+    "growth_mib": 4.8,
+    "peak_mib": 11.4
+   }
+  },
+  {
+   "id": "api",
+   "title": "Calls to the Zoraxy API",
+   "status": "skip",
+   "detail": "The plugin asks for no Zoraxy API endpoints (and gets no API key).",
+   "ms": 0
+  },
+  {
+   "id": "survive",
+   "title": "Stays up",
+   "status": "pass",
+   "detail": "Still running after 3.0 s and 1000 calls.",
+   "ms": 2592
+  },
+  {
+   "id": "term",
+   "title": "Ends on the terminate request",
+   "status": "pass",
+   "detail": "Ended 104 ms after the terminate request (exit code 0).",
+   "ms": 104
+  },
+  {
+   "id": "sigterm",
+   "title": "Ends within 5 s of SIGTERM",
+   "status": "pass",
+   "detail": "Ended 2 ms after SIGTERM (ended by signal terminated).",
+   "ms": 2
+  },
+  {
+   "id": "cleanup",
+   "title": "Leaves no process behind",
+   "status": "pass",
+   "detail": "No process of the plugin was left.",
+   "ms": 0
+  },
+  {
+   "id": "logs",
+   "title": "Log volume",
+   "status": "pass",
+   "detail": "3 lines, 133 bytes during 1001 calls.",
+   "ms": 0,
+   "data": {
+    "bytes": 133,
+    "calls": 1001,
+    "lines": 3,
+    "longest_line": 50
+   }
+  }
+ ],
+ "log_tail": [
+  "Resource Monitor started at http://127.0.0.1:20789",
+  "Resource Monitor Plugin Exited",
+  "Resource Monitor started at http://127.0.0.1:20776"
+ ]
+}

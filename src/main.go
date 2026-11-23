@@ -229,6 +229,10 @@ func main() {
 		if err != nil {
 			log.Fatal("Unable to open loopback listener for plugins: ", err)
 		}
+		//The isolated plugin pages (opt-in) are shown inside the HTTPS admin page, so they need TLS too
+		pluginUIListenerWrap = func(ln net.Listener) net.Listener {
+			return webuitls.NewSniffListener(ln, webuitls.ServerTLSConfig(webUICert))
+		}
 	}
 
 	//Startup all modules, see start.go

@@ -49,7 +49,7 @@
         { label: N_("Admin accounts"), page: "seccenter", pre: "#secTabs .item[data-sec='users']", at: "#secTabs .item[data-sec='users']", kw: "users viewer role management login" },
         { label: N_("Auth audit"), page: "seccenter", pre: "#secTabs .item[data-sec='authaudit']", at: "#secTabs .item[data-sec='authaudit']", kw: "failed logins log" },
         { label: N_("CrowdSec"), page: "seccenter", pre: "#secTabs .item[data-sec='crowdsec']", at: "#csEnabled", kw: "crowdsec lapi bouncer decisions ban blocklist api key" },
-        { label: N_("Deployment role"), page: "seccenter", pre: "#secTabs .item[data-sec='deployment']", at: "#drRole", kw: "external internal standalone dual proxy peer gate forwarded headers x-forwarded-for trusted" },
+        { label: N_("Proxy chain role"), page: "seccenter", pre: "#secTabs .item[data-sec='deployment']", at: "#drRole", kw: "external internal standalone dual proxy peer gate forwarded headers x-forwarded-for trusted" },
         { label: N_("Security dashboard"), page: "seccenter", pre: "#secTabs .item[data-sec='overview']", at: "#ovRefresh", kw: "overview dashboard status health backends certificates crowdsec rate limit blocked events trusted proxies warnings" },
         { label: N_("Enterprise baseline"), page: "seccenter", pre: "#secTabs .item[data-sec='overview']", at: "#blCard", kw: "enterprise baseline default secure built in apply undo preview headers hardening nosniff hsts forwarded crowdsec audit log safe settings" },
         { label: N_("Network plan"), page: "seccenter", pre: "#secTabs .item[data-sec='netplan']", at: "#npProxyCidrs", kw: "vlan segmentation management application proxy zones cidr admin access ports firewall document" },
@@ -302,11 +302,11 @@
 
     /* ----------------------------------------------------------------- recent */
     var RECENT_KEY = "zoraxy_palette_recent";
-    function getRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") || []; } catch (e) { return []; } }
+    function getRecent() { try { return JSON.parse(zxStore.get(RECENT_KEY) || "[]") || []; } catch (e) { return []; } }
     function pushRecent(key) {
         var r = getRecent().filter(function (k) { return k !== key; });
         r.unshift(key);
-        try { localStorage.setItem(RECENT_KEY, JSON.stringify(r.slice(0, 8))); } catch (e) { /* storage blocked */ }
+        try { zxStore.set(RECENT_KEY, JSON.stringify(r.slice(0, 8))); } catch (e) { /* storage blocked */ }
     }
 
     /* A Reference ID (ZX-XXXX-XXXX, from a visitor's 403 page) or an IP address typed in the palette finds the block in Statistics > Blocked. */

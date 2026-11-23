@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cross-compile the Linux release binaries, sign them and verify the result.
 #
-#   tools/build_release.sh -t TAG [-b BUILD] [-k PRIVATE_KEY.pem] [-o DIST_DIR]
+#   tools/build_release.sh -t TAG [-b BUILD] [-k PRIVATE_KEY.pem] [-o DIST_DIR] [-p]
 #
 # TAG is the GitHub release tag (e.g. v3.3.6-topic.1); it is signed into
 # SHA256SUMS so the updater can refuse a replayed older release. BUILD is a
@@ -14,6 +14,12 @@
 # The committed public key (src/mod/updater/release_pubkey.pem) is used to
 # verify the produced SHA256SUMS.sig, so a wrong key aborts the build.
 #
+# -p (optional, off by default) also builds the fork's reference plugins into
+# DIST_DIR/plugins and runs the conformance kit on them
+# (tools/build_ref_plugins.sh). They are extra files: the release itself, its
+# SHA256SUMS and its signature are the same with and without -p, and the
+# reference plugins are not signed with the release key.
+#
 # Nothing is published: attach the files in DIST_DIR to a GitHub release by hand.
 set -euo pipefail
 
@@ -24,14 +30,16 @@ pub="${ZORAXY_RELEASE_PUB:-$root/src/mod/updater/release_pubkey.pem}"
 
 tag=""
 build="$(date +%s)"
+refplugins=0
 
-while getopts "k:o:t:b:" opt; do
+while getopts "k:o:t:b:p" opt; do
   case "$opt" in
     k) key="$OPTARG" ;;
     o) dist="$OPTARG" ;;
     t) tag="$OPTARG" ;;
     b) build="$OPTARG" ;;
-    *) echo "usage: $0 -t tag [-b build] [-k private.pem] [-o dist_dir]" >&2; exit 2 ;;
+    p) refplugins=1 ;;
+    *) echo "usage: $0 -t tag [-b build] [-k private.pem] [-o dist_dir] [-p]" >&2; exit 2 ;;
   esac
 done
 
@@ -80,6 +88,12 @@ go run tools/sign_release.go -dist "$dist" -key "$key" -pub "$pub" -tag "$tag" -
 
 echo "verifying with the committed public key"
 go run tools/sign_release.go -verify -dist "$dist" -pub "$pub"
+
+if [ "$refplugins" = 1 ]; then
+  # After signing and verifying, in a sub-folder: the signed release is not changed by this
+  echo "building the reference plugins (optional, -p)"
+  "$root/tools/build_ref_plugins.sh" -o "$dist/plugins" -c
+fi
 
 echo
 echo "Release assets in $dist:"

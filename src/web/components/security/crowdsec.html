@@ -1,7 +1,155 @@
-<!-- Security Center > CrowdSec (advanced). Status (connected? log only or blocking? what did it do), the set-up guide, the two cards a
-     first set-up needs (connection, what happens on a match), the rest in groups; then what matched and the tools for the CrowdSec server. -->
+<!-- Security Center > CrowdSec (advanced).
+     Order: the status in plain words (is it on, blocking or watching, what did it do today); while it is on, what it is doing
+     (activity over time, the live feed, check an address, what is loaded, connection health); then the settings (set-up guide,
+     connection, what happens on a match, which decisions to act on, advanced groups) and the tools for the CrowdSec server.
+     One Save for all settings: the save bar (window.zxSecBar). Everything under #csSee and #csGrpManage is not part of it. -->
 <style>
-    #csForm .zx-select { width: 100%; }
+    /* status */
+    #secPane #csStatusCard .sx-facts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    #secPane #csStatusCard .sx-facts[hidden] { display: none; }
+    @media (max-width: 1200px) { #secPane #csStatusCard .sx-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { #secPane #csStatusCard .sx-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    #csWarnBox .zx-callout { margin: 0 var(--zx-card-pad) var(--zx-card-pad); }
+    #csWarnBox .zx-callout ul { margin: 0; padding-left: 1.1em; }
+    #csWarnBox .zx-callout ul.is-one { list-style: none; padding-left: 0; }
+    #csSee[hidden] { display: none; }
+    #csSee > .zx-card, #csSee > details.sx-group { margin-bottom: var(--zx-space-4); }
+
+    /* shared small things */
+    #secPane .cs-ip { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #secPane .cs-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #secPane .cs-muted { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #secPane .cs-headrow { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-4); }
+    #secPane .cs-headrow > div:first-child { flex: 1 1 18rem; min-width: 0; }
+    #secPane .cs-h { margin: 0 0 var(--zx-space-2); font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); }
+
+    /* activity: two charts with one axis each (matches per period, requests checked per period), never two scales in one plot */
+    #csChartBox { position: relative; }
+    #csChartBox .cs-plot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+    #csChartBox .cs-plot__cap { display: flex; justify-content: space-between; gap: var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-xs); }
+    #csChartBox svg { display: block; width: 100%; overflow: visible; }
+    #csChartBox svg.cs-chart { height: 112px; }
+    #csChartBox svg.cs-strip { height: 30px; }
+    #csChartBox .cs-plot + .cs-plot { margin-top: var(--zx-space-3); }
+    #csChartBox .cs-base { stroke: var(--zx-border-strong); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    #csChartBox .cs-grid { stroke: var(--zx-border); stroke-width: 1; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
+    #csChartBox .cs-b-blocked { fill: var(--zx-danger-solid); }
+    #csChartBox .cs-b-chal { fill: var(--zx-info-solid); }
+    #csChartBox .cs-b-would { fill: var(--zx-warn-solid); }
+    #csChartBox .cs-b-checked { fill: var(--zx-border-strong); }
+    #csChartBox .cs-hit { fill: transparent; }
+    #csChartBox .cs-hit.is-on { fill: var(--zx-text); fill-opacity: 0.06; }
+    #csChartBox .cs-axis { display: flex; justify-content: space-between; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-variant-numeric: tabular-nums; }
+    #csTip { position: absolute; z-index: 2; top: 0; left: 0; min-width: 11rem; max-width: 18rem; padding: var(--zx-space-2) var(--zx-space-3); background: var(--zx-surface); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); box-shadow: var(--zx-shadow-2); font-size: var(--zx-fs-sm); pointer-events: none; }
+    #csTip[hidden] { display: none; }
+    #csTip b { display: block; margin-bottom: 2px; }
+    #csTip span { display: flex; justify-content: space-between; gap: var(--zx-space-4); font-variant-numeric: tabular-nums; }
+    #csTip i, #secPane .cs-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+    #secPane .cs-legend { display: flex; flex-wrap: wrap; gap: var(--zx-space-1) var(--zx-space-4); margin: var(--zx-space-3) 0 0; padding: 0; list-style: none; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #secPane .cs-legend b { color: var(--zx-text); font-variant-numeric: tabular-nums; margin-left: 4px; }
+    #secPane .cs-k-blocked { background: var(--zx-danger-solid); } #secPane .cs-k-chal { background: var(--zx-info-solid); }
+    #secPane .cs-k-would { background: var(--zx-warn-solid); } #secPane .cs-k-checked { background: var(--zx-border-strong); }
+    #csActTable { margin-top: var(--zx-space-3); }
+    #csActTable table { margin-top: var(--zx-space-2); }
+    #csTops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--zx-space-4) var(--zx-space-5); margin-top: var(--zx-space-5); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+    @media (max-width: 1500px) { #csTops { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { #csTops { grid-template-columns: minmax(0, 1fr); } }
+    #secPane .cs-bars { list-style: none; margin: 0; padding: 0; }
+    #secPane .cs-bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--zx-space-3); padding: 4px 0; font-size: var(--zx-fs-sm); }
+    #secPane .cs-bars .k { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--zx-text); }
+    #secPane .cs-bars .k small { color: var(--zx-text-muted); font-size: inherit; }
+    #secPane .cs-bars .n { color: var(--zx-text-muted); font-variant-numeric: tabular-nums; }
+    #secPane .cs-bars .bar { grid-column: 1 / -1; display: flex; gap: 2px; height: 4px; border-radius: 2px; background: var(--zx-surface-3); overflow: hidden; }
+    #secPane .cs-bars .bar i { display: block; height: 100%; min-width: 2px; }
+    #secPane .cs-bars .bar i.e { background: var(--zx-danger-solid); } #secPane .cs-bars .bar i.l { background: var(--zx-warn-solid); } #secPane .cs-bars .bar i.m { background: var(--zx-text-muted); }
+
+    /* feed */
+    #csFeedCard .cs-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--zx-space-3); margin: 0 0 var(--zx-space-4); }
+    #csFeedCard .cs-bar .zx-field { flex: 0 1 14rem; min-width: 10rem; margin: 0; }
+    #csFeedCard .cs-bar .zx-field > label { display: block; margin-bottom: var(--zx-space-1); font-weight: 700; }
+    #csFeedCard .cs-bar .zx-field > input, #csFeedCard .cs-bar .zx-field > select { width: 100%; max-width: none; box-sizing: border-box; }
+    #csFeedCard .cs-bar__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin-left: auto; }
+    #csLive .cs-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--zx-text-faint, var(--zx-text-muted)); }
+    #csLive[aria-pressed="true"] .cs-dot { background: var(--zx-ok-solid); animation: csPulse 2s ease-in-out infinite; }
+    @keyframes csPulse { 50% { opacity: 0.35; } }
+    @media (prefers-reduced-motion: reduce) { #csLive[aria-pressed="true"] .cs-dot { animation: none; } }
+    #csFeed { table-layout: fixed; width: 100%; }
+    #csFeed th:nth-child(1) { width: 7.5rem; } #csFeed th:nth-child(3) { width: 15rem; }
+    #csFeed td { vertical-align: top; }
+    #csFeed .cs-time { color: var(--zx-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    #csFeed .cs-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--zx-space-2); min-width: 0; }
+    #csFeed .cs-host { color: var(--zx-text); font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
+    #csFeed .cs-req { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); color: var(--zx-text); overflow-wrap: anywhere; min-width: 0; }
+    #csFeed .cs-on { color: var(--zx-text-muted); }
+    #secPane button.cs-iplink { padding: 0; border: 0; background: none; color: var(--zx-link); cursor: pointer; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); font-weight: 700; border-radius: var(--zx-radius-sm); }
+    #secPane button.cs-iplink:hover { text-decoration: underline; }
+    #secPane button.cs-iplink:focus-visible { outline: none; box-shadow: var(--zx-focus-ring); }
+    #secPane .cs-cc { padding: 0 6px; border: 1px solid var(--zx-border); border-radius: 999px; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+    #csFeed .cs-why { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+    #csFeed .cs-res small { display: block; margin-top: 4px; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); }
+    #csFeedFoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--zx-space-2) var(--zx-space-4); padding-top: var(--zx-space-3); }
+    @media (max-width: 760px) {
+        #csFeedCard .cs-bar .zx-field { flex: 1 1 100%; } #csFeedCard .cs-bar__end { margin-left: 0; }
+        #csFeed { table-layout: auto; }
+        #csFeed thead { display: none; }
+        #csFeed tr { display: block; padding: 10px 0; border-top: 1px solid var(--zx-border); }
+        #csFeed tr:first-child { border-top: 0; }
+        #csFeed td, #csFeed td.zx-cell-long { display: block; padding: 2px 0; border: 0; text-align: left; max-width: none; }
+        #csFeed td::before { content: none; }
+        #csFeed td.zx-empty-cell::before { content: "\f01c"; }
+        #csFeed .cs-res small { display: inline; margin-left: var(--zx-space-2); }
+    }
+
+    /* check an address */
+    #csCheckCard .sx-inline > .zx-field > label { display: block; margin-bottom: var(--zx-space-1); font-weight: 700; }
+    #csCheckCard .cs-liverow { margin: var(--zx-space-3) 0 0; }
+    #csCheckOut { margin-top: var(--zx-space-4); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+    #csCheckOut[hidden] { display: none; }
+    #csCheckOut .cs-verdict { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-2); }
+    #csCheckOut .cs-verdict strong { color: var(--zx-text); } #csCheckOut .cs-verdict strong .cs-ip { font-size: inherit; }
+    #csCheckOut p { margin: 0 0 var(--zx-space-2); max-width: 62rem; color: var(--zx-text); }
+    #csCheckOut .cs-h { margin-top: var(--zx-space-4); }
+    #csCheckOut ul.cs-list { list-style: none; margin: 0; padding: 0; }
+    #csCheckOut ul.cs-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--zx-space-3); padding: 6px 0; border-top: 1px solid var(--zx-border); overflow-wrap: anywhere; }
+    #csCheckOut ul.cs-list li:first-child { border-top: 0; }
+    #csCheckOut ul.cs-list li > span:first-child { flex: 1 1 18rem; min-width: 0; }
+
+    /* what is loaded */
+    #csLoaded { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--zx-space-4) var(--zx-space-6); }
+    @media (max-width: 1000px) { #csLoaded { grid-template-columns: minmax(0, 1fr); } }
+    #csLoaded dl.zx-kv, #csHealthFacts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px var(--zx-space-4); margin: 0; font-size: var(--zx-fs-sm); }
+    #csLoaded dl dt, #csHealthFacts dt { color: var(--zx-text-muted); font-weight: 400; }
+    #csLoaded dl dd, #csHealthFacts dd { font-family: inherit; font-size: inherit; margin: 0; color: var(--zx-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    #csLoadedCard details.sx-more-d { margin-top: var(--zx-space-4); }
+    #csLoadedCard details.sx-more-d .zx-table-wrap { margin-top: var(--zx-space-2); }
+    #csHealthFacts { margin-bottom: var(--zx-space-4); }
+    #csHealthFacts .is-error { color: var(--zx-danger-text); }
+    #csGrpHealth .zx-subhead { font-size: 1.071rem; }
+
+    /* settings */
+    #csSettings .zx-select { width: 100%; }
+    #csSettings > .zx-card, #csSettings > details.sx-group { margin-bottom: var(--zx-space-4); }
+    #csSettings > details.sx-group { margin-bottom: var(--zx-space-2); }
+    #csSettings .cs-key { display: flex; align-items: center; gap: var(--zx-space-2); }
+    #csSettings .cs-test { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); }
+    #csSettings .cs-test .ui.message { flex: 1 1 16rem; margin: 0; padding: var(--zx-space-2) var(--zx-space-3); }
+    #csSettings .cs-keyrm { margin: var(--zx-space-4) 0 0; }
+    #csSettings .cs-keyrm .zx-disclosure__body { padding-bottom: 0; }
+    #csSettings #csMsg { margin: var(--zx-space-3) 0 0; }
+    #csSettings .sx-row select { width: auto; min-width: 13rem; }
+    #csSettings .sx-row .sx-row__title small { font-weight: 400; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #csSettings #csSiteEmpty { margin: 0 0 var(--zx-space-3); }
+    #csSettings #csSiteRows:not(:empty) { margin-bottom: var(--zx-space-4); padding-bottom: var(--zx-space-4); border-bottom: 1px solid var(--zx-border); }
+    #csSettings .sx-inline > .zx-field > label { display: block; margin-bottom: var(--zx-space-1); font-weight: 700; }
+    #secPane .cs-reach { list-style: none; margin: var(--zx-space-2) 0 0; padding: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #secPane .cs-reach[hidden] { display: none; }
+    #secPane .cs-reach li { padding: 2px 0; overflow-wrap: anywhere; }
+    #secPane .cs-reach code { color: var(--zx-text); font-family: var(--zx-font-mono); font-size: inherit; background: none; padding: 0; }
+    #secPane .cs-reach li.is-wide span { color: var(--zx-warn-text); font-weight: 700; }
+    #csSettings .cs-saveline { margin: var(--zx-space-4) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    @media (max-width: 640px) { #csSettings .sx-row select { width: 100%; } #csSettings .sx-row__end { flex: 1 1 100%; } }
+
+    /* set-up guide and command blocks */
     #secPane .cs-cmd { position: relative; margin: var(--zx-space-1) 0 var(--zx-space-2); }
     #secPane .cs-cmd pre { margin: 0; padding: var(--zx-space-3); padding-right: 6rem; background: var(--zx-surface-2); color: var(--zx-text); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); }
     #secPane .cs-cmd button { position: absolute; top: 6px; right: 6px; }
@@ -12,27 +160,13 @@
     #secPane ol.cs-steps { padding-left: 1.3em; margin: 0 0 var(--zx-space-3); line-height: var(--zx-lh); }
     #secPane ol.cs-steps li { margin-bottom: var(--zx-space-1); }
     #csSetup details.zx-disclosure { margin-top: var(--zx-space-4); }
-    #csStatus .cs-extra { margin: 0; padding: 0 var(--zx-card-pad) var(--zx-space-4); background: var(--zx-surface-2); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    #csStatus .cs-extra:empty { display: none; }
-    #csStatus .cs-extra .is-error { display: block; color: var(--zx-danger-text); overflow-wrap: anywhere; }
-    #csWarnBox .zx-callout { margin: var(--zx-card-pad); }
-    #csWarnBox .zx-callout ul.list { margin: 0; padding-left: 1.1em; }
-    #csForm .cs-key { display: flex; align-items: center; gap: var(--zx-space-2); }
-    #csForm .cs-test { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3); }
-    #csForm .cs-test .ui.message { flex: 1 1 16rem; margin: 0; padding: var(--zx-space-2) var(--zx-space-3); }
-    #csForm .cs-keyrm { margin: var(--zx-space-4) 0 0; }
-    #csForm .cs-keyrm .zx-disclosure__body { padding-bottom: 0; }
-    #csForm #csMsg { margin: 0 0 var(--zx-space-3); }
     #secPane .cs-filter { max-width: 24rem; margin: 0 0 var(--zx-space-3); }
     #secPane .cs-filter input { width: 100%; }
-    #secPane .cs-sub { display: block; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
-    #secPane .cs-ip { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
     #csPanelTools { display: flex; align-items: center; gap: var(--zx-space-3); flex-wrap: wrap; margin: 0 0 var(--zx-space-4); }
     #csMgPanel .zx-subhead { font-size: 1.071rem; }
-    #csActivity { margin: 0 0 var(--zx-space-2); }
 </style>
 
-<div class="ui form" id="csForm">
+<div id="csForm">
     <section class="zx-card sx-status" id="csStatusCard" data-state="off">
         <div id="csStatus" aria-live="polite">
             <div class="sx-status__top">
@@ -42,20 +176,122 @@
                     <p class="sx-status__desc">Zoraxy asks a <a href="https://docs.crowdsec.net/" target="_blank" rel="noopener noreferrer">CrowdSec</a> server you run which addresses to refuse. Off until you switch it on, and it starts in log-only mode: matches are counted, nobody is blocked.</p>
                 </div>
                 <div class="sx-status__action">
-                    <label class="sx-switch" for="csEnabled"><span>Use CrowdSec</span><input type="checkbox" class="zx-switch" role="switch" id="csEnabled"></label>
+                    <label class="sx-switch" for="csEnabled"><span>Use CrowdSec</span><input type="checkbox" class="zx-switch" role="switch" id="csEnabled" data-zx-label="Use CrowdSec"></label>
                 </div>
             </div>
-            <dl class="sx-facts">
-                <div class="sx-fact"><dt>Decisions in memory</dt><dd id="csFMem">-</dd></div>
-                <div class="sx-fact"><dt>Visitors blocked</dt><dd id="csFBlocked">-</dd></div>
-                <div class="sx-fact"><dt>Matched, log only</dt><dd id="csFLog">-</dd></div>
-                <div class="sx-fact"><dt>Last pull from the server</dt><dd id="csFPull">-</dd></div>
+            <dl class="sx-facts" id="csFacts" hidden>
+                <div class="sx-fact"><dt>Decisions loaded</dt><dd id="csFMem">-</dd></div>
+                <div class="sx-fact"><dt>Last sync</dt><dd id="csFPull">-</dd></div>
+                <div class="sx-fact"><dt id="csFBlockedL">Blocked today</dt><dd id="csFBlocked">-</dd></div>
+                <div class="sx-fact"><dt id="csFLogL">Would block today</dt><dd id="csFLog">-</dd></div>
+                <div class="sx-fact"><dt id="csFCheckedL">Requests checked today</dt><dd id="csFChecked">-</dd></div>
             </dl>
-            <p class="cs-extra" id="csExtra"></p>
             <div id="csWarnBox"></div>
         </div>
     </section>
 
+    <!-- what CrowdSec is doing: shown while it is switched on. Nothing in here is a setting. -->
+    <div id="csSee" data-zx-ignore hidden>
+        <section class="zx-card" id="csActCard">
+            <div class="zx-card__head cs-headrow">
+                <div>
+                    <h3 class="zx-card__title">Activity</h3>
+                    <p class="zx-card__desc">Every request is looked up in the loaded decisions. This shows how many matched, and what happened to them.</p>
+                </div>
+                <div class="zx-segmented" id="csWindow" aria-label="Period">
+                    <button type="button" class="zx-segmented__item" data-value="24h" aria-checked="true">24 hours</button>
+                    <button type="button" class="zx-segmented__item" data-value="7d">7 days</button>
+                </div>
+            </div>
+            <div class="zx-card__body">
+                <div id="csChartBox"><p class="cs-muted">Loading...</p></div>
+                <div id="csTops"></div>
+            </div>
+        </section>
+
+        <section class="zx-card" id="csFeedCard">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Matched requests</h3>
+                <p class="zx-card__desc">Each visitor whose address had a decision, newest first: what was requested, which decision applied and what Zoraxy did. In log-only mode this is what would have been blocked.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="cs-bar">
+                    <div class="zx-field"><label for="csFeedOutcome">Show</label>
+                        <select id="csFeedOutcome" class="zx-select">
+                            <option value="">Everything</option>
+                            <option value="enforced">Stopped (blocked or CAPTCHA)</option>
+                            <option value="served">Served (not stopped)</option>
+                            <option value="log-only">Would block (log only)</option>
+                            <option value="blocked">Blocked with the 403 page</option>
+                            <option value="dropped">Blocked, connection closed</option>
+                            <option value="challenged">CAPTCHA shown</option>
+                            <option value="challenge-passed">CAPTCHA already solved</option>
+                            <option value="captcha-unavailable">Site has no CAPTCHA</option>
+                            <option value="allowlisted">Allowlisted</option>
+                            <option value="exempt-site">Site exempt</option>
+                            <option value="fail-closed">Refused, server unreachable</option>
+                        </select></div>
+                    <div class="zx-field"><label for="csFeedIp">Address</label><input type="text" id="csFeedIp" class="zx-input" placeholder="203.0.113.7" autocomplete="off" spellcheck="false"></div>
+                    <div class="zx-field"><label for="csFeedQ">Search</label><input type="text" id="csFeedQ" class="zx-input" placeholder="site, path, scenario, origin" autocomplete="off" spellcheck="false"></div>
+                    <div class="cs-bar__end">
+                        <button type="button" class="zx-btn zx-btn--ghost" id="csGoBlocked" title="Blocked requests are also kept in the blocked-request log, which survives a restart"><i class="external alternate icon" aria-hidden="true"></i> Blocked-request log</button>
+                        <button type="button" class="zx-btn zx-btn--secondary" id="csLive" aria-pressed="true"><span class="cs-dot" aria-hidden="true"></span> <span id="csLiveText">Live</span></button>
+                    </div>
+                </div>
+                <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Matched requests">
+                    <table class="zx-table" id="csFeed"><thead><tr><th>Last seen</th><th>Visitor and request</th><th>What Zoraxy did</th></tr></thead><tbody><tr><td colspan="3" class="zx-empty-cell">Loading...</td></tr></tbody></table>
+                </div>
+                <div id="csFeedFoot">
+                    <button type="button" class="zx-btn zx-btn--secondary" id="csFeedMore" hidden>Show more</button>
+                    <span class="cs-muted" id="csFeedNote"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="zx-card" id="csCheckCard">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">Check an address</h3>
+                <p class="zx-card__desc">What would happen to a visitor from this address right now, and why. Nothing is changed or counted.</p>
+            </div>
+            <div class="zx-card__body">
+                <div class="sx-inline">
+                    <div class="zx-field"><label for="csCheckIp">Address</label><input type="text" id="csCheckIp" class="zx-input" placeholder="203.0.113.7 or 2001:db8::7" autocomplete="off" spellcheck="false"></div>
+                    <div class="zx-field"><label for="csCheckSite">On the site</label><select id="csCheckSite" class="zx-select"><option value="">Any site (no per-site rule)</option></select></div>
+                    <div class="sx-inline__btn"><button type="button" class="zx-btn zx-btn--secondary" id="csCheckGo"><i class="search icon" aria-hidden="true"></i> Check</button></div>
+                </div>
+                <p class="cs-liverow"><label class="zx-check" for="csCheckLive"><input type="checkbox" id="csCheckLive"> <span>Also ask the CrowdSec server (one request to it)</span></label></p>
+                <div id="csCheckOut" aria-live="polite" hidden></div>
+            </div>
+        </section>
+
+        <section class="zx-card" id="csLoadedCard">
+            <div class="zx-card__head">
+                <h3 class="zx-card__title">What is loaded</h3>
+                <p class="zx-card__desc">The ban and captcha decisions Zoraxy holds in memory right now, by where they come from.</p>
+            </div>
+            <div class="zx-card__body">
+                <div id="csLoaded"><p class="cs-muted">Loading...</p></div>
+                <details class="sx-more-d" id="csGrpDecisions"><summary>Newest decisions received</summary>
+                    <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Newest decisions received"><table class="zx-table" id="csDecisions"><thead><tr><th>Applies to</th><th>Why</th><th>Received</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
+                </details>
+            </div>
+        </section>
+
+        <details class="sx-group" id="csGrpHealth">
+            <summary><span class="sx-group__title">Connection health</span><span class="sx-group__desc">Every pull from the CrowdSec server, how long it took, and when the connection changed state.</span><span class="sx-group__now" id="csNowHealth"></span></summary>
+            <div class="sx-group__body">
+                <dl id="csHealthFacts"></dl>
+                <h4 class="zx-subhead">Recent pulls</h4>
+                <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Recent pulls"><table class="zx-table zx-table--compact" id="csPulls"><thead><tr><th>Time</th><th>Kind</th><th>Took</th><th>Added</th><th>Removed</th><th>Result</th></tr></thead><tbody></tbody></table></div>
+                <div class="sx-more"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="csPullsMore" hidden>Show more</button></div>
+                <h4 class="zx-subhead">State changes</h4>
+                <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="State changes"><table class="zx-table zx-table--compact" id="csTrans"><thead><tr><th>Time</th><th>Change</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </details>
+    </div>
+
+    <h4 class="sx-label" id="csSetLabel">Settings</h4>
+    <div class="ui form" id="csSettings">
     <details id="csSetup" class="sx-group">
         <summary><span class="sx-group__title">New to CrowdSec? Set it up in three steps</span><span class="sx-group__desc">Install CrowdSec, create a key for this Zoraxy, paste address and key below. Zoraxy never installs or runs it for you.</span></summary>
         <div class="sx-group__body">
@@ -136,7 +372,7 @@ labels:
                     <input type="text" id="csUrl" placeholder="http://127.0.0.1:8080" autocomplete="off" spellcheck="false">
                     <p class="zx-help">Use https when the server is not on this machine. Cloud metadata and link-local addresses are always refused.</p></div>
                 <div class="field zx-field"><label for="csKey" class="cs-key">Bouncer API key <span id="csKeyBadge" class="zx-badge zx-badge--dot zx-badge--ok" style="display:none">Key stored</span></label>
-                    <input type="password" id="csKey" autocomplete="new-password" spellcheck="false" placeholder="">
+                    <input type="password" id="csKey" autocomplete="new-password" spellcheck="false" placeholder="" data-zx-label="Bouncer API key">
                     <p class="zx-help">Stored encrypted, never shown again and left out of exports. Leave empty to keep the stored key.</p></div>
             </div>
             <div class="cs-test">
@@ -144,7 +380,7 @@ labels:
                 <div id="csTestMsg" class="ui message" style="display:none" role="status"></div>
             </div>
             <details class="zx-disclosure cs-keyrm"><summary>Remove the stored key</summary><div class="zx-disclosure__body">
-                <label class="zx-toggle-row" for="csClearKey"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Remove the stored key</span><span class="zx-toggle-row__desc">Only possible while CrowdSec is switched off. Takes effect when you save.</span></span><input type="checkbox" class="zx-switch" role="switch" id="csClearKey"></label>
+                <label class="zx-toggle-row" for="csClearKey"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Remove the stored key</span><span class="zx-toggle-row__desc">Only possible while CrowdSec is switched off. Takes effect when you save.</span></span><input type="checkbox" class="zx-switch" role="switch" id="csClearKey" data-zx-label="Remove the stored key"></label>
             </div></details>
         </div>
     </section>
@@ -152,7 +388,7 @@ labels:
     <section class="zx-card">
         <div class="zx-card__head">
             <h3 class="zx-card__title">What happens on a match</h3>
-            <p class="zx-card__desc">Start with Log only and look at the recent matches below. Switch to Enforce when the list shows what you expect.</p>
+            <p class="zx-card__desc">Start with Log only and watch the matched requests. Switch to Enforce when the list shows what you expect.</p>
         </div>
         <div class="zx-card__body">
             <div class="zx-form-grid">
@@ -165,22 +401,75 @@ labels:
                     <select id="csBan" class="zx-select">
                         <option value="page">The 403 page</option>
                         <option value="drop">No answer (connection closed)</option>
-                    </select><p class="zx-help">Only used in Enforce mode.</p></div>
+                    </select><p class="zx-help">Only used when a request is really blocked.</p></div>
+                <div class="field zx-field"><label for="csCaptcha">When the decision is "captcha" instead of "ban"</label>
+                    <select id="csCaptcha" class="zx-select">
+                        <option value="log">Only log it</option>
+                        <option value="challenge">Show the site CAPTCHA</option>
+                    </select><p class="zx-help">CrowdSec can ask for a CAPTCHA instead of a ban. Zoraxy uses the CAPTCHA you configured for the site.</p></div>
+                <div class="field zx-field" id="csFallbackField"><label for="csFallback">On a site that has no CAPTCHA</label>
+                    <select id="csFallback" class="zx-select">
+                        <option value="log">Only log it, serve the visitor</option>
+                        <option value="ban">Block the visitor, as for a ban</option>
+                    </select><p class="zx-help">Only used when captcha decisions show the site CAPTCHA.</p></div>
             </div>
         </div>
     </section>
 
+    <section class="zx-card" id="csPolicyCard">
+        <div class="zx-card__head">
+            <h3 class="zx-card__title">Which decisions to act on</h3>
+            <p class="zx-card__desc">Decisions come from different sources. By default all of them follow the mode above. Keep a source on Log only to watch it without blocking, or ignore it. These choices can only make Zoraxy block less, never more.</p>
+        </div>
+        <div class="zx-card__body">
+            <ul class="sx-rows" id="csOrigins">
+                <li class="sx-row"><span class="sx-row__main"><span class="sx-row__title">Your own CrowdSec scenarios <small id="csOrgN-crowdsec"></small></span><span class="sx-row__sub">Addresses your CrowdSec caught misbehaving in your logs (origin "crowdsec").</span></span>
+                    <span class="sx-row__end"><select id="csPolCrowdsec" class="zx-select cs-pol" data-origin="crowdsec" data-zx-label="Your own CrowdSec scenarios" aria-label="Your own CrowdSec scenarios"><option value="">Follow the mode</option><option value="log">Log only</option><option value="ignore">Ignore</option></select></span></li>
+                <li class="sx-row"><span class="sx-row__main"><span class="sx-row__title">Bans added by hand <small id="csOrgN-cscli"></small></span><span class="sx-row__sub">Added with cscli or with the ban tool at the bottom of this page (origin "cscli").</span></span>
+                    <span class="sx-row__end"><select id="csPolCscli" class="zx-select cs-pol" data-origin="cscli" data-zx-label="Bans added by hand" aria-label="Bans added by hand"><option value="">Follow the mode</option><option value="log">Log only</option><option value="ignore">Ignore</option></select></span></li>
+                <li class="sx-row"><span class="sx-row__main"><span class="sx-row__title">Community blocklist <small id="csOrgN-capi"></small></span><span class="sx-row__sub">Addresses reported by other CrowdSec users worldwide (origin "CAPI"). Usually the largest group.</span></span>
+                    <span class="sx-row__end"><select id="csPolCapi" class="zx-select cs-pol" data-origin="capi" data-zx-label="Community blocklist" aria-label="Community blocklist"><option value="">Follow the mode</option><option value="log">Log only</option><option value="ignore">Ignore</option></select></span></li>
+                <li class="sx-row"><span class="sx-row__main"><span class="sx-row__title">Blocklists you subscribed to <small id="csOrgN-lists"></small></span><span class="sx-row__sub">Third-party lists from the CrowdSec console (origin "lists:name").</span></span>
+                    <span class="sx-row__end"><select id="csPolLists" class="zx-select cs-pol" data-origin="lists" data-zx-label="Blocklists you subscribed to" aria-label="Blocklists you subscribed to"><option value="">Follow the mode</option><option value="log">Log only</option><option value="ignore">Ignore</option></select></span></li>
+                <li class="sx-row"><span class="sx-row__main"><span class="sx-row__title">Anything else <small id="csOrgN-other"></small></span><span class="sx-row__sub">Decisions from the console or another tool.</span></span>
+                    <span class="sx-row__end"><select id="csPolOther" class="zx-select cs-pol" data-origin="other" data-zx-label="Other decisions" aria-label="Other decisions"><option value="">Follow the mode</option><option value="log">Log only</option><option value="ignore">Ignore</option></select></span></li>
+            </ul>
+        </div>
+    </section>
+
     <h4 class="sx-label">Advanced settings</h4>
-    <details class="sx-group">
-        <summary><span class="sx-group__title">Captcha decisions and exempt sites</span><span class="sx-group__desc">What a "captcha" decision does, and sites that never ask CrowdSec.</span><span class="sx-group__now" id="csNowCap"></span></summary>
+    <details class="sx-group" id="csGrpSites">
+        <summary><span class="sx-group__title">Rules for single sites</span><span class="sx-group__desc">Exempt a site, keep one on Log only, or try Enforce on one site first.</span><span class="sx-group__now" id="csNowSites"></span></summary>
         <div class="sx-group__body">
-            <div class="field zx-field"><label for="csCaptcha">Captcha decisions</label>
-                <select id="csCaptcha" class="zx-select">
-                    <option value="log">Only logged</option>
-                    <option value="challenge">Show the site CAPTCHA (sites without one: logged)</option>
-                </select></div>
-            <div class="field zx-field"><label for="csExempt">Sites that never ask CrowdSec</label>
-                <textarea id="csExempt" rows="2" placeholder="status.example.com" spellcheck="false"></textarea><p class="zx-help">One proxy rule host name per line.</p></div>
+            <p class="cs-muted" id="csSiteEmpty">No site has its own rule: every site follows the mode.</p>
+            <ul class="sx-rows" id="csSiteRows" data-zx-ignore></ul>
+            <div class="sx-inline" data-zx-ignore>
+                <div class="zx-field"><label for="csSiteAdd">Site</label><select id="csSiteAdd" class="zx-select"><option value="">Choose a site</option></select></div>
+                <div class="zx-field"><label for="csSiteAddMode">Rule</label><select id="csSiteAddMode" class="zx-select">
+                    <option value="exempt">Exempt: never act on CrowdSec here</option>
+                    <option value="log">Log only on this site</option>
+                    <option value="enforce">Enforce on this site</option></select></div>
+                <div class="sx-inline__btn"><button type="button" class="zx-btn zx-btn--secondary" id="csSiteAddGo"><i class="plus icon" aria-hidden="true"></i> Add rule</button></div>
+            </div>
+            <p class="sx-note">The sites are your proxy rules. "Enforce on this site" blocks there even while the mode is Log only: a way to try blocking on one site first.</p>
+            <textarea id="csSitesState" class="zx-sr-only" aria-hidden="true" tabindex="-1" data-zx-label="Rules for single sites"></textarea>
+        </div>
+    </details>
+    <details class="sx-group" id="csGrpAllow">
+        <summary><span class="sx-group__title">Addresses Zoraxy never blocks</span><span class="sx-group__desc">Your office, your monitoring: served whatever CrowdSec says.</span><span class="sx-group__now" id="csNowAllow"></span></summary>
+        <div class="sx-group__body">
+            <div class="field zx-field"><label for="csAllow">Allowlist</label>
+                <textarea id="csAllow" rows="3" placeholder="198.51.100.7&#10;2001:db8:1::/48" spellcheck="false"></textarea>
+                <p class="zx-help">One address or range per line. A match is served and listed as "allowlisted". This list only applies to this Zoraxy; <code>cscli allowlists</code> on the CrowdSec server covers every bouncer.</p></div>
+        </div>
+    </details>
+    <details class="sx-group" id="csGrpScen">
+        <summary><span class="sx-group__title">Scenarios kept on Log only</span><span class="sx-group__desc">A noisy scenario is listed as "would block" and never blocks.</span><span class="sx-group__now" id="csNowScen"></span></summary>
+        <div class="sx-group__body">
+            <div class="field zx-field"><label for="csScen">Scenario names</label>
+                <textarea id="csScen" rows="3" placeholder="http-crawl-non_statics" spellcheck="false"></textarea>
+                <p class="zx-help">One per line, at least 3 characters. A decision whose scenario contains the text (upper or lower case) is never enforced. The scenario names are in the list of matched requests. A short entry reaches far: while decisions are loaded, the list below shows how many each entry matches.</p>
+                <ul class="cs-reach" id="csScenReach" data-zx-ignore aria-live="polite" hidden></ul></div>
         </div>
     </details>
     <details class="sx-group">
@@ -188,9 +477,10 @@ labels:
         <div class="sx-group__body">
             <label class="zx-toggle-row" for="csClosed">
                 <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Fail closed: refuse every visitor while the server is unreachable</span><span class="zx-toggle-row__desc">Default is fail open: traffic is allowed and only the decisions already in memory apply. Fail closed only works in Enforce mode, and an outage then takes your sites offline.</span></span>
-                <input type="checkbox" class="zx-switch" role="switch" id="csClosed">
+                <input type="checkbox" class="zx-switch" role="switch" id="csClosed" data-zx-label="Fail closed">
             </label>
             <div class="field zx-field"><label for="csGrace">The server counts as unreachable after</label><div class="zx-inputgroup"><input type="number" id="csGrace" min="10" max="86400"><span class="zx-inputgroup__unit">seconds</span></div></div>
+            <p class="sx-note">To be told when the server goes away and comes back, subscribe a channel to "CrowdSec server unreachable" under Notifications. Nothing is sent until you do.</p>
         </div>
     </details>
     <details class="sx-group">
@@ -212,32 +502,11 @@ labels:
         </div>
     </details>
     <div id="csMsg" class="ui negative message" style="display:none" role="alert"></div>
-    <div class="sx-actions">
-        <button type="button" class="zx-btn zx-btn--primary" id="csSave"><i class="save icon" aria-hidden="true"></i> Save CrowdSec</button>
-        <span class="zx-help">Saves everything above: the switch, the connection, what happens on a match and the advanced settings.</span>
+    <p class="cs-saveline">Changes to the switch and to the settings are saved together: a bar with <b>Save changes</b> appears at the bottom of the page as soon as you change something.</p>
     </div>
-</div>
 
-<!-- below the settings: what CrowdSec is doing. Nothing here is saved by the button above -->
-<h4 class="sx-label">Activity and the CrowdSec server</h4>
-
-<section class="zx-card" id="csActivity">
-    <div class="zx-card__head">
-        <h3 class="zx-card__title">Recent matches</h3>
-        <p class="zx-card__desc">Up to 100 visitors whose address had a decision: blocked, or in log-only mode what would have been blocked.</p>
-    </div>
-    <div class="zx-card__body">
-        <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Recent matches"><table class="zx-table" id="csMatches"><thead><tr><th>Visitor</th><th>Result</th><th>Decision</th><th>Last seen</th></tr></thead><tbody></tbody></table></div>
-    </div>
-</section>
-
-<details class="sx-group" id="csGrpDecisions">
-    <summary><span class="sx-group__title">Decisions received from the server</span><span class="sx-group__desc">The newest 100 ban and captcha decisions. Other scopes (country, AS) and types (throttle) are counted in the status and not enforced.</span><span class="sx-group__now" id="csNowDec"></span></summary>
-    <div class="sx-group__body">
-        <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Recent decisions"><table class="zx-table" id="csDecisions"><thead><tr><th>Applies to</th><th>Why</th><th>Received</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
-    </div>
-</details>
-
+<h4 class="sx-label">The CrowdSec server</h4>
+<div data-zx-ignore>
 <details class="sx-group" id="csGrpManage">
     <summary><span class="sx-group__title" id="csManageHead">Manage bans on the CrowdSec server</span><span class="sx-group__desc">See what is banned, ban or unban an address and read the alerts without leaving Zoraxy. Needs a machine login created once on the CrowdSec host.</span><span class="sx-group__now" id="csNowMg"></span></summary>
     <div class="sx-group__body">
@@ -273,130 +542,237 @@ labels:
         </div>
     </div>
 </details>
+</div>
+</div>
 <script>
 (function () {
     var setupDecided = false;
-    var failClosedWas = false, modeWas = "log", enabledWas = false, keySet = false;
+    var S = null, keySet = false, lastStatus = null, lastAct = null;   // saved settings, last status and activity answers
+    var win = "24h", live = true, feedShown = 25, feedSig = "", pullsShown = 10, sites = [];
+    function N_(s) { return s; }
     function esc(s) { return $("<div>").text(s == null ? "" : String(s)).html(); }
     function toast(m, ok) { if (window.msgbox) { msgbox(m, ok); } }
+    function num(n) { return (+n || 0).toLocaleString(); }
     function fmt(ts) { if (!ts) { return "-"; } var d = new Date(ts); return isNaN(d) ? "-" : d.toLocaleString(); }
+    function here() { return !!document.getElementById("csForm"); }   // an answer that arrives after the section was left
+    // "14:20", or "Nov 23, 14:20" when it is not today
+    function clock(ts) {
+        var d = new Date(ts); if (isNaN(d)) { return "-"; }
+        var same = d.toDateString() === new Date().toDateString();
+        return d.toLocaleString([], same ? { hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+    function clockS(ts) { var d = new Date(ts); return isNaN(d) ? "-" : (d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString() : d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })); }
+    // "8 s ago", "6 min ago": the header needs seconds, ZxSec.ago starts at a minute
+    function rel(ts) {
+        var d = Math.round((Date.now() - new Date(ts).getTime()) / 1000);
+        if (isNaN(d)) { return t("never"); }
+        if (d < 3) { return t("just now"); }
+        if (d < 90) { return t("{0} s ago").replace("{0}", d); }
+        return ZxSec.ago(Math.round(new Date(ts).getTime() / 1000));
+    }
+    function span(sec) {
+        sec = Math.max(0, Math.round(sec));
+        if (sec < 90) { return t("{0} s").replace("{0}", sec); }
+        if (sec < 5400) { return t("{0} min").replace("{0}", Math.round(sec / 60)); }
+        return t("{0} h").replace("{0}", Math.round(sec / 3600));
+    }
+    function plural(n, one, many) { return (+n === 1 ? t(one) : t(many)).replace("{0}", num(n)); }
+    function lines(id) { return $(id).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
+
+    /* ---------------------------------------------------------------- vocabulary */
+    var ORIGIN = { crowdsec: N_("your CrowdSec scenarios"), cscli: N_("added by hand"), capi: N_("community blocklist"), lists: N_("subscribed blocklist"), other: N_("other source") };
+    var ORIGIN_T = { crowdsec: N_("Your own CrowdSec scenarios"), cscli: N_("Bans added by hand"), capi: N_("Community blocklist"), lists: N_("Blocklists you subscribed to"), other: N_("Anything else") };
+    function originClass(o) {
+        o = String(o || "").toLowerCase().trim();
+        if (o === "crowdsec") { return "crowdsec"; }
+        if (o === "cscli" || o === "cscli-import") { return "cscli"; }
+        if (o === "capi") { return "capi"; }
+        if (o.indexOf("lists") === 0) { return "lists"; }
+        return "other";
+    }
+    // "community blocklist (CAPI)"; a named list keeps its name
+    function originLabel(o) {
+        if (!o) { return t("unknown source"); }
+        var c = originClass(o);
+        if (c === "lists" && String(o).indexOf(":") > 0) { return t("blocklist {0}").replace("{0}", String(o).split(":").slice(1).join(":")); }
+        return c === "other" ? String(o) : t(ORIGIN[c]) + " (" + (c === "capi" ? "CAPI" : o) + ")";
+    }
+    // outcome -> [badge kind, words]
+    var OUT = { blocked: ["danger", N_("Blocked")], dropped: ["danger", N_("Blocked, connection closed")], "fail-closed": ["danger", N_("Refused, server unreachable")],
+        challenged: ["info", N_("CAPTCHA shown")], "challenge-passed": ["ok", N_("Served, CAPTCHA solved")], "captcha-unavailable": ["", N_("Served, site has no CAPTCHA")],
+        "challenge-skipped": ["", N_("Served, CAPTCHA not needed here")], "log-only": ["warn", N_("Would block")], allowlisted: ["", N_("Served, allowlisted")], "exempt-site": ["", N_("Served, site exempt")] };
+    var WHY = { mode: N_("the mode is Log only"), "site-log": N_("this site is on Log only"), "origin-log": N_("this source is kept on Log only"), "scenario-log": N_("this scenario is kept on Log only"),
+        "captcha-log": N_("captcha decisions are only logged"), "origin-ignore": N_("this source is ignored") };
+    function outcome(e) {
+        var o = OUT[e.outcome] || ["", e.outcome];
+        var word = e.outcome === "log-only" && e.action === "captcha" ? t("Would show CAPTCHA") : t(o[1]);
+        return '<span class="zx-badge zx-badge--dot' + (o[0] ? " zx-badge--" + o[0] : "") + '">' + esc(word) + "</span>";
+    }
+    var regionNames = null;
+    try { regionNames = new Intl.DisplayNames(undefined, { type: "region" }); } catch (e) { }
+    function country(cc) { try { return regionNames && /^[A-Z]{2}$/.test(cc) ? regionNames.of(cc) : cc; } catch (e) { return cc; } }
+
+    /* ---------------------------------------------------------------- settings form */
+    function sitesState() { try { return JSON.parse($("#csSitesState").val() || "{}"); } catch (e) { return {}; } }
+    function setSitesState(m, user) {
+        var o = {}; Object.keys(m).sort().forEach(function (k) { o[k] = m[k]; });
+        var el = document.getElementById("csSitesState");
+        el.value = JSON.stringify(o);
+        if (user) { el.dispatchEvent(new Event("input", { bubbles: true })); }   // tells the save bar (within the user's click)
+        renderSites();
+    }
+    var SITE_SUB = { exempt: N_("Never acts on CrowdSec decisions here; matches are listed as \"site exempt\"."), log: N_("Matches are listed, nobody is blocked on this site."), enforce: N_("Blocks on this site, also while the mode is Log only.") };
+    function renderSites() {
+        var m = sitesState(), keys = Object.keys(m);
+        $("#csSiteRows").html(keys.map(function (h) {
+            var opt = function (v, label) { return '<option value="' + v + '"' + (m[h] === v ? " selected" : "") + ">" + esc(t(label)) + "</option>"; };
+            var gone = sites.length && sites.indexOf(h) < 0 ? ' <span class="zx-badge">' + esc(t("no such proxy rule")) + "</span>" : "";
+            return '<li class="sx-row" data-host="' + esc(h) + '"><span class="sx-row__main"><span class="sx-row__title">' + esc(h) + gone + '</span><span class="sx-row__sub">' + esc(t(SITE_SUB[m[h]] || "")) + '</span></span><span class="sx-row__end">' +
+                '<select class="zx-select cs-site-mode" aria-label="' + esc(t("Rule for {0}").replace("{0}", h)) + '">' + opt("exempt", "Exempt") + opt("log", "Log only") + opt("enforce", "Enforce") + "</select>" +
+                '<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm sx-del cs-site-rm">' + esc(t("Remove")) + "</button></span></li>";
+        }).join(""));
+        $("#csSiteEmpty").prop("hidden", keys.length > 0);
+        var cur = $("#csSiteAdd").val();
+        $("#csSiteAdd").html('<option value="">' + esc(t("Choose a site")) + "</option>" + sites.filter(function (h) { return !m[h]; }).map(function (h) { return '<option value="' + esc(h) + '">' + esc(h) + "</option>"; }).join("")).val(cur && !m[cur] ? cur : "");
+        groups();
+    }
     function cfg() {
-        var lines = function (id) { return $(id).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); };
+        var pol = {};
+        $("#csOrigins .cs-pol").each(function () { if ($(this).val()) { pol[$(this).attr("data-origin")] = $(this).val(); } });
         return { enabled: $("#csEnabled").prop("checked"), lapiUrl: $("#csUrl").val().trim(), mode: $("#csMode").val(), caBundlePem: $("#csCA").val().trim(),
             pinsSha256: lines("#csPins"), pollSeconds: parseInt($("#csPoll").val(), 10) || 0, maxEntries: parseInt($("#csMax").val(), 10) || 0,
             maxTtlSeconds: (parseInt($("#csTtl").val(), 10) || 0) * 3600, graceSeconds: parseInt($("#csGrace").val(), 10) || 0,
-            failClosed: $("#csClosed").prop("checked"), banResponse: $("#csBan").val(), captchaAction: $("#csCaptcha").val(), exemptSites: lines("#csExempt") };
+            failClosed: $("#csClosed").prop("checked"), banResponse: $("#csBan").val(), captchaAction: $("#csCaptcha").val(), captchaFallback: $("#csFallback").val(),
+            exemptSites: [],   // the older list is shown and saved as "Exempt" rules for single sites
+            originPolicy: pol, scenarioLogOnly: lines("#csScen"), allowlist: lines("#csAllow"), siteOverrides: sitesState() };
     }
     function loadSettings() {
-        $.get("/api/crowdsec/get", function (d) {
-            $("#csEnabled").prop("checked", !!d.enabled); enabledWas = !!d.enabled;
-            keySet = !!d.keySet;
-            $("#csForm .cs-keyrm").prop("hidden", !keySet);
-            if (!setupDecided) { setupDecided = true; $("#csSetup").prop("open", false); }
-            $("#csUrl").val(d.lapiUrl || ""); $("#csMode").val(d.mode || "log"); modeWas = d.mode || "log";
-            $("#csBan").val(d.banResponse || "page"); $("#csCaptcha").val(d.captchaAction || "log");
+        return $.get("/api/crowdsec/get", function (d) {
+            if (!here() || !d || d.error) { return; }
+            S = d; keySet = !!d.keySet;
+            $("#csEnabled").prop("checked", !!d.enabled);
+            $("#csSettings .cs-keyrm").prop("hidden", !keySet);
+            if (!setupDecided) { setupDecided = true; $("#csSetup").prop("open", !d.enabled && !keySet && !d.lapiUrl); }
+            $("#csUrl").val(d.lapiUrl || ""); $("#csMode").val(d.mode || "log");
+            $("#csBan").val(d.banResponse || "page"); $("#csCaptcha").val(d.captchaAction || "log"); $("#csFallback").val(d.captchaFallback || "log");
             $("#csPoll").val(d.pollSeconds); $("#csMax").val(d.maxEntries); $("#csTtl").val(Math.round(d.maxTtlSeconds / 3600)); $("#csGrace").val(d.graceSeconds);
-            $("#csClosed").prop("checked", !!d.failClosed); failClosedWas = !!d.failClosed;
-            $("#csExempt").val((d.exemptSites || []).join("\n")); $("#csCA").val(d.caBundlePem || ""); $("#csPins").val((d.pinsSha256 || []).join("\n"));
+            $("#csClosed").prop("checked", !!d.failClosed);
+            $("#csCA").val(d.caBundlePem || ""); $("#csPins").val((d.pinsSha256 || []).join("\n"));
+            $("#csAllow").val((d.allowlist || []).join("\n")); $("#csScen").val((d.scenarioLogOnly || []).join("\n"));
+            $("#csOrigins .cs-pol").each(function () { $(this).val((d.originPolicy || {})[$(this).attr("data-origin")] || ""); });
+            var m = {}; (d.exemptSites || []).forEach(function (h) { m[h] = "exempt"; }); $.each(d.siteOverrides || {}, function (h, v) { m[h] = v; });
+            setSitesState(m, false);
             $("#csKey").val("").attr("placeholder", d.keySet ? t("A key is stored (leave empty to keep it)") : t("Paste the key"));
             $("#csKeyBadge").toggle(!!d.keySet);
             $("#csClearKey").prop("checked", false);
             groups();
+            if (window.zxSecBar) { window.zxSecBar.reset(); }
             if (lastStatus) { renderStatus(lastStatus); }
         });
     }
     // what is in effect, shown on the closed groups
     function groups() {
-        if (!document.getElementById("csForm")) { return; }   // an answer that arrives after the section was left
-        $("#csNowCap").text(($("#csCaptcha").val() === "challenge" ? t("Captcha shown") : t("Captcha logged")) + ", " + (function (n) { return n === 1 ? t("1 site exempt") : t("{0} sites exempt").replace("{0}", n); })($("#csExempt").val().split("\n").filter(function (x) { return x.trim(); }).length));
+        if (!here()) { return; }
+        var m = sitesState(), n = Object.keys(m).length, enf = Object.keys(m).filter(function (h) { return m[h] === "enforce"; }).length;
+        $("#csNowSites").text(n ? plural(n, N_("1 site"), N_("{0} sites")) + (enf ? ", " + t("{0} enforcing").replace("{0}", enf) : "") : t("None"));
+        $("#csNowAllow").text((function (k) { return k ? plural(k, N_("1 entry"), N_("{0} entries")) : t("Empty"); })(lines("#csAllow").length));
+        $("#csNowScen").text((function (k) { return k ? plural(k, N_("1 scenario"), N_("{0} scenarios")) : t("None"); })(lines("#csScen").length));
         $("#csNowDown").text($("#csClosed").prop("checked") ? t("Refuse everyone") : t("Keep serving (default)"));
-        $("#csNowTune").text(t("Every {0} s, {1} decisions").replace("{0}", $("#csPoll").val()).replace("{1}", $("#csMax").val()));
+        $("#csNowTune").text(t("Every {0} s, {1} decisions").replace("{0}", $("#csPoll").val()).replace("{1}", num($("#csMax").val())));
         $("#csNowTrust").text($("#csCA").val().trim() || $("#csPins").val().trim() ? t("Custom") : t("System certificates"));
+        $("#csFallbackField").prop("hidden", $("#csCaptcha").val() !== "challenge");
+        scenReach();
     }
-    var STATE = { off: N_("Off"), starting: N_("Starting"), ok: N_("OK"), degraded: N_("Degraded"), down: N_("Down") };
-    var COLOR = { off: "", starting: "", ok: "zx-badge--ok", degraded: "zx-badge--warn", down: "zx-badge--danger" };
-    function N_(s) { return s; }
-    var KIND = { off: "off", starting: "info", ok: "on", degraded: "warn", down: "danger" };
-    var lastStatus = null;
-    function renderStatus(s) {
-        if (!document.getElementById("csForm")) { return; }
-        lastStatus = s;
-        var st = { state: KIND[s.state] || "off", badge: t(STATE[s.state] || s.state) };
-        if (!s.enabled) {
-            st.title = t("CrowdSec is off"); st.desc = t("CrowdSec is switched off. Nothing is checked.") + " " + (keySet ? t("Switch it on above and save to start in log-only mode.") : t("Paste the server address and a bouncer key below, test the connection, then switch it on."));
-        } else if (s.state === "down" || s.state === "degraded") {
-            st.title = t("Zoraxy cannot reach the CrowdSec server");
-            st.desc = t("Mode: {0}").replace("{0}", s.mode === "enforce" ? t("Enforce") : t("Log only")) + ". " + (s.failClosedActive ? t("Fail closed is active: every visitor is refused until the server is back.") : t("Visitors are still served; only the decisions already in memory apply."));
-        } else if (s.state === "starting") {
-            st.title = t("Connecting to the CrowdSec server"); st.desc = t("Mode: {0}").replace("{0}", s.mode === "enforce" ? t("Enforce") : t("Log only")) + ". " + t("Waiting for the first pull.");
-        } else if (s.mode === "enforce") {
-            st.title = t("Connected and blocking"); st.desc = t("Mode: {0}").replace("{0}", t("Enforce")) + ". " + t("A visitor whose address has a ban decision is refused.");
-        } else {
-            st.state = "info"; st.title = t("Connected, watching only"); st.desc = t("Mode: {0}").replace("{0}", t("Log only")) + ". " + t("Matches are counted and listed below, nobody is blocked. Switch to Enforce when the list looks right.");
-        }
-        ZxSec.status("#csStatusCard", st);
-        if (s.enabled) {
-            ZxSec.fact("#csFMem", t("{0} of {1}").replace("{0}", s.cacheSize).replace("{1}", s.cacheMax));
-            ZxSec.fact("#csFBlocked", s.enforced, s.failClosedBlocks ? t("{0} more by fail closed").replace("{0}", s.failClosedBlocks) : "");
-            ZxSec.fact("#csFLog", s.logOnly);
-            var pulled = s.lastSuccess ? Math.round(new Date(s.lastSuccess).getTime() / 1000) : 0;
-            ZxSec.fact("#csFPull", pulled > 0 ? ZxSec.ago(pulled) : t("Not yet"), t("LAPI latency: {0} ms").replace("{0}", s.latencyMs), s.state === "down" ? "danger" : "");
-            var ex = [esc(t("Errors since start: {0}").replace("{0}", s.totalErrors))], ign = [];
-            $.each(s.ignoredScopes || {}, function (k, v) { ign.push(k + ": " + v); });
-            $.each(s.ignoredTypes || {}, function (k, v) { ign.push(k + ": " + v); });
-            if (ign.length) { ex.push(esc(t("Ignored decisions (scope or type not enforced): {0}").replace("{0}", ign.join(", ")))); }
-            var h = ex.join(" &middot; ");
-            if (s.lastError) { h += '<span class="is-error">' + esc(t("Last error: {0}").replace("{0}", s.lastError)) + "</span>"; }
-            $("#csExtra").html(h);
-            $("#csWarnBox").html((s.warnings || []).length ? '<div class="zx-callout zx-callout--warn" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"><ul class="list">' + s.warnings.map(function (w) { return "<li>" + esc(t(w)) + "</li>"; }).join("") + "</ul></div></div>" : "");
-        } else {
-            // switched off: words, not dashes
-            ZxSec.fact("#csFMem", t("Not connected")); ZxSec.fact("#csFBlocked", t("Nobody")); ZxSec.fact("#csFLog", t("Nothing")); ZxSec.fact("#csFPull", t("Never"));
-            $("#csExtra").empty(); $("#csWarnBox").empty();
-        }
+    // how far each "scenario kept on Log only" entry reaches into what is loaded: the same test as the server (the scenario
+    // name contains the entry, upper or lower case), on the scenario names of the last activity answer. Typed entries count too.
+    function scenReach() {
+        var box = $("#csScenReach"), entries = lines("#csScen");
+        if (!box.length) { return; }
+        if (!entries.length) { box.empty().prop("hidden", true); return; }
+        var L = (lastAct || {}).loaded || {}, all = L.allScenarios || [], total = L.total || 0, on = !!(lastStatus && lastStatus.enabled && lastAct);
+        var rest = all.some(function (x) { return x.name === "other"; });
+        var h = entries.slice(0, 50).map(function (raw) {
+            var e = raw.toLowerCase(), txt, wide = false;
+            if (e.length < 3) { txt = t("too short, use at least 3 characters"); }
+            else if (!on || !total) { txt = t("no decisions are loaded right now, so its reach cannot be shown"); }
+            else {
+                var hit = all.filter(function (x) { return x.name !== "other" && x.name !== "(none)" && x.name.toLowerCase().indexOf(e) >= 0; });
+                var n = hit.reduce(function (m, x) { return m + x.count; }, 0);
+                if (!n) { txt = t("matches none of the {0} loaded decisions").replace("{0}", num(total)); }
+                else {
+                    wide = n * 2 >= total;
+                    txt = plural(n, N_("matches 1 of the {1} loaded decisions"), N_("matches {0} of the {1} loaded decisions")).replace("{1}", num(total)) + " (" +
+                        plural(hit.length, N_("1 scenario: {1}"), N_("{0} scenarios: {1}")).replace("{1}", hit.slice(0, 3).map(function (x) { return x.name; }).join(", ") + (hit.length > 3 ? ", ..." : "")) + ")" +
+                        (wide ? ". " + t("That is half or more of what is loaded: none of it will be enforced.") : "");
+                }
+            }
+            return "<li" + (wide ? ' class="is-wide"' : "") + "><code>" + esc(raw) + "</code> <span>" + esc(txt) + "</span></li>";
+        }).join("");
+        if (on && total && rest) { h += "<li>" + esc(t("More than 256 different scenarios are loaded: the numbers are a lower bound.")) + "</li>"; }
+        box.html(h).prop("hidden", false);
     }
-    function loadStatus() {
-        $.get("/api/crowdsec/status", renderStatus);
-        $.get("/api/crowdsec/decisions", function (d) {
-            var m = (d.matches || []).map(function (x) {
-                var res = x.enforced ? t("blocked") : (x.action === "captcha" ? t("captcha, logged only") : t("would block (log only)"));
-                return '<tr><td data-label="' + esc(t("Visitor")) + '"><span class="cs-ip">' + esc(x.ip) + '</span><span class="cs-sub">' + esc(x.site) + '</span></td><td data-label="' + esc(t("Result")) + '"><span class="zx-badge zx-badge--dot ' + (x.enforced ? "zx-badge--danger" : "") + '">' + esc(res) + '</span></td><td data-label="' + esc(t("Decision")) + '">' +
-                    esc(x.type || x.action) + (x.scenario ? '<span class="cs-sub">' + esc(x.scenario) + "</span>" : "") + '</td><td data-label="' + esc(t("Last seen")) + '">' + esc(fmt(x.time)) + '<span class="cs-sub">' + esc(+x.count === 1 ? t("1 request") : t("{0} requests").replace("{0}", x.count)) + "</span></td></tr>";
-            }).join("");
-            $("#csMatches tbody").html(m || '<tr><td colspan="4" class="zx-empty-cell">' + esc(t("Nothing yet. Entries appear here once CrowdSec is connected and a visitor matches.")) + "</td></tr>");
-            var r = (d.decisions || []).map(function (x) {
-                return '<tr><td data-label="' + esc(t("Applies to")) + '"><span class="cs-ip">' + esc(x.value) + '</span><span class="cs-sub">' + esc(x.type) + " · " + esc(x.scope) + '</span></td><td data-label="' + esc(t("Why")) + '">' + esc(x.scenario || "-") + '<span class="cs-sub">' + esc(x.origin) + '</span></td><td data-label="' + esc(t("Received")) + '">' + esc(fmt(x.added)) + '</td><td data-label="' + esc(t("Expires")) + '">' + esc(fmt(x.expires)) + "</td></tr>";
-            }).join("");
-            $("#csDecisions tbody").html(r || '<tr><td colspan="4" class="zx-empty-cell">' + esc(t("Nothing yet. Decisions appear here after the first successful pull.")) + "</td></tr>");
-            $("#csNowDec").text((d.decisions || []).length ? t("{0} shown").replace("{0}", (d.decisions || []).length) : t("None yet"));
+    function loadSites() {
+        $.get("/api/proxy/list?type=host", function (l) {
+            if (!here() || !$.isArray(l)) { return; }
+            sites = l.map(function (x) { return String(x.RootOrMatchingDomain || "").toLowerCase(); }).filter(Boolean).sort();
+            renderSites();
+            var cur = $("#csCheckSite").val();
+            $("#csCheckSite").html('<option value="">' + esc(t("Any site (no per-site rule)")) + "</option>" + sites.map(function (h) { return '<option value="' + esc(h) + '">' + esc(h) + "</option>"; }).join("")).val(cur || "");
         });
     }
-    function save(confirmClosed) {
-        var data = { config: JSON.stringify(cfg()), apikey: $("#csKey").val().trim() };
+    $("#csSiteAddGo").on("click", function () {
+        var h = $("#csSiteAdd").val();
+        if (!h) { $("#csSiteAdd").trigger("focus"); return; }
+        var m = sitesState(); m[h] = $("#csSiteAddMode").val();
+        setSitesState(m, true);
+    });
+    $("#csSiteRows").on("change", ".cs-site-mode", function () { var m = sitesState(); m[$(this).closest("li").attr("data-host")] = $(this).val(); setSitesState(m, true); });
+    $("#csSiteRows").on("click", ".cs-site-rm", function () { var m = sitesState(); delete m[$(this).closest("li").attr("data-host")]; setSitesState(m, true); $("#csSiteAdd").trigger("focus"); });
+
+    /* everything that makes Zoraxy block more than it does now is confirmed first; fail closed has its own, stronger question */
+    function raises(c) {
+        var out = [], was = S || {}, wasSites = $.extend({}, was.siteOverrides || {});
+        if (c.mode === "enforce" && was.mode !== "enforce") { out.push(t("Visitors whose address has a CrowdSec ban decision will be refused on every site.")); }
+        var newEnf = Object.keys(c.siteOverrides).filter(function (h) { return c.siteOverrides[h] === "enforce" && wasSites[h] !== "enforce"; });
+        if (newEnf.length && c.mode !== "enforce") { out.push(t("Banned addresses will be refused on {0}, although the mode is Log only.").replace("{0}", newEnf.join(", "))); }
+        if (c.mode === "enforce" && was.mode === "enforce") {
+            $.each(was.originPolicy || {}, function (o, v) { if (v && !c.originPolicy[o]) { out.push(t("Decisions from \"{0}\" will be enforced again.").replace("{0}", t(ORIGIN_T[o] || o))); } });
+        }
+        if (c.captchaAction === "challenge" && was.captchaAction !== "challenge") { out.push(t("Visitors with a captcha decision will get the site CAPTCHA.")); }
+        if (c.captchaAction === "challenge" && c.captchaFallback === "ban" && was.captchaFallback !== "ban") { out.push(t("On a site without CAPTCHA, a visitor with a captcha decision will be blocked.")); }
+        return out;
+    }
+    function post(c, confirmClosed) {
+        var data = { config: JSON.stringify(c), apikey: $("#csKey").val().trim() };
         if ($("#csClearKey").prop("checked")) { data.clearkey = "true"; }
         if (confirmClosed) { data.confirmfailclosed = "true"; }
-        $.cjax({ type: "POST", url: "/api/crowdsec/set", data: data, success: function (d) {
-            if (d && d.error) { $("#csMsg").text(d.error).show(); document.getElementById("csMsg").scrollIntoView({ block: "center" }); return; }
+        return $.cjax({ type: "POST", url: "/api/crowdsec/set", data: data }).then(function (d) {
+            if (d && d.error) { $("#csMsg").text(d.error).show(); return d; }
             $("#csMsg").hide();
-            toast(t("CrowdSec settings saved"), true);
-            loadSettings(); loadStatus();
-        } });
+            return loadSettings().then(function () { loadStatus(); loadActivity(); return d; });
+        });
     }
-    $("#csSave").on("click", function () {
-        var c = cfg();
-        var needClosed = c.failClosed && !failClosedWas;
-        var steps = [];
-        if (c.mode === "enforce" && modeWas !== "enforce") {
-            steps.push(function () { return ZxUI.confirm({ title: "Start blocking?", message: "Visitors whose address has a CrowdSec ban decision will be refused. Check the recent matches in log only mode first.", confirmLabel: "Enforce" }); });
+    function save() {
+        var c = cfg(), up = raises(c), needClosed = c.failClosed && !(S && S.failClosed), steps = [];
+        $("#csMsg").hide();
+        if (up.length) {
+            var onlyMode = up.length === 1 && c.mode === "enforce" && (S || {}).mode !== "enforce";
+            steps.push(function () { return ZxUI.confirm({ title: onlyMode ? "Start blocking?" : "Block more than now?", message: up.join(" ") + " " + t("Check the matched requests first: they show what would have been blocked."), confirmLabel: onlyMode ? "Enforce" : "Save and block" }); });
         }
         if (needClosed) {
             steps.push(function () { return ZxUI.confirm({ title: "Fail closed?", message: "If the CrowdSec LAPI cannot be reached for longer than the grace period, every visitor of every site is refused until it is back. Only enable this if an outage of CrowdSec must take your sites offline.", confirmLabel: "Fail closed", danger: true }); });
         }
-        (function next(i) {
-            if (i >= steps.length) { save(needClosed); return; }
-            steps[i]().then(function (ok) { if (ok) { next(i + 1); } });
-        })(0);
-    });
+        return new Promise(function (resolve) {
+            (function next(i) {
+                if (i >= steps.length) { resolve(post(c, needClosed)); return; }
+                steps[i]().then(function (ok) { if (ok) { next(i + 1); } else { resolve({ error: t("Nothing was saved: you cancelled the confirmation.") }); } });
+            })(0);
+        });
+    }
+    if (window.zxSecBar) { window.zxSecBar.destroy(); }
+    window.zxSecBar = ZxUI.saveBar({ form: "#csForm", id: "crowdsec", noHistory: true, successText: t("CrowdSec settings saved"), onSave: save, onDiscard: function () { renderSites(); groups(); } });
+    $("#csForm").on("input change", groups);
+
     $("#csTest").on("click", function () {
         var data = { config: JSON.stringify(cfg()), apikey: $("#csKey").val().trim() };
         var box = $("#csTestMsg").removeClass("positive negative").text(t("Testing...")).show();
@@ -417,7 +793,6 @@ labels:
         if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(ok, fail); }
         else { fail(); }
     });
-    $("#csForm").on("input change", groups);
     // Point the download link at the release of the running version (falls back to the releases list).
     $.get("./api/updater/info", function (i) {
         try {
@@ -427,6 +802,364 @@ labels:
             }
         } catch (e) { }
     });
+
+    /* ---------------------------------------------------------------- status header: plain words */
+    var STATE = { off: N_("Off"), starting: N_("Starting"), ok: N_("OK"), degraded: N_("Degraded"), down: N_("Down") };
+    var KIND = { off: "off", starting: "info", ok: "on", degraded: "warn", down: "danger" };
+    function renderStatus(s) {
+        if (!here()) { return; }
+        lastStatus = s;
+        var st = { state: KIND[s.state] || "off", badge: t(STATE[s.state] || s.state) }, td = s.today || {};
+        var loaded = plural(s.cacheSize, N_("1 decision loaded"), N_("{0} decisions loaded")), synced = s.lastSuccess ? t("synced {0}").replace("{0}", rel(s.lastSuccess)) : t("not synced yet");
+        var stopped = (td.blocked || 0) + (td.failClosed || 0), enfSites = (s.enforcedSites || []).length;
+        var rejected = !!(s.enabled && s.keyRejected), failing = (s.consecutiveErrors || 0) > 0, modeWord = s.mode === "enforce" ? t("Mode: Enforce.") : t("Mode: Log only.");
+        var newKey = t("Create a new bouncer key on the CrowdSec server (cscli bouncers add) and paste it under Connection.");
+        // the same state in the navigation of the Security Center (also after a change made through the API or on another device)
+        if (window.ZxSec && typeof ZxSec.navOnOff === "function") { ZxSec.navOnOff("crowdsec", !!s.enabled, s.enabled && s.mode === "log" ? t("Log only") : ""); }
+        if (!s.enabled) {
+            st.title = t("CrowdSec is off"); st.desc = t("CrowdSec is switched off. Nothing is checked.") + " " + (keySet ? t("Switch it on and save to start in log-only mode.") : t("Paste the server address and a bouncer key below, test the connection, then switch it on."));
+        } else if (s.state === "down" || s.state === "degraded") {
+            var since = s.lastSuccess ? span((Date.now() - new Date(s.lastSuccess).getTime()) / 1000) : "";
+            st.title = rejected ? (since ? t("The CrowdSec server has rejected the API key for {0}").replace("{0}", since) : t("The CrowdSec server rejects the API key")) :
+                (since ? t("Cannot reach the CrowdSec server for {0}").replace("{0}", since) : t("Cannot reach the CrowdSec server"));
+            st.desc = (rejected ? newKey + " " : "") + (s.failClosedActive ? t("Fail closed is active: every visitor is refused until the server is back.") : t("Failing open: visitors are still served, and the decisions already loaded keep applying ({0}).").replace("{0}", num(s.cacheSize))) + " " +
+                (s.mode === "enforce" ? plural(stopped, N_("1 request blocked today."), N_("{0} requests blocked today.")) : plural(td.wouldBlock || 0, N_("1 request would have been blocked today."), N_("{0} requests would have been blocked today.")));
+        } else if (s.state === "starting" && rejected) {   // no pull has worked yet and the last one was refused: not "connecting"
+            st.state = "danger"; st.badge = t("Key rejected");
+            st.title = t("The CrowdSec server rejects the API key");
+            st.desc = t("No decisions could be loaded, so no address is matched yet and every visitor is served.") + " " + newKey + " " + modeWord;
+        } else if (s.state === "starting" && failing) {
+            st.state = "warn"; st.badge = t("No connection");
+            st.title = t("Cannot reach the CrowdSec server yet");
+            st.desc = plural(s.consecutiveErrors, N_("1 pull has failed since CrowdSec was switched on."), N_("{0} pulls have failed since CrowdSec was switched on.")) + " " +
+                t("No decisions are loaded, so no address is matched yet and every visitor is served.") + " " + t("Check the server address under Connection; Zoraxy keeps trying.") + " " + modeWord;
+        } else if (s.state === "starting") {
+            st.title = t("Connecting to the CrowdSec server"); st.desc = t("Waiting for the first pull.") + " " + modeWord;
+        } else if (s.mode === "enforce") {
+            st.title = t("Blocking banned addresses");
+            st.desc = loaded + ", " + synced + ". " + (stopped ? plural(stopped, N_("1 request blocked today"), N_("{0} requests blocked today")) + " " + t("out of {0} checked.").replace("{0}", num(td.checked)) : t("Nobody was blocked today ({0} requests checked).").replace("{0}", num(td.checked))) +
+                (td.challenged ? " " + plural(td.challenged, N_("1 CAPTCHA shown."), N_("{0} CAPTCHAs shown.")) : "") + (td.wouldBlock ? " " + plural(td.wouldBlock, N_("1 match was only logged."), N_("{0} matches were only logged.")) : "");
+        } else {
+            st.state = "info"; st.badge = t("Log only");
+            st.title = enfSites ? plural(enfSites, N_("Watching only, enforcing on 1 site"), N_("Watching only, enforcing on {0} sites")) : t("Watching only: nobody is blocked");
+            st.desc = loaded + ", " + synced + ". " + (td.wouldBlock ? plural(td.wouldBlock, N_("1 request would have been blocked today; it was served."), N_("{0} requests would have been blocked today; all were served.")) : t("No request matched a decision today ({0} checked).").replace("{0}", num(td.checked))) +
+                (stopped ? " " + plural(stopped, N_("1 request was blocked on a site set to Enforce."), N_("{0} requests were blocked on sites set to Enforce.")) : "") + " " + t("Switch to Enforce when the matched requests look right.");
+        }
+        ZxSec.status("#csStatusCard", st);
+        $("#csFacts").prop("hidden", !s.enabled);
+        $("#csSee").prop("hidden", !s.enabled);
+        $("#csSetLabel").text(s.enabled ? t("Settings") : t("Set it up"));
+        if (!s.enabled) { $("#csWarnBox").empty(); return; }
+        ZxSec.fact("#csFMem", num(s.cacheSize), t("room for {0}").replace("{0}", num(s.cacheMax)), s.cacheRefused ? "warn" : "");
+        // a duration only for a pull that worked; before the first one: what the attempts did
+        ZxSec.fact("#csFPull", s.lastSuccess ? rel(s.lastSuccess) : t("Not yet"), s.lastSuccess ? t("took {0} ms").replace("{0}", s.pullDurationMs || s.latencyMs || 0) : (failing ? plural(s.consecutiveErrors, N_("1 attempt failed"), N_("{0} attempts failed")) : t("first pull running")),
+            s.state === "down" || rejected || (!s.lastSuccess && failing) ? "danger" : (s.state === "degraded" ? "warn" : ""));
+        // "today" only when the counters cover the day so far; switched on or restarted today: since when they count
+        var cs = s.countingSince ? clock(s.countingSince) : "", csTip = cs ? t("The counters start again when Zoraxy restarts or CrowdSec is switched off and on. Blocked requests from before are in the blocked-request log.") : null;
+        $("#csFBlockedL").text(cs ? t("Blocked since {0}").replace("{0}", cs) : t("Blocked today")).attr("title", csTip);
+        $("#csFLogL").text(cs ? t("Would block since {0}").replace("{0}", cs) : t("Would block today")).attr("title", csTip);
+        $("#csFCheckedL").text(cs ? t("Checked since {0}").replace("{0}", cs) : t("Requests checked today")).attr("title", csTip);
+        ZxSec.fact("#csFBlocked", num(stopped), [td.challenged ? plural(td.challenged, N_("1 CAPTCHA shown"), N_("{0} CAPTCHAs shown")) : "", td.failClosed ? t("{0} by fail closed").replace("{0}", num(td.failClosed)) : ""].filter(Boolean).join(", ") || (s.mode === "enforce" ? "" : t("log-only mode")), stopped ? "danger" : "");
+        ZxSec.fact("#csFLog", num(td.wouldBlock || 0), (td.allowlisted || td.exempt) ? t("{0} allowlisted or exempt").replace("{0}", num((td.allowlisted || 0) + (td.exempt || 0))) : "");
+        ZxSec.fact("#csFChecked", num(td.checked || 0), td.checked ? t("{0}% matched").replace("{0}", (Math.round(((td.blocked || 0) + (td.wouldBlock || 0) + (td.challenged || 0) + (td.passed || 0) + (td.notChallenged || 0) + (td.failClosed || 0)) / td.checked * 1000) / 10)) : "");
+        // the mode sentence is the header itself; the other warnings stay
+        // a rejected key is the headline: neither its warning nor the same sentence as "last error" is repeated below it
+        var shown = (s.warnings || []).filter(function (w) { return !/^Log only mode/.test(w) && !/^The LAPI has been unreachable longer than the grace period\. Failing open/.test(w) && !(rejected && /rejected the API key/.test(w)); });
+        var warns = shown.map(function (w) { return "<li>" + esc(t(w)) + "</li>"; });
+        var errSaid = rejected || shown.some(function (w) { return w.toLowerCase().replace(/\.$/, "").indexOf(String(s.lastError).toLowerCase().replace(/ \(http.*$/, "").replace(/\.$/, "")) >= 0; });
+        if (s.lastError && !errSaid) { warns.push("<li>" + esc(t("Last error: {0}").replace("{0}", s.lastError)) + "</li>"); }
+        $("#csWarnBox").html(warns.length ? '<div class="zx-callout zx-callout--' + (s.state === "down" ? "danger" : "warn") + '" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span><div class="zx-callout__body"><ul class="' + (warns.length === 1 ? "is-one" : "") + '">' + warns.join("") + "</ul></div></div>" : "");
+        renderLoaded(); renderHealth();
+    }
+    function loadStatus() { $.get("/api/crowdsec/status", renderStatus); }
+
+    /* ---------------------------------------------------------------- activity: timeline and top lists */
+    function periodLabel(p) {
+        var a = new Date(p.t * 1000), b = new Date((p.t + p.hours * 3600) * 1000);
+        var day = a.toDateString() === new Date().toDateString() ? "" : a.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + ", ";
+        return day + a.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " – " + b.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    // one plot: stacked columns on one axis. series = [[class, values]], the first is drawn at the bottom
+    function plot(cls, n, H, series, max) {
+        var W = n * 12, out = '<svg class="' + cls + '" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">';
+        if (cls === "cs-chart") { out += '<line class="cs-grid" x1="0" x2="' + W + '" y1="' + (H / 2).toFixed(1) + '" y2="' + (H / 2).toFixed(1) + '"/>'; }
+        for (var i = 0; i < n; i++) {
+            var y = H;
+            for (var k = 0; k < series.length; k++) {
+                var v = series[k][1][i] || 0;
+                if (v <= 0) { continue; }
+                var h = Math.max(v / max * (H - 4), 1.5);
+                y -= h;
+                out += '<rect class="' + series[k][0] + '" x="' + (i * 12 + 1) + '" y="' + y.toFixed(1) + '" width="10" height="' + Math.max(h - (k < series.length - 1 ? 0.8 : 0), 1).toFixed(1) + '"/>';
+            }
+            out += '<rect class="cs-hit" data-i="' + i + '" x="' + (i * 12) + '" y="0" width="12" height="' + H + '"/>';
+        }
+        return out + '<line class="cs-base" x1="0" x2="' + W + '" y1="' + H + '" y2="' + H + '"/></svg>';
+    }
+    function renderActivity(a) {
+        if (!here() || !a || a.error) { return; }
+        lastAct = a;
+        var pts = a.series || [], n = pts.length, tot = a.total || {};
+        var blocked = pts.map(function (p) { return (p.blocked || 0) + (p.failClosed || 0); }), chal = pts.map(function (p) { return p.challenged || 0; }), would = pts.map(function (p) { return p.wouldBlock || 0; }), checked = pts.map(function (p) { return p.checked || 0; });
+        var maxM = 1, maxC = 1, i;
+        for (i = 0; i < n; i++) { maxM = Math.max(maxM, blocked[i] + chal[i] + would[i]); maxC = Math.max(maxC, checked[i]); }
+        var per = a.window === "7d" ? t("per 6 hours") : t("per hour"), stopped = (tot.blocked || 0) + (tot.failClosed || 0);
+        var label = t("Matched requests {0}: {1} blocked, {2} would block, {3} CAPTCHA shown; {4} requests checked").replace("{0}", per).replace("{1}", num(stopped)).replace("{2}", num(tot.wouldBlock)).replace("{3}", num(tot.challenged)).replace("{4}", num(tot.checked));
+        var first = n ? new Date(pts[0].t * 1000) : new Date(), mid = n ? new Date(pts[Math.floor(n / 2)].t * 1000) : new Date();
+        var ax = function (d) { return a.window === "7d" ? d.toLocaleDateString([], { weekday: "short", day: "numeric" }) : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
+        var h = '<div role="img" aria-label="' + esc(label) + '">' +
+            '<div class="cs-plot"><div class="cs-plot__cap"><span>' + esc(t("Requests that matched a decision, {0}").replace("{0}", per)) + "</span><span>" + esc(t("highest: {0}").replace("{0}", num(maxM === 1 && !(stopped + (tot.wouldBlock || 0) + (tot.challenged || 0)) ? 0 : maxM))) + "</span></div>" +
+            plot("cs-chart", n, 112, [["cs-b-blocked", blocked], ["cs-b-chal", chal], ["cs-b-would", would]], maxM) + "</div>" +
+            '<div class="cs-plot"><div class="cs-plot__cap"><span>' + esc(t("All requests checked, {0}").replace("{0}", per)) + "</span><span>" + esc(t("highest: {0}").replace("{0}", num(tot.checked ? maxC : 0))) + "</span></div>" +
+            plot("cs-strip", n, 30, [["cs-b-checked", checked]], maxC) + "</div>" +
+            '<div class="cs-axis"><span>' + esc(ax(first)) + "</span><span>" + esc(ax(mid)) + "</span><span>" + esc(t("now")) + "</span></div></div>" +
+            '<ul class="cs-legend"><li><i class="cs-k-blocked"></i>' + esc(t("Blocked")) + "<b>" + num(stopped) + '</b></li><li><i class="cs-k-chal"></i>' + esc(t("CAPTCHA shown")) + "<b>" + num(tot.challenged) + '</b></li><li><i class="cs-k-would"></i>' + esc(t("Would block (log only)")) + "<b>" + num(tot.wouldBlock) +
+            '</b></li><li><i class="cs-k-checked"></i>' + esc(t("Requests checked")) + "<b>" + num(tot.checked) + "</b></li></ul>" +
+            '<div id="csTip" hidden></div>';
+        var extra = [];
+        if (tot.passed) { extra.push(plural(tot.passed, N_("1 served after a solved CAPTCHA"), N_("{0} served after a solved CAPTCHA"))); }
+        if (tot.notChallenged) { extra.push(plural(tot.notChallenged, N_("1 captcha decision served without CAPTCHA"), N_("{0} captcha decisions served without CAPTCHA"))); }
+        if (tot.allowlisted) { extra.push(plural(tot.allowlisted, N_("1 allowlisted"), N_("{0} allowlisted"))); }
+        if (tot.exempt) { extra.push(plural(tot.exempt, N_("1 on an exempt site"), N_("{0} on exempt sites"))); }
+        if (tot.ignored) { extra.push(plural(tot.ignored, N_("1 from an ignored source"), N_("{0} from ignored sources"))); }
+        var since = a.since ? new Date(a.since) : null, winStart = Date.now() - (a.window === "7d" ? 7 * 86400e3 : 86400e3);
+        var note = (extra.length ? t("Also in this period: {0}.").replace("{0}", extra.join(", ")) + " " : "") + (since && since.getTime() > winStart ? t("Counting since {0} (the counters start again when Zoraxy restarts or CrowdSec is switched on).").replace("{0}", clock(since)) : "");
+        if (note) { h += '<p class="cs-muted" style="margin-top:var(--zx-space-2)">' + esc(note) + "</p>"; }
+        // the same numbers as a table (screen readers, copy and paste)
+        var open = $("#csActTable").prop("open");
+        h += '<details class="sx-more-d" id="csActTable"' + (open ? " open" : "") + "><summary>" + esc(t("Show the numbers as a table")) + '</summary><div class="zx-table-wrap zx-table-wrap--flush"><table class="zx-table zx-table--compact"><thead><tr><th>' + esc(t("Period")) + '</th><th class="zx-num">' + esc(t("Checked")) + '</th><th class="zx-num">' + esc(t("Blocked")) + '</th><th class="zx-num">' + esc(t("CAPTCHA")) + '</th><th class="zx-num">' + esc(t("Would block")) + "</th></tr></thead><tbody>" +
+            pts.slice().reverse().filter(function (p) { return p.checked || p.blocked || p.wouldBlock || p.challenged || p.failClosed; }).map(function (p) {
+                return '<tr><td data-label="' + esc(t("Period")) + '">' + esc(periodLabel(p)) + '</td><td class="zx-num" data-label="' + esc(t("Checked")) + '">' + num(p.checked) + '</td><td class="zx-num" data-label="' + esc(t("Blocked")) + '">' + num((p.blocked || 0) + (p.failClosed || 0)) + '</td><td class="zx-num" data-label="' + esc(t("CAPTCHA")) + '">' + num(p.challenged) + '</td><td class="zx-num" data-label="' + esc(t("Would block")) + '">' + num(p.wouldBlock) + "</td></tr>";
+            }).join("") + "</tbody></table></div></details>";
+        if (!$("#csChartBox .cs-hit.is-on").length) { $("#csChartBox").html(h); }   // not while the reader points at a bar
+        if (!$("#csActTable tbody tr").length) { $("#csActTable tbody").html('<tr><td colspan="5" class="zx-empty-cell">' + esc(t("No request was checked in this period yet.")) + "</td></tr>"); }
+
+        var TOP = [["scenarios", N_("Top scenarios"), N_("No scenario matched in this period.")], ["origins", N_("Where the decisions came from"), N_("Nothing matched in this period.")], ["countries", N_("Visitor countries"), N_("Nothing matched in this period.")], ["sites", N_("Sites hit most"), N_("Nothing matched in this period.")]];
+        $("#csTops").html(TOP.map(function (d) {
+            var items = (a.tops || {})[d[0]] || [], max = items.reduce(function (m, x) { return Math.max(m, x.enforced + x.logOnly); }, 1);
+            return '<div><h4 class="cs-h">' + esc(t(d[1])) + "</h4>" + (items.length ? '<ul class="cs-bars">' + items.slice(0, 5).map(function (x) {
+                var key = x.key === "(none)" ? t("Unknown") : (x.key === "other" ? t("Other") : x.key), label = key, sub = "";
+                if (d[0] === "origins" && x.key !== "(none)" && x.key !== "other") { label = originLabel(x.key); }
+                if (d[0] === "countries" && /^[A-Z]{2}$/.test(x.key)) { label = country(x.key); sub = x.key; }
+                var tot2 = x.enforced + x.logOnly, w = Math.max(4, Math.round(tot2 / max * 100));
+                var tip = label + ": " + t("{0} stopped, {1} only logged").replace("{0}", num(x.enforced)).replace("{1}", num(x.logOnly));
+                return '<li title="' + esc(tip) + '"><span class="k">' + esc(label) + (sub && sub !== label ? " <small>" + esc(sub) + "</small>" : "") + '</span><span class="n">' + num(tot2) + '</span><span class="bar" style="width:' + w + '%">' +
+                    (x.enforced ? '<i class="e" style="flex:' + x.enforced + '"></i>' : "") + (x.logOnly ? '<i class="l" style="flex:' + x.logOnly + '"></i>' : "") + "</span></li>";
+            }).join("") + "</ul>" : '<p class="cs-muted">' + esc(t(d[2])) + "</p>") + "</div>";
+        }).join(""));
+        renderLoaded(); renderHealth();
+    }
+    function loadActivity() { $.get("/api/crowdsec/activity", { window: win }, renderActivity); }
+    ZxUI.segmented("#csWindow", { onChange: function (v) { win = v; $("#csChartBox .cs-hit").removeClass("is-on"); loadActivity(); } });
+    // hover and touch: the numbers of one period
+    function tip(i, on) {
+        var box = $("#csChartBox"), tipEl = $("#csTip");
+        box.find(".cs-hit").removeClass("is-on");
+        if (!on || !lastAct || !lastAct.series[i]) { tipEl.prop("hidden", true); return; }
+        var p = lastAct.series[i], row = function (cls, label, v) { return "<span><span><i class='" + cls + "'></i>" + esc(label) + "</span><span>" + num(v) + "</span></span>"; };
+        box.find('.cs-hit[data-i="' + i + '"]').addClass("is-on");
+        tipEl.html("<b>" + esc(periodLabel(p)) + "</b>" + row("cs-k-blocked", t("Blocked"), (p.blocked || 0) + (p.failClosed || 0)) + row("cs-k-chal", t("CAPTCHA shown"), p.challenged) + row("cs-k-would", t("Would block"), p.wouldBlock) + row("cs-k-checked", t("Requests checked"), p.checked)).prop("hidden", false);
+        var bw = box.width(), x = (i + 0.5) / lastAct.series.length * bw, tw = tipEl.outerWidth();
+        tipEl.css({ left: Math.max(0, Math.min(bw - tw, x - tw / 2)) + "px", top: "18px" });
+    }
+    $("#csChartBox").on("mouseenter click", ".cs-hit", function () { tip(+$(this).attr("data-i"), true); }).on("mouseleave", function () { tip(0, false); if (lastAct) { renderActivity(lastAct); } });
+
+    /* ---------------------------------------------------------------- feed */
+    function feedRow(e) {
+        var cc = e.country ? ' <span class="cs-cc" title="' + esc(country(e.country)) + '">' + esc(e.country) + "</span>" : "";
+        var who = e.ip ? '<button type="button" class="cs-iplink" data-ip="' + esc(e.ip) + '" title="' + esc(t("Check this address")) + '">' + esc(e.ip) + "</button>" + cc : '<span class="cs-ip">' + esc(t("unknown address")) + "</span>";
+        var host = e.host || e.rule || "", req = (e.method || e.path) ? '<span class="cs-req">' + esc((e.method ? e.method + " " : "") + (e.path || "")) + "</span>" : "";
+        var parts = [];
+        if (e.action === "fail-closed") { parts.push(t("no decision: the CrowdSec server is unreachable and fail closed is on")); }
+        else {
+            if (e.scenario) { parts.push(e.scenario); }
+            parts.push(originLabel(e.origin));
+            parts.push((e.type || "ban") + (e.value && e.value !== e.ip ? " " + t("on {0}").replace("{0}", e.value) : "") + (e.expires ? " " + t("until {0}").replace("{0}", clock(e.expires)) : ""));
+        }
+        if (e.rule && e.host && e.rule.toLowerCase() !== e.host.toLowerCase().replace(/:\d+$/, "")) { parts.push(t("proxy rule {0}").replace("{0}", e.rule)); }
+        var cnt = +e.count > 1 ? t("{0} requests since {1}").replace("{0}", num(e.count)).replace("{1}", clock(e.firstSeen)) : "";
+        var why = e.why && WHY[e.why] && e.outcome === "log-only" ? t("Served: {0}").replace("{0}", t(WHY[e.why])) : "";
+        return '<tr><td class="cs-time" data-label="' + esc(t("Last seen")) + '" title="' + esc(fmt(e.time)) + '">' + esc(clockS(e.time)) + "</td>" +
+            '<td class="zx-cell-long" data-label="' + esc(t("Visitor and request")) + '"><span class="cs-what">' + who + (host ? '<span class="cs-on">' + esc(t("on")) + '</span><span class="cs-host">' + esc(host) + "</span>" : "") + req + "</span>" +
+            '<span class="cs-why">' + esc(parts.join(" · ")) + "</span></td>" +
+            '<td class="cs-res" data-label="' + esc(t("What Zoraxy did")) + '">' + outcome(e) + (why || cnt ? "<small>" + esc([why, cnt].filter(Boolean).join(". ")) + "</small>" : "") + "</td></tr>";
+    }
+    function loadFeed() {
+        var q = { outcome: $("#csFeedOutcome").val(), ip: $("#csFeedIp").val().trim(), q: $("#csFeedQ").val().trim(), limit: feedShown };
+        $.get("/api/crowdsec/feed", q, function (d) {
+            if (!here() || !d || d.error) { return; }
+            var sig = JSON.stringify(d);
+            if (sig === feedSig) { return; }
+            feedSig = sig;
+            var filtered = q.outcome || q.ip || q.q, mode = (lastStatus || {}).mode;
+            var empty = filtered ? t("Nothing in the list matches these filters.") : (mode === "enforce" ? t("No visitor matched a decision yet. A blocked request shows up here within seconds.") : t("No visitor matched a decision yet. In log-only mode, a request that would have been blocked shows up here within seconds."));
+            $("#csFeed tbody").html((d.entries || []).map(feedRow).join("") || '<tr><td colspan="3" class="zx-empty-cell">' + esc(empty) + "</td></tr>");
+            $("#csFeedMore").prop("hidden", !d.more);
+            $("#csFeedNote").text(d.total ? t("{0} of the last {1} entries shown. The list holds 500 and starts again when Zoraxy restarts.").replace("{0}", (d.entries || []).length).replace("{1}", d.total) : "");
+        });
+    }
+    var feedT;
+    $("#csFeedOutcome").on("change", function () { feedShown = 25; loadFeed(); });
+    $("#csFeedIp, #csFeedQ").on("input", function () { clearTimeout(feedT); feedT = setTimeout(function () { feedShown = 25; loadFeed(); }, 300); });
+    $("#csFeedMore").on("click", function () { feedShown = Math.min(200, feedShown + 25); loadFeed(); });
+    $("#csLive").on("click", function () {
+        live = !live;
+        $(this).attr("aria-pressed", live ? "true" : "false");
+        $("#csLiveText").text(live ? t("Live") : t("Paused"));
+        if (live) { loadFeed(); }
+    });
+    $("#csGoBlocked").on("click", function () { if (typeof window.statsOpenBlocked === "function") { window.statsOpenBlocked({ reason: "crowdsec" }); } else { openTabById("stats"); } });
+    $("#csForm").on("click", ".cs-iplink", function () {
+        $("#csCheckIp").val($(this).attr("data-ip"));
+        check();
+        document.getElementById("csCheckCard").scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+
+    /* ---------------------------------------------------------------- check an address */
+    var RESULT = {
+        off: ["", N_("Nothing is checked"), N_("CrowdSec is switched off.")],
+        "protected": ["", N_("Never acted on"), ""],
+        none: ["ok", N_("Served"), N_("No loaded decision applies to this address.")],
+        ignored: ["", N_("Served"), N_("Decisions apply, but their source is set to Ignore.")],
+        allowlisted: ["ok", N_("Served"), N_("The address is on your allowlist ({0}); it is served whatever CrowdSec says.")],
+        exempt: ["", N_("Served"), N_("This site is exempt from CrowdSec.")],
+        "would-block": ["warn", N_("Would be blocked, but is served"), ""],
+        "would-challenge": ["warn", N_("Would get the CAPTCHA, but is served"), ""],
+        block: ["danger", N_("Blocked"), N_("The visitor gets the 403 page.")],
+        drop: ["danger", N_("Blocked"), N_("The connection is closed without an answer.")],
+        challenge: ["info", N_("Gets the site CAPTCHA"), ""],
+        "fail-closed": ["danger", N_("Refused"), N_("The CrowdSec server is unreachable and fail closed is on: every visitor is refused.")]
+    };
+    function decLine(d, live) {
+        var txt = (d.type || "") + " " + t("on {0}").replace("{0}", d.value) + (d.scenario ? " · " + d.scenario : "") + " · " + originLabel(d.origin) +
+            (live ? (d.duration ? " · " + t("{0} left").replace("{0}", String(d.duration).replace(/\.\d+s$/, "s")) : "") : (d.expires ? " · " + t("until {0}").replace("{0}", clock(d.expires)) : ""));
+        var tag = "";
+        if (!live) {
+            if (d.wins) { tag = '<span class="zx-badge zx-badge--dot zx-badge--info">' + esc(t("This one decides")) + "</span>"; }
+            else if (d.allowlisted) { tag = '<span class="zx-badge">' + esc(t("Allowlisted")) + "</span>"; }
+            else if (d.policy === "ignore") { tag = '<span class="zx-badge">' + esc(t("Ignored")) + "</span>"; }
+            else if (d.policy === "log") { tag = '<span class="zx-badge">' + esc(t("Log only")) + "</span>"; }
+        }
+        return "<li><span>" + esc(txt) + "</span>" + tag + "</li>";
+    }
+    function renderCheck(x) {
+        var r = RESULT[x.result] || ["", x.result, ""], h = "", say = r[2] ? t(r[2]).replace("{0}", x.allowedBy || "") : "";
+        if (x.result === "protected") { say = x["protected"] === "loopback" ? t("This is a loopback address: Zoraxy never acts on it as a direct visitor.") : t("This is this server or one of your trusted proxies: Zoraxy never acts on it as a direct visitor."); }
+        if (x.result === "would-block" || x.result === "would-challenge") { say = t("Not enforced because {0}.").replace("{0}", t(WHY[x.why] || x.why || "")); }
+        if (x.result === "challenge") { say = t("The visitor must solve the CAPTCHA of the site.") + " " + (x.fallback === "ban" ? t("On a site without CAPTCHA the visitor is blocked.") : t("On a site without CAPTCHA the visitor is served and the match is only logged.")); }
+        h += '<p class="cs-verdict"><span class="zx-badge zx-badge--dot' + (r[0] ? " zx-badge--" + r[0] : "") + '">' + esc(t(r[1])) + '</span><strong><span class="cs-ip">' + esc(x.ip) + "</span> " + esc(x.site ? t("on {0}").replace("{0}", x.site) : t("on any site")) + "</strong></p>";
+        h += "<p>" + esc(say) + "</p>";
+        var ctx = [];
+        if (x.enabled && x.result !== "protected") {
+            ctx.push(x.siteMode ? t("This site has its own rule: {0}.").replace("{0}", t({ exempt: "Exempt", log: "Log only", enforce: "Enforce" }[x.siteMode] || x.siteMode)) : (x.mode === "enforce" ? t("Mode: Enforce.") : t("Mode: Log only.")));
+            if (!x.site && S && Object.keys(S.siteOverrides || {}).length + (S.exemptSites || []).length) { ctx.push(t("Some sites have their own rule: choose a site to see the result there.")); }
+            if (x.state === "down" || x.state === "degraded") { ctx.push(t("The CrowdSec server is not reachable right now: this is based on the decisions already loaded.")); }
+        }
+        if (ctx.length) { h += '<p class="cs-muted">' + esc(ctx.join(" ")) + "</p>"; }
+        if ((x.decisions || []).length) { h += '<h4 class="cs-h">' + esc(plural(x.decisions.length, N_("1 loaded decision applies"), N_("{0} loaded decisions apply"))) + '</h4><ul class="cs-list">' + x.decisions.map(function (d) { return decLine(d, false); }).join("") + "</ul>"; }
+        if (x.live) {
+            h += '<h4 class="cs-h">' + esc(t("What the CrowdSec server says right now")) + "</h4>";
+            if (x.live.error) { h += '<p class="cs-muted">' + esc(t("It could not be asked: {0}").replace("{0}", x.live.error)) + "</p>"; }
+            else if (!(x.live.decisions || []).length) { h += '<p class="cs-muted">' + esc(t("No decision for this address.")) + "</p>"; }
+            else { h += '<ul class="cs-list">' + x.live.decisions.map(function (d) { return decLine(d, true); }).join("") + "</ul>"; }
+            if (x.live.differs && !x.live.error) { h += '<p class="cs-muted">' + esc(t("Zoraxy and the server do not agree yet. The next pull (every {0} s) brings them in line.").replace("{0}", (S || {}).pollSeconds || 10)) + "</p>"; }
+        }
+        var rec = x.recent || [];
+        h += '<h4 class="cs-h">' + esc(t("Seen by Zoraxy")) + "</h4>";
+        if (rec.length) {
+            var total = rec.reduce(function (m, e) { return m + (+e.count || 1); }, 0);
+            h += '<ul class="cs-list">' + rec.slice(0, 5).map(function (e) { return "<li><span>" + esc(clock(e.time) + " · " + (e.host || e.rule || "") + " " + (e.method || "") + " " + (e.path || "") + (+e.count > 1 ? " · " + t("{0} requests").replace("{0}", num(e.count)) : "")) + "</span>" + outcome(e) + "</li>"; }).join("") + "</ul>" +
+                '<p style="margin-top:var(--zx-space-2)"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="csCheckFeed" data-ip="' + esc(x.ip) + '">' + esc(plural(total, N_("Show its 1 request in the list"), N_("Show its {0} requests in the list"))) + "</button></p>";
+        } else { h += '<p class="cs-muted">' + esc(t("No matched request from this address in the list.")) + "</p>"; }
+        h += '<div id="csCheckAlerts"></div>';
+        $("#csCheckOut").html(h).prop("hidden", false);
+        if (mgOn) {   // with a machine login: what CrowdSec itself detected for this address
+            $.get("/api/crowdsec/manage/alerts", { ip: x.ip, limit: 5 }, function (d) {
+                if (!$.isArray(d) || !$("#csCheckAlerts").length) { return; }
+                $("#csCheckAlerts").html('<h4 class="cs-h">' + esc(t("Alerts in CrowdSec")) + "</h4>" + (d.length ? '<ul class="cs-list">' + d.map(function (a) { return "<li><span>" + esc(fmt(a.time) + " · " + a.scenario + " · " + plural(a.events, N_("1 event"), N_("{0} events"))) + "</span></li>"; }).join("") + "</ul>" : '<p class="cs-muted">' + esc(t("CrowdSec has no alert for this address.")) + "</p>"));
+            });
+        }
+    }
+    function check() {
+        var ip = $("#csCheckIp").val().trim();
+        if (!ip) { $("#csCheckIp").trigger("focus"); return; }
+        ZxUI.setLoading(document.getElementById("csCheckGo"), true);
+        $.cjax({ type: "POST", url: "/api/crowdsec/check", data: { ip: ip, site: $("#csCheckSite").val() || "", live: $("#csCheckLive").prop("checked") ? "true" : "false" }, success: function (d) {
+            ZxUI.setLoading(document.getElementById("csCheckGo"), false);
+            if (!here()) { return; }
+            if (d && d.error) { $("#csCheckOut").html('<p class="cs-muted" role="alert">' + esc(/IPv4 or IPv6/.test(d.error) ? t("Enter one IPv4 or IPv6 address, for example 203.0.113.7.") : d.error) + "</p>").prop("hidden", false); return; }
+            renderCheck(d);
+        }, error: function () { ZxUI.setLoading(document.getElementById("csCheckGo"), false); } });
+    }
+    $("#csCheckGo").on("click", check);
+    $("#csCheckIp").on("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); check(); } });
+    $("#csCheckOut").on("click", "#csCheckFeed", function () {
+        $("#csFeedIp").val($(this).attr("data-ip")); $("#csFeedOutcome").val(""); $("#csFeedQ").val(""); feedShown = 25; loadFeed();
+        document.getElementById("csFeedCard").scrollIntoView({ block: "start" });
+    });
+
+    /* ---------------------------------------------------------------- what is loaded, connection health */
+    function barList(items, emptyText) {
+        if (!items.length) { return '<p class="cs-muted">' + esc(emptyText) + "</p>"; }
+        var max = items.reduce(function (m, x) { return Math.max(m, x.n); }, 1);
+        return '<ul class="cs-bars">' + items.map(function (x) {
+            return '<li title="' + esc(x.title || x.label) + '"><span class="k">' + esc(x.label) + (x.sub ? " <small>" + esc(x.sub) + "</small>" : "") + '</span><span class="n">' + num(x.n) + '</span><span class="bar" style="width:' + (x.n ? Math.max(3, Math.round(x.n / max * 100)) : 0) + '%"><i class="m" style="flex:1"></i></span></li>';
+        }).join("") + "</ul>";
+    }
+    function renderLoaded() {
+        var a = lastAct, s = lastStatus || {};
+        if (!a || !here()) { return; }
+        var L = a.loaded || {}, by = L.byClass || {}, pol = (S || {}).originPolicy || {};
+        var POLW = { log: N_("log only"), ignore: N_("ignored") };
+        var cls = ["crowdsec", "cscli", "capi", "lists", "other"].map(function (c) { return { label: t(ORIGIN_T[c]), sub: pol[c] ? t(POLW[pol[c]]) : "", n: by[c] || 0 }; });
+        ["crowdsec", "cscli", "capi", "lists", "other"].forEach(function (c) { $("#csOrgN-" + c).text(s.enabled ? "· " + t("{0} loaded").replace("{0}", num(by[c] || 0)) : ""); });
+        var ign = [];
+        $.each(s.ignoredScopes || {}, function (k, v) { ign.push(t("scope {0}: {1}").replace("{0}", k).replace("{1}", num(v))); });
+        $.each(s.ignoredTypes || {}, function (k, v) { ign.push(t("type {0}: {1}").replace("{0}", k).replace("{1}", num(v))); });
+        var bt = L.byType || {};
+        var kv = [[t("Decisions loaded"), num(L.total || 0) + " " + t("of at most {0}").replace("{0}", num(s.cacheMax))], [t("Ban decisions"), num(bt.ban || 0)], [t("Captcha decisions"), num(bt.captcha || 0)],
+            [t("On single addresses"), num(L.ips || 0)], [t("On ranges"), num(L.ranges || 0)]];
+        if (s.cacheEvicted) { kv.push([t("Removed to make room"), num(s.cacheEvicted)]); }
+        if (s.cacheRefused) { kv.push([t("Not stored, memory full"), num(s.cacheRefused)]); }
+        if (s.clampedDecisions) { kv.push([t("Cut to the longest lifetime"), num(s.clampedDecisions)]); }
+        if (s.malformed) { kv.push([t("Unreadable, skipped"), num(s.malformed)]); }
+        kv.push([t("Not used by Zoraxy"), ign.length ? ign.join(", ") : t("none")]);
+        scenReach();
+        $("#csLoaded").html('<div><h4 class="cs-h">' + esc(t("By source")) + "</h4>" + barList(cls, "") + "</div>" +
+            '<div><h4 class="cs-h">' + esc(t("In numbers")) + '</h4><dl class="zx-kv">' + kv.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>"; }).join("") + "</dl></div>" +
+            '<div><h4 class="cs-h">' + esc(t("Most common scenarios loaded")) + "</h4>" + barList((L.scenarios || []).slice(0, 6).map(function (x) { return { label: x.name === "(none)" ? t("No scenario named") : (x.name === "other" ? t("Other") : x.name), n: x.count }; }), t("Nothing is loaded yet. Decisions appear after the first successful pull.")) + "</div>");
+    }
+    function renderHealth() {
+        var a = lastAct, s = lastStatus;
+        if (!a || !s || !here()) { return; }
+        var pulls = a.pulls || [], errs = pulls.filter(function (p) { return p.error; }).length;
+        $("#csNowHealth").text(s.state === "ok" ? t("Synced {0}").replace("{0}", s.lastSuccess ? rel(s.lastSuccess) : "-") : t(STATE[s.state] || s.state));
+        var kv = [[t("State"), t(STATE[s.state] || s.state)], [t("Last successful pull"), s.lastSuccess ? fmt(s.lastSuccess) + " (" + rel(s.lastSuccess) + ")" : t("not yet")], [t("Last full synchronisation"), a.lastFullSync ? fmt(a.lastFullSync) : t("not yet")],
+            [t("Last pull took"), t("{0} ms").replace("{0}", s.pullDurationMs || 0)], [t("Pulls every"), t("{0} s").replace("{0}", (S || {}).pollSeconds || "-")], [t("Errors since start"), num(s.totalErrors) + (s.consecutiveErrors ? " (" + t("{0} in a row now").replace("{0}", s.consecutiveErrors) + ")" : "")],
+            [t("Full synchronisations"), num(s.fullSyncs)]];
+        if (s.unknownClients) { kv.push([t("Requests without a client address"), num(s.unknownClients)]); }
+        $("#csHealthFacts").html(kv.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>"; }).join("") + (s.lastError ? "<dt>" + esc(t("Last error")) + '</dt><dd class="is-error">' + esc(s.lastError) + "</dd>" : ""));
+        $("#csPulls tbody").html(pulls.slice(0, pullsShown).map(function (p) {
+            return '<tr><td data-label="' + esc(t("Time")) + '">' + esc(clockS(p.time)) + '</td><td data-label="' + esc(t("Kind")) + '">' + esc(p.full ? t("Full list") : t("Changes only")) + '</td><td data-label="' + esc(t("Took")) + '">' + esc(t("{0} ms").replace("{0}", p.durationMs)) + '</td><td data-label="' + esc(t("Added")) + '">' + num(p["new"]) + '</td><td data-label="' + esc(t("Removed")) + '">' + num(p.deleted) +
+                '</td><td class="zx-cell-long" data-label="' + esc(t("Result")) + '">' + (p.error ? '<span class="zx-badge zx-badge--dot zx-badge--danger">' + esc(t("Failed")) + '</span><span class="cs-sub">' + esc(p.error) + "</span>" : '<span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(t("OK")) + "</span>") + "</td></tr>";
+        }).join("") || '<tr><td colspan="6" class="zx-empty-cell">' + esc(t("No pull yet. The first one runs right after CrowdSec is switched on.")) + "</td></tr>");
+        $("#csPullsMore").prop("hidden", pulls.length <= pullsShown);
+        $("#csTrans tbody").html((a.transitions || []).map(function (x) {
+            return '<tr><td data-label="' + esc(t("Time")) + '">' + esc(fmt(x.time)) + '</td><td data-label="' + esc(t("Change")) + '">' + esc(t("{0} to {1}").replace("{0}", t(STATE[x.from] || x.from)).replace("{1}", t(STATE[x.to] || x.to))) + '</td><td class="zx-cell-long" data-label="' + esc(t("Detail")) + '">' + esc(x.error || "") + "</td></tr>";
+        }).join("") || '<tr><td colspan="3" class="zx-empty-cell">' + esc(t("No change yet. Every change between OK, Degraded and Down is listed here.")) + "</td></tr>");
+        void errs;
+    }
+    $("#csPullsMore").on("click", function () { pullsShown = 60; renderHealth(); });
+    function loadDecisions() {
+        $.get("/api/crowdsec/decisions", function (d) {
+            if (!here() || !d) { return; }
+            var r = (d.decisions || []).map(function (x) {
+                return '<tr><td data-label="' + esc(t("Applies to")) + '"><span class="cs-ip">' + esc(x.value) + '</span><span class="cs-sub">' + esc(x.type) + " · " + esc(x.scope) + '</span></td><td data-label="' + esc(t("Why")) + '">' + esc(x.scenario || "-") + '<span class="cs-sub">' + esc(originLabel(x.origin)) + '</span></td><td data-label="' + esc(t("Received")) + '">' + esc(fmt(x.added)) + '</td><td data-label="' + esc(t("Expires")) + '">' + esc(fmt(x.expires)) + "</td></tr>";
+            }).join("");
+            $("#csDecisions tbody").html(r || '<tr><td colspan="4" class="zx-empty-cell">' + esc(t("Nothing yet. Decisions appear here after the first successful pull.")) + "</td></tr>");
+        });
+    }
+    $("#csGrpDecisions").on("toggle", function () { if (this.open) { loadDecisions(); } });
 
     // ---- Manage CrowdSec (machine login) ----
     var mgOn = false;
@@ -510,8 +1243,19 @@ labels:
         var el = document.getElementById($(this).data("for"));
         if (navigator.clipboard && navigator.clipboard.writeText && el) { navigator.clipboard.writeText(el.textContent).then(function () { toast(t("Copied. Read the command before you run it."), true); }); }
     });
-    mgLoad();
-    loadSettings(); loadStatus();
-    var timer = setInterval(function () { if (!document.getElementById("csStatus")) { clearInterval(timer); return; } loadStatus(); }, 10000);
+    mgLoad(); loadSites();
+    loadSettings().then(function () { loadStatus(); loadActivity(); loadFeed(); });
+    // refresh while this section is on screen: the feed every 5 s (unless paused), status and activity every 10 s.
+    // Nothing is requested while the browser tab is in the background or another page of the admin UI is open.
+    var tick = 0;
+    var timer = setInterval(function () {
+        var root = document.getElementById("csForm");
+        if (!root) { clearInterval(timer); return; }
+        if (document.hidden || root.offsetParent === null) { return; }
+        tick++;
+        var on = lastStatus && lastStatus.enabled;
+        if (on && live) { loadFeed(); }
+        if (tick % 2 === 0) { loadStatus(); if (on) { loadActivity(); } }
+    }, 5000);
 })();
 </script>

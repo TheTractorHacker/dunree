@@ -6,7 +6,9 @@
     Breakpoints: > 1180px full text; 749-1180px pills shrink to icon + number; <= 748px pills, theme, language and account
     fold into the "More" menu (the hamburger of the page menu stays).
 */
-:root { --zx-topbar-h: 52px; }
+/* Same selector list as the token blocks of zxui.css: a value set there on body.darkTheme (the design v2 block does) would
+   otherwise win in the dark theme only and the dark bar came out 12px taller than the light one. */
+:root, .zx-scheme-light, body.darkTheme, .zx-scheme-dark { --zx-topbar-h: 52px; }
 
 .menubar.zx-topbar {
     box-sizing: border-box;

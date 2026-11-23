@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	PLUGIN_ID = "org.aroz.zoraxy.api_call_example"
-	UI_PATH   = "/ui"
+	PLUGIN_ID   = "org.aroz.zoraxy.api_call_example"
+	UI_PATH     = "/ui"
+	HEALTH_PATH = "/health"
 )
 
 func main() {
@@ -28,6 +29,16 @@ func main() {
 
 		UIPath: UI_PATH,
 
+		// This plugin gets an API key. Ask Zoraxy to hand the start configuration
+		// (which holds that key) over on standard input instead of the command line,
+		// where every local user could read it with "ps". ServeAndRecvSpec reads both
+		// ways, so the plugin still works with a Zoraxy that does not know this field.
+		ConfigureVia: plugin.ConfigureViaStdin,
+
+		// Address Zoraxy asks when the administrator turned the health check of this
+		// plugin on (served below with plugin.HealthHandler)
+		HealthPath: HEALTH_PATH,
+
 		/* API Access Control */
 		PermittedAPIEndpoints: []plugin.PermittedAPIEndpoint{
 			{
@@ -42,6 +53,9 @@ func main() {
 		fmt.Printf("Error serving introspect: %v\n", err)
 		return
 	}
+
+	// Health address: answers 200 while the plugin is able to answer
+	http.Handle(HEALTH_PATH, plugin.HealthHandler(nil))
 
 	// Start the HTTP server
 	http.HandleFunc(UI_PATH+"/", func(w http.ResponseWriter, r *http.Request) {

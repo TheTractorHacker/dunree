@@ -5,7 +5,16 @@
     It will change the theme of the website to dark mode when the toggle is clicked and back to light mode when clicked again.
 
     Must be included just after the start of body tag in the HTML file.
+    The choice is stored through script/safestorage.js (zxStore), loaded before this file: when the browser blocks
+    storage the choice is kept in memory, so the toggle still works until the page is reloaded.
 */
+
+//Plugin pages and older copies of a page may load this file without safestorage.js: guarded direct calls then
+var _themeStore = window.zxStore || {
+    get: function(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    remove: function(k){ try { localStorage.removeItem(k); } catch (e) {} }
+};
 
 //The top bar (script/topbar.js) listens to this to show the current mode
 function _themeChanged(){
@@ -25,7 +34,7 @@ function _darkThemeHandleApplyChange(){
  function setDarkTheme(isDarkTheme = false){
     if (isDarkTheme){
         $("body").addClass("darkTheme");
-        localStorage.setItem("theme", "dark");
+        _themeStore.set("theme", "dark");
         _themeChanged();
 
         //Check if the page is still loading, if not change the logo
@@ -39,7 +48,7 @@ function _darkThemeHandleApplyChange(){
         }
     }else{
         $("body").removeClass("darkTheme")
-        localStorage.setItem("theme", "light");
+        _themeStore.set("theme", "light");
         _themeChanged();
         //By default the page is white theme. So no need to change the logo if page is still loading
         if (document.readyState == "complete"){
@@ -58,16 +67,15 @@ function _systemPrefersDark(){
     }
 }
 
-var _storedTheme = null;
-try { _storedTheme = localStorage.getItem("theme"); } catch (e) {}
+var _storedTheme = _themeStore.get("theme");
 if (_storedTheme == "dark"){
     setDarkTheme(true);
 }else if (_storedTheme == null && _systemPrefersDark()){
     setDarkTheme(true);
-    try { localStorage.removeItem("theme"); } catch (e) {} //keep "auto" until the user toggles
+    _themeStore.remove("theme"); //keep "auto" until the user toggles
 }else{
     setDarkTheme(false);
     if (_storedTheme == null){
-        try { localStorage.removeItem("theme"); } catch (e) {}
+        _themeStore.remove("theme");
     }
 }

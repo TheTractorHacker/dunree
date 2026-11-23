@@ -73,6 +73,7 @@
     </head>
     <body>
         <link rel="stylesheet" href="../darktheme.css">
+        <script src="../script/safestorage.js"></script>
         <script src="../script/darktheme.js"></script>
         <br>
         <div class="ui container">
@@ -138,10 +139,16 @@
             let installedPlugins = [];
             $(".accordion").accordion();
 
+            // Error texts of the store can quote what a downloaded plugin or an index
+            // says about itself, and msgbox renders HTML: always pass them as text
+            function storeErrText(text){
+                return $("<div>").text(text === undefined || text === null ? "" : String(text)).html();
+            }
+
             function initStoreList(){
                 $.get("/api/plugins/list", function(data) {
                     if (data.error != undefined) {
-                        parent.msgbox(data.error, false);
+                        parent.msgbox(storeErrText(data.error), false);
                         return;
                     }else{
                         installedPlugins = data || [];
@@ -153,7 +160,7 @@
                         type: 'GET',
                         success: function(data) {
                             if (data.error != undefined) {
-                                parent.msgbox(data.error, false);
+                                parent.msgbox(storeErrText(data.error), false);
                             }else{
                                 availablePlugins = data || [];
                                 populatePluginList(availablePlugins);
@@ -205,7 +212,7 @@
                     type: 'POST',
                     success: function(data) {
                         if (data.error != undefined) {
-                            parent.msgbox(data.error, false);
+                            parent.msgbox(storeErrText(data.error), false);
                         } else {
                             parent.msgbox("Plugin list updated successfully", true);
                             initStoreList();
@@ -273,7 +280,7 @@
                             $(btn).removeClass('loading').prop('disabled', false);
                         }
                         if (data.error != undefined) {
-                            parent.msgbox(data.error, false);
+                            parent.msgbox(storeErrText(data.error), false);
                         } else {
                             parent.msgbox("Plugin installed successfully", true);
                             initStoreList();
@@ -388,7 +395,7 @@
                     data: { urls },
                     success: function(data) {
                         if (data.error != undefined) {
-                            parent.msgbox(data.error, false);
+                            parent.msgbox(storeErrText(data.error), false);
                         } else {
                             parent.msgbox("URLs saved successfully", true);
                         }

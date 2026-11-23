@@ -22,7 +22,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
             .ui.container > .ui.menu{ margin-top: 0.8em; }
             .ui.tab.basic.segment{ padding: 1em 0 0; margin: 0; }
             /* the tab bar stays in view while a long tab scrolls (audit SU-10) */
-            .ui.container > .ui.pointing.secondary.menu{ position: sticky; top: 0; z-index: 5; background: var(--theme_bg_primary, #fff); margin-top: 0; padding-top: .8em; }
+            .ui.container > .ui.pointing.secondary.menu{ position: sticky; top: 0; z-index: 20; background: var(--theme_bg_primary, #fff); background-clip: border-box; margin-top: 0; padding-top: .8em; box-shadow: 0 -1.5em 0 0 var(--theme_bg_primary, #fff); isolation: isolate; }
             .ui.tab small, .ui.tab .sub.header{ font-size: 13px; line-height: 1.4; }
             .ui.tab[data-tab="loadbalance"] .ui.message{ padding: .6em .9em; font-size: 13px; }
             body.darkTheme .ui.checkbox label, body.darkTheme .ui.checkbox label small{ color: var(--text_color, #ddd) !important; opacity: 1 !important; }
@@ -224,6 +224,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
         <!-- The legacy dark theme sits in a cascade layer: its element rules (body.darkTheme p, span, a) must not
              outrank the colours of the kit classes used in this view -->
         <style>@import url("../darktheme.css") layer(legacy);</style>
+        <script src="../script/safestorage.js"></script>
         <script src="../script/darktheme.js"></script>
         <div class="ui container">
             <div class="ui small pointing secondary menu">

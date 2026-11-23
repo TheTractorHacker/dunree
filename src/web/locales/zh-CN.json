@@ -3,8 +3,8 @@
   "language": "Simplified Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 36.2,
-  "coreCoverage": 33.3
+  "coverage": 34.8,
+  "coreCoverage": 31.3
  },
  "strings": {
   "\"Add Redirection Rule\"": "“添加重定向规则”",
@@ -506,7 +506,6 @@
   "Clear filters": "清除筛选",
   "Clear form": "清空表单",
   "Clear IP filter": "清除 IP 筛选",
-  "Clear selection": "清除选择",
   "Clear the list": "清空列表",
   "Click \"Connect\" and enter your Zoraxy admin credentials": "点击“连接”并输入你的 Zoraxy 管理员凭据",
   "Click again to delete": "再次点击以删除",

@@ -19,6 +19,19 @@
 // (https://docs.crowdsec.net/docs/local_api/tls_auth), the optional scopes/origins/types filters of the stream, reporting
 // alerts back to CrowdSec, and any replication between two Zoraxy instances (each one queries the same LAPI).
 //
+// Visibility and policy (stats.go, settings.go): Check, CheckForwarded and CheckUnknown only decide. The request path
+// reports what it really did with Report, and that is what the counters (168 hourly buckets), the top lists, the feed
+// (500 entries) and Explain ("check an address") show; all of it is bounded and in memory only. Policies are applied
+// when a request is evaluated, never when decisions are stored: per origin class (follow / log / ignore), scenarios
+// kept log only, an allowlist, per-site overrides (exempt / log / enforce) and the captcha fallback. With none of
+// them set the verdicts are the ones of the versions before they existed. The origin classes rely on the documented
+// origin strings (crowdsec, cscli, cscli-import, CAPI, lists:<name>), not verified against a real LAPI.
+//
+// Known limit of Report: every matched request (log-only matches included) takes Manager.mu once, for the hour bucket
+// and the feed, and the caller has done a GeoIP lookup before. Unmatched requests pay one atomic add. Memory is bounded
+// (feed 500, 32 keys x 5 lists x 168 hours); the lock is process-wide and not load-tested under a flood of matched
+// requests. Sharded per-hour counters would be the next step.
+//
 // Everything is opt-in: with Settings.Enabled false nothing here runs and no request is touched. The first time it
 // is enabled the mode is "log only": decisions are matched and counted but never enforced.
 package crowdsec

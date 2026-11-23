@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"imuslab.com/zoraxy/mod/crowdsec"
+	"imuslab.com/zoraxy/mod/notify"
 	"imuslab.com/zoraxy/mod/secaudit"
 	"imuslab.com/zoraxy/mod/utils"
 )
@@ -26,6 +27,9 @@ import (
 	POST /api/crowdsec/test       one authenticated call to the LAPI (config + apikey optional: test unsaved values)
 	GET  /api/crowdsec/status     health
 	GET  /api/crowdsec/decisions  recent decisions and matches (bounded)
+	GET  /api/crowdsec/activity   window=24h|7d: counters, timeline, top lists, what is loaded, synchronisation history
+	GET  /api/crowdsec/feed       the activity feed (outcome=, ip=, q=, before=, limit=), newest first
+	POST /api/crowdsec/check      ip, site (optional), live=true (optional: one call to the LAPI): what applies to an address and why
 	GET  /api/crowdsec/manage/status     whether a machine login is stored (never the login)
 	POST /api/crowdsec/manage/login      machineid + password: test, then seal (clear=true removes it)
 	GET  /api/crowdsec/manage/decisions  active decisions of the LAPI (q= filter)
@@ -33,6 +37,7 @@ import (
 	POST /api/crowdsec/manage/ban        target (address or range), duration, reason
 	POST /api/crowdsec/manage/unban      id
 	All are closed for viewer accounts (internal addresses, decisions) and recorded by the security audit log (set, test).
+	check changes nothing and is neither audited nor a history entry.
 */
 
 var crowdsecMgr *crowdsec.Manager
@@ -52,6 +57,10 @@ func initCrowdSec() {
 			return false
 		}
 		return a.String() == accessController.ServerPublicIP || accessController.IsTrustedProxy(a.String())
+	}
+	m.Notify = func(event, subject string, extra map[string]string) {
+		//nothing is sent unless the administrator subscribed a channel to the event (Notifications)
+		notify.Emit(notify.Event{Event: event, Source: "crowdsec", Subject: subject, Extra: extra})
 	}
 	crowdsecMgr = m
 	m.Start()
@@ -76,6 +85,18 @@ func HandleCrowdSecGet(w http.ResponseWriter, r *http.Request) {
 	}
 	if v.Settings.PinsSHA256 == nil {
 		v.Settings.PinsSHA256 = []string{}
+	}
+	if v.Settings.ScenarioLogOnly == nil {
+		v.Settings.ScenarioLogOnly = []string{}
+	}
+	if v.Settings.Allowlist == nil {
+		v.Settings.Allowlist = []string{}
+	}
+	if v.Settings.OriginPolicy == nil {
+		v.Settings.OriginPolicy = map[string]string{}
+	}
+	if v.Settings.SiteOverrides == nil {
+		v.Settings.SiteOverrides = map[string]string{}
 	}
 	js, _ := json.Marshal(v)
 	utils.SendJSONResponse(w, string(js))
@@ -125,9 +146,99 @@ func HandleCrowdSecSet(w http.ResponseWriter, r *http.Request) {
 	if clear == "true" {
 		note += ", API key removed"
 	}
+	note += crowdsecPolicyChanges(old, cur)
 	SystemWideLogger.PrintAndLog("crowdsec", "CrowdSec settings changed by "+actor+": "+boolWord(old.Enabled)+" -> "+boolWord(cur.Enabled)+
 		", mode "+old.Mode+" -> "+cur.Mode+", fail-closed "+boolWord(old.FailClosed)+" -> "+boolWord(cur.FailClosed)+note, nil)
 	utils.SendOK(w)
+}
+
+// crowdsecPolicyChanges names the policy settings that changed, for the log line (the values are in the audit log entry)
+func crowdsecPolicyChanges(old, cur crowdsec.Settings) string {
+	js := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
+	out := ""
+	if js(old.OriginPolicy) != js(cur.OriginPolicy) {
+		out += ", origin policy " + js(cur.OriginPolicy)
+	}
+	if js(old.ScenarioLogOnly) != js(cur.ScenarioLogOnly) {
+		out += ", log-only scenarios: " + strconv.Itoa(len(cur.ScenarioLogOnly))
+	}
+	if js(old.Allowlist) != js(cur.Allowlist) {
+		out += ", allowlist: " + strconv.Itoa(len(cur.Allowlist)) + " entries"
+	}
+	if js(old.SiteOverrides) != js(cur.SiteOverrides) || js(old.ExemptSites) != js(cur.ExemptSites) {
+		out += ", site overrides: " + strconv.Itoa(len(cur.SiteOverrides)+len(cur.ExemptSites)) + " (" + strconv.Itoa(len(cur.EnforcedSites())) + " enforce)"
+	}
+	if old.CaptchaAction != cur.CaptchaAction || old.CaptchaFallback != cur.CaptchaFallback {
+		out += ", captcha " + cur.CaptchaAction + " (without a site CAPTCHA: " + cur.CaptchaFallback + ")"
+	}
+	return out
+}
+
+// HandleCrowdSecActivity returns counters, timeline, top lists, what is loaded and the synchronisation history
+func HandleCrowdSecActivity(w http.ResponseWriter, r *http.Request) {
+	window, _ := utils.GetPara(r, "window")
+	js, _ := json.Marshal(crowdsecMgr.Activity(window))
+	utils.SendJSONResponse(w, string(js))
+}
+
+// HandleCrowdSecFeed returns the activity feed, newest first
+func HandleCrowdSecFeed(w http.ResponseWriter, r *http.Request) {
+	q := crowdsec.FeedQuery{}
+	q.Outcome, _ = utils.GetPara(r, "outcome")
+	q.IP, _ = utils.GetPara(r, "ip")
+	q.Q, _ = utils.GetPara(r, "q")
+	if len(q.Q) > 128 || len(q.IP) > 64 || len(q.Outcome) > 32 {
+		utils.SendErrorResponse(w, "filter too long")
+		return
+	}
+	if v, err := utils.GetPara(r, "limit"); err == nil {
+		q.Limit, _ = strconv.Atoi(v)
+	}
+	if v, err := utils.GetPara(r, "before"); err == nil && v != "" {
+		t, perr := time.Parse(time.RFC3339Nano, v)
+		if perr != nil {
+			utils.SendErrorResponse(w, "invalid before")
+			return
+		}
+		q.Before = t
+	}
+	js, _ := json.Marshal(crowdsecMgr.Feed(q))
+	utils.SendJSONResponse(w, string(js))
+}
+
+// HandleCrowdSecCheck (POST) explains what applies to one address. It changes nothing. live=true asks the LAPI once
+// (bouncer key, GET /v1/decisions?ip=), rate limited by the manager.
+func HandleCrowdSecCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	raw, _ := utils.PostPara(r, "ip")
+	raw = strings.TrimSpace(raw)
+	if len(raw) > 64 {
+		utils.SendErrorResponse(w, "enter an IPv4 or IPv6 address")
+		return
+	}
+	ip, err := netip.ParseAddr(strings.Trim(raw, "[]"))
+	if err != nil {
+		utils.SendErrorResponse(w, "enter an IPv4 or IPv6 address")
+		return
+	}
+	site, _ := utils.PostPara(r, "site")
+	if len(site) > 253 {
+		utils.SendErrorResponse(w, "invalid site")
+		return
+	}
+	live, _ := utils.PostPara(r, "live")
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	ex, err := crowdsecMgr.Explain(ctx, ip, site, live == "true")
+	if err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+	js, _ := json.Marshal(ex)
+	utils.SendJSONResponse(w, string(js))
 }
 
 // HandleCrowdSecTest (POST) makes one authenticated call to the LAPI. The destination is checked first

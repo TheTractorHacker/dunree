@@ -1,39 +1,10 @@
 <!-- Error pages (tag errorpages): what a visitor sees when Zoraxy itself answers with an error (403 block pages, 404, 429, 5xx, unknown host, 503).
-     Kit page header, Related menu, sectioned navigation (#epNav), ONE save bar (ZxUI.saveBar on #epForm).
-     API: /api/errorpages/* (src/errorpagesapi.go). Off by default: nothing a visitor gets changes until the switch in "Theme" is on and saved.
+     Kit page header, Related menu, sectioned navigation (#epNav), ONE save bar (ZxUI.saveBar on the whole page, #errorPagesPage,
+     because the master switch #epEnabled sits in the page header). Styles: ui/zxpages.css, "area: errorpages".
+     API: /api/errorpages/* (src/errorpagesapi.go). Off by default: nothing a visitor gets changes until the switch in the header is on and saved.
      State model: the theme controls are real form controls; the page of each class (title, message, HTML) is kept as JSON in a hidden input
      (#epPage_CLASS, tracked by the save bar) and edited through ONE visible editor (data-zx-ignore) that shows the class chosen in the navigation. -->
 <div class="standardContainer" id="errorPagesPage">
-    <style>
-        #errorPagesPage .ep-grid { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
-        @media (min-width: 1500px) { #errorPagesPage .ep-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
-        #errorPagesPage .ep-grid > * { min-width: 0; margin: 0; }
-        #errorPagesPage .ep-stack { display: grid; gap: var(--zx-space-4); grid-template-columns: minmax(0, 1fr); }
-        #errorPagesPage .ep-stack > * { margin: 0; min-width: 0; }
-        #errorPagesPage .ep-toolbar { display: flex; flex-wrap: wrap; gap: var(--zx-space-2) var(--zx-space-4); align-items: flex-end; margin: 0 0 var(--zx-space-4); }
-        #errorPagesPage .ep-toolbar .zx-field { margin: 0; flex: 0 1 22rem; min-width: min(100%, 14rem); }
-        #errorPagesPage .ep-toolbar .zx-field .zx-select { width: 100%; }
-        #errorPagesPage .ep-when { margin: 0 0 var(--zx-space-4); color: var(--zx-text-muted); display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
-        #errorPagesPage .ep-when span:last-child { flex: 1 1 16rem; min-width: 0; }
-        #errorPagesPage #epTemplate { font-family: var(--zx-font-mono); font-size: var(--zx-fs-sm); line-height: 1.5; min-height: 22rem; width: 100%; max-width: none; tab-size: 2; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
-        #errorPagesPage .ep-starters { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin: 0 0 var(--zx-space-3); }
-        #errorPagesPage .ep-starters > span { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-        #errorPagesPage .ep-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--zx-space-2); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); margin-top: var(--zx-space-1); }
-        #errorPagesPage .ep-vars { width: 100%; border-collapse: collapse; font-size: var(--zx-fs-sm); }
-        #errorPagesPage .ep-vars td { padding: 6px 12px 6px 0; vertical-align: top; border-top: 1px solid var(--zx-border); }
-        #errorPagesPage .ep-vars tr:first-child td { border-top: 0; }
-        #errorPagesPage .ep-vars code { white-space: nowrap; }
-        #errorPagesPage .ep-preview { display: block; width: 100%; height: 600px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md, 8px); background: #fff; }
-        #errorPagesPage .ep-preview-note { margin: var(--zx-space-2) 0 0; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-        #errorPagesPage .ep-color { display: flex; gap: var(--zx-space-2); align-items: center; }
-        #errorPagesPage .ep-color input[type=color] { width: 3rem; height: var(--zx-control-h, 36px); padding: 2px; border: 1px solid var(--zx-border-strong); border-radius: var(--zx-radius-md, 8px); background: var(--zx-surface); cursor: pointer; }
-        #errorPagesPage .ep-logo-row { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; }
-        #errorPagesPage .ep-logo-row .zx-input { flex: 1 1 14rem; min-width: 0; }
-        #errorPagesPage [hidden] { display: none !important; }
-        #errorPagesPage .zx-callout { margin: 0 0 var(--zx-space-4); }
-        #errorPagesPage .ep-testhint { color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
-    </style>
-
     <header class="zx-page-header">
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
@@ -41,9 +12,25 @@
             <p class="zx-page-header__sub">Choose what visitors see when Zoraxy blocks a request or a site is down. Until you switch this on, everybody gets the built-in pages.</p>
         </div>
         <div class="zx-page-header__actions">
-            <span class="zx-badge zx-badge--dot" id="epStatus">Off</span>
+            <!-- the Related menu is moved in front of this by zxpage.js -->
+            <!-- the master switch of the page. A tracked control of the ONE save bar: changing it marks the page dirty, it never saves by itself.
+                 ONE state indicator: the switch. As high as the buttons next to it, one line. The plain-words line (#epStatusSub: what visitors
+                 get now, or that the change applies with Save) is the description of the switch for assistive technology and its tooltip,
+                 and is shown under the label on phones, where the control has the whole row. -->
+            <label class="ep-master" for="epEnabled" id="epMaster">
+                <input id="epEnabled" type="checkbox" class="zx-switch" role="switch" aria-label="Use my error pages" aria-describedby="epStatusSub" data-zx-label="Use my error pages">
+                <span class="ep-master__text">
+                    <span class="ep-master__title">Use my error pages</span>
+                    <span class="ep-master__sub" id="epStatusSub">Visitors get the built-in pages</span>
+                </span>
+            </label>
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Error pages"><i class="history icon" aria-hidden="true"></i> History</button>
-            <button type="button" class="zx-btn zx-btn--danger-outline" id="epResetAll"><i class="undo icon" aria-hidden="true"></i> Reset to built-in</button>
+            <details class="sy-more sy-more--end" id="epMore">
+                <summary class="zx-btn zx-btn--secondary zx-btn--icon" aria-label="More actions" title="More actions"><i class="ellipsis horizontal icon" aria-hidden="true"></i></summary>
+                <div class="sy-more__menu">
+                    <button type="button" class="sy-more__item sy-more__item--danger" id="epResetAll"><i class="undo icon" aria-hidden="true"></i> <span>Reset everything to built-in</span></button>
+                </div>
+            </details>
         </div>
     </header>
     <aside class="zx-related" aria-label="Related pages">
@@ -59,7 +46,7 @@
     <div class="zx-sectioned">
         <nav class="zx-sectionnav" id="epNav" aria-label="Error page sections">
             <div class="zx-sectionnav__group">
-                <button type="button" class="zx-sectionnav__item active" data-ep="theme"><i class="paint brush icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Theme</span><span class="zx-sectionnav__desc" hidden>Switch customised pages on and give them your look: logo, colour and footer. Off until you switch it on.</span></button>
+                <button type="button" class="zx-sectionnav__item active" data-ep="theme"><i class="paint brush icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Theme</span><span class="zx-sectionnav__desc" hidden>Give your pages your look: name, logo, colour and footer. Everything is optional.</span></button>
             </div>
             <div class="zx-sectionnav__group" role="group" aria-labelledby="epGrpPages">
                 <div class="zx-sectionnav__label" id="epGrpPages">Pages</div>
@@ -70,6 +57,8 @@
                 <button type="button" class="zx-sectionnav__item" data-ep="nohost"><i class="question circle outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">No such host</span><span class="zx-sectionnav__desc" hidden>The page for a host name nobody configured, when the Default Site shows a "not found" page.</span></button>
                 <button type="button" class="zx-sectionnav__item" data-ep="maintenance"><i class="wrench icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Busy or maintenance</span><span class="zx-sectionnav__desc" hidden>The page for a 503 that Zoraxy answers when every server of a site is busy.</span></button>
             </div>
+            <!-- the words of the state dots (the dots carry the word for assistive technology, and the section picker of narrow screens shows it) -->
+            <p class="ep-legend" aria-hidden="true"><span class="ep-legend__item ep-legend__item--on">Customised</span><span class="ep-legend__item">Built-in</span></p>
         </nav>
 
         <div class="zx-sectioned__main">
@@ -89,31 +78,20 @@
                 <input type="hidden" id="epPage_nohost" data-ep-store="nohost" data-zx-label="No such host page">
                 <input type="hidden" id="epPage_maintenance" data-ep-store="maintenance" data-zx-label="Busy or maintenance page">
 
+                <!-- facts of the chosen page class: belongs to the section head, spans both columns -->
+                <p class="ep-when" id="epClassMeta" hidden><span class="zx-badge" id="epStatuses"></span><span class="zx-badge zx-badge--dot" id="epClassState"></span><span class="ep-when__text" id="epWhen"></span></p>
+                <div class="zx-callout zx-callout--info" id="epOffNote" role="note" hidden>
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+                    <div class="zx-callout__body">Visitors do not get this page yet: your error pages are switched off. <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="epSwitchOn" data-zx-ignore>Switch on</button></div>
+                </div>
+
                 <div class="ep-grid">
-                    <div class="ep-stack">
+                    <div class="ep-col">
                         <!-- ============ Theme ============ -->
                         <div class="ep-stack" id="epThemePanel">
                             <section class="zx-card">
-                                <div class="zx-card__body">
-                                    <label class="zx-toggle-row" for="epEnabled">
-                                        <span class="zx-toggle-row__text">
-                                            <span class="zx-toggle-row__title">Use my error pages</span>
-                                            <span class="zx-toggle-row__desc">On: visitors get the pages you changed here. A page you did not change stays the built-in one. Off: everybody gets the built-in pages, and what you saved here is kept.</span>
-                                        </span>
-                                        <input id="epEnabled" type="checkbox" class="zx-switch" role="switch" data-zx-label="Use my error pages">
-                                    </label>
-                                    <label class="zx-toggle-row" for="epApplyBuiltin">
-                                        <span class="zx-toggle-row__text">
-                                            <span class="zx-toggle-row__title">Use this look for every page</span>
-                                            <span class="zx-toggle-row__desc">On: all six pages use the theme below, also the ones you did not write a text for. Off: only the pages you changed do.</span>
-                                        </span>
-                                        <input id="epApplyBuiltin" type="checkbox" class="zx-switch" role="switch" data-zx-label="Use this look for every page">
-                                    </label>
-                                </div>
-                            </section>
-                            <section class="zx-card">
                                 <div class="zx-card__head">
-                                    <h3 class="zx-card__title">Look</h3>
+                                    <h3 class="zx-card__title">Brand</h3>
                                     <p class="zx-card__desc">Shown on every customised page. Everything is optional.</p>
                                 </div>
                                 <div class="zx-card__body">
@@ -143,6 +121,21 @@
                                             <input type="text" class="zx-input" id="epFooter" maxlength="500" placeholder="Questions? Write to support@example.com">
                                         </div>
                                     </div>
+                                </div>
+                            </section>
+                            <section class="zx-card">
+                                <div class="zx-card__head">
+                                    <h3 class="zx-card__title">What the pages show</h3>
+                                    <p class="zx-card__desc">These apply to every page that uses your look.</p>
+                                </div>
+                                <div class="zx-card__body ep-toggles">
+                                    <label class="zx-toggle-row" for="epApplyBuiltin">
+                                        <span class="zx-toggle-row__text">
+                                            <span class="zx-toggle-row__title">Use this look for every page</span>
+                                            <span class="zx-toggle-row__desc">On: all six pages use your look, also the ones you did not write a text for. Off: only the pages you changed do.</span>
+                                        </span>
+                                        <input id="epApplyBuiltin" type="checkbox" class="zx-switch" role="switch" data-zx-label="Use this look for every page">
+                                    </label>
                                     <label class="zx-toggle-row" for="epShowRequestID">
                                         <span class="zx-toggle-row__text">
                                             <span class="zx-toggle-row__title">Show the reference</span>
@@ -163,22 +156,13 @@
 
                         <!-- ============ One page class (the visible editor; its values live in the hidden inputs above) ============ -->
                         <div class="ep-stack" id="epClassPanel" hidden data-zx-ignore>
-                            <div>
-                                <div class="zx-callout zx-callout--info" id="epOffNote" role="note" hidden>
-                                    <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-                                    <div class="zx-callout__body">Your error pages are switched off, so visitors get the built-in page. You can prepare this page now and switch it on later. <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="epGoTheme">Open Theme</button></div>
-                                </div>
-                                <div class="ep-toolbar">
-                                    <div class="zx-field">
+                            <section class="zx-card" id="epEditorCard">
+                                <div class="zx-card__body">
+                                    <div class="ep-scope">
                                         <label class="zx-field__label" for="epScope">Pages of</label>
                                         <select id="epScope" class="zx-select" data-zx-ignore></select>
+                                        <button type="button" class="zx-btn zx-btn--ghost sy-quiet-danger" id="epScopeRemove" hidden><i class="trash alternate outline icon" aria-hidden="true"></i> Remove the pages of this site</button>
                                     </div>
-                                    <button type="button" class="zx-btn zx-btn--ghost" id="epScopeRemove" hidden><i class="trash alternate outline icon" aria-hidden="true"></i> Remove the pages of this site</button>
-                                </div>
-                                <p class="ep-when"><span class="zx-badge" id="epStatuses"></span><span class="zx-badge zx-badge--dot" id="epClassState"></span><span id="epWhen"></span></p>
-                            </div>
-                            <section class="zx-card">
-                                <div class="zx-card__body">
                                     <div class="zx-tabs" id="epTabs" aria-label="How to edit this page">
                                         <button type="button" class="zx-tab" data-zx-panel="epPanelSimple" aria-selected="true">Text</button>
                                         <button type="button" class="zx-tab" data-zx-panel="epPanelHTML">HTML <span class="zx-badge" id="epHTMLBadge" hidden>In use</span></button>
@@ -194,7 +178,7 @@
                                         </div>
                                         <div class="zx-field zx-field--wide">
                                             <label class="zx-field__label" for="epMessage">Message</label>
-                                            <textarea class="zx-textarea" id="epMessage" rows="3" maxlength="500"></textarea>
+                                            <textarea class="zx-textarea" id="epMessage" rows="4" maxlength="500"></textarea>
                                             <p class="zx-help">Leave both empty to keep the built-in text. The page uses the look from Theme.</p>
                                         </div>
                                     </div>
@@ -224,7 +208,7 @@
                         </div>
                     </div>
 
-                    <!-- ============ Preview ============ -->
+                    <!-- ============ Preview: stays in view next to the editor on wide screens (sticky, no scroll box), as high as the page it shows ============ -->
                     <section class="zx-card" id="epPreviewCard" data-zx-ignore>
                         <div class="zx-card__head">
                             <h3 class="zx-card__title">Preview</h3>
@@ -332,16 +316,26 @@
     function refreshStates() {
         var on = $("#epEnabled").prop("checked");
         var savedOn = !!(saved && saved.Enabled);
-        $("#epStatus").text(savedOn ? t("On") : t("Off")).toggleClass("zx-badge--ok", savedOn);
+        // the master switch in the header is the one state indicator. Its plain-words line (description, tooltip, visible on phones)
+        // says what visitors get now, or that the switch was moved and applies with Save
+        var sub = on !== savedOn ? (on ? t("Switches on when you save") : t("Switches off when you save"))
+            : (savedOn ? t("Visitors see your pages") : t("Visitors get the built-in pages"));
+        $("#epStatusSub").text(sub);
+        $("#epMaster").attr("title", sub).toggleClass("is-pending", on !== savedOn);
         if (nav) {
-            nav.state("theme", on ? "on" : "off", on ? t("On") : t("Off"));
+            // every page class carries a state dot: filled = customised, ring = built-in (words: legend under the list, picker, title)
             CLASSES.forEach(function (c) {
-                var custom = isCustom(readStore(c));
-                nav.state(c, custom ? "on" : null, custom ? t("Custom") : "");
+                var custom = isCustom(readStore(c)), word = custom ? t("Customised") : t("Built-in");
+                nav.state(c, custom ? "on" : "off", word);
+                var st = nav.items.filter(function (it) { return it.getAttribute("data-ep") === c; })[0];
+                st = st && st.querySelector(".zx-sectionnav__state");
+                if (st) { st.title = word; }
             });
         }
-        $("#epOffNote").prop("hidden", on);
-        if (section !== "theme") {
+        var isClass = section !== "theme";
+        $("#epClassMeta").prop("hidden", !isClass);
+        $("#epOffNote").prop("hidden", !(isClass && !on && isCustom(readStore(section))));
+        if (isClass) {
             var p = readStore(section), custom = isCustom(p), all = $("#epApplyBuiltin").prop("checked");
             var word = custom ? (p.Template ? t("Own HTML") : t("Own text")) : (scope !== "" ? t("Same as all sites") : (all ? t("Themed built-in page") : t("Built-in page")));
             $("#epClassState").text(word).toggleClass("zx-badge--ok", custom);
@@ -417,35 +411,88 @@
                 return;
             }
             $("#epPreviewError").prop("hidden", true);
-            var f = document.getElementById("epPreview");
-            f.style.height = "";
-            f.srcdoc = d.html;
-            $("#epPreviewNote").text(t("Sample values: host app.example.com, reference ZX-7K2M-9QXD. Light or dark follows your browser."));
+            document.getElementById("epPreview").srcdoc = d.html;   // the load handler below themes and sizes the frame
+            $("#epPreviewNote").text(tf("Sample values: host {0}, reference ZX-7K2M-9QXD.", scope || "app.example.com") + " " +
+                t("A visitor gets the light or the dark version from their browser; here it follows the theme of this page."));
         }).fail(function (x) {
             if (seq !== previewSeq) { return; }
             $("#epPreviewErrorText").text(x && x.status === 403 ? t("This account can only read: the preview needs an admin account.") : t("The server did not answer."));
             $("#epPreviewError").prop("hidden", false);
         });
     }
-    // The preview is one static document without scripts: after it loaded, grow the frame once to the page's height
-    // (up to 1400px) so it does not scroll inside the scrolling page. Measured once per load, never observed.
-    document.getElementById("epPreview").addEventListener("load", function () {
-        var f = this;
+    // The preview is one static document without scripts. The frame is as high as the page it shows: no blank frame around a short
+    // page and no scrolling inside the scrolling page. An error page usually fills its window (min-height: 100vh) and centres its
+    // content, so the natural height only shows in a low window: measure with the frame at 120px, in the same task (nothing is painted
+    // in between). Measured after a load and after a resize, never observed.
+    var PREVIEW_MIN = 200, PREVIEW_MAX = 2400;
+    function fitPreview() {
+        var f = document.getElementById("epPreview");
+        if (!f.offsetParent) { return; }   // the page is not shown: measured again when it is
         try {
             var d = f.contentDocument;
+            if (!d || !d.documentElement || !d.body) { return; }
+            d.documentElement.style.overflowY = "hidden";   // a scroll bar would make the page narrower than it will be
+            f.style.height = "120px";
+            // a page that sizes parts of itself by the window (padding: 8vh) grows with the frame: follow it a few steps
+            var h = 0, i;
+            for (i = 0; i < 6; i++) {
+                var need = Math.max(d.documentElement.scrollHeight, d.body.scrollHeight) + 2;
+                if (need <= h) { break; }
+                h = Math.min(Math.max(need, PREVIEW_MIN), PREVIEW_MAX);
+                f.style.height = h + "px";
+                if (h === PREVIEW_MAX) { break; }
+            }
+            if (Math.max(d.documentElement.scrollHeight, d.body.scrollHeight) > f.clientHeight + 2) { d.documentElement.style.overflowY = ""; }   // longer than the limit: it may scroll
+            else if (d.documentElement.scrollWidth > d.documentElement.clientWidth && h < PREVIEW_MAX) { f.style.height = (h + 18) + "px"; }   // too wide (one long word): room for the sideways scroll bar
+        } catch (e) { f.style.height = ""; /* not readable: keep the height of the style sheet */ }
+    }
+    // Light or dark: an error page chooses with "prefers-color-scheme", which in a frame follows the operating system, not the admin
+    // theme, so a dark admin page would show a bright white preview. The preview shows the version of the admin theme instead: the
+    // colour-scheme conditions of the page's own style rules are answered here (the document itself is not changed, nothing is saved).
+    // A page without a dark version stays light, which is what a visitor gets.
+    function isDark() { return document.body.classList.contains("darkTheme"); }
+    function themePreview() {
+        var dark = isDark();
+        try {
+            var d = document.getElementById("epPreview").contentDocument;
             if (!d || !d.documentElement) { return; }
-            var h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
-            if (h > f.clientHeight + 2) { f.style.height = Math.min(h + 2, 1400) + "px"; }
-        } catch (e) { /* not readable: keep the fixed height */ }
-    });
+            var yes = "(min-width: 0px)", no = "(max-width: 0px) and (min-width: 1px)";
+            var walk = function (rules) {
+                Array.prototype.forEach.call(rules || [], function (r) {
+                    if (r.media && /prefers-color-scheme/i.test(r.media.mediaText)) {
+                        r.media.mediaText = r.media.mediaText
+                            .replace(/\(\s*prefers-color-scheme\s*:\s*dark\s*\)/gi, dark ? yes : no)
+                            .replace(/\(\s*prefers-color-scheme\s*:\s*light\s*\)/gi, dark ? no : yes);
+                    }
+                    if (r.cssRules) { walk(r.cssRules); }
+                });
+            };
+            Array.prototype.forEach.call(d.styleSheets, function (sh) { try { walk(sh.cssRules); } catch (e) { /* a style sheet from elsewhere: not readable */ } });
+            // a page that declares both schemes gets the default colours (canvas, text, links) of the one shown
+            var m = d.querySelector("meta[name='color-scheme']");
+            if (m && /dark/i.test(m.getAttribute("content") || "")) { d.documentElement.style.colorScheme = dark ? "dark" : "light"; }
+        } catch (e) { /* not readable: the frame keeps the scheme of the browser */ }
+    }
+    document.getElementById("epPreview").addEventListener("load", function () { themePreview(); fitPreview(); });
+    // the admin theme was switched: render again (the conditions were rewritten in place, so the frame starts from the page again)
+    var wasDark = isDark();
+    new MutationObserver(function () {
+        if (isDark() === wasDark) { return; }
+        wasDark = isDark();
+        if (saved) { schedulePreview(0); }
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    var fitTimer = null;
+    window.addEventListener("resize", function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitPreview, 150); });
 
     // ---- loading ----
     function loadError(text) {
         $("#epLoadErrorText").text(text);
         $("#epLoadError").prop("hidden", false);
         $("#epForm").prop("hidden", true);
+        $("#epEnabled").prop("disabled", true);   // nothing is known about the state: the switch must not pretend
+        $("#epStatusSub").text(t("Not loaded"));
     }
-    function load() {
+    function load(then) {
         $("#epLoadError").prop("hidden", true);
         $("#epForm").prop("hidden", false);
         $.when($.get("/api/errorpages/classes"), $.get("/api/errorpages/get")).done(function (a, b) {
@@ -460,8 +507,10 @@
             saved.Pages = saved.Pages || {};
             saved.Hosts = saved.Hosts || {};
             if (scope !== "" && !saved.Hosts[scope] && hosts.indexOf(scope) < 0) { scope = ""; }
+            $("#epEnabled").prop("disabled", false);
             renderHelp();
             fillForm();
+            if (typeof then === "function") { then(); }
         }).fail(function () { loadError(t("The error page settings could not be loaded.")); });
         $.get("/api/proxy/list?type=host", function (list) {
             if (!Array.isArray(list)) { return; }
@@ -485,10 +534,28 @@
 
     // ---- wiring ----
     nav = ZxUI.sectionNav("#epNav", { attr: "data-ep", head: "#epHead" });
-    $("#epNav").on("click", ".zx-sectionnav__item", function () { commitEditor(); showSection(this.getAttribute("data-ep")); });
+    $("#epNav").on("click", ".zx-sectionnav__item", function () {
+        commitEditor();
+        showSection(this.getAttribute("data-ep"));
+        // a section opened while the page was scrolled down starts at its head, not somewhere in the middle (under the top bar)
+        var head = document.getElementById("epHead"), topbar = document.querySelector(".zx-topbar");
+        if (head.getBoundingClientRect().top < (topbar ? topbar.getBoundingClientRect().bottom : 56)) { head.scrollIntoView({ block: "start" }); }
+    });
     ZxUI.tabs("#epTabs");
-    $("#epGoTheme").on("click", function () { showSection("theme"); });
-    $("#epRetry").on("click", load);
+    // "Switch on" of the note on a customised page: moves the master switch of the header, which marks the page unsaved (it does not save)
+    $("#epSwitchOn").on("click", function () {
+        var el = document.getElementById("epEnabled");
+        el.checked = true;
+        bar.tracker.commit([]);   // changed from code: tell the save bar to look again
+        refreshStates();
+        el.focus();
+    });
+    // the "More actions" menu of the header: closes on Escape, on a click outside, after a choice and when the focus leaves it
+    var more = document.getElementById("epMore");
+    $(document).on("click", function (e) { if (more.open && (!more.contains(e.target) || $(e.target).closest(".sy-more__item").length)) { more.open = false; } });
+    $(more).on("focusout", function (e) { if (more.open && e.relatedTarget && !more.contains(e.relatedTarget)) { more.open = false; } });   // Tab leaves the menu
+    $(more).on("keydown", function (e) { if (e.key === "Escape" && more.open) { e.stopPropagation(); more.open = false; $(more).children("summary").trigger("focus"); } });
+    $("#epRetry").on("click", function () { load(); });
 
     $("#epTitle, #epMessage, #epTemplate").on("input", function () {
         if (this.id === "epTemplate") { updateSize(); }
@@ -511,7 +578,13 @@
         var id = this.getAttribute("data-ep-starter");
         var s = meta.starters.filter(function (x) { return x.id === id; })[0];
         if (!s) { return; }
-        function apply() { $("#epTemplate").val(s.html).trigger("input").focus(); }
+        // the editor gets the focus at the start of the template (a caret at the end would open it scrolled past the doctype)
+        function apply() {
+            var el = $("#epTemplate").val(s.html).trigger("input")[0];
+            el.focus();
+            el.selectionStart = el.selectionEnd = 0;
+            el.scrollTop = 0; el.scrollLeft = 0;
+        }
         if (!$("#epTemplate").val().trim()) { apply(); return; }
         ZxUI.confirm({ title: t("Replace the HTML of this page?"), message: t("The starter template replaces what is in the editor now. Nothing is saved until you save."),
             confirmLabel: t("Replace") }).then(function (ok) { if (ok) { apply(); } });
@@ -590,21 +663,36 @@
         });
     });
 
+    // "Reset everything to built-in" (More actions): the dialog names what is removed, from the saved state
+    function resetMessage() {
+        var what = [t("your look (name, logo, colour, footer and what the pages show)")];
+        var n = Object.keys((saved && saved.Pages) || {}).length, sites = Object.keys((saved && saved.Hosts) || {}).sort();
+        if (n) { what.push(n === 1 ? t("1 customised page for all sites") : tf("{0} customised pages for all sites", n)); }
+        if (sites.length) {
+            var names = sites.slice(0, 3).join(", ") + (sites.length > 3 ? ", \u2026" : "");
+            what.push(sites.length === 1 ? tf("the pages of 1 site ({0})", names) : tf("the pages of {0} sites ({1})", sites.length, names));
+        }
+        return t("This switches your error pages off and removes:") + " " + what.join("; ") + ". " +
+            (bar && bar.isDirty() ? t("Changes you did not save are lost too.") + " " : "") +
+            t("Visitors get the built-in pages again. You can bring a version back from History.");
+    }
     $("#epResetAll").on("click", function () {
-        ZxUI.confirm({ title: t("Reset all error pages to built-in?"), message: t("This removes your theme, every text and every HTML page, for all sites. Visitors get the built-in pages again. You can bring a version back from History."),
+        // the menu entry that opened the dialog is in the closed menu by now: the focus goes back to the button of the menu
+        function backToMenu() { $("#epMore > summary").trigger("focus"); }
+        ZxUI.confirm({ title: t("Reset all error pages to built-in?"), message: resetMessage(),
             confirmLabel: t("Reset everything"), danger: true }).then(function (ok) {
-            if (!ok) { return; }
+            if (!ok) { backToMenu(); return; }
             $.cjax({ url: "/api/errorpages/reset", method: "POST", data: {} }).done(function (d) {
-                if (d && d.error) { ZxUI.toast(d.error, { type: "error" }); return; }
+                if (d && d.error) { ZxUI.toast(d.error, { type: "error" }); backToMenu(); return; }
                 scope = "";
                 ZxUI.toast(t("All error pages are the built-in ones again."));
-                load();
-            });
+                load(backToMenu);
+            }).fail(backToMenu);
         });
     });
 
     bar = ZxUI.saveBar({
-        form: "#epForm",
+        form: "#errorPagesPage",   // the whole page: the master switch is in the page header, outside #epForm
         id: "errorpages",
         historyObject: "Error pages",
         onSave: function () {
@@ -628,7 +716,7 @@
     });
     bar.tracker.onChange(refreshStates);
 
-    tabSwitchEventBind["errorpages"] = function () { if (!bar.isDirty()) { load(); } };
+    tabSwitchEventBind["errorpages"] = function () { if (!bar.isDirty()) { load(); } else { fitPreview(); } };
     load();
 })();
 </script>

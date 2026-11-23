@@ -3,15 +3,14 @@ package plugins
 import (
 	"encoding/json"
 	"fmt"
-	"imuslab.com/zoraxy/mod/offline"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
+	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
 	"imuslab.com/zoraxy/mod/utils"
 )
 
@@ -28,6 +27,10 @@ type PluginUpdateInfo struct {
 	InstalledVersion string `json:"installedVersion"` //The version currently installed
 	LatestVersion    string `json:"latestVersion"`    //The latest version available on the plugin store
 	UpdateAvailable  bool   `json:"updateAvailable"`  //Whether the store version is newer than the installed one
+	Source           string `json:"source"`           //The index the update would come from
+	BoundToSource    bool   `json:"boundToSource"`    //The plugin was installed from that index and is only updated from it
+	Signature        string `json:"signature"`        //Signature state of that index (see DownloadablePlugin)
+	Blocked          string `json:"blocked"`          //Why the update cannot be installed under the current signature checking mode, empty = it can
 }
 
 // versionToString formats a plugin version tuple as a string
@@ -50,16 +53,26 @@ func storeVersionIsNewer(storeCopy *DownloadablePlugin, installedCopy *Plugin) b
 // getDownloadablePluginByID finds a plugin in the downloadable plugin cache by its ID.
 // If the same plugin is offered by multiple sources, the one with the highest version wins.
 func (m *Manager) getDownloadablePluginByID(pluginID string) *DownloadablePlugin {
-	var best *DownloadablePlugin
-	for _, p := range m.Options.DownloadablePluginCache {
-		if p.PluginIntroSpect.ID != pluginID {
-			continue
+	return newestOf(m.candidatesFor(pluginID, ""))
+}
+
+// installCandidate picks the store entry a new install uses: the newest one of
+// the named index, or of all indexes. With signature checking set to enforce an
+// entry that may be installed wins over a newer one that may not.
+func (m *Manager) installCandidate(pluginID string, source string) *DownloadablePlugin {
+	all := m.candidatesFor(pluginID, source)
+	if m.Settings().VerifyMode == VerifyEnforce {
+		ok := []*DownloadablePlugin{}
+		for _, p := range all {
+			if m.installBlockedReason(p) == "" {
+				ok = append(ok, p)
+			}
 		}
-		if best == nil || downloadableVersionIsNewer(p, best) {
-			best = p
+		if len(ok) > 0 {
+			return newestOf(ok)
 		}
 	}
-	return best
+	return newestOf(all)
 }
 
 // downloadableVersionIsNewer checks if candidate has a higher version than current
@@ -78,46 +91,65 @@ func downloadableVersionIsNewer(candidate *DownloadablePlugin, current *Download
 // that are also available on the plugin store
 func (m *Manager) GetPluginUpdateInfos() []*PluginUpdateInfo {
 	updateInfos := []*PluginUpdateInfo{}
-	m.loadedPluginsMutex.RLock()
-	defer m.loadedPluginsMutex.RUnlock()
-	for pluginID, plugin := range m.LoadedPlugins {
-		storeCopy := m.getDownloadablePluginByID(pluginID)
+	loaded, _ := m.ListLoadedPlugins()
+	for _, plugin := range loaded {
+		spec := plugin.spec()
+		storeCopy, source, _ := m.updateCandidate(spec.ID)
 		if storeCopy == nil {
-			//Not from the plugin store, cannot check for updates
+			//Not from the plugin store (or not offered by the index it was installed from), cannot check for updates
 			continue
 		}
-		updateInfos = append(updateInfos, &PluginUpdateInfo{
-			PluginID:         pluginID,
-			Name:             plugin.Spec.Name,
-			InstalledVersion: versionToString(plugin.Spec.VersionMajor, plugin.Spec.VersionMinor, plugin.Spec.VersionPatch),
+		info := &PluginUpdateInfo{
+			PluginID:         spec.ID,
+			Name:             spec.Name,
+			InstalledVersion: versionOfSpec(spec),
 			LatestVersion:    versionToString(storeCopy.PluginIntroSpect.VersionMajor, storeCopy.PluginIntroSpect.VersionMinor, storeCopy.PluginIntroSpect.VersionPatch),
-			UpdateAvailable:  storeVersionIsNewer(storeCopy, plugin),
-		})
+			UpdateAvailable:  storeVersionIsNewerThanSpec(storeCopy, spec),
+			Source:           storeCopy.Source,
+			BoundToSource:    source != "",
+			Signature:        storeCopy.Signature,
+		}
+		if info.UpdateAvailable {
+			info.Blocked = m.installBlockedReason(storeCopy)
+		}
+		updateInfos = append(updateInfos, info)
 	}
 	return updateInfos
 }
 
-// UpdatePlugin downloads the latest binary of an installed plugin from the
-// plugin store and overwrites the existing resources in the plugin folder.
-// If the plugin was running before the update, it is restarted afterwards.
-func (m *Manager) UpdatePlugin(pluginID string) error {
-	storeCopy := m.getDownloadablePluginByID(pluginID)
-	if storeCopy == nil {
-		return fmt.Errorf("plugin not found on the plugin store: %s", pluginID)
+func storeVersionIsNewerThanSpec(storeCopy *DownloadablePlugin, spec *zoraxyPlugin.IntroSpect) bool {
+	storeVer := [3]int{storeCopy.PluginIntroSpect.VersionMajor, storeCopy.PluginIntroSpect.VersionMinor, storeCopy.PluginIntroSpect.VersionPatch}
+	installedVer := [3]int{spec.VersionMajor, spec.VersionMinor, spec.VersionPatch}
+	for i := 0; i < 3; i++ {
+		if storeVer[i] != installedVer[i] {
+			return storeVer[i] > installedVer[i]
+		}
 	}
+	return false
+}
 
+// UpdatePlugin downloads the latest binary of an installed plugin from the
+// plugin store index it was installed from and swaps it in. The download is
+// verified and introspected in the staging folder while the installed version
+// keeps running; the replaced binary is kept for a rollback. If the plugin was
+// running before the update, it is restarted afterwards and has to pass a
+// health check.
+func (m *Manager) UpdatePlugin(pluginID string) error {
 	installedPlugin, err := m.GetPluginByID(pluginID)
 	if err != nil {
 		return fmt.Errorf("plugin is not installed: %s", pluginID)
 	}
 
-	if !storeVersionIsNewer(storeCopy, installedPlugin) {
-		return fmt.Errorf("plugin is already up to date")
+	storeCopy, source, elsewhere := m.updateCandidate(pluginID)
+	if storeCopy == nil {
+		if elsewhere {
+			return fmt.Errorf("plugin %s was installed from %s, which does not offer it; another index does, but a plugin is only updated from the index it was installed from", pluginID, source)
+		}
+		return fmt.Errorf("plugin not found on the plugin store: %s", pluginID)
 	}
 
-	downloadURL, ok := storeCopy.DownloadURLs[runtime.GOOS+"_"+runtime.GOARCH]
-	if !ok {
-		return fmt.Errorf("no download URL available for the current platform")
+	if !storeVersionIsNewer(storeCopy, installedPlugin) {
+		return fmt.Errorf("plugin is already up to date")
 	}
 
 	//Locate the plugin binary to overwrite
@@ -130,103 +162,144 @@ func (m *Manager) UpdatePlugin(pluginID string) error {
 		return fmt.Errorf("script based plugins cannot be updated automatically")
 	}
 
+	// Download, verify and introspect in the staging folder. The installed version
+	// is not touched and keeps running until all of that went well. The store lock
+	// is not held meanwhile: a slow or stalled download does not hold up a rollback
+	// (of this plugin or another), an install or the update of another plugin.
+	release, err := m.beginStaging(pluginID)
+	if err != nil {
+		return err
+	}
+	defer release()
+	gen := m.storeGen(pluginID)
+	staged, err := m.stageDownload(storeCopy, pluginID, entryBase)
+	if err != nil {
+		m.store.opMu.Lock()
+		m.noteChange(pluginID, "update", "The update to version "+versionToString(storeCopy.PluginIntroSpect.VersionMajor, storeCopy.PluginIntroSpect.VersionMinor, storeCopy.PluginIntroSpect.VersionPatch)+" was not installed: the download or its checks failed. The installed version was not touched.", false)
+		m.store.opMu.Unlock()
+		return fmt.Errorf("failed to download plugin update: %w (the installed version was not touched)", err)
+	}
+	defer os.RemoveAll(staged.dir)
+	iconPath, iconErr := m.stageIcon(storeCopy, staged.dir)
+	if iconErr != nil {
+		//Icon is not critical, log and continue
+		m.Log("Failed to update plugin icon for "+pluginID, iconErr)
+	}
+
+	// From here on files of the plugin change: one such change at a time. The
+	// download took a while; what happened to the plugin meanwhile decides.
+	m.store.opMu.Lock()
+	defer m.store.opMu.Unlock()
+	if m.storeGen(pluginID) != gen {
+		return fmt.Errorf("plugin %s was rolled back, updated or removed while its update was downloading: the update was not installed (the installed version was not touched)", pluginID)
+	}
+	if cur, getErr := m.GetPluginByID(pluginID); getErr != nil {
+		return fmt.Errorf("plugin %s was removed while its update was downloading", pluginID)
+	} else {
+		installedPlugin = cur
+	}
+	if entryPoint, err = m.GetPluginEntryPoint(installedPlugin.RootDir); err != nil || filepath.Base(entryPoint) != entryBase {
+		return fmt.Errorf("the program file of plugin %s changed while its update was downloading: the update was not installed", pluginID)
+	}
+	if err = m.declaredIDCollision(staged.spec.ID, pluginID); err != nil {
+		return fmt.Errorf("failed to download plugin update: %w (the installed version was not touched)", err)
+	}
+
+	// What is installed now, for the rollback
+	rec := m.installRecord(pluginID)
+	if rec == nil {
+		rec = &InstallRecord{}
+		rec.Current.Version = versionOfSpec(installedPlugin.spec())
+	}
+	if rec.Current.SHA256 == "" {
+		rec.Current.SHA256, rec.Current.Size, _ = fileSHA256(entryPoint)
+	}
+	oldVersion := rec.Current
+
 	//Stop the plugin if it is running
-	wasRunning := installedPlugin.IsRunning()
-	if wasRunning {
-		err = m.StopPlugin(pluginID)
-		if err != nil {
-			return fmt.Errorf("failed to stop plugin before update: %w", err)
+	wantRun, err := m.holdPlugin(installedPlugin)
+	if err != nil {
+		return fmt.Errorf("failed to stop plugin before update: %w", err)
+	}
+
+	//Swap: the installed binary goes to .zoraxy-previous/, the staged one takes its place
+	if err = swapIn(entryPoint, staged.binPath); err != nil {
+		if wantRun {
+			m.StartPlugin(pluginID)
 		}
+		return err
 	}
-
-	//Download the new binary to a temporary file next to the current one
-	//so a failed download never corrupts the existing installation
-	tmpPath := entryPoint + ".download"
-	err = downloadFileTo(downloadURL, tmpPath)
-	if err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("failed to download plugin update: %w", err)
-	}
-
-	//Replace the old binary with the downloaded one
-	err = os.Remove(entryPoint)
-	if err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("failed to remove old plugin binary: %w", err)
-	}
-	err = os.Rename(tmpPath, entryPoint)
-	if err != nil {
-		return fmt.Errorf("failed to replace plugin binary: %w", err)
-	}
-	err = os.Chmod(entryPoint, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to set executable permissions: %w", err)
-	}
-
-	//Update the plugin icon if one is provided by the store
-	iconURL := strings.TrimSpace(storeCopy.IconPath)
-	if strings.HasPrefix(iconURL, "http://") || strings.HasPrefix(iconURL, "https://") {
-		err = downloadFileTo(iconURL, filepath.Join(installedPlugin.RootDir, "icon.png"))
-		if err != nil {
-			//Icon is not critical, log and continue
+	m.bumpStoreGen(pluginID)
+	if iconPath != "" {
+		if err := os.Rename(iconPath, filepath.Join(installedPlugin.RootDir, "icon.png")); err != nil {
 			m.Log("Failed to update plugin icon for "+pluginID, err)
 		}
 	}
+	rec.Previous = &oldVersion
+	rec.Current = staged.version(storeCopy)
+	rec.Folder = filepath.Base(filepath.FromSlash(installedPlugin.RootDir)) //also for a record from before folders were recorded
+	if rec.Source == "" {
+		// The plugin had no known source. From now on it is updated from this index only
+		rec.Source = storeCopy.Source
+	}
+	rec.LastChange, rec.LastChangeAt, rec.LastChangeIssue = "update", time.Now().Unix(), false
+	rec.LastChangeNote = "Updated from version " + oldVersion.Version + " to " + rec.Current.Version + "."
+	m.saveInstallRecord(pluginID, rec)
 
 	//Reload the plugin spec from the updated binary
-	updatedPlugin, err := m.LoadPluginSpec(installedPlugin.RootDir)
+	newID, err := m.adoptSpec(installedPlugin, pluginID)
 	if err != nil {
-		return fmt.Errorf("plugin updated but failed to reload plugin spec: %w", err)
+		// The new binary cannot be loaded in its place: put the old one back
+		if _, rbErr := m.rollback(installedPlugin, wantRun, "auto_rollback", "The manifest of the new version could not be read."); rbErr != nil {
+			return fmt.Errorf("plugin updated but failed to reload plugin spec (%v), and the previous version could not be put back: %w", err, rbErr)
+		}
+		return fmt.Errorf("the update was undone: the manifest of the new version could not be read: %w", err)
 	}
-
-	m.loadedPluginsMutex.Lock()
-	if updatedPlugin.Spec.ID != pluginID {
-		//Plugin changed its ID after the update, re-register under the new ID
-		delete(m.LoadedPlugins, pluginID)
+	if newID != pluginID {
+		//Plugin changed its ID after the update: its record moves with it
+		m.saveInstallRecord(newID, rec)
+		m.forgetInstallRecord(pluginID)
 	}
-	installedPlugin.Spec = updatedPlugin.Spec
-	installedPlugin.SupportHotRebuild = updatedPlugin.SupportHotRebuild
-	m.LoadedPlugins[updatedPlugin.Spec.ID] = installedPlugin
-	m.loadedPluginsMutex.Unlock()
-
-	//Update the plugin hash list to reflect the new binary
-	m.InitPluginHashList()
-
-	m.Log("Plugin "+updatedPlugin.Spec.Name+" updated to v"+versionToString(updatedPlugin.Spec.VersionMajor, updatedPlugin.Spec.VersionMinor, updatedPlugin.Spec.VersionPatch), nil)
+	updatedSpec := installedPlugin.spec()
+	m.Log("Plugin "+updatedSpec.Name+" updated to v"+versionOfSpec(updatedSpec), nil)
 
 	//Restart the plugin if it was running before the update
-	if wasRunning {
-		err = m.StartPlugin(updatedPlugin.Spec.ID)
-		if err != nil {
-			return fmt.Errorf("plugin updated but failed to restart: %w", err)
-		}
+	if !wantRun {
+		return nil
 	}
+	err = m.StartPlugin(newID)
+	if err == nil {
+		err = m.waitHealthyAfterUpdate(installedPlugin)
+	}
+	if err == nil {
+		return nil
+	}
+	problem := "Version " + rec.Current.Version + " did not start properly after the update: " + publicUpdateProblem(err) + "."
+	m.Log("plugin "+newID+": "+problem, nil)
+	m.audit("plugins.update.unhealthy", newID, map[string]string{"version": rec.Current.Version, "previous": oldVersion.Version, "auto_rollback": strconv.FormatBool(m.Settings().AutoRollback)})
+	if m.Settings().AutoRollback {
+		if _, rbErr := m.rollback(installedPlugin, true, "auto_rollback", problem); rbErr != nil {
+			m.noteChange(newID, "update", problem+" The automatic rollback failed.", true)
+			return fmt.Errorf("the new version did not start properly (%v) and the automatic rollback failed: %w", err, rbErr)
+		}
+		return fmt.Errorf("the new version did not start properly (%v). Version %s was put back and started", err, oldVersion.Version)
+	}
+	m.noteChange(newID, "update", problem+" Version "+oldVersion.Version+" is kept: use Roll back to return to it.", true)
+	return fmt.Errorf("plugin updated but the new version did not start properly: %v. The previous version is kept, use Roll back in the Plugin Manager to return to it", err)
+}
 
-	return nil
+// publicUpdateProblem words a failed start or health check for the status of the
+// plugin. Text of a contract refusal is Zoraxy's own; anything else may quote the
+// operating system, which is fine for the administrator who reads it.
+func publicUpdateProblem(err error) string {
+	return clipText(strings.TrimRight(err.Error(), ". "), 300)
 }
 
 // downloadFileTo downloads the content of the given URL to the given file path
+// (with the size cap and the timeout of every store download)
 func downloadFileTo(downloadURL string, destPath string) error {
-	if err := offline.Check(); err != nil {
-		return err
-	}
-	resp, err := http.Get(downloadURL)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed: %s", resp.Status)
-	}
-
-	out, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
+	m := &Manager{}
+	_, _, err := m.downloadTo(downloadURL, destPath, int64(defaultMaxDownloadMB)<<20)
 	return err
 }
 

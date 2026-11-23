@@ -12,6 +12,7 @@ import (
 
 	"imuslab.com/zoraxy/mod/blocklog"
 	"imuslab.com/zoraxy/mod/crowdsec"
+	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
 )
 
 const csTestKey = "hook-test-key-123456"
@@ -52,7 +53,8 @@ func newCrowdSecRouter(t *testing.T, mode string, mod func(*crowdsec.Settings)) 
 		w.Write([]byte(`{"deleted":null,"new":[` +
 			`{"id":1,"origin":"cscli","type":"ban","scope":"Ip","value":"203.0.113.9","duration":"1h","scenario":"crowdsecurity/ssh-bf"},` +
 			`{"id":2,"origin":"CAPI","type":"ban","scope":"Range","value":"198.18.0.0/16","duration":"1h","scenario":"crowdsecurity/http-probing"},` +
-			`{"id":3,"origin":"cscli","type":"ban","scope":"Ip","value":"2001:db8::bad","duration":"1h","scenario":"x"}]}`))
+			`{"id":3,"origin":"cscli","type":"ban","scope":"Ip","value":"2001:db8::bad","duration":"1h","scenario":"x"},` +
+			`{"id":4,"origin":"crowdsec","type":"captcha","scope":"Ip","value":"203.0.113.77","duration":"1h","scenario":"crowdsecurity/http-crawl-non_statics"}]}`))
 	}))
 	t.Cleanup(lapi.Close)
 	m, err := crowdsec.New(&csKV{}, crowdsec.NewVault(t.TempDir()))
@@ -239,5 +241,159 @@ func TestCrowdSecTrustedProxyHeaderSpoof(t *testing.T) {
 	// an untrusted peer cannot use headers at all
 	if got := csSendHeaders(router, sep, "203.0.113.9:1", map[string]string{"X-Real-Ip": "127.0.0.1"}); got != 403 {
 		t.Errorf("untrusted banned peer with loopback header: %d", got)
+	}
+}
+
+// csFeedFirst returns the newest feed entry of ip
+func csFeedFirst(t *testing.T, m *crowdsec.Manager, ip string) crowdsec.FeedEntry {
+	t.Helper()
+	pg := m.Feed(crowdsec.FeedQuery{IP: ip})
+	if len(pg.Entries) == 0 {
+		t.Fatalf("no feed entry for %s", ip)
+	}
+	return pg.Entries[0]
+}
+
+// The counters and the feed show what really happened to the request, with the request itself (no query string).
+func TestCrowdSecReportsRealOutcome(t *testing.T) {
+	router, sep, m, _ := newCrowdSecRouter(t, crowdsec.ModeEnforce, nil)
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "http://app.example.com/wp-login.php?user=admin&pw=secret", nil)
+	r.RemoteAddr = "203.0.113.9:1000"
+	router.handleNonTLSRequest(w, r, sep)
+	if w.Code != 403 {
+		t.Fatalf("banned IP got %d", w.Code)
+	}
+	e := csFeedFirst(t, m, "203.0.113.9")
+	if e.Outcome != crowdsec.OutBlocked || !e.Enforced || e.Method != "POST" || e.Path != "/wp-login.php" || e.Host != "app.example.com" ||
+		e.Rule != abuseScope(sep) || e.Scenario != "crowdsecurity/ssh-bf" || e.Origin != "cscli" || e.Expires == nil {
+		t.Fatalf("feed entry: %+v", e)
+	}
+	if strings.Contains(e.Path, "secret") {
+		t.Fatal("query string in the feed")
+	}
+	csSend(router, sep, "203.0.113.10:1000", "") //clean
+	st := m.Status()
+	if st.Enforced != 1 || st.LogOnly != 0 || st.Checked != 2 || st.Today.Blocked != 1 || st.Today.Checked != 2 {
+		t.Fatalf("counters: %+v", st)
+	}
+}
+
+// The bug this replaces: a captcha decision used to be counted and listed as "blocked" although the request was served.
+func TestCrowdSecCaptchaDecisionOutcomes(t *testing.T) {
+	challenge := func(s *crowdsec.Settings) { s.CaptchaAction = crowdsec.CaptchaChallenge }
+	const ip = "203.0.113.77"
+
+	// site without CAPTCHA: served, not counted as blocked
+	router, sep, m, bl := newCrowdSecRouter(t, crowdsec.ModeEnforce, challenge)
+	for i := 0; i < 3; i++ {
+		if code := csSend(router, sep, ip+":1000", ""); code != 299 {
+			t.Fatalf("captcha decision on a site without CAPTCHA was not served: %d", code)
+		}
+	}
+	st := m.Status()
+	if st.Enforced != 0 || st.Today.Blocked != 0 || st.Today.Challenged != 0 || st.Today.NotChallenged != 3 {
+		t.Fatalf("a served request was counted as blocked: enforced=%d today=%+v", st.Enforced, st.Today)
+	}
+	if e := csFeedFirst(t, m, ip); e.Outcome != crowdsec.OutNoCaptcha || e.Enforced || e.Count != 3 {
+		t.Fatalf("feed entry: %+v", e)
+	}
+	if n := len(bl.List(blocklog.Filter{}, 0, 10).Items); n != 0 {
+		t.Fatalf("%d blocked-log entries for served requests", n)
+	}
+
+	// the fallback "ban": refused and counted as blocked
+	router, sep, m, _ = newCrowdSecRouter(t, crowdsec.ModeEnforce, func(s *crowdsec.Settings) {
+		challenge(s)
+		s.CaptchaFallback = crowdsec.CaptchaFallbackBan
+	})
+	if code := csSend(router, sep, ip+":1000", ""); code != 403 {
+		t.Fatalf("captcha fallback ban: %d", code)
+	}
+	if e := csFeedFirst(t, m, ip); e.Outcome != crowdsec.OutBlocked || m.Status().Enforced != 1 {
+		t.Fatalf("feed entry: %+v", e)
+	}
+
+	// site with a CAPTCHA: challenged; with a solved CAPTCHA: served and listed as passed
+	router, sep, m, _ = newCrowdSecRouter(t, crowdsec.ModeEnforce, challenge)
+	router.captchaSessionStore = captcha.NewSessionStore()
+	sep.CaptchaConfig = &captcha.Config{Provider: captcha.ProviderCloudflare, SiteKey: "k", SecretKey: "s"}
+	if code := csSend(router, sep, ip+":1000", ""); code == 299 {
+		t.Fatalf("not challenged: %d", code)
+	}
+	if e := csFeedFirst(t, m, ip); e.Outcome != crowdsec.OutChallenged || !e.Enforced || m.Status().Today.Challenged != 1 {
+		t.Fatalf("feed entry: %+v today %+v", e, m.Status().Today)
+	}
+	tok, _ := router.captchaSessionStore.Issue("app.example.com", 300)
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://app.example.com/x", nil)
+	r.RemoteAddr = ip + ":1000"
+	r.AddCookie(&http.Cookie{Name: captcha.CookieName, Value: tok})
+	router.handleNonTLSRequest(w, r, sep)
+	if w.Code != 299 {
+		t.Fatalf("a visitor who solved the CAPTCHA was not served: %d", w.Code)
+	}
+	if e := csFeedFirst(t, m, ip); e.Outcome != crowdsec.OutPassed || e.Enforced {
+		t.Fatalf("feed entry: %+v", e)
+	}
+	if st := m.Status(); st.Today.Challenged != 1 || st.Today.Passed != 1 || st.Enforced != 1 {
+		t.Fatalf("counters: enforced=%d today=%+v", st.Enforced, st.Today)
+	}
+}
+
+// Policies through the router: they only lower what the mode does, except the per-site "enforce".
+func TestCrowdSecPoliciesThroughRouter(t *testing.T) {
+	// community blocklist kept log only while the mode is enforce
+	router, sep, m, bl := newCrowdSecRouter(t, crowdsec.ModeEnforce, func(s *crowdsec.Settings) {
+		s.OriginPolicy = map[string]string{crowdsec.OriginCAPI: crowdsec.PolicyLog}
+		s.Allowlist = []string{"2001:db8::/32"}
+	})
+	if code := csSend(router, sep, "198.18.4.4:1000", ""); code != 299 {
+		t.Fatalf("CAPI decision enforced although its origin is log only: %d", code)
+	}
+	if e := csFeedFirst(t, m, "198.18.4.4"); e.Outcome != crowdsec.OutLogOnly || e.Why != crowdsec.WhyOriginLog || e.Value != "198.18.0.0/16" {
+		t.Fatalf("feed entry: %+v", e)
+	}
+	if code := csSend(router, sep, "203.0.113.9:1000", ""); code != 403 {
+		t.Fatalf("local decision not enforced: %d", code)
+	}
+	if code := csSend(router, sep, "[2001:db8::bad]:1000", ""); code != 299 {
+		t.Fatalf("allowlisted address refused: %d", code)
+	}
+	if e := csFeedFirst(t, m, "2001:db8::bad"); e.Outcome != crowdsec.OutAllowlisted {
+		t.Fatalf("feed entry: %+v", e)
+	}
+	if st := m.Status(); st.Enforced != 1 || st.Today.WouldBlock != 1 || st.Today.Allowlisted != 1 {
+		t.Fatalf("counters: %+v", st.Today)
+	}
+	waitBlocked(t, bl, 1)
+
+	// one site enforces while the mode is log only; another is log only while the mode is enforce
+	site := strings.ToLower(abuseScope(sep))
+	router, sep, m, _ = newCrowdSecRouter(t, crowdsec.ModeLog, func(s *crowdsec.Settings) {
+		s.SiteOverrides = map[string]string{site: crowdsec.SiteEnforce}
+	})
+	if code := csSend(router, sep, "203.0.113.9:1000", ""); code != 403 {
+		t.Fatalf("site set to enforce did not block in log only mode: %d", code)
+	}
+	if es := m.Status().EnforcedSites; len(es) != 1 || es[0] != site {
+		t.Fatalf("enforced sites: %v", es)
+	}
+	router, sep, m, _ = newCrowdSecRouter(t, crowdsec.ModeEnforce, func(s *crowdsec.Settings) {
+		s.SiteOverrides = map[string]string{site: crowdsec.SiteLog}
+	})
+	if code := csSend(router, sep, "203.0.113.9:1000", ""); code != 299 {
+		t.Fatalf("site set to log only blocked: %d", code)
+	}
+	if e := csFeedFirst(t, m, "203.0.113.9"); e.Outcome != crowdsec.OutLogOnly || e.Why != crowdsec.WhySiteLog {
+		t.Fatalf("feed entry: %+v", e)
+	}
+	// the older exempt list still works and is listed as skipped
+	router, sep, m, _ = newCrowdSecRouter(t, crowdsec.ModeEnforce, func(s *crowdsec.Settings) { s.ExemptSites = []string{site} })
+	if code := csSend(router, sep, "203.0.113.9:1000", ""); code != 299 {
+		t.Fatalf("exempt site blocked: %d", code)
+	}
+	if e := csFeedFirst(t, m, "203.0.113.9"); e.Outcome != crowdsec.OutExempt || m.Status().Enforced != 0 {
+		t.Fatalf("feed entry: %+v", e)
 	}
 }

@@ -10,6 +10,27 @@
     var modal, names = [];
 
     function esc(s){ return $("<div>").text(s).html(); }
+    function tr(s){ return typeof window.t === "function" ? window.t(s) : s; }
+
+    // The names of the selected rules, in the flow of the dialog: the first few, then "and N more", which opens the rest in place.
+    // No box with a scrollbar of its own inside the dialog; the dialog is the one surface that scrolls.
+    var NAMES_SHOWN = 8;
+    function nameList(list){
+        var line = function(n){ return '<li>' + esc(n) + '</li>'; };
+        var html = '<ul class="bulkNames" style="list-style:none; margin:0.6em 0 0; padding:0; font-family:var(--zx-font-mono, monospace); font-size:0.93em; line-height:1.6; overflow-wrap:anywhere;">' + list.slice(0, NAMES_SHOWN).map(line).join("");
+        if (list.length > NAMES_SHOWN) {
+            html += '<li class="bulkNamesRest" hidden style="display:none; outline:none;"><ul style="list-style:none; margin:0; padding:0;">' + list.slice(NAMES_SHOWN).map(line).join("") + '</ul></li>' +
+                '<li style="font-family:var(--zx-font, inherit); margin-top:0.3em;"><button type="button" class="zxs-linkbtn bulkNamesMore" aria-expanded="false">' + esc(tr("and {0} more").replace("{0}", list.length - NAMES_SHOWN)) + '</button></li>';
+        }
+        return html + '</ul>';
+    }
+    $(document).on("click", "#bulkModal .bulkNamesMore", function(){
+        var rest = $(this).closest(".bulkNames").find(".bulkNamesRest");
+        rest.prop("hidden", false).css("display", "");
+        $(this).closest("li").remove();
+        rest.attr("tabindex", "-1").trigger("focus");
+        if (modal) { modal.modal("refresh"); }
+    });
 
     function ensureModal(){
         if (!modal || !document.body.contains(modal[0])) {
@@ -152,7 +173,7 @@
         }
         else if (act === "delete") {
             openModal("Delete " + n + " rule(s)?",
-                '<div class="ui negative message">This permanently removes the following proxy rules:</div><div style="max-height:12em; overflow:auto;"><code>' + names.map(esc).join("<br>") + '</code></div>' +
+                '<div class="ui negative message">This permanently removes the following proxy rules:</div>' + nameList(names) +
                 '<div class="ui form" style="margin-top:1em;"><div class="field"><label>Type DELETE to confirm</label><input type="text" id="bulkDelConfirm" autocomplete="off"></div></div>',
                 [{ label: "Delete", cls: "red", fn: function(){
                     if ($("#bulkDelConfirm").val() !== "DELETE") { msgbox("Type DELETE to confirm", false); return; }

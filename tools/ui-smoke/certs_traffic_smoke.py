@@ -394,6 +394,100 @@ def certs_traffic_ui(pg, ctx):
             fail("stats", "Referring sites: the note on why a referrer can be missing is not shown")
         if ref["wide"]:
             fail("stats", "Referring sites: a row is wider than its card")
+        # What to list of the requests without a referrer: everything by default, one switch for the whole group, "Choose rows" for single
+        # reasons. The choice is kept in this browser, hidden requests are stated in one line, and no share is rebased.
+        def ref_state():
+            return js("""() => { const q = s => [...document.querySelectorAll(s)], vis = e => !!e && e.getClientRects().length > 0;
+                return {rows: q('#stats_RefererWhy li').filter(vis).map(li => li.dataset.ref),
+                        sites: q('#stats_RefererTable li').map(li => li.innerText.replace(/\\s+/g, ' ').trim() + ' | ' + li.querySelector('.n').title),
+                        on: document.getElementById('sRefShow').checked, picks: Object.fromEntries(q('#sRefPick input').map(i => [i.dataset.refGroup, i.checked])),
+                        pickOff: document.getElementById('sRefPickBtn').disabled, popOpen: vis(document.getElementById('sRefPick')),
+                        expanded: document.getElementById('sRefPickBtn').getAttribute('aria-expanded'), focus: (document.activeElement || {}).id || (document.activeElement || {}).tagName,
+                        focusInPop: document.getElementById('sRefPick').contains(document.activeElement),
+                        hidden: vis(document.getElementById('sRefHidden')) ? document.getElementById('sRefHidden').innerText.replace(/\\s+/g, ' ').trim() : '',
+                        share: document.getElementById('sRefWhyShare').innerText, stored: (() => { try { return localStorage.getItem('zoraxy.stats.refwhy'); } catch (e) { return 'n/a'; } })()}; }""")
+
+        def open_stats_again():
+            pg.reload()
+            pg.wait_for_function("typeof openTabById === 'function'", timeout=15000)
+            pg.wait_for_timeout(800)
+            js("openTabById('stats')")
+            pg.wait_for_timeout(800)
+            js("document.querySelector('#sRange button[data-range=today]').click()")
+            pg.wait_for_function("document.querySelectorAll('#stats_RefererTable li .n').length > 0 && !document.getElementById('sRefWhyBox').hidden", timeout=10000)
+            pg.wait_for_timeout(300)
+
+        d0 = ref_state()
+        why_total = sum(int(re.sub(r"\D", "", v["n"])) for v in ref["why"].values())
+        bots = int(re.sub(r"\D", "", ref["why"].get("~non-browser", {}).get("n", "0")) or 0)
+        if not d0["on"] or not all(d0["picks"].values()) or len(d0["picks"]) != 5 or d0["hidden"] or d0["stored"] not in (None, "n/a") or d0["rows"] != list(ref["why"]):
+            fail("stats", f"Referring sites: requests without a referrer are not all listed by default (nothing may be hidden unless chosen): {d0}")
+        # the switch, by keyboard: the group goes, one line says how many requests are not listed, the real sites keep their numbers
+        pg.focus("#sRefShow")
+        pg.keyboard.press("Space")
+        pg.wait_for_timeout(300)
+        d1 = ref_state()
+        m = re.match(r"^([\d.,   ]+) requests without a referrer are not listed \((<?[\d.]+%) of all requests\)\. Show$", d1["hidden"])
+        if d1["on"] or d1["rows"] or not m:
+            fail("stats", f"Referring sites: switching 'Show requests without a referrer' off does not hide the rows and state what is not listed: {d1}")
+        elif int(re.sub(r"\D", "", m.group(1))) != why_total or m.group(2) not in d0["share"]:
+            fail("stats", f"Referring sites: the line about hidden requests does not carry the count and share of the group ({why_total}, {d0['share']!r}): {d1['hidden']!r}")
+        if d1["sites"] != d0["sites"] or d1["share"] != d0["share"]:
+            fail("stats", f"Referring sites: hiding the requests without a referrer changed the numbers of the referring sites (shares must not be rebased): {d0['sites']} -> {d1['sites']}")
+        if not d1["pickOff"]:
+            fail("stats", "Referring sites: 'Choose rows' stays active while the whole group is hidden")
+        if '"show":false' not in str(d1["stored"]).replace(" ", ""):
+            fail("stats", f"Referring sites: the switch is not remembered in this browser: {d1['stored']!r}")
+        open_stats_again()
+        d2 = ref_state()
+        if d2["on"] or d2["rows"] or not d2["hidden"]:
+            fail("stats", f"Referring sites: the hidden group is listed again after a reload: {d2}")
+        pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers-hidden.png"))
+        # "Show" in that line brings everything back and leaves the focus on the switch
+        pg.focus("#sRefHiddenShow")
+        pg.keyboard.press("Enter")
+        pg.wait_for_timeout(300)
+        d3 = ref_state()
+        if not d3["on"] or d3["rows"] != d0["rows"] or d3["hidden"] or d3["pickOff"] or d3["focus"] != "sRefShow":
+            fail("stats", f"Referring sites: 'Show' does not list the requests without a referrer again: {d3}")
+        # single reasons: the popover opens and closes by keyboard, one unchecked reason leaves the other rows
+        pg.focus("#sRefPickBtn")
+        pg.keyboard.press("Enter")
+        pg.wait_for_timeout(200)
+        d4 = ref_state()
+        if not d4["popOpen"] or d4["expanded"] != "true" or not d4["focusInPop"]:
+            fail("stats", f"Referring sites: 'Choose rows' does not open by keyboard with the focus on the first choice: {d4}")
+        if js("(() => { const r = document.getElementById('sRefPick').getBoundingClientRect(); return r.left < 0 || r.right > innerWidth + 1; })()"):
+            fail("stats", "Referring sites: the 'Choose rows' popover leaves the window")
+        pg.focus("#sRefPick input[data-ref-group=bots]")
+        pg.keyboard.press("Space")
+        pg.wait_for_timeout(300)
+        d5 = ref_state()
+        m = re.match(r"^([\d.,   ]+) requests? without a referrer (?:is|are) not listed \(", d5["hidden"])
+        if "~non-browser" in d5["rows"] or d5["rows"] != [x for x in d0["rows"] if x != "~non-browser"] or not m or int(re.sub(r"\D", "", m.group(1))) != bots or not d5["on"]:
+            fail("stats", f"Referring sites: unchecking 'Bots and scripts' does not hide just that row and state its {bots} requests: {d5}")
+        if d5["sites"] != d0["sites"]:
+            fail("stats", "Referring sites: hiding one reason changed the numbers of the referring sites")
+        pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers-choose.png"))
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(200)
+        d6 = ref_state()
+        if d6["popOpen"] or d6["expanded"] != "false" or d6["focus"] != "sRefPickBtn":
+            fail("stats", f"Referring sites: Escape does not close 'Choose rows' and return the focus to its button: {d6}")
+        open_stats_again()
+        d7 = ref_state()
+        if "~non-browser" in d7["rows"] or len(d7["rows"]) != len(d0["rows"]) - 1 or d7["picks"].get("bots") or not d7["on"] or not d7["hidden"]:
+            fail("stats", f"Referring sites: the choice of rows is not kept after a reload: {d7}")
+        pg.click("#sRefPickBtn")
+        pg.click("#statsPage .zx-page-header, #statsPage h2, #statsPage", position={"x": 5, "y": 5})
+        pg.wait_for_timeout(200)
+        if ref_state()["popOpen"]:
+            fail("stats", "Referring sites: a click outside does not close 'Choose rows'")
+        pg.click("#sRefHiddenShow")
+        pg.wait_for_timeout(300)
+        d8 = ref_state()
+        if d8["rows"] != d0["rows"] or d8["hidden"] or not all(d8["picks"].values()):
+            fail("stats", f"Referring sites: 'Show' does not bring a single hidden reason back: {d8}")
         # a day saved by an older version (empty key) is named as such, below the classified rows
         def legacy_day(route):
             resp = route.fetch()
@@ -420,6 +514,15 @@ def certs_traffic_ui(pg, ctx):
         pg.wait_for_timeout(300)
         check_horizontal(pg, "stats 390")
         pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers-390.png"))
+        # the row choice on a phone: inside the window, no sideways scroll
+        js("document.getElementById('sRefPickBtn').scrollIntoView({block: 'center'})")
+        pg.click("#sRefPickBtn")
+        pg.wait_for_timeout(200)
+        if js("(() => { const p = document.getElementById('sRefPick'), r = p.getBoundingClientRect(); return !r.width || r.left < 0 || r.right > innerWidth + 1 || [...p.querySelectorAll('label')].some(l => l.scrollWidth > l.clientWidth + 1); })()"):
+            fail("stats", "Referring sites: the 'Choose rows' popover does not fit a 390px window")
+        check_horizontal(pg, "stats 390 choose rows")
+        pg.locator("#stats_RefererTable").locator("xpath=ancestor::section[1]").screenshot(path=os.path.join(args.out, "ct-stats-referrers-390-choose.png"))
+        pg.keyboard.press("Escape")
         pg.set_viewport_size({"width": 1366, "height": 900})
         pg.wait_for_timeout(300)
         # Blocked tab: recording off is stated on the page, the search box has a length limit

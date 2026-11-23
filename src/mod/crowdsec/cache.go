@@ -2,6 +2,7 @@ package crowdsec
 
 import (
 	"net/netip"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -359,4 +360,162 @@ func (c *Cache) Sweep(now time.Time) int {
 	}
 	c.n -= removed
 	return removed
+}
+
+// each calls fn for every unexpired decision that applies to ip (the exact address and every range containing it)
+func (c *Cache) each(ip netip.Addr, now time.Time, fn func(Decision)) {
+	ip = ip.WithZone("").Unmap()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, d := range c.ips[ip] {
+		if d.Expires.After(now) {
+			fn(d)
+		}
+	}
+	if len(c.ranges) == 0 {
+		return
+	}
+	lens := c.lens6[:]
+	if ip.Is4() {
+		lens = c.lens4[:]
+	}
+	for bits, cnt := range lens {
+		if cnt == 0 {
+			continue
+		}
+		p, err := ip.Prefix(bits)
+		if err != nil {
+			continue
+		}
+		for _, d := range c.ranges[p] {
+			if d.Expires.After(now) {
+				fn(d)
+			}
+		}
+	}
+}
+
+// LookupAll returns every unexpired decision that applies to ip: exact matches first, then ranges from the widest to
+// the narrowest. Lookup returns only the strongest of them.
+func (c *Cache) LookupAll(ip netip.Addr, now time.Time) []Decision {
+	var out []Decision
+	c.each(ip, now, func(d Decision) { out = append(out, d) })
+	return out
+}
+
+// NameCount is one line of a breakdown
+type NameCount struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// Composition says what the cache holds: where the decisions come from and what they are
+type Composition struct {
+	Total     int            `json:"total"`
+	IPs       int            `json:"ips"`
+	Ranges    int            `json:"ranges"`
+	ByClass   map[string]int `json:"byClass"`  // origin class (crowdsec, cscli, capi, lists, other)
+	ByOrigin  []NameCount    `json:"byOrigin"` // origin as the LAPI sent it; at most 16 names, the rest is "other"
+	ByType    map[string]int `json:"byType"`
+	Scenarios []NameCount    `json:"scenarios"` // the 10 most frequent
+	// every distinct scenario name loaded (at most 256, the rest is "other"), most frequent first: lets the settings
+	// page show how many loaded decisions a "scenario kept on log only" entry reaches
+	AllScenarios []NameCount `json:"allScenarios"`
+	At           time.Time   `json:"at"`
+}
+
+const (
+	compOrigins   = 16
+	compScenarios = 256
+	compTopN      = 10
+)
+
+func topCounts(m map[string]int, n int) []NameCount {
+	out := make([]NameCount, 0, len(m))
+	for k, v := range m {
+		out = append(out, NameCount{k, v})
+	}
+	sortNameCounts(out)
+	if len(out) > n {
+		out = out[:n]
+	}
+	return out
+}
+
+func sortNameCounts(l []NameCount) {
+	sort.Slice(l, func(a, b int) bool {
+		if l[a].Count != l[b].Count {
+			return l[a].Count > l[b].Count
+		}
+		return l[a].Name < l[b].Name
+	})
+}
+
+// ScenarioReach says how many of the loaded decisions (and how many distinct scenario names) a "scenario kept on log
+// only" entry matches: the same test as the request path (the scenario contains the entry, upper or lower case).
+// Decisions counted under "other" (more than 256 distinct names loaded) cannot be told apart and are not included.
+func (c Composition) ScenarioReach(entry string) (decisions, names int) {
+	entry = strings.ToLower(strings.TrimSpace(entry))
+	if entry == "" {
+		return 0, 0
+	}
+	for _, sc := range c.AllScenarios {
+		if sc.Name == "other" || sc.Name == "(none)" {
+			continue
+		}
+		if strings.Contains(strings.ToLower(sc.Name), entry) {
+			decisions += sc.Count
+			names++
+		}
+	}
+	return decisions, names
+}
+
+// Composition walks the cache once (expired entries are skipped)
+func (c *Cache) Composition(now time.Time) Composition {
+	out := Composition{ByClass: map[string]int{}, ByType: map[string]int{}, At: now}
+	origins, scen := map[string]int{}, map[string]int{}
+	bump := func(m map[string]int, k string, max int) {
+		if k == "" {
+			k = "(none)"
+		}
+		if _, ok := m[k]; !ok && len(m) >= max {
+			k = "other"
+		}
+		m[k]++
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	add := func(d Decision, isRange bool) {
+		if !d.Expires.After(now) {
+			return
+		}
+		out.Total++
+		if isRange {
+			out.Ranges++
+		} else {
+			out.IPs++
+		}
+		out.ByClass[OriginClass(d.Origin)]++
+		out.ByType[d.Type]++
+		bump(origins, strings.ToLower(d.Origin), compOrigins)
+		bump(scen, d.Scenario, compScenarios)
+	}
+	for _, l := range c.ips {
+		for _, d := range l {
+			add(d, false)
+		}
+	}
+	for _, l := range c.ranges {
+		for _, d := range l {
+			add(d, true)
+		}
+	}
+	out.ByOrigin = topCounts(origins, compOrigins+1)
+	out.AllScenarios = topCounts(scen, compScenarios+1)
+	out.Scenarios = out.AllScenarios
+	if len(out.Scenarios) > compTopN {
+		out.Scenarios = out.Scenarios[:compTopN:compTopN]
+	}
+	return out
 }

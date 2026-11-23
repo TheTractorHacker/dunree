@@ -166,7 +166,14 @@ func (x *tm) pull(t *testing.T) error {
 	t.Helper()
 	return x.m.PullOnce(context.Background())
 }
-func (x *tm) check(ip string) Verdict { return x.m.Check(netip.MustParseAddr(ip), "site") }
+
+// check asks for a verdict and reports it the way the request path does when it does exactly what the verdict says
+func (x *tm) check(ip string) Verdict { return x.checkOn(ip, "site") }
+func (x *tm) checkOn(ip, site string) Verdict {
+	v := x.m.Check(netip.MustParseAddr(ip), site)
+	x.m.Report(v, v.DefaultOutcome(), Event{Host: site, Method: "GET", Path: "/p?secret=1"})
+	return v
+}
 func (x *tm) advance(d time.Duration) { *x.clock = x.clock.Add(d) }
 
 func TestStartupThenDelta(t *testing.T) {

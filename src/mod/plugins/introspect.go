@@ -3,6 +3,7 @@ package plugins
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -49,23 +50,46 @@ func (m *Manager) LoadPluginSpec(pluginPath string) (*Plugin, error) {
 		m.logf(nil, "plugin "+pluginSpec.ID+": "+warn, nil)
 	}
 
+	for _, warn := range sanitizeContractSpec(pluginSpec) {
+		m.logf(nil, "plugin "+pluginSpec.ID+": "+warn, nil)
+	}
+	if pc := contractOf(pluginSpec, m.Settings().ContractMode); pc.Note != "" {
+		m.logf(nil, "plugin "+pluginSpec.ID+": "+pc.Note, nil)
+	}
+
+	// API permissions are not reviewed here: reviewPermissions is called by whoever
+	// makes this manifest the loaded one (boot, a new plugin on reload, an update),
+	// so a manifest that is read and then thrown away never changes an approval.
+
 	loaded := &Plugin{
 		RootDir:           pluginPath,
 		Spec:              pluginSpec,
 		Enabled:           false,
 		SupportHotRebuild: checkSupportHotRebuild(pluginPath),
+		mgr:               m,
 	}
 	m.loadPluginPolicy(loaded) //what the administrator set for this plugin ID (restart policy, limits, ...)
 	return loaded, nil
 }
 
-// GetPluginEntryPoint returns the plugin entry point
+// GetPluginSpec runs the plugin with -introspect and returns its manifest
 func (m *Manager) GetPluginSpec(entryPoint string) (*zoraxyPlugin.IntroSpect, error) {
-	pluginSpec := zoraxyPlugin.IntroSpect{}
+	return m.getPluginSpec(entryPoint, false)
+}
+
+// getPluginSpec runs a plugin binary with -introspect. asPluginUser: as the
+// unprivileged plugin user when one is configured (-plugin_user). That is how a
+// binary that was just downloaded is run for the first time (staging folder).
+func (m *Manager) getPluginSpec(entryPoint string, asPluginUser bool) (*zoraxyPlugin.IntroSpect, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, entryPoint, "-introspect")
+	if asPluginUser {
+		if err := m.applyRunAs(cmd, entryPoint); err != nil {
+			return nil, err
+		}
+	}
 	output, err := cmd.Output()
 	if ctx.Err() == context.DeadlineExceeded {
 		return nil, fmt.Errorf("plugin introspect timed out")
@@ -75,12 +99,50 @@ func (m *Manager) GetPluginSpec(entryPoint string) (*zoraxyPlugin.IntroSpect, er
 	}
 
 	// Assuming the output is JSON and needs to be unmarshaled into pluginSpec
-	err = json.Unmarshal(output, &pluginSpec)
+	spec, warns, err := decodeManifest(output)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal plugin spec: %v", err)
 	}
+	for _, warn := range warns {
+		m.logf(nil, "plugin "+spec.ID+": "+warn, nil)
+	}
+	return spec, nil
+}
 
-	return &pluginSpec, nil
+// decodeManifest decodes the introspect output of a plugin. An api_version that
+// is not a whole number in the range of an int (a string, a fraction, an object,
+// a number that is too large) is dropped with a warning and the plugin is a
+// legacy plugin: before api_version existed such a key was an unknown key and
+// ignored, so a manifest that carries one must still load. Every other field is
+// decoded as strictly as before.
+func decodeManifest(output []byte) (*zoraxyPlugin.IntroSpect, []string, error) {
+	spec := zoraxyPlugin.IntroSpect{}
+	err := json.Unmarshal(output, &spec)
+	if err == nil {
+		return &spec, nil, nil
+	}
+	var typeErr *json.UnmarshalTypeError
+	if !errors.As(err, &typeErr) || !strings.EqualFold(typeErr.Field, "api_version") {
+		return nil, nil, err
+	}
+	raw := map[string]json.RawMessage{}
+	if json.Unmarshal(output, &raw) != nil {
+		return nil, nil, err
+	}
+	for key := range raw {
+		if strings.EqualFold(key, "api_version") {
+			delete(raw, key)
+		}
+	}
+	rest, mErr := json.Marshal(raw)
+	if mErr != nil {
+		return nil, nil, err
+	}
+	spec = zoraxyPlugin.IntroSpect{}
+	if err := json.Unmarshal(rest, &spec); err != nil {
+		return nil, nil, err
+	}
+	return &spec, []string{"api_version in the manifest is not a whole number, the plugin is treated as a legacy plugin"}, nil
 }
 
 // sanitizeSupervisionSpec checks the optional supervision fields of a manifest

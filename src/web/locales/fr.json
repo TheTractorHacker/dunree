@@ -3,8 +3,8 @@
   "language": "French",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 10.0,
-  "coreCoverage": 18.1
+  "coverage": 9.6,
+  "coreCoverage": 17.1
  },
  "strings": {
   "\"Add Redirection Rule\"": "« Ajouter une règle de redirection »",
@@ -261,7 +261,6 @@
   "Clear": "Effacer",
   "Clear filters": "Effacer les filtres",
   "Clear form": "Effacer le formulaire",
-  "Clear selection": "Effacer la sélection",
   "Click \"Connect\" and enter your Zoraxy admin credentials": "Cliquez sur « Connecter » et saisissez vos identifiants admin Zoraxy",
   "Click again to delete": "Cliquez à nouveau pour supprimer",
   "Client": "Client",

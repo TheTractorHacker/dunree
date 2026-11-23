@@ -65,6 +65,12 @@ func (m *Manager) StartPlugin(pluginID string) error {
 func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 	pluginID := thisPlugin.Spec.ID
 
+	// Contract version: a plugin built for a contract this Zoraxy does not support is
+	// started anyway (and logged) unless the administrator asked to refuse such plugins
+	if err := m.checkContractForStart(thisPlugin); err != nil {
+		return err
+	}
+
 	//Get the plugin Entry point
 	pluginEntryPoint, err := m.GetPluginEntryPoint(thisPlugin.RootDir)
 	if err != nil {
@@ -78,10 +84,22 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 		return err
 	}
 
+	// Signed index: is the binary still the one that was installed? Only for plugins
+	// with an install record. warn (default): logged and shown. enforce: not started.
+	if err := m.checkBinaryForStart(thisPlugin, absolutePath); err != nil {
+		return err
+	}
+
 	//Prepare plugin start configuration
 	pluginConfiguration := zoraxyPlugin.ConfigureSpec{
 		Port:         getRandomPortNumber(),
 		RuntimeConst: *m.Options.SystemConst,
+	}
+	if thisPlugin.Spec.APIVersion >= 1 {
+		// A plugin that declares a contract version is told which versions this Zoraxy
+		// supports. A legacy plugin gets byte for byte the payload it always got.
+		pluginConfiguration.APIVersionMin = ContractVersionMin
+		pluginConfiguration.APIVersionMax = ContractVersionMax
 	}
 
 	//Secret that proves to the plugin that a call comes from Zoraxy (filter / sniff / capture)
@@ -99,7 +117,14 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 		if m.Options.APIKeyManager == nil {
 			return errors.New("plugin asks for Zoraxy API access but no API key manager is configured")
 		}
-		apiKey, err := m.Options.APIKeyManager.GenerateAPIKey(thisPlugin.Spec.ID, thisPlugin.Spec.PermittedAPIEndpoints)
+		// Default: every endpoint of the manifest, as always. With "require approval"
+		// (opt-in) only the endpoints the administrator approved; the plugin still gets
+		// a key, so its calls are answered "not permitted" and not "invalid key".
+		granted := m.grantedEndpoints(thisPlugin)
+		if withheld := len(requestedKeys(thisPlugin.Spec)) - len(granted); withheld > 0 {
+			m.Log("plugin "+pluginID+": "+strconv.Itoa(withheld)+" of the API permissions it asks for are not granted, they wait for an approval in the Plugin Manager", nil)
+		}
+		apiKey, err := m.Options.APIKeyManager.GenerateAPIKey(thisPlugin.Spec.ID, granted)
 		if err != nil {
 			return err
 		}
@@ -546,7 +571,11 @@ func (m *Manager) StopPlugin(pluginID string) error {
 	//One start / stop at a time per plugin
 	thisPlugin.lifeMu.Lock()
 	defer thisPlugin.lifeMu.Unlock()
+	return m.stopPluginLocked(thisPlugin)
+}
 
+// stopPluginLocked is StopPlugin for a caller that holds lifeMu of the plugin
+func (m *Manager) stopPluginLocked(thisPlugin *Plugin) error {
 	// A stop by the administrator voids a waiting automatic restart and ends a crash loop
 	hadPending := thisPlugin.sup.resetByAdmin()
 	thisPlugin.mu.Lock()

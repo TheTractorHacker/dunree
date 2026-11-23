@@ -9,6 +9,7 @@
         <link rel="icon" type="image/png" href="./favicon.png" />
         <title>Control Panel | Zoraxy</title>
         <link rel="stylesheet" href="script/semantic/semantic.min.css">
+        <script src="script/safestorage.js"></script> <!-- first: every script that stores something goes through zxStore -->
         <script src="script/i18n.js"></script>
         <script src="script/jquery-3.6.0.min.js"></script>
         <script src="script/perfkit.js"></script>
@@ -680,7 +681,7 @@
             var MENU_GROUP_DEFAULT_OPEN = { recent: true, overview: true }; // groups without a saved state: open; all others start collapsed
             function getMenuGroupStates() {
                 var states;
-                try { states = JSON.parse(localStorage.getItem('zoraxy_menu_groups') || '{}') || {}; }
+                try { states = JSON.parse(zxStore.get('zoraxy_menu_groups') || '{}') || {}; }
                 catch(e) { return {}; }
                 if (states._v !== 3) {
                     var migrated = { _v: 3 };
@@ -697,13 +698,13 @@
                         if (states[oldId] !== undefined) { migrated[MENU_GROUP_MIGRATION_V2[oldId]] = states[oldId]; }
                     });
                     states = migrated;
-                    try { localStorage.setItem('zoraxy_menu_groups', JSON.stringify(states)); } catch(e) {}
+                    try { zxStore.set('zoraxy_menu_groups', JSON.stringify(states)); } catch(e) {}
                 }
                 return states;
             }
 
             function saveMenuGroupStates(states) {
-                localStorage.setItem('zoraxy_menu_groups', JSON.stringify(states));
+                zxStore.set('zoraxy_menu_groups', JSON.stringify(states));
             }
 
             // Accordion: opening a menu group closes the other page groups, so the menu never grows past one screen.
@@ -787,17 +788,17 @@
             var RECENT_HISTORY_MAX = 15; // how many recent entries to retain in storage
 
             function getRecentTabs() {
-                try { return JSON.parse(localStorage.getItem('zoraxy_recent_tabs') || '[]'); }
+                try { return JSON.parse(zxStore.get('zoraxy_recent_tabs') || '[]'); }
                 catch(e) { return []; }
             }
 
             function getPinnedTabs() {
-                try { return JSON.parse(localStorage.getItem('zoraxy_pinned_tabs') || '[]'); }
+                try { return JSON.parse(zxStore.get('zoraxy_pinned_tabs') || '[]'); }
                 catch(e) { return []; }
             }
 
             function savePinnedTabs(pinned) {
-                localStorage.setItem('zoraxy_pinned_tabs', JSON.stringify(pinned));
+                zxStore.set('zoraxy_pinned_tabs', JSON.stringify(pinned));
             }
 
             function isTabPinned(tabID) {
@@ -826,7 +827,7 @@
                 var recent    = getRecentTabs().filter(function(t) { return t.tag !== tabID; });
                 recent.unshift({ tag: tabID, label: label, icon: iconClass });
                 recent = recent.slice(0, RECENT_HISTORY_MAX);
-                localStorage.setItem('zoraxy_recent_tabs', JSON.stringify(recent));
+                zxStore.set('zoraxy_recent_tabs', JSON.stringify(recent));
                 renderRecentItems();
             }
 

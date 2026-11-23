@@ -74,6 +74,11 @@
           "filename": "2. Architecture/7. Request and Response Hooks.md",
           "title": "Request and Response Hooks",
           "type": "file"
+        },
+        {
+          "filename": "2. Architecture/8. Contract Version, Health and Secrets.md",
+          "title": "Contract Version, Health and Secrets",
+          "type": "file"
         }
       ]
     },

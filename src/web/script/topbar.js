@@ -25,8 +25,8 @@
     function trf(s) { var a = Array.prototype.slice.call(arguments, 1); return tr(s).replace(/\{(\d+)\}/g, function (m, n) { return a[+n] !== undefined ? a[+n] : m; }); }
     function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
     function $id(id) { return document.getElementById(id); }
-    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-    function lsSet(k, v) { try { if (v === null) { localStorage.removeItem(k); } else { localStorage.setItem(k, v); } } catch (e) { /* storage blocked */ } }
+    function lsGet(k) { try { return zxStore.get(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { if (v === null) { zxStore.remove(k); } else { zxStore.set(k, v); } } catch (e) { /* storage blocked */ } }
 
     var POLL_MS = 45000;
     var UPDATE_TTL_MS = 14 * 24 * 3600 * 1000, UPDATE_KEY = "zoraxy.topbar.update";

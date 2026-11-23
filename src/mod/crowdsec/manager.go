@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math/rand"
 	"net/netip"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,6 +33,16 @@ type Verdict struct {
 	Enforce  bool // false: log only (or an action that is only logged); the request must not be touched
 	Drop     bool // ban response: close the connection instead of the 403 page
 	Decision Decision
+
+	IP   netip.Addr // the address the decision applies to (invalid for an unknown client)
+	Site string     // the proxy rule the request belongs to
+	// Why says why a match is not enforced (see the Why constants in stats.go); "" when Enforce is true
+	Why string
+	// Skip is set instead of Matched when a decision applies but must not be acted on at all: SkipAllowlist or
+	// SkipSiteExempt. The request path only reports it (Manager.Report).
+	Skip string
+	// Fallback: a captcha decision on a site without CAPTCHA is treated as a ban (setting captchaFallback=ban)
+	Fallback bool
 }
 
 // Detail is the text for the blocked-request log: never contains anything but decision fields
@@ -75,7 +84,60 @@ type Recent struct {
 
 type state struct {
 	s      Settings
-	exempt map[string]bool
+	sites  map[string]string // proxy rule -> exempt | log | enforce
+	allow  []netip.Prefix
+	policy bool // any origin or scenario policy is set
+}
+
+const (
+	dispAct = iota
+	dispLog
+	dispIgnore
+)
+
+// disposition is what the policy makes of a decision: act on it as the mode says, keep it log only, or ignore it
+func (st *state) disposition(d Decision) (int, string) {
+	if !st.policy {
+		return dispAct, ""
+	}
+	switch st.s.OriginPolicy[OriginClass(d.Origin)] {
+	case PolicyIgnore:
+		return dispIgnore, "origin-ignore"
+	case PolicyLog:
+		return dispLog, WhyOriginLog
+	}
+	if len(st.s.ScenarioLogOnly) > 0 {
+		sc := strings.ToLower(d.Scenario)
+		for _, x := range st.s.ScenarioLogOnly {
+			if strings.Contains(sc, x) {
+				return dispLog, WhyScenarioLog
+			}
+		}
+	}
+	return dispAct, ""
+}
+
+func (st *state) allowedBy(ip netip.Addr) (string, bool) {
+	for _, p := range st.allow {
+		if p.Contains(ip) {
+			if p.IsSingleIP() {
+				return p.Addr().String(), true
+			}
+			return p.String(), true
+		}
+	}
+	return "", false
+}
+
+// modeFor is the mode that applies on a site: its override, else the global mode
+func (st *state) modeFor(site string) string {
+	switch st.sites[site] {
+	case SiteLog, SiteExempt:
+		return ModeLog
+	case SiteEnforce:
+		return ModeEnforce
+	}
+	return st.s.Mode
 }
 
 type tally struct {
@@ -89,6 +151,17 @@ const (
 	maxTallyKs = 16
 )
 
+func newState(s Settings) *state {
+	st := &state{s: s, sites: map[string]string{}, allow: s.AllowPrefixes(), policy: len(s.OriginPolicy) > 0 || len(s.ScenarioLogOnly) > 0}
+	for _, h := range s.ExemptSites {
+		st.sites[h] = SiteExempt
+	}
+	for h, v := range s.SiteOverrides {
+		st.sites[h] = v
+	}
+	return st
+}
+
 // Manager keeps settings, cache and health. All methods are safe for concurrent use.
 type Manager struct {
 	kv    KV
@@ -99,7 +172,10 @@ type Manager struct {
 	Protect func(netip.Addr) bool
 	// Log receives short operational lines (never a key, never a response body). Optional.
 	Log func(msg string)
-	now func() time.Time
+	// Notify, if set, receives NotifyDown / NotifyUp when the LAPI becomes unreachable (beyond the grace period) and
+	// when it is back. subject is the LAPI address. Optional.
+	Notify func(event, subject string, extra map[string]string)
+	now    func() time.Time
 
 	cur    atomic.Pointer[state]
 	cache  atomic.Pointer[Cache]
@@ -113,6 +189,8 @@ type Manager struct {
 	wake    chan struct{}
 
 	enforced, logOnly, closedBlocks, unknownClients atomic.Uint64
+	checked, ignored                                atomic.Uint64 // requests looked up; requests where only ignored-by-policy decisions applied
+	statHour                                        atomic.Int64  // the hour the per-request counters were last folded into (stats.go)
 
 	mu          sync.Mutex
 	since       time.Time // enabled (or settings changed) at
@@ -125,7 +203,7 @@ type Manager struct {
 	latency     time.Duration
 	authFailed  bool
 	tally       tally
-	matches     []Match
+	st          stats
 	recents     []Recent
 	logTokens   float64
 	logTokenAt  time.Time
@@ -141,7 +219,8 @@ type Manager struct {
 // New loads the settings from kv. A stored value that no longer validates is ignored (feature off); the error says so.
 func New(kv KV, vault *Vault) (*Manager, error) {
 	m := &Manager{kv: kv, vault: vault, now: time.Now, wake: make(chan struct{}, 1)}
-	m.cur.Store(&state{s: defaultSettings(), exempt: map[string]bool{}})
+	m.cur.Store(newState(defaultSettings()))
+	m.st.since = time.Now()
 	m.cache.Store(NewCache(DefaultMaxEntries))
 	if kv == nil {
 		return m, nil
@@ -164,11 +243,7 @@ func defaultSettings() Settings {
 }
 
 func (m *Manager) install(s Settings) {
-	ex := make(map[string]bool, len(s.ExemptSites))
-	for _, h := range s.ExemptSites {
-		ex[h] = true
-	}
-	m.cur.Store(&state{s: s, exempt: ex})
+	m.cur.Store(newState(s))
 	m.mu.Lock()
 	m.since = m.now()
 	m.mu.Unlock()
@@ -216,6 +291,16 @@ func (m *Manager) Settings() Settings {
 	s := m.cur.Load().s
 	s.ExemptSites = append([]string{}, s.ExemptSites...)
 	s.PinsSHA256 = append([]string{}, s.PinsSHA256...)
+	s.ScenarioLogOnly = append([]string{}, s.ScenarioLogOnly...)
+	s.Allowlist = append([]string{}, s.Allowlist...)
+	op, so := make(map[string]string, len(s.OriginPolicy)), make(map[string]string, len(s.SiteOverrides))
+	for k, v := range s.OriginPolicy {
+		op[k] = v
+	}
+	for k, v := range s.SiteOverrides {
+		so[k] = v
+	}
+	s.OriginPolicy, s.SiteOverrides = op, so
 	return s
 }
 
@@ -289,19 +374,26 @@ func (m *Manager) Set(in SetInput) error {
 	if err := m.kv.Write(DBTable, DBKey, next); err != nil {
 		return err
 	}
+	wasOn := m.cur.Load().s.Enabled
 	m.install(next)
 	if !next.Enabled {
 		m.cache.Store(NewCache(next.MaxEntries))
 		m.mu.Lock()
-		m.matches, m.recents, m.tally = nil, nil, tally{}
+		m.recents, m.tally = nil, tally{}
 		m.consecErrs, m.lastErr, m.authFailed = 0, "", false
+		m.lastOK, m.lastTry = time.Time{}, time.Time{} //switched on again later: "starting" until the first pull, not "degraded" from an old time stamp
 		m.mu.Unlock()
+		m.resetStats()
 	} else {
 		m.resync.Store(true)
 		m.mu.Lock()
 		m.consecErrs, m.lastErr, m.authFailed = 0, "", false
+		if !wasOn { //the counters were emptied when it was switched off: they count from now ("since 14:20" on the dashboard)
+			m.st.since = m.now()
+		}
 		m.mu.Unlock()
 	}
+	m.noteState()
 	select {
 	case m.wake <- struct{}{}:
 	default:
@@ -399,6 +491,7 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 	m.mu.Unlock()
 
 	key := ""
+	full := false
 	fail := func(err error) error {
 		msg := err.Error()
 		if key != "" {
@@ -416,6 +509,8 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 		m.lastLogLine = msg
 		m.mu.Unlock()
 		m.resync.Store(true)
+		m.notePull(PullRecord{Time: now, Full: full, DurationMs: m.now().Sub(now).Milliseconds(), Error: msg})
+		m.noteState()
 		if first {
 			m.logLimited("CrowdSec: synchronisation with the LAPI failed: " + msg)
 		}
@@ -432,6 +527,7 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 	gen := m.pullSeq.Add(1)
 	maxTTL := time.Duration(st.s.MaxTTLSeconds) * time.Second
 	startup := m.resync.Load() || m.fullDue(now, maxTTL)
+	full = startup
 	timeout := deltaTimeout
 	if startup {
 		timeout = startupTimeout
@@ -449,12 +545,13 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 	t := tally{scopes: map[string]uint64{}, types: map[string]uint64{}}
 	var fresh []Recent
 	var clamped uint64
+	nNew, nDel := 0, 0
 	t0 := m.now()
 	var base time.Time //expiry is counted from the first decision read (after the response headers), not from before the request
 	err = client.Stream(ctx, startup, func(d apiDecision, deleted bool) error {
 		if deleted {
 			if !startup { //a fresh cache holds nothing that could be deleted (the initial answer lists past deletions)
-				target.DeleteSparing(d.Scope, d.Value, d.Type, d.ID, gen)
+				nDel += target.DeleteSparing(d.Scope, d.Value, d.Type, d.ID, gen)
 			}
 			return nil
 		}
@@ -487,6 +584,7 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 		case addInvalid:
 			t.malformed++
 		case addOK:
+			nNew++
 			if len(fresh) >= ringSize {
 				fresh = fresh[1:]
 			}
@@ -498,7 +596,7 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 	if err != nil {
 		return fail(err)
 	}
-	target.Sweep(m.now())
+	swept := target.Sweep(m.now())
 	m.applyMu.Lock()
 	defer m.applyMu.Unlock()
 	if m.cur.Load() != st { //the settings changed while this pull ran: its answer belongs to the old LAPI or to a disabled feature
@@ -533,8 +631,20 @@ func (m *Manager) PullOnce(ctx context.Context) error {
 		m.recents = m.recents[len(m.recents)-ringSize:]
 	}
 	nTypes := len(t.types)
+	compDue := startup || nNew > 0 || nDel > 0 || swept > 0 || m.st.comp.At.IsZero() || m.now().Sub(m.st.comp.At) >= time.Minute
+	m.st.pulls = append(m.st.pulls, PullRecord{Time: now, Full: startup, DurationMs: lat.Milliseconds(), New: nNew, Deleted: nDel})
+	if len(m.st.pulls) > pullRing {
+		m.st.pulls = append(m.st.pulls[:0], m.st.pulls[len(m.st.pulls)-pullRing:]...)
+	}
 	m.mu.Unlock()
+	if compDue { //what is loaded, by origin and type: one walk, only when something changed (or once a minute for expiry)
+		comp := target.Composition(m.now())
+		m.mu.Lock()
+		m.st.comp = comp
+		m.mu.Unlock()
+	}
 	m.resync.Store(false)
+	defer m.noteState()
 	if startup {
 		extra := ""
 		if nTypes > 0 || len(t.scopes) > 0 {
@@ -588,31 +698,28 @@ func (m *Manager) down(now time.Time) bool {
 
 // Check is the decision for a client address that is the TCP peer itself. Loopback, this server and the trusted
 // proxies are never acted on. For an address taken from a forwarded header use CheckForwarded (those exemptions must not apply to it).
+// Check only decides: the caller reports what it really did with Report (counters and the activity feed).
 func (m *Manager) Check(ip netip.Addr, site string) Verdict {
 	if !m.Active() || !ip.IsValid() {
 		return Verdict{}
 	}
 	ip = ip.WithZone("").Unmap()
-	st := m.cur.Load()
-	if ip.IsLoopback() || (site != "" && st.exempt[strings.ToLower(site)]) {
+	if ip.IsLoopback() {
 		return Verdict{}
 	}
 	if m.Protect != nil && m.Protect(ip) {
 		return Verdict{}
 	}
-	return m.decide(st, []netip.Addr{ip}, site)
+	return m.evaluate(m.cur.Load(), []netip.Addr{ip}, strings.ToLower(site), true)
 }
 
 // CheckForwarded is for a request that came through a trusted proxy: addrs are every address the request claims
-// (the resolved client address and the forwarded headers). A trusted proxy does not strip what the client sent, so any
-// of them may be the real one: the strongest decision among them applies. Loopback and the protected addresses are
-// NOT exempt here, a client could otherwise choose them in a header to skip CrowdSec.
+// (the resolved client address first, then the forwarded headers). A trusted proxy does not strip what the client
+// sent, so any of them may be the real one: the strongest decision among them applies. Loopback and the protected
+// addresses are NOT exempt here, a client could otherwise choose them in a header to skip CrowdSec. The same goes for
+// the allowlist: an allowlisted address among them never triggers anything, the others still do.
 func (m *Manager) CheckForwarded(addrs []netip.Addr, site string) Verdict {
 	if !m.Active() {
-		return Verdict{}
-	}
-	st := m.cur.Load()
-	if site != "" && st.exempt[strings.ToLower(site)] {
 		return Verdict{}
 	}
 	norm := make([]netip.Addr, 0, len(addrs))
@@ -624,7 +731,7 @@ func (m *Manager) CheckForwarded(addrs []netip.Addr, site string) Verdict {
 	if len(norm) == 0 {
 		return m.CheckUnknown(site)
 	}
-	return m.decide(st, norm, site)
+	return m.evaluate(m.cur.Load(), norm, strings.ToLower(site), true)
 }
 
 // CheckUnknown is for a request whose client address cannot be determined: counted, and refused only when
@@ -636,89 +743,148 @@ func (m *Manager) CheckUnknown(site string) Verdict {
 	}
 	m.unknownClients.Add(1)
 	st := m.cur.Load()
-	if site != "" && st.exempt[strings.ToLower(site)] {
+	site = strings.ToLower(site)
+	if sm := st.sites[site]; sm == SiteExempt || sm == SiteLog {
 		return Verdict{}
 	}
 	if st.s.FailClosed && st.s.Mode == ModeEnforce && m.down(m.now()) {
-		m.closedBlocks.Add(1)
-		v := Verdict{Matched: true, Action: ActionClosed, Enforce: true, Drop: st.s.BanResponse == BanDrop}
-		m.record(netip.Addr{}, site, v)
-		return v
+		return Verdict{Matched: true, Action: ActionClosed, Enforce: true, Drop: st.s.BanResponse == BanDrop, Site: site}
 	}
 	return Verdict{}
 }
 
-func (m *Manager) decide(st *state, ips []netip.Addr, site string) Verdict {
+// evaluate decides what applies to a request that claims the addresses ips (the resolved client address first) on
+// site (lower case). It has no side effects except, with count, the "requests checked" and "ignored by policy" counters.
+//
+// The decision that counts is the strongest one the settings act on: a decision that will be enforced before one
+// that is only logged, a ban before a captcha. Decisions of an origin set to "ignore" are skipped. A decision for an
+// allowlisted address is never acted on (Skip). A site override replaces the mode for that site.
+func (m *Manager) evaluate(st *state, ips []netip.Addr, site string, count bool) Verdict {
 	now := m.now()
-	enforce := st.s.Mode == ModeEnforce
+	if count {
+		if h := now.Unix() / 3600; h != m.statHour.Load() { //first request of a new hour: close the previous one
+			m.rollHour(now)
+		}
+		m.checked.Add(1)
+	}
 	c := m.cache.Load()
-	var best Decision
-	var bestIP netip.Addr
-	found := false
-	for _, ip := range ips {
-		if d, ok := c.Lookup(ip, now); ok && (!found || d.rank() > best.rank()) {
-			best, bestIP, found = d, ip, true
+	siteMode := st.sites[site]
+	hit := false
+	for _, ip := range ips { //the common case (no decision) costs what it did before: one lookup per address, no allocation
+		if _, ok := c.Lookup(ip, now); ok {
+			hit = true
+			break
 		}
 	}
-	if found {
-		d := best
-		v := Verdict{Matched: true, Decision: d, Drop: st.s.BanResponse == BanDrop}
-		switch d.Type {
-		case TypeBan:
-			v.Action, v.Enforce = ActionBan, enforce
-		case TypeCaptcha:
-			v.Action, v.Enforce = ActionCaptcha, enforce && st.s.CaptchaAction == CaptchaChallenge
-		default:
+	failClosed := func() Verdict {
+		if !st.s.FailClosed || st.s.Mode != ModeEnforce || siteMode == SiteLog || siteMode == SiteExempt || !m.down(now) {
 			return Verdict{}
 		}
-		if v.Enforce {
-			m.enforced.Add(1)
-		} else {
-			m.logOnly.Add(1)
+		if _, ok := st.allowedBy(ips[0]); ok && len(st.allow) > 0 { //the resolved client address is allowlisted
+			return Verdict{}
 		}
-		m.record(bestIP, site, v)
-		return v
+		return Verdict{Matched: true, Action: ActionClosed, Enforce: true, Drop: st.s.BanResponse == BanDrop, IP: ips[0], Site: site}
 	}
-	if st.s.FailClosed && enforce && m.down(now) {
-		m.closedBlocks.Add(1)
-		v := Verdict{Matched: true, Action: ActionClosed, Enforce: true, Drop: st.s.BanResponse == BanDrop}
-		m.record(ips[0], site, v)
-		return v
+	if !hit {
+		return failClosed()
 	}
-	return Verdict{}
+	var best, allowed Decision
+	var bestIP, allowedIP netip.Addr
+	bestScore, bestWhy, bestDisp := -1, "", dispAct
+	haveAllowed, ignored := false, false
+	for _, ip := range ips {
+		_, isAllowed := st.allowedBy(ip)
+		c.each(ip, now, func(d Decision) {
+			if d.rank() == 0 {
+				return
+			}
+			if isAllowed {
+				if !haveAllowed || d.rank() > allowed.rank() {
+					allowed, allowedIP, haveAllowed = d, ip, true
+				}
+				return
+			}
+			disp, why := st.disposition(d)
+			if disp == dispIgnore {
+				ignored = true
+				return
+			}
+			score := d.rank()
+			if disp == dispAct && (d.Type == TypeBan || st.s.CaptchaAction == CaptchaChallenge) {
+				score += 10
+			}
+			if score > bestScore {
+				best, bestIP, bestScore, bestWhy, bestDisp = d, ip, score, why, disp
+			}
+		})
+	}
+	if siteMode == SiteExempt {
+		if bestScore >= 0 {
+			return Verdict{Skip: SkipSiteExempt, Decision: best, IP: bestIP, Site: site}
+		}
+		if haveAllowed {
+			return Verdict{Skip: SkipSiteExempt, Decision: allowed, IP: allowedIP, Site: site}
+		}
+		return Verdict{}
+	}
+	if bestScore < 0 {
+		if haveAllowed {
+			return Verdict{Skip: SkipAllowlist, Decision: allowed, IP: allowedIP, Site: site}
+		}
+		if ignored && count {
+			m.ignored.Add(1)
+		}
+		return failClosed()
+	}
+	v := Verdict{Matched: true, Decision: best, Drop: st.s.BanResponse == BanDrop, IP: bestIP, Site: site}
+	canAct := true
+	if best.Type == TypeCaptcha {
+		v.Action = ActionCaptcha
+		canAct = st.s.CaptchaAction == CaptchaChallenge
+		v.Fallback = canAct && st.s.CaptchaFallback == CaptchaFallbackBan
+	} else {
+		v.Action = ActionBan
+	}
+	switch {
+	case bestDisp == dispLog:
+		v.Why = bestWhy
+	case !canAct:
+		v.Why = WhyCaptchaLog
+	case siteMode == SiteLog:
+		v.Why = WhySiteLog
+	case siteMode != SiteEnforce && st.s.Mode != ModeEnforce:
+		v.Why = WhyMode
+	default:
+		v.Enforce = true
+	}
+	if !v.Enforce {
+		if fc := failClosed(); fc.Matched { //the LAPI is down and fail-closed is on: everyone is refused, a logged-only match included
+			return fc
+		}
+	}
+	return v
 }
 
-func (m *Manager) record(ip netip.Addr, site string, v Verdict) {
+// stateNow is the health state: off, starting, ok, degraded or down
+func (m *Manager) stateNow() string {
+	st := m.cur.Load()
+	if !st.s.Enabled {
+		return "off"
+	}
 	now := m.now()
-	ips := ip.String()
 	m.mu.Lock()
-	lo := len(m.matches) - 32
-	if lo < 0 {
-		lo = 0
-	}
-	for i := len(m.matches) - 1; i >= lo; i-- {
-		e := &m.matches[i]
-		if e.IP == ips && e.Site == site && e.Action == v.Action && e.Enforced == v.Enforce {
-			e.Count++
-			e.Time = now
-			m.mu.Unlock()
-			return
-		}
-	}
-	d := v.Decision
-	m.matches = append(m.matches, Match{Time: now, IP: ips, Site: site, Action: v.Action, Enforced: v.Enforce, Type: d.Type,
-		Scope: d.Scope, Value: d.Value, Origin: d.Origin, Scenario: d.Scenario, Count: 1})
-	if len(m.matches) > ringSize {
-		m.matches = m.matches[len(m.matches)-ringSize:]
-	}
+	lastOK, errs := m.lastOK, m.consecErrs
 	m.mu.Unlock()
-	verb := "would block"
-	if v.Enforce {
-		verb = "blocked"
-	} else if v.Action == ActionCaptcha {
-		verb = "would challenge (logged only)"
+	poll := time.Duration(st.s.PollSeconds) * time.Second
+	switch {
+	case m.down(now):
+		return "down"
+	case lastOK.IsZero():
+		return "starting"
+	case errs > 0 || now.Sub(lastOK) > 3*poll+30*time.Second || m.cache.Load().Dropped() > 0:
+		return "degraded"
 	}
-	m.logLimited("CrowdSec: " + verb + " " + ips + " on " + site + ": " + v.Detail())
+	return "ok"
 }
 
 // Status is the health view
@@ -748,6 +914,16 @@ type Status struct {
 	FailClosedBlocks  uint64            `json:"failClosedBlocks"`
 	FailClosedActive  bool              `json:"failClosedActive"`
 	Warnings          []string          `json:"warnings"`
+	// since the visibility work: counters of today (server local time) and what the policy does
+	Checked        uint64   `json:"checked"` // requests looked up since start
+	Today          Counts   `json:"today"`
+	EnforcedSites  []string `json:"enforcedSites"`  // sites that enforce although the mode is log only
+	PolicyActive   bool     `json:"policyActive"`   // an origin, scenario, allowlist or site setting changes what is enforced
+	PullDurationMs int64    `json:"pullDurationMs"` // same value as latencyMs: how long the last synchronisation took, the whole answer included
+	// KeyRejected: the last pull was answered with 403 or 401 (the same fact as the "rejected the API key" warning, as a flag)
+	KeyRejected bool `json:"keyRejected"`
+	// CountingSince: when today's counters started, if that is later than local midnight (switched on or restarted today); null otherwise
+	CountingSince *time.Time `json:"countingSince"`
 }
 
 // Status returns the health summary. It never contains the API key or response bodies.
@@ -775,24 +951,24 @@ func (m *Manager) Status() Status {
 	for k, v := range m.tally.types {
 		s.IgnoredTypes[k] = v
 	}
-	lastOK, errs := m.lastOK, m.consecErrs
 	s.Clamped = m.clamped
 	m.mu.Unlock()
+	s.Checked, s.PullDurationMs, s.EnforcedSites = m.checked.Load(), s.LatencyMs, []string{}
 	if !st.s.Enabled {
 		return s
 	}
-	isDown := m.down(now)
-	poll := time.Duration(st.s.PollSeconds) * time.Second
-	switch {
-	case isDown:
-		s.State = "down"
-	case lastOK.IsZero():
-		s.State = "starting"
-	case errs > 0 || now.Sub(lastOK) > 3*poll+30*time.Second || s.CacheRefused > 0:
-		s.State = "degraded"
-	default:
-		s.State = "ok"
+	s.Today = m.Today()
+	if t := m.countingSince(); !t.IsZero() {
+		s.CountingSince = &t
 	}
+	s.PolicyActive = st.policy || len(st.allow) > 0 || len(st.sites) > 0
+	if st.s.Mode == ModeLog {
+		if es := st.s.EnforcedSites(); es != nil {
+			s.EnforcedSites = es
+		}
+	}
+	isDown := m.down(now)
+	s.State = m.stateNow()
 	if isDown && st.s.FailClosed && st.s.Mode == ModeEnforce {
 		s.FailClosedActive = true
 		s.Warnings = append(s.Warnings, "The LAPI has been unreachable longer than the grace period and fail-closed is on: every visitor is being refused.")
@@ -802,7 +978,9 @@ func (m *Manager) Status() Status {
 	if s.Clamped > 0 {
 		s.Warnings = append(s.Warnings, "Some decisions last longer than the maximum decision lifetime and are kept cut to it; a full synchronisation at half of that time refreshes them.")
 	}
-	if st.s.Mode == ModeLog {
+	if st.s.Mode == ModeLog && len(s.EnforcedSites) > 0 {
+		s.Warnings = append(s.Warnings, "Log only mode, except on the sites set to Enforce: there banned addresses are refused.")
+	} else if st.s.Mode == ModeLog {
 		s.Warnings = append(s.Warnings, "Log only mode: matches are counted and logged, nobody is blocked.")
 	}
 	if st.s.FailClosed && st.s.Mode == ModeLog {
@@ -818,6 +996,7 @@ func (m *Manager) Status() Status {
 		s.Warnings = append(s.Warnings, "The LAPI address is plain http on a non-loopback host: the API key travels unencrypted.")
 	}
 	if m.keyRejected() {
+		s.KeyRejected = true
 		s.Warnings = append(s.Warnings, "The LAPI rejected the API key.")
 	}
 	return s
@@ -843,12 +1022,20 @@ func (m *Manager) Decisions(limit int) (recent []Recent, matches []Match) {
 		limit = ringSize
 	}
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	for i := len(m.recents) - 1; i >= 0 && len(recent) < limit; i-- {
 		recent = append(recent, m.recents[i])
 	}
-	for i := len(m.matches) - 1; i >= 0 && len(matches) < limit; i-- {
-		matches = append(matches, m.matches[i])
+	m.mu.Unlock()
+	//the matches are the activity feed in its older, shorter form (the entries CrowdSec acted on or would have)
+	for _, e := range m.Feed(FeedQuery{Limit: 200}).Entries {
+		if len(matches) >= limit {
+			break
+		}
+		if e.Outcome != OutLogOnly && !e.Enforced {
+			continue
+		}
+		matches = append(matches, Match{Time: e.Time, IP: e.IP, Site: e.Rule, Action: e.Action, Enforced: e.Enforced, Type: e.Type,
+			Scope: e.Scope, Value: e.Value, Origin: e.Origin, Scenario: e.Scenario, Count: e.Count})
 	}
 	if recent == nil {
 		recent = []Recent{}
@@ -856,7 +1043,6 @@ func (m *Manager) Decisions(limit int) (recent []Recent, matches []Match) {
 	if matches == nil {
 		matches = []Match{}
 	}
-	sort.SliceStable(matches, func(a, b int) bool { return matches[a].Time.After(matches[b].Time) })
 	return
 }
 

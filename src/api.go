@@ -86,6 +86,9 @@ func RegisterHTTPProxyAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/crowdsec/test", HandleCrowdSecTest)
 	authRouter.HandleFunc("/api/crowdsec/status", HandleCrowdSecStatus)
 	authRouter.HandleFunc("/api/crowdsec/decisions", HandleCrowdSecDecisions)
+	authRouter.HandleFunc("/api/crowdsec/activity", HandleCrowdSecActivity)
+	authRouter.HandleFunc("/api/crowdsec/feed", HandleCrowdSecFeed)
+	authRouter.HandleFunc("/api/crowdsec/check", HandleCrowdSecCheck)
 	authRouter.HandleFunc("/api/crowdsec/manage/status", HandleCrowdSecManageStatus)
 	authRouter.HandleFunc("/api/crowdsec/manage/login", HandleCrowdSecManageLogin)
 	authRouter.HandleFunc("/api/crowdsec/manage/decisions", HandleCrowdSecManageDecisions)
@@ -382,6 +385,10 @@ func RegisterPluginAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/plugins/status", pluginManager.HandlePluginStatus)   //read-only: state, exit code, last error, last output lines
 	authRouter.HandleFunc("/api/plugins/policy", pluginManager.HandlePluginPolicy)   //per plugin supervision: restart policy, health check, timeouts, log target, limits (all off by default)
 	authRouter.HandleFunc("/api/plugins/restart", pluginManager.HandleRestartPlugin) //stop + start, also clears a crash loop
+	//API permissions of a plugin: asked for, approved, granted; approve / withdraw
+	authRouter.HandleFunc("/api/plugins/permissions", pluginManager.HandlePluginPermissions)
+	//Plugin manager settings: contract mode (warn / refuse), require approval of API permissions (both off by default)
+	authRouter.HandleFunc("/api/plugins/settings", pluginManager.HandlePluginSettings)
 
 	authRouter.HandleFunc("/api/plugins/hooks/set", pluginManager.HandleSetPluginHookSettings)
 	authRouter.HandleFunc("/api/plugins/groups/list", pluginManager.HandleListPluginGroups)
@@ -395,6 +402,9 @@ func RegisterPluginAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/plugins/store/uninstall", pluginManager.HandleUninstallPlugin)
 	authRouter.HandleFunc("/api/plugins/store/checkUpdates", pluginManager.HandleCheckPluginUpdates)
 	authRouter.HandleFunc("/api/plugins/store/update", pluginManager.HandleUpdatePlugin)
+	authRouter.HandleFunc("/api/plugins/store/rollback", pluginManager.HandleRollbackPlugin)            //put the previous version of a plugin back (kept by an update)
+	authRouter.HandleFunc("/api/plugins/store/releaseSource", pluginManager.HandleReleaseInstallSource) //let any index update a plugin again (default: only the index it was installed from)
+	authRouter.HandleFunc("/api/plugins/ui/ticket", pluginManager.HandlePluginUITicket)                 //where the page of a plugin is: under the admin origin, or (isolated plugin UI, opt-in) a ticket address on the isolated listener
 	authRouter.HandleFunc("/api/plugins/store/sources", pluginManager.HandleListStoreSources)
 	authRouter.HandleFunc("/api/plugins/store/sources/add", pluginManager.HandleAddStoreSource)
 	authRouter.HandleFunc("/api/plugins/store/sources/remove", pluginManager.HandleRemoveStoreSource)

@@ -20,10 +20,53 @@
     }
 
     function loadPluginContext(pluginID){
-        //Check if the iframe is currently visable
-        let pluginContextURL = `/plugin.ui/${pluginID}/`;
-        //the sandbox is applied only when a plugin page is really opened, so the browser does not warn about it on every page load
-        $("#pluginContextLoader").attr("sandbox", "allow-scripts allow-same-origin").attr("src", pluginContextURL);
+        //Zoraxy says where the page of the plugin is. Default: under this origin, as always.
+        //With "Isolate plugin pages" (Plugin Manager, plugin safety settings): on an address of
+        //its own, in a sandbox without allow-same-origin, so the page has no part in the admin session.
+        let frame = $("#pluginContextLoader");
+        frame.attr("data-plugin", pluginID).attr("data-isolated", "");
+        $.cjax({
+            url: "/api/plugins/ui/ticket",
+            type: "POST",
+            data: {plugin_id: pluginID},
+            success: function(resp){
+                if (frame.attr("data-plugin") != pluginID){
+                    return; //another plugin was opened in the meantime
+                }
+                if (!resp || resp.error != undefined || !resp.url){
+                    showPluginContextError((resp && resp.error) || t("The page of the plugin could not be opened."));
+                    return;
+                }
+                guardPluginFrameWindow(!!resp.isolated);
+                //the sandbox is applied only when a plugin page is really opened, so the browser does not warn about it on every page load
+                frame.attr("data-isolated", resp.isolated ? "true" : "false")
+                    .attr("sandbox", resp.sandbox || (resp.isolated ? "allow-scripts allow-forms" : "allow-scripts allow-same-origin"))
+                    .removeAttr("srcdoc")
+                    .attr("src", resp.url);
+            },
+            error: function(){
+                if (frame.attr("data-plugin") == pluginID){
+                    showPluginContextError(t("The page of the plugin could not be opened."));
+                }
+            }
+        });
+    }
+
+    //The admin page calls contentWindow.setDarkTheme() of this frame when the theme changes. The window of an
+    //isolated page belongs to another origin: touching it throws. Give such a frame a stand-in that does nothing.
+    function guardPluginFrameWindow(isolated){
+        let el = document.getElementById("pluginContextLoader");
+        if (isolated){
+            Object.defineProperty(el, "contentWindow", {configurable: true, get: function(){ return {setDarkTheme: function(){}}; }});
+        } else {
+            delete el.contentWindow;
+        }
+    }
+
+    function showPluginContextError(message){
+        let esc = $("<div>").text(message).html();
+        $("#pluginContextLoader").attr("sandbox", "").removeAttr("src")
+            .attr("srcdoc", '<!doctype html><meta charset="utf-8"><meta name="color-scheme" content="light dark"><body style="font-family:system-ui,sans-serif;padding:2rem;line-height:1.5"><p role="alert">' + esc + '</p></body>');
     }
 
     function getPluginIDFromWindowHash(){

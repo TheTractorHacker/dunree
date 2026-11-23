@@ -19,10 +19,14 @@
         .logres td { word-break: break-all; }
         .logres th { font-family: inherit; font-size: 1em; }
         .st2 { color: #21ba45; } .st3 { color: #2185d0; } .st4 { color: #f2711c; } .st5 { color: #db2828; }
+        /* dark theme: darktheme.css colours every table cell with !important; the status classes keep their meaning (kit dark tints) */
+        body.darkTheme .ui.table tbody td.st2 { color: #8ee3ae !important; } body.darkTheme .ui.table tbody td.st3 { color: #b9cffd !important; }
+        body.darkTheme .ui.table tbody td.st4 { color: #f6cf7d !important; } body.darkTheme .ui.table tbody td.st5 { color: #ffb1ab !important; }
         #tailBadge { display: none; }
     </style>
 </head>
 <body>
+<script src="../script/safestorage.js"></script>
 <script src="../script/darktheme.js"></script>
 <div class="ui container" style="max-width: 1400px !important;">
     <h2 class="ui header"><i class="search icon"></i><div class="content">Access Log Search

@@ -1,0 +1,20 @@
+{
+ "id": "com.example.restful-example",
+ "name": "Restful Example",
+ "author": "foobar",
+ "author_contact": "admin@example.com",
+ "description": "A simple demo for making RESTful API calls in plugin",
+ "url": "https://example.com",
+ "type": 1,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": null,
+ "static_capture_ingress": "",
+ "dynamic_capture_sniff": "",
+ "dynamic_capture_ingress": "",
+ "ui_path": "/",
+ "subscription_path": "",
+ "subscriptions_events": null,
+ "permitted_api_endpoints": null
+}

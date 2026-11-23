@@ -1,0 +1,224 @@
+{
+ "tool": "zoraxy-plugin-check",
+ "tool_version": "1.0.0",
+ "contract_version_checked": 1,
+ "time": "2026-11-23T20:17:13Z",
+ "binary": "~/plugins/Data-Shield Blocklist/Data-Shield Blocklist",
+ "sha256": "8d54237d6b1000580212b43bd6bd284e3aaa4f2e0682b29e721b3556eb90ffe0",
+ "size": 6504740,
+ "plugin": {
+  "id": "fr.madyanne.zoraxy.datashield-blocklist",
+  "name": "Data-Shield Blocklist",
+  "version": "1.3.0",
+  "type": 0,
+  "api_version": 0
+ },
+ "result": "pass",
+ "counts": {
+  "fail": 0,
+  "pass": 15,
+  "skip": 4,
+  "warn": 2
+ },
+ "checks": [
+  {
+   "id": "introspect",
+   "title": "Introspect answers with a manifest",
+   "status": "pass",
+   "detail": "Manifest in 10 ms.",
+   "ms": 10,
+   "data": {
+    "bytes": 651,
+    "stderr_bytes": 0
+   }
+  },
+  {
+   "id": "introspect_size",
+   "title": "Size of the introspect output",
+   "status": "pass",
+   "detail": "651 bytes.",
+   "ms": 10
+  },
+  {
+   "id": "manifest",
+   "title": "Fields of the manifest",
+   "status": "pass",
+   "detail": "legacy plugin (no api_version).",
+   "ms": 10
+  },
+  {
+   "id": "configure",
+   "title": "Starts with the configure payload",
+   "status": "pass",
+   "detail": "Started with -configure=\u003cjson\u003e.",
+   "ms": 22
+  },
+  {
+   "id": "secrets",
+   "title": "Secrets stay off the command line",
+   "status": "warn",
+   "detail": "The invoke token is on the command line, where every local user can read it. Declare configure_via \"stdin\" (SDK 1.1.0).",
+   "ms": 22
+  },
+  {
+   "id": "readiness",
+   "title": "Opens its port",
+   "status": "pass",
+   "detail": "Port open after 21 ms.",
+   "ms": 22,
+   "data": {
+    "ms": 21
+   }
+  },
+  {
+   "id": "bind",
+   "title": "Listens on the loopback address only",
+   "status": "pass",
+   "detail": "Not reachable on 10.1.0.25.",
+   "ms": 0
+  },
+  {
+   "id": "ui",
+   "title": "Answers on its page path",
+   "status": "pass",
+   "detail": "HTTP 200 in 1 ms.",
+   "ms": 1
+  },
+  {
+   "id": "health",
+   "title": "Health path",
+   "status": "skip",
+   "detail": "No health_path declared. The health check of Zoraxy can then only try a TCP connect, which does not see a plugin that accepts connections and no longer answers.",
+   "ms": 0
+  },
+  {
+   "id": "verdict",
+   "title": "Filter answers are valid verdicts",
+   "status": "skip",
+   "detail": "The plugin declares no filter hooks.",
+   "ms": 0
+  },
+  {
+   "id": "sniff",
+   "title": "Dynamic capture sniff answers",
+   "status": "pass",
+   "detail": "Answers by status: 501 3 (200 = the plugin takes the request, anything else = it does not).",
+   "ms": 2,
+   "data": {
+    "statuses": {
+     "501": 3
+    },
+    "timeout_ms": 2000
+   }
+  },
+  {
+   "id": "events",
+   "title": "Acknowledges events",
+   "status": "skip",
+   "detail": "The plugin subscribes to no events.",
+   "ms": 0
+  },
+  {
+   "id": "token",
+   "title": "Refuses calls without the invoke token",
+   "status": "warn",
+   "detail": "Could not be told: sniff /sniff without the token (HTTP 501, the same as with the token); sniff /sniff with a wrong token (HTTP 501, the same as with the token). The plugin does not take the sample request of the kit, with or without the token, so the kit cannot see whether it checks the token.",
+   "ms": 1,
+   "data": {
+    "open": null,
+    "paths": 1,
+    "unclear": [
+     "sniff /sniff without the token (HTTP 501, the same as with the token)",
+     "sniff /sniff with a wrong token (HTTP 501, the same as with the token)"
+    ]
+   }
+  },
+  {
+   "id": "load",
+   "title": "Latency under load",
+   "status": "pass",
+   "detail": "300 sniff calls, 4 at a time: p50 0.35 ms, p95 1.04 ms, p99 1.8 ms, slowest 3.24 ms.",
+   "ms": 34,
+   "data": {
+    "calls": 300,
+    "concurrency": 4,
+    "errors": 0,
+    "max_ms": 3.24,
+    "p50_ms": 0.35,
+    "p95_ms": 1.04,
+    "p99_ms": 1.8,
+    "seconds": 0.03,
+    "timeout_ms": 2000
+   }
+  },
+  {
+   "id": "memory",
+   "title": "Memory after the calls",
+   "status": "pass",
+   "detail": "12.5 MiB after 1000 calls (sniff calls for the last 692), 8.6 MiB before the load, peak 12.5 MiB.",
+   "ms": 349,
+   "data": {
+    "after_mib": 12.5,
+    "before_mib": 8.6,
+    "calls": 1000,
+    "growth_mib": 4,
+    "peak_mib": 12.5
+   }
+  },
+  {
+   "id": "api",
+   "title": "Calls to the Zoraxy API",
+   "status": "skip",
+   "detail": "The plugin asks for no Zoraxy API endpoints (and gets no API key).",
+   "ms": 0
+  },
+  {
+   "id": "survive",
+   "title": "Stays up",
+   "status": "pass",
+   "detail": "Still running after 3.0 s and 1000 calls.",
+   "ms": 2589
+  },
+  {
+   "id": "term",
+   "title": "Ends on the terminate request",
+   "status": "pass",
+   "detail": "Ended 104 ms after the terminate request (exit code 0).",
+   "ms": 104
+  },
+  {
+   "id": "sigterm",
+   "title": "Ends within 5 s of SIGTERM",
+   "status": "pass",
+   "detail": "Ended 1 ms after SIGTERM (ended by signal terminated).",
+   "ms": 1
+  },
+  {
+   "id": "cleanup",
+   "title": "Leaves no process behind",
+   "status": "pass",
+   "detail": "No process of the plugin was left.",
+   "ms": 0
+  },
+  {
+   "id": "logs",
+   "title": "Log volume",
+   "status": "pass",
+   "detail": "5 lines, 779 bytes during 1001 calls.",
+   "ms": 0,
+   "data": {
+    "bytes": 779,
+    "calls": 1001,
+    "lines": 5,
+    "longest_line": 289
+   }
+  }
+ ],
+ "log_tail": [
+  "2026/11/23 20:17:14 [datashield] Warning: initial blocklist load failed: download: Get \"https://raw.githubusercontent.com/duggytuxy/Data-Shield_IPv4_Blocklist/refs/heads/main/prod_critical_data-shield_ipv4_blocklist.txt\": proxyconnect tcp: dial tcp 127.0.0.1:9: connect: connection refused",
+  "2026/11/23 20:17:14 [datashield] Plugin listening on 127.0.0.1:20760",
+  "2026/11/23 20:17:17 [datashield] Plugin terminated by Zoraxy",
+  "2026/11/23 20:17:17 [datashield] Warning: initial blocklist load failed: download: Get \"https://raw.githubusercontent.com/duggytuxy/Data-Shield_IPv4_Blocklist/refs/heads/main/prod_critical_data-shield_ipv4_blocklist.txt\": proxyconnect tcp: dial tcp 127.0.0.1:9: connect: connection refused",
+  "2026/11/23 20:17:17 [datashield] Plugin listening on 127.0.0.1:20789"
+ ]
+}

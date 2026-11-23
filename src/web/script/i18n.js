@@ -47,8 +47,16 @@
     LANGS.forEach(function (l) { supported[l[0]] = l[1]; });
 
     function norm(s) { return s.replace(/\s+/g, " ").trim(); }
-    function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
-    function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    // Through the shared safe-storage helper (script/safestorage.js) when the page loaded it; pages that only load
+    // this file (login, error pages) fall back to a guarded direct call.
+    function store(k, v) {
+        if (window.zxStore) { if (v === null) zxStore.remove(k); else zxStore.set(k, v); return; }
+        try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { }
+    }
+    function load(k) {
+        if (window.zxStore) return zxStore.get(k);
+        try { return localStorage.getItem(k); } catch (e) { return null; }
+    }
 
     // "zh-Hans-CN" -> "zh-CN", "pt" -> "pt-BR" ... null when not shipped
     function match(code) {

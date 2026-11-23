@@ -35,6 +35,8 @@ admin.login_failed    warning   auth     user name         ip
 admin.login_new_ip    warning   auth     user name         ip
 updater.available     info      updater  version tag       current, channel, url
 visitor.new_country   info      visitors country code      ip, host   (off by default: needs "notify on new country" in the Visitors settings)
+crowdsec.lapi_down    critical  crowdsec LAPI address      error, mode, fail_closed   (unreachable longer than the grace period; at most once in five minutes)
+crowdsec.lapi_up      info      crowdsec LAPI address      mode                       (only after a crowdsec.lapi_down that was sent)
 */
 const (
 	EventUptimeDown        = "uptime.down"
@@ -48,6 +50,8 @@ const (
 	EventUpdateAvail       = "updater.available"
 	EventVisitorNewCountry = "visitor.new_country"
 	EventDigest            = "notify.digest"
+	EventCrowdSecDown      = "crowdsec.lapi_down" // same strings as crowdsec.NotifyDown / NotifyUp (mod/crowdsec does not import this package)
+	EventCrowdSecUp        = "crowdsec.lapi_up"
 )
 
 // Severity levels, ordered
@@ -79,6 +83,8 @@ var Catalog = []EventInfo{
 	{EventAdminLoginNew, SevWarning, "Admin login from a new address"},
 	{EventUpdateAvail, SevInfo, "Update available"},
 	{EventVisitorNewCountry, SevInfo, "First visitor from a new country"},
+	{EventCrowdSecDown, SevCritical, "CrowdSec server unreachable"},
+	{EventCrowdSecUp, SevInfo, "CrowdSec server reachable again"},
 }
 
 // AllEvents are the event names that can be subscribed to
@@ -203,6 +209,18 @@ func Describe(ev Event) (title string, lines []string) {
 		}
 	case EventNodeOnline:
 		title = "Fleet node online: " + subj
+	case EventCrowdSecDown:
+		title = "CrowdSec server unreachable: " + subj
+		if x("fail_closed") == "yes" {
+			lines = append(lines, "Fail-closed is on: every visitor is refused until it is back.")
+		} else {
+			lines = append(lines, "Visitors are still served; only the decisions already in memory apply.")
+		}
+		if x("error") != "" {
+			lines = append(lines, "Last error: "+x("error"))
+		}
+	case EventCrowdSecUp:
+		title = "CrowdSec server reachable again: " + subj
 	case EventAdminLoginFail:
 		title = "Admin login failed: " + subj
 		lines = append(lines, "From address: "+x("ip"))

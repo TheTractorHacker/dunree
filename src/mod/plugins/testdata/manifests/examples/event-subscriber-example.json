@@ -1,0 +1,25 @@
+{
+ "id": "org.aroz.zoraxy.event_subscriber_example",
+ "name": "Event Subscriber Example Plugin",
+ "author": "Anthony Rubick",
+ "author_contact": "",
+ "description": "An example plugin for event subscriptions, will display all events in the UI",
+ "url": "",
+ "type": 1,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": null,
+ "static_capture_ingress": "",
+ "dynamic_capture_sniff": "",
+ "dynamic_capture_ingress": "",
+ "ui_path": "/ui",
+ "subscription_path": "/notifyme",
+ "subscriptions_events": {
+  "accessRuleCreated": "This event is triggered when a new access ruleset is created",
+  "blacklistToggled": "This event is triggered when the blacklist is toggled for an access rule",
+  "blacklistedIpBlocked": "This event is triggered when a blacklisted IP is blocked",
+  "customEvent": "This event is a custom event that can be emitted by any plugin, we subscribe to it to demonstrate a \"monitor\" plugin that can see all custom events emitted by other plugins"
+ },
+ "permitted_api_endpoints": null
+}

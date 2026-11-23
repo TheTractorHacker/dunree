@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -280,5 +281,144 @@ func TestCrowdSecManageAPI(t *testing.T) {
 	// the audit log redacts the password field
 	if !secaudit.IsSecretName("password") {
 		t.Fatal("password not redacted by the audit log")
+	}
+}
+
+// Activity, feed and "check an address": closed to viewers, read-only, never the key.
+func TestCrowdSecVisibilityAPI(t *testing.T) {
+	for _, p := range []string{"/api/crowdsec/activity", "/api/crowdsec/feed"} {
+		if auth.ViewerAllowed(http.MethodGet, p) {
+			t.Errorf("viewer may read %s", p)
+		}
+	}
+	if auth.ViewerAllowed(http.MethodPost, "/api/crowdsec/check") {
+		t.Error("viewer may use check")
+	}
+	lookups := 0
+	crowdsecTestSetup(t)
+	lapi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Api-Key") != csAPIKey {
+			w.WriteHeader(403)
+			return
+		}
+		if r.URL.Path == "/v1/decisions/stream" {
+			w.Write([]byte(`{"new":[{"id":1,"origin":"cscli","type":"ban","scope":"Ip","value":"203.0.113.9","duration":"1h","scenario":"manual"},` +
+				`{"id":2,"origin":"CAPI","type":"ban","scope":"Range","value":"198.18.0.0/16","duration":"1h","scenario":"crowdsecurity/http-probing"}],"deleted":null}`))
+			return
+		}
+		lookups++
+		if r.URL.Query().Get("ip") == "203.0.113.9" {
+			w.Write([]byte(`[{"id":1,"origin":"cscli","type":"ban","scope":"Ip","value":"203.0.113.9","duration":"59m","scenario":"manual"}]`))
+			return
+		}
+		w.Write([]byte("null"))
+	}))
+	t.Cleanup(lapi.Close)
+	cfg := `{"enabled":true,"lapiUrl":"` + lapi.URL + `","originPolicy":{"capi":"log"},"allowlist":["192.0.2.0/24"],"siteOverrides":{"Shop.Example.com":"log"},"scenarioLogOnly":["http-crawl"],"captchaFallback":"ban"}`
+	if w := csPost(HandleCrowdSecSet, url.Values{"config": {cfg}, "apikey": {csAPIKey}}); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	if err := crowdsecMgr.PullOnce(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	// the policy settings come back normalised
+	var v crowdsecView
+	if err := json.Unmarshal([]byte(csGet(HandleCrowdSecGet)), &v); err != nil || v.OriginPolicy["capi"] != "log" || v.SiteOverrides["shop.example.com"] != "log" ||
+		len(v.Allowlist) != 1 || len(v.ScenarioLogOnly) != 1 || v.CaptchaFallback != "ban" {
+		t.Fatalf("%+v %v", v, err)
+	}
+	for _, bad := range []string{
+		`{"originPolicy":{"capi":"enforce"}}`, `{"originPolicy":{"nonsense":"log"}}`, `{"allowlist":["0.0.0.0/0"]}`, `{"allowlist":["not-an-ip"]}`,
+		`{"siteOverrides":{"a.example.com":"block"}}`, `{"captchaFallback":"drop"}`, `{"scenarioLogOnly":["x"]}`,
+	} {
+		if w := csPost(HandleCrowdSecSet, url.Values{"config": {bad}}); !strings.Contains(w.Body.String(), "error") {
+			t.Errorf("accepted %s: %s", bad, w.Body.String())
+		}
+	}
+	// a request path stand-in: one match in log mode
+	vd := crowdsecMgr.Check(netip.MustParseAddr("203.0.113.9"), "app.example.com")
+	crowdsecMgr.Report(vd, crowdsec.OutLogOnly, crowdsec.Event{Host: "app.example.com", Method: "GET", Path: "/wp-login.php", Country: "de"})
+
+	get := func(h http.HandlerFunc, q string) string {
+		w := httptest.NewRecorder()
+		h(w, httptest.NewRequest(http.MethodGet, "/x?"+q, nil))
+		return w.Body.String()
+	}
+	var act crowdsec.Activity
+	if err := json.Unmarshal([]byte(get(HandleCrowdSecActivity, "window=7d")), &act); err != nil {
+		t.Fatal(err)
+	}
+	if act.Window != "7d" || len(act.Series) != 28 || act.Today.WouldBlock != 1 || act.Today.Checked != 1 || act.Loaded.Total != 2 ||
+		act.Loaded.ByClass["capi"] != 1 || len(act.Pulls) == 0 || len(act.Tops["countries"]) != 1 || act.Tops["countries"][0].Key != "DE" {
+		t.Fatalf("activity: %+v", act)
+	}
+	if def := get(HandleCrowdSecActivity, "window=nonsense"); !strings.Contains(def, `"window":"24h"`) {
+		t.Fatalf("unknown window: %s", def)
+	}
+	var feed crowdsec.FeedPage
+	if err := json.Unmarshal([]byte(get(HandleCrowdSecFeed, "outcome=log-only&q=wp-login")), &feed); err != nil || len(feed.Entries) != 1 ||
+		feed.Entries[0].Path != "/wp-login.php" || feed.Entries[0].Country != "DE" {
+		t.Fatalf("feed: %+v %v", feed, err)
+	}
+	if out := get(HandleCrowdSecFeed, "outcome=blocked"); !strings.Contains(out, `"entries":[]`) {
+		t.Fatalf("filter: %s", out)
+	}
+	if out := get(HandleCrowdSecFeed, "before=yesterday"); !strings.Contains(out, "error") {
+		t.Fatalf("bad cursor accepted: %s", out)
+	}
+
+	// check: POST only, a real address only
+	if w := httptest.NewRecorder(); true {
+		HandleCrowdSecCheck(w, httptest.NewRequest(http.MethodGet, "/x?ip=203.0.113.9", nil))
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("check must be POST only: %d", w.Code)
+		}
+	}
+	for _, bad := range []string{"", "example.com", "203.0.113.9/24", "203.0.113.9; rm -rf", strings.Repeat("1", 80)} {
+		if w := csPost(HandleCrowdSecCheck, url.Values{"ip": {bad}}); !strings.Contains(w.Body.String(), "error") {
+			t.Errorf("check accepted %q: %s", bad, w.Body.String())
+		}
+	}
+	var ex crowdsec.Explanation
+	body := csPost(HandleCrowdSecCheck, url.Values{"ip": {"203.0.113.9"}, "site": {"app.example.com"}}).Body.String()
+	if err := json.Unmarshal([]byte(body), &ex); err != nil || ex.Result != "would-block" || ex.Why != crowdsec.WhyMode || len(ex.Decisions) != 1 || !ex.Decisions[0].Wins ||
+		ex.Live != nil || len(ex.Recent) != 1 {
+		t.Fatalf("check: %s", body)
+	}
+	if lookups != 0 {
+		t.Fatalf("check without live asked the LAPI %d times", lookups)
+	}
+	body = csPost(HandleCrowdSecCheck, url.Values{"ip": {"203.0.113.9"}, "live": {"true"}}).Body.String()
+	if err := json.Unmarshal([]byte(body), &ex); err != nil || ex.Live == nil || ex.Live.Error != "" || len(ex.Live.Decisions) != 1 || ex.Live.Differs || lookups != 1 {
+		t.Fatalf("live check (%d lookups): %s", lookups, body)
+	}
+	body = csPost(HandleCrowdSecCheck, url.Values{"ip": {"198.51.100.7"}}).Body.String()
+	if err := json.Unmarshal([]byte(body), &ex); err != nil || ex.Result != "none" || len(ex.Decisions) != 0 {
+		t.Fatalf("clean address: %s", body)
+	}
+	body = csPost(HandleCrowdSecCheck, url.Values{"ip": {"198.18.3.3"}, "site": {"shop.example.com"}}).Body.String()
+	if err := json.Unmarshal([]byte(body), &ex); err != nil || ex.Result != "would-block" || ex.SiteMode != "log" || ex.Decisions[0].Policy != "log" {
+		t.Fatalf("policy shown: %s", body)
+	}
+	// the live lookup is rate limited (30 a minute); the loaded decisions are still answered
+	limited := false
+	for i := 0; i < 40; i++ {
+		b := csPost(HandleCrowdSecCheck, url.Values{"ip": {"198.51.100.7"}, "live": {"true"}}).Body.String()
+		if strings.Contains(b, "too many live lookups") {
+			limited = strings.Contains(b, `"result":"none"`)
+			break
+		}
+	}
+	if !limited || lookups > 31 {
+		t.Fatalf("live lookups not limited (%d calls)", lookups)
+	}
+	// check counted nothing and wrote no feed entry
+	if st := crowdsecMgr.Status(); st.Checked != 1 || st.LogOnly != 1 {
+		t.Fatalf("check changed the counters: %+v", st)
+	}
+	for _, o := range []string{get(HandleCrowdSecActivity, ""), get(HandleCrowdSecFeed, ""), body, csGet(HandleCrowdSecStatus), csGet(HandleCrowdSecGet)} {
+		if strings.Contains(o, csAPIKey) || strings.Contains(o, "api-test-KEY") {
+			t.Fatalf("API key in output: %s", o)
+		}
 	}
 }

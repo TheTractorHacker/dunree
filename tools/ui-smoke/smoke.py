@@ -28,6 +28,7 @@ ap.add_argument("--posture-only", action="store_true", help="run only the Securi
 ap.add_argument("--ai-only", action="store_true", help="run only the AI assistant page scenario")
 ap.add_argument("--site-editor-only", action="store_true", help="run only the site editor scenario (Easy/Advanced, Save bar, presets, control inventory)")
 ap.add_argument("--rules-only", action="store_true", help="run only the Security rules (rules builder) scenario")
+ap.add_argument("--proxy-ux-only", action="store_true", help="run only the navigation / HTTP Proxy table scenario (proxy_ux: table, selection and selection bar, bulk preview, WAF Coverage selection, New proxy rule)")
 ap.add_argument("--waf-tuning-only", action="store_true", help="run only the WAF Tuning tab scenario")
 ap.add_argument("--consistency-only", action="store_true", help="run only the consistency-pass scenario (certificates, Related boxes, save bar, history toast, hostile host, renamed pages)")
 ap.add_argument("--sites-only", action="store_true", help="run only the Sites pages audit scenario (Default Site, Stream Proxy, Redirection, hostnames, editor sub views)")
@@ -51,6 +52,7 @@ ap.add_argument("--crowdsec-only", action="store_true", help="run only the Crowd
 ap.add_argument("--phase4-only", action="store_true", help="run only the Phase 4 GUI scenario (phase4_smoke.py: Security overview, Network plan, Config Tools export / import dry run, Fleet certs confirmation; UI port + 2 must be free; creates and removes its own rules, plan and certificate, run it on a throw-away instance)")
 ap.add_argument("--baseline-only", action="store_true", help="run only the enterprise baseline card scenario (baseline_smoke.py: preview, Apply, Undo on an existing-style throw-away instance; changes and restores instance-wide settings; the fresh-start check is baseline_fresh_check.py)")
 ap.add_argument("--errorpages-only", action="store_true", help="run only the Sites > Error pages scenario (errorpages_smoke.py: theme, page text and HTML, preview, save bar, per site pages, reset; saves and resets the error page settings, run it on a throw-away instance)")
+ap.add_argument("--storage-only", action="store_true", help="run only the blocked-storage and dark text colour scenario (storage_smoke.py: localStorage / sessionStorage throw, every page still opens, the theme menu works for the session; kit colours survive the dark theme; reads only)")
 ap.add_argument("--plugins-only", action="store_true", help="run only the Plugin Manager scenario (plugins_smoke.py: status badges, Details row, escaping of a hostile manifest, Supervision form; the plugin API is mocked, so any instance works)")
 ap.add_argument("--plugins-live", action="store_true", help="with --plugins-only: the instance was prepared by plugins_run.sh (three real chaos plugins); the part against the real plugin API must run")
 ap.add_argument("--zrok-fake", default=os.environ.get("SMOKE_ZROK_FAKE", ""), help="path of a fake zrok script; enables the zrok flow (the instance needs -allow_external_tools)")
@@ -374,6 +376,21 @@ def proxy_ux(pg, ctx):
         pg.fill("#searchInput", "smoke")
         pg.wait_for_timeout(300)
         boxes = pg.locator("#httpProxyList .bulkSel")
+        # the table must not move when the selection bar appears (it takes the place of the search row): components.md 9.4
+        THEAD_TOP = "document.querySelector('#httpProxyTable thead').getBoundingClientRect().top + scrollY"
+        thead0 = pg.evaluate(THEAD_TOP)
+        boxes.nth(1).click()
+        pg.wait_for_timeout(200)
+        thead1 = pg.evaluate(THEAD_TOP)
+        if abs(thead1 - thead0) > 0.5:
+            fail("select", f"the table moved by {thead1 - thead0:.1f}px when the selection bar appeared (the bar must take the place of the search row)")
+        if pg.is_visible("#searchInput") or not pg.evaluate("""(() => { const b = document.getElementById('bulkBar').getBoundingClientRect(), t = document.getElementById('ptTools').getBoundingClientRect();
+                return Math.abs(b.top - t.top) < 1 && b.height >= t.height - 1 && b.height <= t.height + 1; })()"""):
+            fail("select", "the selection bar does not lie exactly over the search row")
+        boxes.nth(1).click()
+        pg.wait_for_timeout(200)
+        if not pg.is_visible("#searchInput") or abs(pg.evaluate(THEAD_TOP) - thead0) > 0.5:
+            fail("select", "the search row did not come back in place after the selection was cleared")
         boxes.nth(1).click()
         boxes.nth(5).click(modifiers=["Shift"])
         pg.wait_for_timeout(200)
@@ -382,6 +399,27 @@ def proxy_ux(pg, ctx):
             fail("select", f"shift-click range should select 5 rules, got {got}")
         if not pg.is_visible("#bulkBar"):
             fail("select", "bulk bar not visible with a selection")
+        # selection design (components.md 9.4): kit checkbox, header dash, tint + accent bar on the row, no patchy cells
+        st = pg.evaluate("""() => {
+            const rows = Array.from(document.querySelectorAll('#httpProxyList tr.ptRow')), sel = rows.filter(r => r.classList.contains('is-selected'));
+            const bgs = r => Array.from(new Set(Array.from(r.children).map(td => getComputedStyle(td).backgroundColor)));
+            const box = document.querySelector('#httpProxyList .bulkSel'), all = document.getElementById('bulkSelectAll');
+            return { sel: sel.length, selBgs: sel.length ? bgs(sel[0]) : [], plain: bgs(rows.find(r => !r.classList.contains('is-selected')) || rows[0]),
+                bar: sel.length ? getComputedStyle(sel[0].children[0]).boxShadow : '', kit: box.classList.contains('zx-check') && all.classList.contains('zx-check'),
+                w: box.getBoundingClientRect().width, indet: all.indeterminate, checked: all.checked,
+                faded: Array.from(document.querySelectorAll('#httpProxyList tr.ptRow td')).filter(td => getComputedStyle(td).opacity !== '1').length,
+                chip: document.querySelector('#bulkBar .bulkCount').textContent.trim() };
+        }""")
+        if st["sel"] != 5 or len(st["selBgs"]) != 1 or st["selBgs"] == st["plain"] or "inset" not in st["bar"]:
+            fail("select", f"a selected row needs one tint on every cell and the accent bar on its left edge: {st}")
+        if not st["kit"] or abs(st["w"] - 18) > 0.5:
+            fail("select", f"the selection checkboxes are not the 18px kit checkbox (.zx-check): {st}")
+        if not st["indet"] or st["checked"]:
+            fail("select", f"the header checkbox must be a dash (indeterminate) while only some rows are selected: {st}")
+        if st["faded"]:
+            fail("select", f"{st['faded']} table cells have an opacity of their own (fade the contents, not the cell)")
+        if not st["chip"].startswith("5"):
+            fail("select", f"the selection bar does not show the count: {st['chip']!r}")
         pg.screenshot(path=out("httprp-selected.png"))
         pg.evaluate("window.scrollTo(0, 600)")
         pg.wait_for_timeout(300)
@@ -415,6 +453,8 @@ def proxy_ux(pg, ctx):
         pg.wait_for_timeout(200)
         if pg.evaluate("ProxyTable.selected().length") != pg.locator("#httpProxyList tr.ptRow").count():
             fail("select", "select all did not select every row on the page")
+        if not pg.evaluate("(() => { const a = document.getElementById('bulkSelectAll'); return a.checked && !a.indeterminate; })()"):
+            fail("select", "the header checkbox is not checked (without the dash) when every row on the page is selected")
         pg.click("#bulkBar button[data-act=clear]")
         pg.fill("#searchInput", "")
         pg.wait_for_timeout(200)
@@ -426,6 +466,16 @@ def proxy_ux(pg, ctx):
         pg.wait_for_timeout(700)
         if pg.evaluate(API, ["/api/proxy/detail", {"type": "host", "epname": names[0]}]).get("Disabled") is not True:
             fail("pill", "clicking the status pill did not disable the rule")
+        # a disabled row: the name is muted like the rest of the row (components.md 9.4), light and dark
+        for dark in (False, True):
+            pg.evaluate("(d) => document.body.classList.toggle('darkTheme', d)", dark)
+            pg.wait_for_timeout(350)   # the colour has a transition
+            col = pg.evaluate("""(ep) => { const tr = document.querySelector('#httpProxyList tr.ptRow[data-ep="' + ep + '"]'); const d = document.createElement('i');
+                d.style.color = 'var(--zx-text-muted)'; document.body.appendChild(d); const muted = getComputedStyle(d).color; d.remove();
+                return { cls: tr.classList.contains('is-disabled'), name: getComputedStyle(tr.querySelector('.ptHost')).color, sub: getComputedStyle(tr.querySelector('.ptSub')).color, muted }; }""", names[0])
+            if not col["cls"] or col["name"] != col["muted"] or col["sub"] != col["muted"]:
+                fail("select", f"a disabled row must show its name and upstream in --zx-text-muted ({'dark' if dark else 'light'}): {col}")
+        pg.evaluate("document.body.classList.remove('darkTheme')")
         if not pg.is_visible("#ptToast .ptToastAct"):
             fail("pill", "no undo toast after toggling")
         else:
@@ -443,6 +493,42 @@ def proxy_ux(pg, ctx):
             fail("table", "page size 25 should render 25 rows and a next button")
         pg.click("#ptNext")
         pg.wait_for_timeout(300)
+        pg.click("#ptPrev")
+        pg.wait_for_timeout(300)
+        # a full page selected: the offer to select the rest sits in the bar (no extra line), and nothing moves
+        thead0 = pg.evaluate(THEAD_TOP)
+        pg.check("#bulkSelectAll")
+        pg.wait_for_timeout(250)
+        more = pg.evaluate("""(() => { const m = document.getElementById('bulkSelectMatching'); return { vis: !!m.offsetParent, inBar: !!m.closest('#bulkBar'), text: m.querySelector('button').textContent.trim(),
+            fit: document.getElementById('bulkBar').getAttribute('data-fit') }; })()""")
+        if not more["vis"] or not more["inBar"] or "36" not in more["text"]:
+            fail("select", f"with a full page selected the bar must offer the rest of the hosts: {more}")
+        if abs(pg.evaluate(THEAD_TOP) - thead0) > 0.5:
+            fail("select", "the table moved when the 'select all' offer appeared")
+        pg.click("#bulkSelectMatching button")
+        pg.wait_for_timeout(250)
+        chip = pg.inner_text("#bulkBar .bulkCount")
+        if pg.evaluate("ProxyTable.selected().length") != 36 or "36" not in chip or pg.is_visible("#bulkSelectMatching") or abs(pg.evaluate(THEAD_TOP) - thead0) > 0.5:
+            fail("select", f"'Select all 36' must select every host, say so in the count and move nothing (count {chip!r})")
+        pg.screenshot(path=out("httprp-selected-all.png"))
+        # the bulk delete dialog lists the first names and "and N more"; no box with a scrollbar of its own
+        pg.click("#bulkBar button[data-act=delete]")
+        pg.wait_for_selector("#bulkModal", state="visible", timeout=5000)
+        pg.wait_for_timeout(500)
+        dlg = pg.evaluate("""(() => { const m = document.getElementById('bulkModal');
+            const nested = Array.from(m.querySelectorAll('.content *')).filter(e => /auto|scroll/.test(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight + 1).length;
+            return { nested, shown: Array.from(m.querySelectorAll('.bulkNames li')).filter(e => e.offsetParent && !e.querySelector('button')).length, more: (m.querySelector('.bulkNamesMore') || {}).textContent || '' }; })()""")
+        if dlg["nested"] or dlg["shown"] != 8 or "28" not in dlg["more"]:
+            fail("select", f"the delete dialog must list 8 names and 'and 28 more' without a scroller of its own: {dlg}")
+        pg.screenshot(path=out("httprp-bulk-delete.png"))
+        pg.click("#bulkModal .bulkNamesMore")
+        pg.wait_for_timeout(300)
+        if pg.evaluate("Array.from(document.querySelectorAll('#bulkModal .bulkNames li')).filter(e => e.offsetParent && !e.querySelector('ul')).length") != 36:
+            fail("select", "'and N more' in the delete dialog did not open the rest of the names in place")
+        pg.click("#bulkModal .actions button:has-text('Cancel')")
+        pg.wait_for_timeout(600)
+        pg.click("#bulkBar button[data-act=clear]")
+        pg.wait_for_timeout(200)
         pg.select_option("#ptPageSize", "50")
 
         # phone layout of the table
@@ -450,7 +536,26 @@ def proxy_ux(pg, ctx):
         pg.wait_for_timeout(300)
         check_horizontal(pg, "httprp mobile")
         pg.screenshot(path=out("httprp-table-mobile.png"))
+        # phones: the bar takes the place of the two-line toolbar, nothing moves; "Clear filters" never lies over the state filter
+        thead0 = pg.evaluate(THEAD_TOP)
+        pg.locator("#httpProxyList .bulkSel").first.click()
+        pg.wait_for_timeout(250)
+        if abs(pg.evaluate(THEAD_TOP) - thead0) > 0.5:
+            fail("select", "phone: the list moved when the selection bar appeared")
+        check_horizontal(pg, "httprp mobile, selection bar")
+        pg.screenshot(path=out("httprp-selected-mobile.png"))
+        pg.click("#bulkBar button[data-act=clear]")
+        pg.fill("#searchInput", "smoke")
+        pg.wait_for_timeout(300)
+        hit = pg.evaluate("""(() => { const c = document.getElementById('ptClear').getBoundingClientRect();
+            return Array.from(document.querySelectorAll('#ptSeg > button, #ptRefresh')).filter(b => { const r = b.getBoundingClientRect();
+                return c.width > 0 && r.left < c.right - 1 && r.right > c.left + 1 && r.top < c.bottom - 1 && r.bottom > c.top + 1; }).length; })()""")
+        if hit:
+            fail("table", "phone: 'Clear filters' is drawn over the state filter")
+        pg.fill("#searchInput", "")
+        pg.wait_for_timeout(200)
         pg.set_viewport_size({"width": 1366, "height": 900})
+        waf_coverage_selection(pg, names)
 
         # ---- New proxy rule dialog ----
         current["page"] = "newrule"
@@ -513,6 +618,70 @@ def proxy_ux(pg, ctx):
         pg.evaluate("openTabById('httprp')")
         settle(pg, 500)
         pg.screenshot(path=out("httprp-empty.png"))
+
+
+def waf_coverage_selection(pg, names):
+    """WAF > Coverage uses the same selection system as HTTP Proxy (components.md 9.4): the shared bar in the place of the filter row,
+    a header box that acts on the rows shown, muted rows for disabled proxy rules, and "select all" on phones."""
+    out = lambda n: os.path.join(args.out, n)
+    current["page"] = "waf-coverage-selection"
+    pg.evaluate(API, ["/api/proxy/toggle", {"ep": names[1], "enable": "false"}])
+    try:
+        pg.evaluate("openTabById('waf')")
+        settle(pg, 900)
+        pg.dispatch_event("#wafTabs .item[data-tab=waf-coverage]", "click")
+        settle(pg, 900)
+        pg.wait_for_selector(".wafCovCk", timeout=8000)
+        BODY_TOP = "document.getElementById('wafCoverageBody').getBoundingClientRect().top + scrollY"
+        top0 = pg.evaluate(BODY_TOP)
+        total = pg.evaluate("document.querySelectorAll('.wafCovCk').length")
+        pg.locator(".wafCovCk").nth(1).click()
+        pg.wait_for_timeout(250)
+        st = pg.evaluate("""(() => { const b = document.getElementById('wafCovBulk'), a = document.getElementById('wafCovAll'), cs = getComputedStyle(b);
+            const d = document.createElement('i'); d.style.background = 'var(--zx-primary-soft)'; document.body.appendChild(d); const soft = getComputedStyle(d).backgroundColor; d.remove();
+            return { kit: b.classList.contains('zxs-bulk') && !!b.querySelector('.zxs-bulk__count') && !!b.querySelector('.zxs-bulk__clear'), flood: cs.backgroundColor === soft, sticky: cs.position,
+                dash: a.indeterminate && !a.checked, filter: !!document.getElementById('wafCovFilter').offsetParent && getComputedStyle(document.querySelector('#wafPage .wafPane[data-tab="waf-coverage"] .wafBar')).visibility,
+                off: document.querySelectorAll('#wafCoverageBody tr.is-disabled').length, chip: b.querySelector('.zxs-bulk__count').textContent.trim() }; })()""")
+        if abs(pg.evaluate(BODY_TOP) - top0) > 0.5:
+            fail("waf-coverage", f"the table moved by {pg.evaluate(BODY_TOP) - top0:.1f}px when the selection bar appeared")
+        if not st["kit"] or st["flood"] or st["sticky"] != "sticky" or st["filter"] != "hidden" or not st["chip"].startswith("1"):
+            fail("waf-coverage", f"the selection bar must be the shared .zxs-bulk in the place of the filter row: {st}")
+        if not st["dash"]:
+            fail("waf-coverage", f"the header box must be a dash while only some rules are selected: {st}")
+        if st["off"] < 1:
+            fail("waf-coverage", "a disabled proxy rule is not shown as a muted row (tr.is-disabled)")
+        pg.screenshot(path=out("waf-coverage-selected.png"))
+        pg.click("#wafCovAll")
+        pg.wait_for_timeout(250)
+        n = pg.evaluate("parseInt(document.getElementById('wafCovBulk').getAttribute('data-count'), 10)")
+        if n != total:
+            fail("waf-coverage", f"the header box must select exactly the {total} rules shown, selected {n}")
+        if abs(pg.evaluate(BODY_TOP) - top0) > 0.5:
+            fail("waf-coverage", "the table moved when every rule shown was selected")
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(250)
+        if pg.is_visible("#wafCovBulk") or not pg.is_visible("#wafCovFilter") or pg.evaluate("document.querySelectorAll('#wafCoverageBody tr.is-selected').length"):
+            fail("waf-coverage", "Esc did not clear the selection and bring the filter row back")
+        # phones: the header stays as one line with the box and "Select all"
+        pg.set_viewport_size({"width": 390, "height": 800})
+        pg.wait_for_timeout(300)
+        try:
+            pg.click("#wafCovAll", timeout=3000)
+            pg.wait_for_timeout(250)
+            if pg.evaluate("document.querySelectorAll('#wafCoverageBody tr.is-selected').length") != total or not pg.is_visible("#wafPage th.zx-selcol .zx-selcol__label"):
+                fail("waf-coverage", "phone: the header box with its 'Select all' label did not select the rules shown")
+        except Exception:
+            fail("waf-coverage", "phone: the 'select all' box of the coverage table cannot be clicked")
+        check_horizontal(pg, "waf coverage mobile, selection bar")
+        pg.screenshot(path=out("waf-coverage-selected-mobile.png"))
+        pg.click("#wafCovBulkClear")
+    except Exception as ex:
+        fail("waf-coverage", f"selection scenario failed: {' '.join(str(ex).split()[:40])}")
+    finally:
+        pg.set_viewport_size({"width": 1366, "height": 900})
+        pg.evaluate(API, ["/api/proxy/toggle", {"ep": names[1], "enable": "true"}])
+        pg.evaluate("openTabById('httprp')")
+        settle(pg, 500)
 
 
 def nav_palette(pg, ctx):
@@ -2930,6 +3099,7 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "phas
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "baseline_smoke.py")).read(), "baseline_smoke.py", "exec"))  # defines baseline_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugins_smoke.py")).read(), "plugins_smoke.py", "exec"))  # defines plugins_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "errorpages_smoke.py")).read(), "errorpages_smoke.py", "exec"))  # defines errorpages_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage_smoke.py")).read(), "storage_smoke.py", "exec"))  # defines storage_ui
 
 
 def main():
@@ -2952,6 +3122,10 @@ def main():
 
         if args.db_usage_only:
             dbusage_ui(pg, ctx)
+            b.close()
+            return
+        if args.storage_only:
+            storage_ui(pg, ctx)
             b.close()
             return
         if args.plugins_only:
@@ -3016,6 +3190,10 @@ def main():
             sites_ui(pg, ctx)
             b.close()
             return
+        if args.proxy_ux_only:
+            proxy_ux(pg, ctx)
+            b.close()
+            return
         if args.consistency_only:
             consistency_ui(pg, ctx)
             b.close()
@@ -3074,6 +3252,7 @@ def main():
         enterprise_ui(pg, ctx)
         plugins_ui(pg, ctx)  # mocked plugin API (works without plugins); the part with real plugins runs in plugins_run.sh
         errorpages_ui(pg, ctx)  # Sites > Error pages: saves a customisation and resets it at the end
+        storage_ui(pg, ctx)  # blocked localStorage / sessionStorage in fresh contexts, then the dark theme keeps kit colours; reads only
         tabs = pg.eval_on_selector_all("#mainmenu .item[tag]", "els => els.map(e => e.getAttribute('tag'))")
         tabs = list(dict.fromkeys(tabs))
         if args.no_page_sweep:

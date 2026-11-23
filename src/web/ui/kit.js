@@ -232,18 +232,49 @@
   <span class="zx-badge zx-badge--dot">Disabled</span>
 </p>`);
 
-    ex("table", "Data table", "Sticky header inside a scrolling region (give the wrapper a label and tabindex=0 so it scrolls with the keyboard), density modifiers .zx-table--compact / --comfortable, row actions, numbers right aligned. Below 480px every row becomes a card using the data-label of each cell.",
-`<div class="zx-table-wrap" style="--zx-table-max: 14rem" tabindex="0" role="region" aria-label="Proxy rules">
+    ex("checkbox", "Checkbox", "An 18px box with a drawn tick. Alone (class on the input, with an aria-label) it selects a row; inside label.zx-check it carries a visible label. The dash is the indeterminate state of a 'select all' box while only some rows are selected: set box.indeterminate = true from script. The target is 32px (44px on touch screens) without a larger box. A switch (.zx-switch) is for settings that take effect; a checkbox is for choosing things and for options of a form.",
+`<div class="zx-row" style="gap:20px">
+  <input type="checkbox" class="zx-check" aria-label="Not selected">
+  <input type="checkbox" class="zx-check" aria-label="Selected" checked>
+  <input type="checkbox" class="zx-check" aria-label="Some selected" data-kit-indeterminate>
+  <input type="checkbox" class="zx-check" aria-label="Not available" disabled>
+  <input type="checkbox" class="zx-check" aria-label="Selected, not available" checked disabled>
+</div>
+<div class="zx-row" style="gap:20px; margin-top:16px">
+  <label class="zx-check"><input type="checkbox" checked> <span>Follow redirects</span></label>
+  <label class="zx-check"><input type="checkbox"> <span>Ignore certificate errors</span></label>
+  <label class="zx-check"><input type="checkbox" disabled> <span>Not available here</span></label>
+</div>
+<script>
+  document.querySelector("#selectAll").indeterminate = someButNotAll;   // a property, there is no attribute for it
+</script>`, function (pane) {
+        $(pane).find("[data-kit-indeterminate]").prop("indeterminate", true);
+    });
+
+    ex("table", "Data table", "Density modifiers .zx-table--compact / --comfortable, row actions, numbers right aligned. Below 480px every row becomes a card using the data-label of each cell. Row states are one system: hover is a light neutral wash; tr.is-selected a subtle tint with a 3px accent bar on the left; tr.is-disabled mutes the text and greys the badges but keeps the background of the other rows; the row that holds the focused selection checkbox gets a ring (Tab to a box to see it). A table that is not a .zx-table gets the same states with the class .zx-rows. The selection column is th/td.zx-selcol with an input.zx-check; the header box is a dash while only some rows are selected.",
+`<div class="zx-table-wrap" tabindex="0" role="region" aria-label="Proxy rules">
   <table class="zx-table zx-table--compact">
-    <thead><tr><th scope="col">Host</th><th scope="col">Upstream</th><th scope="col">Status</th><th scope="col" class="zx-num">Requests</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
+    <thead><tr><th scope="col" class="zx-selcol"><input type="checkbox" class="zx-check" id="kitSelAll" aria-label="Select every rule"><label class="zx-selcol__label" for="kitSelAll" aria-hidden="true">Select all</label></th><th scope="col">Host</th><th scope="col">Status</th><th scope="col" class="zx-num">Requests</th><th scope="col" class="zx-actions"><span class="zx-sr-only">Actions</span></th></tr></thead>
     <tbody>
-      <tr><td data-label="Host">app.example.com</td><td data-label="Upstream">127.0.0.1:8080</td><td data-label="Status"><span class="zx-badge zx-badge--ok zx-badge--dot">Healthy</span></td><td data-label="Requests" class="zx-num">12,408</td><td class="zx-actions"><span class="zx-row-actions"><button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm" aria-label="Edit app.example.com"><i class="pencil icon"></i></button><button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm" aria-label="Delete app.example.com"><i class="trash icon"></i></button></span></td></tr>
-      <tr class="is-selected"><td data-label="Host">git.example.com</td><td data-label="Upstream">10.0.0.5:3000</td><td data-label="Status"><span class="zx-badge zx-badge--warn zx-badge--dot">Slow</span></td><td data-label="Requests" class="zx-num">932</td><td class="zx-actions"><span class="zx-row-actions"><button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm" aria-label="Edit git.example.com"><i class="pencil icon"></i></button></span></td></tr>
-      <tr><td data-label="Host">old.example.com</td><td data-label="Upstream">10.0.0.9:80</td><td data-label="Status"><span class="zx-badge">Disabled</span></td><td data-label="Requests" class="zx-num">0</td><td class="zx-actions"></td></tr>
-      <tr><td data-label="Host">wiki.example.com</td><td data-label="Upstream">10.0.0.7:8081</td><td data-label="Status"><span class="zx-badge zx-badge--danger zx-badge--dot">Down</span></td><td data-label="Requests" class="zx-num">57</td><td class="zx-actions"></td></tr>
+      <tr><td class="zx-selcol"><input type="checkbox" class="zx-check" aria-label="Select app.example.com"></td><td data-label="Host">app.example.com</td><td data-label="Status"><span class="zx-badge zx-badge--ok zx-badge--dot">Healthy</span></td><td data-label="Requests" class="zx-num">12,408</td><td class="zx-actions"><span class="zx-row-actions"><button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm" aria-label="Edit app.example.com"><i class="pencil icon"></i></button><button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm" aria-label="Delete app.example.com"><i class="trash icon"></i></button></span></td></tr>
+      <tr class="is-selected"><td class="zx-selcol"><input type="checkbox" class="zx-check" aria-label="Select git.example.com" checked></td><td data-label="Host">git.example.com</td><td data-label="Status"><span class="zx-badge zx-badge--warn zx-badge--dot">Slow</span></td><td data-label="Requests" class="zx-num">932</td><td class="zx-actions"><span class="zx-row-actions"><button type="button" class="zx-btn zx-btn--ghost zx-btn--icon zx-btn--sm" aria-label="Edit git.example.com"><i class="pencil icon"></i></button></span></td></tr>
+      <tr class="is-disabled"><td class="zx-selcol"><input type="checkbox" class="zx-check" aria-label="Select old.example.com"></td><td data-label="Host">old.example.com</td><td data-label="Status"><span class="zx-badge zx-badge--dot">Disabled</span></td><td data-label="Requests" class="zx-num">0</td><td class="zx-actions"></td></tr>
+      <tr class="is-selected is-disabled"><td class="zx-selcol"><input type="checkbox" class="zx-check" aria-label="Select legacy.example.com" checked></td><td data-label="Host">legacy.example.com</td><td data-label="Status"><span class="zx-badge zx-badge--ok zx-badge--dot">Disabled</span></td><td data-label="Requests" class="zx-num">0</td><td class="zx-actions"></td></tr>
+      <tr><td class="zx-selcol"><input type="checkbox" class="zx-check" aria-label="Select wiki.example.com"></td><td data-label="Host">wiki.example.com</td><td data-label="Status"><span class="zx-badge zx-badge--danger zx-badge--dot">Down</span></td><td data-label="Requests" class="zx-num">57</td><td class="zx-actions"></td></tr>
     </tbody>
   </table>
-</div>`);
+</div>`, function (pane) {
+        // the demo keeps rows, boxes and the header box in step, the way a page does
+        var $t = $(pane).find("table"), $all = $t.find("thead .zx-check");
+        function sync() {
+            var boxes = $t.find("tbody .zx-check"), on = boxes.filter(":checked").length;
+            boxes.each(function () { $(this).closest("tr").toggleClass("is-selected", this.checked); });
+            $all.prop("checked", on === boxes.length).prop("indeterminate", on > 0 && on < boxes.length);
+        }
+        $t.on("change", "tbody .zx-check", sync);
+        $all.on("change", function () { $t.find("tbody .zx-check").prop("checked", this.checked); sync(); });
+        sync();
+    });
 
     ex("tabs", "Tabs and segmented control", "Tabs switch panels of one page (ZxUI.tabs: arrow keys, Home/End, aria-selected). A segmented control chooses one of a few values (ZxUI.segmented, role=radiogroup).",
 `<div class="zx-tabs" id="demo-tabs">

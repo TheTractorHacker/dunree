@@ -3,8 +3,8 @@
   "language": "Russian",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 10.4,
-  "coreCoverage": 19.2
+  "coverage": 10.0,
+  "coreCoverage": 18.1
  },
  "strings": {
   "\"Add Redirection Rule\"": "«Добавить правило перенаправления»",
@@ -274,7 +274,6 @@
   "Clear": "Очистить",
   "Clear filters": "Сбросить фильтры",
   "Clear form": "Очистить форму",
-  "Clear selection": "Снять выделение",
   "Click \"Connect\" and enter your Zoraxy admin credentials": "Нажмите «Подключить» и введите учётные данные администратора Zoraxy",
   "Click again to delete": "Нажмите ещё раз для удаления",
   "Client": "Клиент",

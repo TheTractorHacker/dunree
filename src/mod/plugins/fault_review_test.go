@@ -252,8 +252,11 @@ func TestFaultFailedStartAfterAStopIsDownNotStopped(t *testing.T) {
 
 func TestFaultUninstallForgetsPolicyAndConsent(t *testing.T) {
 	m := newFaultManager(t)
-	p := loadChaosStopped(t, m, "tenant", "mode=ok\nfeatures=hooks,failclosed\n", "t")
+	p := loadChaosStopped(t, m, "tenant", "mode=ok\nfeatures=hooks,failclosed,api\n", "t")
 	id := p.Spec.ID
+	if !m.Options.Database.KeyExists(permDBTable, id) {
+		t.Fatal("the test setup did not store the approved API permissions")
+	}
 	yes := true
 	if err := m.SetHookAdminSettings(id, &yes, &yes); err != nil {
 		t.Fatal(err)
@@ -275,6 +278,9 @@ func TestFaultUninstallForgetsPolicyAndConsent(t *testing.T) {
 	}
 	if db.KeyExists(hookDBTable, id) {
 		t.Fatal("the global attach and fail-closed consent of an uninstalled plugin are still in the database")
+	}
+	if db.KeyExists(permDBTable, id) {
+		t.Fatal("the approved API permissions of an uninstalled plugin are still in the database")
 	}
 
 	//A plugin installed later under the same ID starts with the defaults

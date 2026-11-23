@@ -46,7 +46,7 @@
                 <div class="zx-sectionnav__label" id="secGrpAdvanced">Advanced</div>
                 <button type="button" class="zx-sectionnav__item item" data-sec="headers"><i class="code icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Header rules</span><span class="zx-sectionnav__desc" hidden>Require a secret request header, such as one set by your CDN, on a site.</span></button>
                 <button type="button" class="zx-sectionnav__item item" data-sec="crowdsec"><i class="crosshairs icon" aria-hidden="true"></i><span class="zx-sectionnav__text">CrowdSec</span><span class="zx-sectionnav__desc" hidden>Use the ban list of a CrowdSec server you run.</span></button>
-                <button type="button" class="zx-sectionnav__item item" data-sec="deployment"><i class="sitemap icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Deployment</span><span class="zx-sectionnav__desc" hidden>Where Zoraxy sits in your network: on its own, or in a chain of two proxies.</span></button>
+                <button type="button" class="zx-sectionnav__item item" data-sec="deployment"><i class="sitemap icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Proxy chain</span><span class="zx-sectionnav__desc" hidden>Where Zoraxy sits in your network: on its own, or in a chain of two proxies.</span></button>
                 <button type="button" class="zx-sectionnav__item item" data-sec="netplan"><i class="road icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Network plan</span><span class="zx-sectionnav__desc" hidden>Describe your network segments and export firewall recommendations.</span></button>
             </div>
         </nav>
@@ -332,6 +332,7 @@
             if (warnWord) { secNav.state(name, "warn", warnWord); return; }
             secNav.state(name, on ? "on" : "off", on ? t("On") : t("Off"));
         }
+        window.ZxSec.navOnOff = onOff;   // a section that polls its own status keeps its item current (a change made through the API or elsewhere)
         var stateTimer = null;
         function loadStates() {
             if (!document.getElementById("secTabs")) { return; }

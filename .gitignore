@@ -63,3 +63,7 @@ src/zoraxy.exe~
 # Release build output (tools/build_release.sh)
 /dist/
 __pycache__/
+fork-ref-filter/fork-ref-filter
+fork-ref-events/fork-ref-events
+fork-ref-ui-api/fork-ref-ui-api
+/tools/plugin-check/plugin-check

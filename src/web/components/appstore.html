@@ -704,7 +704,7 @@
           asBusy(btn, false);
         }
         if (data.error != undefined) {
-          msgbox(data.error, false);
+          msgbox(asEscapeHtml(data.error), false) /* error texts can quote what a downloaded plugin or an index says; msgbox renders HTML */;
         } else {
           msgbox(t("App installed"), true);
           asLoadData();
@@ -747,7 +747,7 @@
             asBusy(btn, false);
           }
           if (data.error != undefined) {
-            msgbox(data.error, false);
+            msgbox(asEscapeHtml(data.error), false) /* error texts can quote what a downloaded plugin or an index says; msgbox renders HTML */;
           } else {
             msgbox(tf("{0} updated to v{1}", app.PluginIntroSpect.name, updateInfo.latestVersion), true);
             asLoadData();
@@ -778,7 +778,7 @@
           asBusy(btn, false);
         }
         if (data.error != undefined) {
-          msgbox(data.error, false);
+          msgbox(asEscapeHtml(data.error), false) /* error texts can quote what a downloaded plugin or an index says; msgbox renders HTML */;
         } else {
           msgbox(t("App list updated"), true);
           asLoadData();
@@ -886,7 +886,7 @@
           asBusy(btn, false);
         }
         if (data.error != undefined) {
-          msgbox(data.error, false);
+          msgbox(asEscapeHtml(data.error), false) /* error texts can quote what a downloaded plugin or an index says; msgbox renders HTML */;
         } else {
           msgbox(t("Source added"), true);
           $("#asNewSourceURL").val("");
@@ -917,7 +917,7 @@
           if (btn !== undefined) {
             asBusy(btn, false);
           }
-          msgbox(data.error, false);
+          msgbox(asEscapeHtml(data.error), false) /* error texts can quote what a downloaded plugin or an index says; msgbox renders HTML */;
         } else {
           msgbox(t("Source removed"), true);
           delete asDisabledSources[url];

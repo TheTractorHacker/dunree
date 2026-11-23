@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"imuslab.com/zoraxy/mod/crowdsec"
+	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
 	"imuslab.com/zoraxy/mod/metrics"
 	"imuslab.com/zoraxy/mod/netutils"
+	"imuslab.com/zoraxy/mod/pathmatch"
 )
 
 // forwardedCandidates lists the resolved client address and every address the forwarding headers carry (at most 24)
@@ -48,9 +50,41 @@ func forwardedCandidates(r *http.Request, resolved string) []netip.Addr {
 	and the auto-ban use: a forwarded header from a peer that is not trusted cannot change which decision applies.
 
 	Log only mode never touches the request. Enforce mode: ban = 403 page or dropped connection (setting), captcha =
-	the site's CAPTCHA challenge when the setting says so and the site has one (otherwise only logged), fail-closed =
-	same refusal as a ban. The block is recorded in the blocked-request log with the reason "crowdsec".
+	the site's CAPTCHA challenge when the setting says so and the site has one (otherwise only logged, or a ban when the
+	captcha fallback says so), fail-closed = same refusal as a ban. The block is recorded in the blocked-request log with
+	the reason "crowdsec".
+
+	The manager only decides (Check*). What really happened is known here, so this is where it is reported
+	(Manager.Report): the counters and the activity feed of the CrowdSec page show the real outcome, not the intended one.
+	The country lookup runs only for a request whose address has a decision.
 */
+
+// crowdsecEvent describes the request for the activity feed (no headers, no query string)
+func (router *Router) crowdsecEvent(r *http.Request, v crowdsec.Verdict) crowdsec.Event {
+	ev := crowdsec.Event{Host: r.Host, Method: r.Method}
+	if r.URL != nil {
+		ev.Path = r.URL.Path
+	}
+	if v.IP.IsValid() && router.Option.GeodbStore != nil {
+		if info, err := router.Option.GeodbStore.ResolveCountryCodeFromIP(v.IP.String()); err == nil && info != nil {
+			ev.Country = info.CountryIsoCode
+		}
+	}
+	return ev
+}
+
+// crowdsecCaptchaServed says why a request with an enforced captcha decision was served although the site has a
+// CAPTCHA: the same conditions, in the same order, as captchaChallengeFor. "" = part of the challenge flow, not reported.
+func (router *Router) crowdsecCaptchaServed(r *http.Request, sep *ProxyEndpoint) crowdsec.Outcome {
+	cfg := sep.EffectiveCaptchaConfig()
+	if !cfg.ChallengeAllowedOnPath(pathmatch.RequestTarget(r)) {
+		return crowdsec.OutSkipped //outside the protected paths of this site
+	}
+	if ok, _ := captcha.CheckSessionReason(r, router.captchaSessionStore); ok {
+		return crowdsec.OutPassed //the visitor solved the CAPTCHA earlier
+	}
+	return crowdsec.OutSkipped //a CAPTCHA exception of the site matches
+}
 
 // crowdsecBegin returns true when the request was answered here
 func (router *Router) crowdsecBegin(w http.ResponseWriter, r *http.Request, sep *ProxyEndpoint) bool {
@@ -77,17 +111,44 @@ func (router *Router) crowdsecBegin(w http.ResponseWriter, r *http.Request, sep 
 		//protected-address exemptions do not apply to them.
 		v = cs.CheckForwarded(forwardedCandidates(r, resolved), abuseScope(sep))
 	}
-	if !v.Matched || !v.Enforce {
+	if !v.Matched {
+		if v.Skip != "" { //a decision applies but the address is allowlisted or the site exempt: served, and shown as such
+			cs.Report(v, v.DefaultOutcome(), router.crowdsecEvent(r, v))
+		}
+		return false
+	}
+	if !v.Enforce {
+		cs.Report(v, crowdsec.OutLogOnly, router.crowdsecEvent(r, v))
 		return false
 	}
 	detail := v.Detail()
-	switch v.Action {
-	case crowdsec.ActionCaptcha:
+	if v.Action == crowdsec.ActionCaptcha {
 		if sep == nil || sep.EffectiveCaptchaConfig() == nil || !sep.EffectiveCaptchaConfig().IsConfigured() || router.captchaSessionStore == nil {
-			return false //no CAPTCHA on this site: a captcha decision is only logged, never turned into a block
+			if !v.Fallback {
+				//no CAPTCHA on this site: a captcha decision is only logged, never turned into a block (unless the fallback says ban)
+				cs.Report(v, crowdsec.OutNoCaptcha, router.crowdsecEvent(r, v))
+				return false
+			}
+			detail += " (no CAPTCHA on this site, treated as a ban)"
+		} else {
+			flow := r.URL != nil && (r.URL.Path == captcha.VerifyPath || r.URL.Path == captcha.AltchaChallengePath)
+			if router.captchaChallengeFor(w, r, sep, "crowdsec", detail, "crowdsec") {
+				if !flow { //the verification and the proof-of-work request belong to a challenge already counted
+					cs.Report(v, crowdsec.OutChallenged, router.crowdsecEvent(r, v))
+				}
+				return true
+			}
+			cs.Report(v, router.crowdsecCaptchaServed(r, sep), router.crowdsecEvent(r, v))
+			return false
 		}
-		return router.captchaChallengeFor(w, r, sep, "crowdsec", detail, "crowdsec")
 	}
+	out := crowdsec.OutBlocked
+	if v.Action == crowdsec.ActionClosed {
+		out = crowdsec.OutFailClosed
+	} else if v.Drop {
+		out = crowdsec.OutDropped
+	}
+	cs.Report(v, out, router.crowdsecEvent(r, v))
 	router.Option.Metrics.Event(metrics.EventAccessBlocked, endpointLabel(sep), "crowdsec")
 	if v.Drop {
 		router.logRequestRule(r, false, 444, "crowdsec-dropped", r.Host, "", sep, detail, "crowdsec")

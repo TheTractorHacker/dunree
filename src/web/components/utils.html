@@ -571,7 +571,7 @@
     // or, with the daily check on, the release the server cached (GET /api/updater/badge, no request to GitHub).
     function utKnownRelease(){
         var u = null;
-        try { u = JSON.parse(localStorage.getItem("zoraxy.topbar.update") || "null"); } catch (e) { u = null; }
+        try { u = JSON.parse(zxStore.get("zoraxy.topbar.update") || "null"); } catch (e) { u = null; }
         if (u && Date.now() - (u.at || 0) > 14 * 24 * 3600 * 1000){ u = null; }
         if (utBadge && utBadge.auto_check && utBadge.update_available){ return {available: true, latest: utBadge.latest || ""}; }
         if (u && u.available && utVersion && u.latest && u.latest.replace(/^v/, "") === utVersion){ return {available: false, latest: u.latest, checked: true}; }

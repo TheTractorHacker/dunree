@@ -15,10 +15,10 @@
     "use strict";
 
     function storeGet(key) {
-        try { return localStorage.getItem(key); } catch (e) { return null; }
+        try { return zxStore.get(key); } catch (e) { return null; }
     }
     function storeSet(key, val) {
-        try { localStorage.setItem(key, val); } catch (e) { /* storage blocked */ }
+        try { zxStore.set(key, val); } catch (e) { /* storage blocked */ }
     }
 
     /* ---------------------------------------------------------------
@@ -407,6 +407,55 @@
         });
         scan();
     }
+
+    /*
+        Selection bar in the place of the list toolbar (components.md 9.4).
+        var swap = zxBulkSwap(barElement, toolbarElement);  swap.set(true | false);
+        The bar (.zxs-bulk, the element right after the toolbar) is laid over the toolbar: the toolbar keeps its room but is not shown
+        (.zxs-swapped), the bar is pulled up by exactly that room and is at least as tall. Nothing below moves when a selection starts
+        or ends. The bar stays sticky; the fit follows the toolbar when the window changes size.
+        The bar must not be taller than the toolbar either, so it takes the first of its forms that fits (data-fit, see zxpages.css):
+        one line in full, one line in three shorter forms, or two lines where the toolbar has two.
+    */
+    var BULK_FITS = ["", "brief", "brief words", "brief words twoline", "brief icons"], BULK_ONE_LINE = 68;
+    window.zxBulkSwap = function (bar, tools) {
+        var on = false, ro = null;
+        function fit() {
+            if (!on || !bar || !tools) { return; }
+            bar.style.marginTop = "0"; bar.style.marginBottom = ""; bar.style.minHeight = ""; bar.style.position = "static";
+            var room = bar.getBoundingClientRect().top - tools.getBoundingClientRect().top;   // the toolbar and the gap under it
+            var h = tools.offsetHeight, form = null;
+            for (var i = 0; i < BULK_FITS.length && form === null; i++) {
+                bar.setAttribute("data-fit", BULK_FITS[i]);
+                var two = BULK_FITS[i].indexOf("twoline") > -1, bh = bar.offsetHeight;
+                if (two ? bh <= Math.max(h, 1) : bh <= Math.min(BULK_ONE_LINE, Math.max(h, 48))) { form = BULK_FITS[i]; }
+            }
+            if (form === null) { bar.setAttribute("data-fit", "brief words twoline"); }   // nothing fits (a very long language): readable comes first
+            if (room > 0 && h > 0) {
+                bar.style.marginTop = (-room) + "px";
+                bar.style.minHeight = h + "px";
+                bar.style.marginBottom = Math.max(0, room - bar.offsetHeight) + "px";
+            } else { bar.style.marginTop = ""; }
+            bar.style.position = "";
+        }
+        function set(v) {
+            v = !!v;
+            if (!bar || !tools) { return; }
+            if (v === on) { if (v) { fit(); } return; }
+            on = v;
+            bar.hidden = !v;
+            tools.classList.toggle("zxs-swapped", v);
+            if (v) {
+                fit();
+                if (!ro && window.ResizeObserver) { ro = new ResizeObserver(fit); ro.observe(tools); }
+                window.addEventListener("resize", fit);
+            } else {
+                bar.style.marginTop = ""; bar.style.marginBottom = ""; bar.style.minHeight = "";
+                window.removeEventListener("resize", fit);
+            }
+        }
+        return { set: set, fit: fit };
+    };
 
     $(function () {
         try {

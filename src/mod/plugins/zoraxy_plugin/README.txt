@@ -17,3 +17,10 @@ This module serves as a template for building your own plugins for the Zoraxy Re
 ## Directory Structure
  zoraxy_plugin: Handle -introspect and -configuration process required for plugin loading and startup
  embed_webserver: Handle embeded web server routing and injecting csrf token to your plugin served UI pages
+
+## Version
+This package follows semantic versioning. The version is the constant `SDKVersion`
+in zoraxy_plugin.go, the history is in CHANGELOG.md. The plugin contract it
+implements (`APIVersion`) is written down in docs/plugins/contract.md of the
+Zoraxy repository. Copy the whole folder, including CHANGELOG.md, and do not
+edit the copy: replace it with a newer one when you want a newer version.

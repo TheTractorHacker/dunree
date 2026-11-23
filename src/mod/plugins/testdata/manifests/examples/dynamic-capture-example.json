@@ -1,0 +1,20 @@
+{
+ "id": "org.aroz.zoraxy.dynamic-capture-example",
+ "name": "Dynamic Capture Example",
+ "author": "aroz.org",
+ "author_contact": "https://aroz.org",
+ "description": "This is an example plugin for Zoraxy that demonstrates how to use dynamic captures.",
+ "url": "https://zoraxy.aroz.org",
+ "type": 0,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": null,
+ "static_capture_ingress": "",
+ "dynamic_capture_sniff": "/d_sniff",
+ "dynamic_capture_ingress": "/d_capture",
+ "ui_path": "/debug",
+ "subscription_path": "",
+ "subscriptions_events": null,
+ "permitted_api_endpoints": null
+}

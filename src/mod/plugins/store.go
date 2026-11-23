@@ -3,12 +3,11 @@ package plugins
 import (
 	"encoding/json"
 	"fmt"
-	"imuslab.com/zoraxy/mod/offline"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +28,16 @@ type DownloadablePlugin struct {
 	PluginIntroSpect zoraxy_plugin.IntroSpect `json:"PluginIntroSpect"` //Plugin introspect information
 	DownloadURLs     map[string]string        `json:"DownloadURLs"`     //Download URLs for different platforms
 	Source           string                   `json:"Source"`           //The plugin store index URL this plugin was fetched from
+
+	//Set by Zoraxy when the index is read (store_verify.go), never taken from an unsigned index
+	Downloads   map[string]PinnedDownload `json:"Downloads,omitempty"` //signed index only: URL, SHA-256 and size per platform
+	Signature   string                    `json:"Signature"`           //signed | unsigned | no_key | missing | bad_signature | replayed | downgraded | unchecked
+	IndexSerial int64                     `json:"IndexSerial"`         //serial of the signed index, 0 for an unsigned one
+
+	// Fingerprint of the public key the signature of the index was verified with
+	// (only for Signature "signed"). An entry counts as signed only as long as that
+	// is the configured key: replacing the key revokes what the old key signed.
+	verifiedKey string
 }
 
 /* Plugin Store Index List Sync */
@@ -38,17 +47,50 @@ func (m *Manager) UpdateDownloadablePluginList() error {
 	newCache := []*DownloadablePlugin{}
 	var lastErr error
 	succCount := 0
+	enforce := m.Settings().VerifyMode == VerifyEnforce
+	keyNow := m.indexKeyFingerprint()
 	for _, url := range m.GetAllStoreURLs() {
-		pluginList, err := m.getPluginListFromURL(url)
+		pluginList, st, err := m.fetchIndex(url)
 		if err != nil {
 			//One broken source should not prevent the other sources from syncing
 			lastErr = fmt.Errorf("failed to get plugin list from %s: %w", url, err)
 			m.Log("Failed to sync plugin list from "+url, err)
+			prev := m.sourceStatusOf(url)
+			prev.Error, prev.CheckedAt = "The last sync of this index failed.", st.CheckedAt
+			m.setSourceStatus(url, prev)
 			continue
 		}
 		for _, plugin := range pluginList {
 			plugin.Source = url
 		}
+		// A finding: an index in the signed format whose signature is not good, or an
+		// address that served a signed index before and now serves the upstream list
+		if st.Signature != SigSigned && st.Signature != SigUnchecked && st.Signature != SigUnsigned {
+			was := m.sourceStatusOf(url)
+			if was.Signature != st.Signature || was.Serial != st.Serial {
+				//Once per change, not at every sync
+				m.Log("plugin index "+url+": "+st.Note, nil)
+				m.audit("plugins.index.signature", url, map[string]string{"state": st.Signature, "serial": strconv.FormatInt(st.Serial, 10), "mode": m.Settings().VerifyMode})
+			}
+			if enforce {
+				// Keep what the last good index of this address offered: it is validly
+				// signed and newer than what is being served now. Only entries that
+				// were verified with the key that is configured now: after a change of
+				// the key nothing the old key signed stays on offer.
+				kept := []*DownloadablePlugin{}
+				for _, old := range m.Options.DownloadablePluginCache {
+					if old != nil && old.Source == url && old.Signature == SigSigned && keyNow != "" && old.verifiedKey == keyNow {
+						kept = append(kept, old)
+					}
+				}
+				if len(kept) > 0 {
+					pluginList = kept
+					st.Note += " The plugins of the last valid index are still offered."
+					st.Plugins = len(kept)
+				}
+			}
+		}
+		m.setSourceStatus(url, st)
 		newCache = append(newCache, pluginList...)
 		succCount++
 	}
@@ -65,39 +107,10 @@ func (m *Manager) UpdateDownloadablePluginList() error {
 
 // Get the plugin list from the URL
 func (m *Manager) getPluginListFromURL(url string) ([]*DownloadablePlugin, error) {
-	if err := offline.Check(); err != nil {
-		return nil, err
-	}
-	//Get the plugin list from the URL
-	resp, err := http.Get(url)
+	pluginList, _, err := m.fetchIndex(url)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get plugin list from %s: %s", url, resp.Status)
-	}
-
-	var pluginList []*DownloadablePlugin
-	content, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read plugin list from %s: %w", url, err)
-	}
-	content = []byte(strings.TrimSpace(string(content)))
-
-	err = json.Unmarshal(content, &pluginList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal plugin list from %s: %w", url, err)
-	}
-
-	// Filter out if IconPath is empty string, set it to "/img/plugin_icon.png"
-	for _, plugin := range pluginList {
-		if strings.TrimSpace(plugin.IconPath) == "" {
-			plugin.IconPath = "/img/plugin_icon.png"
-		}
-	}
-
 	return pluginList, nil
 }
 
@@ -126,84 +139,77 @@ func (m *Manager) InstallPlugin(plugin *DownloadablePlugin) (err error) {
 		pluginFile += ".exe"
 	}
 
-	//Check if the plugin id already exists in runtime plugin map
-	if _, err := m.GetPluginByID(plugin.PluginIntroSpect.ID); err == nil {
-		return fmt.Errorf("plugin already installed: %s", plugin.PluginIntroSpect.ID)
-	}
-
-	// Two different store names can end up as the same folder name ("Foo/Bar" and
-	// "Foo_Bar"), and a folder can be left from a plugin that no longer loads.
-	// Never write into a folder that already holds something.
-	if entries, statErr := os.ReadDir(pluginDir); statErr == nil && len(entries) > 0 {
-		return fmt.Errorf("the plugin folder %q already exists and is not empty, remove it first", folderName)
-	} else if statErr != nil && !os.IsNotExist(statErr) {
-		return fmt.Errorf("failed to check the plugin folder: %w", statErr)
-	}
-
-	// Create the plugin directory if it doesn't exist
-	err = os.MkdirAll(pluginDir, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create plugin directory: %w", err)
-	}
-	// The folder was absent or empty: a failed install must not leave a half
-	// written plugin behind (it would block the next attempt, see above)
-	defer func() {
-		if err != nil {
-			os.RemoveAll(pluginDir)
+	installTargetFree := func() error {
+		//Check if the plugin id already exists in runtime plugin map
+		if _, err := m.GetPluginByID(plugin.PluginIntroSpect.ID); err == nil {
+			return fmt.Errorf("plugin already installed: %s", plugin.PluginIntroSpect.ID)
 		}
-	}()
 
-	// Download the plugin binary
-	downloadURL, ok := plugin.DownloadURLs[runtime.GOOS+"_"+runtime.GOARCH]
-	if !ok {
-		return fmt.Errorf("no download URL available for the current platform")
+		// Two different store names can end up as the same folder name ("Foo/Bar" and
+		// "Foo_Bar"), and a folder can be left from a plugin that no longer loads.
+		// Never write into a folder that already holds something.
+		if entries, statErr := os.ReadDir(pluginDir); statErr == nil && len(entries) > 0 {
+			return fmt.Errorf("the plugin folder %q already exists and is not empty, remove it first", folderName)
+		} else if statErr != nil && !os.IsNotExist(statErr) {
+			return fmt.Errorf("failed to check the plugin folder: %w", statErr)
+		}
+		return nil
 	}
-
-	if err := offline.Check(); err != nil {
+	if err = installTargetFree(); err != nil {
 		return err
 	}
-	resp, err := http.Get(downloadURL)
-	if err != nil {
-		return fmt.Errorf("failed to download plugin: %w", err)
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download plugin: %s", resp.Status)
-	}
-
-	// Write the plugin binary to the plugin directory
-	pluginPath := filepath.Join(pluginDir, pluginFile)
-	out, err := os.Create(pluginPath)
+	// Download into the staging folder, verify and introspect there. The plugin
+	// folder only appears when all of that went well. The download runs without the
+	// store lock: a slow store does not hold up a rollback or another plugin.
+	release, err := m.beginStaging(plugin.PluginIntroSpect.ID)
 	if err != nil {
-		return fmt.Errorf("failed to create plugin file: %w", err)
+		return err
 	}
-
-	_, err = io.Copy(out, resp.Body)
+	defer release()
+	staged, err := m.stageDownload(plugin, plugin.PluginIntroSpect.ID, pluginFile)
 	if err != nil {
-		out.Close()
-		return fmt.Errorf("failed to write plugin file: %w", err)
+		return err
 	}
-
-	// Make the plugin executable
-	err = os.Chmod(pluginPath, 0755)
-	if err != nil {
-		out.Close()
-		return fmt.Errorf("failed to set executable permissions: %w", err)
-	}
-	//Close the plugin executable before anything else can fail
-	out.Close()
+	defer os.RemoveAll(staged.dir)
 
 	//Ok, also download the icon if exists
 	//Note the IconPath might be a relative path pointing to the default
 	//icon on the webmin server, only download it if it is a full URL
-	iconURL := strings.TrimSpace(plugin.IconPath)
-	if strings.HasPrefix(iconURL, "http://") || strings.HasPrefix(iconURL, "https://") {
-		err = downloadFileTo(iconURL, filepath.Join(pluginDir, "icon.png"))
-		if err != nil {
-			return fmt.Errorf("failed to download plugin icon: %w", err)
-		}
+	if _, err = m.stageIcon(plugin, staged.dir); err != nil {
+		return fmt.Errorf("failed to download plugin icon: %w", err)
 	}
+
+	// From here on files of the plugin directory change: one such change at a time.
+	// What was checked before the download is checked again, it took a while.
+	m.store.opMu.Lock()
+	defer m.store.opMu.Unlock()
+	if err = installTargetFree(); err != nil {
+		return err
+	}
+	if err = m.declaredIDCollision(staged.spec.ID, plugin.PluginIntroSpect.ID); err != nil {
+		return err
+	}
+
+	// Move the whole staged folder into place (one rename inside the plugin directory)
+	if err = os.Remove(pluginDir); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to prepare the plugin folder: %w", err)
+	}
+	if err = os.Rename(staged.dir, pluginDir); err != nil {
+		return fmt.Errorf("failed to move the plugin into place: %w", err)
+	}
+
+	// Where it came from and what was installed: updates only come from this index.
+	// The record goes under the ID the binary declares (the ID the plugin is loaded
+	// under). declaredIDCollision made sure that is not the ID of another plugin.
+	rec := &InstallRecord{Source: plugin.Source, Folder: folderName, Current: staged.version(plugin), LastChange: "install", LastChangeAt: time.Now().Unix()}
+	m.forgetInstallRecord(plugin.PluginIntroSpect.ID) //of an earlier install under this ID that was removed by hand
+	m.saveInstallRecord(staged.spec.ID, rec)
+	for _, id := range []string{plugin.PluginIntroSpect.ID, staged.spec.ID} {
+		m.bumpStoreGen(id)
+		m.dropUITickets(id) //page addresses handed out for an earlier plugin of this ID
+	}
+
 	//Reload the plugin list
 	m.ReloadPluginFromDisk()
 
@@ -285,6 +291,11 @@ func safePluginFolderName(name string, id string) (string, error) {
 
 // UninstallPlugin uninstalls the plugin by removing its directory.
 func (m *Manager) UninstallPlugin(pluginID string) error {
+	// Not while an update or a rollback swaps files of the plugin directory. An
+	// update of this plugin that is still downloading notices the change and stops.
+	m.store.opMu.Lock()
+	defer m.store.opMu.Unlock()
+	m.bumpStoreGen(pluginID)
 
 	//Stop the plugin process if it's running
 	plugin, err := m.GetPluginByID(pluginID)
@@ -316,6 +327,13 @@ func (m *Manager) UninstallPlugin(pluginID string) error {
 		m.Options.Database.Delete(policyDBTable, pluginID)
 		m.Options.Database.Delete(hookDBTable, pluginID)
 	}
+	// Also what was approved of its API permissions: a later install under the same
+	// ID is a new plugin to review
+	m.forgetPermissions(pluginID)
+	// And where it was installed from
+	m.forgetInstallRecord(pluginID)
+	// And the addresses of its isolated page that were handed out
+	m.dropUITickets(pluginID)
 
 	//Reload the plugin list
 	m.ReloadPluginFromDisk()
@@ -364,8 +382,10 @@ func (m *Manager) HandleInstallPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find the plugin info from cache, picking the newest version
-	// if multiple sources offer the same plugin
-	plugin := m.getDownloadablePluginByID(pluginID)
+	// if multiple sources offer the same plugin. The optional parameter
+	// "source" names the index to install from.
+	source, _ := utils.PostPara(r, "source")
+	plugin := m.installCandidate(pluginID, source)
 	if plugin == nil {
 		utils.SendErrorResponse(w, "Plugin not found")
 		return

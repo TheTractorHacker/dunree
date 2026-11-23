@@ -180,6 +180,41 @@
   #pluginsPage .pm-settings label.pm-check input { margin-top: 3px; flex: 0 0 auto; }
   #pluginsPage .pm-summary { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); align-items: center; margin-bottom: var(--zx-space-3); }
   #pluginsPage .pm-summary:empty { display: none; }
+  #pluginsPage .pm-perms { background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-4); text-align: left; }
+  #pluginsPage .pm-perms__list { border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); margin-top: var(--zx-space-3); }
+  #pluginsPage .pm-perms__row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--zx-space-2) var(--zx-space-3); align-items: center; padding: var(--zx-space-2) var(--zx-space-3); border-bottom: 1px solid var(--zx-border); }
+  #pluginsPage .pm-perms__row:last-child { border-bottom: 0; }
+  #pluginsPage .pm-perms__what { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  #pluginsPage .pm-perms__what code { font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+  #pluginsPage .pm-perms__reason { font-size: var(--zx-fs-sm); color: var(--zx-text-muted); overflow-wrap: anywhere; }
+  #pluginsPage .pm-perms__row .ui.button { margin: 0; white-space: nowrap; }
+  #pluginsPage .pm-perms__foot { display: flex; flex-wrap: wrap; gap: var(--zx-space-3); align-items: center; margin-top: var(--zx-space-3); }
+  #pluginsPage .pm-perms__foot .zx-help { margin: 0; flex: 1 1 16rem; }
+  #pluginsPage .pm-perms__foot .ui.button { margin: 0; }
+  #pluginsPage .pm-safety label.pm-check { display: flex; gap: var(--zx-space-2); align-items: flex-start; font-size: var(--zx-fs-sm); cursor: pointer; margin-bottom: var(--zx-space-3); }
+  #pluginsPage .pm-safety label.pm-check input { margin-top: 3px; flex: 0 0 auto; }
+  #pluginsPage .pm-safety__group { margin: var(--zx-space-5) 0 var(--zx-space-2); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); font-weight: 700; font-size: var(--zx-fs-md); }
+  #pluginsPage .pm-safety .zx-field { margin-bottom: var(--zx-space-3); max-width: 40rem; }
+  #pluginsPage .pm-safety .zx-field--wide { max-width: 56rem; }
+  #pluginsPage .pm-safety .zx-textarea { font-family: var(--zx-font-mono, monospace); font-size: var(--zx-fs-sm); min-height: 5.5em; }
+  #pluginsPage .pm-safety__row { display: flex; flex-wrap: wrap; gap: var(--zx-space-3); align-items: center; margin-bottom: var(--zx-space-3); }
+  #pluginsPage .pm-safety__row .ui.button { margin: 0; }
+  #pluginsPage .pm-safety__row .zx-help { margin: 0; flex: 1 1 16rem; }
+  #pluginsPage .pm-sources { border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); margin-bottom: var(--zx-space-3); max-width: 56rem; }
+  #pluginsPage .pm-sources:empty { display: none; }
+  #pluginsPage .pm-sources__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--zx-space-1) var(--zx-space-3); align-items: center; padding: var(--zx-space-2) var(--zx-space-3); border-bottom: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); }
+  #pluginsPage .pm-sources__row:last-child { border-bottom: 0; }
+  #pluginsPage .pm-sources__url { overflow-wrap: anywhere; min-width: 0; }
+  #pluginsPage .pm-sources__note { grid-column: 1 / -1; color: var(--zx-text-muted); }
+  #pluginsPage .pm-install { background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); padding: var(--zx-space-4); text-align: left; }
+  #pluginsPage .pm-install .zx-kv dd { font-family: inherit; font-size: var(--zx-fs-sm); overflow-wrap: anywhere; }
+  #pluginsPage .pm-install__foot { display: flex; flex-wrap: wrap; gap: var(--zx-space-3); align-items: center; margin-top: var(--zx-space-3); }
+  #pluginsPage .pm-install__foot .ui.button { margin: 0; }
+  #pluginsPage .pm-install__foot .zx-help { margin: 0; flex: 1 1 16rem; }
+  @media (max-width: 780px) {
+    #pluginsPage .pm-perms__row { grid-template-columns: minmax(0, 1fr) auto; }
+    #pluginsPage .pm-perms__what { grid-column: 1 / -1; }
+  }
   #pluginsPage #pluginLoadFailures:empty { display: none; }
   #pluginsPage #pluginLoadFailures ul { margin: var(--zx-space-1) 0 0; padding-left: 1.2em; }
   #pluginsPage #pluginLoadFailures code { overflow-wrap: anywhere; }
@@ -294,6 +329,70 @@
     </div>
       </div>
     </section>
+      <details class="zx-disclosure" id="pluginSafetySettings">
+        <summary>Plugin safety settings</summary>
+        <div class="zx-disclosure__body pm-safety">
+          <p class="zx-help" style="margin: 0 0 var(--zx-space-3);">Nothing here refuses or changes anything unless you turn it on. The settings apply to every plugin.</p>
+          <label class="pm-check"><input type="checkbox" id="pluginRequireApproval"> <span><strong>Require my approval for Zoraxy API permissions</strong><br>
+            Off: a plugin may call every Zoraxy API endpoint it asks for, and permissions you have not approved are only reported (in the plugin list and in the security audit log).
+            On: a plugin may only call the endpoints you approved under Details. An update that asks for more does not get it until you approve it.
+            Plugins that were installed before this option existed keep what they had.</span></label>
+          <label class="pm-check"><input type="checkbox" id="pluginContractRefuse"> <span><strong>Do not start plugins built for a newer plugin contract</strong><br>
+            Off: a plugin that was built for a newer Zoraxy than this one is started anyway, with a warning. On: it is not started.
+            Plugins that declare no contract version (older plugins) are never affected.</span></label>
+          <p class="zx-help" id="pluginContractInfo" style="margin: 0;"></p>
+
+          <p class="pm-safety__group">Signed plugin index</p>
+          <p class="zx-help" style="margin: 0 0 var(--zx-space-3);">A signed index lists the exact download, checksum and size of every plugin and is signed with a plugin key. The index that ships with Zoraxy is not signed, so its plugins show as "Unsigned". Whatever you choose, a plugin is only updated from the index it was installed from.</p>
+          <div class="zx-field">
+            <div class="zx-field__label-row"><label class="zx-field__label" for="pluginVerifyMode">Signature checking</label></div>
+            <select class="zx-select" id="pluginVerifyMode">
+              <option value="off">Off: check nothing</option>
+              <option value="warn">Warn (default): report problems, install anyway</option>
+              <option value="enforce">Enforce: only install what a signed index describes</option>
+            </select>
+            <p class="zx-help" id="pluginVerifyModeHelp"></p>
+          </div>
+          <div class="zx-field zx-field--wide">
+            <div class="zx-field__label-row"><label class="zx-field__label" for="pluginIndexKey">Public key of the plugin index</label></div>
+            <textarea class="zx-textarea" id="pluginIndexKey" rows="3" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+            <p class="zx-help" id="pluginIndexKeyInfo">The public half of the key the index is signed with (PEM, or 32 bytes in base64 or hex). It is not a secret. Never paste a private key here.</p>
+          </div>
+          <div class="pm-safety__row">
+            <button type="button" class="ui basic button" id="pluginIndexKeySave">Save public key</button>
+            <p class="zx-help" id="pluginIndexKeyState"></p>
+          </div>
+          <div class="pm-sources" id="pluginIndexSources" aria-label="Plugin indexes"></div>
+
+          <p class="pm-safety__group">Updates</p>
+          <label class="pm-check"><input type="checkbox" id="pluginAutoRollback"> <span><strong>Roll back automatically when a new version does not start</strong><br>
+            An update keeps the version it replaces. After the update the plugin has to start and answer.
+            Off: a new version that fails is left in place and reported, and you roll back with one click under Details.
+            On: Zoraxy puts the previous version back and starts it.</span></label>
+
+          <p class="pm-safety__group">Plugin pages</p>
+          <label class="pm-check"><input type="checkbox" id="pluginIsolateUI"> <span><strong>Isolate plugin pages from the admin session</strong><br>
+            Off: the page of a plugin runs inside this admin page with your session, so it can do whatever you can do here.
+            On: plugin pages are served from an address of their own, without your session cookie and CSRF token, in a sandbox.
+            A plugin page that needs the admin API stops working when this is on.</span></label>
+          <div class="zx-form-grid">
+            <div class="zx-field">
+              <div class="zx-field__label-row"><label class="zx-field__label" for="pluginUIListen">Listen address of the plugin pages</label></div>
+              <input class="zx-input" type="text" id="pluginUIListen" spellcheck="false" autocomplete="off" placeholder=":8001">
+              <p class="zx-help" id="pluginUIListenHelp">Port (and optionally host) Zoraxy opens for plugin pages. Your browser has to reach it.</p>
+            </div>
+            <div class="zx-field">
+              <div class="zx-field__label-row"><label class="zx-field__label" for="pluginUIOrigin">Address your browser uses for it (optional)</label></div>
+              <input class="zx-input" type="text" id="pluginUIOrigin" spellcheck="false" autocomplete="off" placeholder="https://plugins.example.com">
+              <p class="zx-help">Only when the admin page is behind another proxy. Empty: the host of this page with the port above.</p>
+            </div>
+          </div>
+          <div class="pm-safety__row">
+            <button type="button" class="ui basic button" id="pluginUISave">Save addresses</button>
+            <p class="zx-help" id="pluginUIState" aria-live="polite"></p>
+          </div>
+        </div>
+      </details>
       <details class="zx-disclosure" id="pluginDeveloperSettings">
         <summary>Developer settings</summary>
         <div class="zx-disclosure__body ui form">
@@ -794,6 +893,32 @@ function pluginHealthInfo(plugin){
     restart += " · " + (st.AutoRestartCount == 1 ? t("1 automatic restart") : tf("{0} automatic restarts", st.AutoRestartCount));
   }
   info.lines.push({text: restart, cls: ""});
+  const perm = st.Permissions || {};
+  if (perm.Withheld > 0){
+    info.lines.push({text: perm.Withheld == 1 ? t("1 API permission waits for your approval (not granted)") : tf("{0} API permissions wait for your approval (not granted)", perm.Withheld), cls: "pm-health__line--danger pm-health__line--perm"});
+  } else if (perm.Pending > 0){
+    info.lines.push({text: perm.Pending == 1 ? t("1 API permission you have not approved") : tf("{0} API permissions you have not approved", perm.Pending), cls: "pm-health__line--warn pm-health__line--perm"});
+  }
+  const inst = st.Install || {};
+  if (inst.BinaryState == "changed"){
+    info.lines.push({text: t("Program file changed since it was installed"), cls: "pm-health__line--danger pm-health__line--install"});
+  } else if (inst.LastChangeIssue){
+    info.lines.push({text: inst.LastChange == "auto_rollback" ? t("Last update failed: previous version restored") : (inst.CanRollback ? t("Last update did not start properly: roll back under Details") : t("Last update did not start properly")), cls: "pm-health__line--warn pm-health__line--install"});
+  } else if (inst.Verified == "hash_mismatch"){
+    info.lines.push({text: t("Download did not match its index"), cls: "pm-health__line--warn pm-health__line--install"});
+  }
+  const con = st.Contract || {};
+  if (con.State == "unsupported"){
+    // "Not started" only when a start was refused. The setting does not stop a plugin
+    // that is running, and a plugin that was stopped or never started was not refused yet.
+    let contractText = t("Built for a newer Zoraxy: may not work");
+    if (con.Refused){
+      if (st.State == "failed_to_start"){ contractText = t("Built for a newer Zoraxy: not started"); }
+      else if (st.State == "running"){ contractText = t("Built for a newer Zoraxy: still running, will not be started again"); }
+      else { contractText = t("Built for a newer Zoraxy: will not be started"); }
+    }
+    info.lines.push({text: contractText, cls: "pm-health__line--warn pm-health__line--contract"});
+  }
   if (c.PassedWhileDown > 0){
     info.lines.push({text: c.PassedWhileDown == 1 ? t("1 request passed unfiltered while it was down") : tf("{0} requests passed unfiltered while it was down", c.PassedWhileDown), cls: "pm-health__line--danger"});
   }
@@ -824,10 +949,18 @@ function pluginHealthCell(plugin){
 
 //Callouts above the table for what needs the attention of the administrator
 function renderPluginAlerts(data){
-  const loops = [], passed = [];
+  const loops = [], passed = [], unapproved = [], badUpdate = [], changedBinary = [];
+  let approvalRequired = false;
   data.forEach(plugin => {
     const st = plugin.Status || {};
+    if (((st.Permissions || {}).Pending || 0) > 0){
+      unapproved.push(plugin.Spec.name);
+      approvalRequired = approvalRequired || !!st.Permissions.RequireApproval;
+    }
     if (st.State == "crash_loop") loops.push(plugin.Spec.name);
+    const inst = st.Install || {};
+    if (inst.BinaryState == "changed") changedBinary.push(plugin.Spec.name);
+    else if (inst.LastChangeIssue && inst.CanRollback) badUpdate.push(plugin.Spec.name);
     if (((st.Counters || {}).PassedWhileDown || 0) > 0) passed.push(plugin.Spec.name);
   });
   let html = "";
@@ -838,11 +971,32 @@ function renderPluginAlerts(data){
         ${ZxUI.esc(loops.join(", "))}. ${ZxUI.esc(t("Open Details to see the exit history and the last output. Start tries again."))}</div>
       </div>`;
   }
+  if (changedBinary.length){
+    html += `<div class="zx-callout zx-callout--danger" role="alert" data-alert="binary_changed">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(changedBinary.length == 1 ? t("The program file of 1 plugin is not the one that was installed") : tf("The program files of {0} plugins are not the ones that were installed", changedBinary.length))}</div>
+        ${ZxUI.esc(changedBinary.join(", "))}. ${ZxUI.esc(t("The file was replaced or changed on disk after the install. If that was not you, stop the plugin and reinstall it."))}</div>
+      </div>`;
+  }
+  if (badUpdate.length){
+    html += `<div class="zx-callout zx-callout--warn" role="note" data-alert="update_failed">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="history icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(badUpdate.length == 1 ? t("1 plugin did not start properly after its update") : tf("{0} plugins did not start properly after their update", badUpdate.length))}</div>
+        ${ZxUI.esc(badUpdate.join(", "))}. ${ZxUI.esc(t("The version that was replaced is kept. Open Details of the plugin and choose Roll back to return to it."))}</div>
+      </div>`;
+  }
   if (passed.length){
     html += `<div class="zx-callout zx-callout--warn" role="note" data-alert="passed_while_down">
         <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
         <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(t("Requests passed unfiltered while a fail-closed plugin was not running"))}</div>
         ${ZxUI.esc(passed.join(", "))}. ${ZxUI.esc(t("You allowed this plugin to block requests when it fails, but it was not running, so it could not. Turn on \"Also block requests while this plugin is not running\" to refuse such requests instead."))}</div>
+      </div>`;
+  }
+  if (unapproved.length){
+    html += `<div class="zx-callout zx-callout--warn" role="note" data-alert="permissions">
+        <span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(unapproved.length == 1 ? t("1 plugin asks for Zoraxy API permissions you have not approved") : tf("{0} plugins ask for Zoraxy API permissions you have not approved", unapproved.length))}</div>
+        ${ZxUI.esc(unapproved.join(", "))}. ${ZxUI.esc(approvalRequired ? t("These permissions are not granted until you approve them. Open Details of the plugin to see and approve them.") : t("They are granted, because approval is not required. Open Details of the plugin to see and approve them, or turn on \"Require my approval\" under Plugin safety settings."))}</div>
       </div>`;
   }
   $("#pluginAlerts").html(html);
@@ -946,6 +1100,18 @@ function pluginDetailHtml(detail){
   if (detail.LogFile){
     add(t("Log file"), detail.LogFile);
   }
+  const con = st.Contract || {};
+  if (con.State == "legacy"){
+    add(t("Plugin contract"), t("Not declared (older plugin, runs as before)"));
+  } else if (con.State == "ok"){
+    add(t("Plugin contract"), tf("Version {0} (supported)", con.APIVersion));
+  } else if (con.State == "unsupported"){
+    add(t("Plugin contract"), con.Refused
+      ? (st.State == "running"
+        ? tf("Version {0}. This Zoraxy supports {1} to {2}, and you chose not to start such plugins. This one was already running and keeps running; it will not be started again.", con.APIVersion, con.SupportedMin, con.SupportedMax)
+        : tf("Version {0}. This Zoraxy supports {1} to {2}, and you chose not to start such plugins.", con.APIVersion, con.SupportedMin, con.SupportedMax))
+      : tf("Version {0}. This Zoraxy supports {1} to {2}: the plugin is started anyway and may not work as expected.", con.APIVersion, con.SupportedMin, con.SupportedMax));
+  }
   if (st.LastError){
     add(t("Last problem"), st.LastError + (st.LastErrorAt ? " (" + pluginTimeAgo(st.LastErrorAt) + ")" : ""));
   }
@@ -977,7 +1143,108 @@ function pluginDetailHtml(detail){
         ${out.length ? `<div class="zx-codeblock" tabindex="0"><pre>${ZxUI.esc(out.join("\n"))}</pre></div>` : `<p class="zx-muted">${ZxUI.esc(t("The plugin has not printed anything since Zoraxy started."))}</p>`}
       </div>
     </div>
-    ${pluginHistoryHtml(detail.ExitHistory || [])}`;
+    ${pluginHistoryHtml(detail.ExitHistory || [])}
+    <div class="pm-detail__block">${pluginInstallHtml(detail.ID || (detail.Spec || {}).id || "", st.Install || {})}</div>`;
+}
+
+//Signature state of an index, or of the index a plugin version came from
+function pluginSignatureBadge(state){
+  const map = {
+    signed: ["zx-badge--ok", t("Signed")],
+    unsigned: ["", t("Unsigned")],
+    unchecked: ["", t("Not checked")],
+    no_key: ["zx-badge--warn", t("Signed, no key to check it")],
+    missing: ["zx-badge--warn", t("Signature missing")],
+    bad_signature: ["zx-badge--danger", t("Signature not valid")],
+    replayed: ["zx-badge--danger", t("Old index served again")],
+    downgraded: ["zx-badge--danger", t("Signature removed")]
+  };
+  const m = map[state] || ["", t("Unknown")];
+  return `<span class="zx-badge zx-badge--dot ${m[0]}" data-signature="${ZxUI.esc(state || "")}">${ZxUI.esc(m[1])}</span>`;
+}
+
+/* Where a plugin came from, how its download was checked, and the previous version (rollback) */
+function pluginInstallHtml(pluginId, inst){
+  const pid = ZxUI.esc(pluginId);
+  const rows = [];
+  const add = (k, html) => { rows.push(`<dt>${ZxUI.esc(k)}</dt><dd>${html}</dd>`); };
+  if (!inst.Known){
+    add(t("Installed from"), ZxUI.esc(t("Not recorded: this plugin was installed before installs were recorded, or copied in by hand. Any index may update it; from its next update on it is bound to that index.")));
+  } else {
+    add(t("Installed from"), inst.Source
+      ? `<code>${ZxUI.esc(inst.Source)}</code><br>${ZxUI.esc(t("Updates only come from this index."))}`
+      : ZxUI.esc(t("No index: any index may update this plugin.")));
+    add(t("Index signature"), pluginSignatureBadge(inst.Signature));
+    const verified = {
+      hash_ok: t("The download matched the checksum and size of the index."),
+      hash_mismatch: t("The download did not match the checksum of the index. It was installed because signature checking was set to warn."),
+      not_pinned: t("The index has no checksum for this download, so there was nothing to compare."),
+      unchecked: t("Not compared: signature checking was off.")
+    }[inst.Verified];
+    if (verified) add(t("Download check"), ZxUI.esc(verified));
+    if (inst.Version) add(t("Installed version"), ZxUI.esc(inst.Version) + (inst.InstalledAt ? " · " + ZxUI.esc(pluginTimeAgo(inst.InstalledAt)) : ""));
+    if (inst.SHA256) add(t("SHA-256 of the program file"), `<code>${ZxUI.esc(inst.SHA256)}</code>`);
+  }
+  if (inst.BinaryState == "changed"){
+    add(t("Program file"), `<span class="zx-badge zx-badge--dot zx-badge--danger">${ZxUI.esc(t("Changed since install"))}</span><br>${ZxUI.esc(t("The file in the plugin folder is not the one that was installed. With signature checking set to enforce Zoraxy does not start it, and does not run or load it at its next start or reload. With warn it is run as before."))}`);
+  } else if (inst.BinaryState == "ok"){
+    add(t("Program file"), `<span class="zx-badge zx-badge--dot zx-badge--ok">${ZxUI.esc(t("As installed"))}</span>`);
+  }
+  if (inst.LastChangeNote){
+    add(t("Last change"), ZxUI.esc(inst.LastChangeNote) + (inst.LastChangeAt ? " (" + ZxUI.esc(pluginTimeAgo(inst.LastChangeAt)) + ")" : ""));
+  }
+  add(t("Previous version"), inst.CanRollback
+    ? ZxUI.esc(tf("Version {0} is kept in the plugin folder.", inst.PreviousVersion || "?"))
+    : ZxUI.esc(t("None kept. An update keeps the version it replaces.")));
+  const buttons = [];
+  if (inst.CanRollback){
+    buttons.push(`<button type="button" class="ui ${inst.LastChangeIssue ? "primary" : "basic"} button pm-install__rollback" data-pid="${pid}" data-version="${ZxUI.esc(inst.PreviousVersion || "")}" onclick="rollbackPlugin(this.dataset.pid, this.dataset.version, this);">${ZxUI.esc(tf("Roll back to version {0}", inst.PreviousVersion || "?"))}</button>`);
+  }
+  if (inst.Known && inst.Source){
+    buttons.push(`<button type="button" class="ui basic button pm-install__release" data-pid="${pid}" onclick="releasePluginSource(this.dataset.pid, this);">${ZxUI.esc(t("Allow updates from any index"))}</button>`);
+  }
+  return `<div class="pm-install" data-pid="${pid}" data-signature="${ZxUI.esc(inst.Signature || "")}" data-can-rollback="${inst.CanRollback ? "true" : "false"}" data-binary="${ZxUI.esc(inst.BinaryState || "")}">
+      <p class="pm-detail__title">${ZxUI.esc(t("Install and updates"))}</p>
+      <dl class="zx-kv">${rows.join("")}</dl>
+      ${buttons.length ? `<div class="pm-install__foot">${buttons.join("")}<p class="zx-help">${ZxUI.esc(inst.CanRollback ? t("A rollback stops the plugin, puts the previous program file back and starts the plugin again if it was meant to run. Files the plugin stored are not changed.") : "")}</p></div>` : ""}
+    </div>`;
+}
+
+function rollbackPlugin(pluginId, version, btn){
+  if (!confirm(tf("Roll this plugin back to version {0}? The version that is installed now is removed.", version || "?"))) return;
+  $(btn).addClass("disabled loading");
+  $.cjax({
+    url: '/api/plugins/store/rollback',
+    type: 'POST',
+    data: {pluginID: pluginId},
+    success: function(resp){
+      $(btn).removeClass("disabled loading");
+      if (resp.error != undefined){
+        msgbox(ZxUI.esc(resp.error), false);
+      } else {
+        msgbox(ZxUI.esc(tf("Rolled back to version {0}", version || "?")), true);
+      }
+      initiatePluginList();
+      initPluginSideMenu();
+    },
+    error: function(){ $(btn).removeClass("disabled loading"); msgbox(t("The plugin could not be rolled back."), false); }
+  });
+}
+
+function releasePluginSource(pluginId, btn){
+  if (!confirm(t("Let any index update this plugin? If two indexes offer it, the higher version wins, whoever publishes it."))) return;
+  $(btn).addClass("disabled");
+  $.cjax({
+    url: '/api/plugins/store/releaseSource',
+    type: 'POST',
+    data: {pluginID: pluginId},
+    success: function(resp){
+      $(btn).removeClass("disabled");
+      if (resp.error != undefined){ msgbox(ZxUI.esc(resp.error), false); } else { msgbox(t("Any index may update this plugin now"), true); }
+      loadPluginStatusDetail(pluginId);
+    },
+    error: function(){ $(btn).removeClass("disabled"); msgbox(t("The setting could not be saved."), false); }
+  });
 }
 
 //Counters since Zoraxy started: only the ones that are not zero
@@ -1133,7 +1400,7 @@ function savePluginSettings(form){
     success: function(resp){
       btn.removeClass("disabled");
       if (resp.error != undefined){
-        msgbox(resp.error, false);
+        msgbox(ZxUI.esc(resp.error), false);
         return;
       }
       msgbox(t("Supervision settings saved"), true);
@@ -1154,12 +1421,82 @@ function setPluginPolicyValue(pluginId, values){
     data: data,
     success: function(resp){
       if (resp.error != undefined){
-        msgbox(resp.error, false);
+        msgbox(ZxUI.esc(resp.error), false);
       }else{
         msgbox("Plugin setting updated", true);
       }
       initiatePluginList();
     }
+  });
+}
+
+/* Zoraxy API permissions of one plugin, see /api/plugins/permissions */
+function pluginPermissionsHtml(view){
+  const pid = ZxUI.esc(view.ID);
+  const list = view.Requested || [];
+  if (list.length == 0){
+    return `<div class="pm-perms" data-pid="${pid}">
+        <p class="pm-detail__title">${ZxUI.esc(t("Zoraxy API permissions"))}</p>
+        <p class="zx-muted" style="margin: 0;">${ZxUI.esc(t("This plugin does not ask for access to the Zoraxy API."))}</p>
+      </div>`;
+  }
+  const how = view.RequireApproval
+    ? t("Your approval is required: the plugin can only call the endpoints you approved. An approval applies at once, without a restart of the plugin.")
+    : t("Your approval is not required, so the plugin can call every endpoint it asks for. Approving records that you have seen it. To make approvals binding, turn on \"Require my approval\" under Plugin safety settings.");
+  const rows = list.map(e => {
+    let badge = "zx-badge--ok", label = t("Approved");
+    if (!e.Approved && e.Granted){ badge = "zx-badge--warn"; label = t("Not approved, granted"); }
+    else if (!e.Approved){ badge = "zx-badge--danger"; label = t("Waiting for approval, not granted"); }
+    return `<div class="pm-perms__row" data-method="${ZxUI.esc(e.Method)}" data-endpoint="${ZxUI.esc(e.Endpoint)}" data-approved="${e.Approved ? "true" : "false"}" data-granted="${e.Granted ? "true" : "false"}">
+        <div class="pm-perms__what"><code>${ZxUI.esc(e.Method)} ${ZxUI.esc(e.Endpoint)}</code>${e.Reason ? `<span class="pm-perms__reason">${ZxUI.esc(tf("The plugin says: {0}", e.Reason))}</span>` : ""}</div>
+        <span class="zx-badge zx-badge--dot ${badge}">${ZxUI.esc(label)}</span>
+        <button type="button" class="ui basic mini button pm-perms__one" data-pid="${pid}" data-action="${e.Approved ? "revoke" : "approve"}" onclick="setPluginPermission(this.dataset.pid, this.dataset.action, [this.closest('.pm-perms__row')], this);">${ZxUI.esc(e.Approved ? t("Withdraw") : t("Approve"))}</button>
+      </div>`;
+  }).join("");
+  const pending = view.Pending || 0;
+  return `<div class="pm-perms" data-pid="${pid}" data-pending="${pending}" data-withheld="${view.Withheld || 0}" data-require="${view.RequireApproval ? "true" : "false"}">
+      <p class="pm-detail__title">${ZxUI.esc(t("Zoraxy API permissions"))}</p>
+      <p class="zx-help" style="margin: 0;">${ZxUI.esc(t("What this plugin asks to do in Zoraxy through the plugin API. The reason next to each one is the text of the plugin author."))} ${ZxUI.esc(how)}</p>
+      <div class="pm-perms__list">${rows}</div>
+      <div class="pm-perms__foot">
+        ${pending > 0 ? `<button type="button" class="ui primary button pm-perms__all" data-pid="${pid}" onclick="setPluginPermission(this.dataset.pid, 'approve', Array.from(this.closest('.pm-perms').querySelectorAll('.pm-perms__row[data-approved=false]')), this);">${ZxUI.esc(pending == 1 ? t("Approve the 1 permission shown as not approved") : tf("Approve the {0} permissions shown as not approved", pending))}</button>` : ""}
+        <p class="zx-help">${ZxUI.esc(view.Origin == "baseline" ? t("This plugin was installed before permissions were tracked, so what it asked for then counts as approved.") : "")}</p>
+      </div>
+    </div>`;
+}
+
+function loadPluginPermissions(pluginId){
+  const row = $("#pluginTable tr.pm-detail").filter(function(){ return $(this).attr("data-pid") == pluginId; });
+  if (row.length == 0) return;
+  $.get('/api/plugins/permissions?plugin_id=' + encodeURIComponent(pluginId), function(view){
+    if (!view || view.error != undefined){
+      row.find(".pm-detail__perms").html(`<span class="zx-muted">${ZxUI.esc((view && view.error) || t("The permissions could not be loaded."))}</span>`);
+      return;
+    }
+    row.find(".pm-detail__perms").html(pluginPermissionsHtml(view));
+  });
+}
+
+//Approve or withdraw exactly the endpoints of the given rows (what the administrator sees, not "whatever the plugin asks for by now")
+function setPluginPermission(pluginId, action, rowEls, btn){
+  const endpoints = rowEls.map(el => ({Method: el.getAttribute("data-method"), Endpoint: el.getAttribute("data-endpoint")}));
+  if (endpoints.length == 0) return;
+  $(btn).addClass("disabled");
+  $.cjax({
+    url: '/api/plugins/permissions',
+    type: 'POST',
+    data: {plugin_id: pluginId, action: action, endpoints: JSON.stringify(endpoints)},
+    success: function(resp){
+      $(btn).removeClass("disabled");
+      if (resp.error != undefined){
+        msgbox(ZxUI.esc(resp.error), false);
+      } else {
+        msgbox(action == "approve" ? t("Permission approved") : t("Approval withdrawn"), true);
+      }
+      loadPluginPermissions(pluginId);
+      refreshPluginStatus(true);
+    },
+    error: function(){ $(btn).removeClass("disabled"); msgbox(t("The permission could not be changed."), false); }
   });
 }
 
@@ -1175,8 +1512,14 @@ function loadPluginStatusDetail(pluginId){
       //The live part is replaced on every refresh; the settings form below it is only
       //drawn once, so a refresh never wipes what the administrator is typing
       if (row.find(".pm-detail__live").length == 0){
-        row.find("td").html(`<div class="pm-detail__live"></div><div class="pm-detail__block pm-detail__settings"><span class="zx-muted">${ZxUI.esc(t("Loading..."))}</span></div>`);
+        row.find("td").html(`<div class="pm-detail__live"></div><div class="pm-detail__block pm-detail__perms"></div><div class="pm-detail__block pm-detail__settings"><span class="zx-muted">${ZxUI.esc(t("Loading..."))}</span></div>`);
         loadPluginSettings(pluginId);
+      }
+      //What the plugin may call can change without a click here (update, the safety setting): follow it
+      const permSig = JSON.stringify([(data.Status || {}).Permissions, ((data.Status || {}).Contract || {}).State]);
+      if (row.attr("data-perm-sig") != permSig){
+        row.attr("data-perm-sig", permSig);
+        loadPluginPermissions(pluginId);
       }
       if (data.error != undefined){
         row.find(".pm-detail__live").html(`<span class="zx-muted">${ZxUI.esc(data.error)}</span>`);
@@ -1319,7 +1662,7 @@ function refreshPluginStatus(force){
       }
       //An open details row follows the plugin: counters, exit history and output can change without a state change.
       //It is only loaded again when something did change (each load is a POST, which the audit log records).
-      const sig = JSON.stringify([st.State, st.Health, st.StartCount, st.NextRestartAt, st.Counters]);
+      const sig = JSON.stringify([st.State, st.Health, st.StartCount, st.NextRestartAt, st.Counters, st.Permissions, st.Contract]);
       if (open && row.attr("data-sig") != sig){ loadPluginStatusDetail(plugin.Spec.id); }
       row.attr("data-sig", sig);
     });
@@ -1330,7 +1673,7 @@ function refreshPluginStatus(force){
 }
 //Opening the page shows fresh status at once (the list was loaded with the admin UI, without the port probe)
 if (typeof tabSwitchEventBind != "undefined"){
-  tabSwitchEventBind["plugins"] = function(){ refreshPluginStatus(); };
+  tabSwitchEventBind["plugins"] = function(){ refreshPluginStatus(); if (typeof loadPluginSafetySettings == "function"){ loadPluginSafetySettings(); } };
 }
 if (window.pluginStatusTimer){ clearInterval(window.pluginStatusTimer); }
 window.pluginStatusTimer = setInterval(refreshPluginStatus, 10000);
@@ -1582,6 +1925,106 @@ function uninstallPlugin(pluginId, pluginName, btn=undefined) {
   }
 
   initDeveloperSettings();
+
+  /* Plugin safety settings (nothing refuses or changes anything by default), see /api/plugins/settings */
+  function loadPluginSafetySettings(){
+    $.get('/api/plugins/settings', function(data){
+      if (!data || data.error != undefined) return;
+      $("#pluginRequireApproval").prop("checked", !!data.RequirePermissionApproval);
+      $("#pluginContractRefuse").prop("checked", data.ContractMode == "refuse");
+      $("#pluginContractInfo").text(tf("This Zoraxy supports plugin contract versions {0} to {1} (plugin SDK {2}).", data.ContractVersionMin, data.ContractVersionMax, data.SDKVersion));
+      renderPluginStoreSafety(data);
+    });
+  }
+  //Signed index, automatic rollback and isolated plugin pages
+  function renderPluginStoreSafety(data){
+    $("#pluginVerifyMode").val(data.VerifyMode || "warn");
+    $("#pluginVerifyModeHelp").text({
+      off: t("Now: nothing is checked. Indexes and downloads are taken as they come."),
+      warn: t("Now: a signature or checksum that does not match is logged, written to the security audit log and shown here. The plugin is installed anyway."),
+      enforce: t("Now: a plugin is only installed or updated when its index is validly signed and the download matches it. Plugins of an unsigned index cannot be installed or updated. A plugin whose program file was changed after the install is not started, and at a start or reload of Zoraxy the changed file is not run or loaded.")
+    }[data.VerifyMode] || "");
+    const keyBox = $("#pluginIndexKey");
+    if (!keyBox.is(":focus")){ keyBox.val(data.IndexPublicKey || ""); }
+    keyBox.prop("disabled", !!data.IndexKeyFromFlag);
+    $("#pluginIndexKeySave").toggleClass("disabled", !!data.IndexKeyFromFlag);
+    let keyState = t("No key is set: a signed index cannot be checked.");
+    if (data.IndexKeyProblem){ keyState = tf("The key cannot be used: {0}", data.IndexKeyProblem); }
+    else if (data.IndexKeyFingerprint){ keyState = tf("Key in use, fingerprint {0}.", data.IndexKeyFingerprint); }
+    if (data.IndexKeyFromFlag){ keyState += " " + t("It comes from the start flag -plugin_index_pubkey, which wins over this field."); }
+    $("#pluginIndexKeyState").text(keyState).attr("data-fingerprint", data.IndexKeyFingerprint || "");
+    $("#pluginIndexSources").html((data.Sources || []).map(src => {
+      const note = src.error || src.note || "";
+      const facts = [];
+      if (src.serial) facts.push(tf("serial {0}", src.serial));
+      if (src.format) facts.push(src.plugins == 1 ? t("1 plugin") : tf("{0} plugins", src.plugins || 0));
+      return `<div class="pm-sources__row" data-url="${ZxUI.esc(src.url)}">
+          <span class="pm-sources__url"><code>${ZxUI.esc(src.url)}</code>${facts.length ? " · " + ZxUI.esc(facts.join(", ")) : ""}</span>
+          ${src.format ? pluginSignatureBadge(src.signature) : `<span class="zx-muted">${ZxUI.esc(t("Not read yet"))}</span>`}
+          ${note ? `<span class="pm-sources__note">${ZxUI.esc(note)}</span>` : ""}
+        </div>`;
+    }).join(""));
+    $("#pluginAutoRollback").prop("checked", !!data.AutoRollback);
+    const iso = data.UIIsolation || {};
+    $("#pluginIsolateUI").prop("checked", !!data.IsolatePluginUI);
+    if (!$("#pluginUIListen").is(":focus")){ $("#pluginUIListen").val(data.PluginUIListen || ""); }
+    if (!$("#pluginUIOrigin").is(":focus")){ $("#pluginUIOrigin").val(data.PluginUIOrigin || ""); }
+    $("#pluginUIListen").attr("placeholder", iso.DefaultListen || ":8001");
+    $("#pluginUIListenHelp").text(iso.DefaultListen
+      ? tf("Port (and optionally host) Zoraxy opens for plugin pages. Your browser has to reach it. Empty: {0}.", iso.DefaultListen)
+      : t("Port (and optionally host) Zoraxy opens for plugin pages. Your browser has to reach it."));
+    let uiState = t("Plugin pages are not isolated.");
+    if (data.IsolatePluginUI){
+      uiState = iso.Listening ? tf("Plugin pages are isolated and served on {0}.", iso.ListenAddr) : tf("Plugin pages are isolated but cannot be served: {0}. Plugin pages are not available until this is fixed.", iso.Error || t("the listener is not running"));
+    }
+    $("#pluginUIState").text(uiState).attr("data-listening", iso.Listening ? "true" : "false");
+  }
+  function savePluginSafetySetting(values, okText){
+    $.cjax({
+      url: '/api/plugins/settings',
+      type: 'POST',
+      data: values,
+      success: function(resp){
+        if (resp.error != undefined){
+          msgbox(ZxUI.esc(resp.error), false);
+        } else {
+          msgbox(okText, true);
+        }
+        loadPluginSafetySettings();
+        //What is granted changed: redraw the list and every open details row
+        $("#pluginTable tr.pm-detail").removeAttr("data-perm-sig");
+        refreshPluginStatus(true);
+        Object.keys(plugin_detail_open).forEach(id => { loadPluginStatusDetail(id); });
+      },
+      error: function(){ msgbox(t("The setting could not be saved."), false); loadPluginSafetySettings(); }
+    });
+  }
+  $("#pluginRequireApproval").on("change", function(){
+    savePluginSafetySetting({require_permission_approval: this.checked ? "true" : "false"},
+      this.checked ? t("API permissions now need your approval") : t("API permissions no longer need your approval"));
+  });
+  $("#pluginContractRefuse").on("change", function(){
+    savePluginSafetySetting({contract_mode: this.checked ? "refuse" : "warn"},
+      this.checked ? t("Plugins built for a newer plugin contract are no longer started") : t("Plugins built for a newer plugin contract are started with a warning"));
+  });
+  $("#pluginVerifyMode").on("change", function(){
+    savePluginSafetySetting({verify_mode: this.value}, tf("Signature checking is now: {0}", this.value));
+  });
+  $("#pluginIndexKeySave").on("click", function(){
+    savePluginSafetySetting({index_public_key: $("#pluginIndexKey").val().trim()}, t("Public key of the plugin index saved"));
+  });
+  $("#pluginAutoRollback").on("change", function(){
+    savePluginSafetySetting({auto_rollback: this.checked ? "true" : "false"},
+      this.checked ? t("A new version that does not start is rolled back automatically") : t("A new version that does not start is left in place and reported"));
+  });
+  $("#pluginIsolateUI").on("change", function(){
+    savePluginSafetySetting({isolate_plugin_ui: this.checked ? "true" : "false", plugin_ui_listen: $("#pluginUIListen").val().trim(), plugin_ui_origin: $("#pluginUIOrigin").val().trim()},
+      this.checked ? t("Plugin pages are now isolated from the admin session") : t("Plugin pages are no longer isolated"));
+  });
+  $("#pluginUISave").on("click", function(){
+    savePluginSafetySetting({plugin_ui_listen: $("#pluginUIListen").val().trim(), plugin_ui_origin: $("#pluginUIOrigin").val().trim()}, t("Addresses of the plugin pages saved"));
+  });
+  loadPluginSafetySettings();
   // Scope to this page's accordion only; .advanceSettings is reused by
   // other webmin components loaded dynamically via ajax.
 

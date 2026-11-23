@@ -64,8 +64,8 @@
 
     function $m() { return $("#httprpEditModal"); }
     function visible() { return $("#httprpEditModalWrapper").is(":visible"); }
-    function storeGet() { try { return localStorage.getItem(MODE_KEY); } catch (e) { return null; } }
-    function storeSet(v) { try { localStorage.setItem(MODE_KEY, v); } catch (e) { /* storage blocked */ } }
+    function storeGet() { try { return zxStore.get(MODE_KEY); } catch (e) { return null; } }
+    function storeSet(v) { try { zxStore.set(MODE_KEY, v); } catch (e) { /* storage blocked */ } }
 
     /* ------------------------------------------------------------------ init */
     // Controls without a name or id get a stable one so the dirty tracker keys do not depend on their position,

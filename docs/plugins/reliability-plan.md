@@ -3,7 +3,13 @@
 Status: **phase 0 and phase 1 are built, with gaps.** Phase 0: see "Phase 0 results and known limits". Phase 1
 (supervision, every new behaviour off by default): see "Phase 1 results and known limits" at the end, which also lists
 what of phase 1 was **not** built (request budget, slow-call breaker, Prometheus series, lowering a filter timeout) and
-what was not tested (root, `-plugin_user` with limits, Windows). Phases 2 and 3 are a plan, nothing of them is built.
+what was not tested (root, `-plugin_user` with limits, Windows). **Phase 2 is partly built:** items 2.1 (contract),
+2.2 (SDK version and compatibility test), 2.3 (secrets off the command line, SDK side) and 2.6 (permission approval), see
+"Phase 2 results and known limits (items 2.1, 2.2, 2.3, 2.6)" at the end. Items 2.4 (signed index), 2.5 (safe
+install, update, rollback) and 2.7 (isolated plugin UI) are built too: see "Phase 2 results and known limits (items
+2.4, 2.5, 2.7)". **Phase 3 is built, with gaps** (reference plugins, conformance kit, a run of the kit against the
+three plugins installed on the build machine): see "Phase 3 results and known limits", the last section, which also
+lists what of phase 3 was **not** done (no signed plugin index entry, no upstream issues, no "conformance passed" flag).
 Sections 1 to 6 and the appendices describe the code as it was **before** phase 0. Branch `dev`, written
 2026-11-22 from a read-only review of the code (no build, no test run, no Zoraxy instance started). Every claim about today's behaviour cites `file:line`. Paths
 are relative to `src/` unless they start with `docs/`, `tools/` or `example/`. Where I could not check something it says
@@ -843,4 +849,634 @@ What this round added:
 cd src
 GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test ./mod/plugins/ -run 'TestBug|TestFault' -count=1
 GOTMPDIR=$HOME/.cache/go-tmp CGO_ENABLED=1 ~/capped.sh go test -race ./mod/plugins/ -count=1     # needs gcc
+```
+
+---
+
+## Phase 2 results and known limits (items 2.1, 2.2, 2.3, 2.6)
+
+Built 2026-11-23 on `dev`. This section covers four of the seven items of phase 2. The signed index (2.4), safe
+install and rollback (2.5), the isolated plugin UI (2.7) and phase 3 are **not** part of it. Everything here is off
+or log-only by default; a plugin that declares nothing and an administrator who changes nothing see the behaviour of
+phase 1, with the additions listed under "Behaviour that changed for existing installs".
+
+### What was built
+
+| Item | Where | What it does | Default |
+|---|---|---|---|
+| 2.1 Contract version | `src/mod/plugins/contract.go`, `introspect.go`, `lifecycle.go`, SDK `zoraxy_plugin.go` | Manifest field `api_version` (missing = 0 = legacy). Zoraxy supports 0 to 1. A plugin that declares 1 or more gets `api_version_min` / `api_version_max` in its configure payload. A plugin built for a newer contract is reported: log line at load and at start, `Status.Contract` in the API, a line in the Health column and a row in Details | **warn**: the plugin is started anyway |
+| 2.1 Opt-in refuse | `contract.go` (`ManagerSettings.ContractMode`), `GET/POST /api/plugins/settings`, "Plugin safety settings" in the Plugin Manager | `contract_mode=refuse`: a plugin of an unsupported contract version is not started (state `failed_to_start` with the reason). Legacy plugins and plugins inside the range are never affected. A restart policy does not retry such a plugin, at boot or after a crash | off |
+| 2.1 Written contract | `docs/plugins/contract.md` | Versions, introspect, configure, calls in both directions, stop sequence, permissions, seven stability rules, and the tests that hold each claim | |
+| 2.1 Golden manifests | `src/mod/plugins/testdata/manifests/examples` (11), `.../installed` (3) | The `-introspect` output of every example plugin as built with SDK 1.0.0, and of the three plugins installed on this machine (see known limits for how they were taken) | |
+| 2.2 SDK version | `src/mod/plugins/zoraxy_plugin/zoraxy_plugin.go`, `CHANGELOG.md`, `README.txt` | `SDKVersion = "1.1.0"` (semantic versioning), `APIVersion = 1`, changelog, tag scheme `sdk/v<version>`. New in 1.1.0: `IntroSpect.APIVersion` (filled in by `ServeIntroSpect`), `ConfigureSpec.APIVersionMin/Max` with `ContractKnown`, `ContractSupported`, `SupportsAPIVersion`, a one-line warning on standard error when Zoraxy does not support the SDK's contract, `HealthHandler` | |
+| 2.2 Module path decision | `docs/plugins/contract.md` section 9 | **The SDK stays a package inside the Zoraxy module and is distributed by copying the folder; it is not a Go module of its own.** Reasons and what replaces the module (version constant, changelog, tags, frozen copy, compatibility test) are written there | |
+| 2.2 Compatibility test | `testdata/sdk-1.0.0/` (frozen SDK), `testdata/sdkplugin/` (fixture plugin written against the public SDK API), `phase2_helper_test.go`, `phase2_contract_test.go` | The fixture is built twice, offline: against the frozen SDK 1.0.0 and against the current SDK. Each binary goes through load, start, configure, API key, filter (modify and deny), static capture, UI, 20 events with the invoke token, crash, automatic restart, stop | |
+| 2.3 Secrets off the command line | phase 1 code in `lifecycle.go` (confirmed, unchanged), SDK `RecvConfigureSpec`, examples | The lifecycle side was built in phase 1 and is confirmed by a new test with a plugin built from the real SDK. New: the reference examples `api-call-example` and `filter-example` declare `ConfigureVia: plugin.ConfigureViaStdin` (and `HealthPath` with `plugin.HealthHandler`); the test now also reads `/proc/<pid>/environ` | per plugin, declared by the plugin |
+| 2.6 Permission approval | `src/mod/plugins/permissions.go`, `lifecycle.go`, `mod/auth/plugin_apikey_manager.go` (`SetPermittedEndpointsForPlugin`), `GET/POST /api/plugins/permissions` | Per plugin ID Zoraxy stores which `permitted_api_endpoints` (method + path) are approved (table `plugin_permissions`). At every load (boot, install, update, reload) the manifest is compared with it. Endpoints that are not approved: one log line, one security audit entry `plugins.permissions.new` (actor "plugin manager", with the endpoints and whether they were granted), `Status.Permissions` in the API, a line in the Health column, a notice above the list, and a "Zoraxy API permissions" block in Details with Approve / Withdraw per endpoint and "Approve the N ..." | **log-only**: every endpoint of the manifest is granted, as before |
+| 2.6 Opt-in "require approval" | `ManagerSettings.RequirePermissionApproval`, "Plugin safety settings" | Only approved endpoints are granted. The plugin still gets an API key; a call to an endpoint that is not approved is answered as not permitted. Approving or withdrawing changes what the key of the **running** process opens, at once | off |
+| Example plugins | `example/plugins/*/mod/zoraxy_plugin` | All eleven examples carry SDK 1.1.0 and build offline with it | |
+| Author docs | `docs/plugins/docs/2. Architecture/8. Contract Version, Health and Secrets.md`, note in `3. Configure.md`, `zoraxy_plugin API.md` regenerated, `index.json` | `api_version`, `health_path`, `configure_via`, and what approval means for authors | |
+| UI | `src/web/components/plugins.html` | As above, plus the disclosure "Plugin safety settings" with the two switches | |
+
+### Behaviour that changed for existing installs
+
+1. **Two new database tables** (`plugin_settings`, `plugin_permissions`). At the first start of this version every
+   installed plugin that asks for API endpoints gets a row that records those endpoints as approved ("baseline"),
+   with one log line per plugin. Nothing is asked of the administrator and no badge appears for these plugins.
+2. **A plugin that is installed or copied in after that first start** shows "N API permissions you have not
+   approved" in the Plugin Manager and gets one audit entry. It still receives every endpoint it asks for.
+3. **`/api/plugins/list`, `/api/plugins/info` and `/api/plugins/status`** carry two more objects in `Status`:
+   `Contract` and `Permissions` (additive).
+4. **A plugin that is rebuilt with SDK 1.1.0** declares `"api_version": 1` without a code change, and Zoraxy then
+   adds `api_version_min` / `api_version_max` to its configure payload. A plugin that is not rebuilt gets byte for
+   byte what it got before (`TestFaultContractRangeOnlyForPluginsThatDeclareAVersion`,
+   `TestSDKCompatBinaryBuiltWithOldSDKStillPasses`).
+5. **The example plugins `api-call-example` and `filter-example`** now receive their configuration on standard
+   input and serve `/health`. Both still work with a Zoraxy that passes `-configure=`.
+6. **Uninstall** also forgets the approved permissions of the plugin ID.
+7. Nothing else. No request is decided differently, no plugin is refused, no permission is withheld unless one of
+   the two switches is turned on.
+
+### Tests
+
+`src/mod/plugins/phase2_contract_test.go`, `phase2_permissions_test.go`, `phase2_helper_test.go`,
+`src/mod/auth/plugin_apikey_endpoints_test.go`. The chaos plugin got the settings `api_version` and `api_endpoints`.
+
+| Behaviour asked for | Test |
+|---|---|
+| Golden manifests parse unchanged (every field back with the same value, nothing added, all legacy, never warned about or refused) | `TestContractGoldenManifestsParseUnchanged` |
+| Version states, invalid values | `TestContractStatesAndSanitize`, `TestSDKContractHelpers` |
+| Mismatch: warn by default, refuse on opt-in, setting stored, legacy and current plugins unaffected | `TestFaultContractMismatchWarnsByDefaultAndRefusesOnOptIn`, `TestFaultRefusedPluginIsNotRetriedAtBoot` |
+| Range only for plugins that declare a version | `TestFaultContractRangeOnlyForPluginsThatDeclareAVersion` |
+| A binary built with the old SDK passes against this Zoraxy; so does one built with the current SDK | `TestSDKCompatBinaryBuiltWithOldSDKStillPasses`, `TestSDKCompatBinaryBuiltWithCurrentSDKPasses`, `TestSDKFrozenCopyIsNotTheCurrentSDK` (the frozen copy was not overwritten; the changelog has an entry for `SDKVersion`) |
+| ps-style check with the real SDK: no key, no token in the command line or the environment | `TestFaultSDKPluginSecretsAreNotInTheProcessList`; from phase 1: `TestFaultSecretsOnStdinAreNotOnTheCommandLine` |
+| `HealthHandler` of the SDK with the health check | `TestFaultSDKHealthHandlerIsSeenByTheHealthCheck` |
+| Baseline, new plugin pending, reported once, also after a Zoraxy restart | `TestPermissionBaselineThenNewPluginsArePending` |
+| Default: an update that adds an endpoint gets it, with an audit entry and a badge | `TestFaultPermissionAddedByAnUpdateIsGrantedAndReportedByDefault` (real `UpdatePlugin` through a local store fixture) |
+| Opt-in: an update that adds `blacklist/ip/add` is not granted until approved; approve one, refuse nonsense, withdraw, approve all, restart, endpoint dropped and re-added is new again, option off again | `TestFaultPermissionAddedByAnUpdateIsNotGrantedUntilApproved` |
+| Opt-in: a new plugin gets a key that opens nothing; approval stored | `TestFaultNewPluginGetsNothingUntilApprovedWhenApprovalIsRequired` |
+| A plugin without permissions: no record, no key, no audit entry | `TestFaultPluginWithoutPermissionsHasNoRecordAndNoKey` |
+| Uninstall forgets | addition to `TestFaultUninstallForgetsPolicyAndConsent` |
+| Live key narrowed and widened without a new key | `TestSetPermittedEndpointsForPlugin` (`mod/auth`) |
+| UI | `tools/ui-smoke/plugins_smoke.py`: mocked part (Health line, notice, contract row, permissions block with hostile endpoint and reason texts, Approve / Approve all / Withdraw post exactly what is shown, safety settings) and, through `plugins_run.sh`, the real part (a new plugin: granted and reported; "Require my approval" ticked with the real checkbox: nothing granted; one endpoint whose name is markup approved with its button; the rest with the button below; each read back from the API) |
+
+Results (2026-11-23, shared 4-core machine, through `~/capped.sh`): see the build report of this change for the
+exact runs. `go vet ./mod/plugins/...`, `GOOS=windows go vet ./mod/plugins/...` and `go build ./...` clean;
+`go test -p 1 -race ./mod/plugins/... ./mod/auth/` green; `plugins_run.sh` green on a throw-away instance (port
+20710) in headless Chromium at 1366 px, light theme. **Not run:** the whole `go test ./...`, the rest of
+`tools/ui-smoke`, anything as root, on Windows or macOS.
+
+### Not done
+
+- **2.4 signed index, 2.5 safe install / rollback, 2.7 isolated plugin UI, phase 3**: not in this change. The key
+  pair tool of owner decision D4 belongs to 2.4 and was not written here.
+- **The SDK is not a Go module** (decision, `contract.md` section 9). **The tag `sdk/v1.1.0` was not created**
+  and **no CI job** runs the compatibility test; it runs with the package tests.
+- **Start flags** for the two settings: there are none, they are in the database and the UI only.
+- **Plugin info side panel and store dialog** (`web/snippet/pluginInfo.html`, `web/components/appstore.html`): not
+  changed. They still list the permissions of a manifest without saying what is approved.
+- **The generated HTML of the author docs** (`docs/plugins/html/`) was not rebuilt; the Markdown and `index.json`
+  are updated.
+- **DEVELOPMENT.md**, translations (all new texts are English), Prometheus series.
+- **`plugincontext.html`** was not touched (it belongs to 2.7).
+
+### Known limits
+
+- **The contract version is a declaration, not a proof.** Zoraxy cannot tell whether a plugin that says
+  `api_version: 1` follows the contract; that is the conformance kit of phase 3. The only mismatch that exists
+  today is "newer than this Zoraxy"; there is no "too old", because version 0 is supported.
+- **Warn mode warns in the log, the API and the Plugin Manager only.** No notification, no audit entry.
+- **Refuse applies to starts.** Turning it on does not stop a plugin that is already running; it is refused at its
+  next start. Until then the Plugin Manager says "still running, will not be started again". A restart policy that
+  restarts such a plugin after a crash runs into the refusal once and stops there in the state `failed_to_start`
+  (no retries, no crash loop; `TestFaultRefusedPluginIsNotRetriedAfterACrash`). Turning refuse off again does not
+  start it: press Start.
+- **Your three plugins are legacy plugins** and stay so until their authors rebuild them with SDK 1.1.0 or add the
+  field. Nothing changes for them.
+- **How the three "installed" golden manifests were taken:** by running each binary under `/home/sysadmin/plugins`
+  once with `-introspect` (as the unprivileged build user, working directory in a scratch folder, 10 s limit), the
+  same call Zoraxy makes at every boot. They are Data-Shield Blocklist 1.3.0, Resource Monitor 1.0.3 and Zoraxy
+  Cloudflare WAF 0.3.4, which is what is installed here; section 1 of this plan quotes the public index
+  (1.4.0 / 0.4.0). The plugins on the other proxy were not looked at.
+- **SDK 1.0.0 is the SDK as the example plugins carried it** (identical to commit `ff33f5be`, with hooks and the
+  invoke token). Plugins built with an older upstream copy (before hooks) are covered by the golden manifests
+  only, not by a built binary.
+- **The compatibility test runs a well-behaved plugin.** It is the part of the fault suite a correct plugin has to
+  pass (start, calls, crash, restart, stop), not the chaos modes: those need a plugin that misbehaves on purpose
+  and stay with the chaos plugin, which does not use the SDK.
+- **Stop of an SDK plugin** ends by the terminate request or by the SIGTERM that follows it, whichever is first;
+  the exit code shown can be 0 or "signal: terminated". Unchanged behaviour, noticed while writing the test.
+- **Secrets on standard input** only for plugins that declare it. A `start.sh` has to pass its standard input on.
+  A plugin with limits is started through `systemd-run --scope`. Checked by hand on this host
+  (`echo ... | systemd-run --user --scope -q -- cat` prints the line): standard input passes through a user scope.
+  There is **no automated test** of `configure_via` together with limits (the phase 1 limits tests use the command
+  line way), and a system scope (Zoraxy as root) was not tried.
+- **Permissions are per plugin ID, not per binary.** Whoever can replace the binary of an approved plugin, or
+  install another plugin under the same ID after an uninstall was skipped, inherits its approvals. Binding
+  approvals to a checksum needs the signed index (2.4).
+- **The baseline approves what is there.** Every plugin present at the first start of this version, also one that
+  was copied in by hand, is recorded as approved with what it asks for at that moment. Review the list once before
+  turning "Require my approval" on (Details of each plugin says "installed before permissions were tracked"). The
+  baseline is taken per database: a new database, or a plugin directory that could not be read at that start,
+  takes it at the next successful start.
+- **A plugin folder that could not be loaded at that first start** (introspect timed out on a busy machine, broken
+  binary) is remembered by its folder name and gets its baseline the first time it loads. This goes by the folder
+  name, not by what is in the folder: whatever loads first from that folder is recorded as approved, once. The
+  name is forgotten when the folder is gone at a boot or a reload (every store install and uninstall reloads), so a
+  folder that is deleted and created again between two reloads still counts as the old one. A plugin whose first
+  load fails *after* the baseline was taken is a new plugin.
+- **A reload does not look at the permissions of plugins that are already loaded.** A binary that was replaced by
+  hand is introspected again only by an update or the next start of Zoraxy; until then the approvals, the Plugin
+  Manager and the API key all describe the manifest that was loaded. The process itself is the new binary from its
+  next start on (unchanged from before).
+- **In the default mode an approval binds nothing.** It records that the administrator has seen the endpoint and
+  clears the badge. It becomes binding when "Require my approval" is turned on.
+- **A permission is a method and a path, compared as text.** `get` and `GET` are different, as they already are
+  for the API key check. There is no approval "for this version only" and no expiry.
+- **An endpoint a plugin stops asking for loses its approval** when that manifest is loaded, so a downgrade and a
+  later upgrade need a new approval.
+- **Withdrawing an approval** changes the live key at once; a request that is being answered at that moment is
+  not cut off. In the default mode it only brings the badge back.
+- **With "Require my approval" on, a plugin that needs an endpoint it does not have** sees its call refused and
+  may log errors or stop working until the endpoint is approved. That is what was asked for, and why it is off by
+  default. The HTTP status of such a refusal is the one the plugin API always gave for an endpoint outside the
+  manifest; it was not checked here.
+- **The audit entry is written once per change** of the set of endpoints that are not approved, not at every boot.
+  Approvals and withdrawals by the administrator are recorded by the HTTP audit middleware as
+  `plugins.permissions` (every POST under `/api/plugins/`), which follows from reading `mod/secaudit/http.go` and
+  was not tested here. The same goes for `plugins.settings`.
+- **Read-only accounts** can read `GET /api/plugins/permissions` and `GET /api/plugins/settings` like the other
+  plugin GET routes. Not tested with a viewer account.
+- **The reason text of an endpoint is the plugin author's.** It is shown escaped, prefixed "The plugin says:".
+- **Without a database** (unit tests only) settings and approvals live in memory.
+- **UI**: looked at in headless Chromium at 1366 px, light theme, once. Dark theme and phone width of the new
+  blocks were not looked at. The permissions block is reloaded when the status of the plugin says its permissions
+  changed, at most every 10 s.
+- **A change of the plugin ID by an update** makes it a new plugin for permissions (and, as before, for policy).
+
+### Phase 2 review fixes
+
+Findings of the independent review of items 2.1 and 2.6 and what was done. The tests are in
+`src/mod/plugins/phase2_review_test.go`. No default changed; the first row removes a change for existing installs
+that the first version of this phase made without saying so.
+
+| Finding | Fix | Test |
+|---|---|---|
+| An `api_version` that is not a whole number (`"1"`, `1.5`, a number too large, an object) made the whole manifest fail to decode, so the plugin could not be loaded. Before the field existed such a key was ignored, and `contract.md` said it is dropped (major) | `decodeManifest` in `introspect.go`: when the only thing wrong with the manifest is the type of `api_version`, the key is dropped (any spelling Go would match), one line is logged and the plugin is a legacy plugin. Every other field is decoded as strictly as before. `contract.md` section 1 lists the cases | `TestContractAPIVersionThatIsNotANumberLoadsAsLegacy` (string, fraction, huge, object, list, bool, other spelling, the key twice; `null` and numbers without a warning; other broken fields still fail), `TestFaultPluginWithOddAPIVersionIsLoadedAsLegacy` (a `start.sh` plugin through the real loader) |
+| Two changes of the plugin safety settings at the same time both started from the same values; the later write undid the earlier one, and the database and the memory could disagree | `SetSettings` holds a lock from reading the settings to storing and swapping them; the API keys are adjusted after it is released | `TestSettingsConcurrentChangesDoNotUndoEachOther` (200 rounds, also under `-race`) |
+| Every reload read the manifest of plugins that were already loaded and reviewed their permissions against it, although that manifest is thrown away: approvals could be dropped and audit entries written for a binary that is not the loaded one | `reviewPermissions` is no longer called by `LoadPluginSpec`. It is called where a manifest becomes the loaded one: at boot, for a new plugin found by a reload, and by an update after the swap (the plugin is stopped at all three, and the start that follows grants what is approved) | `TestFaultReloadDoesNotReviewPermissionsOfLoadedPlugins` |
+| The Health column said "not started" for a plugin of an unsupported contract version that was still running after refuse was turned on | "not started" only in the state `failed_to_start`; a running plugin shows "still running, will not be started again", any other state "will not be started". The Details row says the same | `plugins_smoke.py` ("a running plugin of a refused contract version is not called 'not started'") |
+| With refuse on and a restart policy, a crash of such a plugin led to five refused restarts and the state `crash_loop` | The automatic restart treats the refusal as the boot path does: one attempt, state `failed_to_start`, an exit history entry that says why, nothing counted towards a crash loop | `TestFaultRefusedPluginIsNotRetriedAfterACrash` |
+| Known limit "standard input through `systemd-run --scope` not tested" could be narrowed; the changelog called `health_path` and `configure_via` new in 1.1.0 although the fork.30 copy of the SDK had them | Known limit reworded (checked by hand, no automated test). `CHANGELOG.md` (and its copies in the example plugins) says that these names first shipped unversioned with fork.30 and that 1.1.0 is the first numbered release with them | none (documentation) |
+| The baseline did not cover a plugin that failed to load at the first start of this version; it became a "new" plugin at its next load | The folder names that failed to load at the baseline boot are stored (`permission_baseline_deferred` in `plugin_settings`); such a folder gets its baseline at its first successful load, once. Limits: see "A plugin folder that could not be loaded at that first start" above | `TestPermissionBaselineCoversPluginsThatFailedToLoadThen`, `TestPermissionBaselineIsNotExtendedByLaterLoadFailures` |
+
+Behaviour that changed with these fixes, compared with the first version of this phase (which was never released):
+a manifest with an odd `api_version` loads again; a reload no longer writes permission records or audit entries for
+loaded plugins; one more key in `plugin_settings` when a plugin failed to load at the baseline boot.
+
+Results (2026-11-23, shared 4-core machine, through `~/capped.sh`): `go vet ./mod/plugins/...`,
+`GOOS=windows go vet ./mod/plugins/...` and `go build ./...` clean; `go test -p 1 -race ./mod/plugins/... ./mod/auth/`
+green (plugins package 71 s); `plugins_run.sh` green on a throw-away instance (port 20710). Not run: the whole
+`go test ./...`, the rest of `tools/ui-smoke`, anything as root, on Windows or macOS.
+
+Not done: no automated test of `configure_via` with limits; the Plugin Manager texts for a refused plugin are
+derived from the state in the browser, the API still reports `Contract.Refused` from the current setting (true for
+a running plugin that will be refused at its next start).
+
+### How to run
+
+```
+cd src
+GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -p 1 ./mod/plugins/ ./mod/auth/ -count=1 \
+  -run 'TestContract|TestSDK|TestPermission|TestSettings|TestFaultContract|TestFaultRefused|TestFaultSDK|TestFaultPermission|TestFaultNewPlugin|TestFaultPluginWith|TestFaultReloadDoesNot|TestSetPermittedEndpoints'
+GOTMPDIR=$HOME/.cache/go-tmp CGO_ENABLED=1 ~/capped.sh go test -p 1 -race ./mod/plugins/... -count=1     # everything, needs gcc
+cd .. && PY=<python with playwright> PORT=20710 tools/ui-smoke/plugins_run.sh     # ZORAXY_BIN=<binary> skips the build
+cd example/plugins/filter-example && GOFLAGS=-mod=mod GOPROXY=off go build -o /tmp/filter-example .     # every example builds offline
+```
+
+The SDK compatibility tests need the `go` command at run time (two small offline builds, in the folder the chaos
+plugin is built in). To freeze the next SDK version: copy `src/mod/plugins/zoraxy_plugin` to
+`src/mod/plugins/testdata/sdk-<version>/zoraxy_plugin` before changing it, and add that version to
+`phase2_helper_test.go`.
+
+---
+
+## Phase 2 results and known limits (items 2.4, 2.5, 2.7)
+
+Built 2026-11-23 on `dev`. This section covers the three items the section above left open: the signed plugin
+index (2.4), safe install, update and rollback (2.5) and the isolated plugin UI (2.7). Owner decisions used: D4 (a
+separate plugin key, mode warn by default, enforce opt-in, no index published or curated here). **No real key was
+read, copied or created**: Zoraxy only verifies with a public key you configure, the tool creates a key pair when
+you run it, and the tests use keys the tool creates in a temporary folder. Phase 3 was not built when this section was written (it is now: see the last section).
+
+### What was built
+
+| Item | Where | What it does | Default |
+|---|---|---|---|
+| 2.4 Signed index format | `src/mod/plugins/store_verify.go` | A second index format next to the upstream list: `{"format":"zoraxy-plugin-index","version":1,"serial":N,"plugins":[{IconPath, PluginIntroSpect, Downloads:{"linux_amd64":{url, sha256, size}}}]}` with a detached signature at `<index URL>.sig` (the raw 64 bytes of an ed25519 signature over the exact bytes of the index, PKCS#8 / SPKI PEM keys: the format of `tools/sign_release.go`). `serial` only goes up; Zoraxy stores the highest serial it has seen per index URL (with the checksum of that index) and treats a lower one, or the same one with other content, as a replay | |
+| 2.4 Key | settings `IndexPublicKey`, start flag `-plugin_index_pubkey=<file>` (wins over the setting) | The public half of the plugin key: PEM, or 32 bytes in base64 or hex. A private key pasted there is refused with a clear error | none |
+| 2.4 Verification mode | settings `VerifyMode`, "Plugin safety settings" in the Plugin Manager | `off`: no signature file is fetched, nothing compared. `warn`: every finding (no key, signature missing, signature not valid, replay, download does not match checksum or size) is logged, written to the security audit log once per change and shown; nothing is refused. `enforce`: a plugin is installed or updated only from a validly signed, not replayed index with checksum and size for the platform, and only when the download matches; the download is cut off at the size of the index; the binary must declare the ID of the index; while an index is not valid the plugins of its last valid version stay on offer | **warn** |
+| 2.4 Changed binary | `checkBinaryForStart`, `checkBinaryBeforeLoad` in `store_verify.go`, `lifecycle.go`, `plugins.go` | For a plugin with an install record the SHA-256 of the program file is compared with what was installed: at every start, and **before the file is run for its manifest** at a start of Zoraxy and at every reload. For that second check the record is found by the plugin **folder** (stored in the record, table `plugin_install_folders`), not by the ID the file declares. warn: log line, one audit entry (`plugins.binary.changed`), red line in the Plugin Manager, loaded and started anyway. enforce: at a start it is not started (state `failed_to_start`, not retried by a restart policy); at a start of Zoraxy the changed file is **not run at all** and the folder is listed under "could not be loaded" with the reason; at a reload it is not run and the plugin that is loaded stays as it is. off: not looked at | warn |
+| 2.4 Source of install (F15) | `InstallRecord` in table `plugin_installs`, `updateCandidate` | Every install records the index URL, the version, checksum, size, the signature state of the index and how the download was checked. Update information and updates of that plugin come from that index only. `POST /api/plugins/store/releaseSource` (button "Allow updates from any index") lifts the binding | on for new installs, see "Behaviour that changed" |
+| 2.4 Tool | `tools/plugin-index/sign_plugin_index.go` (standard library only, outside the Go module) | `-genkey PRIVATE.pem PUBLIC.pem` (refuses to overwrite, private key mode 0600), sign (`-index DRAFT -out index.json -key ... -serial N [-files DIR] [-fetch] [-pub ...]`: fills in checksum and size from local files or by download, refuses a serial that is not higher than the one at `-out`, refuses http and "latest" URLs, verifies its own output), `-verify`. It refuses a key file named like the release key or equal to `$ZORAXY_RELEASE_KEY` | |
+| 2.5 Staging | `src/mod/plugins/store_safe.go`, `store.go`, `store_update.go` | Install and update download to `<plugin dir>/.staging/<plugin id>/` with a size cap (256 MB, setting `MaxDownloadMB`; in enforce the size of the index) and a timeout (10 minutes per download, 30 s for an index), compare with the index, and run the binary there with `-introspect`, **as the plugin user** when `-plugin_user` is set. The staging folder is skipped by the plugin loader | always |
+| 2.5 Swap and previous version | `swapIn`, `swapBack` | Only after all of that the plugin is stopped and the binary swapped by two renames inside the plugin directory; the replaced binary goes to `<plugin folder>/.zoraxy-previous/` (a name of Zoraxy's own, so a plugin that keeps data in a folder called `previous` does not lose it). A failed second rename undoes the first. An install moves the whole staged folder into place with one rename | always |
+| 2.5 Health check | `waitHealthyAfterUpdate` | After an update of a plugin that was running (or waiting for an automatic restart) the new process has to answer (its `health_path`, else a TCP connect) within 15 s and then stay up, as the same process, for 2 s | always, for plugins that were running |
+| 2.5 Rollback | `RollbackPlugin`, `POST /api/plugins/store/rollback`, button "Roll back to version X" in Details | Puts the binary of `.zoraxy-previous/` back, reads its manifest, starts the plugin if it was meant to run. One previous version is kept; a rollback uses it up | manual |
+| 2.5 Automatic rollback | setting `AutoRollback` | A new version that fails to start or fails the health check is replaced by the previous one, which is started | **off**: the new version stays in place, the failure is reported with the way out |
+| 2.7 Isolated plugin UI | `src/mod/plugins/ui_isolation.go`, `ui_router.go`, `src/pluginui.go`, `web/components/plugincontext.html` | Settings `IsolatePluginUI`, `PluginUIListen`, `PluginUIOrigin`. On: Zoraxy opens a second listener (default: the host of the admin UI, next port; TLS with the web UI certificate when the admin UI uses TLS; the admin allow-list in front). The admin page asks `POST /api/plugins/ui/ticket` and opens `<origin>/t/<ticket>/` in an iframe sandboxed without `allow-same-origin`. Requests go to the plugin without `Cookie`, `Authorization` and CSRF token (header `X-Zoraxy-Ui-Isolated: true` instead); `Set-Cookie` of the plugin is dropped; every answer carries `Content-Security-Policy: sandbox ...` and `Referrer-Policy: no-referrer`; `/plugin.ui/` under the admin origin answers 403. The public style and script files plugin pages load by absolute path (`/script/`, `/main.css`, `/darktheme.css`, `/img/public/`, `/locales/`, `/favicon.png`) are served there too | **off** |
+| UI | `src/web/components/plugins.html` | Plugin safety settings: signature checking (select), public key, list of indexes with their signature state, automatic rollback, plugin page isolation with its addresses and state. Details of a plugin: block "Install and updates" (index, signature badge, download check, checksum, program file state, last change, previous version, "Roll back to version X", "Allow updates from any index"). Health column and notices for a changed program file and for an update that did not start properly | |
+| API | `/api/plugins/settings` (more fields, also the index list), `Status.Install` in list / info / status, `/api/plugins/store/list` (`Downloads`, `Signature`, `IndexSerial`), `/api/plugins/store/checkUpdates` (`source`, `boundToSource`, `signature`, `blocked`), `/api/plugins/store/sources` (format, signature, serial, note), `/api/plugins/store/install` (optional `source`) | additive | |
+| Chaos plugin | `src/mod/plugins/testdata/chaosplugin/main.go` | Setting `version`; settings appended to the binary after `##CHAOS-TRAILER##` (makes "version 2" of a plugin with another checksum and, say, `mode=crash`); feature `adminprobe` (its page and its process try to use the admin session); `/ui/headers` | |
+
+### Behaviour that changed for existing installs
+
+1. **A new database table** (`plugin_installs`) and one more key in `plugin_settings` (`index_seen`). Plugins that
+   are installed now have **no** install record: nothing is checked for them at start, and any index may update
+   them, as before.
+2. **The first store update of such a plugin binds it** to the index that update came from, and keeps the replaced
+   binary in `.zoraxy-previous/`. From then on only that index updates it. To undo: "Allow updates from any index".
+3. **Plugins installed from the store from now on** are bound to their index from the start. If you run a second
+   index that offers the same plugin ID with a higher version, it no longer takes over updates.
+4. **Install and update run the binary once more than before**: in the staging folder, before anything is replaced
+   (and, with `-plugin_user`, as that user; before, the first run of a new binary was always as Zoraxy's user).
+   A download that is not a loadable plugin is now refused before the installed version is stopped.
+5. **An update no longer stops the plugin before the download.** It keeps running until the new binary passed its
+   checks. A failed download leaves it running (before: stopped).
+6. **An update of a running plugin takes at least 2 s longer** (the health check), and an update whose new version
+   does not come up now returns an error although the new binary is in place. That is on purpose: the error names
+   the rollback. Before, only a start that failed outright was an error.
+7. **Downloads have a size cap** (256 MB per plugin binary, 4 MB per icon, 8 MB per index) **and a timeout.** A
+   larger plugin needs `max_download_mb` (`POST /api/plugins/settings`, up to 4096).
+8. **A folder called `.staging` in the plugin directory is not loaded as a plugin**, and every plugin folder may
+   get a sub-folder `.zoraxy-previous/`.
+9. **Default mode warn:** with the upstream index (not signed) nothing is fetched or logged that was not before;
+   its plugins are labelled "Unsigned". Log lines and audit entries only appear for an index in the signed format
+   or a plugin with an install record.
+10. **The admin page asks `/api/plugins/ui/ticket` before it opens a plugin page.** With isolation off the answer is
+    the address it always used.
+11. Nothing else. No plugin is refused, no update is rolled back by itself and no plugin page is isolated unless
+    you turn the setting on.
+
+### Tests
+
+`src/mod/plugins/phase2_store_test.go` (19 tests; the "store" is a local `httptest` server, the index is signed by
+the real tool, which the test builds), `tools/plugin-index/sign_plugin_index_test.go` (3 tests),
+`tools/ui-smoke/plugins_smoke.py` and `plugins_run.sh`.
+
+| Behaviour asked for | Test |
+|---|---|
+| Defaults: warn, no key, no automatic rollback, no isolation; invalid values refused | `TestStoreDefaultsChangeNothing` |
+| Key formats; a private key is refused; the start flag wins | `TestSignedIndexKeyFormats` |
+| Index signed by the tool verifies; install under enforce; record and status | `TestSignedIndexInstallUnderEnforce` |
+| Tampered binary (same size / larger): enforce refuses and leaves nothing, warn installs, records and audits | `TestSignedIndexTamperedBinaryPerMode` |
+| Wrong hash in a forged index, other key, broken signature file, no signature file, no key: warn / enforce | `TestSignedIndexBadSignaturePerMode` |
+| Replayed older index (also after a restart), same serial with other content: warn lists it marked, enforce keeps the last valid one and refuses | `TestSignedIndexReplayPerMode` |
+| Upstream index: unsigned, cannot make itself look signed; warn installs as before, enforce refuses without downloading | `TestUnsignedIndexPerMode` |
+| Mode off fetches no signature and compares nothing | `TestVerificationOffChecksNothing` |
+| Updates only from the source of install; error text; release | `TestUpdatesOnlyFromTheSourceOfInstall` |
+| A plugin without a record updates as before and is then bound | `TestPluginWithoutRecordUpdatesAsBeforeAndIsThenBound` |
+| Binary replaced on disk: warn starts and reports once, enforce does not start, off does not look | `TestBinaryChangedOnDiskPerMode` |
+| Update keeps `.zoraxy-previous/`, plugin files untouched, manual rollback through the API, second rollback refused, `.staging` not loaded | `TestSafeUpdateKeepsThePreviousVersion` |
+| A failed download keeps the old version **running** (same PID): HTTP 500, transfer cut off, larger than the index, wrong checksum, stalled (timeout), over the size cap with and without Content-Length, not a plugin | `TestFailedDownloadKeepsTheOldVersionRunning` |
+| The staged binary is introspected through the plugin user setting | `TestStagedBinaryIsIntrospectedAsThePluginUser` (not as root, see known limits) |
+| **Chaos: the new version crashes at start** (also: exits with 0, never opens its port). Default: reported, rollback button restores the old one, running. Opt-in: restored and started by itself | `TestFaultNewVersionCrashesAtStart` (6 cases) |
+| The same under a restart policy `on-failure` | `TestFaultNewVersionCrashesUnderARestartPolicy` |
+| A stopped plugin is updated and rolled back without being started | `TestUpdateAndRollbackOfAStoppedPlugin` |
+| **An admin API call from the plugin UI works when not isolated and fails when isolated** (the plugin process calls an API that needs the admin cookie and CSRF token with what it was handed); cookie, Authorization and CSRF token stripped; `Set-Cookie` dropped; CSP sandbox; tickets per plugin; 403 under the admin origin; off again | `TestIsolatedPluginUICannotUseTheAdminSession` |
+| Listener that cannot be opened is refused, origin validation, static file allow-list, allow-list wrapper, configured origin, restart | `TestIsolatedPluginUIListenerAndStaticFiles` |
+| Tool: round trip, serial must rise, changed index / binary / other key noticed, "latest" and http URLs refused, release key refused | `TestSignVerifyRoundtrip`, `TestSignRefusesWhatWouldNotVerifyLater`, `TestReleaseKeyIsRefused` |
+| UI, mocked: install block with hostile texts, Roll back and "any index" ask first and post the plugin ID, signature badges, Health lines, frame attributes with and without isolation, safety settings post one change each | `plugins_smoke.py` |
+| UI, real instance (`plugins_run.sh`, a local signed index on PORT+3): key saved on the page turns the index from "no key" to "Signed"; install under enforce; version 1.1.0 crashes at start, the page reports it, the Roll back button restores 1.0.0; **in a real browser** the plugin page reads the plugin list and changes a safety setting when not isolated, and with isolation ticked it sees no cookie and no token, both calls are blocked, `document.cookie` is denied and the setting is unchanged | `plugins_smoke.py` live part |
+
+Results (2026-11-23, shared 4-core machine, through `~/capped.sh`): `go vet ./mod/plugins/...`,
+`GOOS=windows go vet ./mod/plugins/...` and `go build ./...` clean; `go test -p 1 -race ./mod/plugins/... ./mod/auth/`
+green (plugins package about 100 s); both tool test files green; `plugins_run.sh` green on a throw-away instance
+(port 20710, headless Chromium, 1366 px, light theme). **Not run:** the whole `go test ./...`, the rest of
+`tools/ui-smoke`, anything as root, on Windows or macOS, with web UI TLS.
+
+### Not done
+
+- **No index was published or curated**, no key pair of the owner exists yet. Until you create one, sign an index
+  and add its URL as a store source, every plugin is "Unsigned" and `enforce` would refuse every install and update.
+- **Your three installed plugins have no install record** and are not bound to an index or checked at start until
+  their next store update (or a reinstall).
+- **App Store page** (`web/components/appstore.html`) and the plugin info side panel: not changed apart from the
+  escaping of error texts (see "Review fixes"). The store does
+  not show the signature state of a plugin or why an install is refused beyond the error text of the API. The
+  signature state of each index is in the Plugin Manager.
+- **Start flags** for the settings (other than the key file): none.
+- **Rollback of more than one version, rollback of the icon, rollback of the plugin's own data files**: not built.
+- **Script plugins** (`start.sh`) are not updated by the store, as before, so they have no rollback.
+- **Hot rebuild** (developer mode) does not update the install record; a rebuilt plugin shows "changed since
+  install", and under enforce it is not started and not loaded at the next start of Zoraxy.
+- **DEVELOPMENT.md, `docs/plugins/contract.md`, author docs, translations** (new texts are English), Prometheus series.
+- **`web/index.html`** was not touched: its theme switch calls into the plugin frame. `plugincontext.html` gives an
+  isolated frame a stand-in so that call does nothing; the dark theme is not passed to an isolated page.
+
+### Known limits
+
+- **The signature covers the index, the checksum covers the binary.** Nothing here says a plugin is safe; it says
+  the binary is the one the holder of the plugin key listed. Whoever holds the private key can sign anything.
+- **Key change:** there is one key. To rotate it, sign the index with the new key and replace the public key on
+  every proxy; in between the index shows "Signature not valid". The stored serial numbers are per index URL, not
+  per key, and are only cleared with the database.
+- **Replay protection starts at the first valid index a proxy sees** and is per URL. A fresh install can be served
+  an old (validly signed) index once. An index that is withheld altogether cannot be told from one that has no news.
+- **warn installs what it warns about.** That is the meaning of the default; a mismatching download is on record
+  (Details, audit log), not blocked.
+- **enforce and plugins without a record:** they start as before, because Zoraxy has no checksum for them. Their
+  updates are refused unless the index is signed.
+- **The check of the program file happens at start, at a start of Zoraxy and at a reload**, not while the plugin
+  runs, and covers the entry binary only, not other files in the plugin folder (a `start.sh` next to a missing
+  binary, a library the binary loads). It costs one SHA-256 of the binary per start and per reload.
+- **enforce keeps a changed file from running only for a folder with an install record.** A folder that was copied
+  in by hand, or a plugin installed before installs were recorded, is run for its manifest at every start and
+  reload as before, as Zoraxy's user. Whoever can write into the plugin directory can also add such a folder.
+  enforce is about what the store installed, not a lock on the plugin directory.
+- **Under enforce a plugin whose file changed is not loaded at the next start of Zoraxy**: it is not in the plugin
+  list (the folder is listed as not loadable, with the reason), so it cannot be updated or rolled back from the UI.
+  Put the installed file back, or remove the folder and install again, or switch to warn and restart. That
+  includes a plugin you rebuilt with hot rebuild (developer mode), which does not update the install record.
+- **warn still runs a changed file**, at a start of Zoraxy and at the start of the plugin. When the file declares
+  the ID of its record, the start reports it; when it declares another ID, the load reports it (audit entry with
+  `declared`). A changed file of a plugin that is never started and keeps its ID is only reported when started.
+- **Switching the mode or the key re-reads the indexes** when a list was loaded before. Entries read with
+  verification off count as not signed under enforce until the next sync.
+- **Two download timeouts:** 10 minutes for the whole transfer, and a stall timeout of 60 s (a download that
+  delivers no byte for that long is ended; every byte that arrives gives it another 60 s). Neither is a setting.
+  Redirects are followed as before; the checksum is what pins the content, so a "pinned URL" is a rule of the signing tool
+  (it refuses "latest" URLs), not something Zoraxy can verify.
+- **Introspect in staging as the plugin user needs root**, like every use of `-plugin_user`. Not root with the flag
+  set: the install is refused with the same message a start gives. The run as another user was **not tested**
+  (tests do not run as root); the test shows that the staging introspect goes through that setting. The boot-time
+  introspect of installed plugins still runs as Zoraxy's user (F17 is only closed for new binaries).
+- **The staged binary is run with `-introspect` before the administrator sees its manifest.** Verification comes
+  first; in warn mode a binary that failed verification is still run.
+- **The swap is two renames, not one.** Between them the plugin folder has no binary; the plugin is stopped then.
+  A crash of Zoraxy in that window leaves the installed binary in `.zoraxy-previous/` (update) or in
+  `.staging/.rollback-<id>/` (rollback). The **next start of Zoraxy** renames it back (see "Review fixes"); until
+  then the plugin has no program file. The Roll back button cannot help in that state: it needs a loaded plugin.
+  The repair only runs at a start, never at a reload, and only for a folder whose program file is named after the
+  folder (script plugins are not updated by the store). After an interrupted update the version an *earlier*
+  update had kept is gone (the swap clears it first), so there is nothing to roll back to.
+- **The health check is "answers and stays up for 2 s".** A new version that breaks later, or answers its health
+  path while filtering wrongly, passes. A plugin that needs more than 15 s to open its port fails it.
+- **Without automatic rollback a failed new version stays installed and stopped** (or running without a port).
+  With a restart policy the supervisor keeps restarting it until you roll back or it reaches the crash-loop limit.
+- **After an automatic rollback the store still offers the bad version.** Nothing retries it, but "Update" will.
+  The note about the failed update stays in Details until the next install, update or rollback.
+- **A rollback restores the binary only.** A new version that converted its data files leaves them converted.
+- **An update of a plugin that changes its ID** is allowed in off and warn (as before) and refused in enforce.
+- **Isolated plugin pages need a second port your browser can reach.** Behind another reverse proxy or a firewall
+  you have to publish that port and set "Address your browser uses". If the listener cannot be opened when you
+  turn the setting on, the setting is refused. If it cannot be opened at a later start of Zoraxy, plugin pages are
+  unavailable (the admin origin refuses them) until you fix the address or turn the setting off.
+- **A plugin page that needs the admin API, cookies, `localStorage` or same-origin access stops working when
+  isolated.** Which of your three plugins do was **not checked**. The shared script files of the admin UI are
+  served, but those that use storage (theme) throw inside the sandbox.
+- **The ticket is the key to a plugin page**: 8 hours, per plugin, in the address. Whoever has the address can open
+  that plugin's page (not the admin UI) until it expires; a logout does not end it. Tickets live in memory and end
+  when Zoraxy restarts or isolation is turned off. At most 512 are kept.
+- **The isolated listener** has the admin allow-list in front but not the dial guard that keeps proxy rules from
+  targeting the admin listener, and no login of its own: static files on it are the ones that are public anyway.
+- **An isolated page can still open a window on the admin address.** The sandbox has `allow-popups` (links in
+  plugin pages that open a new tab keep working). A window opened that way is a top-level GET navigation, and the
+  browser sends the admin cookie with it (SameSite=Lax). The page cannot read the answer and cannot send a POST
+  with the cookie, but an admin API that changes state on a GET request (older handlers do not check the method,
+  and `utils.PostPara` also reads the query string) can be triggered blind. Any website you visit while logged in
+  can do the same, so isolation is not worse than no isolation here, but "no part in the admin session" is only
+  true for reading and for POST. Not fixed: closing it means method checks on every admin handler, which is outside
+  the plugin work. `allow-popups` was kept; dropping it would not stop the outside website.
+- **What isolation does not stop:** the plugin process itself still has its granted plugin API key and runs as
+  its OS user; isolation is about the page in the administrator's browser. A path such as `/t/<ticket>/../x` is
+  passed to the plugin as it always was under `/plugin.ui/`.
+- **Browser behaviour** (opaque origin, blocked cross-origin calls, SameSite cookies) was observed in headless
+  Chromium only. With web UI TLS the listener uses the same certificate; that combination was **not run**.
+- **UI:** looked at in headless Chromium at 1366 px, light theme. Dark theme and phone width of the new blocks
+  were not looked at. Texts are English only.
+
+### Review fixes (2.4, 2.5, 2.7)
+
+Each finding was checked against the code first. Tests: `src/mod/plugins/phase2_store_review_test.go`, and
+`tools/ui-smoke/plugins_smoke.py` for the two UI rows.
+
+| Finding | Fix | Test |
+|---|---|---|
+| Under enforce a program file that changed on disk was still run: every start of Zoraxy and every reload ran it with `-introspect` as Zoraxy's user before anything was compared, and a file that declared another ID had no record and was never compared (major) | The install record stores the plugin folder; `plugin_install_folders` maps folder to plugin ID. `checkBinaryBeforeLoad` hashes the entry point before `LoadPluginSpec` runs it, at boot and reload. enforce: a mismatching file is not run; at boot the folder is a load failure with the reason, at a reload the loaded plugin is left as it is; one audit entry per changed file. warn: loaded as before, and a file that declares another ID than its record is logged and audited (`declared`). A record without a folder (written before this fix) gets it at the next boot. The UI texts about enforce say what happens | `TestChangedBinaryIsNotRunBeforeItIsCompared` (the replacement leaves a marker file when run), `TestInstallRecordLearnsItsFolderAtBoot` |
+| Docs and two comments said `previous/`, the code uses `.zoraxy-previous/` | Corrected everywhere in this section and in `store_safe.go`, `store_verify.go` | |
+| Docs said there is no stall detection; the 60 s stall timeout had no test | Doc corrected | `TestStalledDownloadIsEndedByTheStallTimeout` (bytes keep arriving past the stall time, then stop; the overall timeout stays at 10 minutes) |
+| A crash between the two renames left a folder without program file; "use Roll back" could not work, nothing cleaned `.staging/` | At a start of Zoraxy `repairPluginFolder` renames the installed file back (from `.staging/.rollback-<id>/` after an interrupted rollback, else from `.zoraxy-previous/` after an interrupted update), with a log line, and `clearStagingAtBoot` empties `.staging/`. Doc corrected | `TestInterruptedSwapIsRepairedAtBoot` |
+| No badge for the signature state `downgraded` (an index that was signed and is now served unsigned showed "Unknown") | Red badge "Signature removed" | badge check in `plugins_smoke.py` |
+| An index entry without icon no longer got `/img/plugin_icon.png`; the old store page showed a broken image | Default restored for both index formats | `TestIndexEntryWithoutIconGetsTheDefault` |
+| Install and update errors quote the ID a downloaded binary declares; the App Store and the old store page passed them to `msgbox`, which renders HTML | Every `msgbox(data.error)` of `web/components/appstore.html` and `web/snippet/pluginstore.html` passes the text escaped (also the resync and source errors, which can quote an index) | `plugins_smoke.py`: an install error with markup in the App Store is shown as text |
+| Known limits did not mention that an isolated page can open a window on the admin address | Added to the known limits above; `allow-popups` kept | |
+
+Behaviour that changed with these fixes, all for plugins with an install record or for a state that was broken:
+under enforce a changed program file is no longer run at boot or reload (before: run for its manifest, then not
+started), and such a plugin is missing from the plugin list after a restart; a start of Zoraxy empties
+`<plugin dir>/.staging/` and repairs a plugin folder that an interrupted swap left without program file; one more
+database table (`plugin_install_folders`). Nothing changes in off or warn except one more log line and audit entry
+for a changed file that declares another ID.
+
+### How to run
+
+```
+cd src
+GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -p 1 ./mod/plugins/ -count=1 \
+  -run 'TestStore|TestSignedIndex|TestUnsigned|TestVerification|TestUpdatesOnly|TestPluginWithoutRecord|TestBinaryChanged|TestSafeUpdate|TestFailedDownload|TestStagedBinary|TestFaultNewVersion|TestUpdateAndRollback|TestIsolated|TestChangedBinaryIsNotRun|TestInstallRecordLearns|TestInterruptedSwap|TestIndexEntryWithoutIcon|TestStalledDownload'
+GOTMPDIR=$HOME/.cache/go-tmp CGO_ENABLED=1 ~/capped.sh go test -p 1 -race ./mod/plugins/... -count=1     # everything
+cd ../tools/plugin-index && go test sign_plugin_index.go sign_plugin_index_test.go
+cd ../.. && PY=<python with playwright> PORT=20710 tools/ui-smoke/plugins_run.sh     # uses PORT to PORT+3
+```
+
+For the owner, once (on a machine that is not a proxy; this is the plugin key, not the release key):
+
+```
+go run tools/plugin-index/sign_plugin_index.go -genkey ~/.zoraxy-plugin-index-key plugin-index.pub
+go run tools/plugin-index/sign_plugin_index.go -index draft.json -out index.json -key ~/.zoraxy-plugin-index-key -serial 1 -files ./binaries
+```
+
+Publish `index.json` and `index.json.sig` side by side, add the URL as a store source, paste `plugin-index.pub`
+into Plugin Manager > Plugin safety settings (or start Zoraxy with `-plugin_index_pubkey=<file>`), check that the
+index shows "Signed", and only then consider `enforce`. The draft format is in the comment at the top of the tool.
+
+---
+
+## Phase 3 results and known limits (items 3.1, 3.2, 3.3)
+
+Built 2026-11-23 on `dev`. This section covers the three items of phase 3: the reference plugins (3.1), the
+conformance kit (3.2) and a run of the kit against the plugins installed on the build machine (3.3). Owner decisions
+used: D1 (the goal is the plugins you run plus first-party reference plugins, with a kit that says whether any other
+plugin is safe), D4 (nothing here is signed with the release key, no index is published or curated), D5
+(Data-Shield is not touched: it was only run, as a copy, by the kit). **Nothing in this phase changes Zoraxy itself**:
+no file under `src/` was changed except one new test file.
+
+### What was built
+
+| Item | Where | What it does |
+|---|---|---|
+| 3.1 `fork-ref-filter` | `example/plugins/fork-ref-filter` | `pre_auth` and `response` hooks, declares `fail_closed`, health path, configuration on standard input, token check. Marks requests and responses with `X-Fork-Ref-Filter`, answers 403 under `/fork-ref-filter/deny` |
+| 3.1 `fork-ref-events` | `example/plugins/fork-ref-events` | Subscribes to three events, requires the invoke token, acknowledges at once and works later; its own waiting list is bounded (256, the oldest is dropped and counted). `FORK_REF_EVENTS_WORK_MS` slows its worker for the back-pressure test |
+| 3.1 `fork-ref-ui-api` | `example/plugins/fork-ref-ui-api` | A page plus one read (`GET /plugin/api/access/list`) and one write (`POST /plugin/api/blacklist/ip/add`) permission. Reads once at start. **Its port has no login (no plugin port has): any local user or process on the host can make the requests its page makes, with the plugin's API key behind them.** So the write accepts documentation addresses only (inside `192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`; `0.0.0.0/0` and every real address are refused by the plugin), at most 16 per start, and the read hands out the number of rules, not the rules. The value in its page only stops cross-site request forgery. The page talks to the plugin only, so it works with plugin page isolation on; the API key never reaches the browser |
+| 3.1 Build | `tools/build_ref_plugins.sh`, `tools/build_release.sh -p` | Builds the three plugins for the release architectures into a folder, writes a plain `SHA256SUMS`, and with `-c` runs the conformance kit on the ones the machine can run (a failure stops the build). `build_release.sh` calls it only with the new flag `-p`, after the release is signed and verified, into `DIST_DIR/plugins` |
+| 3.2 Conformance kit | `tools/plugin-check` (a Go module of its own, standard library only) | `plugin-check <binary>` (version 1.1.0 since the review fixes): 21 checks (introspect validity and size, manifest, configure, secrets, readiness, loopback only, page, health, verdict rules, sniff, events, invoke token, latency under load, memory after 1000 calls, API calls, stays up, terminate request, SIGTERM within 5 s, leftover processes, log volume). Text and JSON report, exit code 0 / 1 / 2. Method, every rule and the limits: `docs/plugins/conformance.md` |
+| 3.3 Certification run | `docs/plugins/conformance.md` section 5, `docs/plugins/conformance-reports/*.json` | The kit against Data-Shield Blocklist 1.3.0, Resource Monitor 1.0.3 and Zoraxy Cloudflare WAF plugin 0.3.4 as installed under `~/plugins` on the build machine |
+| e2e | `tools/e2e/scenarios/s12_plugin.py` | New scenario `plugin_reference_plugins` (real Zoraxy, the three reference plugins as real processes). The existing scenario `plugin_filter_hooks` was failing before this change and is repaired (see "Found on the way") |
+| Docs | `docs/plugins/conformance.md` (new), `docs/plugins/contract.md` (sniff row corrected, two rows in section 8), `example/plugins/README.md` | |
+
+### Behaviour that changed for existing installs
+
+1. **Nothing in Zoraxy.** No code under `src/` changed besides the new test file `src/mod/plugins/phase3_reference_test.go`.
+2. **The default release is the same.** `tools/build_release.sh` without `-p` builds, signs and verifies exactly
+   what it did; `-p` adds a sub-folder after that. The reference plugins are not in `SHA256SUMS` of the release.
+3. **`example/plugins/build_all.sh` now also builds the three `fork-ref-*` folders** (it builds every folder).
+4. Nobody gets a reference plugin installed. They are source code and optional build output.
+
+### Tests
+
+| Behaviour asked for | Test |
+|---|---|
+| Every reference plugin passes the kit, without a warning, and the checks about what it does were run | `TestReferencePluginsPass` (`tools/plugin-check/check_test.go`) |
+| The kit is red on the chaos plugin in each bad mode, at the check that mode is about (19 cases: crash and exit 0 at start and later, never opens its port, accepts nothing, never answers, slower than its timeout, slow inside it, not JSON, 1 MiB, invalid header, log flood, unhealthy, memory balloon, ignores SIGTERM, introspect garbage and hang, contract version 1 without a token check) | `TestChaosPluginFailsInEveryBadMode` |
+| The chaos plugin that behaves passes (so the red comes from the mode) | `TestChaosPluginThatBehavesPasses` |
+| A plugin on every address fails; calls without the key or outside the manifest fail | `TestPluginThatListensOnEveryAddressFails`, `TestStubAPIRecordsWhatIsNotAllowed` |
+| Exit codes, JSON report, text report, report file | `TestCommandLine` |
+| The plugin folder is not written to and the scratch folder is removed | `TestPluginFolderIsNotTouched` |
+| Verdict rules of the kit = verdict rules of Zoraxy, on 64 verdicts | `TestVerdictFixtures` (kit), `TestConformanceKitVerdictRulesMatchZoraxy` (`src/mod/plugins`) |
+| Manifest rules, log counter, percentiles | `TestManifestChecks`, `TestLogCounter`, `TestPercentile` |
+| `fork-ref-filter` through the real pipeline: contract version 1, token not on the command line, health check, both stages, deny, token required, fail-open after a crash although it declares `fail_closed` (no consent), automatic restart, stop without kill | `TestFaultReferenceFilter` (`src/mod/plugins/phase3_reference_test.go`) |
+| `fork-ref-events` under 600 events with a worker of 25 ms per event: Zoraxy drops and fails none, the plugin's list stays at 256 and counts its drops; events without or with a wrong token are refused | `TestFaultReferenceEventsBackPressure` |
+| `fork-ref-ui-api` against a stand-in API that checks the key as the real middleware does: default grants both; "require my approval" grants nothing, then the read only, then both; write only with the page's value, POST and a documentation address (`0.0.0.0/0`, `::/0`, private, loopback, real and too wide ranges are refused and never reach the API), at most 16 writes per start; the read gives a count; the log line does not say "administrator"; key not in the page or the command line | `TestFaultReferenceUIAPIPermissions` |
+| The SDK copies of the reference plugins are the SDK of the tree | `TestReferencePluginsCarryTheCurrentSDK` |
+| End to end with a real Zoraxy | `tools/e2e/run.sh --only plugin_` (`plugin_reference_plugins`, `plugin_filter_hooks`) |
+
+Results (2026-11-23, shared 4-core machine, through `~/capped.sh`): `go vet ./mod/plugins/...`,
+`GOOS=windows go vet ./mod/plugins/...` and `go build ./...` clean; `go test -p 1 -race ./mod/plugins/...` green
+(124 s); `go test -race .` in `tools/plugin-check` green (about 60 s); `tools/build_ref_plugins.sh -a "amd64 arm64" -c`
+green; both e2e plugin scenarios PASS on ports from 20700. **Not run:** the whole `go test ./...`, the rest of the
+e2e suite, `tools/build_release.sh -p` as a whole (it needs the release key, which was not read; `bash -n` only),
+the plugin UI smoke (no UI file was changed), anything as root, on Windows or macOS.
+
+### Results of the certification run (3.3)
+
+All three installed binaries **pass** (no failed check). Details and how they were run are in
+`docs/plugins/conformance.md` section 5.3. In short:
+
+| Plugin | Result | What to know |
+|---|---|---|
+| Data-Shield Blocklist 1.3.0 | PASS, 2 warnings | Configuration on the command line. Whether its sniff path checks the invoke token could not be told. Sniff p95 about 1 ms, but measured **with an empty blocklist** (its download was blocked for the run) |
+| Resource Monitor 1.0.3 | PASS, 1 warning | Configuration on the command line. Nothing else applies to it |
+| Zoraxy Cloudflare WAF plugin 0.3.4 | PASS, 2 warnings | **Its API key is on the command line. Its event path accepts events without the invoke token**: any local process can feed it "blocked" addresses. One log line per event. Its API use was not exercised (it ran disabled, without its settings) |
+
+### Found on the way
+
+- **The e2e scenario `plugin_filter_hooks` was failing before this change** (`POST /api/plugins/enable -> plugin is
+  already running`). A plugin folder that is there before the first start has no stored "enabled" flag, which
+  counts as enabled, so Zoraxy starts it at boot, and enabling a running plugin is an error. The scenario now
+  enables only what is not running. Since when it failed was not looked up; `docs/verification/e2e-dataplane.md`
+  still shows the older PASS and was not regenerated.
+- **`docs/plugins/contract.md` said a sniff answers 280 / 284 / 580.** Zoraxy reads 200 as "take it" and anything
+  else as "skip" (`dynamic_forwarder.go`), and the SDK answers 200 or 501. The row is corrected. The three
+  constants are still in the SDK and unused by Zoraxy; they were left alone.
+- **At a start of Zoraxy, plugins are started before the plugin API listens.** A plugin that calls the API in its
+  first second gets "connection refused". `fork-ref-ui-api` tries its read at start again for up to 30 s. Other
+  plugins have to do the same; this is not in `contract.md` yet.
+
+### Not done
+
+- **"Signed with releases" and "listed in the fork index"** (plan row 3.1): the reference plugins are built, not
+  signed and not listed. There is no fork index and no owner plugin key yet (D4: you create the key and approve
+  each entry). `build_ref_plugins.sh` prints how to sign an index with `tools/plugin-index`.
+- **Upstream issues and a "conformance passed for API vX" flag in the index** (plan row 3.3): not done, both need
+  the owner. The two findings to pass on are in `conformance.md` section 5.3.
+- **The plugins on the other proxy and the newer versions** (Data-Shield 1.4.0, Cloudflare WAF 0.4.0) were not run.
+- **The reference plugins were not added to the golden manifests** of `testdata/manifests` (that test asserts
+  "all legacy"; the reference plugins declare contract version 1).
+- **The kit is not built or shipped by the release script** and has no CI job; it is built from source.
+- **No UI** shows a conformance result. `DEVELOPMENT.md`, translations, the generated HTML of the author docs: not
+  touched.
+- **`docs/verification/e2e-dataplane.md`** was not regenerated with the new scenario.
+
+### Known limits
+
+- **A pass is not a proof.** The kit is a black-box run of a few seconds with sample requests (the full list of
+  what it cannot tell is `conformance.md` section 4): not honesty, not correctness of what a filter decides, not
+  behaviour with real settings, real lists or over days, not static capture, not what a page does when a button is
+  pressed.
+- **The kit does not confine the plugin it runs.** Scratch folder, loopback ports, a stand-in API and (since the
+  review fixes) an environment without the variables of your shell keep it away from the plugin's own files, from
+  Zoraxy and from tokens in the environment; a plugin can still open files by absolute path (your real home
+  included) and use the network. `-no-egress` only works for plugins that honour the proxy variables. Do not run
+  the kit as root.
+- **The search for left processes is not a cgroup.** On Linux the kit finds and ends children that left the process
+  group (`setsid`, `setpgid`) and daemons that still run from the scratch folder. A helper that was cut loose
+  between two looks at the process tree (about 200 ms apart) and that runs another program from another directory
+  is missed. On other Unix systems only the process group is looked at. When the kit is killed with SIGKILL the
+  kernel ends the plugin process (Linux), not its children, and the scratch folder stays.
+- **The page path and `/term` of every plugin are without authentication on the plugin port.** Any local user or
+  process on the host can call them directly; Zoraxy's admin login guards the way through the admin address only,
+  and the page proxy adds no secret a plugin could check. So any local process can stop any plugin with
+  `GET <ui_path>/term` (a logged-in administrator can reach the same path through the page proxy): for a filter
+  that is a bypass (fail-open, the default) or a 503 on its rules (with the `fail_closed` consent), and with the
+  restart policy `never` it stays down. And whatever a plugin page can do with the plugin's API key, a local
+  process can do. This is upstream's design, unchanged by the fork, now written down in `contract.md` section 4.
+  Closing it needs a token on the page path and on `/term`, which is a new contract version: not built. The kit
+  prints no warning about it.
+- **Thresholds are the kit's own where Zoraxy has none** (introspect size, p95 latency of 250 ms, memory growth of
+  64 MiB, log lines per call). They are options, and they are judgement, not contract.
+- **The invoke token check fails only plugins that declare contract version 1.** Legacy plugins get a warning,
+  and a sniff path that does not take the sample request cannot be judged at all.
+- **The verdict rules in the kit are a copy** of `hooks_validate.go`, held together by a shared fixture list of 64
+  verdicts. A new rule in Zoraxy needs a fixture, or the copy drifts unnoticed.
+- **Latency and memory numbers come from one shared machine** and from one short run each.
+- **`sigterm` on a second start**: when a plugin ends on the terminate request (most do), SIGTERM is tried on a
+  second start. A plugin that cannot be started twice in a row fails there.
+- **Reference plugins are minimal on purpose.** `fork-ref-filter` sets a header on every request and response of
+  the rules it is attached to; do not attach it to production rules. `fork-ref-ui-api` can add to a blacklist and
+  cannot remove (remove in the Zoraxy access page). **Its write is not protected against local processes:** any
+  user on the host can read its page from the plugin port and post the form, without logging in to Zoraxy. The
+  value in the page and the CSRF token of Zoraxy only protect the browser of the administrator. What keeps it
+  harmless is that the plugin refuses everything but documentation addresses (never routed) and passes on at most
+  16 writes per start; a local user can therefore add up to 16 useless entries per start to a blacklist, and learn
+  how many access rules exist. Do not copy the page-value pattern into a plugin whose write matters.
+- **`fork-ref-filter` declares `fail_closed`.** If you tick the consent for it, requests of attached rules are
+  answered 503 while it fails. That is what the declaration is for in tests; leave the consent off.
+- **`fork-ref-events` loses events by design** when its list of 256 is full, and everything it counted at a
+  restart. It is a fixture, not a log.
+- **The reference plugins carry a copy of the SDK** like every example (`TestReferencePluginsCarryTheCurrentSDK`
+  and `build_ref_plugins.sh` refuse a stale copy). An SDK change means running `example/plugins/build_all.sh`.
+- **Their pages were not looked at in a browser.** They are tested through HTTP only (with and without the admin
+  proxy), not with plugin page isolation in a real browser.
+- **The reference plugin binaries are about 6 to 7 MiB each** (Go, stripped) and are built for Linux only.
+- **Unix only.** The kit and the reference plugin tests do not run on Windows.
+
+### Phase 3 review fixes
+
+Findings of the independent review of phase 3 and what was done. Each was checked against the code first (the first
+one is plain in the old source: the page with the value was served to anybody who asked the port). No file of Zoraxy
+under `src/` changed besides the test file; no default of Zoraxy changed.
+
+| Finding | Fix | Test |
+|---|---|---|
+| `fork-ref-ui-api`: any local user could read the page value from the plugin port and make the plugin add `0.0.0.0/0` to the default blacklist with its API key (lock-out), and read the access rules. The docs suggested the admin login guards the write (major) | The proxy of the plugin page carries nothing a plugin can verify, so the reference no longer has a write that matters: documentation addresses only, at most 16 writes per start, the read returns a count. Source comment, page text, log line, README, `contract.md` section 4 and the texts above now say that any local user can trigger it | `TestFaultReferenceUIAPIPermissions` (13 refused addresses, the limit, the count, the log line) |
+| An interrupted kit (Ctrl-C, timeout, SIGTERM) left the plugin under test running and the scratch folder behind | The command catches SIGINT, SIGTERM and SIGHUP, ends the process group and every process seen below the plugin, removes the scratch folder, exits 2. On Linux the plugin and the introspect child are started with `Pdeathsig=SIGKILL` | `TestInterruptedKitEndsThePluginAndCleansUp` (SIGINT, SIGTERM, SIGKILL against the built command) |
+| `/term` and the page path of every plugin are without authentication on loopback; nothing said so | Written down: `contract.md` section 4, `conformance.md` section 4, known limits above. No code: a token there is a new contract version | |
+| The kit handed its whole environment to the plugin it certifies | The plugin gets `PATH`, `HOME` and `TMPDIR` in the scratch folder, `LANG`, `LC_ALL`, `LC_CTYPE`, `TZ` and the `-no-egress` variables; new option `-env NAME[=VALUE]` for more | `TestPluginDoesNotGetTheEnvironmentOfTheKit` |
+| The leftover check only looked at the process group: a child that called `setsid` was reported as "nothing left" and kept running | Linux: the process tree below the plugin is read about every 200 ms and before each stop step; after the stop, every process seen that still runs, and every process whose program or working directory is in the scratch folder, is reported (`cleanup` WARN, "left its process group") and ended. Also fixed on the way: the memory check missed children that a plugin started from another thread than its first | `TestChildOutsideTheProcessGroupIsFoundAndEnded` (a `setsid` child, and a daemon started by a process that ends at once) |
+
+Behaviour that changed with these fixes: only in the kit and in `fork-ref-ui-api` (both new in this phase). A plugin
+that needs a variable of the caller's environment now needs `-env` under the kit. The three installed plugins were
+run again with kit 1.1.0 (see `conformance.md` section 5.3).
+
+### How to run
+
+```
+cd tools/plugin-check && go build -o plugin-check . && ./plugin-check <plugin folder>/<plugin program>
+cd tools/plugin-check && GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -count=1 .       # kit: reference plugins green, chaos modes red
+cd src && GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -p 1 -count=1 ./mod/plugins/ \
+  -run 'TestReferencePlugins|TestFaultReference|TestConformanceKit'
+PLUGIN_CHECK_PORTS=20740-20799 tools/build_ref_plugins.sh -o /tmp/ref-plugins -a amd64 -c  # build + kit
+E2E_PORT_BASE=20700 tools/e2e/run.sh --only plugin_ --results /tmp/e2e.json                # real Zoraxy
+tools/build_release.sh -t <tag> -p                                                         # release plus DIST_DIR/plugins (optional)
 ```

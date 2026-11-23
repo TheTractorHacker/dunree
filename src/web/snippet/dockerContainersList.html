@@ -13,6 +13,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
   </head>
   <body>
     <link rel="stylesheet" href="../darktheme.css" />
+    <script src="../script/safestorage.js"></script>
     <script src="../script/darktheme.js"></script>
     <div class="ui container">
       <!-- the title keeps the first row clear of the Close button of the side panel -->
@@ -442,14 +443,14 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
 
       // local storage handling
       function loadCheckboxState(id, $elem) {
-        const state = localStorage.getItem(id);
+        const state = zxStore.get(id);
         if (state !== null) {
           $elem.prop("checked", state === "true");
         }
       }
 
       function saveCheckboxState(id, $elem) {
-        localStorage.setItem(id, $elem.prop("checked"));
+        zxStore.set(id, $elem.prop("checked"));
       }
 
       // debounce function

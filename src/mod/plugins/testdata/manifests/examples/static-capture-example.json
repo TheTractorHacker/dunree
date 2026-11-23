@@ -1,0 +1,27 @@
+{
+ "id": "org.aroz.zoraxy.static-capture-example",
+ "name": "Static Capture Example",
+ "author": "aroz.org",
+ "author_contact": "https://aroz.org",
+ "description": "An example for showing how static capture works in Zoraxy.",
+ "url": "https://zoraxy.aroz.org",
+ "type": 0,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": [
+  {
+   "capture_path": "/test_a"
+  },
+  {
+   "capture_path": "/test_b"
+  }
+ ],
+ "static_capture_ingress": "/s_capture",
+ "dynamic_capture_sniff": "",
+ "dynamic_capture_ingress": "",
+ "ui_path": "/ui",
+ "subscription_path": "",
+ "subscriptions_events": null,
+ "permitted_api_endpoints": null
+}

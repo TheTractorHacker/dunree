@@ -1,0 +1,28 @@
+{
+ "id": "org.aroz.zoraxy.plugin2plugin_comms_peer1",
+ "name": "Plugin2Plugin Comms Peer 1",
+ "author": "Anthony Rubick",
+ "author_contact": "",
+ "description": "An example plugin for demonstrating plugin to plugin communications - Peer 1",
+ "url": "",
+ "type": 1,
+ "version_major": 1,
+ "version_minor": 0,
+ "version_patch": 0,
+ "static_capture_paths": null,
+ "static_capture_ingress": "",
+ "dynamic_capture_sniff": "",
+ "dynamic_capture_ingress": "",
+ "ui_path": "/ui",
+ "subscription_path": "/notifyme",
+ "subscriptions_events": {
+  "dummy": "A dummy event to satisfy the requirement of having at least one event"
+ },
+ "permitted_api_endpoints": [
+  {
+   "method": "POST",
+   "endpoint": "/plugin/event/emit",
+   "reason": "Used to send events to the peer plugin"
+  }
+ ]
+}

@@ -18,7 +18,14 @@
 //	          health     declares health_path /health and serves it
 //	          stdinconf  declares configure_via stdin (secrets not on the command line)
 //	          children   starts one child process that outlives the plugin unless Zoraxy ends the process group
+//	api_version    declares that plugin contract version in the manifest (default: none = legacy plugin)
+//	api_endpoints  permitted API endpoints the manifest asks for, "METHOD /path" separated by ";"
+//	               (replaces the single endpoint of the feature "api"). The file is read at every
+//	               -introspect, so a test can change it to play an update that asks for more
 //	name      display name (default "Chaos <folder>")
+//	version   version of the manifest, "major.minor.patch" (default 0.1.0)
+//	          adminprobe (feature)  the UI page tries to call the Zoraxy admin API with what it was given
+//	                                (see /ui/adminprobe and the script of the page), for the UI isolation tests
 //	id, author, author_contact, description   replace that manifest field (for hostile-manifest UI tests)
 //
 // Modes
@@ -41,11 +48,15 @@
 //	ignore_sigterm  ignores SIGTERM and the /term request
 //	introspect_garbage / introspect_hang   break the -introspect call
 //
+// A binary can carry settings of its own: everything after the last line "##CHAOS-TRAILER##" at the
+// end of the executable file is read like chaos.conf and wins over it. The update and rollback tests
+// append such a trailer to make "version 2" of a plugin: another checksum, another version, and for
+// example mode=crash, while chaos.conf in the plugin folder stays what it was.
+//
 // Never install this on a real proxy.
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -66,17 +77,22 @@ var eventsSeen, eventsWithToken atomic.Int64
 var balloon [][]byte
 
 type config struct {
-	mode     string
-	delay    time.Duration
-	hasDelay bool
-	features map[string]bool
-	name     string
-	folder   string
-	manifest map[string]string //overrides of manifest text fields: id, author, author_contact, description
+	mode         string
+	delay        time.Duration
+	hasDelay     bool
+	features     map[string]bool
+	name         string
+	folder       string
+	manifest     map[string]string //overrides of manifest text fields: id, author, author_contact, description
+	apiVersion   int               //api_version of the manifest, 0 = not declared
+	apiEndpoints []string          //"METHOD /path"
+	version      [3]int            //version of the manifest
 }
 
+const trailerMark = "\n##CHAOS-TRAILER##\n"
+
 func loadConfig() config {
-	c := config{mode: "ok", features: map[string]bool{"hooks": true, "static": true}}
+	c := config{mode: "ok", features: map[string]bool{"hooks": true, "static": true}, version: [3]int{0, 1, 0}}
 	exe, err := os.Executable()
 	if err != nil {
 		exe = os.Args[0]
@@ -84,10 +100,9 @@ func loadConfig() config {
 	dir := filepath.Dir(exe)
 	c.folder = strings.TrimSuffix(filepath.Base(exe), ".exe")
 	c.name = "Chaos " + c.folder
-	if f, err := os.Open(filepath.Join(dir, "chaos.conf")); err == nil {
-		sc := bufio.NewScanner(f)
-		for sc.Scan() {
-			line := strings.TrimSpace(sc.Text())
+	apply := func(text string) {
+		for _, line := range strings.Split(text, "\n") {
+			line = strings.TrimSpace(line)
 			if line == "" || strings.HasPrefix(line, "#") {
 				continue
 			}
@@ -105,6 +120,19 @@ func loadConfig() config {
 				}
 			case "name":
 				c.name = v
+			case "version":
+				parts := strings.SplitN(v, ".", 3)
+				for i := 0; i < len(parts) && i < 3; i++ {
+					c.version[i], _ = strconv.Atoi(parts[i])
+				}
+			case "api_version":
+				c.apiVersion, _ = strconv.Atoi(v)
+			case "api_endpoints":
+				for _, ep := range strings.Split(v, ";") {
+					if ep = strings.TrimSpace(ep); ep != "" {
+						c.apiEndpoints = append(c.apiEndpoints, ep)
+					}
+				}
 			case "id", "author", "author_contact", "description":
 				//Lets a test serve a hostile manifest (markup, quotes) to the admin UI
 				if c.manifest == nil {
@@ -117,6 +145,24 @@ func loadConfig() config {
 					if ft = strings.TrimSpace(ft); ft != "" {
 						c.features[ft] = true
 					}
+				}
+			}
+		}
+	}
+	if raw, err := os.ReadFile(filepath.Join(dir, "chaos.conf")); err == nil {
+		apply(string(raw))
+	}
+	//Settings carried by the binary itself (see the package comment)
+	if f, err := os.Open(exe); err == nil {
+		if st, err := f.Stat(); err == nil {
+			n := int64(4096)
+			if st.Size() < n {
+				n = st.Size()
+			}
+			tail := make([]byte, n)
+			if _, err := f.ReadAt(tail, st.Size()-n); err == nil {
+				if i := strings.LastIndex(string(tail), trailerMark); i >= 0 {
+					apply(string(tail[i+len(trailerMark):]))
 				}
 			}
 		}
@@ -144,9 +190,9 @@ func introspect(c config) map[string]any {
 		"description":             "Fault-injection test plugin, mode \"" + c.mode + "\". Not for production.",
 		"url":                     "https://example.invalid/chaos",
 		"type":                    0,
-		"version_major":           0,
-		"version_minor":           1,
-		"version_patch":           0,
+		"version_major":           c.version[0],
+		"version_minor":           c.version[1],
+		"version_patch":           c.version[2],
 		"ui_path":                 "/ui",
 		"static_capture_paths":    []any{},
 		"subscriptions_events":    map[string]string{},
@@ -188,8 +234,41 @@ func introspect(c config) map[string]any {
 	if c.features["api"] {
 		spec["permitted_api_endpoints"] = []any{map[string]string{"method": "GET", "endpoint": "/plugin/api/access/list", "reason": "chaos test permission"}}
 	}
+	if len(c.apiEndpoints) > 0 {
+		list := []any{}
+		for _, ep := range c.apiEndpoints {
+			method, path, _ := strings.Cut(ep, " ")
+			list = append(list, map[string]string{"method": method, "endpoint": strings.TrimSpace(path), "reason": "chaos test permission"})
+		}
+		spec["permitted_api_endpoints"] = list
+	}
+	if c.apiVersion != 0 {
+		spec["api_version"] = c.apiVersion
+	}
 	return spec
 }
+
+// adminProbePage is the script of the UI page with the feature "adminprobe": the page
+// tries, as hard as a hostile plugin page could, to use the admin session of whoever
+// looks at it. It reads the plugin list and turns the plugin safety setting
+// "contract_mode" to "refuse" (the test reads that back from the admin API).
+const adminProbePage = `<pre id="probe">probing</pre><script>
+(async function () {
+  var out = {};
+  var admin = (location.ancestorOrigins && location.ancestorOrigins.length) ? location.ancestorOrigins[0] : location.origin;
+  var tok = "";
+  try { var h = await (await fetch("headers")).json(); tok = h.csrf || ""; out.cookieSeen = !!h.cookie; out.csrfSeen = !!h.csrf; out.isolated = h.isolated || ""; } catch (e) { out.headers = "failed"; }
+  try { var r = await fetch(admin + "/api/plugins/list", { credentials: "include" }); out.read = r.status; } catch (e) { out.read = "blocked"; }
+  try {
+    var w = await fetch(admin + "/api/plugins/settings", { method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "X-CSRF-Token": tok }, body: "contract_mode=refuse" });
+    out.write = w.status;
+  } catch (e) { out.write = "blocked"; }
+  try { await fetch(admin + "/api/plugins/settings", { method: "POST", mode: "no-cors", credentials: "include", body: new URLSearchParams({ contract_mode: "refuse" }) }); out.nocors = "sent"; } catch (e) { out.nocors = "blocked"; }
+  try { out.cookieJS = document.cookie.length; } catch (e) { out.cookieJS = "denied"; }
+  document.getElementById("probe").textContent = JSON.stringify(out);
+})();
+</script>`
 
 // sleepForever blocks without tripping the "all goroutines are asleep" check of the Go runtime
 func sleepForever() {
@@ -368,7 +447,51 @@ func main() {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprintf(w, "<!doctype html><title>Chaos</title><body style=\"font-family:sans-serif\"><h3>Chaos plugin</h3><p>Mode: %s</p></body>", c.mode)
+		fmt.Fprintf(w, "<!doctype html><title>Chaos</title><body style=\"font-family:sans-serif\"><h3>Chaos plugin</h3><p>Mode: %s</p><p id=\"ver\">Version: %d.%d.%d</p>", c.mode, c.version[0], c.version[1], c.version[2])
+		if c.features["adminprobe"] {
+			io.WriteString(w, adminProbePage)
+		}
+		io.WriteString(w, "</body>")
+	})
+	// What Zoraxy handed to the plugin with a request for its page: the admin session
+	// cookie and the CSRF token of the admin (or nothing, with the isolated plugin UI)
+	mux.HandleFunc("/ui/headers", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Set-Cookie", "chaosplanted=1; Path=/") //a plugin that plants a cookie for the host of the admin UI
+		js, _ := json.Marshal(map[string]string{
+			"cookie":   r.Header.Get("Cookie"),
+			"csrf":     r.Header.Get("X-Zoraxy-Csrf"),
+			"auth":     r.Header.Get("Authorization"),
+			"isolated": r.Header.Get("X-Zoraxy-Ui-Isolated"),
+		})
+		w.Write(js)
+	})
+	// The plugin process itself calls an admin API (?url=) with the cookie and the CSRF
+	// token it was handed with this request, and answers with the status it got
+	mux.HandleFunc("/ui/adminprobe", func(w http.ResponseWriter, r *http.Request) {
+		if !c.features["adminprobe"] {
+			http.NotFound(w, r)
+			return
+		}
+		req, err := http.NewRequest(http.MethodPost, r.URL.Query().Get("url"), strings.NewReader("probe=1"))
+		if err != nil {
+			http.Error(w, "bad url", http.StatusBadRequest)
+			return
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		if v := r.Header.Get("Cookie"); v != "" {
+			req.Header.Set("Cookie", v)
+		}
+		if v := r.Header.Get("X-Zoraxy-Csrf"); v != "" {
+			req.Header.Set("X-CSRF-Token", v)
+		}
+		resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+		if err != nil {
+			fmt.Fprint(w, "error")
+			return
+		}
+		resp.Body.Close()
+		fmt.Fprint(w, resp.StatusCode)
 	})
 	mux.HandleFunc("/filter", func(w http.ResponseWriter, r *http.Request) {
 		if misbehave(w, r) {

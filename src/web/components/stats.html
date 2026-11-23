@@ -81,6 +81,18 @@
     #statsPage .sRank--why li .n b{ display:block; font-weight:600; color:var(--zx-text); }
     #statsPage .sRank--why li .n small{ display:block; font-size:var(--zx-fs-xs); }
     #statsPage .sRank li .sVia{ flex:none; padding:0 6px; border:1px solid var(--zx-border); border-radius:var(--zx-radius-pill); font-size:var(--zx-fs-xs); color:var(--zx-text-muted); background:var(--zx-surface); white-space:nowrap; }
+    /* Referring sites: what to list of the requests without a referrer (switch + "Choose rows"), and the line that says what is not listed */
+    #statsPage .sRefCtl{ position:relative; display:flex; align-items:center; justify-content:space-between; gap:var(--zx-space-2) var(--zx-space-3); margin:0 0 var(--zx-space-3); }
+    #statsPage .sRefSwitch{ display:flex; flex:1 1 auto; align-items:center; gap:var(--zx-space-2); min-width:0; line-height:1.3; cursor:pointer; font-size:var(--zx-fs-sm); color:var(--zx-text); }
+    #statsPage .sRefPickBtn{ flex:none; }
+    #statsPage .sRefPick{ top:calc(100% + var(--zx-space-1)); right:0; width:min(19rem, 100%); max-width:none; margin:0; min-width:0; }
+    #statsPage .sRefPick legend{ float:left; width:100%; padding:0; margin:0 0 var(--zx-space-2); font-size:var(--zx-fs-xs); font-weight:700; color:var(--zx-text-muted); }
+    #statsPage .sRefPick .zx-check{ display:flex; clear:both; padding:5px 0; }
+    #statsPage .sRefPick .zx-check span{ flex:1 1 auto; min-width:0; }
+    #statsPage .sRefPick .zx-check small{ flex:none; font-size:var(--zx-fs-xs); color:var(--zx-text-muted); font-variant-numeric:tabular-nums; }
+    #statsPage .sRefPick p{ margin:var(--zx-space-2) 0 0; padding-top:var(--zx-space-2); border-top:1px solid var(--zx-border); font-size:var(--zx-fs-xs); line-height:1.4; color:var(--zx-text-muted); }
+    #statsPage .sRefHidden{ margin:var(--zx-space-3) 0 0; font-size:var(--zx-fs-sm); color:var(--zx-text-muted); }
+    #statsPage .sRefHidden .sLink{ font-weight:700; }
     #statsPage .sRefNote{ margin:var(--zx-space-4) 0 0; font-size:var(--zx-fs-xs); line-height:1.5; color:var(--zx-text-muted); }
     #statsPage .sMore{ background:none; border:0; color:var(--zx-link); cursor:pointer; padding:var(--zx-space-2) var(--zx-space-2) 0; min-height:28px; font:inherit; font-size:var(--zx-fs-sm); font-weight:700; }
     #statsPage .sMore:hover{ text-decoration:underline; }
@@ -313,7 +325,21 @@
                         <ul class="sRank" id="stats_RefererTable" aria-label="Referring sites"></ul>
                         <div id="sRefWhyBox" hidden>
                             <h5 class="sSubhead"><span>Without a referrer</span><small id="sRefWhyShare"></small></h5>
+                            <div class="sRefCtl" id="sRefCtl">
+                                <label class="sRefSwitch"><input type="checkbox" class="zx-switch" role="switch" id="sRefShow" checked><span>Show requests without a referrer</span></label>
+                                <button type="button" class="zx-btn zx-btn--sm zx-btn--secondary sRefPickBtn" id="sRefPickBtn" aria-expanded="false" aria-controls="sRefPick">Choose rows</button>
+                                <fieldset class="zx-popover sRefPick" id="sRefPick" hidden>
+                                    <legend>Rows to list</legend>
+                                    <label class="zx-check"><input type="checkbox" data-ref-group="direct" checked><span>Direct and apps</span><small></small></label>
+                                    <label class="zx-check"><input type="checkbox" data-ref-group="policy" checked><span>Hidden by policy</span><small></small></label>
+                                    <label class="zx-check"><input type="checkbox" data-ref-group="bots" checked><span>Bots and scripts</span><small></small></label>
+                                    <label class="zx-check"><input type="checkbox" data-ref-group="same" checked><span>Same site</span><small></small></label>
+                                    <label class="zx-check"><input type="checkbox" data-ref-group="other" checked><span>Other and unknown</span><small></small></label>
+                                    <p>Remembered in this browser. Hidden rows still count in every total and in the CSV export.</p>
+                                </fieldset>
+                            </div>
                             <ul class="sRank sRank--why" id="stats_RefererWhy" aria-label="Requests without a referrer, by reason"></ul>
+                            <p class="sRefHidden" id="sRefHidden" hidden><span id="sRefHiddenText"></span> <button type="button" class="sLink" id="sRefHiddenShow">Show</button></p>
                         </div>
                         <p class="sRefNote" id="sRefNote">Zoraxy shows the Referer header as the browser sent it, with markup removed and cut at 256 characters. It does not hide a referrer itself. Browsers leave it out for typed addresses, bookmarks and apps, when the linking site asks them to, and in private modes. Bots and scripts rarely send one.</p>
                     </div>
@@ -607,8 +633,52 @@
         ["~invalid", t("Unreadable referrer"), t("A Referer header was sent, but it held only markup and no address. Zoraxy removes markup before it stores the value.")],
         ["", t("Unknown (recorded before this version)"), t("Saved before Zoraxy recorded why a referrer is missing. Newer requests are sorted into the rows above.")]
     ]; }
+    /* What to list of the requests without a referrer. Everything is listed unless this browser was told otherwise
+       (localStorage; the page works the same without it, the choice then lasts until the page is reloaded).
+       Hiding never changes a number: the shares stay relative to all requests of the period, and the card says how many are not listed. */
+    var REF_PREF_KEY = "zoraxy.stats.refwhy", REF_GROUPS = {"~direct": "direct", "~hidden-policy": "policy", "~non-browser": "bots", "~same-site": "same"};
+    var refPref = {show: true, hide: {}}, refLast = null;
+    (function(){
+        try {
+            var p = JSON.parse(zxStore.get(REF_PREF_KEY) || "null");
+            if (p && typeof p === "object"){
+                refPref.show = p.show !== false;
+                (Array.isArray(p.hide) ? p.hide : []).forEach(function(g){ if (/^(direct|policy|bots|same|other)$/.test(g)) refPref.hide[g] = true; });
+            }
+        } catch (e) {}
+    })();
+    function refPrefSave(){
+        try { zxStore.set(REF_PREF_KEY, JSON.stringify({show: refPref.show, hide: Object.keys(refPref.hide)})); } catch (e) {}
+    }
+    function refGroup(k){ return REF_GROUPS[k] || "other"; }
+    function refPick(open, focus){
+        var btn = $("#sRefPickBtn"), pop = $("#sRefPick");
+        if (open === !pop.prop("hidden")) return;
+        pop.prop("hidden", !open);
+        btn.attr("aria-expanded", open ? "true" : "false");
+        if (open) pop.find("input").first().trigger("focus");
+        else if (focus) btn.trigger("focus");
+    }
+    $("#sRefShow").on("change", function(){ refPref.show = this.checked; refPrefSave(); renderReferrers(refLast); });
+    $("#sRefPickBtn").on("click", function(){ refPick($("#sRefPick").prop("hidden")); });
+    $("#sRefPick").on("change", "input", function(){
+        var g = $(this).attr("data-ref-group");
+        if (this.checked) delete refPref.hide[g]; else refPref.hide[g] = true;
+        refPrefSave(); renderReferrers(refLast);
+    });
+    $("#sRefCtl").on("keydown", function(ev){ if (ev.key === "Escape" && !$("#sRefPick").prop("hidden")){ ev.stopPropagation(); refPick(false, true); } })
+        .on("focusout", function(ev){ if (ev.relatedTarget && !this.contains(ev.relatedTarget)) refPick(false); });
+    $(document).off(".sRefPick").on("mousedown.sRefPick touchstart.sRefPick", function(ev){
+        if (!$(ev.target).closest("#sRefPick, #sRefPickBtn").length) refPick(false);
+    });
+    $("#sRefHiddenShow").on("click", function(){
+        refPref.show = true; refPref.hide = {};
+        refPrefSave(); renderReferrers(refLast);
+        $("#sRefShow").trigger("focus");
+    });
     function renderReferrers(map){
         map = map || {};
+        refLast = map;
         var sites = {}, why = {}, total = 0, whyTotal = 0;
         Object.keys(map).forEach(function(k){
             var n = map[k] || 0;
@@ -632,15 +702,32 @@
         var rows = refWhy();
         rows.forEach(function(w){ known[w[0]] = 1; });
         Object.keys(why).forEach(function(k){ if (!known[k]) rows.push([k, k, ""]); });   // a key written by a newer version
+        var hiddenN = 0, groupN = {};
+        $("#sRefShow").prop("checked", refPref.show);
+        $("#sRefPickBtn").prop("disabled", !refPref.show);
+        if (!refPref.show) refPick(false);
         rows.forEach(function(w){
             var n = why[w[0]];
             if (!n) return;
+            var g = refGroup(w[0]);
+            groupN[g] = (groupN[g] || 0) + n;
+            if (!refPref.show || refPref.hide[g]){ hiddenN += n; return; }
             var li = $('<li></li>').attr("data-ref", w[0] === "" ? "legacy" : w[0]);
             li.append($('<span class="bar"></span>').css("width", Math.max(2, Math.round(100 * n / total)) + "%"),
                 $('<span class="k"></span>').append($("<b></b>").text(w[1]), w[2] ? $("<small></small>").text(w[2]) : null),
                 $('<span class="n"></span>').append($("<b></b>").text(num(n)), $("<small></small>").text(pct(n))));
             ul.append(li);
         });
+        ul.prop("hidden", !ul.children().length);
+        $("#sRefPick input").each(function(){
+            var g = $(this).attr("data-ref-group");
+            this.checked = !refPref.hide[g];
+            $(this).siblings("small").text(num(groupN[g] || 0));
+        });
+        /* what is not listed is stated, with the same share as the row would show */
+        $("#sRefHidden").prop("hidden", hiddenN === 0);
+        $("#sRefHiddenText").text(hiddenN === 1 ? tf("1 request without a referrer is not listed ({0} of all requests).", pct(1))
+            : tf("{0} requests without a referrer are not listed ({1} of all requests).", num(hiddenN), pct(hiddenN)));
     }
 
     /* ---------- Overview ---------- */

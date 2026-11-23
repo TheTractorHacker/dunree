@@ -15,7 +15,6 @@
     #acme .acmeRenewTable th:nth-child(2) { width: 11rem; }
     #acme .acmeRenewTable th:nth-child(3) { width: 17rem; }
     #acme .acmeRenewTable th:nth-child(4) { width: 8rem; }
-    #acme .acmeRenewTable input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--zx-primary); }
     #acme .acmeRenewTable .cx-cell__main { font-weight: 700; }
     #acme .acmePolicyNote { margin: var(--zx-space-3) 0 0; }
     #acme .zx-toggle-row { border-bottom: 0; padding-top: 0; }
@@ -350,7 +349,7 @@
             row.append($('<td>').attr("data-label", t("Next renewal")).html('<span class="acmeNext"></span>'));
 
             var checkboxCell = $('<td>').attr("data-label", t("Auto-renew")).attr('srcfile', srcfile).attr('domain', encodeURIComponent(JSON.stringify(domains)));
-            checkboxCell.append($('<input type="checkbox">').attr('name', srcfile).attr("aria-label", tf("Renew {0} automatically", own)).attr("data-external", external ? "1" : "0").prop("disabled", external));
+            checkboxCell.append($('<input type="checkbox" class="zx-check">').attr('name', srcfile).attr("aria-label", tf("Renew {0} automatically", own)).attr("data-external", external ? "1" : "0").prop("disabled", external));
             row.append(checkboxCell);
 
             tableBody.append(row);

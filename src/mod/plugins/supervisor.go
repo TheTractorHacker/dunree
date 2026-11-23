@@ -343,6 +343,17 @@ func (m *Manager) autoRestart(p *Plugin, gen uint64) {
 	if err := m.startPluginProcess(p); err != nil {
 		p.noteStartFailure(err)
 		m.revokePluginAPIKeys(p)
+		var refused *errContractRefused
+		if errors.As(err, &refused) {
+			// Not a failure a retry can fix, and not a crash: the administrator asked
+			// not to start plugins of an unsupported contract version (or, with
+			// signature checking set to enforce, a binary that was changed). Stop here in
+			// the state failed_to_start (as at boot) and do not count towards a crash loop.
+			p.sup.addHistory(ExitRecord{At: time.Now().Unix(), Kind: StateFailedToStart, ExitCode: -1, Reason: "automatic restart refused: " + refused.why()})
+			p.sup.annotateLast(ActionNone, 0, "not restarted: "+refused.why())
+			m.Log("plugin "+p.Spec.ID+": not restarted", err)
+			return
+		}
 		p.sup.addHistory(ExitRecord{At: time.Now().Unix(), Kind: StateFailedToStart, ExitCode: -1, Reason: "automatic restart failed"})
 		m.Log("plugin "+p.Spec.ID+": automatic restart failed", err)
 		m.superviseFailure(p, true, 0)

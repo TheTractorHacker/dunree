@@ -74,13 +74,21 @@ body.darkTheme {
     color: var(--text_color);
 }
 
-body.darkTheme h1,
-body.darkTheme h2,
-body.darkTheme h3,
-body.darkTheme h4,
-body.darkTheme h5,
-body.darkTheme h6,
-body.darkTheme a {
+/*
+    Colours on bare tags (headings, links, p, span).
+    "body.darkTheme" is wrapped in :where(), so these rules weigh as much as a tag selector (0,0,1): they still
+    beat the tag rules of Semantic UI (a { color }) because this file loads later, but every class wins against
+    them. Without the wrapper they outranked single-class colours (.zx-muted, .zx-danger-text, page classes) and
+    flattened muted and semantic text to plain white in the dark theme. Do not raise the weight again; a legacy
+    class that needs another colour in the dark theme gets its own rule (see "legacy classes" at the end).
+*/
+:where(body.darkTheme) h1,
+:where(body.darkTheme) h2,
+:where(body.darkTheme) h3,
+:where(body.darkTheme) h4,
+:where(body.darkTheme) h5,
+:where(body.darkTheme) h6,
+:where(body.darkTheme) a {
     color: var(--text_color);
 }
 
@@ -88,9 +96,23 @@ body.darkTheme .ui.header {
     color: var(--text_color) !important;
 }
 
-body.darkTheme p,
-body.darkTheme span{
+/*
+    p and span. Semantic UI components carry dark text colours of their own (items, cards, lists, steps...), so a p or
+    span inside one (any ".ui" ancestor) gets the text colour of the dark theme. Zero weight: any rule that names the
+    element wins. The other cases inherit, so that text without a colour of its own follows the muted / danger /
+    warn / ok colour of its parent and does not turn plain white:
+      - outside Semantic UI components (no ".ui" ancestor): no rule applies at all;
+      - inside a kit component (an ancestor with a "zx-" or "zxs-" class), also when a ".ui" wrapper sits above it;
+      - inside a block of a redesigned page: an ancestor with a "block__element" class (hx-item__meta, up-row__main).
+        Semantic UI and the legacy pages have no class with "__";
+      - the group headers of the side menu (ui/nav.css).
+    Do not give the first rule back its weight; a legacy place that needs a colour gets a rule with a class.
+*/
+:where(body.darkTheme) :where(.ui) :where(p, span){
     color: var(--text_color);
+}
+:where(body.darkTheme) :where([class*="zx-"], [class*="zxs-"], [class*="__"], .menugroup-header, .menugroup-head) :where(p, span){
+    color: inherit;
 }
 
 body.darkTheme .ui.secondary.menu .dropdown.item:hover,
@@ -1288,3 +1310,13 @@ body.darkTheme select:not(.i18n-picker):not(.ui) {
 
 /* native <select> pop-ups and arrows follow the dark theme */
 body.darkTheme select { color-scheme: dark; }
+
+/*
+    Table cells. The legacy table rules above colour every td with !important, so a class on the cell cannot win.
+    The cells the kit colours itself are restored here; a page with its own cell colours does the same in its style
+    block (see .st2 ... .st5 in snippet/logsearch.html).
+*/
+body.darkTheme .ui.table tbody tr td.zx-empty-cell,
+body.darkTheme :is(#access, #ipTable, #proxyTable, #redirectset, #gan) tbody tr td.zx-empty-cell {
+    color: var(--zx-text-muted, var(--text_color_secondary)) !important;
+}

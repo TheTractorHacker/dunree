@@ -3,8 +3,8 @@
   "language": "Traditional Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 10.3,
-  "coreCoverage": 18.9
+  "coverage": 9.9,
+  "coreCoverage": 17.8
  },
  "strings": {
   "\"Add Redirection Rule\"": "「新增重新導向規則」",
@@ -273,7 +273,6 @@
   "Clear": "清除",
   "Clear filters": "清除篩選",
   "Clear form": "清除表單",
-  "Clear selection": "清除選取",
   "Click \"Connect\" and enter your Zoraxy admin credentials": "點擊「連線」並輸入您的 Zoraxy 管理員憑證",
   "Click again to delete": "再次點擊以刪除",
   "Client": "用戶端",

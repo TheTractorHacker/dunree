@@ -40,6 +40,7 @@ import (
 	"imuslab.com/zoraxy/mod/pathrule"
 	"imuslab.com/zoraxy/mod/plugins"
 	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"imuslab.com/zoraxy/mod/secaudit"
 	"imuslab.com/zoraxy/mod/sshprox"
 	"imuslab.com/zoraxy/mod/statistic"
 	"imuslab.com/zoraxy/mod/statistic/analytic"
@@ -438,7 +439,20 @@ func startupSequence() {
 		RunAsUser:          *plugin_user,
 		ProbePluginPorts:   *plugin_port_probe,
 		RunAsGroup:         *plugin_group,
-		ZoraxyPort:         ZoraxyPort,
+		IndexPublicKeyFile: *plugin_index_key,
+		ReleasePublicKey:   releasePublicKeyBytes(), //refused as the plugin index key
+
+		//Isolated plugin pages (opt-in, plugin safety settings): the host of the admin UI, the next port
+		IsolatedUIDefaultListen: isolatedPluginUIDefaultListen(*webUIPort),
+		UIListenerWrap:          pluginUIListenerWrap,
+		UIHandlerWrap:           pluginUIAllowList,
+		UIStaticAssets:          pluginUIStaticAssets(),
+
+		Audit: func(event string, target string, detail map[string]string) {
+			//secAudit is read when the event happens; Record of a nil logger does nothing
+			secAudit.Record(secaudit.Event{Actor: "plugin manager", Event: event, Target: target, Detail: detail})
+		},
+		ZoraxyPort: ZoraxyPort,
 		CSRFTokenGen: func(r *http.Request) string {
 			return csrf.Token(r)
 		},
@@ -480,6 +494,7 @@ func startupSequence() {
 	if err != nil {
 		SystemWideLogger.PrintAndLog("plugin-manager", "Failed to load plugins", err)
 	}
+	pluginManager.StartIsolatedUI() //only when "isolated plugin pages" is turned on (off by default)
 
 	/* Docker UX Optimizer */
 	if runtime.GOOS == "windows" && *runningInDocker {

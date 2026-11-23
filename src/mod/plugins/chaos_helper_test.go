@@ -205,6 +205,7 @@ func loadChaos(t testing.TB, m *Manager, folder string, conf string, tags ...str
 	if err != nil {
 		t.Fatalf("introspect of chaos plugin %s failed: %v", folder, err)
 	}
+	m.reviewPermissions(p.Spec, filepath.Base(dir)) //as the loaders do for a manifest that becomes the loaded one
 	p.RootDir = filepath.ToSlash(dir)
 	p.staticRouteProxy = make(map[string]*dpcore.ReverseProxy)
 	m.loadedPluginsMutex.Lock()

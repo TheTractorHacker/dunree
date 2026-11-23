@@ -49,6 +49,9 @@ func NewPluginManager(options *ManagerOptions) *Manager {
 	options.Database.NewTable("plugins")
 	options.Database.NewTable(hookDBTable)
 	options.Database.NewTable(policyDBTable) //reading from a table that does not exist panics in the bolt backend
+	options.Database.NewTable(settingsDBTable)
+	options.Database.NewTable(permDBTable)
+	options.Database.NewTable(installDBTable)
 
 	thisManager := &Manager{
 		LoadedPlugins:      make(map[string]*Plugin),
@@ -83,6 +86,7 @@ func (m *Manager) ReloadPluginFromDisk() {
 			delete(m.LoadedPlugins, pluginID)
 			//Remove the plugin enable state from the database
 			m.Options.Database.Delete("plugins", pluginID)
+			m.forgetInstallRecord(pluginID) //and where it was installed from
 		}
 	}
 
@@ -95,9 +99,23 @@ func (m *Manager) ReloadPluginFromDisk() {
 		return
 	}
 
+	m.pruneDeferredBaseline(dirNames(foldersInPluginDir))
+
 	for _, folder := range foldersInPluginDir {
-		if folder.IsDir() {
+		if folder.IsDir() && folder.Name() != stagingDirName { //the staging folder of downloads is not a plugin
 			pluginPath := filepath.Join(m.Options.PluginDir, folder.Name())
+			// Before the program file is run for its manifest: is it the installed one?
+			changedFrom, err := m.checkBinaryBeforeLoad(folder.Name(), pluginPath)
+			if err != nil {
+				if m.folderIsLoaded(pluginPath) {
+					// The plugin of this folder is loaded (its manifest was read from
+					// the installed file). Its next start reports the changed file.
+					continue
+				}
+				m.Log("Failed to load plugin: "+filepath.Base(pluginPath), err)
+				m.noteLoadFailure(folder.Name(), err)
+				continue
+			}
 			thisPlugin, err := m.LoadPluginSpec(pluginPath)
 			if err != nil {
 				m.Log("Failed to load plugin: "+filepath.Base(pluginPath), err)
@@ -105,15 +123,22 @@ func (m *Manager) ReloadPluginFromDisk() {
 				continue
 			}
 			m.clearLoadFailure(folder.Name())
+			m.noteChangedBinaryLoaded(folder.Name(), pluginPath, changedFrom, thisPlugin.Spec.ID)
 
 			//Check if the plugin id is already loaded into the runtime
 			m.loadedPluginsMutex.RLock()
 			_, ok := m.LoadedPlugins[thisPlugin.Spec.ID]
 			m.loadedPluginsMutex.RUnlock()
 			if ok {
-				//Plugin already loaded, skip it
+				// Plugin already loaded, skip it. Its API permissions are not reviewed:
+				// the manifest just read from disk is not the one that is loaded (the
+				// binary may have been replaced by hand), and the approvals must match
+				// the plugin that runs.
 				continue
 			}
+
+			// A new plugin: compare what it asks for with what is approved for its ID
+			m.reviewPermissions(thisPlugin.Spec, folder.Name())
 
 			thisPlugin.RootDir = filepath.ToSlash(pluginPath)
 			thisPlugin.staticRouteProxy = make(map[string]*dpcore.ReverseProxy)
@@ -141,16 +166,36 @@ func (m *Manager) LoadPluginsFromDisk() error {
 		return err
 	}
 
+	m.pruneDeferredBaseline(dirNames(foldersInPluginDir))
+	failedFolders := []string{} //for the permission baseline, see markPermissionBaseline
+
 	for _, folder := range foldersInPluginDir {
-		if folder.IsDir() {
+		if folder.IsDir() && folder.Name() != stagingDirName { //the staging folder of downloads is not a plugin
 			pluginPath := filepath.Join(m.Options.PluginDir, folder.Name())
-			thisPlugin, err := m.LoadPluginSpec(pluginPath)
+			// A crash of Zoraxy in the middle of an update or rollback can leave the
+			// folder without its program file: put it back
+			m.repairPluginFolder(folder.Name(), pluginPath)
+			// Before the program file is run for its manifest: is it the installed one?
+			changedFrom, err := m.checkBinaryBeforeLoad(folder.Name(), pluginPath)
+			var thisPlugin *Plugin
+			if err == nil {
+				thisPlugin, err = m.LoadPluginSpec(pluginPath)
+			}
 			if err != nil {
 				m.Log("Failed to load plugin: "+filepath.Base(pluginPath), err)
 				m.noteLoadFailure(folder.Name(), err)
+				failedFolders = append(failedFolders, folder.Name())
 				continue
 			}
 			m.clearLoadFailure(folder.Name())
+			m.noteChangedBinaryLoaded(folder.Name(), pluginPath, changedFrom, thisPlugin.Spec.ID)
+			if changedFrom == "" {
+				m.noteRecordFolder(thisPlugin.Spec.ID, folder.Name()) //a record from before folders were recorded
+			}
+			// API permissions: compare what the manifest asks for with what is approved
+			// for this plugin ID, and report what is new (log-only unless approval is
+			// required). Before the start below, which grants what is approved.
+			m.reviewPermissions(thisPlugin.Spec, folder.Name())
 			thisPlugin.RootDir = filepath.ToSlash(pluginPath)
 			thisPlugin.staticRouteProxy = make(map[string]*dpcore.ReverseProxy)
 			m.loadHookAdminSettings(thisPlugin)
@@ -165,6 +210,11 @@ func (m *Manager) LoadPluginsFromDisk() error {
 				err = m.StartPlugin(thisPlugin.Spec.ID)
 				if err != nil {
 					m.Log("Failed to enable plugin: "+thisPlugin.Spec.Name, err)
+					var refused *errContractRefused
+					if errors.As(err, &refused) {
+						//Not a failure a retry can fix: the administrator asked not to start such plugins
+						continue
+					}
 					// With a restart policy a plugin that fails to start at boot is tried
 					// again with the same backoff as a crashed one (default never: nothing)
 					thisPlugin.lifeMu.Lock()
@@ -175,6 +225,14 @@ func (m *Manager) LoadPluginsFromDisk() error {
 			}
 		}
 	}
+
+	m.clearStagingAtBoot() //leftovers of a download or swap that the end of Zoraxy cut off
+
+	// Every plugin that was installed before API permissions were tracked has its
+	// record now (see reviewPermissions). A plugin that shows up later starts with
+	// nothing approved. A folder that could not be loaded this time gets its baseline
+	// on its first successful load.
+	m.markPermissionBaseline(failedFolders...)
 
 	if m.Options.PluginGroupsConfig != "" {
 		//Load the plugin groups from the config file
@@ -190,6 +248,16 @@ func (m *Manager) LoadPluginsFromDisk() error {
 	//Generate a hash list for plugins
 	m.InitPluginHashList()
 	return nil
+}
+
+func dirNames(entries []os.DirEntry) map[string]bool {
+	names := make(map[string]bool, len(entries))
+	for _, e := range entries {
+		if e.IsDir() {
+			names[e.Name()] = true
+		}
+	}
+	return names
 }
 
 // GetPluginByID returns a plugin by its ID

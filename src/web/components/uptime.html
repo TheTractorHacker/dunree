@@ -658,9 +658,9 @@
     var qTimer = null;
     $("#utmSearch").on("input", function(){ var v = this.value.trim(); clearTimeout(qTimer); qTimer = setTimeout(function(){ S.q = v; renderList(); renderIncidents(); }, 150); });
     $("#utmFilterTag").on("change", function(){ S.tag = this.value; renderList(); renderIncidents(); });
-    try { var saved = parseInt(localStorage.getItem("zoraxy.utm.range"), 10); if (SLOTS[saved]){ S.range = saved; $("#utmRange .zx-segmented__item").each(function(){ this.setAttribute("aria-checked", this.getAttribute("data-value") === String(saved) ? "true" : "false"); }); } } catch (e) {}
+    try { var saved = parseInt(zxStore.get("zoraxy.utm.range"), 10); if (SLOTS[saved]){ S.range = saved; $("#utmRange .zx-segmented__item").each(function(){ this.setAttribute("aria-checked", this.getAttribute("data-value") === String(saved) ? "true" : "false"); }); } } catch (e) {}
     ZxUI.segmented("#utmFilterStatus", { onChange: function(v){ S.status = v; S.incShown = INCIDENT_PAGE; if (S.records){ renderList(); renderIncidents(); } } });
-    ZxUI.segmented("#utmRange", { onChange: function(v){ S.range = parseInt(v, 10); S.incShown = INCIDENT_PAGE; try { localStorage.setItem("zoraxy.utm.range", String(S.range)); } catch (e) {} renderAll(); } });
+    ZxUI.segmented("#utmRange", { onChange: function(v){ S.range = parseInt(v, 10); S.incShown = INCIDENT_PAGE; try { zxStore.set("zoraxy.utm.range", String(S.range)); } catch (e) {} renderAll(); } });
     $("#utmSettingsBtn").on("click", function(){
         var el = document.getElementById("utmStatusSetting");
         try { el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } catch (e) { el.scrollIntoView(); }

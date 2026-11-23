@@ -126,6 +126,7 @@ var (
 	plugin_user       = flag.String("plugin_user", "", "Run plugin processes as this OS user (name or uid, Unix only, Zoraxy must run as root). Default: same user as Zoraxy")
 	plugin_group      = flag.String("plugin_group", "", "Group for plugin processes started with -plugin_user (name or gid). Default: the user's primary group")
 	plugin_port_probe = flag.Bool("plugin_port_probe", false, "Plugin status: open a TCP connection to the port of each running plugin whenever plugins are listed (at most once per 2 s per plugin) to show Starting / Not listening in every listing (API, side menu). Default: off, only the Plugin Manager page makes that connection, while it is shown")
+	plugin_index_key  = flag.String("plugin_index_pubkey", "", "File with the ed25519 public key (PEM) of the signed plugin index. Default: the key of the plugin safety settings in the Plugin Manager, if any. Never the release key")
 
 	/* Maintaince & Development Function Flags */
 	geoDbUpdate       = flag.Bool("update_geoip", false, "Download the latest GeoIP data and exit")
@@ -178,6 +179,7 @@ var (
 	tlsCertManager        *tlscert.Manager                //TLS / SSL management
 	redirectTable         *redirection.RuleTable          //Handle special redirection rule sets
 	webminPanelMux        *http.ServeMux                  //Server mux for handling webmin panel APIs
+	pluginUIListenerWrap  func(net.Listener) net.Listener //wraps the listener of the isolated plugin pages in TLS when the web UI uses TLS (set in main.go)
 	webUILoopbackListener net.Listener                    //Loopback-only plain HTTP listener for plugins, only used when web UI TLS is enabled
 	csrfMiddleware        func(http.Handler) http.Handler //CSRF protection middleware
 
