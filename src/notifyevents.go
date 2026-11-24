@@ -41,6 +41,7 @@ func initNotifyCenter() {
 	dynamicproxy.BlockObserver = func(site string, _ string) { notifyManager.ObserveWAFBlock(site) }
 
 	go watchFleetNodes()
+	go watchAuthDrift() //auth:* tag against the effective login, see authauditapi.go
 }
 
 // uptimeNotifyObserver is the uptime monitor's per-check callback

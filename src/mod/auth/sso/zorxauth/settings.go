@@ -242,6 +242,9 @@ func (ar *AuthRouter) HandleLogoutAllUsers(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Signed tokens of the shared session mode cannot be forgotten: refuse everything issued up to now
+	ar.revokeAllSharedSessions()
+
 	// Clear all session ID store (one-time validation codes)
 	ar.sessionIdStore.Range(func(key, value interface{}) bool {
 		ar.sessionIdStore.Delete(key)

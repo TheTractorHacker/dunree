@@ -162,6 +162,7 @@ func validHealthPath(hp string) bool {
 
 var knownEvents = map[string]bool{
 	"blacklistedIpBlocked": true, "blacklistToggled": true, "accessRuleCreated": true, "customEvent": true, "dummy": true,
+	"proxyRuleAdded": true, "proxyRuleEdited": true, "proxyRuleRemoved": true, //SDK 1.2.0
 }
 
 // decodeManifest reads the output of -introspect as Zoraxy does. An api_version of

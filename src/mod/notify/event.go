@@ -17,11 +17,13 @@ const (
 	EventCertIssued      = "certificate.issued"
 	EventCertRenewFailed = "certificate.renewal_failed"
 	EventCertExpiring    = "certificate.expiring"
-	EventTest            = "test"
+	// EventCertRenewing is emitted before an ACME order starts (issue #178), see renewing.go
+	EventCertRenewing = "certificate.renewing"
+	EventTest         = "test"
 )
 
 // AllCertEvents are the events the certificate subsystem emits.
-var AllCertEvents = []string{EventCertIssued, EventCertRenewFailed, EventCertExpiring}
+var AllCertEvents = []string{EventCertIssued, EventCertRenewFailed, EventCertExpiring, EventCertRenewing}
 
 // Event is the payload delivered to sinks. It is serialised as the webhook JSON body.
 type Event struct {

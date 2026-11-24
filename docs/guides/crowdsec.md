@@ -28,6 +28,9 @@ instance; the CrowdSec configuration itself was **not** run (no CrowdSec here), 
   ```
   ^\[(?P<ts>[^\]]+)\] \[router:(?P<router>[^\]]+)\] \[origin:(?P<host>[^\]]*)\] \[client: (?P<ip>[^\]]+)\] \[useragent: (?P<ua>[^\]]*)\] (?P<method>[A-Z]+) (?P<uri>\S+) (?P<status>\d{3})$
   ```
+  With the optional **Write the ECH result to the request log** box (Network > Encrypted Client Hello, off by default) HTTPS
+  lines carry one more field after the user agent, `[ech: accepted outer=ech.example.com]`. Leave the box off, or add
+  `(?: \[ech: (?P<ech>[^\]]*)\])?` after the `useragent` group of the pattern.
   A community collection for Zoraxy was proposed to the CrowdSec hub (see upstream discussion #338); check the hub
   before writing your own.
 * Alternative: per-site log files in **JSON lines** (`time, class, site, origin, upstream, client, useragent, method,

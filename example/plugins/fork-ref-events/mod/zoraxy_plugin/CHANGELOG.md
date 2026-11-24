@@ -14,6 +14,30 @@ What the numbers mean here:
 
 `APIVersion` is separate: it is the version of the plugin contract (see `docs/plugins/contract.md`).
 
+## 1.2.0 (2026-11-23), contract version 1
+
+Added. All of it is optional; a plugin that uses none of it behaves as with 1.1.0, and the contract version is
+unchanged.
+
+- API client helpers (`api_client.go`) for the calls a plugin makes to the Zoraxy plugin API. They build the
+  address and set the `Authorization: Bearer <api_key>` header:
+  `ConfigureSpec.DoAPIRequest(method, endpoint, body)` (build and send; no redirects followed, 30 s limit),
+  `ConfigureSpec.NewAPIRequest(method, endpoint, body)` (build only, for your own `http.Client`),
+  `ConfigureSpec.SetAPIAuth(req)` (header only), `ConfigureSpec.APIURL(endpoint)`, and the errors `ErrNoAPIKey`
+  (the start configuration holds no key) and `ErrAPIEndpoint` (the endpoint is not a path).
+- Events `proxyRuleAdded`, `proxyRuleEdited`, `proxyRuleRemoved` (`events.EventProxyRuleAdded`, ...) with the
+  payloads `events.ProxyRuleAddedEvent`, `events.ProxyRuleEditedEvent` (both carry `events.ProxyRuleInfo`: host
+  name, aliases, default site or not, switched off or not, tags) and `events.ProxyRuleRemovedEvent`.
+  `events.ParseEvent` reads them. Only a Zoraxy that knows these names sends them; an older Zoraxy does not
+  register a subscription to a name it does not know (it logs that, and the plugin runs).
+
+Known limits: the helpers call `http://127.0.0.1:<zoraxy_port>` as the contract says, there is no option for another
+address; `DoAPIRequest` has no context parameter (use `NewAPIRequest` with `req.WithContext` and your own client
+when you need to cancel); a response body is not decoded for you. `APIURL` returns an empty string for an endpoint
+that is not a path starting with one `/` (for example `@other.host/x`) and when there is no port, so a request built
+from it cannot be sent; `SetAPIAuth` does nothing without a key, and it does not check where the request goes: only
+`NewAPIRequest` and `DoAPIRequest` guarantee that the key goes to Zoraxy and nowhere else.
+
 ## 1.1.0 (2026-11-23), contract version 1
 
 Added. All of it is optional; a plugin that uses none of it behaves as with 1.0.0.

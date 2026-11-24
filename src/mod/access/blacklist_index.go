@@ -41,6 +41,12 @@ type blacklistIndex struct {
 	v6Bits  []int
 	prefix4 map[netip.Prefix]string
 	prefix6 map[netip.Prefix]string
+	vars    []blacklistVar //{{name}} entries, resolved on every lookup (see vars.go)
+}
+
+type blacklistVar struct {
+	name    string
+	comment string
 }
 
 func buildBlacklistIndex(src *map[string]string) *blacklistIndex {
@@ -56,6 +62,10 @@ func buildBlacklistIndex(src *map[string]string) *blacklistIndex {
 	seen6 := map[int]bool{}
 
 	for entry, comment := range *src {
+		if name, ok := EntryVar(entry); ok {
+			idx.vars = append(idx.vars, blacklistVar{name, comment})
+			continue
+		}
 		// IPv4 wildcard / dotted entries: exactly four dot separated parts
 		if parts := strings.Split(entry, "."); len(parts) == 4 {
 			node := idx.wild
@@ -135,8 +145,20 @@ func (n *wildcardNode) match(octets []string) (string, bool) {
 }
 
 // lookup returns the comment of a matching entry. Exact entries win, then wildcards,
-// then the most specific CIDR.
+// then the most specific CIDR, then the {{variable}} entries.
 func (idx *blacklistIndex) lookup(ipAddr string) (string, bool) {
+	if comment, ok := idx.lookupStatic(ipAddr); ok {
+		return comment, true
+	}
+	for _, v := range idx.vars {
+		if matchVarEntry(ipAddr, v.name) {
+			return v.comment, true
+		}
+	}
+	return "", false
+}
+
+func (idx *blacklistIndex) lookupStatic(ipAddr string) (string, bool) {
 	if comment, ok := idx.exact[ipAddr]; ok {
 		return comment, true
 	}

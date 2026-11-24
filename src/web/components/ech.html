@@ -86,6 +86,11 @@
     #echPanel .echFbStep { margin-top: .25em; line-height: 1.5; overflow-wrap: anywhere; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
     #echPanel .echKeyActions { display: flex; flex-wrap: wrap; gap: var(--zx-space-1); justify-content: flex-end; }
     #echPanel .echKeyActions .ui.button { margin: 0; }
+    #echPanel .echReject { margin-top: var(--zx-space-4); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+    #echPanel .echReject .echMuted { margin: var(--zx-space-2) 0 0; max-width: 62rem; }
+    #echPanel .echReject .ui.checkbox label, #echPanel #echLogReq label { overflow-wrap: anywhere; }
+    #echPanel .echLogField { margin-top: var(--zx-space-3); }
+    #echPanel .echLogField code { font-family: var(--zx-font-mono); font-size: 0.92em; background: transparent; padding: 0; overflow-wrap: anywhere; }
     @media (max-width: 748px) { #echPanel .echBtns .ui.button.echPrimary { flex: 1 1 100%; } #echPanel .echPill { white-space: normal; } }
 </style>
 <div id="echPanel" class="standardContainer">
@@ -158,6 +163,10 @@
                     <input type="number" id="echRetain" min="1" max="8760" value="168">
                     <small>In hours. Longer than the TTL of your DNS record plus resolver and browser caching.</small>
                 </div>
+            </div>
+            <div class="field echLogField">
+                <div class="ui checkbox" id="echLogReq"><input type="checkbox" id="echLogReqInput" aria-describedby="echLogReqHelp"><label for="echLogReqInput">Write the ECH result to the request log</label></div>
+                <small id="echLogReqHelp">Off by default. Every HTTPS line of the request log gets one more field after the user agent, for example <code>[ech: accepted outer=ech.example.com]</code>: the result (<b>accepted</b>, <b>offered</b> = the browser sent ECH that was not decrypted, usually its placeholder when it found no record, or <b>plain</b>) and the outer SNI, the name that was readable on the network. Works with ECH off as well. It changes the line format, so adjust log parsers (CrowdSec, fail2ban) before turning it on.</small>
             </div>
         </div>
         <div id="echApplyWarn" class="echBanner warn" style="display:none" role="alert">
@@ -290,11 +299,16 @@
     <section class="zx-card" id="echFbCard" aria-labelledby="echFbTitle">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="echFbTitle">Fallback certificate served for these names</h3>
-            <p class="zx-card__desc">Optional diagnostics. Names that reached this proxy, match no proxy rule or alias, and were answered with the fallback certificate. For diagnosis only: nothing here changes which certificate is served. Counted since the last restart.</p>
+            <p class="zx-card__desc">Optional diagnostics. Names that reached this proxy, match no proxy rule or alias, and were answered with the fallback certificate. The list is for diagnosis only and never changes which certificate is served. Counted since the last restart.</p>
         </div>
         <div class="zx-card__body">
         <div id="echFbEmpty" class="zx-empty zx-empty--inline" style="display:none"><span class="zx-empty__icon" aria-hidden="true"><i class="shield alternate icon"></i></span><p class="zx-empty__text" id="echFbEmptyText">Nothing has reached the fallback certificate since the last restart. A name shows up here when a visitor asks for a host that no proxy rule covers.</p></div>
         <div id="echFbList" class="echFbList"></div>
+        <div class="echReject" id="echRejectBox">
+            <div class="ui toggle checkbox" id="echReject"><input type="checkbox" id="echRejectInput" aria-describedby="echRejectHelp"><label for="echRejectInput">Reject handshakes for unknown names</label></div>
+            <p class="echMuted" id="echRejectHelp">Off by default. When on, a TLS handshake for a name that matches no proxy rule, no alias and no certificate (scanners, access by IP address, no SNI) is refused before any certificate is sent, so the fallback certificate no longer tells strangers a domain name. Names of proxy rules are never refused, with or without a certificate of their own. A proxy rule for an IP address keeps working only when that address is one of this server's own addresses: clients send no name for an IP address, so behind NAT or a port forward such a rule is refused too. Applies at once to new connections.</p>
+            <p class="echMuted" id="echRejectState" role="status" hidden></p>
+        </div>
         </div>
     </section>
     <div id="echNotice" class="echBanner info" style="display:none" role="status"><i class="info circle icon"></i><div class="t" id="echNoticeText"></div></div>
@@ -357,6 +371,7 @@
         $id("echEnabled").checkbox(s.Enabled ? "set checked" : "set unchecked");
         $id("echPublicName").val(s.PublicName); $id("echMaxName").val(s.MaxNameLength);
         $id("echRotate").val(s.RotateEveryHours); $id("echRetain").val(s.RetainHours); $id("echRotateRetain").text(s.RetainHours);
+        $id("echLogReq").checkbox(s.LogRequests ? "set checked" : "set unchecked");
 
         // pill
         var pill = $id("echStatePill").removeClass("on off warn bad");
@@ -376,7 +391,10 @@
         f.append(fact("Decrypted handshakes", String(d.Accepted), ""));
         var fm = $id("echFactsMore").empty();
         fm.append(fact("Active key created", active ? when(active.Created) : "Never", ""));
-        fm.append(fact("Other TLS requests", String(d.NotAccepted), ""));
+        var oc = d.Outcomes || {Accepted: d.Accepted, Offered: 0, Plain: d.NotAccepted};
+        fm.append(fact(t("Requests with ECH offered, not decrypted"), String(oc.Offered), ""));
+        fm.append(fact(t("Requests without ECH"), String(oc.Plain), ""));
+        fm.append(fact(t("ECH result in the request log"), s.LogRequests ? t("On") : t("Off"), ""));
         fm.append(fact("Handshakes for the public name", String(d.OuterHandshakes || 0) + (d.OuterBadCert ? " (" + d.OuterBadCert + " with an invalid certificate)" : ""), d.OuterBadCert ? "bad" : ""));
 
         // prerequisites
@@ -487,11 +505,39 @@
                 box.append($("<div class='echFbItem'>").append(head).append($("<div class='echFbStep'>").text(c.s)));
             });
             if (d && d.Dropped) { box.append($("<div class='echMuted'>").text("Older names were dropped to keep this list small (" + d.Dropped + ").")); }
+            renderReject(d || {});
         }).fail(function(x){
             $id("echFbList").empty();
             $id("echFbEmptyText").text(x && x.status === 403 ? "Only administrators can see this list." : "The list could not be loaded."); $id("echFbEmpty").show();
         });
     }
+    // ---- reject handshakes for unknown names (optional, off by default; saves at once and says so) ----
+    var rejectBusy = false;
+    function renderReject(d){
+        rejectBusy = true;
+        $id("echReject").checkbox(d.RejectUnknown ? "set checked" : "set unchecked");
+        rejectBusy = false;
+        var st = $id("echRejectState"), n = d.Rejected || 0;
+        if (d.RejectUnknown) {
+            st.text(tf("Rejecting is on: {0} handshake(s) refused since the last restart. Names in the list above that match no proxy rule are now refused instead of getting the fallback certificate.", n)).prop("hidden", false);
+        } else { st.text("").prop("hidden", true); }
+    }
+    function saveReject(on){
+        $.cjax({url: "/api/ech/unknownsni", method: "POST", data: {reject: on}, success: function(r){
+            if (r && typeof r === "object" && r.error != undefined) { msgbox(errText(r), false, 6000); }
+            else { msgbox(on ? t("Handshakes for unknown names are now rejected") : t("Unknown names get the fallback certificate again")); }
+            loadFallbacks();
+        }, error: function(x){ msgbox(errText(null, x), false, 6000); loadFallbacks(); }});
+    }
+    $id("echRejectInput").on("change", function(){
+        if (rejectBusy) { return; }
+        if (!this.checked) { saveReject(false); return; }
+        ZxUI.confirm({title: t("Reject handshakes for unknown names?"),
+            message: t("Visitors who reach this proxy by IP address, without SNI, or under a name that has no proxy rule and no certificate get a TLS error instead of the fallback certificate. The default site is no longer reachable over HTTPS under such names. Sites with a proxy rule for a name keep working. A rule for an IP address keeps working only when that address is one of this server's own addresses (not behind NAT or a port forward)."),
+            confirmLabel: t("Reject unknown names"), danger: true}).then(function(ok){
+            if (ok) { saveReject(true); } else { renderReject({RejectUnknown: false, Rejected: 0}); loadFallbacks(); }
+        });
+    });
     // the page stays loaded between visits: refresh the list whenever the page is opened again
     if (typeof tabSwitchEventBind !== "undefined") { tabSwitchEventBind["ech"] = loadFallbacks; }
     function load(){
@@ -515,7 +561,8 @@
 
     function currentForm(){
         return {enabled: $id("echEnabled").checkbox("is checked"), publicname: $id("echPublicName").val().trim().toLowerCase(),
-            maxnamelength: $id("echMaxName").val(), rotatehours: $id("echRotate").val(), retainhours: $id("echRetain").val()};
+            maxnamelength: $id("echMaxName").val(), rotatehours: $id("echRotate").val(), retainhours: $id("echRetain").val(),
+            logrequests: $id("echLogReq").checkbox("is checked")};
     }
     function applyNow(data){
         $id("echApplyWarn").hide(); pendingApply = null;

@@ -56,7 +56,7 @@ func initCrowdSec() {
 		if accessController == nil {
 			return false
 		}
-		return a.String() == accessController.ServerPublicIP || accessController.IsTrustedProxy(a.String())
+		return a.String() == accessController.PublicIP() || accessController.IsTrustedProxy(a.String())
 	}
 	m.Notify = func(event, subject string, extra map[string]string) {
 		//nothing is sent unless the administrator subscribed a channel to the event (Notifications)

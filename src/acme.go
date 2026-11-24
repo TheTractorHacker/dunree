@@ -51,6 +51,7 @@ func initACME() *acme.ACMEHandler {
 	handler := acme.NewACME(strconv.Itoa(port), sysdb, SystemWideLogger, *acmeTestMode, keyFileMode, publicFileMode)
 	handler.CertStorePath = CONF_CERT_STORE
 	handler.OnEvent = acmeEventBridge
+	handler.BeforeOrder = acmeBeforeOrderBridge
 	return handler
 }
 
@@ -219,6 +220,27 @@ func HandleACMEPreferredCA(w http.ResponseWriter, r *http.Request) {
 		SystemWideLogger.Println("Updating prefered ACME CA to " + ca)
 		utils.SendOK(w)
 	}
+}
+
+// HandleACMEImportGlobalCA (POST) saves the global CA settings (preferred CA, custom URL, skip TLS,
+// ACME email, EAB) as a CA profile. It runs only when the admin presses the button; the global
+// settings stay as they are (issue #233).
+func HandleACMEImportGlobalCA(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "405 - Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	prefCA, prefCAURL, skipTLS := "Let's Encrypt", "", false
+	sysdb.Read("acmepref", "prefca", &prefCA)
+	sysdb.Read("acmepref", "prefcaurl", &prefCAURL)
+	sysdb.Read("acmepref", "skipTLS", &skipTLS)
+	res, err := acmeHandler.ImportGlobalCA(prefCA, prefCAURL, skipTLS, acmeAutoRenewer.RenewerConfig.Email)
+	if err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+	js, _ := json.Marshal(res)
+	utils.SendJSONResponse(w, string(js))
 }
 
 // serveACMEChallenge relays an HTTP-01 challenge request to the temporary

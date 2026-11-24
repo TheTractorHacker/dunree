@@ -111,7 +111,7 @@ func (s *WebhookSink) Wants(eventType string) bool {
 		return false
 	}
 	if len(s.Cfg.Events) == 0 {
-		return true
+		return !IsOptInEvent(eventType) // "all events" never includes the opt-in only ones
 	}
 	for _, e := range s.Cfg.Events {
 		if e == eventType {

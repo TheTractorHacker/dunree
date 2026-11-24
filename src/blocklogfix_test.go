@@ -607,6 +607,29 @@ func TestUnblockPreviewAdmitsOverlappingEntries(t *testing.T) {
 	}
 }
 
+// A {{name}} entry of the same blacklist keeps the address blocked: the preview has to say so
+func TestUnblockPreviewAdmitsVariableEntries(t *testing.T) {
+	env := setupFixEnv(t)
+	rule := env.rule
+	vars := map[string]string{"bad_nets": "192.0.2.1, 198.51.100.*"}
+	access.SetVarResolver(func(name string) (string, bool) { v, ok := vars[name]; return v, ok })
+	t.Cleanup(func() { access.SetVarResolver(nil) })
+	rule.AddIPToBlackList("198.51.100.6", "spam")
+	rule.AddIPToBlackList("{{bad_nets}}", "variable")
+	rule.AddIPToBlackList("{{gone}}", "deleted variable")
+	e := env.record(blocklog.Entry{IP: "198.51.100.6", Reason: blocklog.ReasonBlacklist, RuleID: "access:Office only"})
+	f := explain(t, e.Seq).fix("access-ip-unblock")
+	if f == nil || !strings.Contains(f.Preview, "{{bad_nets}} (currently 192.0.2.1, 198.51.100.*) also covers it") || !strings.Contains(f.Preview, "stays blocked") {
+		t.Fatalf("preview: %+v", f)
+	}
+	// a variable that does not cover the address (or has no value) is not named
+	vars["bad_nets"] = "192.0.2.1"
+	f = explain(t, e.Seq).fix("access-ip-unblock")
+	if f == nil || strings.Contains(f.Preview, "also covers it") {
+		t.Fatalf("preview: %+v", f)
+	}
+}
+
 func TestQuoteUAShortensLongAgents(t *testing.T) {
 	long := strings.Repeat("Segment/1.0 ", 60)
 	q := quoteUA(long)

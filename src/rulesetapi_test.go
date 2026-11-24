@@ -254,6 +254,36 @@ func TestRulesetMigrationProposals(t *testing.T) {
 	if hdr.Rule.Expression != `not (http.header["X-Present"] exists)` || hdr.Exact {
 		t.Fatalf("header present/drop rule: %+v", hdr)
 	}
+	// header rule options of #1356: negate, own status, exceptions; ANY mode is not proposed rule by rule
+	ep.HeaderRules = []*dynamicproxy.HeaderRule{{Name: "X-Debug", Match: dynamicproxy.HeaderMatchPresent, Negate: true, StatusCode: 418, Strip: true}, {Name: "X-B", Match: dynamicproxy.HeaderMatchPresent}}
+	ep.HeaderRulesExcept = []string{"10.0.0.0/8"}
+	res2 := buildRulesetMigration(e)
+	okNeg := false
+	for _, p := range res2.Proposals {
+		if p.SourceRef == "app.example.com, header rule 1 (X-Debug)" {
+			okNeg = p.Valid && !p.Exact && p.Rule.Action.Status == 418 && p.Rule.Expression == `not (ip.src in ["10.0.0.0/8"]) and http.header["X-Debug"] exists`
+			if !okNeg {
+				t.Fatalf("negated header rule: %+v", p)
+			}
+		}
+	}
+	if !okNeg {
+		t.Fatal("negated header rule not proposed")
+	}
+	ep.HeaderRulesMode = dynamicproxy.HeaderRulesModeAny
+	res2 = buildRulesetMigration(e)
+	for _, p := range res2.Proposals {
+		if p.Source == "header_rule" {
+			t.Fatalf("ANY mode header rules must not be proposed one by one: %+v", p)
+		}
+	}
+	skipped := false
+	for _, n := range res2.NotConverted {
+		skipped = skipped || strings.Contains(n.Reason, "one passing rule is enough")
+	}
+	if !skipped {
+		t.Fatalf("ANY mode not listed as not converted: %+v", res2.NotConverted)
+	}
 	// access lists: default rule blacklist as a list + rule, countries inline
 	foundList, foundCountry := false, false
 	for _, p := range res.Proposals {

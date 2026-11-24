@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-const toolVersion = "1.1.0"
+const toolVersion = "1.2.0" //1.2.0: knows proxyRuleAdded / proxyRuleEdited / proxyRuleRemoved and sends samples of them
 
 // Options of one run. The zero value is not usable: see defaultOptions.
 type Options struct {
@@ -902,6 +902,10 @@ func sampleEvent(name, pluginID string, n int) []byte {
 		data = map[string]any{"rule_id": "plugin-check", "enabled": n%2 == 0}
 	case "accessRuleCreated":
 		data = map[string]any{"id": "plugin-check", "name": "plugin-check sample", "desc": "", "blacklist_enabled": false, "whitelist_enabled": false, "trust_proxy_headers_only": false}
+	case "proxyRuleAdded", "proxyRuleEdited":
+		data = map[string]any{"root_or_matching_domain": "conformance.test", "matching_domain_alias": []string{}, "is_root": false, "disabled": n%2 == 0, "tags": []string{"plugin-check"}}
+	case "proxyRuleRemoved":
+		data = map[string]any{"root_or_matching_domain": "conformance.test", "is_root": false}
 	case "customEvent":
 		data = map[string]any{"source_plugin": "plugin-check", "recipients": []string{pluginID}, "payload": map[string]any{}}
 	default:

@@ -289,6 +289,7 @@ func RegisterStatisticalAPIs(authRouter *auth.RouterDef) {
 	RegisterBlockedAPIs(authRouter)
 	/* Rules engine (WHEN expression THEN action, global and per site) */
 	RegisterRulesetAPIs(authRouter)
+	RegisterUserVarAPIs(authRouter)
 	/* UpTime Monitor */
 	authRouter.HandleFunc("/api/utm/list", HandleUptimeMonitorListing)
 	authRouter.HandleFunc("/api/utm/healthyStatus", HandleUptimeHealthyStatus)
@@ -329,6 +330,7 @@ func RegisterACMEAndAutoRenewerAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/acme/dns/providers", acmedns.HandleServeProvidersJson)
 	authRouter.HandleFunc("/api/acme/keytype", acmeHandler.HandleKeyType)
 	authRouter.HandleFunc("/api/acme/profiles/ca", acmeHandler.HandleCAProfiles)
+	authRouter.HandleFunc("/api/acme/profiles/ca/importGlobal", HandleACMEImportGlobalCA)
 	authRouter.HandleFunc("/api/acme/profiles/dns", acmeHandler.HandleDNSProfiles)
 	authRouter.HandleFunc("/api/acme/renewCert", acmeAutoRenewer.HandleRenewCertNow)
 	authRouter.HandleFunc("/api/notify/hooks", notifyManager.HandleHooks)

@@ -17,6 +17,7 @@ import (
 	error pages (upstream #370, #826, #877).
 
 	Variables: {{host}} {{client_ip}} {{request_id}} {{rule_name}} {{external_ip}}
+	plus the variables the admin defined (mod/uservars); a user variable never shadows a built-in.
 	Unknown names are left untouched. Every substituted value is sanitised: control
 	characters (CR, LF, NUL ...) are removed and the value is capped, so a value taken from
 	the request can never inject a header, split a response or smuggle a second Location.
@@ -44,6 +45,18 @@ func SetExternalIPProvider(f func() string) {
 		return
 	}
 	externalIP.Store(&f)
+}
+
+// userVars resolves the admin defined variables (upstream #370). Built-in names always win.
+var userVars atomic.Pointer[func(name string) (string, bool)]
+
+// SetUserVarProvider installs the source of the user defined {{name}} variables. nil removes it.
+func SetUserVarProvider(f func(name string) (string, bool)) {
+	if f == nil {
+		userVars.Store(nil)
+		return
+	}
+	userVars.Store(&f)
 }
 
 // NewRequestID returns a random 16 hex character request identifier
@@ -125,6 +138,9 @@ func varValue(r *http.Request, name string) (string, bool) {
 			return (*p)(), true
 		}
 		return "", true
+	}
+	if p := userVars.Load(); p != nil {
+		return (*p)(name)
 	}
 	return "", false
 }

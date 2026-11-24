@@ -231,9 +231,19 @@ func buildRulesetMigration(e *ruleset.Engine) migrationResult {
 			add(migrationProposal{Source: "path_rule", SourceRef: ref, Site: ei.key,
 				Rule: ruleset.RuleInput{Name: clipName(name), Expression: expr, Action: act}, Exact: exact, Notes: notes})
 		}
+		if ei.ep.HeaderRulesMode == dynamicproxy.HeaderRulesModeAny && len(ei.ep.HeaderRules) > 1 {
+			//One proposal per rule would require every header again; proposing that would block more than the original
+			skip("header_rule", ei.key+", header rules", "The header rules of this site are in 'one passing rule is enough' mode. One proposal per rule would turn that into 'every rule must pass'. Keep these header rules.")
+			continue
+		}
 		for i, hr := range ei.ep.HeaderRules {
 			ref := fmt.Sprintf("%s, header rule %d (%s)", ei.key, i+1, hr.Name)
 			cond, status, notes, exact := headerRuleExpression(hr)
+			if ex := compactNonEmpty(ei.ep.HeaderRulesExcept); len(ex) > 0 {
+				cond = "not (ip.src in " + qlist(ex) + ") and " + cond
+				notes = append(notes, "The exception list is read with the client address the engine sees (ip.src); the original uses the address the site's access rule sees.")
+				exact = false
+			}
 			add(migrationProposal{Source: "header_rule", SourceRef: ref, Site: ei.key,
 				Rule: ruleset.RuleInput{Name: clipName("Require header " + hr.Name), Expression: cond, Action: ruleset.Action{Type: ruleset.ActBlock, Status: status}}, Exact: exact, Notes: notes})
 		}
@@ -432,12 +442,22 @@ func headerRuleExpression(hr *dynamicproxy.HeaderRule) (cond string, status int,
 		exact = false
 	}
 	cond = "not (" + present + ")"
+	if hr.Negate {
+		cond = present //the request is blocked when the header (value) IS there
+	}
+	if hr.Strip {
+		notes = append(notes, "The original removes the header before the request is forwarded; an engine rule cannot. Add a 'remove request header' entry to the site's custom headers.")
+		exact = false
+	}
 	if p := strings.TrimSpace(hr.PathPrefix); p != "" && p != "/" {
 		cond = "(http.path == " + q(strings.TrimSuffix(p, "/")) + " or http.path starts_with " + q(strings.TrimSuffix(p, "/")+"/") + ") and " + cond
 		notes = append(notes, "Path scope read once, see the note on path rules.")
 		exact = false
 	}
 	status = 403
+	if hr.StatusCode != 0 {
+		status = hr.StatusCode
+	}
 	switch hr.Action {
 	case dynamicproxy.HeaderActionNotFound:
 		status = 404
@@ -446,4 +466,14 @@ func headerRuleExpression(hr *dynamicproxy.HeaderRule) (cond string, status int,
 		exact = false
 	}
 	return
+}
+
+func compactNonEmpty(in []string) []string {
+	out := []string{}
+	for _, v := range in {
+		if v = strings.TrimSpace(v); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }

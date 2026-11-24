@@ -56,6 +56,7 @@ func initCluster() {
 		AllowLocalEdits: *clusterAllowLocalEdit,
 		Reload:          clusterReload,
 		Validate:        validateClusterPayload,
+		ExportSettings:  exportClusterSettings,
 		Actor:           fleetActor,
 		Stats:           fleetNodeStats,
 		HubFingerprint:  func() string { return webUIFingerprint },
@@ -89,6 +90,10 @@ func validateClusterPayload(p *cluster.Payload) error {
 				return fmt.Errorf("%s: %w", f.Path, err)
 			}
 			if _, err := waf.NewState(wc.Policy, wc.Profiles); err != nil {
+				return fmt.Errorf("%s: %w", f.Path, err)
+			}
+		case strings.HasPrefix(f.Path, cluster.SettingsRoot+"/"):
+			if err := validateSettingsFile(f.Data); err != nil {
 				return fmt.Errorf("%s: %w", f.Path, err)
 			}
 		case strings.HasPrefix(f.Path, "proxy/") && strings.HasSuffix(f.Path, ".config"):

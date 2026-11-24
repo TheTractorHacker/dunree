@@ -31,6 +31,7 @@ import (
 
 const (
 	sdkOld     = "1.0.0"   //the frozen copy: what plugins in the field were built with
+	sdk11      = "1.1.0"   //the frozen copy of the release before the current one (testdata/sdk-1.1.0)
 	sdkCurrent = "current" //src/mod/plugins/zoraxy_plugin of this tree
 )
 
@@ -88,6 +89,8 @@ func sdkPluginBinary(t testing.TB, version string) string {
 	sdkDir, tags := "zoraxy_plugin", "sdk11"
 	if version == sdkOld {
 		sdkDir, tags = filepath.Join("testdata", "sdk-"+sdkOld, "zoraxy_plugin"), ""
+	} else if version == sdk11 {
+		sdkDir = filepath.Join("testdata", "sdk-"+sdk11, "zoraxy_plugin")
 	}
 	work := filepath.Join(chaosBuild.dir, "sdkplugin-"+version)
 	if err := copyTree(filepath.Join("testdata", "sdkplugin"), work); err != nil {

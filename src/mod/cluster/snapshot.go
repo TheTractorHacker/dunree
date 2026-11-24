@@ -63,11 +63,27 @@ var baseRoots = []string{
 
 const certRoot = "certs"
 
+// Roots of the optional settings sync (Config.SyncSettings, see settings.go).
+// SettingsRoot holds settings that live in the database, exported by the
+// primary as one JSON file per group; ssoRoot holds the files the synced
+// ZorxAuth users refer to (group policies, login page branding).
+const (
+	SettingsRoot = "dbsync"
+	ssoRoot      = "sso"
+)
+
 // ManagedRoots returns the roots covered by a snapshot.
 func ManagedRoots(includeCerts bool) []string {
+	return managedRoots(includeCerts, false)
+}
+
+func managedRoots(includeCerts, includeSettings bool) []string {
 	r := append([]string{}, baseRoots...)
 	if includeCerts {
 		r = append(r, certRoot)
+	}
+	if includeSettings {
+		r = append(r, ssoRoot, SettingsRoot)
 	}
 	return r
 }
@@ -86,6 +102,9 @@ type Payload struct {
 	IncludesCerts bool        `json:"includesCerts"`
 	ContentHash   string      `json:"hash"`
 	Files         []FileEntry `json:"files"`
+	// IncludesSettings: the snapshot carries the database-stored settings
+	// (SettingsRoot) and the SSO files (primary has "sync settings" on).
+	IncludesSettings bool `json:"includesSettings,omitempty"`
 	// Fleet carries bundle metadata of the central management mode (nil for
 	// the legacy primary/follower snapshots).
 	Fleet *FleetMeta `json:"fleet,omitempty"`
@@ -112,7 +131,17 @@ var (
 // CollectFiles reads the syncable files from a conf folder. Symlinks and
 // non-regular files are skipped.
 func CollectFiles(confDir string, includeCerts bool) (*Payload, error) {
-	p := &Payload{Roots: ManagedRoots(includeCerts), IncludesCerts: includeCerts}
+	p, err := collectRoots(confDir, ManagedRoots(includeCerts))
+	if err != nil {
+		return nil, err
+	}
+	p.IncludesCerts = includeCerts
+	return p, nil
+}
+
+// collectRoots is CollectFiles for an explicit list of roots.
+func collectRoots(confDir string, roots []string) (*Payload, error) {
+	p := &Payload{Roots: append([]string{}, roots...)}
 	var total int64
 	for _, root := range p.Roots {
 		abs := filepath.Join(confDir, filepath.FromSlash(root))
@@ -218,6 +247,8 @@ func validEntryPath(p string, roots []string) bool {
 		return len(parts) == 2 && strings.HasSuffix(parts[1], ".config")
 	case "trusted_proxies.json", "acme_conf.json", "waf_central.json":
 		return len(parts) == 1
+	case SettingsRoot:
+		return len(parts) == 2 && strings.HasSuffix(parts[1], ".json")
 	default:
 		return len(parts) >= 2
 	}
@@ -246,7 +277,7 @@ func ValidatePayload(p *Payload) error {
 	}
 	for _, r := range p.Roots {
 		okRoot := false
-		for _, a := range ManagedRoots(true) {
+		for _, a := range managedRoots(true, true) {
 			if r == a {
 				okRoot = true
 			}

@@ -164,8 +164,8 @@ func eventLine(ev Event, now time.Time) string {
 
 // check decides what to do with an event for a channel and records the outcome
 func (g *gate) check(rules Rules, chID string, ev Event, now time.Time) Decision {
-	if ev.Event == EventTest || ev.Event == EventDigest {
-		return DecSend
+	if ev.Event == EventTest || ev.Event == EventDigest || ev.Event == EventCertRenewing {
+		return DecSend // certificate.renewing is only useful right now (it announces an order that is about to start)
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()

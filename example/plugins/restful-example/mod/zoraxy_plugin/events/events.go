@@ -32,6 +32,12 @@ const (
 	EventBlacklistToggled EventName = "blacklistToggled"
 	// EventAccessRuleCreated is emitted when a new access ruleset is created
 	EventAccessRuleCreated EventName = "accessRuleCreated"
+	// EventProxyRuleAdded is emitted when a new HTTP proxy rule was stored (SDK 1.2.0)
+	EventProxyRuleAdded EventName = "proxyRuleAdded"
+	// EventProxyRuleEdited is emitted when a stored HTTP proxy rule was changed (SDK 1.2.0)
+	EventProxyRuleEdited EventName = "proxyRuleEdited"
+	// EventProxyRuleRemoved is emitted when a stored HTTP proxy rule was removed (SDK 1.2.0)
+	EventProxyRuleRemoved EventName = "proxyRuleRemoved"
 	// A custom event emitted by a plugin, with the intention of being broadcast
 	// to the designated recipient(s)
 	EventCustom EventName = "customEvent"
@@ -45,6 +51,9 @@ var validEventNames = map[EventName]bool{
 	EventBlacklistedIPBlocked: true,
 	EventBlacklistToggled:     true,
 	EventAccessRuleCreated:    true,
+	EventProxyRuleAdded:       true,
+	EventProxyRuleEdited:      true,
+	EventProxyRuleRemoved:     true,
 	EventCustom:               true,
 	EventDummy:                true,
 	// Add more event types as needed
@@ -106,6 +115,60 @@ func (e *AccessRuleCreatedEvent) GetEventSource() string {
 	return "accesslist-api"
 }
 
+// ProxyRuleInfo is what the proxy rule events say about a rule. It names the rule
+// and nothing more: no upstream address, no credentials, no header values. A plugin
+// that needs the details asks the plugin API (for example GET /plugin/api/proxy/list,
+// which needs a permitted endpoint).
+type ProxyRuleInfo struct {
+	RootOrMatchingDomain string   `json:"root_or_matching_domain"` // Host name of the rule, "/" for the default site
+	MatchingDomainAlias  []string `json:"matching_domain_alias"`   // Alias host names of the rule
+	IsRoot               bool     `json:"is_root"`                 // True for the default site (the rule for everything no other rule matches)
+	Disabled             bool     `json:"disabled"`                // Whether the rule is switched off
+	Tags                 []string `json:"tags"`                    // Tags of the rule
+}
+
+// ProxyRuleAddedEvent represents an event when a new HTTP proxy rule was stored
+type ProxyRuleAddedEvent struct {
+	ProxyRuleInfo
+}
+
+func (e *ProxyRuleAddedEvent) GetName() EventName {
+	return EventProxyRuleAdded
+}
+
+func (e *ProxyRuleAddedEvent) GetEventSource() string {
+	return "proxy-config"
+}
+
+// ProxyRuleEditedEvent represents an event when a stored HTTP proxy rule was changed.
+// It is sent for every stored change of the rule (upstreams, headers, tags, on / off, ...),
+// and carries the state after the change.
+type ProxyRuleEditedEvent struct {
+	ProxyRuleInfo
+}
+
+func (e *ProxyRuleEditedEvent) GetName() EventName {
+	return EventProxyRuleEdited
+}
+
+func (e *ProxyRuleEditedEvent) GetEventSource() string {
+	return "proxy-config"
+}
+
+// ProxyRuleRemovedEvent represents an event when a stored HTTP proxy rule was removed
+type ProxyRuleRemovedEvent struct {
+	RootOrMatchingDomain string `json:"root_or_matching_domain"` // Host name of the removed rule, "/" for the default site
+	IsRoot               bool   `json:"is_root"`
+}
+
+func (e *ProxyRuleRemovedEvent) GetName() EventName {
+	return EventProxyRuleRemoved
+}
+
+func (e *ProxyRuleRemovedEvent) GetEventSource() string {
+	return "proxy-config"
+}
+
 type CustomEvent struct {
 	SourcePlugin string         `json:"source_plugin"`
 	Recipients   []string       `json:"recipients"`
@@ -160,6 +223,33 @@ func ParseEvent(jsonData []byte, event *Event) error {
 	case EventAccessRuleCreated:
 		type tempData struct {
 			Data AccessRuleCreatedEvent `json:"data"`
+		}
+		var payload tempData
+		if err := json.Unmarshal(jsonData, &payload); err != nil {
+			return err
+		}
+		event.Data = &payload.Data
+	case EventProxyRuleAdded:
+		type tempData struct {
+			Data ProxyRuleAddedEvent `json:"data"`
+		}
+		var payload tempData
+		if err := json.Unmarshal(jsonData, &payload); err != nil {
+			return err
+		}
+		event.Data = &payload.Data
+	case EventProxyRuleEdited:
+		type tempData struct {
+			Data ProxyRuleEditedEvent `json:"data"`
+		}
+		var payload tempData
+		if err := json.Unmarshal(jsonData, &payload); err != nil {
+			return err
+		}
+		event.Data = &payload.Data
+	case EventProxyRuleRemoved:
+		type tempData struct {
+			Data ProxyRuleRemovedEvent `json:"data"`
 		}
 		var payload tempData
 		if err := json.Unmarshal(jsonData, &payload); err != nil {

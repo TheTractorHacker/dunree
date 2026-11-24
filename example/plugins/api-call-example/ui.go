@@ -10,50 +10,52 @@ import (
 	plugin "aroz.org/zoraxy/api-call-example/mod/zoraxy_plugin"
 )
 
-func allowedEndpoint(cfg *plugin.ConfigureSpec) (string, error) {
-	// Make an API call to the permitted endpoint
-	client := &http.Client{}
-	apiURL := fmt.Sprintf("http://localhost:%d/plugin/api/access/list", cfg.ZoraxyPort)
-	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+// callWithKey makes a GET call to Zoraxy with the API key of this plugin.
+//
+// cfg.DoAPIRequest (SDK 1.2.0) builds the address from the port Zoraxy handed over
+// and sets the "Authorization: Bearer <api key>" header, so the key is not
+// handled here at all. It does not follow redirects and gives up after 30 seconds.
+func callWithKey(cfg *plugin.ConfigureSpec, endpoint string) (string, int, error) {
+	resp, err := cfg.DoAPIRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return "", fmt.Errorf("error creating request: %v", err)
-	}
-	// Make sure to set the Authorization header
-	req.Header.Set("Authorization", "Bearer "+cfg.APIKey) // Use the API key from the runtime config
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error making API call: %v", err)
+		return "", 0, fmt.Errorf("error making API call: %v", err)
 	}
 	defer resp.Body.Close()
 
 	respDump, err := httputil.DumpResponse(resp, true)
 	if err != nil {
+		return "", resp.StatusCode, fmt.Errorf("error dumping response: %v", err)
+	}
+	return string(respDump), resp.StatusCode, nil
+}
 
-		return "", fmt.Errorf("error dumping response: %v", err)
+func allowedEndpoint(cfg *plugin.ConfigureSpec) (string, error) {
+	// Make an API call to the permitted endpoint
+	respDump, status, err := callWithKey(cfg, "/plugin/api/access/list")
+	if err != nil {
+		return respDump, err
 	}
 
 	// Check if the response status is OK
-	if resp.StatusCode != http.StatusOK {
-		return string(respDump), fmt.Errorf("received non-OK response status %d", resp.StatusCode)
+	if status != http.StatusOK {
+		return respDump, fmt.Errorf("received non-OK response status %d", status)
 	}
 
-	return string(respDump), nil
+	return respDump, nil
 }
 
 func allowedEndpointInvalidKey(cfg *plugin.ConfigureSpec) (string, error) {
-	// Make an API call to the permitted endpoint with an invalid key
-	client := &http.Client{}
-	apiURL := fmt.Sprintf("http://localhost:%d/plugin/api/access/list", cfg.ZoraxyPort)
-	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	// Make an API call to the permitted endpoint with an invalid key.
+	// cfg.NewAPIRequest builds the same request as above without sending it; the
+	// header it set is then replaced by hand to show what Zoraxy answers.
+	req, err := cfg.NewAPIRequest(http.MethodGet, "/plugin/api/access/list", nil)
 	if err != nil {
 		return "", fmt.Errorf("error creating request: %v", err)
 	}
 	// Use an invalid API key
 	req.Header.Set("Authorization", "Bearer invalid-key")
-	req.Header.Set("Content-Type", "application/json")
 
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error making API call: %v", err)
@@ -71,54 +73,14 @@ func allowedEndpointInvalidKey(cfg *plugin.ConfigureSpec) (string, error) {
 
 func unaccessibleEndpoint(cfg *plugin.ConfigureSpec) (string, error) {
 	// Make an API call to an endpoint that is not permitted
-	client := &http.Client{}
-	apiURL := fmt.Sprintf("http://localhost:%d/api/acme/listExpiredDomains", cfg.ZoraxyPort)
-	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("error creating request: %v", err)
-	}
-	// Use the API key from the runtime config
-	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error making API call: %v", err)
-	}
-	defer resp.Body.Close()
-
-	respDump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		return "", fmt.Errorf("error dumping response: %v", err)
-	}
-
-	return string(respDump), nil
+	respDump, _, err := callWithKey(cfg, "/api/acme/listExpiredDomains")
+	return respDump, err
 }
 
 func unpermittedEndpoint(cfg *plugin.ConfigureSpec) (string, error) {
 	// Make an API call to an endpoint that is plugin-accessible but is not permitted
-	client := &http.Client{}
-	apiURL := fmt.Sprintf("http://localhost:%d/plugin/api/proxy/list", cfg.ZoraxyPort)
-	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("error creating request: %v", err)
-	}
-	// Use the API key from the runtime config
-	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error making API call: %v", err)
-	}
-	defer resp.Body.Close()
-
-	respDump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		return "", fmt.Errorf("error dumping response: %v", err)
-	}
-
-	return string(respDump), nil
+	respDump, _, err := callWithKey(cfg, "/plugin/api/proxy/list")
+	return respDump, err
 }
 
 func RenderUI(config *plugin.ConfigureSpec, w http.ResponseWriter, r *http.Request) {

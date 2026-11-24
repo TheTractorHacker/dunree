@@ -479,8 +479,8 @@ func (gs *GatewayServer) handlePasskeyAuthComplete(w http.ResponseWriter, r *htt
 	cookieDuration := gs.router.Options.CookieDuration
 	isSecure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 
-	sessionToken := gs.router.generateSessionToken()
 	expiryTime := time.Now().Add(time.Duration(cookieDuration) * time.Second)
+	sessionToken := gs.router.issueSessionToken(tokenKindGateway, foundUser.Username, expiryTime, false)
 	gs.router.gatewaySessionStore.Store(sessionToken, &GatewaySession{
 		Username: foundUser.Username,
 		Expiry:   expiryTime,

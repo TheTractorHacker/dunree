@@ -1,7 +1,7 @@
 # Zoraxy plugin contract
 
 Contract version: **1**. Written 2026-11-23 for the fork (`dev` branch). Status of this document: it describes what
-the code does (`src/mod/plugins`, SDK `src/mod/plugins/zoraxy_plugin` 1.1.0). Where the two ever disagree, that is a
+the code does (`src/mod/plugins`, SDK `src/mod/plugins/zoraxy_plugin` 1.2.0). Where the two ever disagree, that is a
 bug in one of them; the tests named in section 8 are what keeps them together.
 
 The contract is everything Zoraxy and a plugin say to each other. A plugin is a separate program; nothing in this
@@ -113,6 +113,47 @@ version; it is not planned yet (see the known limits of phase 3 in `reliability-
 | Event | `POST subscription_path/<event name>` with the event (JSON) | `200`; one at a time, in order, at most 1000 waiting |
 | Health | `GET health_path`, 2 s, only when the administrator turned the health check on | any `2xx` = healthy |
 
+### Events
+
+A plugin gets the events it names in `subscriptions_events`, and no others. A name this Zoraxy does not know is
+logged and skipped; the plugin still starts.
+
+| Event name | Sent when | `data` |
+|---|---|---|
+| `blacklistedIpBlocked` | a request was refused by a blacklist | `ip`, `comment`, `requested_url`, `hostname`, `user_agent`, `method` |
+| `blacklistToggled` | the blacklist of an access rule was switched on or off | `rule_id`, `enabled` |
+| `accessRuleCreated` | an access rule was created | `id`, `name`, `desc`, `blacklist_enabled`, `whitelist_enabled`, `trust_proxy_headers_only` |
+| `proxyRuleAdded` (since fork.32, SDK 1.2.0) | an HTTP proxy rule was stored that had no stored configuration before | `root_or_matching_domain` (`/` for the default site), `matching_domain_alias`, `is_root`, `disabled`, `tags` |
+| `proxyRuleEdited` (since fork.32, SDK 1.2.0) | a stored HTTP proxy rule was stored again: any change of it (upstreams, headers, tags, aliases, on / off, ...) | as `proxyRuleAdded`, the state after the change |
+| `proxyRuleRemoved` (since fork.32, SDK 1.2.0) | the stored configuration of an HTTP proxy rule was removed | `root_or_matching_domain`, `is_root` |
+| `customEvent` | another plugin sent it | `source_plugin`, `recipients`, `payload` |
+
+The proxy rule events name the rule and nothing else: no upstream address, no credentials, no header values. A
+plugin that needs the details asks the plugin API (`GET /plugin/api/proxy/list`, which is a permission). Limits of
+the proxy rule events:
+
+- They follow the stored configuration. A change of the host name of a rule arrives as `proxyRuleRemoved` (old
+  name) followed by `proxyRuleAdded` (new name).
+- `proxyRuleEdited` does not say what changed, and it is also sent when a save changed nothing.
+- Saves and removals are handled one at a time, so two requests that store the same new rule at the same moment
+  arrive as one `proxyRuleAdded` and one `proxyRuleEdited`. The two steps of a host name change are not one step
+  for a subscriber: another event can arrive between its `proxyRuleRemoved` and its `proxyRuleAdded`. Events are
+  sent to a plugin one request each, so do not rely on the order in which two events that follow each other
+  closely arrive.
+- Not sent: for rules loaded at start, for a configuration restored or imported as files (backup restore, Fleet
+  sync to a follower: these replace the files and reload), and for the rewrite of a rule when a basic auth password
+  hash is upgraded at login. Stream proxy, redirection and virtual directory rules of their own have no event
+  (a virtual directory change is stored in its proxy rule and arrives as `proxyRuleEdited`).
+- Delivery is the delivery of every event: at most 1000 waiting per plugin, no retry, no replay for a plugin that
+  was not running.
+
+**Events over UDP: will not be done.** Upstream's tracker lists "consider sending events over UDP instead of HTTP".
+The fork keeps HTTP on loopback: a UDP datagram can be lost or arrive out of order without either side noticing,
+is limited in size (the event payloads have no upper bound), cannot carry the invoke token check and the per plugin
+ordering, back-pressure and failure counters that the HTTP delivery has, and would be a second transport every
+plugin author and the conformance kit has to support. The cost it would save (one loopback HTTP request per event
+on a kept-alive connection) has not been a measured problem.
+
 ## 5. Stop
 
 1. `GET <ui_path>/term` (when the plugin has a UI path).
@@ -136,6 +177,31 @@ that are **granted** are answered.
   installed when this Zoraxy version first started, what they asked for at that moment.
 - An approval is for one plugin ID and one method and path. A pair the manifest stops asking for loses its
   approval.
+
+### The API key
+
+The SDK (1.2.0) sets the header for you: `cfg.DoAPIRequest(method, endpoint, body)`, or `cfg.NewAPIRequest` /
+`cfg.SetAPIAuth` with your own `http.Client`. A plugin in another language sends the header itself. Only
+`DoAPIRequest` and `NewAPIRequest` guarantee that the key goes to Zoraxy and nowhere else: `SetAPIAuth` sets the
+header on whatever request it is given. `cfg.APIURL` gives an empty address for anything that is not a path
+starting with one `/`.
+
+How the key is made was reviewed for fork.32 (`src/mod/auth/plugin_apikey_manager.go`); **nothing was changed**,
+because nothing was found weak:
+
+| Question | Finding |
+|---|---|
+| Source of randomness | 32 bytes from `crypto/rand` (the operating system's generator), an error from it refuses the key. 256 bits: guessing is not possible |
+| Encoding | the 32 bytes are put through SHA-256 and written as 64 hex characters. The hash adds nothing and takes nothing away (the output still has 256 bits of the input); it stays, so the format of the key does not change |
+| Relation to the plugin | none: the plugin ID, the time and the port are not part of the key |
+| Lifetime | made at every start of the plugin, kept in memory only (never written to disk or to the database), removed when the plugin stops or crashes. Keys do not survive a restart of Zoraxy, so there is no old key to keep valid |
+| Scope | one key opens only the granted method and path pairs of its plugin; an approval or withdrawal applies to the live key |
+| Comparison | the key is looked up in a map, which is not a constant-time comparison. With a random 256-bit key and Go's per-process seeded map hash this gives an attacker nothing to measure towards; noted, not changed |
+| Where it can leak | on the command line of the plugin unless the manifest says `configure_via: "stdin"` (section 3); in the plugin's own logs if it prints it; the call itself is plain HTTP, on loopback only |
+| Wrong keys | answered `401`; attempts are not counted or rate limited (the API is reachable on the management port, so a firewall or the loopback bind is what limits who can try) |
+
+Held by `TestPluginAPIKeyFormatAndUniqueness` (`src/mod/auth`) and `TestSDKAPIClientHelpersSetTheBearerHeader`
+(`src/mod/plugins`).
 
 ## 7. Stability rules
 
@@ -165,6 +231,8 @@ These are promises of the fork for contract major version "1.x" (versions 0 and 
 | Version states, warn by default, refuse on opt-in, legacy never affected | `TestContractStatesAndSanitize`, `TestContractAPIVersionThatIsNotANumberLoadsAsLegacy`, `TestFaultPluginWithOddAPIVersionIsLoadedAsLegacy`, `TestFaultContractMismatchWarnsByDefaultAndRefusesOnOptIn`, `TestFaultRefusedPluginIsNotRetriedAtBoot`, `TestFaultRefusedPluginIsNotRetriedAfterACrash` |
 | The range is only sent to plugins that declare a version | `TestFaultContractRangeOnlyForPluginsThatDeclareAVersion` |
 | A binary built with SDK 1.0.0 still works against this Zoraxy | `TestSDKCompatBinaryBuiltWithOldSDKStillPasses` |
+| A binary built with SDK 1.1.0 still works against this Zoraxy | `TestSDKCompatBinaryBuiltWithSDK11StillPasses` (`testdata/sdk-1.1.0`) |
+| Proxy rule events are sent, with the documented payload and nothing more | `TestProxyRuleEvents...` (`src/proxyrule_events_test.go`), `TestProxyRuleEventsDeSerialization` (`src/mod/eventsystem`) |
 | Secrets on standard input | `TestFaultSDKPluginSecretsAreNotInTheProcessList`, `TestFaultSecretsOnStdinAreNotOnTheCommandLine` |
 | Permissions | `phase2_permissions_test.go` |
 | A plugin can be checked against this document without Zoraxy | the conformance kit `tools/plugin-check` (`docs/plugins/conformance.md`); its verdict rules are held to those of Zoraxy by `TestConformanceKitVerdictRulesMatchZoraxy` |
@@ -196,7 +264,8 @@ What a module would have given, and how it is covered instead:
 | No outside dependency | the package only imports the standard library (the compatibility build runs with `GOPROXY=off`) |
 
 Rules for changing the SDK: a release that adds something is a minor version; when it is released the previous
-state is frozen under `testdata/sdk-<version>` and added to the compatibility test. The tag `sdk/v1.1.0` has **not**
-been created (tags are made at release time by the owner's release flow).
+state is frozen under `testdata/sdk-<version>` and added to the compatibility test (done for 1.0.0 and, when 1.2.0
+was made, for 1.1.0). The tags `sdk/v1.1.0` and `sdk/v1.2.0` have **not** been created (tags are made at release
+time by the owner's release flow).
 
 If a separate module is wanted later, the folder can be published as it is: it has no import of Zoraxy.

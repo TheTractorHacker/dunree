@@ -5,6 +5,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -112,5 +113,50 @@ func TestPercentile(t *testing.T) {
 	}
 	if percentile(d, 0.5) != 50*time.Millisecond || percentile(d, 0.95) != 95*time.Millisecond || percentile(d, 0.99) != 99*time.Millisecond || percentile(nil, 0.5) != 0 || percentile(d[:1], 0.99) != time.Millisecond {
 		t.Fatalf("percentiles: %v %v %v", percentile(d, 0.5), percentile(d, 0.95), percentile(d, 0.99))
+	}
+}
+
+// The proxy rule events of SDK 1.2.0 (kit 1.2.0): known names, and sample payloads
+// with the fields docs/plugins/contract.md section 4 lists.
+func TestProxyRuleEventsAreKnownAndSampled(t *testing.T) {
+	m, _, err := decodeManifest([]byte(`{"id":"a.b","name":"n","author":"a","description":"d","ui_path":"/ui","subscription_path":"/ev","subscriptions_events":{"proxyRuleAdded":"x","proxyRuleEdited":"x","proxyRuleRemoved":"x"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fails, warns := checkManifest(m); len(fails) != 0 || len(warns) != 0 {
+		t.Errorf("a manifest that subscribes to the proxy rule events: fails %q, warns %q", fails, warns)
+	}
+	m, _, _ = decodeManifest([]byte(`{"id":"a.b","name":"n","author":"a","description":"d","ui_path":"/ui","subscription_path":"/ev","subscriptions_events":{"proxyRuleRenamed":"x"}}`))
+	if _, warns := checkManifest(m); !strings.Contains(strings.Join(warns, "; "), "not an event this kit knows") {
+		t.Errorf("an unknown event name must still warn: %q", warns)
+	}
+	want := map[string][]string{
+		"proxyRuleAdded":   {"disabled", "is_root", "matching_domain_alias", "root_or_matching_domain", "tags"},
+		"proxyRuleEdited":  {"disabled", "is_root", "matching_domain_alias", "root_or_matching_domain", "tags"},
+		"proxyRuleRemoved": {"is_root", "root_or_matching_domain"},
+	}
+	for name, fields := range want {
+		var ev struct {
+			Name string                     `json:"name"`
+			UUID string                     `json:"uuid"`
+			Data map[string]json.RawMessage `json:"data"`
+		}
+		if err := json.Unmarshal(sampleEvent(name, "a.b", 1), &ev); err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(ev.Data))
+		for f := range ev.Data {
+			got = append(got, f)
+		}
+		sort.Strings(got)
+		if ev.Name != name || ev.UUID == "" || strings.Join(got, ",") != strings.Join(fields, ",") {
+			t.Errorf("sample of %s: name %q, fields %v, want %v", name, ev.Name, got, fields)
+		}
+		if string(ev.Data["root_or_matching_domain"]) != `"conformance.test"` || string(ev.Data["is_root"]) != "false" {
+			t.Errorf("sample of %s: %s", name, ev.Data)
+		}
+	}
+	if toolVersion == "1.1.0" {
+		t.Error("the kit behaves differently from 1.1.0 (three more event names, new samples): it needs its own version")
 	}
 }

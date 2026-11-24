@@ -230,6 +230,10 @@ func GetUptimeTargetsFromReverseProxyRules(dp *dynamicproxy.Router) []*uptime.Ta
 
 			//Add each virtual directory into the list
 			for _, vdir := range target.VirtualDirectories {
+				if vdir.UsesH2C() {
+					//The monitor probes with HTTP/1.1, which an h2c (gRPC) target refuses: it would always show as down
+					continue
+				}
 				url := "http://" + vdir.Domain
 				protocol := "http"
 				if origin.RequireTLS {

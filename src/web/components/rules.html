@@ -56,6 +56,8 @@
     /* result of a create */
     #rulesPage #rulesResult { margin: 0 0 var(--zx-space-4); }
     #rulesPage #rulesResult .zx-btn-row { margin-top: var(--zx-space-3); }
+    #rulesPage #rulesResultDnsRow:not([hidden]) { display: flex; margin-top: var(--zx-space-3); }
+    #rulesPage #rulesResultDnsHint:not([hidden]) { display: block; margin-top: var(--zx-space-1); max-width: 70ch; }
     #rulesPage .zxs-recent { list-style: none; margin: var(--zx-space-3) 0 0; padding: 0; }
     #rulesPage .zxs-recent li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding: 6px 0; border-top: 1px solid var(--zx-border); font-size: var(--zx-fs-sm); }
     #rulesPage .zxs-recent b { overflow-wrap: anywhere; }
@@ -88,6 +90,9 @@
         <div class="zx-callout__body">
             <span class="zx-callout__title" id="rulesResultTitle"></span>
             <span id="rulesResultText"></span>
+            <!-- before the buttons: the option changes what "Request a certificate" does, so it is read and focused first -->
+            <label class="zx-check" id="rulesResultDnsRow" hidden><input type="checkbox" id="rulesResultDns" aria-describedby="rulesResultDnsHint"> <span id="rulesResultDnsLabel">Use DNS challenge (default profile)</span></label>
+            <small class="zx-muted" id="rulesResultDnsHint" hidden>Proves the name with a TXT record from the default DNS credential profile instead of a request on port 80. Leave it off for the usual HTTP challenge.</small>
             <div class="zx-btn-row">
                 <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="rulesResultOpen"><i class="edit icon" aria-hidden="true"></i> Open its settings</button>
                 <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="rulesResultList"><i class="sitemap icon" aria-hidden="true"></i> Show it in HTTP Proxy</button>
@@ -535,6 +540,7 @@
         $("#rulesResultText").text(text);
         let canCert = tlsOn && sum.host.indexOf("*") < 0 && /[a-z]/i.test(sum.host) && sum.host.indexOf(".") > 0;
         $("#rulesResultCert").prop("hidden", !canCert);
+        rulesOfferDnsChallenge(canCert);
         $("#rulesResult").attr("data-host", sum.host).prop("hidden", false);
         let list = $("#rsRecent").empty();
         rulesCreated.slice(0, 5).forEach(function(c){
@@ -550,8 +556,22 @@
     $("#rulesResultList").on("click", function(){ rulesOpenSite($("#rulesResult").attr("data-host"), false); });
     $("#rulesResultClose").on("click", function(){ $("#rulesResult").prop("hidden", true); });
     $("#rulesPage").on("click", ".rsRecentOpen", function(){ rulesOpenSite($(this).attr("data-host"), true); });
+    //DNS challenge for the certificate of the new site: offered only when a default DNS credential profile is saved, never ticked for the user
+    function rulesOfferDnsChallenge(canCert){
+        $("#rulesResultDns").prop("checked", false);
+        $("#rulesResultDnsRow, #rulesResultDnsHint").prop("hidden", true);
+        if (!canCert){ return; }
+        $.get("/api/acme/profiles/dns", function(d){
+            let def = d && d.default ? (d.profiles || []).filter(function(p){ return p.id === d.default; })[0] : null;
+            if (!def || $("#rulesResultCert").prop("hidden")){ return; }
+            $("#rulesResultDnsLabel").text(tf("Use DNS challenge (default profile: {0})", def.name));
+            $("#rulesResultDnsRow, #rulesResultDnsHint").prop("hidden", false);
+        });
+    }
     $("#rulesResultCert").on("click", function(){
         let host = $("#rulesResult").attr("data-host");
+        let useDns = !$("#rulesResultDnsRow").prop("hidden") && $("#rulesResultDns").prop("checked");
+        $("#rulesResultDnsRow, #rulesResultDnsHint").prop("hidden", true);
         //Load the prefer CA from TLS page
         let defaultCA = "";
         try { defaultCA = $("#defaultCA").dropdown("get value") || ""; } catch (ex) { defaultCA = ""; }
@@ -559,7 +579,7 @@
         msgbox(tf("Requesting certificate via {0}...", defaultCA));
         $(this).prop("hidden", true);
         //Request ACME for certificate, see cert.html component
-        obtainCertificate(host, false, defaultCA.trim(), function(){
+        obtainCertificate(host, useDns, defaultCA.trim(), function(){
             // Renew the parent certificate list
             initManagedDomainCertificateList();
         });
@@ -862,14 +882,27 @@
     $("#mitigationAction").parent().dropdown();
 
     //Rule templates for new hosts
+    //The default template (Templates > "Default for new rules", none unless an admin chose one) is preselected
+    //until the operator picks something here. Also called by the template manager after a change.
     function loadNewProxyTemplates(){
         $.get("/api/proxy/templates/list", function(list){
             let sel = $("#newProxyTemplate");
+            let chosen = sel.data("touched") ? sel.val() : null;
             sel.find("option:not(:first)").remove();
             (list || []).forEach(function(t){
                 sel.append($("<option></option>").attr("value", t.Name).text(t.Name + (t.Builtin ? " (built in)" : "")).attr("title", t.Description || ""));
             });
+            let pick = function(name){
+                let has = sel.find("option").filter(function(){ return this.value === name; }).length > 0;
+                sel.val(has ? name : "");
+                if (typeof rulesUpdateSummary === "function"){ rulesUpdateSummary(); }
+            };
+            if (chosen !== null){ pick(chosen); return; }
+            $.get("/api/proxy/templates/default", function(d){
+                if (!sel.data("touched")){ pick((d && d.name) || ""); }
+            });
         });
     }
+    $("#newProxyTemplate").on("change", function(){ $(this).data("touched", true); });
     loadNewProxyTemplates();
 </script>

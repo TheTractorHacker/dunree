@@ -428,6 +428,7 @@ func (a *AutoRenewer) renewExpiredDomains(certs []*ExpiredCerts) ([]string, erro
 			Profile:      certInfo.AcmeProfile,
 			CAProfileID:  certInfo.CAProfileID,
 			DNSProfileID: certInfo.DNSProfileID,
+			FromMetadata: true,
 		})
 		if err != nil {
 			a.Logf("Renew "+fileName+"("+strings.Join(expiredCert.Domains, ",")+") failed", err)

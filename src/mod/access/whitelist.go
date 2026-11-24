@@ -82,6 +82,13 @@ func (s *AccessRule) IsIPWhitelisted(ipAddr string) bool {
 	//Check for IP wildcard and CIRD rules
 	WhitelistedIP := *s.WhiteListIP
 	for ipOrCIDR, _ := range WhitelistedIP {
+		// {{name}} entries stand for the current value of a variable (see vars.go)
+		if name, ok := EntryVar(ipOrCIDR); ok {
+			if matchVarEntry(ipAddr, name) {
+				return true
+			}
+			continue
+		}
 		wildcardMatch := netutils.MatchIpWildcard(ipAddr, ipOrCIDR)
 		if wildcardMatch {
 			return true

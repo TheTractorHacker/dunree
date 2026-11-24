@@ -23,6 +23,10 @@ type ObtainOptions struct {
 	Profile      string // ACME profile (RFC draft "profile" extension, e.g. "shortlived"). Empty = CA default
 	CAProfileID  string // ID of a saved CA profile (custom directory URL, EAB). Empty = use caName / caUrl arguments
 	DNSProfileID string // ID of a saved DNS credential profile. Empty = per certificate credentials
+	// FromMetadata says that CAProfileID and Profile were copied from the certificate's metadata by a
+	// renewal (not chosen in a request). They are then read again once the issuance lock is held, so an
+	// assignment made while the renewal was waiting is not overwritten.
+	FromMetadata bool
 }
 
 // CertEvent describes the outcome of an issuance, passed to ACMEHandler.OnEvent.
@@ -35,6 +39,15 @@ type CertEvent struct {
 	Error    string
 }
 
+// RenewNotice describes an order that is about to start, passed to ACMEHandler.BeforeOrder.
+type RenewNotice struct {
+	CertName   string
+	Domains    []string // as they go to the CA (punycode)
+	CA         string
+	UseDNS     bool // true: DNS-01, false: HTTP-01 (the stored setting of an existing certificate wins, as in the order itself)
+	FirstIssue bool // no certificate of this name has been issued by this instance yet
+}
+
 // Event types emitted by the ACME handler
 const (
 	EventCertIssued = "certificate.issued"
@@ -44,6 +57,7 @@ const (
 const (
 	prefKeyType     = "keytype"
 	prefDefaultDNS  = "default_dns_profile"
+	prefDefaultCA   = "default_ca_profile"
 	prefCAProfiles  = "ca_profiles"
 	prefDNSProfiles = "dns_profiles"
 	prefTableName   = acmeAccountTable

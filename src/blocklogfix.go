@@ -338,7 +338,7 @@ func noCaptchaDetail(detail string) bool {
 	return strings.Contains(detail, "no CAPTCHA") || strings.Contains(detail, "challenge-unavailable")
 }
 
-// otherBlacklistMatch names another entry of the rule's blacklist (a range or wildcard) that would
+// otherBlacklistMatch names another entry of the rule's blacklist (a range, wildcard or variable) that would
 // still match ip once its exact entry is gone, or says so when country entries exist. "" when none.
 func otherBlacklistMatch(rule *access.AccessRule, ip string) string {
 	if rule.BlackListIP != nil {
@@ -348,6 +348,12 @@ func otherBlacklistMatch(rule *access.AccessRule, ip string) string {
 			}
 			if strings.Contains(k, "/") && netutils.MatchIpCIDR(ip, k) || strings.Contains(k, "*") && netutils.MatchIpWildcard(ip, k) {
 				return "The range " + k + " also covers it."
+			}
+			// a {{name}} entry blocks whatever its variable holds right now
+			if name, isVar := access.EntryVar(k); isVar {
+				if value, ok := access.ResolveEntryVar(name); ok && access.VarValueCovers(ip, value) {
+					return "The variable entry {{" + name + "}} (currently " + value + ") also covers it."
+				}
 			}
 		}
 	}

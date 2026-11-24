@@ -128,6 +128,8 @@ func startupSequence() {
 	initSecurityAudit() //security audit log (conf/security_audit.log), see securityaudit.go
 	initHistory()       //change history store; finishes an interrupted restore before modules read their files
 	initAdminExposure() //destination guard and admin allow-list (both off until configured), see adminexposure.go
+	//Cluster follower with "sync settings": bring the primary's database-stored settings in before modules read them (cluster_settings.go)
+	clusterImportSettings()
 
 	//Create tmp folder and conf folder
 	os.MkdirAll(TMP_FOLDER, 0775)
@@ -229,7 +231,13 @@ func startupSequence() {
 	})
 
 	zorxauth.DefaultConfigFolder = CONF_FOLDER + "/sso/zorxauth"
+	//Opt-in (Cluster page, sharedSsoSessions in conf/cluster.json) and only with a cluster secret: the SSO portal sessions are
+	//signed tokens every node accepts. Otherwise they stay random ids kept per node, also when a secret is set
+	if key, ok := clusterMgr.SharedSSOSessionKey(nodeUUID); ok {
+		zorxauth.SharedSessionKey = key
+	}
 	zorxAuthRouter = zorxauth.NewAuthRouter(sysdb, SystemWideLogger)
+	zorxAuthRouter.UsersManagedElsewhere = clusterMgr.SettingsReadOnly //follower with synced users: self-service changes would be overwritten
 
 	//Create a statistic collector
 	statisticCollector, err = statistic.NewStatisticCollector(statistic.CollectorOption{

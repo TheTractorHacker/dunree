@@ -64,9 +64,10 @@ type Entry struct {
 	Country  string    `json:"country,omitempty"`
 	Site     string    `json:"site,omitempty"`
 	Upstream string    `json:"upstream,omitempty"`
+	ECH      string    `json:"ech,omitempty"` // opt-in ECH result field of the request log ("accepted outer=name")
 }
 
-var textLine = regexp.MustCompile(`^\[([^\]]+)\] \[router:([^\]]*)\] \[origin:([^\]]*)\] \[client: ([^\]]*)\] \[useragent: (.*)\] (\S+) (\S+) (\d{3})$`)
+var textLine = regexp.MustCompile(`^\[([^\]]+)\] \[router:([^\]]*)\] \[origin:([^\]]*)\] \[client: ([^\]]*)\] \[useragent: (.*?)\](?: \[ech: ([^\]]*)\])? (\S+) (\S+) (\d{3})$`)
 
 // ParseLine parses a text or JSON-lines request log line. ok=false for system
 // log lines and anything that is not a request record.
@@ -87,11 +88,12 @@ func ParseLine(line string) (e Entry, ok bool) {
 			Method   string    `json:"method"`
 			URI      string    `json:"uri"`
 			Status   int       `json:"status"`
+			ECH      string    `json:"ech"`
 		}
 		if json.Unmarshal([]byte(line), &j) != nil || j.Status == 0 {
 			return e, false
 		}
-		return Entry{Time: j.Time, Class: j.Class, Origin: j.Origin, Client: j.Client, Agent: j.Agent, Method: j.Method, URI: j.URI, Status: j.Status, Site: j.Site, Upstream: j.Upstream}, true
+		return Entry{Time: j.Time, Class: j.Class, Origin: j.Origin, Client: j.Client, Agent: j.Agent, Method: j.Method, URI: j.URI, Status: j.Status, Site: j.Site, Upstream: j.Upstream, ECH: j.ECH}, true
 	}
 	m := textLine.FindStringSubmatch(line)
 	if m == nil {
@@ -104,8 +106,8 @@ func ParseLine(line string) (e Entry, ok bool) {
 			return e, false
 		}
 	}
-	st, _ := strconv.Atoi(m[8])
-	return Entry{Time: t, Class: m[2], Origin: m[3], Client: strings.TrimSpace(m[4]), Agent: m[5], Method: m[6], URI: m[7], Status: st}, true
+	st, _ := strconv.Atoi(m[9])
+	return Entry{Time: t, Class: m[2], Origin: m[3], Client: strings.TrimSpace(m[4]), Agent: m[5], ECH: m[6], Method: m[7], URI: m[8], Status: st}, true
 }
 
 // Query is a compiled search

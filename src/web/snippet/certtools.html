@@ -10,6 +10,9 @@
     <style>
       /* dark theme: the tab content has the same box as in the light theme, so the tab strip and the fields line up */
       body.darkTheme .ui.bottom.attached.tab.segment { border: 1px solid var(--divider_color, #3a3b40) !important; border-top: 0 !important; background: transparent !important; }
+      /* webhook list: long URLs and event names wrap instead of pushing the drawer sideways */
+      .hookTable td, .hookTable th { overflow-wrap: anywhere; }
+      .hookTable td:last-child .button { margin-bottom: 0.25em; }
       body.darkTheme .ui.tabular.menu { border-bottom: 1px solid var(--divider_color, #3a3b40) !important; }
       body.darkTheme .ui.tabular.menu .active.item { border-color: var(--divider_color, #3a3b40) !important; background: var(--theme_bg_primary, #1a1b1f) !important; }
     </style>
@@ -87,7 +90,7 @@
         <p>Get notified when a certificate is issued, fails to renew or is about to expire.</p>
         <div id="offlineNote" class="ui warning message" style="display:none;">Offline mode (-offline) is on: webhooks are not sent.</div>
         <h4>Webhooks</h4>
-        <table class="ui very compact celled unstackable table">
+        <table class="ui very compact celled unstackable table hookTable">
           <thead><tr><th>Name</th><th>URL</th><th>Events</th><th>On</th><th>Actions</th></tr></thead>
           <tbody id="hookList"></tbody>
         </table>
@@ -102,7 +105,8 @@
             <div class="field"><label>Events (none selected = all)</label>
               <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.issued"><label>issued / renewed</label></div><br>
               <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.renewal_failed"><label>renewal failed</label></div><br>
-              <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.expiring"><label>about to expire</label></div>
+              <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.expiring"><label>about to expire</label></div><br>
+              <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.renewing"><label>renewal about to start (sent only when ticked)</label></div>
             </div>
           </div>
           <div class="field"><div class="ui checkbox"><input type="checkbox" id="hookEnabled" checked><label>Enabled</label></div></div>
@@ -115,9 +119,15 @@
             <div class="field"><div class="ui checkbox"><input type="checkbox" id="optPrivate"><label>Allow private, loopback and link-local targets (off by default to prevent SSRF into your network)</label></div></div>
           </div>
           <div class="inline fields">
-            <div class="field"><label>Warn this many days before expiry</label><input type="number" id="optWarn" min="1" max="365" style="width:6em;"></div>
-            <button class="ui basic button" onclick="saveOptions();">Save options</button>
+            <div class="field"><label for="optWarn">Warn this many days before expiry</label><input type="number" id="optWarn" min="1" max="365" style="width:6em;"></div>
           </div>
+          <div class="inline fields">
+            <div class="field"><label for="optLead">Seconds to wait after "renewal about to start" before the HTTP challenge begins</label><input type="number" id="optLead" min="0" max="600" style="width:6em;"></div>
+          </div>
+          <p>0 = no wait. Gives an automation time to open port 80. Used only when a webhook, a notification channel or the command hook subscribed to "renewal about to start"; DNS challenges never wait.</p>
+          <p>A receiver on your own network (a router, for example) is refused unless "Allow private, loopback and link-local targets" above is on. That switch applies to every webhook and also permits plain http.</p>
+          <button class="ui basic button" onclick="saveOptions();">Save options</button>
+        </div>
         </div>
 
         <div class="ui divider"></div>
@@ -239,7 +249,7 @@
               <button class="ui mini basic red icon button" onclick="deleteHook('${esc(h.id)}');"><i class="trash icon"></i></button></td></tr>`);
           });
           if (hooks.length == 0){ $("#hookList").append(`<tr><td colspan="5">No webhooks</td></tr>`); }
-          $("#optPrivate").prop("checked", d.allowPrivateTargets); $("#optWarn").val(d.expiryWarnDays);
+          $("#optPrivate").prop("checked", d.allowPrivateTargets); $("#optWarn").val(d.expiryWarnDays); $("#optLead").val(d.renewLeadSeconds || 0);
           if (d.commandsAllowed){
             $("#cmdForm").show(); $("#cmdDisabled").hide();
             $("#cmdPath").val(d.command.path); $("#cmdArgs").val((d.command.args||[]).length ? JSON.stringify(d.command.args) : ""); $("#cmdEnabled").prop("checked", d.command.enabled);
@@ -260,7 +270,7 @@
       function deleteHook(id){ $.cjax({url:"/api/notify/hooks", method:"POST", data:{op:"deleteWebhook", id:id}, success:function(r){ if(!fail(r)) loadHooks(); }}); }
       function testHook(id){ $.cjax({url:"/api/notify/hooks", method:"POST", data:{op:"testWebhook", id:id}, success:function(r){ if(!fail(r)) parent.msgbox("Test event delivered"); }}); }
       function saveOptions(){
-        $.cjax({url:"/api/notify/hooks", method:"POST", data:{op:"setOptions", allowPrivateTargets:$("#optPrivate")[0].checked, expiryWarnDays:$("#optWarn").val()},
+        $.cjax({url:"/api/notify/hooks", method:"POST", data:{op:"setOptions", allowPrivateTargets:$("#optPrivate")[0].checked, expiryWarnDays:$("#optWarn").val(), renewLeadSeconds:$("#optLead").val() || 0},
           success:function(r){ if(!fail(r)) parent.msgbox("Options saved"); }});
       }
       function saveCommand(){

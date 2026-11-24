@@ -38,9 +38,9 @@ type ValidateResult struct {
 }
 
 func (e *Engine) currentLists() map[string]*List {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	return listMap(e.st.lists)
+	// the snapshot's lists: the same names as the stored ones, with {{variables}} resolved, so a candidate
+	// rule is tested against what the request path would use (the map is immutable)
+	return e.snap.Load().lists
 }
 
 // parseCandidate parses text or tree against the current lists

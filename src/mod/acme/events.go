@@ -5,10 +5,13 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"imuslab.com/zoraxy/mod/utils"
 )
 
 // obtainAndNotify runs an issuance (issueMu is held by the caller) and reports the outcome to OnEvent.
 func (a *ACMEHandler) obtainAndNotify(domains []string, certificateName string, email string, caName string, caUrl string, skipTLS bool, useDNS bool, propagationTimeout int, dnsServers string, disableRecursiveNssCheck bool, disableAuthoritativeNssCheck bool, opts ObtainOptions) (bool, error) {
+	a.announceOrder(domains, certificateName, caName, useDNS)
 	ok, err := a.obtainCertLocked(domains, certificateName, email, caName, caUrl, skipTLS, useDNS, propagationTimeout, dnsServers, disableRecursiveNssCheck, disableAuthoritativeNssCheck, opts)
 	if a.OnEvent != nil {
 		ev := CertEvent{CertName: certificateName, Domains: domains, CA: caName}
@@ -34,6 +37,48 @@ func (a *ACMEHandler) obtainAndNotify(domains []string, certificateName string, 
 		}()
 	}
 	return ok, err
+}
+
+// maxOrderLead bounds the wait a BeforeOrder subscriber may ask for (the issuance lock is held meanwhile).
+const maxOrderLead = 10 * time.Minute
+
+// announceOrder tells BeforeOrder that an order is about to start and waits for the lead time it returns.
+// Without a subscriber it does nothing.
+func (a *ACMEHandler) announceOrder(domains []string, certificateName string, caName string, useDNS bool) {
+	if a.BeforeOrder == nil {
+		return
+	}
+	n := RenewNotice{CertName: certificateName, Domains: utils.NormalizeHostnames(domains), CA: caName, UseDNS: useDNS, FirstIssue: true}
+	if len(n.Domains) == 0 {
+		return // the order is refused before anything is sent
+	}
+	// an existing certificate keeps its stored challenge type and CA (obtainCertLocked does the same)
+	if info, err := LoadCertInfoJSON(a.certPath(certificateName + ".json")); err == nil {
+		n.UseDNS, n.FirstIssue = info.UseDNS, false
+		if n.CA == "" {
+			n.CA = info.AcmeName
+		}
+	}
+	if n.CA == "" {
+		n.CA = "Let's Encrypt"
+	}
+	var lead time.Duration
+	func() {
+		defer func() { recover() }() // a misbehaving subscriber must not break issuance
+		lead = a.BeforeOrder(n)
+	}()
+	if lead <= 0 {
+		return
+	}
+	if lead > maxOrderLead {
+		lead = maxOrderLead
+	}
+	a.Logf("Renewal announced (certificate.renewing), waiting "+lead.Round(time.Second).String()+" before the order starts", nil)
+	if a.sleepFn != nil {
+		a.sleepFn(lead)
+	} else {
+		time.Sleep(lead)
+	}
 }
 
 // ObtainCertCapture is ObtainCertWithOptions that also returns the log lines produced by this operation

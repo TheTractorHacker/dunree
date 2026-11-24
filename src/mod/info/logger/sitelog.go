@@ -267,12 +267,17 @@ type SiteLine struct {
 	Method   string    `json:"method"`
 	URI      string    `json:"uri"`
 	Status   int       `json:"status"`
+	ECH      string    `json:"ech,omitempty"` //opt-in ECH result of an HTTPS request, e.g. "accepted outer=public.example.com"
 }
 
 // FormatText renders the line in the same text format as the global request log
 func (l SiteLine) FormatText() string {
+	ech := ""
+	if l.ECH != "" {
+		ech = "[ech: " + l.ECH + "] "
+	}
 	return "[" + l.Time.Format("2006-01-02 15:04:05.000000") + "] [router:" + l.Class + "] [origin:" + l.Origin +
-		"] [client: " + l.Client + "] [useragent: " + l.Agent + "] " + l.Method + " " + l.URI + " " + fmt.Sprint(l.Status)
+		"] [client: " + l.Client + "] [useragent: " + l.Agent + "] " + ech + l.Method + " " + l.URI + " " + fmt.Sprint(l.Status)
 }
 
 func oneLine(s string) string {
@@ -523,6 +528,7 @@ func (l *Logger) LogHTTPRequestSite(siteKey string, r *http.Request, reqclass st
 		line := SiteLine{
 			Time: time.Now(), Class: reqclass, Origin: downstreamHostname, Upstream: upstreamHostname,
 			Client: clientIP, Agent: r.UserAgent(), Method: r.Method, URI: r.RequestURI, Status: statusCode,
+			ECH: l.echValue(r),
 		}
 		go func() {
 			if err := l.Sites.Write(siteKey, line); err != nil {

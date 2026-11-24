@@ -498,6 +498,84 @@ def sites_ui(pg, ctx):
         fail("vdir", f"the real reason is not shown for an invalid path prefix: {msg!r}")
     shot("sites-vdir-bad.png")
 
+    # ---------------------------------------------------------------- Path routes: h2c option for gRPC paths (issue #201, NetBird)
+    current["page"] = "sites-vdir-h2c"
+    grpc_path = "/management.ManagementService/"
+
+    def vdir_of(path):
+        return js("""([h, p]) => fetch('/api/proxy/list?type=host').then(r => r.json()).then(l => {
+            const e = l.filter(x => x.RootOrMatchingDomain == h)[0]; return e ? (e.VirtualDirectories || []).filter(v => v.MatchingPath == p)[0] || null : null; })""", [SITES_HOSTS[0], path])
+
+    js("resetVdirForm(); vdirClearErrors();")
+    if js("document.getElementById('vdH2C').checked"):
+        fail("vdir-h2c", "the h2c option must be off in a new path route form")
+    # list chip and Edit form follow the server rule (UsesH2C): a stored flag does not count with TLS or an https:// target
+    uses = js("""[{H2C: true, Domain: 'signal:80/x/'}, {H2C: true, RequireTLS: true, Domain: 'signal:443/x/'},
+                 {H2C: true, Domain: ' HTTPS://signal:443/x/'}, {H2C: false, Domain: 'signal:80/x/'}, {Domain: 'signal:80/x/'}].map(vdirUsesH2C)""")
+    if uses != [True, False, False, False, False]:
+        fail("vdir-h2c", f"vdirUsesH2C does not match the server rule: {uses!r}")
+    # the tlscheck of the target address must not be what decides this test: set the fields without a change event
+    js("""([p, d]) => { $('#virtualDirectoryPath').val(p); $('#virtualDirectoryDomain').val(d); updateVdirExample(); document.getElementById('advanceVdirRules').open = true; }""",
+       [grpc_path, "127.0.0.1:9" + grpc_path])
+    js("document.activeElement && document.activeElement.blur()")
+    pg.wait_for_timeout(1500)
+    pg.check("#vdReqTls")
+    if not js("document.getElementById('vdH2C').disabled") or js("document.getElementById('vdH2CTlsNote').hidden"):
+        fail("vdir-h2c", "with TLS to the target ticked, h2c must be disabled and say why")
+    # the disabled state with its explanation, in both themes
+    shot("sites-vdir-h2c-tls-disabled.png")
+    theme(True)
+    shot("sites-vdir-h2c-tls-disabled-dark.png")
+    theme(False)
+    pg.uncheck("#vdReqTls")
+    if js("document.getElementById('vdH2C').disabled") or not js("document.getElementById('vdH2CTlsNote').hidden"):
+        fail("vdir-h2c", "h2c stays disabled after TLS was unticked")
+    pg.check("#vdH2C")
+    shot("sites-vdir-h2c-form.png")
+    theme(True)
+    shot("sites-vdir-h2c-form-dark.png")
+    theme(False)
+    js("addVdirToHost()")
+    pg.wait_for_timeout(1200)
+    v = vdir_of(grpc_path)
+    if not v or v.get("H2C") is not True or v.get("RequireTLS"):
+        fail("vdir-h2c", f"the path route was not stored with h2c: {v!r}")
+    chip = js("""p => { const r = [...document.querySelectorAll('#vdirList tr.vdirEntry')].filter(x => x.querySelector('.zxs-path').textContent == p)[0];
+        return r ? [...r.querySelectorAll('.zxs-fact')].map(x => x.textContent.trim()) : null; }""", grpc_path)
+    if chip != ["h2c"]:
+        fail("vdir-h2c", f"the list does not mark the h2c path route: {chip!r}")
+    # a route added without ticking anything has no h2c (default off)
+    js("""() => { $('#virtualDirectoryPath').val('/plainapi/'); $('#virtualDirectoryDomain').val('127.0.0.1:9/api/'); }""")
+    js("addVdirToHost()")
+    pg.wait_for_timeout(1200)
+    v = vdir_of("/plainapi/")
+    if not v or v.get("H2C"):
+        fail("vdir-h2c", f"a path route added without the option has h2c: {v!r}")
+    shot("sites-vdir-h2c-list.png")
+    check_horizontal(pg, "Path routes h2c")
+    theme(True)
+    pg.wait_for_timeout(300)
+    shot("sites-vdir-h2c-list-dark.png")
+    theme(False)
+    # Edit shows the stored state (advanced settings open), and unticking saves it off again
+    js("""([p, h]) => editVdir(p, h)""", [grpc_path, SITES_HOSTS[0]])
+    pg.wait_for_timeout(500)
+    if not js("document.getElementById('vdH2C').checked") or not js("document.getElementById('advanceVdirRules').open"):
+        fail("vdir-h2c", "Edit does not show that h2c is on for the path route")
+    pg.set_viewport_size({"width": 390, "height": 844})
+    pg.wait_for_timeout(300)
+    check_horizontal(pg, "Path routes h2c 390")
+    shot("sites-vdir-h2c-edit-390.png")
+    pg.set_viewport_size({"width": 1366, "height": 1000})
+    pg.uncheck("#vdH2C")
+    js("submitVdirForm()")
+    pg.wait_for_timeout(1200)
+    v = vdir_of(grpc_path)
+    if not v or v.get("H2C"):
+        fail("vdir-h2c", f"unticking h2c in Edit did not switch it off: {v!r}")
+    if js("!document.getElementById('newVDSection').hidden"):
+        js("closeVdirForm()")
+
     # ---------------------------------------------------------------- HTTP Proxy list
     current["page"] = "sites-list"
     js("openTabById('httprp')")

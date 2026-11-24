@@ -115,7 +115,7 @@ func NewAccessController(options *Options) (*Controller, error) {
 	if options.PublicIpCheckInterval <= 0 {
 		options.PublicIpCheckInterval = 12 * 60 * 60 //12 hours
 	}
-	thisController.ServerPublicIP = "127.0.0.1"
+	thisController.setPublicIP("127.0.0.1")
 	if !options.SkipPublicIPCheck {
 		go func() {
 			err := thisController.UpdatePublicIP()

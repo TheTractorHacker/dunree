@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"imuslab.com/zoraxy/mod/info/logger"
 	"imuslab.com/zoraxy/mod/utils"
@@ -50,6 +51,17 @@ type Manager struct {
 	//localhost certificate or the configured fallback certificate AND is not valid for the server name, i.e. nothing
 	//matched the name. serverName is "" when the client sent no SNI.
 	OnFallbackServed func(serverName string) `json:"-"`
+
+	//RejectUnknownSNI (default off) refuses the handshake instead of answering with the fallback certificate when
+	//nothing matches the server name: no certificate covers it and IsKnownHost does not claim it. Clients get the TLS
+	//alert unrecognized_name, like nginx ssl_reject_handshake. See rejectsni.go.
+	RejectUnknownSNI atomic.Bool `json:"-"`
+	//IsKnownHost says whether a server name belongs to a proxy rule (optional). Such a name is never rejected.
+	//For a handshake without SNI it is asked with the local IP address of the connection (a rule keyed on an IP address).
+	IsKnownHost func(serverName string) bool `json:"-"`
+	//OnUnknownRejected is called for every handshake refused by RejectUnknownSNI (diagnostics, must be cheap)
+	OnUnknownRejected func(serverName string) `json:"-"`
+	rejectedUnknown   atomic.Uint64
 
 	/* External handlers */
 	hostSpecificTlsBehavior func(serverName string) (*HostSpecificTlsBehavior, error) // Function to get host specific TLS behavior, if nil, use global TLS options
@@ -284,10 +296,15 @@ func (m *Manager) GetCert(helloInfo *tls.ClientHelloInfo) (*tls.Certificate, err
 	if err != nil {
 		return nil, nil
 	}
+	unknown := m.isFallbackFile(pubKey) && !certCoversName(&cer, helloInfo.ServerName)
+	if unknown && m.rejectUnknown(helloInfo) {
+		//(nil, nil) with no static certificates makes crypto/tls answer with the unrecognized_name alert
+		return nil, nil
+	}
 	if m.OnServe != nil {
 		m.OnServe(helloInfo.ServerName, &cer, pubKey == filepath.Join(m.tmpFolder(), "localhost.pem"))
 	}
-	if m.OnFallbackServed != nil && m.isFallbackFile(pubKey) && !certCoversName(&cer, helloInfo.ServerName) {
+	if m.OnFallbackServed != nil && unknown {
 		m.OnFallbackServed(helloInfo.ServerName)
 	}
 

@@ -68,3 +68,38 @@ func TestAuditAllAuthSortedAndComplete(t *testing.T) {
 		t.Fatalf("%+v", rows)
 	}
 }
+
+// Issue #216: an auth:* tag that does not name the effective method is drift; no auth:* tag at all is not.
+func TestAuditAuthTagDrift(t *testing.T) {
+	oauth := &AuthenticationProvider{AuthMethod: AuthMethodOauth2}
+	cases := []struct {
+		name  string
+		ap    *AuthenticationProvider
+		tags  []string
+		drift bool
+		auth  string
+	}{
+		{"untagged", oauth, []string{"prod"}, false, ""},
+		{"matching", oauth, []string{"prod", "auth:oauth2"}, false, "auth:oauth2"},
+		{"method lost", nil, []string{"auth:oauth2", "prod"}, true, "auth:oauth2"},
+		{"method lost, explicit none", &AuthenticationProvider{AuthMethod: AuthMethodNone}, []string{"auth:oauth2"}, true, "auth:oauth2"},
+		{"other method", &AuthenticationProvider{AuthMethod: AuthMethodBasic}, []string{"auth:oauth2"}, true, "auth:oauth2"},
+		{"two auth tags", oauth, []string{"auth:oauth2", "auth:basic"}, true, "auth:oauth2,auth:basic"},
+		{"none tagged none", nil, []string{"auth:none"}, false, "auth:none"},
+		{"case matters", oauth, []string{"Auth:oauth2"}, false, ""},
+	}
+	for _, c := range cases {
+		row := AuditAuth(&ProxyEndpoint{RootOrMatchingDomain: "x.example.com", AuthenticationProvider: c.ap, Tags: c.tags})
+		if row.TagDrift != c.drift || strings.Join(row.AuthTags, ",") != c.auth {
+			t.Errorf("%s: drift %v auth tags %v", c.name, row.TagDrift, row.AuthTags)
+		}
+		if row.AuthTags == nil {
+			t.Errorf("%s: AuthTags must be an empty list, not null, for the UI", c.name)
+		}
+		// fixing the tag always ends the drift
+		fixed := AuditAuth(&ProxyEndpoint{AuthenticationProvider: c.ap, Tags: RetagAuth(c.tags, row.WantedTag)})
+		if fixed.TagDrift {
+			t.Errorf("%s: still drifting after RetagAuth: %v", c.name, fixed.Tags)
+		}
+	}
+}

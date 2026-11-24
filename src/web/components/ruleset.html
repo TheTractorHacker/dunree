@@ -30,6 +30,7 @@
             <button type="button" class="zx-tab" data-zx-panel="rbPanelRules" aria-selected="true">Rules</button>
             <button type="button" class="zx-tab" data-zx-panel="rbPanelTest">Request tester</button>
             <button type="button" class="zx-tab" data-zx-panel="rbPanelLists">Lists</button>
+            <button type="button" class="zx-tab" data-zx-panel="rbPanelVars">Variables</button>
             <button type="button" class="zx-tab" data-zx-panel="rbPanelImport">Import</button>
         </div>
 
@@ -85,6 +86,15 @@
             </div>
             <div id="rbListForm"></div>
             <div id="rbListsBody"></div>
+        </div>
+
+        <div id="rbPanelVars" class="zx-tabpanel" hidden>
+            <div class="rb-toolbar">
+                <p class="zx-muted rb-grow">Values you keep in one place and use by name. Write <span class="zx-mono">{{name}}</span> in a custom header value, a redirect target or a static response, as an entry of a list, or as an IP entry of an access rule. Change the value here and every place follows.</p>
+                <button type="button" class="zx-btn zx-btn--primary" id="rbNewVar"><i class="plus icon" aria-hidden="true"></i>New variable</button>
+            </div>
+            <div id="rbVarForm"></div>
+            <div id="rbVarsBody"></div>
         </div>
 
         <div id="rbPanelImport" class="zx-tabpanel" hidden>
@@ -193,6 +203,8 @@
     #rbPage .rb-prop .rb-expr { margin-top: var(--zx-space-2); padding: var(--zx-space-2); }
     #rbPage .rb-importgo { margin: var(--zx-space-3) 0; }
     #rbPage .rb-items { font-family: var(--zx-font-mono); width: 100%; }
+    #rbPage .rb-varval { overflow-wrap: anywhere; }
+    #rbPage .rb-unres { margin-top: 4px; }
     @media (max-width: 748px) {
         #rbPage .rb-group .rb-group { margin-left: var(--zx-space-1); }
         #rbPage .rb-line .rb-field, #rbPage .rb-line .rb-op, #rbPage .rb-line .rb-key, #rbPage .rb-val { flex: 1 1 100%; }

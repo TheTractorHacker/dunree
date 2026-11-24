@@ -91,7 +91,7 @@ type RouterOption struct {
 	UseTls             bool                                                              //Use TLS to serve incoming requsts
 	MinTLSVersion      uint16                                                            //Minimum TLS version
 	EchKeys            func(*tls.ClientHelloInfo) ([]tls.EncryptedClientHelloKey, error) `json:"-"` //Optional server side Encrypted Client Hello keys (ech_glue.go), read per handshake
-	EchObserve         func(accepted bool)                                               `json:"-"` //Optional: called once per TLS request with the ECH outcome
+	EchObserve         func(accepted, offered bool)                                      `json:"-"` //Optional: called once per TLS request with the ECH outcome (offered: an ECH extension was sent but not decrypted)
 	TlsCipherProfile   TlsCipherProfile                                                  //TLS cipher profile (see TlsCipherProfile enum and tlscipherprofile.go)
 	NoCache            bool                                                              //Force set Cache-Control: no-store
 	ListenOnPort80     bool                                                              //Enable port 80 http listener
@@ -257,6 +257,7 @@ type VirtualDirectoryEndpoint struct {
 	RequireTLS          bool                 //Target domain require TLS
 	SkipCertValidations bool                 //Set to true to accept self signed certs
 	Disabled            bool                 //If the rule is enabled
+	H2C                 bool                 `json:",omitempty"` //Speak HTTP/2 over cleartext (prior knowledge) to a plain http:// target, for gRPC services behind a path (#201). Default off, ignored while RequireTLS is set
 	proxy               *dpcore.ReverseProxy `json:"-"`
 	parent              *ProxyEndpoint       `json:"-"`
 }
@@ -425,6 +426,8 @@ type ProxyEndpoint struct {
 	BotPolicy         string            `json:",omitempty"` //Bot rules: "" follow the global switch, "on" apply even if globally off, "off" skip (bot_hook.go)
 	BotAllowUA        []string          `json:",omitempty"` //Bot rules: User-Agent substrings (lower case) whose requests skip the bot rules on this endpoint only (bot_hook.go, botrules/allowua.go)
 	HeaderRules       []*HeaderRule     `json:",omitempty"` //Header based access rules (headerrules.go)
+	HeaderRulesMode   string            `json:",omitempty"` //Header rules: "" / "all" every rule must pass, "any" one passing rule is enough
+	HeaderRulesExcept []string          `json:",omitempty"` //Header rules: client addresses / CIDRs that skip the check
 	SecondaryPortsTLS bool              //Serve the secondary listening ports of this endpoint over TLS
 
 	//Fallback routing logic (Special Rule Sets Only)
@@ -444,6 +447,8 @@ type ProxyEndpoint struct {
 	peerSetErr     error                 `json:"-"`
 	headerRules    []*compiledHeaderRule `json:"-"` //Compiled header rules
 	headerRulesErr error                 `json:"-"`
+	headerRulesAny bool                  `json:"-"` //HeaderRulesMode "any"
+	headerExcept   []netip.Prefix        `json:"-"` //Compiled HeaderRulesExcept
 	basicScope     []*compiledPathRule   `json:"-"` //Compiled basic auth scope prefixes
 	basicScopeErr  error                 `json:"-"`
 	Tags           []string              // Tags for the proxy endpoint

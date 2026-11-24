@@ -44,7 +44,7 @@ func TestEchWithClientCertEndpointEndToEnd(t *testing.T) {
 	}
 	router.Option.EchKeys = func(*tls.ClientHelloInfo) ([]tls.EncryptedClientHelloKey, error) { return em.TLSKeys(), nil }
 	accepted := 0
-	router.Option.EchObserve = func(a bool) {
+	router.Option.EchObserve = func(a, _ bool) {
 		if a {
 			accepted++
 		}

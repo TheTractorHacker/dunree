@@ -61,3 +61,17 @@ func acmeEventBridge(ev acme.CertEvent) {
 	}
 	notifyManager.Emit(out)
 }
+
+// acmeBeforeOrderBridge announces an ACME order that is about to start (certificate.renewing, issue #178)
+// and returns the lead time the issuer has to wait. Nothing is sent and the result is 0 unless a
+// webhook, channel or the command hook subscribed to the event.
+func acmeBeforeOrderBridge(n acme.RenewNotice) time.Duration {
+	if notifyManager == nil {
+		return 0
+	}
+	method := notify.MethodHTTP01
+	if n.UseDNS {
+		method = notify.MethodDNS01
+	}
+	return notifyManager.AnnounceRenewal(n.CertName, n.Domains, n.CA, method, n.FirstIssue)
+}

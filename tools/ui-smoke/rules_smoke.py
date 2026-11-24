@@ -5,6 +5,7 @@ import json
 import os
 import http.server
 import threading
+import urllib.parse
 
 
 def rules_ui(pg, ctx, h):
@@ -256,6 +257,186 @@ def rules_ui(pg, ctx, h):
     imp = [r for r in rules() if r["name"] == "Imported legacy"]
     if len(imp) != 1 or not imp[0]["dry_run"]:
         fail("rules", "imported rule must exist and be log-only")
+
+    # ---- variables ({{name}}, issue #89): defined in one place, followed by lists and access rules ----
+    def probe(ip, expr="ip.src in $office_var"):
+        r = post("/api/ruleset/test", {"site": "", "method": "GET", "url": "https://probe.example/", "client_ip": ip, "expression": expr})
+        return bool(r.get("rules") and r["rules"][0].get("matched"))
+
+    def form_post(url, data):
+        return pg.evaluate("""([u, d]) => new Promise(res => $.cjax({url: u, type: 'POST', data: d, success: x => res(x), error: x => res({error: x.status})}))""", [url, data])
+
+    for v in get("/api/vars/list")["variables"]:
+        post("/api/vars/delete", {"name": v["name"]})
+    if allow is not None:
+        allow.append(re.compile(r"400.*/api/vars/set"))  # the two refusals below (built-in name, existing name) are the point
+    pg.click("#rbTabs .zx-tab[data-zx-panel=rbPanelVars]")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=external_ip]", timeout=8000)
+    if "built-in" not in pg.locator("#rbVarsBody tr[data-var=external_ip]").inner_text():
+        fail("rules", "{{external_ip}} must be listed as a built-in variable")
+    if pg.locator("#rbVarsBody tr[data-var=external_ip] button").count():
+        fail("rules", "a built-in variable must not offer edit / delete")
+    if "read-only" not in pg.locator("#rbVarsBody tr[data-var=external_ip] td.zx-actions").inner_text():
+        fail("rules", "the actions cell of a built-in variable must say read-only instead of being empty")
+    if pg.locator("#rbVarsLoadError").count():
+        fail("rules", "no load problem must be shown while the variables file is fine")
+    pg.click("#rbNewVar")
+    pg.wait_for_selector("#rbVarForm input")
+    pg.locator("#rbVarForm input").nth(0).fill("external_ip")
+    pg.locator("#rbVarForm input").nth(1).fill("192.0.2.1")
+    pg.click("#rbVarForm button:has-text('Create variable')")
+    pg.wait_for_function("(document.querySelector('#rbVarForm .zx-error') || {textContent: ''}).textContent.indexOf('built-in') >= 0", timeout=3000)
+    pg.locator("#rbVarForm input").nth(0).fill("remote_office_ext_ip")
+    pg.locator("#rbVarForm input").nth(1).fill("203.0.113.9")
+    pg.locator("#rbVarForm input").nth(2).fill("Smoke office")
+    pg.click("#rbVarForm button:has-text('Create variable')")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=remote_office_ext_ip]")
+    # "New variable" with an existing name must not replace it
+    pg.click("#rbNewVar")
+    pg.wait_for_selector("#rbVarForm input")
+    pg.locator("#rbVarForm input").nth(0).fill("remote_office_ext_ip")
+    pg.locator("#rbVarForm input").nth(1).fill("1.1.1.1")
+    pg.click("#rbVarForm button:has-text('Create variable')")
+    pg.wait_for_function("(document.querySelector('#rbVarForm .zx-error') || {textContent: ''}).textContent.indexOf('already exists') >= 0", timeout=3000)
+    pg.click("#rbVarForm button:has-text('Cancel')")
+    stored = [v for v in get("/api/vars/list")["variables"] if v["name"] == "remote_office_ext_ip"]
+    if len(stored) != 1 or stored[0]["value"] != "203.0.113.9":
+        fail("rules", f"the variable was not stored as entered: {stored}")
+    # a list entry follows the variable; an undefined one is flagged and matches nothing
+    post("/api/ruleset/list/save", {"name": "office_var", "type": "ip", "items": ["{{remote_office_ext_ip}}", "{{missing_var}}"]})
+    if not probe("203.0.113.9") or probe("198.51.100.50"):
+        fail("rules", "a list holding {{remote_office_ext_ip}} must match the variable's address only")
+    pg.click("#rbVarsBody tr[data-var=remote_office_ext_ip] button[aria-label^='Edit variable']")
+    pg.wait_for_selector("#rbVarForm input")
+    if not pg.locator("#rbVarForm input").nth(0).evaluate("e => e.readOnly"):
+        fail("rules", "the name of an existing variable must be read-only")
+    pg.locator("#rbVarForm input").nth(1).fill("198.51.100.50, 2001:db8::/48")
+    pg.click("#rbVarForm button:has-text('Save variable')")
+    pg.wait_for_function("document.querySelector('#rbVarsBody tr[data-var=remote_office_ext_ip] td[data-label=Value]').textContent.indexOf('198.51.100.50') === 0", timeout=5000)
+    if probe("203.0.113.9") or not probe("198.51.100.50") or not probe("2001:db8::7"):
+        fail("rules", "changing the variable in the UI must change what the list matches, without editing the list")
+    if "list $office_var" not in pg.locator("#rbVarsBody tr[data-var=remote_office_ext_ip] td[data-label='Used in']").inner_text():
+        fail("rules", "the Variables table must show the list that uses the variable")
+    # the same reference as an IP entry of an access rule
+    form_post("/api/whitelist/ip/add", {"ip": "{{remote_office_ext_ip}}", "id": "default", "comment": "smoke"})
+    used = [v for v in get("/api/vars/list")["variables"] if v["name"] == "remote_office_ext_ip"][0]["used_by"]
+    if not any(u.startswith("access rule") for u in used):
+        fail("rules", f"a {{{{name}}}} whitelist entry must be reported as a use of the variable: {used}")
+    # ... is marked in the access rule's table with its current value, an undefined one with a warning
+    form_post("/api/whitelist/ip/add", {"ip": "{{missing_var}}", "id": "default", "comment": "smoke undefined"})
+    form_post("/api/blacklist/ip/add", {"ip": "{{remote_office_ext_ip}}", "id": "default", "comment": "smoke"})
+    pg.evaluate("openTabById('access')")
+    for table in ("#whitelistIpTable", "#blacklistIpTable"):
+        pg.wait_for_function("(t) => { var e = document.querySelector(t + \" tr[ip='\" + encodeURIComponent('{{remote_office_ext_ip}}') + \"'] .accessVarValue\"); return e && e.textContent.indexOf('198.51.100.50') >= 0; }", arg=table, timeout=8000)
+    miss = pg.locator("#whitelistIpTable tr[ip='" + urllib.parse.quote("{{missing_var}}", safe="") + "']")
+    if miss.locator(".accessVarMissing").count() != 1 or "matches nothing" not in miss.inner_text():
+        fail("rules", "a whitelist entry whose variable has no value must carry a warning")
+    if pg.locator("#whitelistIpTable .accessVarMissing, #blacklistIpTable .accessVarMissing").count() != 1:
+        fail("rules", "only the undefined variable entry may carry the warning")
+    if "coming from" not in pg.locator("#ipAddressInput").locator("xpath=..").inner_text():
+        fail("rules", "the blacklist hint must say that an entry means requests coming from that address")
+    if pg.locator(".accesscontrol.item[data-tab=tab_whitelist]").count():
+        pg.click(".accesscontrol.item[data-tab=tab_whitelist]")
+        settle(pg, 300)
+    check_horizontal(pg, "access whitelist with variable entries")
+    shot("access-variable-entries.png")
+    form_post("/api/whitelist/ip/remove", {"ip": "{{missing_var}}", "id": "default"})
+    form_post("/api/blacklist/ip/remove", {"ip": "{{remote_office_ext_ip}}", "id": "default"})
+    form_post("/api/whitelist/ip/remove", {"ip": "{{remote_office_ext_ip}}", "id": "default"})
+    pg.evaluate("openTabById('ruleset')")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=remote_office_ext_ip]")
+    # hostile value stays text
+    post("/api/vars/set", {"name": "hostile_var", "value": "<img src=x onerror=window.__pwnv=1>", "description": "<script>window.__pwnv=2</script>", "create": True})
+    pg.evaluate("RB.refresh()")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=hostile_var]")
+    pg.wait_for_timeout(300)
+    if pg.evaluate("window.__pwnv") or pg.locator("#rbVarsBody img, #rbVarsBody script").count():
+        fail("rules", "a variable value was interpreted as HTML")
+    post("/api/vars/delete", {"name": "hostile_var"})
+    pg.evaluate("RB.refresh()")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=hostile_var]", state="detached")
+    check_horizontal(pg, "rules variables desktop")
+    shot("rules-variables.png")
+    pg.click("#rbTabs .zx-tab[data-zx-panel=rbPanelLists]")
+    pg.wait_for_selector("#rbListsBody tr[data-list=office_var] .rb-unres")
+    if "missing_var" not in pg.locator("#rbListsBody tr[data-list=office_var] .rb-unres").inner_text():
+        fail("rules", "a list entry whose variable has no value must be flagged in the Lists table")
+    if "{{missing_var}} matches nothing for now" not in pg.locator("#rbListsBody tr[data-list=office_var] .rb-unres").inner_text():
+        fail("rules", "an address list must say that an entry without a value matches nothing")
+    # a text list keeps the literal text for an entry without a value, and the table says so (singular and plural)
+    post("/api/ruleset/list/save", {"name": "text_var", "type": "string", "items": ["{{remote_office_ext_ip}}", "{{missing_var}}", "{{other_missing}}"]})
+    post("/api/ruleset/list/save", {"name": "text_one", "type": "string", "items": ["{{missing_var}}"]})
+    pg.evaluate("RB.refresh()")
+    pg.wait_for_selector("#rbListsBody tr[data-list=text_var] .rb-unres")
+    tv = pg.locator("#rbListsBody tr[data-list=text_var] .rb-unres").inner_text()
+    if "{{missing_var}}, {{other_missing}} only match their literal text for now" not in tv or "nothing" in tv:
+        fail("rules", f"a text list must say its unresolved entries match their literal text: {tv!r}")
+    to = pg.locator("#rbListsBody tr[data-list=text_one] .rb-unres").inner_text()
+    if "{{missing_var}} only matches the literal text {{missing_var}} for now" not in to:
+        fail("rules", f"a text list with one unresolved entry: {to!r}")
+    shot("rules-lists-variable.png")
+    post("/api/ruleset/list/delete", {"name": "text_one"})
+    pg.click("#rbTabs .zx-tab[data-zx-panel=rbPanelVars]")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=remote_office_ext_ip]")
+    was_dark_v = pg.evaluate("document.body.classList.contains('darkTheme')")
+    if not was_dark_v:
+        pg.evaluate("toggleTheme()")
+    pg.click("#rbNewVar")
+    pg.wait_for_selector("#rbVarForm input")
+    settle(pg, 400)
+    shot("rules-variables-dark.png")
+    pg.click("#rbVarForm button:has-text('Cancel')")
+    if not was_dark_v:
+        pg.evaluate("toggleTheme()")
+    pg.set_viewport_size({"width": 390, "height": 844})
+    settle(pg, 400)
+    check_horizontal(pg, "rules variables mobile")
+    # stacked cards: no empty strip at the end of the built-in card
+    empty = pg.evaluate("Array.from(document.querySelectorAll('#rbVarsBody tr[data-var=external_ip] td')).filter(td => td.getBoundingClientRect().height > 0 && !td.textContent.trim()).length")
+    if empty:
+        fail("rules", "the built-in variable card must not end with an empty row at 390px")
+    shot("rules-variables-mobile.png")
+    # a variables file that could not be read at start is announced (the list answer is extended here; the store side is unit tested)
+    def with_load_problem(route, backup):
+        resp = route.fetch()
+        body = resp.json()
+        body["load_error"] = "variables.json: unexpected end of JSON input"
+        body["load_backup"] = backup
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(body))
+    pg.route("**/api/vars/list", lambda r: with_load_problem(r, ""))
+    pg.evaluate("RB.refresh()")
+    pg.wait_for_selector("#rbVarsLoadError")
+    le = pg.locator("#rbVarsLoadError").inner_text()
+    if "could not be read" not in le or "unexpected end of JSON input" not in le or "Nothing is overwritten" not in le:
+        fail("rules", f"the load problem callout is incomplete: {le!r}")
+    check_horizontal(pg, "rules variables load problem mobile")
+    shot("rules-variables-loaderror-mobile.png")
+    pg.unroute("**/api/vars/list")
+    pg.route("**/api/vars/list", lambda r: with_load_problem(r, "variables.json.broken-20260101-120000"))
+    pg.evaluate("RB.refresh()")
+    pg.wait_for_function("(document.querySelector('#rbVarsLoadError') || {textContent: ''}).textContent.indexOf('variables.json.broken-20260101-120000') >= 0", timeout=5000)
+    pg.set_viewport_size({"width": 1366, "height": 900})
+    settle(pg, 300)
+    shot("rules-variables-loaderror.png")
+    pg.unroute("**/api/vars/list")
+    pg.evaluate("RB.refresh()")
+    pg.wait_for_selector("#rbVarsLoadError", state="detached")
+    pg.set_viewport_size({"width": 1366, "height": 900})
+    settle(pg, 300)
+    # delete through the UI: the list entry stops matching, the list itself stays
+    pg.click("#rbVarsBody tr[data-var=remote_office_ext_ip] button[aria-label^='Delete variable']")
+    pg.wait_for_selector(".zx-dialog")
+    dt = pg.locator(".zx-dialog").inner_text()
+    if "office_var" not in dt:
+        fail("rules", "the delete confirmation must name where the variable is used")
+    if "It is used in list $office_var. That entry will match nothing." not in dt or "text list $text_var. That entry will only match the literal text {{remote_office_ext_ip}}" not in dt:
+        fail("rules", f"the delete confirmation must tell address lists (match nothing) from text lists (literal text): {dt!r}")
+    pg.click(".zx-dialog .zx-btn--danger")
+    pg.wait_for_selector("#rbVarsBody tr[data-var=remote_office_ext_ip]", state="detached", timeout=5000)
+    if probe("198.51.100.50"):
+        fail("rules", "a deleted variable must match nothing")
+    post("/api/ruleset/list/delete", {"name": "office_var"})
+    post("/api/ruleset/list/delete", {"name": "text_var"})
 
     # ---- hostile content stays text ----
     bad = "<img src=x onerror=window.__pwn=1>"

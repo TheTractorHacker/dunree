@@ -35,7 +35,7 @@ func getAbuseManager() *abuse.Manager {
 				return false
 			}
 			s := a.String()
-			return s == accessController.ServerPublicIP || accessController.IsTrustedProxy(s)
+			return s == accessController.PublicIP() || accessController.IsTrustedProxy(s)
 		}
 		m.Start()
 		abuseManager = m

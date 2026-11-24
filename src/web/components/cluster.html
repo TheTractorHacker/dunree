@@ -12,6 +12,8 @@
     #clusterPage .zx-toggle-row > .ui.toggle.checkbox { flex: 0 0 3.8rem; min-width: 3.8rem; }
     #clusterPage .zx-toggle-row { border-bottom: 0; }
     #clusterPage .clSecretState { color: var(--zx-text-muted); }
+    #clusterPage .clSharedSso { margin: 0 0 var(--zx-space-4); }
+    #clusterPage .clRowGap { margin-top: var(--zx-space-4); }
     #clusterPage .clSecretLine { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-4); }
     #clusterPage #clSecretOnce { display: block; margin: var(--zx-space-2) 0 var(--zx-space-3); word-break: break-all; user-select: all; }
     #clusterPage .clNodes td { vertical-align: top; }
@@ -54,11 +56,16 @@
             <span class="zx-callout__icon" aria-hidden="true"><i class="redo icon"></i></span>
             <div class="zx-callout__body">Restart Zoraxy to switch session cookies to the new secret.</div>
         </div>
+        <div id="clSharedSsoRestart" class="zx-callout zx-callout--warn" role="note" style="display:none;">
+            <span class="zx-callout__icon" aria-hidden="true"><i class="redo icon"></i></span>
+            <div class="zx-callout__body">Restart this node to apply the change to shared SSO portal sign-ins.</div>
+        </div>
         <div id="clReadOnly" class="zx-callout zx-callout--warn" role="note" style="display:none;">
             <span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span>
             <div class="zx-callout__body">This node is a follower. Proxy rules, redirects, access rules, stream proxies, path rules, trusted proxies and ACME
             settings are managed by the primary and read-only here. Other changes made here are overwritten by the next primary change
-            (primary wins). Start with <code class="nobreak">-cluster_allow_local_edits</code> to lift the restriction.</div>
+            (primary wins). Start with <code class="nobreak">-cluster_allow_local_edits</code> to lift the restriction.
+            <span id="clReadOnlySettings" hidden>The primary also syncs its settings: the SSO providers and the SSO portal users are read-only here as well, and users change their password, 2FA and passkeys on the primary.</span></div>
         </div>
         <dl class="cx-facts" id="clFacts" aria-live="polite"></dl>
     </section>
@@ -108,12 +115,22 @@
                         <p class="zx-help">10 to 3600 seconds. Default: 60.</p>
                     </div>
                 </div>
+                <div class="zx-toggle-row clRowGap">
+                    <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Keep this node's own listening ports</span>
+                        <span class="zx-toggle-row__desc">Off by default. Only matters when the primary syncs settings: the incoming port, the TLS mode and the port of the SSO portal then stay as set on this node. Switched on later, this node's own values come back at its next restart.</span></span>
+                    <div class="ui toggle checkbox"><input type="checkbox" id="clKeepListener" aria-label="Keep this node's own listening ports"><label></label></div>
+                </div>
             </div>
             <div class="cx-path" id="clPrimaryFields" style="display:none;">
                 <div class="zx-toggle-row">
                     <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Sync certificates</span>
                         <span class="zx-toggle-row__desc">Off by default. Sends TLS private keys to every follower, so the primary should be the only ACME issuer. Turning it on asks for confirmation.</span></span>
                     <div class="ui toggle checkbox"><input type="checkbox" id="clSyncCerts" aria-label="Sync certificates"><label></label></div>
+                </div>
+                <div class="zx-toggle-row">
+                    <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Sync settings</span>
+                        <span class="zx-toggle-row__desc">Off by default. Also copies the incoming port and TLS mode, the SSO provider settings and the SSO portal users to every follower. Update all followers first: older versions refuse such a snapshot. Turning it on asks for confirmation.</span></span>
+                    <div class="ui toggle checkbox"><input type="checkbox" id="clSyncSettings" aria-label="Sync settings"><label></label></div>
                 </div>
             </div>
         </div>
@@ -126,6 +143,11 @@
         <p class="zx-card__desc">Every node of a cluster needs the same secret of at least 32 characters. It is stored on this server and never shown again after it was generated. Changing it needs a restart of every node before session cookies use it.</p>
         <div class="zx-card__body">
             <p class="clSecretLine"><span class="zx-badge zx-badge--dot" id="clSecretBadge"><span id="clSecretState">-</span></span> <span id="clSecretFp" class="clSecretState"></span></p>
+            <div class="zx-toggle-row clSharedSso">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Share SSO portal sign-ins between nodes</span>
+                    <span class="zx-toggle-row__desc clSharedSsoNote">Off by default. A sign-in at the SSO portal (ZorxAuth) is then valid on every node with the same secret and survives a restart. Signing out only ends the session on the node that handled it. Needs a secret, must be switched on on every node, and takes effect after a restart. <span id="clSharedSsoState"></span></span></span>
+                <div class="ui toggle checkbox"><input type="checkbox" id="clSharedSso" aria-label="Share SSO portal sign-ins between nodes"><label></label></div>
+            </div>
             <div id="clShowOnce" class="zx-callout zx-callout--success" role="status" style="display:none; margin: 0 0 var(--zx-space-4);">
                 <span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span>
                 <div class="zx-callout__body"><span class="zx-callout__title">Copy this secret now. It will not be shown again.</span>
@@ -206,7 +228,7 @@
 
 <script>
 (function(){
-    let st = null, timer = null, dirty = false;
+    let st = null, timer = null, dirty = false, sharedBusy = false;
     function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
     function errText(xhr){
         if (xhr && xhr.responseJSON && xhr.responseJSON.error) return xhr.responseJSON.error;
@@ -254,11 +276,13 @@
         if (s.role == "primary") {
             facts += fact("Followers", nodes.length, nodes.length ? "" : "muted", nodes.length ? "" : t("none has reported in yet")) +
                 fact("Behind the primary", behind, behind ? "warn" : "", behind ? t("do not run the current snapshot") : (nodes.length ? t("all run the current snapshot") : "")) +
-                fact("Snapshot version", s.snapshotVersion || "-");
+                fact("Snapshot version", s.snapshotVersion || "-") +
+                fact("Settings sync", s.syncSettings ? t("On") : t("Off"), s.syncSettings ? "" : "muted", s.syncSettings ? t("port, SSO providers, SSO portal users") : t("followers keep their own settings"));
         } else if (s.role == "follower") {
             facts += fact("Last sync", f.lastResult ? resultWord(f.lastResult).word : t("Never synced"), f.lastError ? "danger" : "", f.lastSuccessAt ? tf("last success {0}", ago(f.lastSuccessAt)) : "") +
                 fact("Applied snapshot", f.appliedVersion || "-") +
-                fact("Sync interval", tf("{0} s", s.syncInterval));
+                fact("Sync interval", tf("{0} s", s.syncInterval)) +
+                fact("Settings", f.settingsSynced ? t("From the primary") : t("Own"), f.settingsSynced ? "" : "muted", f.settingsSynced ? (s.keepLocalListener ? t("listening ports stay local") : t("port, SSO providers, SSO portal users")) : t("the primary does not sync settings"));
         }
         facts += fact("Health endpoint", s.healthDisabled ? t("Off") : t("On"), s.healthDisabled ? "muted" : "", s.healthDisabled ? "" : ((s.healthAllow || []).length ? tf("{0} allowed clients", s.healthAllow.length) : t("open to everyone")));
         $("#clFacts").html(facts);
@@ -286,7 +310,8 @@
         let fleetManaged = s.role == "hub" || s.role == "node";
         $("#clSaveBtn").prop("disabled", fleetManaged);
         //Fleet owns the role: the radios and fields must not look editable
-        $("input[name=clRole], #clPrimaryUrl, #clPrimaryFp, #clInterval, #clSyncCerts").prop("disabled", fleetManaged);
+        $("input[name=clRole], #clPrimaryUrl, #clPrimaryFp, #clInterval, #clSyncCerts, #clKeepListener").prop("disabled", fleetManaged);
+        $("#clSyncSettings").prop("disabled", fleetManaged || s.syncSettingsAvail === false);
         $("#clFleetLock").toggle(fleetManaged);
         $("#clFleetLockText").text(fleetManaged ? (s.role == "hub" ? t("This node is a Fleet hub. Its role is managed on the Fleet page and cannot be changed here.") : t("This node is a Fleet node. Its role is managed on the Fleet page and cannot be changed here.")) : "");
         if (!dirty) {
@@ -296,6 +321,8 @@
         $("#clPrimaryFp").val(s.primaryFingerprint || "");
         $("#clInterval").val(s.syncInterval);
         $("#clSyncCerts").prop("checked", !!s.syncCerts);
+        $("#clSyncSettings").prop("checked", !!s.syncSettings);
+        $("#clKeepListener").prop("checked", !!s.keepLocalListener);
         }
         if (!dirty) $("#clHealthAllow").val((s.healthAllow || []).join(", "));
         if (!dirty) $("#clHealthOff").prop("checked", !!s.healthDisabled);
@@ -304,7 +331,11 @@
         $("#clSecretBadge").toggleClass("zx-badge--ok", !!s.secretSet);
         $("#clSecretFp").text(s.secretSet ? tf("Fingerprint {0}. Compare it on the other nodes: it must be the same.", s.secretFingerprint) : t("Generate one here or paste the secret of the other nodes."));
         $("#clRestart").toggle(!!s.restartRequired);
+        $("#clSharedSsoRestart").toggle(!!s.sharedSsoRestart);
+        if (!sharedBusy) $("#clSharedSso").prop("checked", !!s.sharedSsoSessions).prop("disabled", !s.secretSet && !s.sharedSsoSessions);
+        $("#clSharedSsoState").text(s.sharedSsoActive ? t("Active on this node now.") : (s.sharedSsoSessions ? t("Not active yet on this node.") : ""));
         $("#clReadOnly").toggle(!!s.readOnly);
+        $("#clReadOnlySettings").prop("hidden", !(s.follower && s.follower.settingsSynced));
         if (s.secretFromFlag) { $("#clGenBtn, #clSetSecretBtn, #clSecretIn").prop("disabled", true); $("#clSecretFp").append(document.createTextNode(" " + t("Set by the start flag -cluster_secret, so it cannot be changed here."))); }
 
         $("#clStatusWrap").toggle(s.role == "follower");
@@ -340,7 +371,23 @@
     }
 
     $("input[name=clRole]").on("change", showRoleFields);
-    $("#clusterPage input, #clusterPage textarea").on("input change", function(){ dirty = true; });
+    $("#clusterPage input, #clusterPage textarea").not("#clSharedSso").on("input change", function(){ dirty = true; });
+
+    //Saved on its own, right away (like the secret buttons of this card); the result is a toast
+    $("#clSharedSso").on("change", function(){
+        let on = $(this).is(":checked");
+        function done(){ sharedBusy = false; load(); }
+        function save(){
+            $.cjax({method: "POST", url: "./api/cluster/config", data: {sharedSsoSessions: on}, success: function(d){
+                if (d && d.error) msg(d.error, true); else msg(on ? t("Shared SSO portal sign-ins switched on. Restart this node to apply it.") : t("Shared SSO portal sign-ins switched off. Restart this node to apply it."));
+            }, error: fail, complete: done});
+        }
+        sharedBusy = true;
+        if (!on) { save(); return; }
+        ZxUI.confirm({title: t("Share SSO portal sign-ins between nodes?"), message: t("After the restart, every node with the same cluster secret accepts a sign-in made on any of them. Signing out then only ends the session on the node that handled it: the other nodes accept the old cookie until it expires (1 hour, or 7 days with \"Remember me\"). \"Log out all users\" reaches the followers only with Sync settings on, and only after they restarted. Switch this on on every node and keep their clocks in sync."), confirmLabel: t("Switch on")}).then(function(ok){
+            if (ok) save(); else { $("#clSharedSso").prop("checked", false); done(); }
+        });
+    });
 
     $("#clSaveBtn").on("click", function(){
         let data = {role: role()};
@@ -348,19 +395,28 @@
             data.primaryUrl = $("#clPrimaryUrl").val();
             data.primaryFingerprint = $("#clPrimaryFp").val();
             data.syncInterval = $("#clInterval").val();
+            data.keepLocalListener = $("#clKeepListener").is(":checked");
         }
         function save(){ post("./api/cluster/config", data, function(){ dirty = false; msg(t("Role saved")); load(); }); }
+        //each switch that sends secrets to the followers is confirmed on its own, then the role is saved once
+        function confirmSettings(){
+            if (!(data.syncSettings && !(st && st.syncSettings))) { save(); return; }
+            ZxUI.confirm({title: t("Send settings and SSO users to the followers?"), message: t("Sync settings copies the incoming port and TLS mode, the SSO provider settings with their client secrets and the SSO portal users with their password hashes and 2FA secrets to every follower, and replaces what the followers have. Only enable it for followers you fully trust. Update every follower to this version first: an older follower refuses the whole snapshot, proxy rules and certificates included, while this is on."), confirmLabel: t("I understand, enable it"), danger: true}).then(function(ok){
+                if (ok) { data.ackSyncSettings = "true"; save(); }
+            });
+        }
         if (role() == "primary") {
             data.syncCerts = $("#clSyncCerts").is(":checked");
+            if (!$("#clSyncSettings").prop("disabled")) data.syncSettings = $("#clSyncSettings").is(":checked");
             if (data.syncCerts && !(st && st.syncCerts)) {
                 //private keys leave this machine: confirm, and tell the API we asked
                 ZxUI.confirm({title: t("Send TLS private keys to the followers?"), message: t("Sync certificates copies the private key of every certificate to every follower. Only enable it for followers you fully trust, over a network you trust."), confirmLabel: t("I understand, enable it"), danger: true}).then(function(ok){
-                    if (ok) { data.ackSyncCerts = "true"; save(); }
+                    if (ok) { data.ackSyncCerts = "true"; confirmSettings(); }
                 });
                 return;
             }
         }
-        save();
+        confirmSettings();
     });
 
     $("#clGenBtn").on("click", function(){

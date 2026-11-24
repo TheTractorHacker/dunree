@@ -3,8 +3,8 @@
   "language": "Simplified Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 34.8,
-  "coreCoverage": 31.3
+  "coverage": 34.2,
+  "coreCoverage": 31.1
  },
  "strings": {
   "\"Add Redirection Rule\"": "“添加重定向规则”",

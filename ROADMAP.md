@@ -67,11 +67,15 @@ Status: ✅ done · 🔧 in progress · 📋 planned
 
 ## 6. High availability
 - ✅ Shared session state (#81): optional cluster secret (`-cluster_secret` / `conf/cluster.json`) keys the CAPTCHA and
-  sticky-session cookies with HKDF so any node accepts them; unset = unchanged. 📋 ZorxAuth (SSO portal) sessions are
-  still per node (database backed random IDs).
+  sticky-session cookies with HKDF so any node accepts them; unset = unchanged. ✅ ZorxAuth (SSO portal) sessions are
+  signed tokens every node accepts when a cluster secret is set (unset = random IDs per node as before). 📋 Logout is
+  enforced by the node that handled it (no shared revocation list); pending 2FA / passkey steps stay per node.
 - ✅ Cluster config sync (#81): primary exposes a signed, encrypted, versioned snapshot; followers poll, apply atomically
   with backup, rollback and a boot guard; primary wins (follower edits refused). Cluster / HA page with node list.
-  📋 Database-stored settings (inbound port, SSO provider config, ZorxAuth users) are not synced yet.
+  ✅ Optional "sync settings" (off by default): incoming port and TLS mode, SSO provider config and ZorxAuth users travel
+  in the same snapshot and are imported into the follower's database at its restart, with the follower's own values
+  saved for rollback. 📋 Other database settings (timeouts, PROXY protocol, HTTP/3, geo-IP, plugins) are not synced;
+  📋 tested with two processes on one host only, not on separate hosts behind a real VIP.
 - ✅ Certificate sync with a single ACME issuer (#81): optional, primary only (followers get renewal switched off).
 - ✅ Virtual IP failover guide (keepalived/VRRP, HAProxy/nginx) and `GET /.zoraxy/health` (+ `-health_port`) (#81).
 - ✅ **Central management (Fleet)**: hub role with one time join tokens and per node keys (revoke, rotate), pinned https join,

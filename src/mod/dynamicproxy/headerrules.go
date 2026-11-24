@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"regexp"
 	"strings"
 
@@ -33,6 +34,21 @@ import (
 	  - A rule can be limited to a path prefix; the scope is matched with the same path
 	    confusion hardening as path rules (encoded dots / slashes, ;params, ...).
 	  - The Host header is not a valid rule target (it is part of routing).
+
+	Options added for the rest of #1356, all off by default (a stored configuration without them
+	behaves exactly as before):
+	  - ProxyEndpoint.HeaderRulesMode "any": one passing rule is enough (OR across rules / headers).
+	    Rules outside their path scope do not count; when no rule applies to the path the request passes.
+	    When no rule passes, the action of the first rule that applies is used.
+	  - HeaderRule.Negate turns the condition around: "present" + Negate = the header must be absent,
+	    "equals" / "regex" + Negate = the header must not carry one of the values (an absent header passes).
+	  - HeaderRule.StatusCode replaces the 403 of the "deny" action (400-499 or 503).
+	  - HeaderRule.Strip removes the header from the request before it is forwarded, so a shared secret
+	    does not reach the backend. It applies to every request that passes and is in the rule's path scope.
+	  - ProxyEndpoint.HeaderRulesExcept: client addresses / CIDRs that skip the check. The address is the
+	    one the endpoint's access rule sees (proxy headers only count when that access rule trusts them).
+	    Strip still applies to excepted clients. A list that matches every IPv4 or every IPv6 address, in one
+	    entry or in several, is refused.
 */
 
 const (
@@ -50,6 +66,10 @@ const (
 	maxHeaderRegexLen  = 200
 	maxPresentedValue  = 4096
 	maxPresentedValues = 8
+	maxHeaderExcept    = 200
+
+	HeaderRulesModeAll = "all" //every rule must pass (default, also "")
+	HeaderRulesModeAny = "any" //one passing rule is enough
 )
 
 // HeaderRule is one entry of ProxyEndpoint.HeaderRules
@@ -60,6 +80,9 @@ type HeaderRule struct {
 	PathPrefix string   //Optional: only requests below this path are checked
 	Action     string   //deny (default), drop, notfound
 	Comment    string   //Free text
+	Negate     bool     `json:",omitempty"` //Turn the condition around (present: the header must be absent)
+	StatusCode int      `json:",omitempty"` //Action deny only: answer this status instead of 403 (400-499 or 503)
+	Strip      bool     `json:",omitempty"` //Remove the header before the request is forwarded
 }
 
 type compiledHeaderRule struct {
@@ -97,6 +120,14 @@ func compileHeaderRule(r *HeaderRule) (*compiledHeaderRule, error) {
 	case HeaderActionDeny, HeaderActionDrop, HeaderActionNotFound:
 	default:
 		return nil, errors.New("action must be deny, drop or notfound")
+	}
+	if c.StatusCode != 0 {
+		if c.Action != HeaderActionDeny {
+			return nil, errors.New("a status code can only be set for the deny action")
+		}
+		if !(c.StatusCode >= 400 && c.StatusCode <= 499) && c.StatusCode != http.StatusServiceUnavailable {
+			return nil, errors.New("status code must be 400-499 or 503")
+		}
 	}
 	if len(r.Values) > maxHeaderValues {
 		return nil, fmt.Errorf("too many values (max %d)", maxHeaderValues)
@@ -137,6 +168,76 @@ func compileHeaderRule(r *HeaderRule) (*compiledHeaderRule, error) {
 	return c, nil
 }
 
+// ValidateHeaderRuleSet checks the rules together with the rule set options (mode, exceptions) before they are stored
+func ValidateHeaderRuleSet(rules []*HeaderRule, mode string, except []string) error {
+	if err := ValidateHeaderRules(rules); err != nil {
+		return err
+	}
+	if _, err := parseHeaderRulesMode(mode); err != nil {
+		return err
+	}
+	_, err := parseHeaderExcept(except)
+	return err
+}
+
+func parseHeaderRulesMode(mode string) (any bool, err error) {
+	switch mode {
+	case "", HeaderRulesModeAll:
+		return false, nil
+	case HeaderRulesModeAny:
+		return true, nil
+	}
+	return false, errors.New("mode must be all or any")
+}
+
+func parseHeaderExcept(entries []string) ([]netip.Prefix, error) {
+	if len(entries) > maxHeaderExcept {
+		return nil, fmt.Errorf("too many exceptions (max %d)", maxHeaderExcept)
+	}
+	set, err := parsePeerSet(entries) //address or CIDR, refuses "every address"
+	if err != nil {
+		return nil, fmt.Errorf("exception: %w", err)
+	}
+	//"every address" in pieces (0.0.0.0/1 plus 128.0.0.0/1) would switch the check off just the same
+	for _, all := range []netip.Prefix{netip.PrefixFrom(netip.IPv4Unspecified(), 0), netip.PrefixFrom(netip.IPv6Unspecified(), 0)} {
+		if prefixesCover(set, all) {
+			return nil, fmt.Errorf("exception: the entries together match every %s address, remove the rules instead", map[bool]string{true: "IPv4", false: "IPv6"}[all.Addr().Is4()])
+		}
+	}
+	return set, nil
+}
+
+// prefixesCover reports whether the prefixes of set together contain every address of p
+func prefixesCover(set []netip.Prefix, p netip.Prefix) bool {
+	inside := make([]netip.Prefix, 0, len(set))
+	for _, s := range set {
+		if s.Addr().BitLen() != p.Addr().BitLen() {
+			continue
+		}
+		if s.Bits() <= p.Bits() {
+			if s.Contains(p.Addr()) {
+				return true
+			}
+			continue
+		}
+		if p.Contains(s.Addr()) {
+			inside = append(inside, s)
+		}
+	}
+	if len(inside) < 2 || p.Bits() >= p.Addr().BitLen() {
+		return false
+	}
+	//both halves of p must be covered; only entries inside p are passed down, so the work is bounded by them
+	lo, err := p.Addr().Prefix(p.Bits() + 1)
+	if err != nil {
+		return false
+	}
+	b := lo.Addr().AsSlice()
+	b[p.Bits()/8] |= 0x80 >> (p.Bits() % 8)
+	hiAddr, _ := netip.AddrFromSlice(b)
+	return prefixesCover(inside, lo) && prefixesCover(inside, netip.PrefixFrom(hiAddr, p.Bits()+1))
+}
+
 // ValidateHeaderRules checks a list before it is stored
 func ValidateHeaderRules(rules []*HeaderRule) error {
 	if len(rules) > maxHeaderRules {
@@ -152,6 +253,7 @@ func ValidateHeaderRules(rules []*HeaderRule) error {
 
 func (pe *ProxyEndpoint) initHeaderRules() {
 	pe.headerRules, pe.headerRulesErr = nil, nil
+	pe.headerRulesAny, pe.headerExcept = false, nil
 	if len(pe.HeaderRules) == 0 {
 		return
 	}
@@ -159,6 +261,18 @@ func (pe *ProxyEndpoint) initHeaderRules() {
 		pe.headerRulesErr = errors.New("too many header rules")
 		return
 	}
+	//An unreadable mode or exception list refuses requests like an invalid rule does (never fails open)
+	anyMode, err := parseHeaderRulesMode(pe.HeaderRulesMode)
+	if err != nil {
+		pe.headerRulesErr = fmt.Errorf("header rules: %w", err)
+		return
+	}
+	except, err := parseHeaderExcept(pe.HeaderRulesExcept)
+	if err != nil {
+		pe.headerRulesErr = fmt.Errorf("header rules: %w", err)
+		return
+	}
+	pe.headerRulesAny, pe.headerExcept = anyMode, except
 	for i, r := range pe.HeaderRules {
 		c, err := compileHeaderRule(r)
 		if err != nil {
@@ -170,8 +284,13 @@ func (pe *ProxyEndpoint) initHeaderRules() {
 	}
 }
 
-// satisfied reports whether the request carries an acceptable header value
+// satisfied reports whether the request passes the rule (the condition, turned around with Negate)
 func (c *compiledHeaderRule) satisfied(h http.Header) bool {
+	return c.matches(h) != c.Negate
+}
+
+// matches reports whether the request carries an acceptable header value
+func (c *compiledHeaderRule) matches(h http.Header) bool {
 	vals := h.Values(c.canon)
 	if len(vals) > maxPresentedValues {
 		vals = vals[:maxPresentedValues]
@@ -221,7 +340,9 @@ func (h *ProxyHandler) handleHeaderRules(w http.ResponseWriter, r *http.Request,
 	if len(sep.headerRules) == 0 {
 		return false
 	}
+	//Rules that apply to this path
 	var target string
+	inScope := make([]int, 0, len(sep.headerRules))
 	for i, rule := range sep.headerRules {
 		if rule.scope != nil {
 			if target == "" {
@@ -231,24 +352,71 @@ func (h *ProxyHandler) handleHeaderRules(w http.ResponseWriter, r *http.Request,
 				continue
 			}
 		}
-		if rule.satisfied(r.Header) {
-			continue
+		inScope = append(inScope, i)
+	}
+	if len(inScope) == 0 {
+		return false
+	}
+	failed := -1
+	if !h.headerRulesExcepted(r, sep) {
+		//Every rule is evaluated (no early exit), so the answer time does not tell which rule failed
+		passed := 0
+		for _, i := range inScope {
+			if sep.headerRules[i].satisfied(r.Header) {
+				passed++
+			} else if failed < 0 {
+				failed = i
+			}
 		}
-		//Log the rule, never the presented value
-		reason := fmt.Sprintf("header-rule-%d-%s", i+1, rule.canon)
-		switch rule.Action {
-		case HeaderActionDrop:
-			h.Parent.logRequest(r, false, 444, reason+"-dropped", r.Host, "", sep)
-			abuseNoteKind(r, abuse.KindForbidden)
-			dropConnection(w)
-		case HeaderActionNotFound:
-			h.Parent.logRequest(r, false, 404, reason, r.Host, "", sep)
-			serveProxyRequestError(w, r, http.StatusNotFound, h.Parent, ErrorTemplateHostError)
-		default:
-			h.Parent.logRequest(r, false, 403, reason, r.Host, "", sep)
-			serveProxyRequestError(w, r, http.StatusForbidden, h.Parent, ErrorTemplateForbidden)
+		if sep.headerRulesAny && passed > 0 {
+			failed = -1
 		}
-		return true
+	}
+	if failed < 0 {
+		//Passed: the headers marked "strip" do not travel to the backend
+		for _, i := range inScope {
+			if sep.headerRules[i].Strip {
+				r.Header.Del(sep.headerRules[i].canon)
+			}
+		}
+		return false
+	}
+	rule := sep.headerRules[failed]
+	//Log the rule, never the presented value
+	reason := fmt.Sprintf("header-rule-%d-%s", failed+1, rule.canon)
+	switch {
+	case rule.Action == HeaderActionDrop:
+		h.Parent.logRequest(r, false, 444, reason+"-dropped", r.Host, "", sep)
+		abuseNoteKind(r, abuse.KindForbidden)
+		dropConnection(w)
+	case rule.Action == HeaderActionNotFound || rule.StatusCode == http.StatusNotFound:
+		h.Parent.logRequest(r, false, 404, reason, r.Host, "", sep)
+		serveProxyRequestError(w, r, http.StatusNotFound, h.Parent, ErrorTemplateHostError)
+	case rule.StatusCode != 0 && rule.StatusCode != http.StatusForbidden:
+		//Own status code: a plain text answer, the block page says "403 Forbidden" and would contradict it
+		h.Parent.logRequest(r, false, rule.StatusCode, reason, r.Host, "", sep)
+		http.Error(w, fmt.Sprintf("%d %s", rule.StatusCode, http.StatusText(rule.StatusCode)), rule.StatusCode)
+	default:
+		h.Parent.logRequest(r, false, 403, reason, r.Host, "", sep)
+		serveProxyRequestError(w, r, http.StatusForbidden, h.Parent, ErrorTemplateForbidden)
+	}
+	return true
+}
+
+// headerRulesExcepted reports whether the client address is on the endpoint's exception list
+func (h *ProxyHandler) headerRulesExcepted(r *http.Request, sep *ProxyEndpoint) bool {
+	if len(sep.headerExcept) == 0 {
+		return false
+	}
+	a, err := netip.ParseAddr(h.Parent.GetClientIPForEndpoint(r, sep))
+	if err != nil {
+		return false
+	}
+	a = a.WithZone("").Unmap()
+	for _, p := range sep.headerExcept {
+		if p.Contains(a) {
+			return true
+		}
 	}
 	return false
 }

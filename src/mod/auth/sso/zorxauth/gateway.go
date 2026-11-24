@@ -224,16 +224,17 @@ func (gs *GatewayServer) handleAuthPage(w http.ResponseWriter, r *http.Request) 
 			cookie, cookieErr := r.Cookie(gs.router.Options.CookieName)
 			if cookieErr == nil && cookie.Value != "" {
 				// Load the existing gateway session
-				if sessionData, exists := gs.router.gatewaySessionStore.Load(cookie.Value); exists {
-					if gatewaySession, ok := sessionData.(*GatewaySession); ok {
-						// Extend the session expiry time, keeping the "Remember Me"
-						// duration if the session was created with it
-						rememberMe = gatewaySession.RememberMe
-						renewDuration := gs.router.Options.CookieDuration
-						if rememberMe {
-							renewDuration = gs.router.Options.CookieDurationRememberMe
-						}
-						newExpiry := time.Now().Add(time.Duration(renewDuration) * time.Second)
+				if gatewaySession, exists := gs.router.loadGatewaySession(cookie.Value); exists {
+					// Extend the session expiry time, keeping the "Remember Me"
+					// duration if the session was created with it
+					rememberMe = gatewaySession.RememberMe
+					renewDuration := gs.router.Options.CookieDuration
+					if rememberMe {
+						renewDuration = gs.router.Options.CookieDurationRememberMe
+					}
+					newExpiry := time.Now().Add(time.Duration(renewDuration) * time.Second)
+					if _, inStore := gs.router.gatewaySessionStore.Load(cookie.Value); inStore {
+						//a signed token another node issued has no store entry here and carries its own expiry
 						gatewaySession.Expiry = newExpiry
 						gs.router.gatewaySessionStore.Store(cookie.Value, gatewaySession)
 					}
@@ -440,8 +441,8 @@ func (gs *GatewayServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	isSecure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 
 	// Generate a session token and store it in the gateway session store
-	sessionToken := gs.router.generateSessionToken()
 	expiryTime := time.Now().Add(time.Duration(cookieDuration) * time.Second)
+	sessionToken := gs.router.issueSessionToken(tokenKindGateway, u.Username, expiryTime, rememberMe)
 	gatewaySession := &GatewaySession{
 		Username:   u.Username,
 		Expiry:     expiryTime,
@@ -557,9 +558,11 @@ func (gs *GatewayServer) handleLogout(w http.ResponseWriter, r *http.Request) {
 	// Get the session cookie for the current browser
 	cookie, err := r.Cookie(gs.router.Options.CookieName)
 	if err == nil && cookie.Value != "" {
-		// Remove from gateway session store
+		// Remove from gateway session store (a signed token of the shared session mode is revoked by its id)
+		gs.router.revokeSessionToken(cookie.Value, tokenKindGateway)
 		gs.router.gatewaySessionStore.Delete(cookie.Value)
 	}
+	gs.router.revokeUserBrowserSessions(username)
 
 	// Iterate through all browser sessions and remove all sessions for this username
 	// This ensures the user is logged out from ALL devices/browsers
@@ -697,8 +700,8 @@ func (gs *GatewayServer) handleTOTPVerify(w http.ResponseWriter, r *http.Request
 	}
 	isSecure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 
-	sessionToken := gs.router.generateSessionToken()
 	expiryTime := time.Now().Add(time.Duration(cookieDuration) * time.Second)
+	sessionToken := gs.router.issueSessionToken(tokenKindGateway, u.Username, expiryTime, pending.RememberMe)
 	gs.router.gatewaySessionStore.Store(sessionToken, &GatewaySession{
 		Username:   u.Username,
 		Expiry:     expiryTime,

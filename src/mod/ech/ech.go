@@ -55,6 +55,7 @@ type Settings struct {
 	MaxNameLength    int    // maximum_name_length of generated configs (clients pad the inner SNI to this), default 64
 	RotateEveryHours int    // Automatic rotation interval, 0 = manual only
 	RetainHours      int    // How long retired keys keep decrypting, default 168 (7 days). Keep it above the DNS TTL
+	LogRequests      bool   // Add the ECH result and the outer SNI to every HTTPS line of the request log, default off
 }
 
 // Key is one stored ECH key pair
@@ -87,6 +88,11 @@ type Manager struct {
 
 	accepted atomic.Uint64 // TLS requests whose ClientHello was decrypted
 	plain    atomic.Uint64 // TLS requests without (or with a rejected) ECH while ECH is enabled
+	//counters by outcome, counted while ECH is enabled or the request log option is on (the two above keep their
+	//old meaning: only while ECH is enabled)
+	outAccepted atomic.Uint64
+	outOffered  atomic.Uint64 // an ECH extension that was not decrypted (GREASE, stale or foreign config)
+	outPlain    atomic.Uint64 // no ECH extension
 
 	outer    atomic.Uint64 // TLS handshakes whose (outer) SNI was the public name: ECH rejected, or a direct visit to the public name
 	outerBad atomic.Uint64 // ... of which the certificate served was not valid for the public name
@@ -600,7 +606,27 @@ func (m *Manager) Import(pemText string) (*Key, error) {
 
 // Observe counts one TLS request (called by the proxy per request, only meaningful while ECH is enabled)
 func (m *Manager) Observe(accepted bool) {
-	if !m.Settings().Enabled {
+	m.ObserveOutcome(accepted, false)
+}
+
+// ObserveOutcome counts one TLS request by ECH outcome. offered says that the client sent an ECH extension; it only
+// matters when the hello was not accepted (GREASE, or a config this server has no key for). The counters by outcome
+// (OutcomeStats) count while ECH is enabled or the request log option is on, the older pair (Stats) only while ECH
+// is enabled, as before.
+func (m *Manager) ObserveOutcome(accepted, offered bool) {
+	s := m.Settings()
+	if !s.Enabled && !s.LogRequests {
+		return
+	}
+	switch {
+	case accepted:
+		m.outAccepted.Add(1)
+	case offered:
+		m.outOffered.Add(1)
+	default:
+		m.outPlain.Add(1)
+	}
+	if !s.Enabled {
 		return
 	}
 	if accepted {
@@ -608,6 +634,18 @@ func (m *Manager) Observe(accepted bool) {
 	} else {
 		m.plain.Add(1)
 	}
+}
+
+// Outcomes is the request counter by ECH outcome since start
+type Outcomes struct {
+	Accepted uint64 // the inner ClientHello was decrypted
+	Offered  uint64 // an ECH extension was sent but not decrypted: GREASE, or a config of another key or provider
+	Plain    uint64 // no ECH extension at all
+}
+
+// OutcomeStats returns the request counters by outcome since start
+func (m *Manager) OutcomeStats() Outcomes {
+	return Outcomes{Accepted: m.outAccepted.Load(), Offered: m.outOffered.Load(), Plain: m.outPlain.Load()}
 }
 
 // Stats returns the request counters since start

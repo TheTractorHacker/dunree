@@ -63,6 +63,7 @@ func (router *Router) PrepareProxyRoute(endpoint *ProxyEndpoint) (*ProxyEndpoint
 			IgnoreTLSVerification: vdir.SkipCertValidations,
 			FlushInterval:         500 * time.Millisecond,
 			UpstreamTLSServerName: endpoint.upstreamTLSServerName(),
+			H2C:                   vdir.UsesH2C(),
 		})
 		vdir.proxy = proxy
 		vdir.parent = endpoint

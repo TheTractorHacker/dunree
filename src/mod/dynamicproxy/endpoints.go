@@ -104,8 +104,17 @@ func (ep *ProxyEndpoint) GetVirtualDirectoryRuleByMatchingPath(matchingPath stri
 // spec (domain + TLS settings). The matching path is assumed to already be equal. Used to decide
 // whether a bulk apply/remove may treat an existing directory as "ours" (safe to skip or remove)
 // or as a user-customized one that must be left untouched.
+//
+// The bulk spec has no h2c option, so a directory with h2c switched on is a customized one.
 func (vdir *VirtualDirectoryEndpoint) HasSameTarget(domain string, requireTLS bool, skipCertValidations bool) bool {
-	return vdir.Domain == domain && vdir.RequireTLS == requireTLS && vdir.SkipCertValidations == skipCertValidations
+	return vdir.Domain == domain && vdir.RequireTLS == requireTLS && vdir.SkipCertValidations == skipCertValidations && !vdir.H2C
+}
+
+// UsesH2C reports whether requests of this virtual directory go to the target as HTTP/2 over
+// cleartext TCP (prior knowledge). The option only applies to a plain http:// target: with TLS
+// the target negotiates HTTP/2 by itself (ALPN), so the stored flag is ignored there.
+func (vdir *VirtualDirectoryEndpoint) UsesH2C() bool {
+	return vdir.H2C && !vdir.RequireTLS && !strings.HasPrefix(strings.ToLower(strings.TrimSpace(vdir.Domain)), "https://")
 }
 
 // BulkVdirAction describes what a bulk virtual-directory apply/remove operation should do for one host.

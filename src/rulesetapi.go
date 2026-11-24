@@ -71,6 +71,8 @@ func getRulesEngine() *ruleset.Engine {
 			}
 			return ci.CountryIsoCode
 		}
+		// {{name}} entries of the lists: the built-in external_ip and the user defined variables
+		e.SetVarResolver(getUserVars().Lookup)
 		rulesEngine = e
 	})
 	return rulesEngine
@@ -424,10 +426,12 @@ func HandleRulesetLists(w http.ResponseWriter, r *http.Request) {
 	type view struct {
 		*ruleset.List
 		UsedBy []string `json:"used_by"`
+		// Variables tells how the {{name}} entries resolve right now (absent when the list has none)
+		Variables []ruleset.ListVar `json:"variables,omitempty"`
 	}
 	out := []view{}
 	for _, l := range e.Lists() {
-		out = append(out, view{l, e.ListUsers(l.Name)})
+		out = append(out, view{l, e.ListUsers(l.Name), e.ListVars(l.Name)})
 	}
 	rsJSON(w, http.StatusOK, out)
 }

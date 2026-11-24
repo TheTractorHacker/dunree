@@ -419,6 +419,31 @@ func sdkSuite(t *testing.T, version string) {
 // A binary built with SDK 1.0.0 (the frozen copy) passes against this Zoraxy
 func TestSDKCompatBinaryBuiltWithOldSDKStillPasses(t *testing.T) { sdkSuite(t, sdkOld) }
 
+// A binary built with SDK 1.1.0 (frozen when 1.2.0 was released) passes as well
+func TestSDKCompatBinaryBuiltWithSDK11StillPasses(t *testing.T) { sdkSuite(t, sdk11) }
+
+// The frozen 1.1.0 is 1.1.0: no name that 1.2.0 added
+func TestSDKFrozen11IsNotTheCurrentSDK(t *testing.T) {
+	dir := filepath.Join("testdata", "sdk-"+sdk11, "zoraxy_plugin")
+	main, err := os.ReadFile(filepath.Join(dir, "zoraxy_plugin.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(main), `SDKVersion = "`+sdk11+`"`) {
+		t.Fatalf("the frozen SDK %s does not say it is %s: it was overwritten", sdk11, sdk11)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "api_client.go")); err == nil {
+		t.Fatalf("the frozen SDK %s contains api_client.go, which 1.2.0 added", sdk11)
+	}
+	ev, err := os.ReadFile(filepath.Join(dir, "events", "events.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(ev), "proxyRuleAdded") {
+		t.Fatalf("the frozen SDK %s knows proxyRuleAdded, which 1.2.0 added", sdk11)
+	}
+}
+
 // And so does one built with the SDK of this tree
 func TestSDKCompatBinaryBuiltWithCurrentSDKPasses(t *testing.T) { sdkSuite(t, sdkCurrent) }
 

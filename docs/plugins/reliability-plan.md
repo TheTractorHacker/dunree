@@ -1480,3 +1480,50 @@ PLUGIN_CHECK_PORTS=20740-20799 tools/build_ref_plugins.sh -o /tmp/ref-plugins -a
 E2E_PORT_BASE=20700 tools/e2e/run.sh --only plugin_ --results /tmp/e2e.json                # real Zoraxy
 tools/build_release.sh -t <tag> -p                                                         # release plus DIST_DIR/plugins (optional)
 ```
+
+## Issue #149 gaps (fork.32): proxy rule events, SDK 1.2.0, API key review
+
+### What was built
+
+| Item | Where | What |
+|---|---|---|
+| Events `proxyRuleAdded`, `proxyRuleEdited`, `proxyRuleRemoved` | `zoraxy_plugin/events/events.go`, `src/config.go` (`SaveReverseProxyConfig`, `RemoveReverseProxyConfig`) | Sent from the one place every stored change of an HTTP proxy rule goes through, so every admin page and API that changes a rule is covered without a call in each handler. Payload: host name, aliases, default site or not, switched off or not, tags |
+| SDK 1.2.0 | `zoraxy_plugin/api_client.go`, `CHANGELOG.md` | `ConfigureSpec.DoAPIRequest`, `NewAPIRequest`, `SetAPIAuth`, `APIURL`, `ErrNoAPIKey`, `ErrAPIEndpoint`: the plugin no longer writes the `Authorization: Bearer` header itself. Contract version unchanged (1). SDK 1.1.0 frozen under `testdata/sdk-1.1.0` and added to the compatibility suite |
+| Examples | `example/plugins/api-call-example` uses the helpers; `event-subscriber-example` also subscribes to the three new events; all example copies of the SDK are 1.2.0 |
+| Conformance kit | `tools/plugin-check` | knows the three event names and sends sample payloads for them (kit version unchanged) |
+| API key generation review | `contract.md` section 6 | reviewed, nothing changed |
+| Events over UDP | `contract.md` section 4 | will not be done, with the reasons |
+
+### Behaviour that changed for existing installs
+
+None unless a plugin asks: the events are only sent to a plugin whose manifest subscribes to them, and the helpers
+only exist in a plugin rebuilt with SDK 1.2.0. With no subscriber, storing a rule costs one extra file existence
+check.
+
+### Known limits
+
+- The events follow the stored configuration: a host name change is `proxyRuleRemoved` plus `proxyRuleAdded`;
+  `proxyRuleEdited` does not say what changed and is also sent when a save changed nothing.
+- No event for rules loaded at start, for configuration restored or synced as files, or for the rewrite of a rule
+  by a basic auth hash upgrade. No events for stream proxy or redirection rules.
+- The payload has no upstream addresses on purpose; a plugin needs the `GET /plugin/api/proxy/list` permission for
+  them.
+- A plugin built with SDK 1.1.0 or older can subscribe to the new names (they are strings in the manifest) but its
+  `events.ParseEvent` answers "unknown event" for them; it has to read the JSON itself or be rebuilt.
+- The helpers call `http://127.0.0.1:<zoraxy_port>` only; `DoAPIRequest` has a fixed 30 s limit and no context.
+- Not exercised: the three new events against a real third-party plugin (upstream's CrowdSec bouncer or the
+  requester's plugin); only the fork's listener and the example build were used.
+- `docs/plugins/html` (the generated site) was not rebuilt.
+
+### Not done from the upstream tracker
+
+- "Expose more endpoints to plugins as needed": no concrete endpoint was asked for.
+- "Make the example plugin read from a config file": not built.
+
+### How to run
+
+```
+cd src && GOTMPDIR=$HOME/.cache/go-tmp go test -p 1 -count=1 . -run TestProxyRuleEvents
+cd src && GOTMPDIR=$HOME/.cache/go-tmp go test -p 1 -count=1 ./mod/eventsystem/ ./mod/auth/ ./mod/plugins/ \
+  -run 'TestProxyRuleEvents|TestPluginAPIKey|TestSDK'
+```

@@ -18,6 +18,9 @@
 
     var CSS = [
         "#newRuleModal.ui.modal{ max-width:46em; }",
+        // dark theme: Semantic paints body-level modals white, which left the light text unreadable
+        "body.darkTheme #newRuleModal.ui.modal, body.darkTheme #newRuleModal.ui.modal > .content{ background:var(--zx-surface); color:var(--zx-text); }",
+        "body.darkTheme #newRuleModal.ui.modal > .actions{ background:var(--zx-surface-2); border-top-color:var(--zx-border); }",
         "#newRuleModal .nrHead h2{ margin:0 0 0.15em; }",
         "#newRuleModal .nrHead p{ margin:0; opacity:0.7; }",
         "#newRuleModal .ui.form .field > label{ font-weight:700; }",
@@ -144,7 +147,7 @@
         $f("nrUpstream").on("blur", function () { cleanUpstream(); validateUpstream(true); scheduleTest(0); });
         $f("nrUpstream").on("paste", function () { var el = this; setTimeout(function () { cleanUpstream(); validateUpstream(false); scheduleTest(200); }, 0); });
         $f("nrTest").on("click", function () { runTest(true); });
-        $m.on("change", "input[name=nrTpl]", showPresetDetail);
+        $m.on("change", "input[name=nrTpl]", function () { st.useDefault = false; showPresetDetail(); });
         $f("nrPresetField").on("toggle", function () { $m.modal("refresh"); }); //re-centre when the preset section opens
         $f("nrTlsOn").on("change", function () { st.tlsTouched = true; $f("nrAuto").hide(); syncTlsUi(); });
         $f("nrSkipVerify").on("change", function () { st.skipTouched = true; });
@@ -164,17 +167,32 @@
     /* ---------------------------------------------------------------- data */
     function loadTemplates() {
         function paint(list) {
-            var cur = $m.find("input[name=nrTpl]:checked").val() || "";
+            // a fresh dialog starts on the default template (Templates > "Default for new rules", none unless chosen)
+            var def = st.defaultTpl || "";
+            var cur = st.useDefault ? def : ($m.find("input[name=nrTpl]:checked").val() || "");
+            var defBadge = '<span class="nrAuto nrDefTpl">' + esc(t("default")) + '</span>';
             var h = '<label class="nrTpl"><input type="radio" name="nrTpl" value=""' + (cur === "" ? " checked" : "") + '><b>Basic</b><small>Plain proxy with Zoraxy defaults.</small></label>';
             var ph = "";
             (list || []).forEach(function (t) {
-                var one = '<label class="nrTpl"><input type="radio" name="nrTpl" value="' + esc(t.Name) + '"' + (cur === t.Name ? " checked" : "") + '><b>' + esc(t.Name) + '</b><small>' + esc(t.Description || "") + '</small></label>';
+                var one = '<label class="nrTpl"><input type="radio" name="nrTpl" value="' + esc(t.Name) + '"' + (cur === t.Name ? " checked" : "") + '><b>' + esc(t.Name) + (def !== "" && t.Name === def ? defBadge : "") + '</b><small>' + esc(t.Description || "") + '</small></label>';
                 if (t.Category === "app") { ph += one; } else { h += one; }
             });
             $f("nrTplGrid").html(h);
             $f("nrPresetGrid").html(ph);
             $f("nrPresetField").toggle(ph !== "");
+            if (!$m.find("input[name=nrTpl]:checked").length) { $m.find("input[name=nrTpl]").first().prop("checked", true); }
             showPresetDetail();
+        }
+        if (st.useDefault) {
+            // asked on every fresh open, so a default changed elsewhere is picked up; a choice made meanwhile wins
+            $.get("/api/proxy/templates/default", function (r) {
+                st.defaultTpl = (r && r.name) || "";
+                if (st.useDefault && st.templates) { paint(st.templates); }
+            }).fail(function () {
+                // not known right now: do not preselect the default remembered from an earlier open, it may be gone since
+                st.defaultTpl = "";
+                if (st.useDefault && st.templates) { paint(st.templates); }
+            });
         }
         if (st.templates) { paint(st.templates); return; }
         paint([]);
@@ -494,6 +512,12 @@
             $.get("/api/cert/list", function (names) {
                 if (!hasCertificateFor(primary, names)) {
                     actions.push({ label: "Create certificate for this host", fn: function () { requestCert(primary); } });
+                    // with a default DNS credential profile saved, the same request is also offered with the DNS challenge (a second, explicit choice)
+                    $.get("/api/acme/profiles/dns", function (d) {
+                        var def = d && d.default ? (d.profiles || []).filter(function (p) { return p.id === d.default; })[0] : null;
+                        if (def) { actions.push({ id: "nrToastDns", label: tf("Create certificate with DNS challenge (default profile: {0})", def.name), fn: function () { requestCert(primary, true); } }); }
+                    }).always(function () { toast(msg, actions); });
+                    return;
                 }
                 toast(msg, actions);
             }).fail(function () { toast(msg, actions); });
@@ -502,13 +526,13 @@
         }
     }
 
-    function requestCert(host) {
+    function requestCert(host, dns) {
         if (typeof obtainCertificate !== "function") { openTabById("cert"); return; }
         var ca = "";
         try { ca = ($("#defaultCA").dropdown("get value") || "").trim(); } catch (e) { }
         if (!ca) { ca = "Let's Encrypt"; }
         msgbox("Requesting certificate via " + ca + "...", true);
-        obtainCertificate(host, false, ca, function () { if (typeof initManagedDomainCertificateList === "function") { initManagedDomainCertificateList(); } });
+        obtainCertificate(host, dns === true, ca, function () { if (typeof initManagedDomainCertificateList === "function") { initManagedDomainCertificateList(); } });
     }
 
     function toast(msg, actions) {
@@ -517,7 +541,7 @@
         clearTimeout($t.data("timer"));
         $t.empty().append($("<span></span>").text(msg));
         (actions || []).forEach(function (a) {
-            $("<button type='button'></button>").text(a.label).on("click", function () { $t.removeClass("show"); a.fn(); }).appendTo($t);
+            $("<button type='button'></button>").attr("id", a.id || null).text(a.label).on("click", function () { $t.removeClass("show"); a.fn(); }).appendTo($t);
         });
         $t.addClass("show").data("timer", setTimeout(function () { $t.removeClass("show"); }, 12000));
     }
@@ -551,6 +575,7 @@
         if (!keep) {
             $f("nrForm")[0].reset();
             $m.find("input[name=nrTpl]").first().prop("checked", true);
+            st.useDefault = true;
             showPresetDetail();
             $("#nrPresetField").prop("open", false);
             $f("nrAccess").val("default");

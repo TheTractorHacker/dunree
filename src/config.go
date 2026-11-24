@@ -7,10 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"imuslab.com/zoraxy/mod/dynamicproxy"
 	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
+	"imuslab.com/zoraxy/mod/eventsystem"
 	"imuslab.com/zoraxy/mod/info/logger"
+	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
 	"imuslab.com/zoraxy/mod/tlscert"
 	"imuslab.com/zoraxy/mod/utils"
 )
@@ -102,7 +105,59 @@ func filterProxyConfigFilename(filename string) string {
 	return filepath.ToSlash(filename)
 }
 
+// SaveReverseProxyConfig stores a proxy rule and tells the plugins that subscribed
+// to it: proxyRuleAdded when the rule had no stored configuration before,
+// proxyRuleEdited otherwise. Nothing is sent when the write failed.
 func SaveReverseProxyConfig(endpoint *dynamicproxy.ProxyEndpoint) error {
+	//One save or removal at a time: the "was it stored before" check, the write and
+	//the hand-over of the event are one step, so two requests that store the same
+	//new rule at the same moment give one proxyRuleAdded and one proxyRuleEdited
+	proxyConfigFileLock.Lock()
+	defer proxyConfigFileLock.Unlock()
+	existed, err := saveReverseProxyConfigFile(endpoint)
+	if err != nil {
+		return err
+	}
+	info := events.ProxyRuleInfo{
+		RootOrMatchingDomain: endpoint.RootOrMatchingDomain,
+		MatchingDomainAlias:  append([]string{}, endpoint.MatchingDomainAlias...),
+		IsRoot:               endpoint.ProxyType == dynamicproxy.ProxyTypeRoot,
+		Disabled:             endpoint.Disabled,
+		Tags:                 append([]string{}, endpoint.Tags...),
+	}
+	if existed {
+		emitProxyRuleEvent(&events.ProxyRuleEditedEvent{ProxyRuleInfo: info})
+	} else {
+		emitProxyRuleEvent(&events.ProxyRuleAddedEvent{ProxyRuleInfo: info})
+	}
+	return nil
+}
+
+// proxyConfigFileLock is held while the config file of a proxy rule is written or
+// removed and its event is handed to the event system (which sends it on its own
+// goroutines: the lock does not wait for a plugin)
+var proxyConfigFileLock sync.Mutex
+
+// saveReverseProxyConfigQuietly stores a proxy rule without an event. For rewrites
+// that are not a change by the administrator (a basic auth hash upgrade at login).
+func saveReverseProxyConfigQuietly(endpoint *dynamicproxy.ProxyEndpoint) error {
+	proxyConfigFileLock.Lock()
+	defer proxyConfigFileLock.Unlock()
+	_, err := saveReverseProxyConfigFile(endpoint)
+	return err
+}
+
+// emitProxyRuleEvent sends a proxy rule event to its subscribers (none: nothing happens)
+func emitProxyRuleEvent(payload events.EventPayload) {
+	if eventsystem.Publisher == nil {
+		return //event system not started (early start, tests)
+	}
+	eventsystem.Publisher.Emit(payload)
+}
+
+// saveReverseProxyConfigFile writes the config file of a proxy rule and reports
+// whether the rule had a config file before
+func saveReverseProxyConfigFile(endpoint *dynamicproxy.ProxyEndpoint) (existed bool, err error) {
 	//Get filename for saving
 	filename := filepath.Join(CONF_HTTP_PROXY, endpoint.RootOrMatchingDomain+".config")
 	if endpoint.ProxyType == dynamicproxy.ProxyTypeRoot {
@@ -114,10 +169,11 @@ func SaveReverseProxyConfig(endpoint *dynamicproxy.ProxyEndpoint) error {
 	//Save config to file
 	js, err := json.MarshalIndent(endpoint, "", " ")
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return os.WriteFile(filename, js, 0775)
+	existed = utils.FileExists(filename)
+	return existed, os.WriteFile(filename, js, 0775)
 }
 
 func RemoveReverseProxyConfig(endpoint string) error {
@@ -128,10 +184,16 @@ func RemoveReverseProxyConfig(endpoint string) error {
 
 	filename = filterProxyConfigFilename(filename)
 
+	proxyConfigFileLock.Lock()
+	defer proxyConfigFileLock.Unlock()
 	if !utils.FileExists(filename) {
 		return errors.New("target endpoint not exists")
 	}
-	return os.Remove(filename)
+	if err := os.Remove(filename); err != nil {
+		return err
+	}
+	emitProxyRuleEvent(&events.ProxyRuleRemovedEvent{RootOrMatchingDomain: endpoint, IsRoot: endpoint == "/"})
+	return nil
 }
 
 // Get the default root config that point to the internal static web server

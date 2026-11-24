@@ -20,7 +20,7 @@ type Options struct {
 
 	/* Public IP monitoring */
 	PublicIpCheckInterval int64 //in Seconds
-	SkipPublicIPCheck     bool  //Never look up the public IP (tests / offline use); ServerPublicIP stays 127.0.0.1
+	SkipPublicIPCheck     bool  //Never look up the public IP (tests / offline use); PublicIP() stays 127.0.0.1
 }
 
 type AccessRule struct {
@@ -53,7 +53,7 @@ type TrustedProxy struct {
 }
 
 type Controller struct {
-	ServerPublicIP    string
+	publicIP          atomic.Pointer[string] // see PublicIP: written by the updater, read on the request path
 	DefaultAccessRule *AccessRule
 	TrustedProxies    sync.Map // with structure of map[string]TrustedProxy
 	ProxyAccessRule   *sync.Map

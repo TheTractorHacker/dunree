@@ -463,3 +463,7 @@ func (ar *OAuth2Router) HandleProviders(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
+
+// SettingsTables names the database tables that hold the OAuth2 / OIDC provider
+// configuration (no sessions), for the cluster settings sync.
+func SettingsTables() []string { return []string{dbTable, providerTable} }

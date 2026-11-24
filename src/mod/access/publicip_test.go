@@ -54,7 +54,28 @@ func TestSkipPublicIPCheckMakesNoNetworkCall(t *testing.T) {
 	if n := ct.n.Load(); n != 0 {
 		t.Fatalf("public IP lookup made %d network calls despite SkipPublicIPCheck", n)
 	}
-	if c.ServerPublicIP != "127.0.0.1" {
-		t.Errorf("unexpected public IP %q", c.ServerPublicIP)
+	if c.PublicIP() != "127.0.0.1" {
+		t.Errorf("unexpected public IP %q", c.PublicIP())
 	}
+}
+
+// The public address is written by the background updater and read on the request path (loopback
+// check, {{external_ip}} entries): the accessor must be safe for that (run with -race).
+func TestPublicIPConcurrentAccess(t *testing.T) {
+	c := newPublicIPTestController(t, true)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 2000; i++ {
+			c.setPublicIP("198.51.100.7")
+			c.setPublicIP("203.0.113.9")
+		}
+	}()
+	for i := 0; i < 2000; i++ {
+		if ip := c.PublicIP(); ip != "127.0.0.1" && ip != "198.51.100.7" && ip != "203.0.113.9" {
+			t.Fatalf("unexpected public IP %q", ip)
+		}
+		c.IsLoopbackRequest("203.0.113.9")
+	}
+	<-done
 }

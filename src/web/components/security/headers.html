@@ -19,7 +19,7 @@
     <section class="zx-card" id="hrCard">
         <div class="zx-card__head">
             <h3 class="zx-card__title">Rules of one site</h3>
-            <p class="zx-card__desc">Pick the site, then add what a request must carry. A request has to pass every rule of the site.</p>
+            <p class="zx-card__desc">Pick the site, then add what a request must carry. A request has to pass every rule of the site, unless you choose otherwise below the rules.</p>
         </div>
         <div class="zx-card__body" id="hrNoSites" hidden>
             <div class="zx-empty zx-empty--inline"><span class="zx-empty__icon" aria-hidden="true"><i class="sitemap icon"></i></span><p class="zx-empty__text">There is no site to protect yet. Header rules are set per site: add a proxy rule first.</p><a href="#httprp" data-nav-open="httprp" class="zx-btn zx-btn--secondary zx-btn--sm">Open HTTP Proxy</a></div>
@@ -30,6 +30,10 @@
             <div id="hrRows"></div>
             <div class="zx-empty zx-empty--inline hrEmptyFoot"><span class="zx-empty__icon" aria-hidden="true"><i class="code icon"></i></span><p class="zx-empty__text">This site has no header rules: it answers every request. Add a rule to require a header.</p></div>
             <div class="zx-btn-row hr-add"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="hrAdd"><i class="plus icon" aria-hidden="true"></i> Add rule</button></div>
+            <div class="hr-set" id="hrSet">
+                <div class="field zx-field"><label for="hrMode">A request must pass</label><select id="hrMode"><option value="all">every rule</option><option value="any">at least one rule</option></select><span class="zx-help" id="hrModeHelp">With "at least one rule", one matching header is enough. Rules limited to another path do not count. Careful with "must not" rules here: such a rule passes every request that does not send that header, so it lets almost everyone in.</span></div>
+                <div class="field zx-field"><label for="hrExcept">Addresses that skip the check</label><textarea id="hrExcept" rows="2" placeholder="192.168.1.0/24" autocomplete="off" spellcheck="false" aria-describedby="hrExceptHelp"></textarea><span class="zx-help" id="hrExceptHelp">One address or range per line. Clients from these addresses are let in without the header, for example your own network. Empty means nobody skips it. A list that covers every address is refused: remove the rules instead.</span></div>
+            </div>
         </div>
         <div class="zx-card__foot" id="hrFoot"><button type="button" class="zx-btn zx-btn--primary" id="hrSave"><i class="save icon" aria-hidden="true"></i> Save rules of this site</button><span class="zx-help" id="hrSaveHint">Applies to the site picked above.</span></div>
     </section>
@@ -38,7 +42,10 @@
     <summary><span class="sx-group__title">How the check works, and rotating a secret</span><span class="sx-group__desc">Several values, patterns, paths and what is kept secret.</span></summary>
     <div class="sx-group__body">
         <ul class="hr-how">
-            <li><b>Every rule must pass.</b> A rule passes when any one of its values matches.</li>
+            <li><b>Every rule must pass,</b> or at least one if you choose that for the site. A rule passes when any one of its values matches.</li>
+            <li><b>Must not:</b> the "must not" choices turn a rule around. "Be absent" refuses requests that carry the header at all. With "at least one rule", a "must not" rule alone lets in everyone who leaves that header out.</li>
+            <li><b>Remove before forwarding</b> takes the header off requests that are let in, so the secret does not reach your app. It only works inside the rule's path: a rule limited to /admin leaves the header on every other path. It also applies to the addresses that skip the check.</li>
+            <li><b>Addresses that skip the check</b> are compared with the client address this site's access rule sees. Forwarded-for headers only count when that access rule trusts them.</li>
             <li><b>Rotate a secret without downtime:</b> add the new value on a second line, switch your CDN over, then remove the old line.</li>
             <li><b>Secrets stay secret.</b> They are never logged or shown again. Leave the value box empty to keep what is stored.</li>
             <li><b>Only below a path</b> limits the rule to that part of the site, for example /admin. Empty means the whole site.</li>
@@ -57,13 +64,22 @@
     #hrRows .hrRow > label { display: block; min-width: 0; margin: 0; }
     #hrRows .hrRow > label > span { display: block; margin-bottom: var(--zx-space-1); font-weight: 700; color: var(--zx-text); }
     #hrRows .hrRow > label > small { display: block; margin-top: var(--zx-space-1); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); font-weight: 400; }
-    #hrRows .hrRow input, #hrRows .hrRow select, #hrRows .hrRow textarea { width: 100%; max-width: none; min-width: 0; }
+    #hrRows .hrRow input:not([type="checkbox"]), #hrRows .hrRow select, #hrRows .hrRow textarea { width: 100%; max-width: none; min-width: 0; }
     #hrRows .hrRow select { height: var(--zx-control-h); }
     #hrRows .hrRow .hr-vals { grid-column: 1 / span 2; }
     #hrRows .hrRow .hr-path { grid-column: 3 / -1; }
     #hrRows .hrRow.is-present .hr-vals { display: none; }
     #hrRows .hrRow.is-present .hr-path { grid-column: 1 / span 1; }
     #hrRows .hrRow .hrDel { margin-top: 22px; }
+    #hrRows .hrRow .hr-code { grid-column: 3 / span 1; display: none; }
+    #hrRows .hrRow.is-status .hr-code { display: block; }
+    #hrRows .hrRow .hr-strip { grid-column: 1 / span 2; grid-row-start: 4; display: flex; align-items: center; gap: var(--zx-space-2); align-self: center; }
+    #hrRows .hrRow .hr-strip > span { display: inline; margin: 0; font-weight: 400; }
+    #hrRows .hrRow .hr-code { grid-row-start: 4; }
+    #hrForm .hr-set { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--zx-space-4); margin-top: var(--zx-space-5); padding-top: var(--zx-space-4); border-top: 1px solid var(--zx-border); }
+    #hrForm .hr-set .field { margin: 0; min-width: 0; }
+    #hrForm .hr-set select, #hrForm .hr-set textarea { width: 100%; max-width: none; }
+    #hrRows:not(:has(.hrRow)) ~ .hr-set { display: none; }
     #hrRows { counter-reset: hr; }
     #hrRows .hrRow .hr-num::after { counter-increment: hr; content: " " counter(hr); }
     #hrForm .hr-add { margin: 0; }
@@ -74,6 +90,8 @@
         #hrRows .hrRow { grid-template-columns: minmax(0, 1fr); }
         #hrRows .hrRow .hr-vals, #hrRows .hrRow .hr-path, #hrRows .hrRow.is-present .hr-path { grid-column: auto; }
         #hrRows .hrRow .hrDel { margin-top: 0; justify-self: start; }
+        #hrRows .hrRow .hr-code, #hrRows .hrRow .hr-strip { grid-column: auto; grid-row-start: auto; }
+        #hrForm .hr-set { grid-template-columns: minmax(0, 1fr); }
     }
 </style>
 <script>
@@ -86,16 +104,21 @@
         r = r || { Name: "", Match: "equals", Values: [""], PathPrefix: "", Action: "deny" };
         var m = r.Match || "equals", a = r.Action || "deny";
         var secret = m === "equals";
+        var um = (r.Negate ? "not-" : "") + m, code = +r.StatusCode || 0;
+        if (a === "deny" && code && code !== 403) { a = "status"; }
         var vals = secret ? (r.Values || []).map(function () { return ""; }).join("\n") : (r.Values || []).join("\n");
         var n = (r.Values || []).filter(function (v, i) { return secret ? true : !!v; }).length, stored = secret && r.Name && (r.Values || []).length;
         var ph = stored ? t("{0} stored secret(s): leave empty to keep, one line each").replace("{0}", r.Values.length) : t("One value per line");
-        return '<div class="hrRow' + (m === "present" ? " is-present" : "") + '" data-n="' + (r.Values || []).length + '"><span class="hr-num">' + esc(t("Rule")) + "</span>" +
+        return '<div class="hrRow' + (m === "present" ? " is-present" : "") + (a === "status" ? " is-status" : "") + '" data-n="' + (r.Values || []).length + '"><span class="hr-num">' + esc(t("Rule")) + "</span>" +
             '<label><span>' + esc(t("Header")) + '</span><input class="hn" value="' + esc(r.Name) + '" placeholder="X-Edge-Key" autocomplete="off" spellcheck="false"></label>' +
-            '<label><span>' + esc(t("The header must")) + '</span><select class="hm">' + opt("equals", m, t("equal a secret value")) + opt("regex", m, t("match a pattern")) + opt("present", m, t("be present (any value)")) + "</select></label>" +
-            '<label><span>' + esc(t("Otherwise")) + '</span><select class="ha">' + opt("deny", a, t("answer 403 Forbidden")) + opt("notfound", a, t("answer 404 Not Found")) + opt("drop", a, t("close the connection")) + "</select></label>" +
+            '<label><span>' + esc(t("The header must")) + '</span><select class="hm">' + opt("equals", um, t("equal a secret value")) + opt("regex", um, t("match a pattern")) + opt("present", um, t("be present (any value)")) +
+            opt("not-present", um, t("be absent")) + opt("not-equals", um, t("not equal any of the values")) + opt("not-regex", um, t("not match any of the patterns")) + "</select></label>" +
+            '<label><span>' + esc(t("Otherwise")) + '</span><select class="ha">' + opt("deny", a, t("answer 403 Forbidden")) + opt("notfound", a, t("answer 404 Not Found")) + opt("drop", a, t("close the connection")) + opt("status", a, t("answer another status code")) + "</select></label>" +
+            '<label class="hr-code"><span>' + esc(t("Status code")) + '</span><input class="hc" type="number" min="400" max="503" step="1" inputmode="numeric" value="' + (a === "status" ? code : "") + '" placeholder="401"><small>' + esc(t("400 to 499, or 503")) + "</small></label>" + //right after the select that reveals it: the wide layout places it by grid line, a phone follows this order
             '<button type="button" class="zx-btn zx-btn--ghost zx-btn--icon hrDel" aria-label="' + esc(t("Remove rule")) + '" title="' + esc(t("Remove rule")) + '"><i class="trash alternate outline icon" aria-hidden="true"></i></button>' +
-            '<label class="hr-vals"><span>' + esc(t("Accepted values")) + '</span><textarea class="hv" rows="2" placeholder="' + esc(ph) + '" autocomplete="off" spellcheck="false">' + esc(vals) + "</textarea>" + (stored ? "<small>" + esc(t("Stored secrets are not shown again.")) + "</small>" : "") + "</label>" +
-            '<label class="hr-path"><span>' + esc(t("Only below path")) + '</span><input class="hp" value="' + esc(r.PathPrefix) + '" placeholder="' + esc(t("Whole site")) + '" autocomplete="off" spellcheck="false"></label></div>';
+            '<label class="hr-vals"><span class="hvl">' + esc(r.Negate ? t("Refused values") : t("Accepted values")) + '</span><textarea class="hv" rows="2" placeholder="' + esc(ph) + '" autocomplete="off" spellcheck="false">' + esc(vals) + "</textarea>" + (stored ? "<small>" + esc(t("Stored secrets are not shown again.")) + "</small>" : "") + "</label>" +
+            '<label class="hr-path"><span>' + esc(t("Only below path")) + '</span><input class="hp" value="' + esc(r.PathPrefix) + '" placeholder="' + esc(t("Whole site")) + '" autocomplete="off" spellcheck="false"></label>' +
+            '<label class="hr-strip zx-check"><input type="checkbox" class="hs"' + (r.Strip ? " checked" : "") + "> <span>" + esc(t("Remove this header before the request is forwarded")) + "</span></label></div>";
     }
     function summary() {
         var ep = $("#hrEp").val(), known = Object.keys(counts).length === sites.length && sites.length > 0;
@@ -113,11 +136,16 @@
     }
     function loadRules() {
         var ep = $("#hrEp").val(); if (!ep) { $("#hrRows").html(""); summary(); return; }
-        $.get("/api/headerrules/get?ep=" + encodeURIComponent(ep), function (d) {
-            if (d && d.error) { $("#hrMsg").text(d.error).show(); return; }
+        $.get("/api/headerrules/get?meta=true&ep=" + encodeURIComponent(ep), function (set) {
+            if (set && set.error) { $("#hrMsg").text(set.error).show(); return; }
+            var d = (set && set.Rules) || [];
             $("#hrMsg").hide();
-            $("#hrRows").html((d || []).map(row).join(""));
-            counts[ep] = (d || []).length;
+            // a hand-edited config the proxy refuses to run: the site answers 503 until a valid rule set is saved
+            if (set && set.Invalid) { $("#hrMsg").text(t("The stored rules of this site are not valid ({0}). The site answers every request with 503 until you correct them here and save.").replace("{0}", set.Invalid)).show(); }
+            $("#hrRows").html(d.map(row).join(""));
+            $("#hrMode").val(set && set.Mode === "any" ? "any" : "all");
+            $("#hrExcept").val(((set && set.Except) || []).join("\n"));
+            counts[ep] = d.length;
             summary();
         });
     }
@@ -142,21 +170,24 @@
         loadRules(); loadCounts(); summary();
     } });
     $("#hrEp").on("change", function () { touched = true; loadRules(); });
-    $("#hrAdd").on("click", function () { touched = true; $("#hrRows").append(row()); $("#hrRows .hrRow").last().find(".hn").focus(); summary(); });
+    $("#hrAdd").on("click", function () { touched = true; if (!$("#hrRows .hrRow").length) { $("#hrMode").val("all"); $("#hrExcept").val(""); } $("#hrRows").append(row()); $("#hrRows .hrRow").last().find(".hn").focus(); summary(); });
     $("#hrRows").on("click", ".hrDel", function () { $(this).closest(".hrRow").remove(); summary(); });
-    $("#hrRows").on("change", ".hm", function () { $(this).closest(".hrRow").toggleClass("is-present", $(this).val() === "present"); });
+    $("#hrRows").on("change", ".hm", function () { var v = $(this).val(); $(this).closest(".hrRow").toggleClass("is-present", /present$/.test(v)).find(".hvl").text(v.indexOf("not-") === 0 ? t("Refused values") : t("Accepted values")); });
+    $("#hrRows").on("change", ".ha", function () { var on = $(this).val() === "status", row = $(this).closest(".hrRow").toggleClass("is-status", on); if (on) { row.find(".hc").focus(); } });
     $("#hrSave").on("click", function () {
         var rules = [];
         $(".hrRow").each(function () {
-            var m = $(this).find(".hm").val(), n = +$(this).attr("data-n");
+            var um = $(this).find(".hm").val(), neg = um.indexOf("not-") === 0, m = neg ? um.slice(4) : um, n = +$(this).attr("data-n");
+            var act = $(this).find(".ha").val(), code = 0;
+            if (act === "status") { act = "deny"; code = parseInt($(this).find(".hc").val(), 10) || -1; } //an empty box is refused by the server, not saved as 403
             var raw = $(this).find(".hv").val().split("\n");
             var vals = raw.map(function (s) { return s.replace(/\r$/, ""); });
             if (m !== "equals") { vals = vals.filter(Boolean); }
             else if (n && vals.length === 1 && vals[0] === "") { vals = new Array(n).fill(""); } //keep all stored secrets
             else { while (vals.length && vals[vals.length - 1] === "" && vals.length > n) { vals.pop(); } }
-            rules.push({ Name: $(this).find(".hn").val(), Match: m, Values: vals, PathPrefix: $(this).find(".hp").val(), Action: $(this).find(".ha").val() });
+            rules.push({ Name: $(this).find(".hn").val(), Match: m, Values: vals, PathPrefix: $(this).find(".hp").val(), Action: act, Negate: neg, StatusCode: code, Strip: $(this).find(".hs").prop("checked") });
         });
-        $.cjax({ type: "POST", url: "/api/headerrules/set", data: { ep: $("#hrEp").val(), rules: JSON.stringify(rules) }, success: function (d) {
+        $.cjax({ type: "POST", url: "/api/headerrules/set", data: { ep: $("#hrEp").val(), rules: JSON.stringify(rules), mode: rules.length ? ($("#hrMode").val() || "all") : "all", except: JSON.stringify(rules.length ? $("#hrExcept").val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean) : []) }, success: function (d) {
             if (d && d.error) { $("#hrMsg").text(d.error).show(); } else { $("#hrMsg").hide(); toast(t("Header rules saved"), true); loadRules(); setTimeout(markSites, 600); }
         } });
     });

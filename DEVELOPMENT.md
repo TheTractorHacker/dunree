@@ -972,7 +972,8 @@ secret and role `standalone` nothing is exposed, no files are created and every 
 | Proxy rules, redirects, access rules, stream proxies, path rules, trusted proxies, ACME settings | primary to followers | signed + encrypted snapshot, pull model |
 | Certificates (`conf/certs`) | only if "sync certificates" is on | same snapshot |
 | Admin CSRF key, admin login session, admin account, `sys.uuid`, admin HTTPS cert, updater state, logs | never | node local |
-| ZorxAuth (SSO portal) sessions | no | stored per node in the database (random IDs, not a signed cookie). Put the SSO portal behind sticky routing, or users sign in again after a failover. OAuth2/OIDC cookies hold the provider token and work on every node |
+| ZorxAuth (SSO portal) sessions | only if "Share SSO portal sign-ins between nodes" is on (off by default, needs a cluster secret) | portal cookie, per host cookie and one-time code are HMAC signed tokens (purpose `zorxauth-session`), see "Shared SSO portal sessions" below. Otherwise, also with a secret: random IDs kept per node, as before. OAuth2/OIDC cookies hold the provider token and work on every node |
+| Settings stored in the database: incoming port and TLS mode, SSO provider settings, ZorxAuth users, group policies and login page branding | only if "sync settings" is on | same snapshot, imported into the follower's database at its restart, see "Settings sync" below |
 
 Without a cluster secret the key input stays the node UUID (`cluster.KeyMaterial` returns it unchanged), so a
 standalone node is byte-identical to before. Existing sessions are invalidated once when a secret is first set.
@@ -988,7 +989,7 @@ standalone node is byte-identical to before. Existing sessions are invalidated o
    "Sync now" on the follower page triggers it immediately.
 
 `conf/cluster.json` (mode 0600, node local, never synced):
-`{"role":"standalone|primary|follower","secret":"...","primaryUrl":"","primaryFingerprint":"","syncIntervalSeconds":60,"syncCerts":false,"healthDisabled":false,"healthAllow":[]}`
+`{"role":"standalone|primary|follower","secret":"...","primaryUrl":"","primaryFingerprint":"","syncIntervalSeconds":60,"syncCerts":false,"syncSettings":false,"keepLocalListener":false,"healthDisabled":false,"healthAllow":[]}`
 
 Flags: `-cluster_secret`, `-cluster_gen_secret`, `-cluster_allow_local_edits`, `-health_port`.
 
@@ -1026,13 +1027,102 @@ on a separate tiny listener, reachable even when the proxy is stopped (then it a
 - **Conflict policy: primary wins.** On a follower, writes to synced objects through the admin API are refused with 403
   unless `-cluster_allow_local_edits` (then they are overwritten by the next primary change). Node local settings
   (listen port, TLS toggles, timeouts, start/stop) stay editable.
-- **Not synced (known gaps).** Settings stored in the database (inbound port, TLS mode, SSO provider settings,
-  ZorxAuth users, redirect regex/case flags, geo-IP, plugins), the Docker/uptime/statistics state and static web server
+- **Not synced (known gaps).** Without "sync settings": everything stored in the database. With it: still the
+  remaining database settings (timeouts, PROXY protocol, HTTP/3, port 80 listen address, redirect regex/case flags,
+  geo-IP, plugins, global error pages, CAPTCHA defaults), the Docker/uptime/statistics state and static web server
   content. Set those on every node or use `/api/conf/export` with the database option.
 - **Security.** The cluster secret is as sensitive as the admin password: whoever holds it can read the whole synced
   configuration (including captcha keys, basic-auth hashes and, with cert sync, private keys) and can forge visitor
   sessions. Prefer HTTPS for the admin port (`-webui_tls`) and pin the fingerprint, even though the snapshot is already
   encrypted and signed. Keep node clocks within a few seconds (NTP): the token window is 60 s.
+
+### Settings sync (database-stored settings)
+
+Off by default; a switch on the primary (**Sync settings**, `syncSettings` in `conf/cluster.json`, the API wants
+`ackSyncSettings=true` when it is switched on because password hashes, 2FA secrets and OIDC client secrets leave the
+node). A database file cannot be swapped under a running process, so these settings travel as files:
+
+- **What.** `src/cluster_settings.go` is the allow-list (`clusterSettingsGroups`), nothing else can leave or enter the
+  database through the sync: `listener.json` (table `settings`: `inbound`, `usetls`, `minTLSVersion`,
+  `tlsCipherProfile`, `listenP80`, `redirect`), `sso.json` (forward auth table, `oauth2` and `oauth2_providers`, the
+  ZorxAuth options and the "log out all users" cut-off) and `zorxauth_users.json` (the whole ZorxAuth user table).
+  The folder `conf/sso` (group policies, login page branding) is added as a normal synced root because the users refer
+  to it. Admin accounts, sessions of any kind and statistics are not in the list.
+- **Primary.** `Options.ExportSettings` renders the files in memory and `addSettings` puts them into the snapshot under
+  the root `dbsync` (nothing is written to the primary's disk). The export is deterministic and leaves out what belongs
+  to one node (passkey sign counters and last-used times, the ZorxAuth config folder path), so a passkey login does not
+  produce a new snapshot version.
+- **Follower.** The snapshot is applied like any other (staging, backup, rollback, boot guard) and leaves the files in
+  `conf/dbsync` (mode 0600, on the never-export list of the shareable config export). The restart that follows calls
+  `clusterImportSettings()` right after the database is opened and before any module reads it
+  (`Manager.ImportSyncedSettings`): whole tables are replaced (a user deleted on the primary is deleted here), key lists
+  are overwritten key by key, the node's own passkey counters and config folder are kept. Before the first import the
+  node saves its own values to `conf/.cluster/dbsync-baseline.json` (`exportOwnClusterSettings`); if `conf/dbsync`
+  disappears again (a rollback of the first settings snapshot, also by the boot guard) they are restored
+  (`restoreClusterSettings`). Most listener keys exist in the database only once an admin changed them, so the baseline
+  also records the single keys the node did **not** have (as JSON `null`), and the restore deletes them again: a node on
+  defaults returns to its default port and TLS mode instead of keeping the primary's. A primary never offers such
+  markers and a normal import never deletes single keys. `conf/.cluster/dbsync-applied.json` remembers what was
+  imported, so later starts do nothing.
+- **Keep this node's own listening ports** (follower, `keepLocalListener`): `listener.json` is skipped and the ZorxAuth
+  gateway port stays local. For nodes that listen on different ports (and for two nodes on one host). Switched on
+  **after** an import, the node's own listener settings and gateway port come back from the baseline at the next
+  restart; switched off, the current own values are saved first (`conf/.cluster/dbsync-own-listener.json`) so that
+  switching it on again brings back the latest ones, not those from before the first sync.
+- **Old files are not imported again.** When the primary stops syncing settings, `conf/dbsync` stays on the follower but
+  nothing is imported from it any more (the follower's settings are editable again, a toggle of "keep own listening
+  ports" must not overwrite such edits with old data). If the primary resumes, the follower imports again, also when the
+  primary's settings are the same as before.
+- **Read-only on the follower.** Once settings arrived, writes to `/api/sso/*` and (unless the node keeps its own
+  listener) to the port / TLS mode endpoints are refused with 403 like other synced objects, and the user portal
+  refuses self-service changes (password, 2FA, passkeys) with 409: they would be overwritten by the next sync, so users
+  make them on the primary. `-cluster_allow_local_edits` lifts both.
+- **Known limits.** **Update all followers before turning Sync settings on**: a follower on fork.31 or older does not
+  know the snapshot roots `sso` and `dbsync` and refuses the whole snapshot, so it also stops receiving proxy rules and
+  certificates until it is updated or the switch is off again (the switch and its confirmation dialog say so; the primary
+  does not leave settings out for old followers). Changing "keep own listening ports" takes effect at the follower's next
+  restart, not at once. A follower restarts for every settings change like for every rule change (a few seconds). Switching
+  "sync settings" off on the primary leaves the last synced values on the followers, where they are editable again
+  after the next sync. The follower's own SSO users are replaced, not
+  merged. A follower that is promoted keeps the synced values. Not part of a Fleet scope. Tests:
+  `mod/cluster/settings_test.go`, `cluster_settings_test.go`, two processes: `tools/ui-smoke/cluster_ha_run.sh`.
+
+### Shared SSO portal sessions (ZorxAuth)
+
+**Off by default, also on a node that already has a cluster secret.** Signed sessions change what a logout reaches (see
+the known limits), so they have their own switch: **Share SSO portal sign-ins between nodes** in the Cluster secret card
+(`sharedSsoSessions` in `conf/cluster.json`, API field `sharedSsoSessions` of `/api/cluster/config`, refused without a
+secret; any role). `conf/cluster.json` is node local, so it is switched on on every node, and it counts as of process
+start (`Manager.SharedSSOSessionKey`; the page shows a restart note, `/api/cluster/status` reports `sharedSsoSessions`,
+`sharedSsoActive` and `sharedSsoRestart`). The other keys derived from the secret (CAPTCHA, sticky, OAuth2) are not
+affected by the switch.
+
+With the switch on and a cluster secret `start.go` hands a key derived from it (`cluster.PurposeZorxAuth`) to
+`zorxauth.SharedSessionKey`, and the portal cookie, the per host cookie and the one-time validation code of the
+session-set redirect become signed tokens `zxs1.<base64 claims>.<HMAC-SHA256>` (`mod/auth/sso/zorxauth/shared_session.go`;
+claims: kind, user, expiry, issued-at, remember-me, random id). Any node with the same secret accepts them without a
+database entry, so a sign-in survives a failover and a restart. Sessions issued before the secret was set keep working
+on the node that issued them. Tokens of one kind are not accepted as another, and a token for a user that no longer
+exists resolves to nothing. For a login on one node to work on another, the user must exist on both: turn on "sync
+settings" or create the same users everywhere.
+
+Known limits: a signed token cannot be forgotten, so **logout** is enforced by the node that handled it (the portal
+token by its id, the user's per host tokens by a cut-off, both stored in the node's database); on other nodes the old
+cookie values stay valid until they expire (default 1 hour, 7 days with "remember me"). **Log out all users** stores a
+cut-off that the settings sync carries from the primary to the followers; without settings sync press it on every node.
+A one-time code can be redeemed once per node within its 30 seconds. The sliding renewal of the portal session stays
+per node (the browser cookie was never renewed anyway). Rate-limit counters and pending 2FA / passkey steps are per
+node: a login that starts on one node must finish there (sticky routing for the portal host, or active/passive).
+Changing the cluster secret signs everybody out, and so does switching shared sign-ins off for sessions made while it
+was on. Logout records are kept until the token they refer to has expired (pruned once a minute). **Clocks:** a token
+carries the issue time of the node that made it, "log out all users" compares it with the primary's clock and every node
+checks expiry against its own, so keep the nodes on NTP: with skew, a token issued just before "log out all" can survive
+on another node, or a fresh sign-in is refused for the length of the skew. Tests:
+`mod/auth/sso/zorxauth/shared_session_test.go`, `TestSharedSSOSessionsAreOptIn` in `mod/cluster/settings_test.go`.
+
+**Tested on one host only.** `tools/ui-smoke/cluster_ha_run.sh` starts a primary and a follower as two processes with
+separate conf folders, databases and ports and checks the sync, the restart of the follower, the import and a sign-in
+that crosses the nodes. Two separate hosts behind a real VIP (keepalived) or load balancer have not been tested.
 
 ### ACME in a cluster
 
@@ -1543,7 +1633,15 @@ per certificate DNS credentials).
   (`/api/acme/keytype`, table `acmepref` key `keytype`). Order: request, key type stored in `<cert>.json`, preference, RSA2048.
 * **Staging CA**: built in as `Let's Encrypt (Staging)` (`mod/acme/ca.json`). **Saved CA profiles** (`/api/acme/profiles/ca`,
   stored in `acmepref/ca_profiles`): custom directory URL, optional EAB key id + HMAC, skip-TLS, default ACME `profile`.
-  ACME accounts are already stored per directory URL + email, so several CAs live side by side.
+  ACME accounts are stored per directory URL + email, and for a saved CA additionally per profile ID
+  (`accountDBKeyFor` in `mod/acme/account.go`), so two saved CAs with the same URL and email never share an account or an EAB
+  binding. An account stored under the older URL + email key is taken over by the first saved CA that asks for it (owner recorded
+  in `acmepref/acme_account_owner_<hash>`, the old entry stays for requests without a saved CA). Issue #233 additions
+  (`mod/acme/caprofile_assign.go`): optional registration `email` per saved CA (empty: the global ACME email); a default CA for
+  new certificates (`op=setDefault`, `acmepref/default_ca_profile`, none by default); `op=assign cert=<name> id=<profile or empty>`
+  rewrites only `ca_profile_id` in `<cert>.json`; `POST /api/acme/profiles/ca/importGlobal` saves the global CA settings as a
+  saved CA (never automatic). `/api/acme/obtainCert` reads `caProfile` as: an ID, `none` (the CA named in the request), or absent
+  (an existing certificate keeps its saved CA, a new one gets the default if one is set).
 * **Per certificate metadata** (`conf/certs/<name>.json`) additionally records `key_type`, `acme_profile`, `ca_profile_id`,
   `dns_profile_id`, `managed_by`, `source`, `issued_at`. Renewal reuses all of them. Old files without these fields still work.
 * **ACME profile selection** is passed through to lego (`ObtainRequest.Profile`); CAs that do not offer profiles ignore an empty value.
@@ -1580,6 +1678,20 @@ certificate, window `expiryWarnDays`, default 14). Sources call `notifyManager.E
   environment proxies are ignored. **SSRF guard**: the dialer refuses loopback, RFC1918/ULA, link-local (incl. 169.254.169.254), CGNAT,
   multicast and unspecified addresses *after DNS resolution*, so rebinding and internal hostnames are caught. The admin toggle
   "allow private targets" lifts the guard (and then permits `http://`). Webhooks are not sent in offline mode.
+* **`certificate.renewing`** (issue #178, `mod/notify/renewing.go`, `mod/acme/events.go` `announceOrder`): sent right before an ACME order
+  goes to the CA (first issuance, "renew now" and auto renew share the path), so an automation can open port 80 for HTTP-01. Body as
+  above plus `extra: {method: "HTTP-01"|"DNS-01", lead_seconds: "N", first_issue: "true"|"false"}`. **Opt-in only**
+  (`EventInfo.OptIn`): a webhook, channel or command hook gets it only when its event list names it; "no event selected = all" does not
+  include it, and without a subscriber nothing is sent. Optional lead time `renewLeadSeconds` (0 to 600, default 0, `setOptions`
+  parameter of `/api/notify/hooks`): the issuer waits that long after the announcement (issuance lock held) before an HTTP-01 order;
+  DNS-01 orders and offline mode never wait. Delivery is asynchronous, so with lead 0 the order does not wait for the receiver. On
+  channels the event bypasses dedupe, quiet hours, digest and the rate limit, but **not the minimum severity**: it is an info event, so a
+  channel with "Warning and above" or "Critical only" never gets it. **LAN receivers**: the SSRF guard above applies, so a webhook to a
+  router on a private address fails (the lead wait still happens and the order then starts) unless "Allow private, loopback and
+  link-local targets" is on, which lifts the guard for every webhook and permits `http://`; channels have their own per-channel switch.
+  `ca` is the requested or stored CA name as in `certificate.issued` / `renewal_failed`; with an assigned CA profile
+  (`obtainCertLocked` switches to "custom" plus the profile URL) it can differ from the CA contacted. `setOptions` checks warn days
+  and lead time together and saves once, a refused value changes nothing. Not exercised against a real CA or a real router.
 * **Command hook**: only available when Zoraxy is started with `-allow_hook_commands`; without it the config cannot be saved and nothing
   ever runs. **This lets an administrator execute programs as the Zoraxy user.** The program must be an absolute path, is started
   without a shell (arguments are literal), with a minimal environment (`PATH` plus `ZORAXY_EVENT, ZORAXY_SOURCE, ZORAXY_SUBJECT,
@@ -2080,6 +2192,21 @@ Code: `src/mod/ech` (keys, config serialisation, DNS check), `src/echapi.go` (AP
 - HTTP/3: the QUIC listener clones the same config; with the pinned quic-go and Go version ECH is accepted over QUIC
   (`TestQUICECHSupport` fails if that stops being true, then revisit this paragraph).
 - Observability: the page shows counts of TLS requests that arrived through ECH vs. not; `r.TLS.ECHAccepted` is available to code.
+- Per request result (#235 gap, fork.32): `dynamicproxy.EchResultOf(r)` returns `accepted | offered | plain` and the outer SNI.
+  crypto/tls does not report whether ECH was offered nor the outer name of an accepted hello; both are read in the
+  `GetEncryptedClientHelloKeys` callback (called only for a hello with the ECH extension, first with the OUTER hello) and kept
+  in a note in the connection context (`http.Server.ConnContext` = `router.echConnContext`, TCP listeners only: on HTTP/3 the
+  result is `accepted` without an outer name, or `plain`). Go's TLS 1.3 client sends GREASE ECH, so it shows as `offered`; a
+  TLS 1.2 client is `plain`. Opt-in log field (`ech.Settings.LogRequests`, hook `logger.Logger.ECHField`):
+  `... [useragent: ua] [ech: accepted outer=NAME] METHOD URI STATUS`, JSON site logs get `"ech"`. `/api/ech/status` returns
+  `Outcomes {Accepted, Offered, Plain}` (requests since start, counted while ECH or the log option is on). The older
+  `Accepted` / `NotAccepted` pair of the same answer (`ech.Manager.Stats`) keeps its meaning: it counts only while ECH is on.
+- Reject unknown names (#235 gap): `tlscert.Manager.RejectUnknownSNI` (default off, `settings` key `tlsRejectUnknownSNI`, API
+  `GET/POST /api/ech/unknownsni`). `GetCert` returns `(nil, nil)` when the lookup ended at the fallback certificate, that
+  certificate does not cover the name and `IsKnownHost` (a proxy rule, alias or wildcard rule) does not claim it; with no
+  static certificates crypto/tls then sends the `unrecognized_name` alert. Refused names still reach `echFallbackHook`.
+  A hello without SNI is asked with the local IP address of its connection (`helloInfo.Conn.LocalAddr()`), so a rule keyed
+  on an IP address keeps working; behind NAT or a port mapping the local address is another one and the rule is refused.
 - Not validated here: real browsers (Firefox/Chrome) against a public DNS record; the Go client in the tests is the interop peer.
 
 ### Lua script handlers (fork #88 / upstream #367)

@@ -65,6 +65,9 @@ func NewAuthRouter(db *database.Database, log *logger.Logger) *AuthRouter {
 		rateLimitResetStop: make(chan bool, 1),
 	}
 
+	// Signed session tokens shared by all nodes of a cluster (off unless the main program set a key)
+	authRouter.SetSharedSessionKey(SharedSessionKey)
+
 	// Load browser sessions from database
 	authRouter.loadBrowserSessions()
 
@@ -105,14 +108,30 @@ func (ar *AuthRouter) generateValidationCodeForSession(sessionId string) string 
 	}
 
 	validationCode := hex.EncodeToString(buf)
+	if ar.SharedSessionsEnabled() {
+		//signed, so the node that receives the session-set redirect accepts it even if another node issued it
+		validationCode = ar.mintToken(tokenKindCode, sessionId, time.Now().Add(validationCodeLifetime), false)
+	}
 	ar.sessionIdStore.Store(validationCode, sessionId)
 
 	// Validation code is short-lived and one-time use.
-	time.AfterFunc(30*time.Second, func() {
+	time.AfterFunc(validationCodeLifetime, func() {
 		ar.sessionIdStore.Delete(validationCode)
 	})
 
 	return validationCode
+}
+
+// minuteTick is the once-a-minute housekeeping of the router.
+func (ar *AuthRouter) minuteTick() {
+	ar.loginAttemptCounter.Range(func(key, _ interface{}) bool {
+		ar.loginAttemptCounter.Delete(key)
+		return true
+	})
+	//signed session mode: drop logout records of tokens that have expired by now
+	if ar.SharedSessionsEnabled() {
+		ar.pruneRevocations()
+	}
 }
 
 // startLoginRateLimitTicker resets per-IP login attempt counters every minute.
@@ -124,10 +143,7 @@ func (ar *AuthRouter) startLoginRateLimitTicker() {
 		case <-ar.rateLimitResetStop:
 			return
 		case <-ticker.C:
-			ar.loginAttemptCounter.Range(func(key, _ interface{}) bool {
-				ar.loginAttemptCounter.Delete(key)
-				return true
-			})
+			ar.minuteTick()
 		}
 	}
 }

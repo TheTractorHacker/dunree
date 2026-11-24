@@ -1,7 +1,9 @@
 # Plugin conformance kit: method and results
 
 Written 2026-11-23 for the fork (`dev` branch), kit version 1.1.0 (1.0.0 until the review fixes of the same day:
-minimal environment, interrupt handling, processes outside the process group), plugin contract version 1
+minimal environment, interrupt handling, processes outside the process group; 1.2.0 since fork.32: the kit knows the
+events `proxyRuleAdded`, `proxyRuleEdited`, `proxyRuleRemoved` and sends samples of them, the reports below were made
+with 1.1.0 and were not run again), plugin contract version 1
 (`docs/plugins/contract.md`). This is item 3.2 and 3.3 of `docs/plugins/reliability-plan.md`.
 
 The kit answers one question about one plugin binary: **does it keep the plugin contract, and does it behave in the

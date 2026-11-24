@@ -92,6 +92,7 @@
         { label: N_("Rule templates"), page: "ruleset", at: "#rbToggleTpl", kw: "quick start block country admin ip user agent rate limit redirect header" },
         { label: N_("Test a request against the rules"), page: "ruleset", pre: "#rbTabs .zx-tab[data-zx-panel='rbPanelTest']", at: "#rbTesterMount", kw: "request tester simulate dry run which rules match" },
         { label: N_("Named lists (IP, country, text)"), page: "ruleset", pre: "#rbTabs .zx-tab[data-zx-panel='rbPanelLists']", at: "#rbNewList", kw: "list office networks cidr countries allowlist blocklist" },
+        { label: N_("Variables ({{name}} values used in several places)"), page: "ruleset", pre: "#rbTabs .zx-tab[data-zx-panel='rbPanelVars']", at: "#rbNewVar", kw: "variable alias external ip public address dynamic placeholder template remote office" },
         { label: N_("Import existing rules as security rules"), page: "ruleset", pre: "#rbTabs .zx-tab[data-zx-panel='rbPanelImport']", at: "#rbImportScan", kw: "migrate convert path rules header rules bot rules access" }
     ];
 

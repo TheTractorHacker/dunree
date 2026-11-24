@@ -22,7 +22,7 @@
     var PAGE = 100;                       // rows rendered at once
     var AI_MARK = "[AI proposal] ";       // description prefix of rules created from an AI proposal (the engine has one action per rule, so no tag action)
     RB.AI_MARK = AI_MARK;
-    var S = RB.S = { meta: null, site: "", rules: [], lists: [], q: "", shown: PAGE, ed: null, inited: false, busy: 0, loadSeq: 0 };
+    var S = RB.S = { meta: null, site: "", rules: [], lists: [], vars: null, q: "", shown: PAGE, ed: null, inited: false, busy: 0, loadSeq: 0 };
 
     // ------------------------------------------------------------------ DOM helper (text only, never innerHTML)
     function h(tag, props) {
@@ -287,6 +287,7 @@
         return Promise.all([loadMeta().then(fillScopeSelects), loadRules(S.site), RB.loadLists()]).then(function () {
             renderRules(focus);
             if (q("#rbListsBody")) { renderLists(); }
+            if (q("#rbVarsBody") && !q("#rbPanelVars").hidden) { loadVars().then(renderVars, function () {}); }
         }, function (e) {
             RB.clear(q("#rbList")).appendChild(h("div", { class: "zx-callout zx-callout--danger", role: "alert" }, h("div", { class: "zx-callout__body" }, RB.errText(e))));
         });
@@ -551,6 +552,12 @@
 
     // ------------------------------------------------------------------ lists
     function typeLabel(x) { return x === "ip" ? t("IP addresses and networks") : x === "country" ? t("Countries") : t("Text values"); }
+    // What a {{name}} entry without a value does: nothing in an address list, the literal text in a text list
+    function unresText(type, refs) {
+        var names = refs.join(", ");
+        if (type === "string") { return refs.length === 1 ? tf("{0} only matches the literal text {0} for now", names) : tf("{0} only match their literal text for now", names); }
+        return refs.length === 1 ? tf("{0} matches nothing for now", names) : tf("{0} match nothing for now", names);
+    }
     function renderLists() {
         var body = RB.clear(q("#rbListsBody"));
         if (!S.lists.length) {
@@ -565,8 +572,11 @@
             var used = l.used_by || [];
             var del = ibtn("trash alternate outline", tf("Delete list {0}", l.name), function () { deleteList(l); });
             if (used.length) { del.setAttribute("aria-disabled", "true"); del.title = tf("In use by {0} rule(s): remove it from the rules first", used.length); }
+            var unres = (l.variables || []).filter(function (v) { return !v.ok; });
             tb.appendChild(h("tr", { "data-list": l.name },
-                h("td", { "data-label": t("Name") }, h("b", { class: "zx-mono", text: "$" + l.name }), l.description ? h("div", { class: "zx-muted", text: l.description }) : null),
+                h("td", { "data-label": t("Name"), class: "rb-namecell" }, h("b", { class: "zx-mono", text: "$" + l.name }), l.description ? h("div", { class: "zx-muted", text: l.description }) : null,
+                    unres.length ? h("div", { class: "rb-unres" }, badge(tf("{0} variable(s) without a value", unres.length), "warn", unres.map(function (v) { return "{{" + v.name + "}}: " + v.error; }).join("\n")),
+                        " ", h("span", { class: "zx-muted" }, unresText(l.type, unres.map(function (v) { return "{{" + v.name + "}}"; })))) : null),
                 h("td", { "data-label": t("Type") }, typeLabel(l.type)),
                 h("td", { "data-label": t("Entries"), class: "zx-num" }, String((l.items || []).length)),
                 h("td", { "data-label": t("Used by") }, used.length ? h("span", { title: used.join("\n") }, tf("{0} rule(s)", used.length)) : h("span", { class: "zx-muted" }, t("not used"))),
@@ -603,6 +613,7 @@
             var n = lines().length;
             count.textContent = tf("{0} of {1} entries", n, lim.list_items);
             hint.textContent = type.value === "ip" ? t("One address or network per line, for example 203.0.113.7 or 198.51.100.0/24 (IPv4 and IPv6).") : type.value === "country" ? t("One two-letter country code per line, upper case, for example US.") : t("One exact value per line (case sensitive).");
+            if (type.value !== "country") { hint.textContent += " " + t("An entry can also be a variable from the Variables tab, written {{name}}, for example {{external_ip}}."); }
         }
         var hint = h("span", { id: id + "ih" });
         var save = h("button", { type: "button", class: "zx-btn zx-btn--primary" }, isNew ? t("Create list") : t("Save list"));
@@ -635,6 +646,103 @@
                 msg),
             h("div", { class: "zx-card__foot zx-row" }, save, h("button", { type: "button", class: "zx-btn zx-btn--ghost", onclick: function () { RB.clear(box); } }, t("Cancel")))));
         name.focus();
+        box.scrollIntoView({ block: "nearest" });
+    }
+
+    // ------------------------------------------------------------------ variables ({{name}}, upstream #370)
+    function loadVars() { return RB.get("./api/vars/list").then(function (v) { S.vars = v; return v; }); }
+    function usedCell(used) {
+        return used && used.length ? h("span", { title: used.join("\n") }, used.join(", ")) : h("span", { class: "zx-muted" }, t("no list or access rule"));
+    }
+    function renderVars() {
+        var body = RB.clear(q("#rbVarsBody")), d = S.vars;
+        if (!d) { return; }
+        if (d.load_error) {
+            body.appendChild(h("div", { class: "zx-callout zx-callout--danger", role: "alert", id: "rbVarsLoadError" }, h("span", { class: "zx-callout__icon", "aria-hidden": "true" }, h("i", { class: "exclamation triangle icon" })),
+                h("div", { class: "zx-callout__body" }, h("b", {}, t("The variables file could not be read completely when the server started.")), " ",
+                    d.load_backup ? tf("It was kept as {0} in the conf folder and a new file was started. Copy back what you need, then restart to clear this notice.", d.load_backup)
+                        : t("The variables below are all that could be read. Nothing is overwritten: the file is kept under a new name as soon as you save a variable. Fix the file and restart, or go on from here."),
+                    h("div", { class: "zx-mono rb-varval", text: d.load_error }))));
+        }
+        var tb = h("tbody");
+        (d.builtins || []).forEach(function (b) {
+            tb.appendChild(h("tr", { "data-var": b.name },
+                h("td", { "data-label": t("Name"), class: "rb-namecell" }, h("b", { class: "zx-mono", text: "{{" + b.name + "}}" }), " ", badge(t("built-in"), "info"),
+                    h("div", { class: "zx-muted" }, b.name === "external_ip" ? t("The public address of this server, checked in the background.") : "")),
+                h("td", { "data-label": t("Value"), class: "zx-mono rb-varval" }, b.value ? b.value : h("span", { class: "zx-muted" }, t("not known (the public address check is off or has not answered)"))),
+                h("td", { "data-label": t("Used in") }, usedCell(b.used_by)),
+                h("td", { class: "zx-actions" }, h("span", { class: "zx-muted" }, t("read-only")))));
+        });
+        (d.variables || []).forEach(function (v) {
+            tb.appendChild(h("tr", { "data-var": v.name },
+                h("td", { "data-label": t("Name"), class: "rb-namecell" }, h("b", { class: "zx-mono", text: "{{" + v.name + "}}" }), v.description ? h("div", { class: "zx-muted", text: v.description }) : null),
+                h("td", { "data-label": t("Value"), class: "zx-mono rb-varval", text: v.value }),
+                h("td", { "data-label": t("Used in") }, usedCell(v.used_by)),
+                h("td", { class: "zx-actions" }, h("div", { class: "zx-row-actions" }, ibtn("edit outline", tf("Edit variable {0}", v.name), function () { varForm(v); }),
+                    ibtn("trash alternate outline", tf("Delete variable {0}", v.name), function () { deleteVar(v); })))));
+        });
+        body.appendChild(h("div", { class: "zx-table-wrap", tabindex: "0", role: "region", "aria-label": t("Variables") },
+            h("table", { class: "zx-table zx-table--comfortable" }, h("thead", {}, h("tr", {}, h("th", { scope: "col" }, t("Name")), h("th", { scope: "col" }, t("Value")),
+                h("th", { scope: "col" }, t("Used in")), h("th", { scope: "col", class: "zx-actions" }, t("Actions")))), tb)));
+        if (!(d.variables || []).length) {
+            body.appendChild(h("p", { class: "zx-muted" }, t("No variables of your own yet. Create one for a value you use in several places, for example the public address of a remote office.")));
+        }
+        body.appendChild(h("p", { class: "zx-help" }, tf("{0} only exist while a request is handled: they work in header values, redirect targets and responses, not in lists.",
+            (d.request_builtins || []).map(function (n) { return "{{" + n + "}}"; }).join(" ")) + " " +
+            tf("“Used in” covers lists and access rules; header values and redirect targets are not searched. A list picks up a changed {{external_ip}} within {0} seconds.", d.refresh_seconds)));
+    }
+    function reloadVars() { return Promise.all([loadVars(), RB.loadLists()]).then(function () { renderVars(); renderLists(); }); }
+
+    // What deleting a variable does where it is used: an address list or access rule entry matches
+    // nothing, a text list entry goes back to matching the literal text {{name}}
+    function deleteVarEffect(name, used) {
+        var text = [], other = [];
+        used.forEach(function (u) {
+            var m = /^list \$(.+)$/.exec(u), l = m && S.lists.filter(function (x) { return x.name === m[1]; })[0];
+            if (l && l.type === "string") { text.push("$" + l.name); } else { other.push(u); }
+        });
+        var out = "";
+        if (other.length) { out += (other.length === 1 ? tf("It is used in {0}. That entry will match nothing.", other[0]) : tf("It is used in: {0}. Those entries will match nothing.", other.join(", "))) + " "; }
+        if (text.length) { out += (text.length === 1 ? tf("It is used in the text list {0}. That entry will only match the literal text {1}.", text[0], "{{" + name + "}}") : tf("It is used in the text lists: {0}. Those entries will only match the literal text {1}.", text.join(", "), "{{" + name + "}}")) + " "; }
+        return out;
+    }
+
+    function deleteVar(v) {
+        var used = v.used_by || [];
+        ZxUI.confirm({ title: tf("Delete variable “{0}”?", v.name), danger: true, confirmLabel: t("Delete variable"),
+            message: deleteVarEffect(v.name, used) + t("Where it is written in a header value, redirect target or response, the text {{name}} will be sent as it is.") }).then(function (ok) {
+            if (!ok) { return; }
+            RB.post("./api/vars/delete", { name: v.name }).then(function () { RB.toast(tf("Variable “{0}” deleted", v.name)); return reloadVars(); },
+                function (e) { RB.toast(RB.errText(e), { type: "error" }); });
+        });
+    }
+
+    function varForm(v) {
+        var box = RB.clear(q("#rbVarForm")), lim = (S.vars || {}).limits || { name: 32, value: 256, description: 200, variables: 200 };
+        var isNew = !v, id = "rbv" + (++dseq);
+        var name = h("input", { class: "zx-input", id: id + "n", type: "text", maxlength: String(lim.name), value: v ? v.name : "", readOnly: !isNew, autocomplete: "off", spellcheck: "false", "aria-describedby": id + "nh" });
+        var value = h("input", { class: "zx-input zx-mono", id: id + "v", type: "text", maxlength: String(lim.value), value: v ? v.value : "", autocomplete: "off", spellcheck: "false", "aria-describedby": id + "vh" });
+        var desc = h("input", { class: "zx-input", id: id + "d", type: "text", maxlength: String(lim.description), value: v ? (v.description || "") : "" });
+        var msg = h("div", { class: "zx-error", role: "alert" });
+        var save = h("button", { type: "button", class: "zx-btn zx-btn--primary" }, isNew ? t("Create variable") : t("Save variable"));
+        save.addEventListener("click", function () {
+            msg.textContent = "";
+            ZxUI.setLoading(save, true);
+            RB.post("./api/vars/set", { name: name.value.trim(), value: value.value.trim(), description: desc.value.trim(), create: isNew }).then(function () {
+                ZxUI.setLoading(save, false);
+                RB.clear(box); RB.toast(tf("Variable “{0}” saved", name.value.trim()));
+                return reloadVars();
+            }, function (e) { ZxUI.setLoading(save, false); msg.textContent = RB.errText(e); (isNew ? name : value).focus(); });
+        });
+        function f(label, ctl, fid, help, hid) { return h("div", { class: "zx-field" }, h("div", { class: "zx-field__label-row" }, h("label", { class: "zx-field__label", for: fid }, label)), h("div", { class: "zx-field__control" }, ctl), help ? h("p", { class: "zx-help", id: hid }, help) : null); }
+        box.appendChild(h("div", { class: "zx-card" }, h("div", { class: "zx-card__head" }, h("h3", { class: "zx-card__title" }, isNew ? t("New variable") : tf("Edit variable {0}", v.name))),
+            h("div", { class: "zx-card__body zx-stack" },
+                f(t("Name"), name, id + "n", tf("Lower case letters, digits and _, starting with a letter, up to {0} characters. The names of the built-in variables are taken.", lim.name), id + "nh"),
+                f(t("Value"), value, id + "v", tf("Any single line of text, up to {0} characters. For use in an address list or access rule: one or more addresses or networks, separated by commas. An IPv4 wildcard such as 10.0.*.* works in both when only the last parts are *.", lim.value), id + "vh"),
+                f(t("Description (optional)"), desc, id + "d"),
+                msg),
+            h("div", { class: "zx-card__foot zx-row" }, save, h("button", { type: "button", class: "zx-btn zx-btn--ghost", onclick: function () { RB.clear(box); } }, t("Cancel")))));
+        (isNew ? name : value).focus();
         box.scrollIntoView({ block: "nearest" });
     }
 
@@ -733,10 +841,14 @@
         q("#rbRefresh").addEventListener("click", function () { ready(function () { refresh(); }); });
         q("#rbToggleTpl").addEventListener("click", function () { S.showTemplates = !S.showTemplates; q("#rbToggleTpl").setAttribute("aria-expanded", String(!!S.showTemplates)); ready(function () { renderRules(); }); });
         q("#rbNewList").addEventListener("click", function () { ready(function () { listForm(null); }); });
+        q("#rbNewVar").addEventListener("click", function () { ready(function () { (S.vars ? Promise.resolve() : loadVars()).then(function () { varForm(null); }, function (e) { RB.toast(RB.errText(e), { type: "error" }); }); }); });
         q("#rbImportScan").addEventListener("click", runImport);
         var tt = RB.tester({ site: function () { return q("#rbTestSite").value; } });
         q("#rbTesterMount").appendChild(tt.el);
-        ZxUI.tabs(q("#rbTabs"), { onChange: function (panel) { if (panel === "rbPanelLists" && S.inited) { renderLists(); } } });
+        ZxUI.tabs(q("#rbTabs"), { onChange: function (panel) {
+            if (panel === "rbPanelLists" && S.inited) { renderLists(); }
+            if (panel === "rbPanelVars") { ready(function () { loadVars().then(renderVars, function (e) { RB.toast(RB.errText(e), { type: "error" }); }); }); }
+        } });
     }
     function init() {
         if (initP) { return initP; }

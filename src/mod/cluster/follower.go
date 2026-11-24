@@ -32,7 +32,8 @@ type followerStatus struct {
 	LastError      string `json:"lastError"`
 	LastResult     string `json:"lastResult"` //applied, unchanged, error
 	CertsSynced    bool   `json:"certsSynced"`
-	RejectedHash   string `json:"rejectedHash,omitempty"` //snapshot that prevented a clean start
+	SettingsSynced bool   `json:"settingsSynced,omitempty"` //the applied snapshot carried the database-stored settings
+	RejectedHash   string `json:"rejectedHash,omitempty"`   //snapshot that prevented a clean start
 
 	// Fleet (central management) node state
 	AttemptHash string              `json:"attemptHash,omitempty"` //bundle of the latest apply attempt
@@ -70,6 +71,7 @@ type FollowerStatus struct {
 	LastSuccessAt  int64  `json:"lastSuccessAt"`
 	LastError      string `json:"lastError"`
 	LastResult     string `json:"lastResult"`
+	SettingsSynced bool   `json:"settingsSynced"`
 }
 
 // Status returns the follower sync state.
@@ -77,7 +79,7 @@ func (m *Manager) Status() FollowerStatus {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	s := m.status
-	return FollowerStatus{s.AppliedVersion, s.AppliedAt, s.LastAttemptAt, s.LastSuccessAt, s.LastError, s.LastResult}
+	return FollowerStatus{s.AppliedVersion, s.AppliedAt, s.LastAttemptAt, s.LastSuccessAt, s.LastError, s.LastResult, s.SettingsSynced}
 }
 
 type followerRunner struct {
@@ -276,6 +278,7 @@ func (m *Manager) applySnapshot(env *Envelope, payload *Payload, force bool) (st
 		m.mu.Lock()
 		m.status.AppliedVersion = env.Version
 		m.status.CertsSynced = payload.IncludesCerts
+		m.status.SettingsSynced = payload.IncludesSettings
 		m.saveStatusLocked()
 		m.mu.Unlock()
 		return "unchanged", nil
@@ -289,13 +292,14 @@ func (m *Manager) applySnapshot(env *Envelope, payload *Payload, force bool) (st
 	}
 
 	// Nothing to do if the files already match (first sync of an identical node).
-	local, err := CollectFiles(m.opt.ConfDir, toApply.IncludesCerts)
+	local, err := collectRoots(m.opt.ConfDir, toApply.Roots)
 	if err == nil && local.ContentHash == toApply.ContentHash {
 		m.mu.Lock()
 		m.status.AppliedVersion = env.Version
 		m.status.AppliedHash = payload.ContentHash
 		m.status.AppliedAt = m.opt.Now().Unix()
 		m.status.CertsSynced = payload.IncludesCerts
+		m.status.SettingsSynced = payload.IncludesSettings
 		m.saveStatusLocked()
 		m.mu.Unlock()
 		return "unchanged", nil
@@ -312,6 +316,7 @@ func (m *Manager) applySnapshot(env *Envelope, payload *Payload, force bool) (st
 		st.AppliedHash = payload.ContentHash
 		st.AppliedAt = m.opt.Now().Unix()
 		st.CertsSynced = payload.IncludesCerts
+		st.SettingsSynced = payload.IncludesSettings
 	}, nil, fmt.Sprintf("applied snapshot version %d (%d files)", env.Version, len(payload.Files)))
 }
 

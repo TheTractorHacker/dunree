@@ -44,6 +44,9 @@ func main() {
 			string(events.EventBlacklistedIPBlocked): "This event is triggered when a blacklisted IP is blocked",
 			string(events.EventBlacklistToggled):     "This event is triggered when the blacklist is toggled for an access rule",
 			string(events.EventAccessRuleCreated):    "This event is triggered when a new access ruleset is created",
+			string(events.EventProxyRuleAdded):       "This event is triggered when a new HTTP proxy rule is stored",
+			string(events.EventProxyRuleEdited):      "This event is triggered when a stored HTTP proxy rule is changed",
+			string(events.EventProxyRuleRemoved):     "This event is triggered when a stored HTTP proxy rule is removed",
 			string(events.EventCustom):               "This event is a custom event that can be emitted by any plugin, we subscribe to it to demonstrate a \"monitor\" plugin that can see all custom events emitted by other plugins",
 		},
 	})

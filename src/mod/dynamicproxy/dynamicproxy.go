@@ -242,9 +242,10 @@ func (router *Router) StartProxyService() error {
 	}
 	if router.Option.UseTls {
 		router.server = &http.Server{
-			Addr:      ":" + strconv.Itoa(router.Option.Port),
-			Handler:   router.withHealth(router.mux),
-			TLSConfig: config,
+			Addr:        ":" + strconv.Itoa(router.Option.Port),
+			Handler:     router.withHealth(router.mux),
+			TLSConfig:   config,
+			ConnContext: router.echConnContext, //per connection ECH note for the request log (ech_glue.go)
 			// ReadHeaderTimeout bounds the slowloris window without affecting
 			// long-lived bodies (uploads, SSE, streaming). IdleTimeout reaps
 			// idle keep-alive connections. WriteTimeout left at 0 by default
@@ -530,7 +531,8 @@ func (router *Router) startSecondaryListeners() {
 
 		// Create HTTP server for this secondary port
 		secondaryServer := &http.Server{
-			Addr: addr,
+			Addr:        addr,
+			ConnContext: router.echConnContext,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if router.deployRoleEntry(w, r) { //deployment role: peer gate and forwarded header hardening
 					return

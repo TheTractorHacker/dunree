@@ -9,6 +9,7 @@
         POST /api/proxy/templates/save      template (JSON)
         POST /api/proxy/templates/delete    name
         POST /api/proxy/templates/preview   template (JSON), rule (optional)   (nothing is saved)
+        GET/POST /api/proxy/templates/default  name ("" = none)   the template the New proxy rule forms preselect
 
     openRuleTemplateManager()   opened from the HTTP Proxy page ("Templates") and from the New proxy rule dialog.
 
@@ -18,16 +19,22 @@
     "use strict";
 
     var $m = null;
-    var st = { list: [], editing: null, original: "", previewTimer: null, previewSeq: 0, rules: null, error: "" };
+    var st = { list: [], def: "", editing: null, original: "", previewTimer: null, previewSeq: 0, rules: null, error: "" };
 
     var CSS = [
         "#ruleTplModal.ui.modal{ max-width:62em; }",
+        // dark theme: Semantic paints body-level modals white, which left the light text unreadable
+        "body.darkTheme #ruleTplModal.ui.modal, body.darkTheme #ruleTplModal.ui.modal > .content{ background:var(--zx-surface); color:var(--zx-text); }",
+        "body.darkTheme #ruleTplModal.ui.modal > .actions{ background:var(--zx-surface-2); border-top-color:var(--zx-border); }",
         "#ruleTplModal .rtHead h2{ margin:0 0 0.15em; }",
         "#ruleTplModal .rtHead p{ margin:0 0 1em; opacity:0.7; }",
         "#ruleTplModal table.rtTable{ width:100%; border-collapse:collapse; }",
         "#ruleTplModal table.rtTable th{ text-align:left; padding:0.4em 0.6em; border-bottom:2px solid var(--divider_color); }",
         "#ruleTplModal table.rtTable td{ padding:0.5em 0.6em; border-bottom:1px solid var(--divider_color); vertical-align:top; }",
         "#ruleTplModal .rtBadge{ font-size:0.75em; padding:0.1em 0.55em; border-radius:2em; background:rgba(127,127,127,0.2); margin-left:0.4em; }",
+        "#ruleTplModal .rtDefBadge{ background:var(--zx-primary-soft); color:var(--zx-primary-soft-text); }",
+        "#ruleTplModal .rtDefRow{ margin:0 0 1em; }",
+        "#ruleTplModal .rtDefRow > label{ min-width:0; font-weight:600; }",
         "#ruleTplModal .rtSum{ opacity:0.75; font-size:0.9em; }",
         "#ruleTplModal .rtActs{ white-space:nowrap; text-align:right; }",
         "#ruleTplModal .rtLayout{ display:grid; grid-template-columns:minmax(0,3fr) minmax(0,2fr); gap:1.4em; }",
@@ -47,12 +54,15 @@
         "#ruleTplModal .rtErr{ color:#db2828; }",
         "#ruleTplModal .rtOk{ color:#21ba45; }",
         "#ruleTplModal .rtHint{ font-size:0.85em; opacity:0.7; }",
+        // phones: one template per block instead of a table wider than the dialog
+        "@media screen and (max-width:600px){ #ruleTplModal table.rtTable thead{ display:none; } #ruleTplModal table.rtTable tr{ display:block; padding:0.5em 0; border-bottom:1px solid var(--divider_color); } #ruleTplModal table.rtTable td{ display:block; border-bottom:0; padding:0.2em 0; } #ruleTplModal .rtActs{ text-align:left; white-space:normal; } #ruleTplModal .rtDefRow select{ max-width:100%; } }",
         "@media screen and (max-width:900px){ #ruleTplModal .rtLayout{ grid-template-columns:1fr; } #ruleTplModal .rtHdrRow{ grid-template-columns:1fr 1fr; } }"
     ].join("\n");
 
     function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]; }); }
     function $f(id) { return $("#" + id); }
     function note(msg, ok) { if (typeof msgbox === "function") { msgbox(msg, ok); } }
+    function t(s) { return typeof window.t === "function" ? window.t(s) : s; }
 
     /* ---------------------------------------------------------------- summary of a template */
     function secs(n) {
@@ -126,23 +136,34 @@
 
     function refreshPickers() {
         if (typeof window.resetNewRuleTemplates === "function") { window.resetNewRuleTemplates(); }
+        if (typeof window.loadNewProxyTemplates === "function") { window.loadNewProxyTemplates(); } //the full New site form
     }
 
     /* ---------------------------------------------------------------- list view */
     function loadList(cb) {
         $.get("/api/proxy/templates/list", function (list) {
             st.list = (list && list.forEach) ? list : [];
-            if (cb) { cb(); }
+            $.get("/api/proxy/templates/default", function (r) { st.def = (r && r.name) || ""; }).always(function () { if (cb) { cb(); } });
         }).fail(function () { note("Unable to load the templates", false); });
     }
 
     function showList() {
         st.editing = null;
         clearTimeout(st.previewTimer);
+        clearTimeout(st.defTimer); st.defTimer = null;
         $f("rtEdit").hide().empty();
-        var h = '<table class="rtTable"><thead><tr><th>Template</th><th>Sets</th><th></th></tr></thead><tbody>';
+        // which template a new rule starts from: none until chosen here, app presets fit one app and are not offered
+        var defLabel = t("default for new rules");
+        var h = '<div class="rtRow rtDefRow"><label for="rtDefault">' + esc(t("Default for new rules")) + '</label><select id="rtDefault">' +
+            '<option value="">' + esc(t("None (plain rule)")) + '</option>' +
+            st.list.filter(function (x) { return x.Category !== "app"; }).map(function (x) {
+                return '<option value="' + esc(x.Name) + '"' + (x.Name === st.def ? " selected" : "") + '>' + esc(x.Name) + '</option>';
+            }).join("") + '</select>' +
+            '<span class="rtHint" id="rtDefaultHint">' + esc(t("Preselected when you create a proxy rule. You can still pick another template, or none, for each rule.")) + '</span></div>';
+        h += '<table class="rtTable"><thead><tr><th>Template</th><th>Sets</th><th></th></tr></thead><tbody>';
         st.list.forEach(function (t, i) {
             h += '<tr data-i="' + i + '"><td><b>' + esc(t.Name) + '</b>' + (t.Builtin ? '<span class="rtBadge">built in</span>' : "") +
+                (st.def !== "" && t.Name === st.def ? '<span class="rtBadge rtDefBadge">' + esc(defLabel) + '</span>' : "") +
                 '<div class="rtSum">' + esc(t.Description || "") + '</div></td>' +
                 '<td class="rtSum">' + esc(summarize(t)) + '</td><td class="rtActs">' +
                 (t.Builtin ? "" : '<button type="button" class="ui mini basic button rtEditBtn"><i class="pencil icon"></i> Edit</button>') +
@@ -155,6 +176,43 @@
         $f("rtActs").html('<button type="button" class="ui primary button" id="rtNew"><i class="plus icon"></i> New template</button><button type="button" class="ui basic button" id="rtClose">Close</button>');
         $f("rtNew").on("click", function () { edit(null, false); });
         $f("rtClose").on("click", function () { $m.modal("hide"); });
+        // the select and the "default" mark follow st.def without rebuilding the list, so the keyboard focus stays where it is
+        function paintDefault() {
+            $f("rtDefault").val(st.def);
+            $f("rtList").find(".rtDefBadge").remove();
+            if (st.def === "") { return; }
+            $f("rtList").find("tr[data-i]").each(function () {
+                var one = st.list[$(this).data("i")];
+                if (one && one.Name === st.def) { $(this).find("td").first().find(".rtSum").before($('<span class="rtBadge rtDefBadge"></span>').text(defLabel)); }
+            });
+        }
+        function saveDefault(want) {
+            clearTimeout(st.defTimer); st.defTimer = null;
+            if (want === st.def) { return; }
+            $.cjax({ url: "/api/proxy/templates/default", method: "POST", data: { name: want }, success: function (r) {
+                if (r && r.error) { note(r.error, false); paintDefault(); return; }
+                st.def = (r && r.name) || "";
+                note(st.def ? t("Default template saved") : t("New rules start without a template again"), true);
+                refreshPickers();
+                paintDefault();
+            }, error: function () { note(t("Request failed"), false); paintDefault(); } });
+        }
+        // A closed select fires "change" on every arrow-key step (Chrome): going through the list with the keyboard waits for a
+        // pause, Enter or leaving the field, so only the value the user stops on is saved. A choice made with the pointer saves at once.
+        var viaKeys = false;
+        $f("rtDefault").attr("aria-describedby", "rtDefaultHint")
+            .on("pointerdown", function () { viaKeys = false; })
+            .on("keydown", function (e) {
+                if (e.key !== "Enter") { viaKeys = true; return; }
+                if (st.defTimer) { saveDefault($(this).val() || ""); }
+            })
+            .on("blur", function () { if (st.defTimer) { saveDefault($(this).val() || ""); } })
+            .on("change", function () {
+                var want = $(this).val() || "";
+                clearTimeout(st.defTimer); st.defTimer = null;
+                if (!viaKeys) { saveDefault(want); return; }
+                st.defTimer = setTimeout(function () { saveDefault(want); }, 800);
+            });
         $f("rtList").find(".rtEditBtn").on("click", function () { edit(st.list[$(this).closest("tr").data("i")], false); });
         $f("rtList").find(".rtCloneBtn").on("click", function () { edit(st.list[$(this).closest("tr").data("i")], true); });
         $f("rtList").find(".rtDelBtn").on("click", function () {

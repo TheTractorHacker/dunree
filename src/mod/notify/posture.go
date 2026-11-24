@@ -7,7 +7,7 @@ package notify
 const EventPosture = "security.posture"
 
 func init() {
-	Catalog = append(Catalog, EventInfo{EventPosture, SevWarning, "Security score dropped"})
+	Catalog = append(Catalog, EventInfo{Name: EventPosture, Severity: SevWarning, Title: "Security score dropped"})
 }
 
 // Summary counts the enabled destinations, for the security overview. No settings or secrets are returned.

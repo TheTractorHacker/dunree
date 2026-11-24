@@ -399,7 +399,7 @@ func ReverseProxyInit() {
 	}
 
 	//Persist basic auth credential hashes upgraded from legacy SHA-512
-	dprouter.Option.PersistProxyEndpoint = SaveReverseProxyConfig
+	dprouter.Option.PersistProxyEndpoint = saveReverseProxyConfigQuietly //no proxyRuleEdited event for a hash upgrade
 	initOpsGlobals()
 	dynamicProxyRouter = dprouter
 
@@ -822,6 +822,9 @@ func ReverseProxyHandleAddEndpoint(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
+		//Optional auth:* tag for the login the rule starts with (issue #216, off by default), after the template
+		autoTagAuthOnSave(&thisProxyEndpoint)
 
 		//Global default of the hardened security headers preset (off unless the admin turned it on)
 		applyHardenedDefault(&thisProxyEndpoint)
@@ -1246,6 +1249,11 @@ func ReverseProxyHandleEditEndpoint(w http.ResponseWriter, r *http.Request) {
 	newProxyEndpoint.BlockAICrawlers = blockAICrawlers
 	newProxyEndpoint.MitigationAction = mitigationAction
 	newProxyEndpoint.Tags = tags
+	if authMethodGiven {
+		//Optional (issue #216, off by default): the tag follows a login that was chosen in this request. Without
+		//the parameter the tag is left alone, so it still shows what was intended if the method is ever lost
+		autoTagAuthOnSave(newProxyEndpoint)
+	}
 
 	//Prepare to replace the current routing rule
 	readyRoutingRule, err := dynamicProxyRouter.PrepareProxyRoute(newProxyEndpoint)

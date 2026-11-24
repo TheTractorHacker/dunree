@@ -75,6 +75,11 @@ func (p *primaryState) current(includeCerts bool) ([]byte, int64, *Payload, erro
 	if err != nil {
 		return nil, 0, nil, err
 	}
+	if p.m.Config().SyncSettings {
+		if err := p.m.addSettings(payload); err != nil {
+			return nil, 0, nil, err
+		}
+	}
 	p.mu.Lock()
 	var st primaryFile
 	if b, err := os.ReadFile(p.stateFile()); err == nil {
@@ -83,6 +88,9 @@ func (p *primaryState) current(includeCerts bool) ([]byte, int64, *Payload, erro
 	hash := payload.ContentHash
 	if includeCerts {
 		hash += "+certs"
+	}
+	if payload.IncludesSettings {
+		hash += "+settings"
 	}
 	if st.Hash != hash || st.Version == 0 {
 		nv := p.m.opt.Now().UnixMilli()

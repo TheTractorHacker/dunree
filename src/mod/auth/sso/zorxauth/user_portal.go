@@ -54,6 +54,19 @@ func (gs *GatewayServer) handleUserPortalAPI(w http.ResponseWriter, r *http.Requ
 	sub := strings.TrimPrefix(r.URL.Path, "/user/api/")
 
 	switch sub {
+	case "change-password", "2fa/setup", "2fa/enable", "2fa/disable", "passkey/register/begin", "passkey/register/complete", "passkey/remove":
+		if gs.router.userWriteRefused() {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"success": false,
+				"error":   "This server is a read-only copy of the account list. Please try again later, or ask your administrator.",
+			})
+			return
+		}
+	}
+
+	switch sub {
 	case "info":
 		gs.handleUserInfo(w, r, username)
 	case "change-password":

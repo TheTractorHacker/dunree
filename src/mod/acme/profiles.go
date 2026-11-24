@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/url"
 	"sort"
 	"strings"
@@ -19,7 +20,9 @@ import (
 
 	* CA profiles: a custom ACME directory URL with an optional External Account Binding
 	  (key id + HMAC) for CAs such as ZeroSSL or Google. Several can exist side by side; the
-	  ACME account of each is stored separately (keyed by directory URL + email, see account.go).
+	  ACME account of each is stored separately (keyed by directory URL + email + profile ID, see
+	  account.go). A profile may carry its own registration email; one profile can be the default
+	  for new certificates and certificates can be moved between profiles (caprofile_assign.go).
 	* DNS credential profiles: provider + credentials, selected by name when obtaining or
 	  renewing a certificate instead of retyping them. Secrets are stored exactly like the
 	  per certificate DNS credentials were before (plain values in the database) and are never
@@ -40,6 +43,8 @@ type CAProfile struct {
 	EABKid       string `json:"eabKid"`
 	EABHmac      string `json:"eabHmac"` // base64url HMAC key as issued by the CA; secret
 	Profile      string `json:"profile"` // default ACME profile to request, optional
+	// Email is the registration (contact) email of this profile's ACME account. Empty = the global ACME email.
+	Email string `json:"email,omitempty"`
 }
 
 // DNSProfile is a saved DNS-01 credential set.
@@ -114,19 +119,40 @@ func (a *ACMEHandler) GetCAProfile(id string) (*CAProfile, error) {
 // SaveCAProfile creates (empty ID) or updates a CA profile and returns its ID. An EABHmac equal
 // to SecretMask keeps the stored secret.
 func (a *ACMEHandler) SaveCAProfile(p CAProfile) (string, error) {
-	p.Name = strings.TrimSpace(p.Name)
-	p.DirectoryURL = strings.TrimSpace(p.DirectoryURL)
-	if p.Name == "" {
-		return "", errors.New("profile name is required")
-	}
-	if err := validateDirectoryURL(p.DirectoryURL); err != nil {
+	p, err := normalizeCAProfile(p)
+	if err != nil {
 		return "", err
-	}
-	if (p.EABKid == "") != (p.EABHmac == "") {
-		return "", errors.New("EAB needs both the key id and the HMAC key")
 	}
 	profileMu.Lock()
 	defer profileMu.Unlock()
+	return a.saveCAProfileLocked(p)
+}
+
+// normalizeCAProfile trims and validates the fields of a CA profile before it is stored.
+func normalizeCAProfile(p CAProfile) (CAProfile, error) {
+	p.Name = strings.TrimSpace(p.Name)
+	p.DirectoryURL = strings.TrimSpace(p.DirectoryURL)
+	if p.Name == "" {
+		return p, errors.New("profile name is required")
+	}
+	if err := validateDirectoryURL(p.DirectoryURL); err != nil {
+		return p, err
+	}
+	if (p.EABKid == "") != (p.EABHmac == "") {
+		return p, errors.New("EAB needs both the key id and the HMAC key")
+	}
+	p.Email = strings.TrimSpace(p.Email)
+	if p.Email != "" {
+		addr, err := mail.ParseAddress(p.Email)
+		if err != nil || addr.Address != p.Email {
+			return p, errors.New("the registration email is not a valid email address (example: admin@example.com)")
+		}
+	}
+	return p, nil
+}
+
+// saveCAProfileLocked stores a normalized CA profile; the caller holds profileMu.
+func (a *ACMEHandler) saveCAProfileLocked(p CAProfile) (string, error) {
 	list := a.listCAProfilesLocked()
 	found := false
 	for i := range list {
@@ -154,7 +180,7 @@ func (a *ACMEHandler) SaveCAProfile(p CAProfile) (string, error) {
 	return p.ID, a.saveProfiles(prefCAProfiles, list)
 }
 
-// DeleteCAProfile removes a CA profile. Certificates that reference it fail to renew until reassigned.
+// DeleteCAProfile removes a CA profile (and clears the default if it pointed at it). Certificates that reference it fail to renew until reassigned.
 func (a *ACMEHandler) DeleteCAProfile(id string) error {
 	profileMu.Lock()
 	defer profileMu.Unlock()
@@ -167,6 +193,9 @@ func (a *ACMEHandler) DeleteCAProfile(id string) error {
 	}
 	if len(out) == len(list) {
 		return errors.New("CA profile not found")
+	}
+	if a.prefGet(prefDefaultCA) == id {
+		a.prefSet(prefDefaultCA, "")
 	}
 	return a.saveProfiles(prefCAProfiles, out)
 }

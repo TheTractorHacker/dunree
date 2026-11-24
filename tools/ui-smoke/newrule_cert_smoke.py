@@ -6,6 +6,9 @@ Checks: the empty-list hint; the options (names, expiry) and the grouping by the
 the rule is created with the choice (one request: TlsOptions.PreferredCertificate for the host and every alias, SNI matching off for
 this rule only); the success toast does not offer "Create certificate for this host"; a rule created without a choice keeps the
 default TLS options; an unknown certificate name creates nothing; and a REAL TLS handshake with SNI returns the chosen certificate.
+Part 7 (issue #91): with a default DNS credential profile the New site page shows an unticked "Use DNS challenge (default profile: NAME)"
+option and the dialog's toast a second action; the certificate request then carries dns=true (the request is answered by the test, no
+CA or DNS provider is contacted), and without a default profile nothing changes.
 Screenshots (light, dark, 390px) are written to --out. It needs a store without certificates (a fresh instance), so it only runs
 with --newrule-cert-only, not in the full run."""
 
@@ -18,6 +21,7 @@ NRC_HOST = "nrc-pick.smoke.test"
 NRC_ALIAS = "nrc-alias.smoke.test"
 NRC_PLAIN = "nrc-plain.smoke.test"
 NRC_CERTS = ["nrc-cert-a", "nrc-cert-b", "nrc-cert-c"]
+NRC_DNS = ["nrc-dns%d.smoke.test" % i for i in range(8)]
 
 
 def newrule_cert_ui(pg, ctx):
@@ -199,7 +203,8 @@ def newrule_cert_ui(pg, ctx):
     pg.fill("#nrUpstream", "127.0.0.1:9")
     pg.wait_for_timeout(300)
     pg.click("#nrCreate")
-    pg.wait_for_selector("#nrToast.show", timeout=10000)
+    # (the toast of part 3 can still be up: wait for the one of this rule)
+    pg.wait_for_function("h => { const t = document.getElementById('nrToast'); return t && t.classList.contains('show') && t.innerText.includes(h); }", arg=NRC_PLAIN, timeout=10000)
     to = (rule(NRC_PLAIN) or {}).get("TlsOptions") or {}
     if to.get("DisableSNI") or to.get("PreferredCertificate"):
         fail("newrule-cert", f"a rule created without a choice must keep the default TLS options, got {to}")
@@ -211,6 +216,179 @@ def newrule_cert_ui(pg, ctx):
                                   "cred": "", "rootname": "nrc-bad.smoke.test", "certificate": "does-not-exist"})
     if not (isinstance(bad, dict) and bad.get("error")) or rule("nrc-bad.smoke.test"):
         fail("newrule-cert", f"an unknown certificate must be refused and nothing created, got {bad!r}")
+
+    # ---- 7. DNS challenge with the default DNS credential profile (issue #91). The certificate request is answered by the test
+    # (page.route), so no CA and no DNS provider is contacted; what is checked is the offer and the dns flag of the request.
+    acme_reqs = []
+
+    def fake_acme(route):
+        acme_reqs.append(route.request.url)
+        route.fulfill(status=200, content_type="application/json", body='{"error":"smoke: no CA in this test"}')
+
+    pg.route("**/api/acme/obtainCert*", fake_acme)
+    pg.route("**/api/acme/autoRenew/email", lambda route: route.fulfill(status=200, content_type="application/json", body='"smoke@example.test"'))
+    js("openTabById('cert')")
+    pg.wait_for_function("typeof obtainCertificate === 'function'", timeout=10000)
+
+    def dns_state():
+        return js("fetch('/api/acme/profiles/dns').then(r => r.json())")
+
+    def last_dns():
+        for _ in range(40):
+            if acme_reqs:
+                break
+            pg.wait_for_timeout(100)
+        if not acme_reqs:
+            return None
+        u = acme_reqs.pop()
+        del acme_reqs[:]
+        return re.search(r"[?&]dns=(true|false)", u).group(1), u
+
+    def create_dialog(host):
+        post("/api/proxy/del", {"ep": host})
+        open_dialog()
+        pg.fill("#nrDomain", host)
+        pg.fill("#nrUpstream", "127.0.0.1:9")
+        pg.wait_for_timeout(300)
+        pg.click("#nrCreate")
+        pg.wait_for_function("h => { const t = document.getElementById('nrToast'); return t && t.classList.contains('show') && t.innerText.includes(h); }", arg=host, timeout=10000)
+
+    def create_page(host):
+        post("/api/proxy/del", {"ep": host})
+        js("openTabById('rules')")
+        pg.wait_for_selector("#rulesCreateBtn", state="visible", timeout=10000)
+        pg.fill("#rootname", host)
+        pg.fill("#proxyDomain", "127.0.0.1:9")
+        pg.click("#rulesCreateBtn")
+        pg.wait_for_selector("#rulesResult:not([hidden])", timeout=10000)
+        pg.wait_for_selector("#rulesResultCert:not([hidden])", timeout=5000)
+        pg.wait_for_timeout(500)
+
+    st0 = dns_state()
+    if st0.get("default"):
+        fail("newrule-dns", "this part needs an instance without a default DNS profile")
+    # 7a. no default profile: nothing new is offered, and the plain request is the HTTP challenge as before
+    create_dialog(NRC_DNS[0])
+    toast = js("document.getElementById('nrToast').innerText")
+    if "Create certificate for this host" not in toast or "DNS challenge" in toast or pg.locator("#nrToastDns").count():
+        fail("newrule-dns", f"without a default DNS profile the toast must offer only the plain request, got {toast!r}")
+    pg.click("#nrToast button:has-text('Create certificate for this host')")
+    got = last_dns()
+    if not got or got[0] != "false":
+        fail("newrule-dns", f"the plain request must stay dns=false, got {got}")
+    create_page(NRC_DNS[1])
+    if pg.is_visible("#rulesResultDnsRow") or pg.is_visible("#rulesResultDnsHint"):
+        fail("newrule-dns", "without a default DNS profile the New site page must not offer the DNS challenge")
+    pg.click("#rulesResultCert")
+    got = last_dns()
+    if not got or got[0] != "false":
+        fail("newrule-dns", f"the plain request of the New site page must stay dns=false, got {got}")
+
+    # 7b. a saved profile that is NOT the default changes nothing; as the default it is offered by name
+    saved = post("/api/acme/profiles/dns", {"op": "save", "name": "nrc-dns-profile", "provider": "cloudflare", "credentials": '{"AuthToken":"nrc-fake-token"}'})
+    pid_ = (saved or {}).get("id")
+    if not pid_:
+        fail("newrule-dns", f"could not save the test DNS profile: {saved!r}")
+    create_page(NRC_DNS[2])
+    if pg.is_visible("#rulesResultDnsRow"):
+        fail("newrule-dns", "a profile that is not the default must not be offered")
+    post("/api/acme/profiles/dns", {"op": "setDefault", "id": pid_})
+
+    create_page(NRC_DNS[3])
+    if not pg.is_visible("#rulesResultDnsRow") or not pg.is_visible("#rulesResultDnsHint"):
+        fail("newrule-dns", "with a default DNS profile the New site page must offer the DNS challenge")
+    label = js("document.getElementById('rulesResultDnsRow').innerText")
+    if "Use DNS challenge" not in label or "nrc-dns-profile" not in label:
+        fail("newrule-dns", f"the option must name the default profile, got {label!r}")
+    if js("document.getElementById('rulesResultDns').checked"):
+        fail("newrule-dns", "the DNS challenge must not be ticked for the user")
+    if "nrc-fake-token" in js("document.documentElement.innerHTML"):
+        fail("newrule-dns", "the credential of the profile reached the page")
+    # the option changes what the button does, so it comes first: in the document, on screen and in the tab order
+    order = js("""(() => { const c = document.getElementById('rulesResultDns'), b = document.getElementById('rulesResultCert');
+        return [!!(c.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING), c.getBoundingClientRect().bottom <= b.getBoundingClientRect().top + 1]; })()""")
+    if order != [True, True]:
+        fail("newrule-dns", f"the DNS option must come before 'Request a certificate' (document order, above it): {order}")
+    pg.focus("#rulesResultDns")
+    seen = []
+    for _ in range(4):
+        pg.keyboard.press("Tab")
+        seen.append(js("document.activeElement.id"))
+    if "rulesResultCert" not in seen:
+        fail("newrule-dns", f"Tab from the DNS option must reach 'Request a certificate', got {seen}")
+    js("document.activeElement.blur()")
+    js("document.getElementById('rulesResult').scrollIntoView({block: 'center'})")
+    pg.wait_for_timeout(600)
+    shot("newrule-dns-page-light.png", "#rulesResult")
+    theme(True)
+    shot("newrule-dns-page-dark.png", "#rulesResult")
+    pg.set_viewport_size({"width": 390, "height": 844})
+    pg.wait_for_timeout(300)
+    js("document.getElementById('rulesResult').scrollIntoView({block: 'center'})")
+    shot("newrule-dns-page-390.png", "#rulesResult")
+    if js("document.documentElement.scrollWidth > window.innerWidth + 1"):
+        fail("newrule-dns", "the result of the New site page scrolls horizontally at 390px")
+    theme(False)
+    js("document.getElementById('rulesResult').scrollIntoView({block: 'center'})")
+    shot("newrule-dns-page-390-light.png", "#rulesResult")
+    pg.set_viewport_size({"width": 1366, "height": 1000})
+    # not ticked: HTTP challenge, exactly as before
+    pg.click("#rulesResultCert")
+    got = last_dns()
+    if not got or got[0] != "false":
+        fail("newrule-dns", f"an unticked option must request dns=false, got {got}")
+    # ticked with the keyboard: DNS challenge, and no profile id is sent (the server uses the default)
+    create_page(NRC_DNS[4])
+    pg.focus("#rulesResultDns")
+    pg.keyboard.press("Space")
+    if not js("document.getElementById('rulesResultDns').checked"):
+        fail("newrule-dns", "the option is not operable with the keyboard")
+    pg.click("#rulesResultCert")
+    got = last_dns()
+    if not got or got[0] != "true" or NRC_DNS[4] not in got[1]:
+        fail("newrule-dns", f"a ticked option must request dns=true for the new host, got {got}")
+    if pg.is_visible("#rulesResultDnsRow"):
+        fail("newrule-dns", "the option must go away with the request button")
+    # the next site starts unticked again
+    create_page(NRC_DNS[5])
+    if js("document.getElementById('rulesResultDns').checked"):
+        fail("newrule-dns", "the choice must not carry over to the next site")
+
+    # 7c. the dialog: a second, explicit action in the toast
+    js("openTabById('httprp')")
+    create_dialog(NRC_DNS[6])
+    toast = js("document.getElementById('nrToast').innerText")
+    if "Create certificate for this host" not in toast or not pg.locator("#nrToastDns").count() or "nrc-dns-profile" not in toast:
+        fail("newrule-dns", f"with a default DNS profile the toast must offer both requests and name the profile, got {toast!r}")
+    shot("newrule-dns-toast-light.png", "#nrToast")
+    theme(True)
+    shot("newrule-dns-toast-dark.png", "#nrToast")
+    pg.set_viewport_size({"width": 390, "height": 844})
+    pg.wait_for_timeout(300)
+    shot("newrule-dns-toast-390.png", "#nrToast")
+    box = js("(() => { const r = document.getElementById('nrToast').getBoundingClientRect(); return [r.left, r.right, window.innerWidth]; })()")
+    if box[0] < -1 or box[1] > box[2] + 1:
+        fail("newrule-dns", f"the toast leaves the screen at 390px: {box}")
+    theme(False)
+    shot("newrule-dns-toast-390-light.png", "#nrToast")
+    pg.set_viewport_size({"width": 1366, "height": 1000})
+    pg.click("#nrToastDns")
+    got = last_dns()
+    if not got or got[0] != "true" or NRC_DNS[6] not in got[1]:
+        fail("newrule-dns", f"the DNS action of the toast must request dns=true for the new host, got {got}")
+    create_dialog(NRC_DNS[7])
+    pg.click("#nrToast button:has-text('Create certificate for this host')")
+    got = last_dns()
+    if not got or got[0] != "false":
+        fail("newrule-dns", f"the plain action of the toast must stay dns=false, got {got}")
+
+    pg.unroute("**/api/acme/obtainCert*")
+    pg.unroute("**/api/acme/autoRenew/email")
+    post("/api/acme/profiles/dns", {"op": "delete", "id": pid_})
+    if dns_state().get("default") or dns_state().get("profiles"):
+        fail("newrule-dns", "the test DNS profile was not removed")
+    for h in NRC_DNS:
+        post("/api/proxy/del", {"ep": h})
 
     # ---- clean up
     for h in (NRC_HOST, NRC_PLAIN):

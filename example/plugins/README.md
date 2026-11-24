@@ -35,7 +35,7 @@ and on SIGTERM, and write no log line per request. Build them for a release with
 ## SDK copy (`mod/zoraxy_plugin`)
 
 Every example carries a copy of the plugin SDK from `src/mod/plugins/zoraxy_plugin` (`build_all.sh` refreshes the
-copies). The copies here are SDK 1.1.0, plugin contract version 1; see `CHANGELOG.md` inside the folder and
+copies). The copies here are SDK 1.2.0, plugin contract version 1; see `CHANGELOG.md` inside the folder and
 `docs/plugins/contract.md`. A plugin built with it declares `"api_version": 1` without any code change.
 
 Two examples also show the optional parts of the contract:

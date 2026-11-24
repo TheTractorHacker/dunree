@@ -114,7 +114,8 @@ type snapshot struct {
 	byKey        map[string]*compiledRule // site + "\x00" + id, every rule including disabled / broken
 	active       int                      // enabled and valid rules
 	hasChallenge bool
-	challengeTTL int // minutes, the longest ttl_minutes of an enabled challenge rule
+	challengeTTL int    // minutes, the longest ttl_minutes of an enabled challenge rule
+	varFP        string // what the {{variables}} of the lists resolved to when the snapshot was built
 }
 
 // Engine holds the rule sets
@@ -129,6 +130,9 @@ type Engine struct {
 
 	// Country resolves an address to an ISO country code (set by the proxy; nil = unknown)
 	Country func(ip string) string
+
+	// vars resolves the {{name}} entries of the lists (nil = nothing resolves); guarded by mu
+	vars func(name string) (string, bool)
 
 	ruleBudget, reqBudget int // tests lower these
 	LoadErrors            []string
@@ -204,8 +208,9 @@ func compileRule(r Rule, lists map[string]*List) (*Expr, *Error, error) {
 func (e *Engine) build(st *state) *snapshot {
 	s := &snapshot{sites: map[string]*compiledSet{}, lists: map[string]*List{}, byKey: map[string]*compiledRule{}}
 	for _, l := range st.lists {
-		s.lists[l.Name] = l
+		s.lists[l.Name] = l.resolve(e.vars)
 	}
+	s.varFP = varFingerprint(s.lists)
 	keep := map[string]bool{}
 	comp := func(site string, rules []Rule) *compiledSet {
 		cs := &compiledSet{}
@@ -250,6 +255,55 @@ func (e *Engine) build(st *state) *snapshot {
 		return true
 	})
 	return s
+}
+
+// varFingerprint describes what the variable references of the lists resolved to
+func varFingerprint(lists map[string]*List) string {
+	var parts []string
+	for _, l := range lists {
+		for _, v := range l.vars {
+			parts = append(parts, fmt.Sprintf("%s\x00%s\x00%t\x00%s", l.Name, v.Name, v.OK, v.Value))
+		}
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, "\x01")
+}
+
+// SetVarResolver installs the source of the {{name}} entries of the lists (the built-in external_ip
+// and the user defined variables) and applies it. Call RefreshVars when a value may have changed.
+func (e *Engine) SetVarResolver(f func(name string) (string, bool)) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.vars = f
+	e.snap.Store(e.build(e.st))
+}
+
+// RefreshVars resolves the variable references of the lists again and swaps in a new snapshot when
+// a value changed. It reports whether something changed. Cheap when no list uses a variable.
+func (e *Engine) RefreshVars() bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	uses := false
+	fresh := map[string]*List{}
+	for _, l := range e.st.lists {
+		if len(l.refs) > 0 {
+			uses = true
+			fresh[l.Name] = l.resolve(e.vars)
+		}
+	}
+	if !uses || varFingerprint(fresh) == e.snap.Load().varFP {
+		return false
+	}
+	e.snap.Store(e.build(e.st))
+	return true
+}
+
+// ListVars reports how the {{name}} entries of a list currently resolve (nil when it has none)
+func (e *Engine) ListVars(name string) []ListVar {
+	if l := e.snap.Load().lists[name]; l != nil {
+		return append([]ListVar(nil), l.vars...)
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------------

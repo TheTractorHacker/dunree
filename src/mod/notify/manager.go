@@ -28,6 +28,8 @@ type Config struct {
 	Command             CommandConfig   `json:"command"`
 	AllowPrivateTargets bool            `json:"allowPrivateTargets"`
 	ExpiryWarnDays      int             `json:"expiryWarnDays"`
+	// RenewLeadSeconds: wait after certificate.renewing before an HTTP-01 order starts (0 = no wait), see renewing.go
+	RenewLeadSeconds int `json:"renewLeadSeconds,omitempty"`
 
 	// Notification centre (center.go): channels, delivery rules
 	Channels []ChannelConfig `json:"channels,omitempty"`
@@ -243,6 +245,9 @@ func (m *Manager) View() map[string]any {
 		"commandsAllowed":     m.commandsAllowed,
 		"allowPrivateTargets": m.cfg.AllowPrivateTargets,
 		"expiryWarnDays":      warn,
+		"renewLeadSeconds":    m.cfg.RenewLeadSeconds,
+		"maxRenewLeadSeconds": MaxRenewLeadSeconds,
+		"optInEvents":         OptInEvents(),
 		"events":              AllCertEvents,
 		"offline":             m.offline != nil && m.offline(),
 	}
@@ -344,7 +349,18 @@ func (m *Manager) HandleHooks(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if err := m.SetOptions(allow, days); err != nil {
+		// optional: a client that does not send it leaves the stored lead time alone
+		var lead *int
+		if v, err := utils.PostPara(r, "renewLeadSeconds"); err == nil {
+			var n int
+			if err := json.Unmarshal([]byte(v), &n); err != nil {
+				fail(errors.New("invalid number of seconds"))
+				return
+			}
+			lead = &n
+		}
+		// all or nothing: a refused value must not save the others
+		if err := m.setOptionsAndLead(allow, days, lead); err != nil {
 			fail(err)
 			return
 		}

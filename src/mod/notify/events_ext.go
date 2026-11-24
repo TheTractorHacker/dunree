@@ -66,25 +66,28 @@ type EventInfo struct {
 	Name     string `json:"name"`
 	Severity string `json:"severity"`
 	Title    string `json:"title"`
+	// OptIn events are only delivered to a destination that lists them; "no event selected = all" skips them
+	OptIn bool `json:"optIn,omitempty"`
 }
 
 // Catalog lists every event the notification centre knows (certificate events included)
 var Catalog = []EventInfo{
-	{EventUptimeDown, SevCritical, "Upstream is down"},
-	{EventUptimeUp, SevInfo, "Upstream recovered"},
-	{EventCertIssued, SevInfo, "Certificate issued / renewed"},
-	{EventCertRenewFailed, SevCritical, "Certificate renewal failed"},
-	{EventCertExpiring, SevWarning, "Certificate expires soon"},
-	{EventWAFSpike, SevWarning, "WAF block spike"},
-	{EventAutoBan, SevWarning, "Address banned automatically"},
-	{EventNodeOffline, SevCritical, "Fleet node offline"},
-	{EventNodeOnline, SevInfo, "Fleet node back online"},
-	{EventAdminLoginFail, SevWarning, "Admin login failed"},
-	{EventAdminLoginNew, SevWarning, "Admin login from a new address"},
-	{EventUpdateAvail, SevInfo, "Update available"},
-	{EventVisitorNewCountry, SevInfo, "First visitor from a new country"},
-	{EventCrowdSecDown, SevCritical, "CrowdSec server unreachable"},
-	{EventCrowdSecUp, SevInfo, "CrowdSec server reachable again"},
+	{Name: EventUptimeDown, Severity: SevCritical, Title: "Upstream is down"},
+	{Name: EventUptimeUp, Severity: SevInfo, Title: "Upstream recovered"},
+	{Name: EventCertIssued, Severity: SevInfo, Title: "Certificate issued / renewed"},
+	{Name: EventCertRenewFailed, Severity: SevCritical, Title: "Certificate renewal failed"},
+	{Name: EventCertExpiring, Severity: SevWarning, Title: "Certificate expires soon"},
+	{Name: EventCertRenewing, Severity: SevInfo, Title: "Certificate renewal about to start", OptIn: true},
+	{Name: EventWAFSpike, Severity: SevWarning, Title: "WAF block spike"},
+	{Name: EventAutoBan, Severity: SevWarning, Title: "Address banned automatically"},
+	{Name: EventNodeOffline, Severity: SevCritical, Title: "Fleet node offline"},
+	{Name: EventNodeOnline, Severity: SevInfo, Title: "Fleet node back online"},
+	{Name: EventAdminLoginFail, Severity: SevWarning, Title: "Admin login failed"},
+	{Name: EventAdminLoginNew, Severity: SevWarning, Title: "Admin login from a new address"},
+	{Name: EventUpdateAvail, Severity: SevInfo, Title: "Update available"},
+	{Name: EventVisitorNewCountry, Severity: SevInfo, Title: "First visitor from a new country"},
+	{Name: EventCrowdSecDown, Severity: SevCritical, Title: "CrowdSec server unreachable"},
+	{Name: EventCrowdSecUp, Severity: SevInfo, Title: "CrowdSec server reachable again"},
 }
 
 // AllEvents are the event names that can be subscribed to
@@ -186,6 +189,14 @@ func Describe(ev Event) (title string, lines []string) {
 		title = "Certificate issued: " + subj
 	case EventCertRenewFailed:
 		title = "Certificate renewal FAILED: " + subj
+	case EventCertRenewing:
+		title = "Certificate renewal starting: " + subj
+		if x("method") != "" {
+			lines = append(lines, "Challenge: "+x("method"))
+		}
+		if x("lead_seconds") != "" && x("lead_seconds") != "0" {
+			lines = append(lines, "The ACME order starts in "+x("lead_seconds")+" seconds.")
+		}
 	case EventCertExpiring:
 		title = "Certificate expiring: " + subj
 		if ev.DaysLeft != nil {
@@ -240,6 +251,12 @@ func Describe(ev Event) (title string, lines []string) {
 		}
 		if x("url") != "" {
 			lines = append(lines, x("url"))
+		}
+	case EventAuthDrift:
+		title = "Login tag does not match the login: " + subj
+		lines = append(lines, "Tagged: "+cleanText(x("tagged"), 200), "Login enforced now: "+x("method"))
+		if x("method") == "none" {
+			lines = append(lines, "The site is open to everyone although its tag names a login.")
 		}
 	case EventPosture:
 		title = subj

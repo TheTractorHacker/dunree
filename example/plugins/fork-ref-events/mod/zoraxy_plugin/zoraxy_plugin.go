@@ -30,7 +30,7 @@ import (
 // repository. A plugin that declares no api_version is a "legacy" plugin (version 0)
 // and keeps working.
 const (
-	SDKVersion = "1.1.0"
+	SDKVersion = "1.2.0"
 	APIVersion = 1
 )
 

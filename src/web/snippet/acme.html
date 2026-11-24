@@ -465,11 +465,17 @@
       });
       $("#keyType").dropdown("refresh");
     });
+    let caProfileEmails = {};   // saved CA id -> its own registration email ("" = uses the ACME email above)
     $.get("/api/acme/profiles/ca", function(d){
       (d.profiles || []).forEach(function(p){
-        $("#ca .menu").append(`<div class="item" data-value="profile:${escapeText(p.id)}">${escapeText(p.name)} (saved CA)</div>`);
+        caProfileEmails[p.id] = p.email || "";
+        $("#ca .menu").append(`<div class="item" data-value="profile:${escapeText(p.id)}">${escapeText(p.name)} (${p.id == d.default ? "saved CA, default" : "saved CA"})</div>`);
       });
       $("#ca").dropdown("refresh");
+      // the default CA for new certificates (none unless chosen under "Manage saved CAs") is preselected
+      if (d.default && $("#ca").dropdown("get value") == ""){
+        $("#ca").dropdown("set selected", "profile:" + d.default);
+      }
     });
     let defaultDnsProfile = "";
     $.get("/api/acme/profiles/dns", function(d){
@@ -909,15 +915,17 @@
         return;
       }
       var email = $("#caRegisterEmail").val();
-      if (email == ""){
+      var ca = $("#ca").dropdown("get value");
+      // a saved CA with its own registration email does not need the ACME email
+      var profileHasEmail = ca.startsWith("profile:") && !!caProfileEmails[ca.substring(8)];
+      if (email == "" && !profileHasEmail){
         parent.msgbox("ACME renew email is not set", false)
         if (callback != undefined){callback(false);}
         return;
       }
 
-      var ca = $("#ca").dropdown("get value");
       var caURL = "";
-      var caProfile = "";
+      var caProfile = "none"; // a CA picked in this dialog is an explicit choice: no saved CA unless one is selected
       if (ca == "Custom ACME Server") {
         ca = "custom";
         caURL = $("#caURL").val();

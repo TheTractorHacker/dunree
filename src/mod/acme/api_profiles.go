@@ -55,7 +55,7 @@ func (a *ACMEHandler) HandleKeyType(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, map[string]any{"default": a.DefaultKeyTypePref(), "options": KeyTypeNames})
 }
 
-// HandleCAProfiles: GET lists (secrets masked) with the built-in CA names; POST op=save|delete.
+// HandleCAProfiles: GET lists (secrets masked) with the built-in CA names and the default id; POST op=save|delete|setDefault|assign.
 func (a *ACMEHandler) HandleCAProfiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		op, _ := utils.PostPara(r, "op")
@@ -69,6 +69,7 @@ func (a *ACMEHandler) HandleCAProfiles(w http.ResponseWriter, r *http.Request) {
 			p.EABHmac, _ = utils.PostPara(r, "eabHmac")
 			p.Profile, _ = utils.PostPara(r, "profile")
 			p.SkipTLS, _ = utils.PostBool(r, "skipTLS")
+			p.Email, _ = utils.PostPara(r, "email")
 			id, err := a.SaveCAProfile(p)
 			if err != nil {
 				utils.SendErrorResponse(w, jsonEscape(err.Error()))
@@ -78,6 +79,23 @@ func (a *ACMEHandler) HandleCAProfiles(w http.ResponseWriter, r *http.Request) {
 		case "delete":
 			id, _ := utils.PostPara(r, "id")
 			if err := a.DeleteCAProfile(id); err != nil {
+				utils.SendErrorResponse(w, jsonEscape(err.Error()))
+				return
+			}
+			utils.SendOK(w)
+		case "setDefault":
+			// the CA profile for new certificates; an empty id clears it
+			id, _ := utils.PostPara(r, "id")
+			if err := a.SetDefaultCAProfile(id); err != nil {
+				utils.SendErrorResponse(w, jsonEscape(err.Error()))
+				return
+			}
+			utils.SendOK(w)
+		case "assign":
+			// move an existing certificate to a profile (empty id: no profile) without issuing it again
+			cert, _ := utils.PostPara(r, "cert")
+			id, _ := utils.PostPara(r, "id")
+			if err := a.AssignCertCAProfile(cert, id); err != nil {
 				utils.SendErrorResponse(w, jsonEscape(err.Error()))
 				return
 			}
@@ -92,7 +110,7 @@ func (a *ACMEHandler) HandleCAProfiles(w http.ResponseWriter, r *http.Request) {
 	for _, p := range list {
 		masked = append(masked, p.Masked())
 	}
-	sendJSON(w, map[string]any{"profiles": masked, "builtin": BuiltinCANames()})
+	sendJSON(w, map[string]any{"profiles": masked, "builtin": BuiltinCANames(), "default": a.DefaultCAProfileID()})
 }
 
 // HandleDNSProfiles: GET lists (secrets masked) with the default id; POST op=save|delete|setDefault.
@@ -166,7 +184,7 @@ func (a *AutoRenewer) RenewOne(certName string) ([]string, error) {
 		info.PropTimeout = 300
 	}
 	_, lines, err := a.AcmeHandler.ObtainCertCapture(domains, certName, a.RenewerConfig.Email, info.AcmeName, info.AcmeUrl, info.SkipTLS, info.UseDNS, info.PropTimeout, strings.Join(info.DNSServers, ","), info.DisableRecursiveNssCheck, info.DisableAuthoritativeNssCheck, ObtainOptions{
-		KeyType: info.KeyType, Profile: info.AcmeProfile, CAProfileID: info.CAProfileID, DNSProfileID: info.DNSProfileID,
+		KeyType: info.KeyType, Profile: info.AcmeProfile, CAProfileID: info.CAProfileID, DNSProfileID: info.DNSProfileID, FromMetadata: true,
 	})
 	return lines, err
 }
@@ -179,8 +197,12 @@ func (a *AutoRenewer) HandleRenewCertNow(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if a.RenewerConfig.Email == "" {
-		utils.SendErrorResponse(w, "ACME email is not set (ACME page)")
-		return
+		// a certificate whose CA profile has its own registration email does not need the global one
+		info, ierr := LoadCertInfoJSON(filepath.Join(a.CertFolder, filepath.Base(name)+".json"))
+		if ierr != nil || a.AcmeHandler.caProfileEmail(info.CAProfileID) == "" {
+			utils.SendErrorResponse(w, "ACME email is not set (ACME page)")
+			return
+		}
 	}
 	lines, rerr := a.RenewOne(name)
 	res := map[string]any{"ok": rerr == nil, "log": lines}

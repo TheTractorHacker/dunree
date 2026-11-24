@@ -33,6 +33,12 @@ func (m *Manager) HandleStatus(w http.ResponseWriter, r *http.Request) {
 		"primaryFingerprint": cfg.PrimaryFingerprint,
 		"syncInterval":       cfg.SyncIntervalSeconds,
 		"syncCerts":          cfg.SyncCerts,
+		"syncSettings":       cfg.SyncSettings,
+		"syncSettingsAvail":  m.opt.ExportSettings != nil,
+		"keepLocalListener":  cfg.KeepLocalListener,
+		"sharedSsoSessions":  cfg.SharedSSOSessions,
+		"sharedSsoActive":    m.SharedSSOSessionsActive(),
+		"sharedSsoRestart":   m.SharedSSORestartRequired(),
 		"healthDisabled":     cfg.HealthDisabled,
 		"healthAllow":        cfg.HealthAllow,
 		"healthPath":         HealthPath,
@@ -103,6 +109,29 @@ func (m *Manager) HandleConfig(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		u.SyncCerts = &b
+	}
+	if v, ok := has("syncSettings"); ok {
+		b := v == "true"
+		if b && !m.Config().SyncSettings {
+			if m.opt.ExportSettings == nil {
+				writeErr(w, "this build cannot sync settings")
+				return
+			}
+			//SyncSettings ships password hashes, 2FA secrets and SSO client secrets to every follower: explicit acknowledge required
+			if r.PostForm.Get("ackSyncSettings") != "true" {
+				writeErr(w, "Syncing settings sends the SSO portal users (password hashes, 2FA secrets) and the SSO provider client secrets to the followers. Confirm that you want this by sending ackSyncSettings=true.")
+				return
+			}
+		}
+		u.SyncSettings = &b
+	}
+	if v, ok := has("keepLocalListener"); ok {
+		b := v == "true"
+		u.KeepLocalListener = &b
+	}
+	if v, ok := has("sharedSsoSessions"); ok {
+		b := v == "true"
+		u.SharedSSOSessions = &b
 	}
 	if v, ok := has("healthDisabled"); ok {
 		b := v == "true"
@@ -186,12 +215,35 @@ var nodeLocalProxyPaths = map[string]bool{
 	"/api/proxy/templates/save": true, "/api/proxy/templates/delete": true,
 }
 
+// Listener settings a follower receives with the settings sync unless it keeps
+// its own (Config.KeepLocalListener).
+var syncedListenerPaths = map[string]bool{
+	"/api/proxy/setIncoming": true, "/api/proxy/useHttpsRedirect": true, "/api/proxy/listenPort80": true,
+	"/api/cert/tls": true, "/api/cert/tlsMinVersion": true, "/api/cert/tlsCipherProfile": true,
+}
+
+// isSyncedSettingsWrite reports whether a write targets settings that came
+// with the settings sync: the SSO providers, the ZorxAuth users and options
+// and, unless the node keeps its own, the listener settings.
+func isSyncedSettingsWrite(p string, keepLocalListener bool) bool {
+	if strings.HasPrefix(p, "/api/sso/") {
+		return true
+	}
+	return !keepLocalListener && syncedListenerPaths[p]
+}
+
 // isSyncedWrite reports whether a request would modify synced state.
 func (m *Manager) isSyncedWrite(r *http.Request, syncCerts bool) bool {
 	if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
 		return false
 	}
 	p := r.URL.Path
+	m.mu.RLock()
+	settingsSynced, keepLocal := m.status.SettingsSynced, m.cfg.KeepLocalListener
+	m.mu.RUnlock()
+	if settingsSynced && isSyncedSettingsWrite(p, keepLocal) {
+		return true
+	}
 	if strings.HasPrefix(p, "/api/proxy/") {
 		return !nodeLocalProxyPaths[p]
 	}

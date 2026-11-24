@@ -24,6 +24,8 @@ import (
 	  POST /api/botrules/allowua               ep, op ("add"|"remove"), pattern: the per-site User-Agent allow list (ProxyEndpoint.BotAllowUA)
 	  GET  /api/headerrules/get?ep=<rule>      header rules of a proxy rule
 	  POST /api/headerrules/set                ep, rules (JSON array of HeaderRule)
+	       optional: mode (all | any), except (JSON array of addresses / CIDRs that skip the check); left out = kept
+	  GET  /api/headerrules/get?ep=..&meta=true  {Mode, Except, Rules} instead of the plain list
 */
 
 var (
@@ -209,6 +211,26 @@ func HandleHeaderRulesGet(w http.ResponseWriter, r *http.Request) {
 		}
 		masked = append(masked, &c)
 	}
+	//meta=true: the rules together with the rule set options. Without it the answer stays the plain list.
+	if meta, _ := utils.GetPara(r, "meta"); meta == "true" {
+		except := target.HeaderRulesExcept
+		if except == nil {
+			except = []string{}
+		}
+		mode := target.HeaderRulesMode
+		if mode == "" {
+			mode = dynamicproxy.HeaderRulesModeAll
+		}
+		out := map[string]interface{}{"Mode": mode, "Except": except, "Rules": masked}
+		//A hand-edited config can hold a rule set the proxy refuses to run (the site then answers 503): name the reason.
+		//The message never carries a secret: it names the rule number, a pattern, a mode or an address.
+		if err := dynamicproxy.ValidateHeaderRuleSet(rules, target.HeaderRulesMode, target.HeaderRulesExcept); err != nil && len(rules) > 0 {
+			out["Invalid"] = err.Error()
+		}
+		js, _ := json.Marshal(out)
+		utils.SendJSONResponse(w, string(js))
+		return
+	}
 	js, _ := json.Marshal(masked)
 	utils.SendJSONResponse(w, string(js))
 }
@@ -231,6 +253,23 @@ func HandleHeaderRulesSet(w http.ResponseWriter, r *http.Request) {
 		utils.SendErrorResponse(w, "rules must be a JSON array")
 		return
 	}
+	//Optional rule set options; a request without them keeps what is stored
+	mode, modeErr := utils.PostPara(r, "mode")
+	var except []string
+	exceptRaw, exceptErr := utils.PostPara(r, "except")
+	if exceptErr == nil {
+		if err := json.Unmarshal([]byte(exceptRaw), &except); err != nil {
+			utils.SendErrorResponse(w, "except must be a JSON array of addresses")
+			return
+		}
+		kept := except[:0]
+		for _, e := range except {
+			if e = strings.TrimSpace(e); e != "" {
+				kept = append(kept, e)
+			}
+		}
+		except = kept
+	}
 	if err := applyNetworkingChange(ep, func(e *dynamicproxy.ProxyEndpoint) error {
 		for i, nr := range rules {
 			if nr == nil || (nr.Match != "" && nr.Match != dynamicproxy.HeaderMatchEquals) {
@@ -247,10 +286,28 @@ func HandleHeaderRulesSet(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		if err := dynamicproxy.ValidateHeaderRules(rules); err != nil {
+		newMode, newExcept := e.HeaderRulesMode, e.HeaderRulesExcept
+		if modeErr == nil {
+			newMode = mode
+		}
+		if exceptErr == nil {
+			newExcept = except
+		}
+		if len(rules) == 0 {
+			//The options belong to the rules: without rules nothing is checked, and a mode or exception list left
+			//behind would silently apply to the rules a later client adds without knowing about it
+			newMode, newExcept = "", nil
+		}
+		if err := dynamicproxy.ValidateHeaderRuleSet(rules, newMode, newExcept); err != nil {
 			return err
 		}
-		e.HeaderRules = rules
+		if newMode == dynamicproxy.HeaderRulesModeAll {
+			newMode = "" //the default is not written to the config file
+		}
+		if len(newExcept) == 0 {
+			newExcept = nil
+		}
+		e.HeaderRules, e.HeaderRulesMode, e.HeaderRulesExcept = rules, newMode, newExcept
 		return nil
 	}); err != nil {
 		utils.SendErrorResponse(w, err.Error())

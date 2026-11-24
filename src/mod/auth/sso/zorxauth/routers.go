@@ -21,14 +21,8 @@ func (ar *AuthRouter) RequestIsAuthenticatedInHost(w http.ResponseWriter, r *htt
 		return false
 	}
 
-	// Check if session exists in store
-	sessionData, exists := ar.cookieIdStore.Load(cookie.Value)
-	if !exists {
-		return false
-	}
-
-	// Check if session has expired
-	browserSession, ok := sessionData.(*BrowserSession)
+	// Check if session exists in store (or is a valid signed token in shared session mode)
+	browserSession, ok := ar.loadBrowserSession(cookie.Value)
 	if !ok {
 		return false
 	}
@@ -48,12 +42,7 @@ func (ar *AuthRouter) RequestIsAuthenticatedInSSO(w http.ResponseWriter, r *http
 		return false, ""
 	}
 
-	sessionData, exists := ar.gatewaySessionStore.Load(cookie.Value)
-	if !exists {
-		return false, ""
-	}
-
-	gatewaySession, ok := sessionData.(*GatewaySession)
+	gatewaySession, ok := ar.loadGatewaySession(cookie.Value)
 	if !ok {
 		return false, ""
 	}
@@ -120,27 +109,15 @@ func (ar *AuthRouter) handleSessionSetCallback(w http.ResponseWriter, r *http.Re
 		redirectURL = "/" // default to home page if redirect URL is missing
 	}
 
-	usernameObj, exists := ar.sessionIdStore.Load(sessionID)
-	if !exists {
+	// One-time use validation code (looked up and used up in one step)
+	username, ok := ar.consumeValidationCode(sessionID)
+	if !ok {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(invalidHTML)
 		return errors.New("validation session not found or expired")
 	}
 
-	username, ok := usernameObj.(string)
-	if !ok || username == "" {
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(invalidHTML)
-		return errors.New("validation session is invalid")
-	}
-
-	// One-time use validation code
-	ar.sessionIdStore.Delete(sessionID)
-
-	// Generate long living session cookie for browser with the username and expiry time
-	browserSessionID := ar.generateSessionToken()
 	rememberMe := strings.EqualFold(r.URL.Query().Get("remember_me"), "true") || r.URL.Query().Get("remember_me") == "on"
 	cookieDuration := ar.Options.CookieDuration
 	if rememberMe {
@@ -156,6 +133,8 @@ func (ar *AuthRouter) handleSessionSetCallback(w http.ResponseWriter, r *http.Re
 
 	// Create browser session with expiry time
 	expiryTime := time.Now().Add(time.Duration(cookieDuration) * time.Second)
+	// Long living session cookie for the browser: a random id, or a signed token in shared session mode
+	browserSessionID := ar.issueSessionToken(tokenKindBrowser, username, expiryTime, rememberMe)
 	browserSession := &BrowserSession{
 		Username: username,
 		Expiry:   expiryTime,

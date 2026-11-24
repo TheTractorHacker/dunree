@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,6 +24,10 @@ type Logger struct {
 	CurrentLogFile string        //Current writing filename
 	RotateOption   *RotateOption //Options for log rotation, see rotate.go
 	Sites          *SiteLogs     `json:"-"` //Optional per-site request logs, see sitelog.go (nil = global log only)
+
+	//ECHField, when set, returns the ECH result of a request for the request log ("accepted outer=name"), or ""
+	//for no field. Optional and off by default: without it the line format is unchanged. See trafficlog.go.
+	ECHField func(r *http.Request) string `json:"-"`
 
 	//Internal
 	logRotateTicker *time.Ticker

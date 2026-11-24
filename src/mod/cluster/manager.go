@@ -36,6 +36,9 @@ type Config struct {
 	PrimaryFingerprint  string   `json:"primaryFingerprint,omitempty"` //optional SHA-256 pin of the primary admin TLS leaf certificate
 	SyncIntervalSeconds int      `json:"syncIntervalSeconds,omitempty"`
 	SyncCerts           bool     `json:"syncCerts,omitempty"`
+	SyncSettings        bool     `json:"syncSettings,omitempty"`      //primary: also offer the database-stored settings (listener, SSO providers, ZorxAuth users)
+	KeepLocalListener   bool     `json:"keepLocalListener,omitempty"` //follower: keep this node's own listening ports when settings are synced
+	SharedSSOSessions   bool     `json:"sharedSsoSessions,omitempty"` //any role, off by default: SSO portal (ZorxAuth) sessions become signed tokens every node with the same secret accepts (needs a restart)
 	HealthDisabled      bool     `json:"healthDisabled,omitempty"`
 	HealthAllow         []string `json:"healthAllow,omitempty"`
 }
@@ -55,8 +58,13 @@ type Options struct {
 	// Validate optionally checks a snapshot against the real config schemas
 	// before anything is written (JSON validity is always checked).
 	Validate func(p *Payload) error
-	Logf     func(format string, a ...any)
-	Now      func() time.Time
+	// ExportSettings returns the database-stored settings a primary offers
+	// when Config.SyncSettings is on: file name ("sso.json") to JSON content.
+	// The result must be deterministic (it is part of the content hash). Nil
+	// means this build cannot sync settings.
+	ExportSettings func() (map[string][]byte, error)
+	Logf           func(format string, a ...any)
+	Now            func() time.Time
 	// HTTPClient is used by followers and fleet nodes; nil builds one from the config.
 	HTTPClient *http.Client
 	// Actor names the admin who issued a hub action (audit log). Optional.
@@ -77,6 +85,7 @@ type Manager struct {
 	mu          sync.RWMutex
 	cfg         Config
 	bootSecret  string //secret in effect when the process started (session keys)
+	bootShared  bool   //Config.SharedSSOSessions when the process started
 	secretFlag  bool
 	followerRun *followerRunner
 
@@ -120,6 +129,7 @@ func NewManager(opt Options) (*Manager, error) {
 		m.cfg.Role = RoleStandalone
 	}
 	m.bootSecret = m.cfg.Secret
+	m.bootShared = m.cfg.SharedSSOSessions
 	if err := m.health.Configure(m.cfg.HealthAllow, m.cfg.HealthDisabled); err != nil {
 		return nil, fmt.Errorf("cluster.json health allow list: %w", err)
 	}
@@ -182,6 +192,25 @@ func (m *Manager) KeyMaterial(nodeUUID, purpose string) string {
 	return KeyMaterial(m.bootSecret, nodeUUID, purpose)
 }
 
+// SharedSSOSessionKey returns the key for signed SSO portal (ZorxAuth)
+// sessions that every node of the cluster accepts. ok is false, and the
+// sessions stay random ids kept per node, unless a cluster secret is set AND
+// Config.SharedSSOSessions was switched on (both as of process start): signed
+// sessions change what a logout reaches, so a secret alone does not enable them.
+func (m *Manager) SharedSSOSessionKey(nodeUUID string) (key []byte, ok bool) {
+	if m == nil || !m.bootShared || m.bootSecret == "" {
+		return nil, false
+	}
+	return []byte(KeyMaterial(m.bootSecret, nodeUUID, PurposeZorxAuth)), true
+}
+
+// SharedSSOSessionsActive reports whether this process runs with signed SSO
+// portal sessions.
+func (m *Manager) SharedSSOSessionsActive() bool {
+	_, ok := m.SharedSSOSessionKey("")
+	return ok
+}
+
 // AllowLocalEdits reports -cluster_allow_local_edits.
 func (m *Manager) AllowLocalEdits() bool { return m.opt.AllowLocalEdits }
 
@@ -219,6 +248,9 @@ type ConfigUpdate struct {
 	PrimaryFingerprint  *string
 	SyncIntervalSeconds *int
 	SyncCerts           *bool
+	SyncSettings        *bool
+	KeepLocalListener   *bool
+	SharedSSOSessions   *bool
 	HealthDisabled      *bool
 	HealthAllow         *[]string
 }
@@ -270,6 +302,15 @@ func (m *Manager) Update(u ConfigUpdate) error {
 	if u.SyncCerts != nil {
 		next.SyncCerts = *u.SyncCerts
 	}
+	if u.SyncSettings != nil {
+		next.SyncSettings = *u.SyncSettings
+	}
+	if u.KeepLocalListener != nil {
+		next.KeepLocalListener = *u.KeepLocalListener
+	}
+	if u.SharedSSOSessions != nil {
+		next.SharedSSOSessions = *u.SharedSSOSessions
+	}
 	if u.HealthDisabled != nil {
 		next.HealthDisabled = *u.HealthDisabled
 	}
@@ -289,6 +330,10 @@ func (m *Manager) Update(u ConfigUpdate) error {
 	if _, err := ParseAllowList(next.HealthAllow); err != nil {
 		m.mu.Unlock()
 		return fmt.Errorf("health allow list: %w", err)
+	}
+	if next.SharedSSOSessions && !m.cfg.SharedSSOSessions && next.Secret == "" {
+		m.mu.Unlock()
+		return errors.New("shared SSO portal sign-ins need a cluster secret; set one first")
 	}
 	prev := m.cfg
 	m.cfg = next
@@ -341,6 +386,14 @@ func (m *Manager) RestartRequired() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.cfg.Secret != m.bootSecret
+}
+
+// SharedSSORestartRequired is true when the shared SSO portal sessions switch
+// changed since start: the session format is chosen once per process.
+func (m *Manager) SharedSSORestartRequired() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.cfg.SharedSSOSessions != m.bootShared
 }
 
 // Start launches the follower loop if the role requires it.

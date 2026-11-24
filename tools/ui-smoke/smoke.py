@@ -47,6 +47,9 @@ ap.add_argument("--live-map-only", action="store_true", help="run only the Statu
 ap.add_argument("--live-sites-only", action="store_true", help="run only the Sites table Live column scenario (live_sites_smoke.py; proxy port must be UI port + 1, UI port + 2 free)")
 ap.add_argument("--newrule-cert-only", action="store_true", help="run only the New proxy rule certificate choice scenario (newrule_cert_smoke.py)")
 ap.add_argument("--db-usage-only", action="store_true", help="run only the System > Settings Database card scenario (dbusage_smoke.py)")
+ap.add_argument("--ca-profiles-only", action="store_true", help="run only the saved CA scenario (ca_profiles_smoke.py, issue #233: registration email, default CA, saving the ACME page settings as a saved CA, CA of existing certificates; makes and removes its own saved CAs and one certificate, run it on a throw-away instance; needs openssl)")
+ap.add_argument("--renew-notice-only", action="store_true", help="run only the certificate.renewing scenario (renew_notice_smoke.py: Event Hooks lead time and opt-in event, Notifications channel editor; makes and removes its own webhook, run it on a throw-away instance)")
+ap.add_argument("--tpl-default-only", action="store_true", help="run only the default rule template scenario (tpl_default_smoke.py: Templates > Default for new rules, preselection in the New proxy rule forms; makes and removes its own template and rules, run it on a throw-away instance)")
 ap.add_argument("--enterprise-only", action="store_true", help="run only the Phase 2 enterprise GUI scenario (enterprise_smoke.py: Security Center Deployment / Network exposure / Audit log, site editor limits and upstream trust; changes and restores instance-wide settings, UI port + 2 must be free)")
 ap.add_argument("--crowdsec-only", action="store_true", help="run only the CrowdSec bouncer + hardened security headers GUI scenario (crowdsec_smoke.py: starts a fake LAPI on UI port + 3 and an upstream on + 2, the proxy port must be UI port + 1; changes and restores instance-wide settings)")
 ap.add_argument("--phase4-only", action="store_true", help="run only the Phase 4 GUI scenario (phase4_smoke.py: Security overview, Network plan, Config Tools export / import dry run, Fleet certs confirmation; UI port + 2 must be free; creates and removes its own rules, plan and certificate, run it on a throw-away instance)")
@@ -55,6 +58,8 @@ ap.add_argument("--errorpages-only", action="store_true", help="run only the Sit
 ap.add_argument("--storage-only", action="store_true", help="run only the blocked-storage and dark text colour scenario (storage_smoke.py: localStorage / sessionStorage throw, every page still opens, the theme menu works for the session; kit colours survive the dark theme; reads only)")
 ap.add_argument("--plugins-only", action="store_true", help="run only the Plugin Manager scenario (plugins_smoke.py: status badges, Details row, escaping of a hostile manifest, Supervision form; the plugin API is mocked, so any instance works)")
 ap.add_argument("--plugins-live", action="store_true", help="with --plugins-only: the instance was prepared by plugins_run.sh (three real chaos plugins); the part against the real plugin API must run")
+ap.add_argument("--headerrules-only", action="store_true", help="run only the Header rules options scenario (headerrules_smoke.py, issue #245: at least one rule, be absent, own status code, remove before forwarding, address exceptions; makes and removes its own proxy rule, run it on a throw-away instance, proxy port must be UI port + 1)")
+ap.add_argument("--authaudit-only", action="store_true", help="run only the Auth audit scenario (authaudit_smoke.py: login tag drift, Fix tag, the optional automatic login tag; makes and removes its own rules, run it on a throw-away instance)")
 ap.add_argument("--zrok-fake", default=os.environ.get("SMOKE_ZROK_FAKE", ""), help="path of a fake zrok script; enables the zrok flow (the instance needs -allow_external_tools)")
 ap.add_argument("--allow", action="append", default=[], help="regex of messages whose failure is tolerated")
 args = ap.parse_args()
@@ -3089,6 +3094,9 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "edit
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "visitors_drawer_smoke.py")).read(), "visitors_drawer_smoke.py", "exec"))  # defines visitors_drawer_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "newrule_cert_smoke.py")).read(), "newrule_cert_smoke.py", "exec"))  # defines newrule_cert_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dbusage_smoke.py")).read(), "dbusage_smoke.py", "exec"))  # defines dbusage_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tpl_default_smoke.py")).read(), "tpl_default_smoke.py", "exec"))  # defines tpl_default_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "renew_notice_smoke.py")).read(), "renew_notice_smoke.py", "exec"))  # defines renew_notice_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ca_profiles_smoke.py")).read(), "ca_profiles_smoke.py", "exec"))  # defines ca_profiles_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "topnav_smoke.py")).read(), "topnav_smoke.py", "exec"))  # defines topnav_ui, topnav_auth_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ech_fallback_smoke.py")).read(), "ech_fallback_smoke.py", "exec"))  # defines ech_fallback_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "live_map_smoke.py")).read(), "live_map_smoke.py", "exec"))  # defines live_map_ui
@@ -3100,7 +3108,8 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "base
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugins_smoke.py")).read(), "plugins_smoke.py", "exec"))  # defines plugins_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "errorpages_smoke.py")).read(), "errorpages_smoke.py", "exec"))  # defines errorpages_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage_smoke.py")).read(), "storage_smoke.py", "exec"))  # defines storage_ui
-
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "authaudit_smoke.py")).read(), "authaudit_smoke.py", "exec"))  # defines authaudit_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "headerrules_smoke.py")).read(), "headerrules_smoke.py", "exec"))  # defines headerrules_ui
 
 def main():
     with sync_playwright() as p:
@@ -3120,8 +3129,28 @@ def main():
         if pg.evaluate("location.hash") != want:
             fail("quickstart", f"landed on {pg.evaluate('location.hash')}, expected {want} (quickstart state {qs})")
 
+        if args.authaudit_only:
+            authaudit_ui(pg, ctx)
+            b.close()
+            return
+        if args.headerrules_only:
+            headerrules_ui(pg, ctx)
+            b.close()
+            return
         if args.db_usage_only:
             dbusage_ui(pg, ctx)
+            b.close()
+            return
+        if args.tpl_default_only:
+            tpl_default_ui(pg, ctx)
+            b.close()
+            return
+        if args.renew_notice_only:
+            renew_notice_ui(pg, ctx)
+            b.close()
+            return
+        if args.ca_profiles_only:
+            ca_profiles_ui(pg, ctx)
             b.close()
             return
         if args.storage_only:

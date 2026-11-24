@@ -76,7 +76,7 @@
             </div>
             <p class="zxs-example" id="vdirExample" aria-live="polite" style="margin: 0 0 var(--zx-space-4);"></p>
             <label class="zxs-check">
-                <input type="checkbox" id="vdReqTls">
+                <input type="checkbox" id="vdReqTls" onchange="syncVdirH2CState();">
                 <span><b>The target needs a TLS connection</b><small>Tick this if the target address starts with https://. Zoraxy checks the target and ticks it for you when it can.</small></span>
             </label>
 
@@ -87,6 +87,10 @@
                     <label class="zxs-check" style="margin-bottom:0;">
                         <input type="checkbox" id="vdSkipTLSValidation">
                         <span><b>Ignore TLS/SSL certificate errors</b><small>For targets with a self-signed or expired certificate (not recommended)</small></span>
+                    </label>
+                    <label class="zxs-check" style="margin-top: var(--zx-space-3); margin-bottom:0;">
+                        <input type="checkbox" id="vdH2C" aria-describedby="vdH2CHelp">
+                        <span><b>HTTP/2 without TLS (h2c)</b><small id="vdH2CHelp">For gRPC services on plain HTTP/2 behind this path, such as the NetBird signal and management services. Only for targets without TLS. Leave off for ordinary web servers.</small><small id="vdH2CTlsNote" hidden>Not available while the target needs a TLS connection: with TLS the target chooses HTTP/2 by itself.</small></span>
                     </label>
                 </div>
             </details>
@@ -274,6 +278,9 @@
                 tls = vdir.SkipCertValidations ? `<span class="zxs-fact" title="${ZxUI.esc(t("TLS/SSL mode without verification"))}"><i class="lock open icon" aria-hidden="true"></i>${ZxUI.esc(t("TLS, not verified"))}</span>`
                     : `<span class="zxs-fact zxs-fact--on" title="${ZxUI.esc(t("TLS Mode"))}"><i class="lock icon" aria-hidden="true"></i>TLS</span>`;
             }
+            if (vdirUsesH2C(vdir)){
+                tls = `<span class="zxs-fact" title="${ZxUI.esc(t("HTTP/2 without TLS (h2c), for gRPC"))}">h2c</span>`;
+            }
             let payload = JSON.stringify(vdir).hexEncode();
             let same = (last === endpoint); last = endpoint;
             list.append(`<tr vdirid="${vdir.MatchingPath.hexEncode()}" class="vdirEntry ${same ? "zxs-samehost" : ""}" data-ep="${ZxUI.esc(endpoint)}" payload="${payload}">
@@ -317,7 +324,8 @@
             $("#virtualDirectoryDomain").val(route.Domain);
             $("#vdReqTls").prop("checked", !!route.RequireTLS);
             $("#vdSkipTLSValidation").prop("checked", !!route.SkipCertValidations);
-            if (route.SkipCertValidations){ document.getElementById("advanceVdirRules").open = true; }
+            $("#vdH2C").prop("checked", vdirUsesH2C(route));
+            if (route.SkipCertValidations || vdirUsesH2C(route)){ document.getElementById("advanceVdirRules").open = true; }
         }else{
             if (document.getElementById("newVDSection").hidden){ resetVdirForm(); }
             if (ep){ $("#hostDomainList").val(ep); }
@@ -325,6 +333,7 @@
         }
         vdirClearErrors();
         updateVdirExample();
+        syncVdirH2CState();
         let card = document.getElementById("newVDSection");
         card.hidden = false;
         syncVdirHeaderBtn();
@@ -378,9 +387,24 @@
                     }else if (data.protocol == "http"){
                         $("#vdReqTls").prop("checked", false);
                     }
+                    syncVdirH2CState();
                 }
             });
         }
+    }
+
+    //Same rule as the server (UsesH2C): a stored h2c flag only counts on a target without TLS,
+    //and https:// in the target address means TLS as well
+    function vdirUsesH2C(v){
+        return !!(v && v.H2C) && !v.RequireTLS && !/^https:\/\//i.test(String(v.Domain || "").trim());
+    }
+
+    //h2c is HTTP/2 over a plain connection: it cannot be combined with TLS to the target
+    function syncVdirH2CState(){
+        let tlsOn = $("#vdReqTls")[0].checked;
+        if (tlsOn){ $("#vdH2C").prop("checked", false); }
+        $("#vdH2C").prop("disabled", tlsOn).closest(".zxs-check").toggleClass("is-disabled", tlsOn);
+        $("#vdH2CTlsNote").prop("hidden", !tlsOn);
     }
 
     function reloadVdirList(){
@@ -393,6 +417,7 @@
         var targetDomain = $("#virtualDirectoryDomain").val().trim();
         var reqTLS = $("#vdReqTls")[0].checked;
         var skipTLSValidation = $("#vdSkipTLSValidation")[0].checked;
+        var useH2C = $("#vdH2C")[0].checked && !reqTLS;
 
         //The host comes from the form; the legacy fields are the fallback for scripts that set them directly
         let endpoint = $("#hostDomainList").val() || "";
@@ -418,6 +443,7 @@
                 "domain":targetDomain,
                 "reqTLS":reqTLS,
                 "skipValid":skipTLSValidation,
+                "h2c": useH2C,
             },
             success: function(data){
                 if (data.error != undefined){
@@ -443,6 +469,8 @@
         $("#virtualDirectoryDomain").val("");
         $("#vdReqTls").prop("checked", false);
         $("#vdSkipTLSValidation").prop("checked", false);
+        $("#vdH2C").prop("checked", false);
+        syncVdirH2CState();
         updateVdirExample();
     }
 
@@ -503,6 +531,7 @@
         let newDomain = $("#virtualDirectoryDomain").val().trim();
         let requireTLS = $("#vdReqTls")[0].checked;
         let skipValidation = $("#vdSkipTLSValidation")[0].checked;
+        let useH2C = $("#vdH2C")[0].checked && !requireTLS;
 
         $.cjax({
             url: "/api/proxy/vdir/edit",
@@ -513,7 +542,8 @@
                 "domain":newDomain,
                 "path":path,
                 "reqTLS":requireTLS,
-                "skipValid": skipValidation
+                "skipValid": skipValidation,
+                "h2c": useH2C
             },
             success: function(data){
                 if (data.error != undefined){

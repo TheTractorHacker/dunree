@@ -26,6 +26,11 @@ type AuthAuditRow struct {
 	Weaknesses []string // empty = no known weakening
 	Tags       []string
 	WantedTag  string // auth:<method>
+	// AuthTags are the auth:* tags the rule carries now. TagDrift is set when there is at least one and they do
+	// not say exactly WantedTag: the tag records the login somebody intended, the method is what is enforced.
+	// A rule without any auth:* tag is untagged, not drifting.
+	AuthTags []string
+	TagDrift bool
 }
 
 // AuthMethodName returns the stable audit name of an auth method
@@ -51,6 +56,13 @@ func AuditAuth(pe *ProxyEndpoint) AuthAuditRow {
 		row.Method = AuthMethodName(ap.AuthMethod)
 	}
 	row.WantedTag = AuthTagPrefix + row.Method
+	row.AuthTags = []string{}
+	for _, t := range pe.Tags {
+		if strings.HasPrefix(t, AuthTagPrefix) {
+			row.AuthTags = append(row.AuthTags, t)
+		}
+	}
+	row.TagDrift = len(row.AuthTags) > 0 && !(len(row.AuthTags) == 1 && row.AuthTags[0] == row.WantedTag)
 	if ap == nil || ap.AuthMethod == AuthMethodNone {
 		return row
 	}

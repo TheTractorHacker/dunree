@@ -19,6 +19,7 @@ var shareableRoots = []string{
 var neverExport = []struct{ p, why string }{
 	{"cluster.json", "cluster secret"},
 	{".cluster/", "Fleet keys and cluster state"},
+	{"dbsync/", "settings synced from a cluster primary (SSO users, provider secrets)"},
 	{"notify.json", "notification channel secrets"},
 	{"waf_challenge.key", "WAF challenge signing key"},
 	{"crowdsec/", "CrowdSec API key vault"},

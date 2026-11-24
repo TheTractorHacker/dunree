@@ -83,10 +83,21 @@ func (c *Controller) UpdatePublicIP() error {
 		return errors.New("invalid IP address")
 	}
 
-	c.ServerPublicIP = pubIP.String()
-	c.Options.Logger.PrintAndLog("access", "Public IP address updated to: "+c.ServerPublicIP, nil)
+	c.setPublicIP(pubIP.String())
+	c.Options.Logger.PrintAndLog("access", "Public IP address updated to: "+pubIP.String(), nil)
 	return nil
 }
+
+// PublicIP is the public address of this server as last looked up ("127.0.0.1" until the first
+// answer and when the lookup is off). Safe to call from any goroutine.
+func (c *Controller) PublicIP() string {
+	if p := c.publicIP.Load(); p != nil {
+		return *p
+	}
+	return ""
+}
+
+func (c *Controller) setPublicIP(ip string) { c.publicIP.Store(&ip) }
 
 func (c *Controller) IsLoopbackRequest(ipAddr string) bool {
 	loopbackIPs := []string{
@@ -96,7 +107,7 @@ func (c *Controller) IsLoopbackRequest(ipAddr string) bool {
 	}
 
 	// Check if the request is loopback from public IP
-	if ipAddr == c.ServerPublicIP {
+	if ipAddr == c.PublicIP() {
 		return true
 	}
 

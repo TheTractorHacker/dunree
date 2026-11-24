@@ -11,12 +11,39 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
 	"imuslab.com/zoraxy/mod/dynamicproxy"
 	"imuslab.com/zoraxy/mod/utils"
 )
+
+// validateVdirH2C refuses h2c together with TLS: h2c is HTTP/2 over a plain TCP connection,
+// a TLS target negotiates HTTP/2 by itself. Saying so beats storing a flag that does nothing.
+func validateVdirH2C(useH2C bool, reqTLS bool, domain string) error {
+	if !useH2C {
+		return nil
+	}
+	if reqTLS || strings.HasPrefix(strings.ToLower(strings.TrimSpace(domain)), "https://") {
+		return errors.New("h2c is HTTP/2 without TLS: switch off TLS for this target or leave h2c off")
+	}
+	return nil
+}
+
+// parseVdirH2C reads the h2c parameter. given is false when the request does not carry it
+// (missing or empty). A value that is neither true nor false is refused: reading "1" or "on"
+// as off would leave a script author believing the opt-in took.
+func parseVdirH2C(r *http.Request) (useH2C bool, given bool, err error) {
+	if raw, perr := utils.PostPara(r, "h2c"); perr != nil || strings.TrimSpace(raw) == "" {
+		return false, false, nil
+	}
+	useH2C, err = utils.PostBool(r, "h2c")
+	if err != nil {
+		return false, true, errors.New("h2c must be true or false")
+	}
+	return useH2C, true, nil
+}
 
 // List the Virtual directory under given proxy rule
 func ReverseProxyListVdir(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +128,17 @@ func ReverseProxyAddVdir(w http.ResponseWriter, r *http.Request) {
 	reqTLS, _ := utils.PostBool(r, "reqTLS")
 	skipValid, _ := utils.PostBool(r, "skipValid")
 
+	//h2c (HTTP/2 without TLS, for gRPC targets): off unless asked for
+	useH2C, _, err := parseVdirH2C(r)
+	if err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+	if err := validateVdirH2C(useH2C, reqTLS, domain); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+
 	//Load the target proxy endpoint from runtime
 	var targetProxyEndpoint *dynamicproxy.ProxyEndpoint
 	if eptype == "root" {
@@ -135,6 +173,7 @@ func ReverseProxyAddVdir(w http.ResponseWriter, r *http.Request) {
 		Domain:              domain,
 		RequireTLS:          reqTLS,
 		SkipCertValidations: skipValid,
+		H2C:                 useH2C,
 	}
 
 	//Add Virtual Directory Rule to this Proxy Endpoint
@@ -269,12 +308,28 @@ func ReverseProxyEditVdir(w http.ResponseWriter, r *http.Request) {
 
 	//Overwrite the target endpoint, keeping the enabled state of the old rule
 	wasDisabled := targetEndpoint.GetVirtualDirectoryRuleByMatchingPath(vdir).Disabled
+
+	//h2c: a request without the parameter (older scripts) keeps what is stored,
+	//except that switching TLS on (tick box or https:// in the target address) drops it,
+	//as h2c only exists without TLS
+	useH2C, h2cGiven, err := parseVdirH2C(r)
+	if err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
+	if !h2cGiven {
+		useH2C = targetEndpoint.GetVirtualDirectoryRuleByMatchingPath(vdir).H2C && validateVdirH2C(true, reqTLS, domain) == nil
+	} else if err := validateVdirH2C(useH2C, reqTLS, domain); err != nil {
+		utils.SendErrorResponse(w, err.Error())
+		return
+	}
 	newVdirRule := dynamicproxy.VirtualDirectoryEndpoint{
 		MatchingPath:        vdir,
 		Domain:              domain,
 		RequireTLS:          reqTLS,
 		SkipCertValidations: skipValid,
 		Disabled:            wasDisabled,
+		H2C:                 useH2C,
 	}
 
 	targetEndpoint.RemoveVirtualDirectoryRuleByMatchingPath(vdir)

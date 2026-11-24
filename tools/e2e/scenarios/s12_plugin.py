@@ -101,3 +101,56 @@ def plugin_reference_plugins():
         down = {(p.get("Spec") or {}).get("id"): (p.get("Status") or {}) for p in z.get("/api/plugins/list")}[fid]
         check(down.get("State") == "crashed", "killed filter is shown as %s" % down.get("State"))
         return "3 reference plugins running, contract version 1; filter: requests and responses marked, deny path=403 (upstream untouched); ui-api read the access rules with its key; events stats served; filter killed => 200 (fail open without consent), state crashed"
+
+
+@scenario("plugin_proxy_rule_events", ["149"])
+def plugin_proxy_rule_events():
+    """Issue #149: the event subscriber example (real process, SDK 1.2.0) gets proxyRuleAdded, proxyRuleEdited and
+    proxyRuleRemoved when a rule is created, changed and deleted through the admin API, and the API call example
+    reads the access rules with the SDK helper that sets the Bearer header."""
+    sub, call = "org.aroz.zoraxy.event_subscriber_example", "org.aroz.zoraxy.api_call_example"
+    names = ["event-subscriber-example", "api-call-example"]
+    with Zoraxy(plugins=[(n, build_example_plugin(n)) for n in names]) as z:
+        for pid in (sub, call):
+            _ensure_running(z, pid)
+
+        def running():
+            st = {(p.get("Spec") or {}).get("id"): (p.get("Status") or {}) for p in z.get("/api/plugins/list")}
+            return st if all(st.get(pid, {}).get("State") == "running" for pid in (sub, call)) else None
+        wait_for(running, timeout=15, msg="both example plugins to be running")
+
+        def page(pid):
+            code, body = z.api("/plugin.ui/%s/" % pid, method="GET", raw=True)
+            check(code == 200, "page of %s: HTTP %d" % (pid, code))
+            return body.decode("utf8", "replace")
+
+        def seen(name, host):
+            def look():
+                txt = page(sub)
+                for block in txt.split("<pre>")[1:]:
+                    ev = json.loads(block.split("</pre>")[0])
+                    if ev.get("name") == name and ev["data"].get("root_or_matching_domain") == host:
+                        return ev
+                return None
+            return wait_for(look, timeout=10, msg="%s for %s on the page of the subscriber" % (name, host))
+
+        z.add_rule("ev149.test", "127.0.0.1:9", tags="blue")
+        added = seen("proxyRuleAdded", "ev149.test")
+        check(set(added["data"]) == {"root_or_matching_domain", "matching_domain_alias", "is_root", "disabled", "tags"},
+              "payload of proxyRuleAdded: %s" % added["data"])
+        check(added["data"]["is_root"] is False and added["uuid"] and added["timestamp"], "proxyRuleAdded: %s" % added)
+        z.edit_rule("ev149.test", ratenum=7)
+        seen("proxyRuleEdited", "ev149.test")
+        z.del_rule("ev149.test")
+        removed = seen("proxyRuleRemoved", "ev149.test")
+        check(set(removed["data"]) == {"root_or_matching_domain", "is_root"}, "payload of proxyRuleRemoved: %s" % removed["data"])
+
+        # the API call example: four calls made with cfg.DoAPIRequest / cfg.NewAPIRequest of SDK 1.2.0
+        txt = page(call)
+        blocks = txt.split('<div class="response-block')[1:]
+        check(len(blocks) == 4, "the page of the API call example has %d result blocks" % len(blocks))
+        check("HTTP/1.1 200 OK" in blocks[0] and "Error fetching" not in blocks[0], "allowed endpoint with the helper: %s" % blocks[0][:400])
+        # (the fourth block, an endpoint of the admin API, is not checked: this Zoraxy runs with -noauth and answers it to anyone)
+        for i, what in ((1, "invalid key"), (2, "endpoint that is not permitted")):
+            check("HTTP/1.1 200" not in blocks[i] and "HTTP/1.1 4" in blocks[i], "%s was not refused: %s" % (what, blocks[i][:400]))
+        return "subscriber got proxyRuleAdded, proxyRuleEdited, proxyRuleRemoved for ev149.test (documented fields only); API call example: allowed endpoint 200 through the SDK helper, invalid key and unpermitted endpoint refused"

@@ -105,11 +105,17 @@ type AuthRouter struct {
 	Database *database.Database
 	Options  *AuthRouterOptions
 
+	// UsersManagedElsewhere, if set and true, makes the user portal refuse self-service changes
+	// (the user list is synced from a cluster primary and would be overwritten)
+	// (json:"-": the router is part of the proxy status that /api/proxy/status marshals)
+	UsersManagedElsewhere func() bool `json:"-"`
+
 	/* Internal */
 	sessionIdStore      sync.Map //sessionId -> userID
 	gatewaySessionStore sync.Map //sessionId -> *GatewaySession
 	cookieIdStore       sync.Map //browserSessionID (cookie value) -> *BrowserSession
 	gatewayServer       *GatewayServer
+	shared              sharedSessions //signed session tokens for HA (off without a key, see shared_session.go)
 
 	/* Group Policies */
 	groupPolicies sync.Map // id (string) -> *GroupPolicy

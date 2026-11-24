@@ -88,6 +88,12 @@ type ACMEHandler struct {
 
 	// OnEvent, when set, is called after every issuance attempt (success or failure). It must not block for long.
 	OnEvent func(CertEvent)
+	// BeforeOrder, when set, is called (issuance lock held) right before an order is sent to the CA,
+	// for first issuance, manual renewal and auto renewal alike. The issuer then waits for the returned
+	// duration (0 = start at once) before it contacts the CA. See RenewNotice (issue #178).
+	BeforeOrder func(RenewNotice) time.Duration
+	// sleepFn replaces time.Sleep for the BeforeOrder wait in tests
+	sleepFn func(time.Duration)
 	// logSink, when set (guarded by issueMu), additionally receives every log line of the running operation
 	logSink func(string)
 }
@@ -198,6 +204,15 @@ func (a *ACMEHandler) obtainCertLocked(domains []string, certificateName string,
 	if prevErr != nil {
 		prevInfo = &CertificateInfoJSON{}
 	}
+	if opts.FromMetadata && prevErr == nil {
+		// A renewal read the metadata before it waited for the issuance lock. The certificate may have
+		// been assigned to another CA profile in between (AssignCertCAProfile), so what counts is the
+		// metadata as it is now, not the copy the renewer loaded earlier (issue #233).
+		if opts.CAProfileID != prevInfo.CAProfileID {
+			a.Logf("The CA profile of "+certificateName+" changed while this renewal was waiting, using the current one", nil)
+		}
+		opts.CAProfileID, opts.Profile = prevInfo.CAProfileID, prevInfo.AcmeProfile
+	}
 	if opts.Profile == "" {
 		opts.Profile = prevInfo.AcmeProfile
 	}
@@ -221,7 +236,17 @@ func (a *ACMEHandler) obtainCertLocked(domains []string, certificateName string,
 			return false, err
 		}
 		caName, caUrl = "custom", caProfile.DirectoryURL
-		skipTLS = skipTLS || caProfile.SkipTLS
+		// The profile alone decides about TLS verification. The flag of the request or of an earlier
+		// issuance is not carried over: a certificate moved from a private CA ("ignore TLS errors") to a
+		// public one must not keep talking to the new CA without verification (issue #233).
+		if skipTLS && !caProfile.SkipTLS {
+			a.Logf("The CA profile "+caProfile.Name+" verifies TLS, the skip-TLS setting stored for "+certificateName+" is not used", nil)
+		}
+		skipTLS = caProfile.SkipTLS
+		if caProfile.Email != "" {
+			// the profile's own registration email; the global ACME email is only the fallback
+			email = caProfile.Email
+		}
 		if opts.Profile == "" {
 			opts.Profile = caProfile.Profile
 		}
@@ -259,7 +284,7 @@ func (a *ACMEHandler) obtainCertLocked(domains []string, certificateName string,
 	// is found.
 	var adminUser ACMEUser
 	accountLoaded := false
-	if loadedKey, loadedReg, ok := a.loadACMEAccount(caUrl, email); ok {
+	if loadedKey, loadedReg, ok := a.loadACMEAccountFor(caUrl, email, opts.CAProfileID); ok {
 		adminUser = ACMEUser{
 			Email:        email,
 			key:          loadedKey,
@@ -494,7 +519,7 @@ func (a *ACMEHandler) obtainCertLocked(domains []string, certificateName string,
 	// Persist a freshly registered account so future certificate requests and
 	// renewals reuse it instead of registering a brand new account each time.
 	if !accountLoaded && reg != nil {
-		if serr := a.saveACMEAccount(config.CADirURL, &adminUser); serr != nil {
+		if serr := a.saveACMEAccountFor(config.CADirURL, &adminUser, opts.CAProfileID); serr != nil {
 			a.Logf("Failed to persist ACME account (may hit account create limits, try a different IP)", serr)
 		} else {
 			a.Logf("Persisted ACME account for reuse on "+config.CADirURL, nil)
@@ -677,11 +702,8 @@ func (a *ACMEHandler) HandleRenewCertificate(w http.ResponseWriter, r *http.Requ
 	// Make sure the wildcard * do not goes into the filename
 	filename = strings.ReplaceAll(filename, "*", "_")
 
-	email, err := utils.PostPara(r, "email")
-	if err != nil {
-		utils.SendErrorResponse(w, jsonEscape(err.Error()))
-		return
-	}
+	// The email may be left out when the CA profile used for this request has its own (checked below)
+	email, emailErr := utils.PostPara(r, "email")
 
 	var caUrl string
 
@@ -769,6 +791,11 @@ func (a *ACMEHandler) HandleRenewCertificate(w http.ResponseWriter, r *http.Requ
 	opts.KeyType, _ = utils.PostPara(r, "keyType")
 	opts.Profile, _ = utils.PostPara(r, "acmeProfile")
 	opts.CAProfileID, _ = utils.PostPara(r, "caProfile")
+	opts.CAProfileID = a.resolveRequestCAProfile(opts.CAProfileID, filename)
+	if emailErr != nil && a.caProfileEmail(opts.CAProfileID) == "" {
+		utils.SendErrorResponse(w, jsonEscape(emailErr.Error()))
+		return
+	}
 	opts.DNSProfileID, _ = utils.PostPara(r, "dnsProfile")
 	if _, kerr := NormalizeKeyType(opts.KeyType); kerr != nil {
 		utils.SendErrorResponse(w, jsonEscape(kerr.Error()))

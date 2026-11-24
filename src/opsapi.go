@@ -41,16 +41,8 @@ func initOpsGlobals() {
 			}
 		}
 	}
-	rewrite.SetExternalIPProvider(func() string {
-		if dynamicProxyRouter == nil || dynamicProxyRouter.Option.AccessController == nil {
-			return ""
-		}
-		ip := dynamicProxyRouter.Option.AccessController.ServerPublicIP
-		if ip == "127.0.0.1" {
-			return "" //public IP check disabled or not resolved yet
-		}
-		return ip
-	})
+	rewrite.SetExternalIPProvider(currentExternalIP)
+	initUserVars()
 }
 
 func HandleOpsGet(w http.ResponseWriter, r *http.Request) {

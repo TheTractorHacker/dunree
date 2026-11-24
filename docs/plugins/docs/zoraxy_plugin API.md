@@ -32,7 +32,7 @@ const (
     Verdict actions
 
 const (
-	SDKVersion = "1.1.0"
+	SDKVersion = "1.2.0"
 	APIVersion = 1
 )
     SDK and contract version
@@ -56,6 +56,18 @@ const (
 const HookAPIVersion = 1
     HookAPIVersion is the version of the hooks / filter API described in this
     file.
+
+
+VARIABLES
+
+var ErrAPIEndpoint = errors.New("zoraxy_plugin: the API endpoint must be a path that starts with \"/\"")
+    ErrAPIEndpoint is returned when the endpoint given to an API helper is not a
+    path that starts with "/" (an absolute URL is refused, so the key cannot be
+    sent elsewhere).
+
+var ErrNoAPIKey = errors.New("zoraxy_plugin: no API key in the start configuration (the manifest needs permitted_api_endpoints)")
+    ErrNoAPIKey is returned by the API helpers when Zoraxy handed no API key (or
+    no port) to this plugin: the manifest has no PermittedAPIEndpoints.
 
 
 FUNCTIONS
@@ -129,6 +141,13 @@ func ServeAndRecvSpec(pluginSpect *IntroSpect) (*ConfigureSpec, error)
     This function will serve the intro spect and return the configure spec See
     the ServeIntroSpect and RecvConfigureSpec for more details
 
+func (c *ConfigureSpec) APIURL(endpoint string) string
+    APIURL returns the address of a Zoraxy plugin API endpoint, for example
+    APIURL("/plugin/api/access/list"). The endpoint may carry a query string.
+    It returns an empty string, which no HTTP client can send a request to, when
+    the endpoint is not a path that starts with one "/" (so "@other.host/x"
+    cannot turn the address into one of another host) or when there is no port.
+
 func (c *ConfigureSpec) ContractKnown() bool
     ContractKnown reports whether Zoraxy told the plugin which contract versions
     it supports.
@@ -138,6 +157,24 @@ func (c *ConfigureSpec) ContractSupported() bool
     (APIVersion) is inside the range Zoraxy supports. It is true when Zoraxy
     sent no range (an older Zoraxy): such a Zoraxy only speaks the legacy
     contract, which every version of this package can still speak.
+
+func (c *ConfigureSpec) DoAPIRequest(method string, endpoint string, body io.Reader) (*http.Response, error)
+    DoAPIRequest builds the request as NewAPIRequest does and sends it.
+    The caller closes the body of the response. Redirects are not followed and
+    the call gives up after 30 seconds. A status other than 200 is not an error
+    here: check resp.StatusCode (Zoraxy answers 401 for a key it does not know
+    and for an endpoint that is not granted).
+
+func (c *ConfigureSpec) NewAPIRequest(method string, endpoint string, body io.Reader) (*http.Request, error)
+    NewAPIRequest builds a request to a Zoraxy plugin API endpoint with
+    the Authorization header set. Send it with your own http.Client, or use
+    DoAPIRequest. Set a Content-Type yourself when you send a body.
+
+func (c *ConfigureSpec) SetAPIAuth(req *http.Request)
+    SetAPIAuth sets the "Authorization: Bearer <api_key>" header on a request
+    you built yourself. Only use it on requests to Zoraxy (APIURL): the key is
+    a secret, and SetAPIAuth does not look at where the request goes. It does
+    nothing when there is no key or no request.
 
 func (c *ConfigureSpec) SupportsAPIVersion(version int) bool
     SupportsAPIVersion reports whether this Zoraxy supports the given contract

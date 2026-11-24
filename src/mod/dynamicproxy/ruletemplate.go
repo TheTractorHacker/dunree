@@ -18,6 +18,11 @@ import (
 	direction, the upstreams, domains and authentication of a rule are never touched.
 
 	ApplyRuleTemplate works on a copy and reports each change, which is the "diff preview".
+
+	No templates for virtual directories (path routes), on purpose: a VirtualDirectoryEndpoint only has a
+	path, an upstream, its transport flags (TLS, h2c) and Disabled. Everything a template sets (HSTS, headers, WAF, rate
+	limit, WebSocket, uptime monitor, tags) is read from the parent rule when a path route is served, so the
+	template of the host already covers its path routes, and the upstream is what a template never touches.
 */
 
 type RuleTemplate struct {

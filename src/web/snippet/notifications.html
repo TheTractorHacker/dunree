@@ -49,7 +49,8 @@
                         <select id="c_sev"><option value="">Any</option><option value="warning">Warning and above</option><option value="critical">Critical only</option></select></div>
                 </div>
                 <div id="c_settings"></div>
-                <div class="field"><label>Events (none selected = all events)</label><div class="evgrid" id="c_events"></div></div>
+                <div class="field"><label>Events (none selected = all events)</label><div class="evgrid" id="c_events"></div>
+                    <p id="c_sevNote">An event below the minimum severity is not sent, even when ticked. "Renewal about to start" is an info event: it needs minimum severity "Any".</p></div>
                 <div class="inline fields">
                     <div class="field"><div class="ui checkbox"><input type="checkbox" id="c_enabled" checked><label for="c_enabled">Enabled</label></div></div>
                     <div class="field"><div class="ui checkbox"><input type="checkbox" id="c_private"><label for="c_private">Allow private / loopback targets and plain http (self-hosted services on your LAN)</label></div></div>
@@ -166,7 +167,7 @@
         let grid = $("#c_events").empty();
         center.events.forEach(function(e){
             let checked = c && (c.events || []).indexOf(e.name) >= 0;
-            grid.append($("<label>").append($("<input type='checkbox' class='evbox'>").val(e.name).prop("checked", checked), " " + e.title + " ", $("<small>").text("(" + e.name + ", " + e.severity + ")")));
+            grid.append($("<label>").append($("<input type='checkbox' class='evbox'>").val(e.name).prop("checked", checked), " " + e.title + " ", $("<small>").text("(" + e.name + ", " + e.severity + (e.optIn ? ", " + t("sent only when ticked") : "") + ")")));
         });
         $("#c_err").hide();
         $("#chanEditor").show()[0].scrollIntoView();

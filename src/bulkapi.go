@@ -13,6 +13,9 @@ package main
 	POST /api/proxy/templates/delete name
 	POST /api/proxy/templates/preview template (JSON), rule (optional rule name) -> {"changes":[{Field,Old,New}],"against":"..."}
 	                                   what the template would change on that rule (or on a fresh rule); never saves anything
+	GET  /api/proxy/templates/default -> {"name":"..."} the template the New proxy rule forms preselect ("" = none, the default)
+	POST /api/proxy/templates/default name (empty clears it)       only a choice for the admin UI: /api/proxy/add still applies
+	                                   a template only when the request names one (upstream #877)
 
 	New rules: POST /api/proxy/add accepts an optional "template" (name) which is applied before the rule goes live.
 */
@@ -32,12 +35,16 @@ import (
 
 const ruleTemplateTable = "ruletemplates"
 
+// ruleTemplateDefaultKey (table "settings") holds the name of the template the New proxy rule forms preselect
+const ruleTemplateDefaultKey = "ruleTemplateDefault"
+
 func RegisterBulkAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/proxy/bulk", HandleProxyBulk)
 	authRouter.HandleFunc("/api/proxy/templates/list", HandleRuleTemplateList)
 	authRouter.HandleFunc("/api/proxy/templates/save", HandleRuleTemplateSave)
 	authRouter.HandleFunc("/api/proxy/templates/delete", HandleRuleTemplateDelete)
 	authRouter.HandleFunc("/api/proxy/templates/preview", HandleRuleTemplatePreview)
+	authRouter.HandleFunc("/api/proxy/templates/default", HandleRuleTemplateDefault)
 }
 
 func listRuleTemplates() []*dynamicproxy.RuleTemplate {
@@ -178,7 +185,69 @@ func HandleRuleTemplateDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	sysdb.NewTable(ruleTemplateTable)
 	sysdb.Delete(ruleTemplateTable, name)
+	if strings.EqualFold(storedDefaultRuleTemplate(), name) {
+		//a deleted template is no default any more, and a later template of the same name does not become one silently
+		sysdb.Delete("settings", ruleTemplateDefaultKey)
+	}
 	utils.SendOK(w)
+}
+
+func storedDefaultRuleTemplate() string {
+	name := ""
+	if sysdb == nil || !sysdb.KeyExists("settings", ruleTemplateDefaultKey) || sysdb.Read("settings", ruleTemplateDefaultKey, &name) != nil {
+		return ""
+	}
+	return name
+}
+
+// defaultRuleTemplateName is the template the New proxy rule forms preselect. "" (the state of every
+// installation until an admin chooses one) means none; a stored name whose template is gone counts as none.
+func defaultRuleTemplateName() string {
+	name := storedDefaultRuleTemplate()
+	if name == "" {
+		return ""
+	}
+	t, err := findRuleTemplate(name)
+	if err != nil || t.Category == "app" {
+		return ""
+	}
+	return t.Name
+}
+
+// HandleRuleTemplateDefault reads (GET) or sets (POST name, empty = none) the default template of new rules
+func HandleRuleTemplateDefault(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		name, _ := utils.PostPara(r, "name")
+		name = strings.TrimSpace(name)
+		if sysdb == nil {
+			sendTemplateError(w, "database is not available")
+			return
+		}
+		if name == "" {
+			if sysdb.KeyExists("settings", ruleTemplateDefaultKey) {
+				if err := sysdb.Delete("settings", ruleTemplateDefaultKey); err != nil {
+					sendTemplateError(w, "unable to save the default template")
+					return
+				}
+			}
+		} else {
+			t, err := findRuleTemplate(name)
+			if err != nil {
+				sendTemplateError(w, err.Error())
+				return
+			}
+			if t.Category == "app" {
+				sendTemplateError(w, "an app preset fits one app and cannot be the default of every new rule")
+				return
+			}
+			if err := sysdb.Write("settings", ruleTemplateDefaultKey, t.Name); err != nil {
+				sendTemplateError(w, "unable to save the default template")
+				return
+			}
+		}
+	}
+	js, _ := json.Marshal(map[string]string{"name": defaultRuleTemplateName()})
+	utils.SendJSONResponse(w, string(js))
 }
 
 // applyRuleTemplateByName applies a stored template to a rule that is not live yet

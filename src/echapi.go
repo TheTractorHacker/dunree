@@ -7,7 +7,7 @@ package main
 
 	GET  /api/ech/status                 settings, keys (no private material), the base64 ECHConfigList, a copy ready HTTPS record,
 	                                     certificate check of the public name, HTTP/3 state and request counters
-	POST /api/ech/settings               enabled, publicname, maxnamelength, rotatehours, retainhours
+	POST /api/ech/settings               enabled, publicname, maxnamelength, rotatehours, retainhours, logrequests
 	POST /api/ech/rotate                 generate a new active key, the previous one becomes decrypt only
 	POST /api/ech/retire                 id: stop advertising a key (keeps decrypting)
 	POST /api/ech/delete                 id: remove a key
@@ -17,6 +17,8 @@ package main
 	GET  /api/ech/domains                host (optional): per proxied host, classify the ECH config in the system and public resolver's HTTPS record
 	GET  /api/ech/fallbacks              names answered with the fallback certificate that match no proxy rule (admin only, diagnostics)
 	GET  /api/ech/selfcheck              host (optional): a real local ECH handshake against the HTTPS listener (server side acceptance only)
+	GET  /api/ech/unknownsni             {Reject, Rejected}: the "reject handshakes for unknown names" option and its counter
+	POST /api/ech/unknownsni             reject=true|false (default false, stored in the settings table, applies at once)
 */
 
 import (
@@ -30,6 +32,7 @@ import (
 	"time"
 
 	"imuslab.com/zoraxy/mod/auth"
+	"imuslab.com/zoraxy/mod/dynamicproxy"
 	"imuslab.com/zoraxy/mod/ech"
 	"imuslab.com/zoraxy/mod/tlscert"
 	"imuslab.com/zoraxy/mod/utils"
@@ -48,6 +51,14 @@ func initEch() {
 	}
 	if tlsCertManager != nil {
 		tlsCertManager.OnFallbackServed = echFallbackHook
+		//Optional rejection of unknown names (off by default). It does not need the ECH key store.
+		tlsCertManager.IsKnownHost = tlsKnownHost
+		tlsCertManager.OnUnknownRejected = echFallbackHook //the refused names stay visible in the same diagnostics list
+		reject := false
+		if sysdb != nil && sysdb.KeyExists("settings", rejectUnknownSNIKey) {
+			sysdb.Read("settings", rejectUnknownSNIKey, &reject)
+		}
+		tlsCertManager.RejectUnknownSNI.Store(reject)
 	}
 	m, err := ech.Open(filepath.Join(CONF_FOLDER, "ech"))
 	if err != nil {
@@ -55,6 +66,9 @@ func initEch() {
 		return
 	}
 	echMgr = m
+	if SystemWideLogger != nil {
+		SystemWideLogger.ECHField = echLogField
+	}
 	if tlsCertManager != nil {
 		tlsCertManager.OnServe = echServeHook
 	}
@@ -92,6 +106,7 @@ func RegisterEchAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/ech/selfcheck", HandleEchSelfCheck)
 	authRouter.HandleFunc("/api/ech/fallbacks", HandleEchFallbacks)
 	authRouter.HandleFunc("/api/ech/domains", HandleEchDomains)
+	authRouter.HandleFunc("/api/ech/unknownsni", HandleEchUnknownSNI)
 }
 
 func echReady(w http.ResponseWriter) bool {
@@ -137,6 +152,7 @@ func HandleEchStatus(w http.ResponseWriter, r *http.Request) {
 		"TLSEnabled":      dynamicProxyRouter != nil && dynamicProxyRouter.Option.UseTls,
 		"Accepted":        acc,
 		"NotAccepted":     plain,
+		"Outcomes":        echMgr.OutcomeStats(),
 		"Records":         []ech.HostRecord{},
 	}
 	if list != "" {
@@ -200,9 +216,15 @@ func echFallbackHook(sni string) {
 func HandleEchFallbacks(w http.ResponseWriter, r *http.Request) {
 	list, dropped := echFallbacks.Snapshot()
 	w.Header().Set("Cache-Control", "no-store")
+	rejecting, rejected := false, uint64(0)
+	if tlsCertManager != nil {
+		rejecting, rejected = tlsCertManager.RejectUnknownSNI.Load(), tlsCertManager.RejectedUnknownCount()
+	}
 	js, _ := json.Marshal(map[string]interface{}{
-		"Entries": list,
-		"Dropped": dropped,
+		"Entries":       list,
+		"Dropped":       dropped,
+		"RejectUnknown": rejecting,
+		"Rejected":      rejected,
 		"HasForeignECH": func() bool {
 			for _, e := range list {
 				if e.Class == ech.FallbackForeignECH {
@@ -298,6 +320,9 @@ func HandleEchSettings(w http.ResponseWriter, r *http.Request) {
 	cur := echMgr.Settings()
 	if v, err := utils.PostBool(r, "enabled"); err == nil {
 		cur.Enabled = v
+	}
+	if v, err := utils.PostBool(r, "logrequests"); err == nil {
+		cur.LogRequests = v
 	}
 	if v, err := utils.PostPara(r, "publicname"); err == nil {
 		cur.PublicName = strings.ToLower(strings.TrimSpace(v))
@@ -412,9 +437,78 @@ func echKeysCallback() func(*tls.ClientHelloInfo) ([]tls.EncryptedClientHelloKey
 	return func(*tls.ClientHelloInfo) ([]tls.EncryptedClientHelloKey, error) { return echMgr.TLSKeys(), nil }
 }
 
-func echObserveCallback() func(bool) {
+func echObserveCallback() func(accepted, offered bool) {
 	if echMgr == nil {
 		return nil
 	}
-	return echMgr.Observe
+	return echMgr.ObserveOutcome
+}
+
+// echLogField is the request log hook (logger.Logger.ECHField): the ECH outcome and the outer SNI of an HTTPS
+// request, or "" while the option is off (the default), which leaves the log line format untouched.
+func echLogField(r *http.Request) string {
+	if echMgr == nil || !echMgr.Settings().LogRequests {
+		return ""
+	}
+	outcome, outer, ok := dynamicproxy.EchResultOf(r)
+	if !ok {
+		return ""
+	}
+	if outer == "" {
+		if outcome == dynamicproxy.EchAccepted {
+			return outcome //the outer hello is not visible on this listener (HTTP/3)
+		}
+		outer = "-" //no SNI
+	}
+	return outcome + " outer=" + outer
+}
+
+// ---- reject handshakes for unknown names (tlscert/rejectsni.go) ----
+
+const rejectUnknownSNIKey = "tlsRejectUnknownSNI"
+
+// tlsKnownHost says whether a server name belongs to a proxy rule (wildcards and aliases included). For a handshake
+// without SNI it is asked with the local IP address of the connection: a rule keyed on an IP address (IPv6 rules
+// are written in brackets).
+func tlsKnownHost(sni string) bool {
+	if sni == "" || dynamicProxyRouter == nil {
+		return false
+	}
+	if dynamicProxyRouter.GetProxyEndpointFromHostname(sni) != nil {
+		return true
+	}
+	return strings.Contains(sni, ":") && dynamicProxyRouter.GetProxyEndpointFromHostname("["+sni+"]") != nil
+}
+
+// HandleEchUnknownSNI reads (GET) or sets (POST reject=true|false) the option. It applies to the next handshake.
+func HandleEchUnknownSNI(w http.ResponseWriter, r *http.Request) {
+	if tlsCertManager == nil {
+		utils.SendErrorResponse(w, "The certificate manager is not available")
+		return
+	}
+	if r.Method == http.MethodPost {
+		reject, err := utils.PostBool(r, "reject")
+		if err != nil {
+			utils.SendErrorResponse(w, "reject must be true or false")
+			return
+		}
+		if err := sysdb.Write("settings", rejectUnknownSNIKey, reject); err != nil {
+			utils.SendErrorResponse(w, "Unable to save the setting: "+err.Error())
+			return
+		}
+		tlsCertManager.RejectUnknownSNI.Store(reject)
+		if reject {
+			SystemWideLogger.PrintAndLog("tls-router", "Handshakes for unknown names are now rejected (no proxy rule and no certificate matches)", nil)
+		} else {
+			SystemWideLogger.PrintAndLog("tls-router", "Handshakes for unknown names are answered with the fallback certificate again", nil)
+		}
+		utils.SendOK(w)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	js, _ := json.Marshal(map[string]interface{}{
+		"Reject":   tlsCertManager.RejectUnknownSNI.Load(),
+		"Rejected": tlsCertManager.RejectedUnknownCount(),
+	})
+	utils.SendJSONResponse(w, string(js))
 }

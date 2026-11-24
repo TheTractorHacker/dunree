@@ -445,14 +445,9 @@ func (ar *AuthRouter) GetUserFromRequest(w http.ResponseWriter, r *http.Request)
 		return nil, err
 	}
 
-	sessionObj, exists := ar.cookieIdStore.Load(cookie.Value)
-	if !exists {
-		return nil, errors.New("session not found")
-	}
-
-	browserSession, ok := sessionObj.(*BrowserSession)
+	browserSession, ok := ar.loadBrowserSession(cookie.Value)
 	if !ok || browserSession == nil {
-		return nil, errors.New("invalid session mapping")
+		return nil, errors.New("session not found")
 	}
 
 	// Check if session has expired

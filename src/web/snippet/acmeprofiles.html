@@ -7,6 +7,29 @@
     <script src="../script/jquery-3.6.0.min.js"></script>
     <script src="../script/semantic/semantic.min.js"></script>
     <script src="../script/utils.js"></script>
+    <script src="../script/i18n.js"></script>
+    <style>
+      /* long directory URLs and certificate names wrap instead of widening the panel */
+      #caProfileList td:first-child, #certAssignList td:first-child { overflow-wrap: anywhere; }
+      #caProfileList .button { white-space: nowrap; }
+      #caProfileList .caName { display: block; font-weight: 700; }
+      #caProfileList .caUrl { display: block; }
+      #caProfileList td.caDefaultCell, #caProfileList td.caActionCell { white-space: nowrap; }
+      .caDefaultBar { margin-top: 0.6em; }
+      .caOffscreen { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      /* narrow panel: one saved CA per block (name, URL and account, then its buttons) instead of squeezed columns */
+      @media (max-width: 560px) {
+        #caTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+        #caTable, #caTable tbody, #caTable tr, #caTable td { display: block; }
+        #caTable td { border: 0 !important; padding: 0.3em 0.8em !important; white-space: normal !important; }
+        #caTable td.caDefaultCell, #caTable td.caActionCell { display: inline-block; vertical-align: middle; padding-right: 0 !important; }
+        #caTable tr { padding: 0.45em 0; }
+        #caTable tr + tr { border-top: 1px solid var(--divider_color, rgba(128,128,128,0.35)); }
+      }
+      #caProfileList .caMeta, #certAssignList .caMeta { display: block; opacity: 0.75; font-size: 0.9em; }
+      #certAssignList select { width: 100%; min-width: 9em; }
+      .caDefaultNote { margin-top: 0.6em; }
+    </style>
   </head>
   <body>
     <link rel="stylesheet" href="../darktheme.css">
@@ -39,16 +62,19 @@
 
       <div class="ui divider"></div>
       <h4>Saved certificate authorities</h4>
-      <p><small>Add a private ACME server, ZeroSSL or Google (External Account Binding) once and pick it when requesting certificates. Each CA keeps its own ACME account. The EAB key is never shown again after saving.</small></p>
-      <table class="ui very compact celled unstackable table">
-        <thead><tr><th>Name</th><th>Directory URL</th><th>EAB</th><th>Actions</th></tr></thead>
+      <p><small>Add a private ACME server, ZeroSSL or Google (External Account Binding) once and pick it when requesting certificates. Each saved CA keeps its own ACME account, also when two of them use the same directory URL and email. The EAB key is never shown again after saving.</small></p>
+      <table class="ui very compact celled unstackable table" id="caTable">
+        <thead><tr><th>Saved CA</th><th>Default for new certificates</th><th>Actions</th></tr></thead>
         <tbody id="caProfileList"></tbody>
       </table>
+      <div class="caDefaultBar"><button type="button" class="ui mini basic button" id="caNoDefaultBtn" onclick="setDefaultCA('');">No default</button></div>
+      <p class="caDefaultNote"><small>The default CA is used for <b>new</b> certificates that are requested without choosing a saved CA: the quick requests (New site page, New proxy rule, "Add a certificate"; they still need the ACME email of the ACME page) and API requests without <code>caProfile</code>, whatever CA they name (<code>caProfile=none</code> keeps the named CA). It is preselected in the certificate request dialog. No default: such requests use the CA chosen on the ACME page, as before. Existing certificates are never moved by this setting.</small></p>
       <div class="ui form" id="caForm">
         <input type="hidden" id="caId" value="">
-        <div class="two fields">
+        <div class="three fields">
           <div class="field"><label>Name</label><input type="text" id="caName" placeholder="Internal CA"></div>
           <div class="field"><label>ACME directory URL</label><input type="text" id="caDirectory" placeholder="https://ca.example.com/acme/directory"></div>
+          <div class="field"><label>Registration email (optional)</label><input type="text" id="caEmail" autocomplete="off" placeholder="Empty: the ACME email of the ACME page"></div>
         </div>
         <div class="three fields">
           <div class="field"><label>EAB key id (optional)</label><input type="text" id="caKid"></div>
@@ -58,6 +84,18 @@
         <div class="field"><div class="ui checkbox"><input type="checkbox" id="caSkipTLS"><label>Ignore TLS verification errors of the ACME server (private CAs with self-signed certificates only)</label></div></div>
         <button class="ui basic button" onclick="saveCAProfile();"><i class="save icon"></i> Save CA</button>
         <button class="ui basic button" onclick="resetCAForm();">Clear</button>
+      </div>
+      <p style="margin-top:1em;"><small>Already using one CA for everything? This saves the CA chosen on the ACME page (with its email, custom URL and EAB key) as a saved CA that keeps using the existing ACME account. Nothing else changes: the settings of the ACME page stay, no certificate is moved and no default is set.</small></p>
+      <button class="ui basic button" id="caImportBtn" onclick="importGlobalCA();"><i class="copy outline icon"></i> Save the ACME page's CA settings as a saved CA</button>
+
+      <div class="ui divider"></div>
+      <h4>CA of existing certificates</h4>
+      <p><small>Move a certificate to a saved CA without requesting it again: the certificate stays as it is, and its next renewal (automatic or "Renew now") goes to the CA chosen here. "No saved CA" keeps the CA the certificate was last issued by. A saved CA decides by itself whether TLS errors of its server are ignored, and the ACME profile name of the previous CA is not carried over. Only certificates issued by ACME on this server are listed; uploaded certificates cannot be assigned.</small></p>
+      <div class="ui form">
+        <table class="ui very compact celled unstackable table">
+          <thead><tr><th>Certificate</th><th>Renewed by</th></tr></thead>
+          <tbody id="certAssignList"></tbody>
+        </table>
       </div>
 
       <div class="ui divider"></div>
@@ -102,30 +140,79 @@
         $.cjax({url:"/api/acme/keytype", method:"POST", data:{set:$("#defKeyType").dropdown("get value")}, success:function(r){ if(!fail(r)) parent.msgbox("Default key type saved"); }});
       }
 
-      let caProfiles = [];
+      let caProfiles = [], caDefault = "";
       function loadCAProfiles(){
         $.get("/api/acme/profiles/ca", function(d){
-          caProfiles = d.profiles || [];
+          caProfiles = d.profiles || []; caDefault = d.default || "";
           $("#caProfileList").html("");
           caProfiles.forEach(function(p, i){
-            $("#caProfileList").append(`<tr><td>${esc(p.name)}</td><td>${esc(p.directoryURL)}</td><td>${p.eabKid ? esc(p.eabKid) : "-"}</td>
-              <td><button class="ui mini basic button" onclick="editCA(${i});">Edit</button>
-              <button class="ui mini basic red button" onclick="deleteCA('${esc(p.id)}');">Delete</button></td></tr>`);
+            let meta = (p.email ? t("Email:") + " " + esc(p.email) : t("Email: the ACME email of the ACME page")) + (p.eabKid ? " · " + t("EAB key id:") + " " + esc(p.eabKid) : "");
+            // real buttons: reachable and usable with the keyboard (Enter / Space); the name of the CA is part of the accessible name
+            let forCA = `<span class="caOffscreen"> ${esc(p.name)}</span>`;
+            $("#caProfileList").append(`<tr data-ca="${esc(p.id)}"><td><span class="caName">${esc(p.name)}</span><span class="caUrl">${esc(p.directoryURL)}</span><span class="caMeta">${meta}</span></td>
+              <td class="caDefaultCell">${p.id == caDefault ? `<i class='green check icon' aria-hidden='true'></i><span class="caIsDefault">${esc(t("default"))}</span>` : `<button type="button" class="ui mini basic button caMakeDefault" onclick="setDefaultCA('${esc(p.id)}');">${esc(t("make default"))}${forCA}</button>`}</td>
+              <td class="caActionCell"><button type="button" class="ui mini basic button caEdit" onclick="editCA(${i});">${esc(t("Edit"))}${forCA}</button>
+              <button type="button" class="ui mini basic red button caDelete" onclick="deleteCA('${esc(p.id)}');">${esc(t("Delete"))}${forCA}</button></td></tr>`);
           });
-          if (caProfiles.length == 0){ $("#caProfileList").append(`<tr><td colspan="4">No saved CAs. Built in: ${esc((d.builtin||[]).join(", "))}</td></tr>`); }
+          if (caProfiles.length == 0){ $("#caProfileList").append(`<tr><td colspan="3">No saved CAs. Built in: ${esc((d.builtin||[]).join(", "))}</td></tr>`); }
+          $("#caNoDefaultBtn").toggleClass("disabled", caDefault == "");
+          loadCertAssignments();
         });
+      }
+      function setDefaultCA(id){
+        $.cjax({url:"/api/acme/profiles/ca", method:"POST", data:{op:"setDefault", id:id}, success:function(r){
+          if(!fail(r)){ parent.msgbox(id == "" ? t("No default CA: new certificates use the CA of the ACME page") : t("Default CA for new certificates saved")); loadCAProfiles(); }
+        }});
+      }
+      function importGlobalCA(){
+        $("#caImportBtn").addClass("loading disabled");
+        $.cjax({url:"/api/acme/profiles/ca/importGlobal", method:"POST", data:{}, success:function(r){
+          $("#caImportBtn").removeClass("loading disabled");
+          if (fail(r)) return;
+          let msg = t("Saved as") + " \"" + r.name + "\"";
+          if (r.accountAdopted) msg += ". " + t("It keeps using the existing ACME account");
+          if (r.eabCopied) msg += ". " + t("The EAB key was copied");
+          parent.msgbox(msg, true, 8000);
+          loadCAProfiles();
+        }, error:function(){ $("#caImportBtn").removeClass("loading disabled"); }});
+      }
+
+      // CA of existing certificates: one select per ACME certificate, saved on change
+      function loadCertAssignments(){
+        $.get("/api/cert/list?date=true", function(list){
+          let rows = (Array.isArray(list) ? list : []).filter(function(c){ return c.ManagedBy == "acme"; });
+          $("#certAssignList").html("");
+          rows.forEach(function(c){
+            let known = c.CAProfileID == "" || caProfiles.some(function(p){ return p.id == c.CAProfileID; });
+            let opts = `<option value="">${esc(t("No saved CA") + (c.Issuer ? " (" + c.Issuer + ")" : ""))}</option>`;
+            caProfiles.forEach(function(p){ opts += `<option value="${esc(p.id)}" ${p.id == c.CAProfileID ? "selected" : ""}>${esc(p.name)}</option>`; });
+            if (!known){ opts += `<option value="${esc(c.CAProfileID)}" selected disabled>${esc(t("Deleted CA: choose another one"))}</option>`; }
+            let tr = $(`<tr><td>${esc(c.Filename)}<span class="caMeta">${esc(c.Domain)}</span></td><td><select aria-label="${esc(t("CA that renews") + " " + c.Filename)}">${opts}</select></td></tr>`);
+            tr.attr("data-cert", c.Filename);
+            tr.find("select").on("change", function(){ assignCert(c.Filename, $(this).val()); });
+            $("#certAssignList").append(tr);
+          });
+          if (rows.length == 0){ $("#certAssignList").append(`<tr><td colspan="2">${esc(t("No certificates issued by ACME yet"))}</td></tr>`); }
+        });
+      }
+      function assignCert(name, id){
+        $.cjax({url:"/api/acme/profiles/ca", method:"POST", data:{op:"assign", cert:name, id:id}, success:function(r){
+          if (!fail(r)){ parent.msgbox(id == "" ? t("Saved: no saved CA for") + " " + name : t("Saved: the next renewal uses the chosen CA for") + " " + name); }
+          loadCertAssignments();
+        }, error:function(){ loadCertAssignments(); }});
       }
       function editCA(i){
         let p = caProfiles[i];
         $("#caId").val(p.id); $("#caName").val(p.name); $("#caDirectory").val(p.directoryURL);
-        $("#caKid").val(p.eabKid); $("#caHmac").val(p.eabHmac); $("#caAcmeProfile").val(p.profile);
+        $("#caKid").val(p.eabKid); $("#caHmac").val(p.eabHmac); $("#caAcmeProfile").val(p.profile); $("#caEmail").val(p.email || "");
         $("#caSkipTLS").prop("checked", p.skipTLS);
       }
       function resetCAForm(){ $("#caForm input[type=text], #caForm input[type=password], #caId").val(""); $("#caSkipTLS").prop("checked", false); }
       function saveCAProfile(){
         $.cjax({url:"/api/acme/profiles/ca", method:"POST", data:{
           op:"save", id:$("#caId").val(), name:$("#caName").val(), directoryURL:$("#caDirectory").val(),
-          eabKid:$("#caKid").val(), eabHmac:$("#caHmac").val(), profile:$("#caAcmeProfile").val(), skipTLS:$("#caSkipTLS")[0].checked
+          eabKid:$("#caKid").val(), eabHmac:$("#caHmac").val(), profile:$("#caAcmeProfile").val(), skipTLS:$("#caSkipTLS")[0].checked,
+          email:$("#caEmail").val().trim()
         }, success:function(r){ if(!fail(r)){ parent.msgbox("CA saved"); resetCAForm(); loadCAProfiles(); } }});
       }
       function deleteCA(id){
