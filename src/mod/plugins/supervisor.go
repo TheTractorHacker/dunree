@@ -127,7 +127,7 @@ type ExitRecord struct {
 	At          int64
 	Kind        string //crashed | exited | stopped | failed_to_start | unhealthy
 	ExitCode    int    //-1 when ended by a signal or when there was no process
-	Reason      string //e.g. "exit status 3", "signal: killed"; worded by the OS or by Zoraxy, never plugin output
+	Reason      string //e.g. "exit status 3", "signal: killed"; worded by the OS or by Dunree, never plugin output
 	UptimeSec   int64  //how long the process ran
 	RestartInMs int64  //delay of the automatic restart that was planned after this exit, 0 = none
 	Action      string //what the supervisor decided: restart | crash_loop | would_restart (policy never: log only) | none
@@ -395,7 +395,7 @@ func (m *Manager) probeHealth(ctx context.Context, p *Plugin, port int) error {
 		return err
 	}
 	if tok := p.invokeToken(); tok != "" {
-		req.Header.Set("X-Zoraxy-Plugin-Token", tok)
+		setHostHeader(req.Header, "Plugin-Token", tok)
 	}
 	resp, err := hookHTTPClient.Do(req)
 	if err != nil {

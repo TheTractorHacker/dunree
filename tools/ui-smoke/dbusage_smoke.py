@@ -94,7 +94,7 @@ def dbusage_ui(pg, ctx):
     if not re.search(r"\d", pg.inner_text("#dbStatFile")):
         fail("dbusage", "file size tile empty")
     cmd = pg.text_content("#dbCompactCmd")
-    if "sudo systemctl stop zoraxy" not in cmd or ("-compact-db -dbpath " + api["path"]) not in cmd or not api["path"].startswith("/"):
+    if ("sudo systemctl stop " + api.get("service", "dunree")) not in cmd or ("-compact-db -dbpath " + api["path"]) not in cmd or not api["path"].startswith("/"):
         fail("dbusage", f"compaction commands wrong: {cmd!r}")
     if pg.is_visible("#dbLargeHint"):
         fail("dbusage", "the large-file hint shows for a tiny database")
@@ -137,7 +137,7 @@ def dbusage_ui(pg, ctx):
     if "never shrinks" not in hint or "offline" not in hint:
         fail("dbusage", f"large file hint: {hint!r}")
     txt = pg.inner_text("#dbTables")
-    for want in ("497 MB+", "not counted", "Not a table Zoraxy knows"):
+    for want in ("497 MB+", "not counted", "Not a table Dunree knows"):
         if want not in txt:
             fail("dbusage", f"table text lacks {want!r}: {txt!r}")
     cmd = pg.text_content("#dbCompactCmd")

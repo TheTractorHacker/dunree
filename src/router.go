@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/sshprox"
 	"github.com/gorilla/csrf"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/sshprox"
 )
 
 /*

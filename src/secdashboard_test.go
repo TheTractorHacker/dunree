@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/netplan"
+	"github.com/foleyit/dunree/mod/secaudit"
 	"github.com/gorilla/csrf"
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/netplan"
-	"imuslab.com/zoraxy/mod/secaudit"
 )
 
 // sliceHSetup prepares the globals the overview and the network plan read: router with one rule, sys.db, a fresh plan
@@ -234,7 +234,7 @@ func TestOverviewMakesNoNetworkCalls(t *testing.T) {
 		return nil, errors.New("blocked by the test")
 	}}
 	t.Cleanup(func() { net.DefaultResolver = oldRes })
-	// a backend written as a name, and an allowed backend list that would make Zoraxy resolve it
+	// a backend written as a name, and an allowed backend list that would make Dunree resolve it
 	ep, _ := dynamicProxyRouter.LoadProxy("app.example.com")
 	ep.ActiveOrigins[0].OriginIpOrDomain = "does-not-resolve.invalid:8080"
 	if err := destGuardMgr.Set(destguard.Settings{AllowedBackends: []string{"10.0.2.0/24"}}); err != nil {

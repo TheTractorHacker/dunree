@@ -14,10 +14,10 @@ import (
 
 // Upstream #816: "memory overflow with false forward-auth redirect (Authelia)". Hammer a forward-auth
 // protected rule whose auth server always answers 302/401 (with a large body) and check that goroutines
-// and heap do not grow. ZORAXY_LEAK_SECONDS raises the duration (default 4s) for a longer soak.
+// and heap do not grow. DUNREE_LEAK_SECONDS raises the duration (default 4s) for a longer soak.
 func TestForwardAuthAlwaysRedirectDoesNotLeak(t *testing.T) {
 	secs := 4
-	if v, err := strconv.Atoi(os.Getenv("ZORAXY_LEAK_SECONDS")); err == nil && v > 0 {
+	if v, err := strconv.Atoi(os.Getenv("DUNREE_LEAK_SECONDS")); err == nil && v > 0 {
 		secs = v
 	}
 	big := strings.Repeat("x", 256<<10) // 256 KiB body that must not be buffered or retained

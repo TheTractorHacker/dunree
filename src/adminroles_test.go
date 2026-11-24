@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	db "imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/auth"
+	db "github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // Every route registered on the managed router must refuse mutating requests from a

@@ -130,7 +130,7 @@ func TestMiscParsers(t *testing.T) {
 			t.Errorf("%q", in)
 		}
 	}
-	if !IsZoraxyName("zoraxy_linux_amd64") || IsZoraxyName("nginx") {
+	if !IsDunreeName("zoraxy_linux_amd64") || IsDunreeName("nginx") {
 		t.Fatal("name")
 	}
 	if FormatAge(0) != "unknown" || FormatAge(90*time.Second) != "1m" || FormatAge(30*time.Hour) != "30h 0m" || FormatAge(72*time.Hour) != "3d 0h" {

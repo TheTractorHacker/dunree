@@ -1,15 +1,15 @@
 package dynamicproxy
 
 import (
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/metrics"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/eventsystem"
-	"imuslab.com/zoraxy/mod/netutils"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 // Handle access check (blacklist / whitelist), return true if request is handled (aka blocked)

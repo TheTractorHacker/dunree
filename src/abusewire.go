@@ -5,9 +5,9 @@ import (
 	"net/netip"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 /*

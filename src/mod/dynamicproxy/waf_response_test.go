@@ -8,10 +8,10 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 const respLeak = "<html><body>java.lang.RuntimeException: boom\n\tat com.acme.Foo.bar(Foo.java:42)\n\tat com.acme.Baz.run(Baz.java:7)\n\tat java.lang.Thread.run(Thread.java:748)\n</body></html>"

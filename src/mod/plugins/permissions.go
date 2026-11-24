@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
 	Permission approval (phase 2 of docs/plugins/reliability-plan.md, item 2.6)
 
-	A plugin lists the Zoraxy API endpoints it wants in its manifest
-	(permitted_api_endpoints). Zoraxy remembers, per plugin ID, which of them the
+	A plugin lists the Dunree API endpoints it wants in its manifest
+	(permitted_api_endpoints). Dunree remembers, per plugin ID, which of them the
 	administrator has approved, and compares the manifest with that list every
 	time the plugin is loaded (boot, install, update, reload).
 
@@ -41,7 +41,7 @@ const (
 	permDeferredKey      = "permission_baseline_deferred" //in settingsDBTable: plugin folders that could not be loaded when the baseline was taken
 	permOriginBaseline   = "baseline"                     //approved because the plugin was installed before permissions were tracked
 	permOriginAdmin      = "admin"                        //approved (or withdrawn) by the administrator
-	maxPermissionEntries = 256                            //more endpoints than Zoraxy has; a longer list in an approval request is refused
+	maxPermissionEntries = 256                            //more endpoints than Dunree has; a longer list in an approval request is refused
 )
 
 // PermissionKey names one API endpoint a plugin may call
@@ -55,12 +55,12 @@ func (k PermissionKey) String() string { return k.Method + " " + k.Endpoint }
 // permissionRecord is what is stored per plugin ID
 type permissionRecord struct {
 	Approved  []PermissionKey //endpoints the administrator approved (or the baseline)
-	Notified  []PermissionKey //not approved endpoints that were already reported, so a restart of Zoraxy does not report them again
+	Notified  []PermissionKey //not approved endpoints that were already reported, so a restart of Dunree does not report them again
 	Origin    string          //baseline | admin
 	UpdatedAt int64
 }
 
-// PermissionEntry is one endpoint of a manifest with what Zoraxy does about it
+// PermissionEntry is one endpoint of a manifest with what Dunree does about it
 type PermissionEntry struct {
 	Method   string
 	Endpoint string
@@ -97,7 +97,7 @@ type permState struct {
 	deferred     map[string]bool //plugin folder names that failed to load when the baseline was taken: baselined on their first successful load
 }
 
-func requestedKeys(spec *zoraxyPlugin.IntroSpect) []PermissionKey {
+func requestedKeys(spec *dunreePlugin.IntroSpect) []PermissionKey {
 	if spec == nil {
 		return nil
 	}
@@ -249,7 +249,7 @@ func (m *Manager) pruneDeferredBaseline(present map[string]bool) {
 	}
 }
 
-// markPermissionBaseline ends the baseline: from now on a plugin that Zoraxy has
+// markPermissionBaseline ends the baseline: from now on a plugin that Dunree has
 // no record of starts with nothing approved. Called once the plugins that were
 // installed before permissions were tracked have been loaded. failedFolders are
 // the plugin folders that were there but could not be loaded this time (introspect
@@ -285,7 +285,7 @@ func (m *Manager) markPermissionBaseline(failedFolders ...string) {
 // plugin found by a reload, an update after the swap), never for a manifest that
 // is read from disk and thrown away: the record has to describe the plugin that
 // runs. folder is the name of the plugin folder, "" when it is not a first load.
-func (m *Manager) reviewPermissions(spec *zoraxyPlugin.IntroSpect, folder string) {
+func (m *Manager) reviewPermissions(spec *dunreePlugin.IntroSpect, folder string) {
 	if spec == nil || spec.ID == "" {
 		return
 	}
@@ -416,7 +416,7 @@ func (m *Manager) permissionSummaryOf(p *Plugin) PermissionSummary {
 }
 
 // grantedEndpoints returns the endpoints a process of the plugin may call
-func (m *Manager) grantedEndpoints(p *Plugin) []zoraxyPlugin.PermittedAPIEndpoint {
+func (m *Manager) grantedEndpoints(p *Plugin) []dunreePlugin.PermittedAPIEndpoint {
 	spec := p.spec()
 	if !m.Settings().RequirePermissionApproval {
 		//As always: what the manifest asks for
@@ -426,7 +426,7 @@ func (m *Manager) grantedEndpoints(p *Plugin) []zoraxyPlugin.PermittedAPIEndpoin
 	rec, _ := m.recordLocked(spec.ID)
 	m.perm.mu.Unlock()
 	approved := keySet(rec.Approved)
-	out := make([]zoraxyPlugin.PermittedAPIEndpoint, 0, len(spec.PermittedAPIEndpoints))
+	out := make([]dunreePlugin.PermittedAPIEndpoint, 0, len(spec.PermittedAPIEndpoints))
 	for _, ep := range spec.PermittedAPIEndpoints {
 		if approved[PermissionKey{Method: ep.Method, Endpoint: ep.Endpoint}] {
 			out = append(out, ep)

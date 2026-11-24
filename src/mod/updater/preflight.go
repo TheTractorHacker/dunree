@@ -36,7 +36,7 @@ type Preflight struct {
 }
 
 func writableDir(dir string) error {
-	f, err := os.CreateTemp(dir, ".zoraxy-wtest-*")
+	f, err := os.CreateTemp(dir, ".dunree-wtest-*")
 	if err != nil {
 		return err
 	}

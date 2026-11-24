@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*
@@ -114,13 +114,13 @@ func TestContractStatesAndSanitize(t *testing.T) {
 		}
 	}
 	if ContractVersionMin != 0 || ContractVersionMax != zp.APIVersion {
-		t.Fatalf("Zoraxy must support legacy plugins and the contract of its own SDK: %d to %d, SDK %d", ContractVersionMin, ContractVersionMax, zp.APIVersion)
+		t.Fatalf("Dunree must support legacy plugins and the contract of its own SDK: %d to %d, SDK %d", ContractVersionMin, ContractVersionMax, zp.APIVersion)
 	}
 }
 
-// What the SDK offers a plugin to look at the range Zoraxy sent
+// What the SDK offers a plugin to look at the range Dunree sent
 func TestSDKContractHelpers(t *testing.T) {
-	var none zp.ConfigureSpec //an older Zoraxy sends no range
+	var none zp.ConfigureSpec //an older Dunree sends no range
 	if none.ContractKnown() || !none.ContractSupported() || !none.SupportsAPIVersion(0) || none.SupportsAPIVersion(1) {
 		t.Fatal("without a range only the legacy contract is certain, and the plugin must not complain")
 	}
@@ -130,7 +130,7 @@ func TestSDKContractHelpers(t *testing.T) {
 	}
 	future := zp.ConfigureSpec{APIVersionMin: zp.APIVersion + 1, APIVersionMax: zp.APIVersion + 3}
 	if future.ContractSupported() {
-		t.Fatal("a Zoraxy that dropped this contract version must be noticed")
+		t.Fatal("a Dunree that dropped this contract version must be noticed")
 	}
 	//The health handler of the SDK
 	h := zp.HealthHandler(nil)
@@ -209,7 +209,7 @@ func TestFaultContractMismatchWarnsByDefaultAndRefusesOnOptIn(t *testing.T) {
 		waitHealth(t, p, HealthOK)
 	}
 
-	//The setting is stored: the next Zoraxy start still refuses
+	//The setting is stored: the next Dunree start still refuses
 	next := newFaultManager(t)
 	next.Options.Database = m.Options.Database
 	if next.Settings().ContractMode != ContractModeRefuse {
@@ -276,7 +276,7 @@ func TestFaultContractRangeOnlyForPluginsThatDeclareAVersion(t *testing.T) {
 
 // sdkSuite runs the SDK fixture plugin, built against one version of the SDK,
 // through the cases of the fault suite that a well-behaved plugin has to pass
-// against this Zoraxy: load, start, filter, capture, UI, events, API key, crash,
+// against this Dunree: load, start, filter, capture, UI, events, API key, crash,
 // automatic restart, stop.
 func sdkSuite(t *testing.T, version string) {
 	m := newFaultManager(t)
@@ -407,7 +407,7 @@ func sdkSuite(t *testing.T, version string) {
 	if took := time.Since(begin); took > 3*time.Second {
 		t.Fatalf("the stop took %s: the plugin did not end on the terminate request", took)
 	}
-	//(the terminate handler of the SDK exits 100 ms after it answered, and Zoraxy sends SIGTERM right after the answer: either may end it)
+	//(the terminate handler of the SDK exits 100 ms after it answered, and Dunree sends SIGTERM right after the answer: either may end it)
 	if st := p.Status(); st.State != StateStopped || pidAlive(pid) || !st.HasExited || strings.Contains(st.ExitReason, "killed") {
 		t.Fatalf("after the stop: %+v, pid alive %v", st, pidAlive(pid))
 	}
@@ -416,7 +416,7 @@ func sdkSuite(t *testing.T, version string) {
 	}
 }
 
-// A binary built with SDK 1.0.0 (the frozen copy) passes against this Zoraxy
+// A binary built with SDK 1.0.0 (the frozen copy) passes against this Dunree
 func TestSDKCompatBinaryBuiltWithOldSDKStillPasses(t *testing.T) { sdkSuite(t, sdkOld) }
 
 // A binary built with SDK 1.1.0 (frozen when 1.2.0 was released) passes as well
@@ -424,8 +424,8 @@ func TestSDKCompatBinaryBuiltWithSDK11StillPasses(t *testing.T) { sdkSuite(t, sd
 
 // The frozen 1.1.0 is 1.1.0: no name that 1.2.0 added
 func TestSDKFrozen11IsNotTheCurrentSDK(t *testing.T) {
-	dir := filepath.Join("testdata", "sdk-"+sdk11, "zoraxy_plugin")
-	main, err := os.ReadFile(filepath.Join(dir, "zoraxy_plugin.go"))
+	dir := filepath.Join("testdata", "sdk-"+sdk11, "zoraxy_plugin")  // legacy-compat: frozen old-SDK fixture keeps the old directory name
+	main, err := os.ReadFile(filepath.Join(dir, "zoraxy_plugin.go")) // legacy-compat: frozen old-SDK fixture keeps the old directory name
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -449,7 +449,7 @@ func TestSDKCompatBinaryBuiltWithCurrentSDKPasses(t *testing.T) { sdkSuite(t, sd
 
 // The frozen copy must stay what it is: the SDK as plugins in the field were built with
 func TestSDKFrozenCopyIsNotTheCurrentSDK(t *testing.T) {
-	old, err := os.ReadFile(filepath.Join("testdata", "sdk-"+sdkOld, "zoraxy_plugin", "zoraxy_plugin.go"))
+	old, err := os.ReadFile(filepath.Join("testdata", "sdk-"+sdkOld, "zoraxy_plugin", "zoraxy_plugin.go")) // legacy-compat: frozen old-SDK fixture keeps the old directory name
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -458,14 +458,14 @@ func TestSDKFrozenCopyIsNotTheCurrentSDK(t *testing.T) {
 			t.Fatalf("the frozen SDK %s contains %q, which was added later: it was overwritten", sdkOld, later)
 		}
 	}
-	now, err := os.ReadFile(filepath.Join("zoraxy_plugin", "zoraxy_plugin.go"))
+	now, err := os.ReadFile(filepath.Join("dunree_plugin", "dunree_plugin.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(now), `SDKVersion = "`+zp.SDKVersion+`"`) {
 		t.Fatal("SDKVersion constant not found")
 	}
-	log, err := os.ReadFile(filepath.Join("zoraxy_plugin", "CHANGELOG.md"))
+	log, err := os.ReadFile(filepath.Join("dunree_plugin", "CHANGELOG.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

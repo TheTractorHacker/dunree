@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // A config file is named after the hostname (+ ".config", "*" becomes "(ST)"), file names are capped at 255 bytes

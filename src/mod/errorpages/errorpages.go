@@ -3,7 +3,7 @@ package errorpages
 /*
 	errorpages.go
 
-	Customisable error pages for the answers Zoraxy itself gives a visitor (403 block pages, 404, 429,
+	Customisable error pages for the answers Dunree itself gives a visitor (403 block pages, 404, 429,
 	the 5xx "upstream is down" pages, the "no such host" page of the Default Site and the 503 "busy" answer).
 
 	OFF BY DEFAULT. Until the owner saves a customisation (and switches it on) Render reports false for
@@ -64,7 +64,7 @@ const (
 	ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )
 
-// Class is one kind of answer Zoraxy gives by itself
+// Class is one kind of answer Dunree gives by itself
 type Class string
 
 const (
@@ -90,7 +90,7 @@ type ClassInfo struct {
 var classList = []ClassInfo{
 	{ClassForbidden, "Access denied", "403", "A visitor is blocked: access rules, countries, the WAF, auto-ban, CrowdSec, bot rules, security rules, \"Block common exploits\" and \"Block AI crawlers\" when they answer 403.", 403,
 		"Access denied", "You do not have permission to open this page."},
-	{ClassNotFound, "Not found", "404", "Zoraxy answers 404 for a site: the host name of the upstream cannot be resolved, a header rule answers 404, or \"Block common exploits\" / \"Block AI crawlers\" is set to answer 404.", 404,
+	{ClassNotFound, "Not found", "404", "Dunree answers 404 for a site: the host name of the upstream cannot be resolved, a header rule answers 404, or \"Block common exploits\" / \"Block AI crawlers\" is set to answer 404.", 404,
 		"Page not found", "The page you asked for could not be found."},
 	{ClassRateLimit, "Too many requests", "429", "A rate limit of a site, a path rule or a security rule was reached.", 429,
 		"Too many requests", "You sent too many requests in a short time. Wait a moment and try again."},
@@ -98,7 +98,7 @@ var classList = []ClassInfo{
 		"This site is not available right now", "The server behind this address did not answer. Please try again in a few minutes."},
 	{ClassNoHost, "No such host", "404", "Nobody configured a site for the host name, and the Default Site is set to show a \"not found\" page.", 404,
 		"Nothing here", "No site is configured for this address."},
-	{ClassMaintenance, "Busy or maintenance", "503", "Zoraxy answers 503 itself: every upstream of the site is at its connection limit.", 503,
+	{ClassMaintenance, "Busy or maintenance", "503", "Dunree answers 503 itself: every upstream of the site is at its connection limit.", 503,
 		"We will be right back", "The site is busy or being worked on. Please try again shortly."},
 }
 
@@ -139,7 +139,7 @@ func (p *Page) empty() bool {
 // Config is what the file holds
 type Config struct {
 	Version int
-	Enabled bool //master switch. Off = every response is the one Zoraxy always gave
+	Enabled bool //master switch. Off = every response is the one Dunree always gave
 	Theme   Theme
 	Pages   map[Class]*Page            `json:",omitempty"`
 	Hosts   map[string]map[Class]*Page `json:",omitempty"` //host name or *.wildcard -> pages
@@ -865,7 +865,7 @@ func renderPage(p *compiledPage, theme *Theme, td ThemeData, req Request, now ti
 	return execute(p.tpl, d)
 }
 
-// StatusText is http.StatusText plus the non standard codes Zoraxy answers with
+// StatusText is http.StatusText plus the non standard codes Dunree answers with
 func StatusText(code int) string {
 	if code == 521 {
 		return "Web Server Is Down"

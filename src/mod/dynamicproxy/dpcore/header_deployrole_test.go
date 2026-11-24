@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/deployrole"
+	"github.com/foleyit/dunree/mod/deployrole"
 )
 
 // What the upstream finally sees: hardening followed by dpcore's own X-Forwarded-For / X-Real-Ip step.

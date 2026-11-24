@@ -3,31 +3,31 @@ package auth
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // Approving or withdrawing a permission changes what the live key of a plugin opens,
 // without a new key and without touching the keys of other plugins.
 func TestSetPermittedEndpointsForPlugin(t *testing.T) {
 	m := NewAPIKeyManager()
-	list := zoraxy_plugin.PermittedAPIEndpoint{Method: "GET", Endpoint: "/plugin/api/access/list"}
-	add := zoraxy_plugin.PermittedAPIEndpoint{Method: "POST", Endpoint: "/plugin/api/blacklist/ip/add"}
-	a, err := m.GenerateAPIKey("plugin.a", []zoraxy_plugin.PermittedAPIEndpoint{list})
+	list := dunree_plugin.PermittedAPIEndpoint{Method: "GET", Endpoint: "/plugin/api/access/list"}
+	add := dunree_plugin.PermittedAPIEndpoint{Method: "POST", Endpoint: "/plugin/api/blacklist/ip/add"}
+	a, err := m.GenerateAPIKey("plugin.a", []dunree_plugin.PermittedAPIEndpoint{list})
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := m.GenerateAPIKey("plugin.b", []zoraxy_plugin.PermittedAPIEndpoint{list})
+	b, err := m.GenerateAPIKey("plugin.b", []dunree_plugin.PermittedAPIEndpoint{list})
 	if err != nil {
 		t.Fatal(err)
 	}
-	opens := func(key string, ep zoraxy_plugin.PermittedAPIEndpoint) bool {
+	opens := func(key string, ep dunree_plugin.PermittedAPIEndpoint) bool {
 		_, err := m.ValidateAPIKeyForEndpoint(ep.Endpoint, ep.Method, key)
 		return err == nil
 	}
 	if !opens(a.APIKey, list) || opens(a.APIKey, add) {
 		t.Fatal("setup")
 	}
-	granted := []zoraxy_plugin.PermittedAPIEndpoint{list, add}
+	granted := []dunree_plugin.PermittedAPIEndpoint{list, add}
 	if n := m.SetPermittedEndpointsForPlugin("plugin.a", granted); n != 1 {
 		t.Fatalf("changed %d keys, want 1", n)
 	}

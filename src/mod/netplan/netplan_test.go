@@ -224,7 +224,7 @@ func TestRecommendationsStateThatNothingWasApplied(t *testing.T) {
 		if !strings.HasPrefix(md, "# Firewall recommendations") || !strings.Contains(strings.SplitN(md, "\n", 4)[2], "NOT APPLIED") {
 			t.Fatalf("%s: the disclaimer must be the first thing after the title:\n%s", role, md[:200])
 		}
-		if !strings.Contains(md, "Zoraxy has NOT applied") || !strings.Contains(md, "apply it yourself") {
+		if !strings.Contains(md, "Dunree has NOT applied") || !strings.Contains(md, "apply it yourself") {
 			t.Fatal("disclaimer text")
 		}
 		low := strings.ToLower(md)
@@ -234,7 +234,7 @@ func TestRecommendationsStateThatNothingWasApplied(t *testing.T) {
 			}
 		}
 		// both firewalls are covered, with allows and explicit denies
-		for _, want := range []string{"## 3. UniFi", "## 4. Proxmox", "Deny and log", "IN ACCEPT", "policy_in: DROP", "[IPSET zoraxy-mgmt]", "10.0.9.0/24", "8000"} {
+		for _, want := range []string{"## 3. UniFi", "## 4. Proxmox", "Deny and log", "IN ACCEPT", "policy_in: DROP", "[IPSET dunree-mgmt]", "10.0.9.0/24", "8000"} {
 			if !strings.Contains(md, want) {
 				t.Errorf("%s: export lacks %q", role, want)
 			}
@@ -246,12 +246,12 @@ func TestRecommendationsRoleSpecificRules(t *testing.T) {
 	c := exportCtx()
 	c.Role = "internal"
 	md := Recommendations(goodPlan(), c)
-	if !strings.Contains(md, "the external proxy: 10.0.1.5") || !strings.Contains(md, "-source +zoraxy-upstream-proxies -p tcp -dport 443") {
+	if !strings.Contains(md, "the external proxy: 10.0.1.5") || !strings.Contains(md, "-source +dunree-upstream-proxies -p tcp -dport 443") {
 		t.Fatalf("internal role must allow only the declared upstream proxy:\n%s", md)
 	}
 	c.Role = "external"
 	md = Recommendations(goodPlan(), c)
-	if !strings.Contains(md, "Internet (or your CDN ranges)") || strings.Contains(md, "+zoraxy-upstream-proxies -p tcp") {
+	if !strings.Contains(md, "Internet (or your CDN ranges)") || strings.Contains(md, "+dunree-upstream-proxies -p tcp") {
 		t.Fatalf("external role:\n%s", md)
 	}
 }
@@ -317,7 +317,7 @@ func TestRecommendationsBoundedWithManyBackends(t *testing.T) {
 }
 
 func TestIpsetNameIsProxmoxSafe(t *testing.T) {
-	for in, want := range map[string]string{"Mgmt VLAN (10)": "zoraxy-mgmt-vlan-10", "": "zoraxy-zone", "../etc": "zoraxy-etc", "A_B": "zoraxy-a-b"} {
+	for in, want := range map[string]string{"Mgmt VLAN (10)": "dunree-mgmt-vlan-10", "": "dunree-zone", "../etc": "dunree-etc", "A_B": "dunree-a-b"} {
 		if got := ipsetName(in); got != want {
 			t.Errorf("%q -> %q, want %q", in, got, want)
 		}

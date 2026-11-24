@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/ruleset"
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 const statTestChrome = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"

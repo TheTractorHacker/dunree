@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
 )
 
 // StartProxy create and start a HTTP proxy using dpcore

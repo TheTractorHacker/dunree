@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strconv"
 
-	plugin "example.com/zoraxy/static-capture-example/mod/zoraxy_plugin"
+	plugin "example.com/dunree/static-capture-example/mod/dunree_plugin"
 )
 
 const (
@@ -23,7 +23,7 @@ func main() {
 		Name:          "Static Capture Example",
 		Author:        "aroz.org",
 		AuthorContact: "https://aroz.org",
-		Description:   "An example for showing how static capture works in Zoraxy.",
+		Description:   "An example for showing how static capture works in Dunree.",
 		URL:           "https://zoraxy.aroz.org",
 		Type:          plugin.PluginType_Router,
 		VersionMajor:  1,

@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // validateVdirH2C refuses h2c together with TLS: h2c is HTTP/2 over a plain TCP connection,

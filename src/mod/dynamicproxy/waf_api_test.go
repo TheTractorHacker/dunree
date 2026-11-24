@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 func TestAPIProtectionThroughProxyHandler(t *testing.T) {

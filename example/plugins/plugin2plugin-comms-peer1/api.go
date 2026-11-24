@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sync"
 
-	plugin "aroz.org/zoraxy/plugins/plugin2plugin-comms-peer1/mod/zoraxy_plugin"
-	"aroz.org/zoraxy/plugins/plugin2plugin-comms-peer1/mod/zoraxy_plugin/events"
+	plugin "example.com/dunree/plugins/plugin2plugin-comms-peer1/mod/dunree_plugin"
+	"example.com/dunree/plugins/plugin2plugin-comms-peer1/mod/dunree_plugin/events"
 )
 
 type Message struct {
@@ -35,7 +35,7 @@ func sendMessageToPeer(config *plugin.ConfigureSpec, message string) error {
 
 	// Make an API call to the peer plugin's endpoint
 	client := &http.Client{}
-	apiURL := fmt.Sprintf("http://localhost:%d/plugin/event/emit", config.ZoraxyPort)
+	apiURL := fmt.Sprintf("http://localhost:%d/plugin/event/emit", config.DunreePort)
 	payload := new(bytes.Buffer)
 	if err := json.NewEncoder(payload).Encode(event); err != nil {
 		return err
@@ -58,7 +58,7 @@ func sendMessageToPeer(config *plugin.ConfigureSpec, message string) error {
 	if resp.StatusCode != http.StatusOK {
 		response_body, _ := io.ReadAll(resp.Body)
 		fmt.Printf("Response Body: %s\n", string(response_body))
-		return fmt.Errorf("failed to call the zoraxy API: %s, %v", resp.Status, string(response_body))
+		return fmt.Errorf("failed to call the Dunree API: %s, %v", resp.Status, string(response_body))
 	}
 
 	return nil

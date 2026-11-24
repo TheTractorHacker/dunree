@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 	"golang.org/x/net/publicsuffix"
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 // Create a new uptime monitor
@@ -433,7 +433,7 @@ func (m *Monitor) getWebsiteStatus(url string, skipTLSVerification bool, timeout
 		return 0, reqErr
 	}
 	req.Header = http.Header{
-		"User-Agent": {UPTIME_MONITOR_USER_AGENT},
+		"User-Agent": {uptimeUserAgent()},
 	}
 
 	resp, err := client.Do(req)
@@ -455,7 +455,7 @@ func (m *Monitor) getWebsiteStatus(url string, skipTLSVerification bool, timeout
 			return 0, reqErr
 		}
 		req.Header = http.Header{
-			"User-Agent": {UPTIME_MONITOR_USER_AGENT},
+			"User-Agent": {uptimeUserAgent()},
 		}
 
 		resp, err = client.Do(req)

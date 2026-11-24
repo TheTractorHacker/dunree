@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 /*

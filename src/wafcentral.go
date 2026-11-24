@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 /*

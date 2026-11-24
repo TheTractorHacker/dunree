@@ -3,7 +3,7 @@
 //
 // Archive layout (unchanged from older builds): every file of the config folder is stored as
 // "conf/<relative path>", the optional system database as "sys.db". New in schema 1: a
-// "manifest.json" at the root with the schema version, Zoraxy version, mode (full or shareable),
+// "manifest.json" at the root with the schema version, Dunree version, mode (full or shareable),
 // creation time and the size and SHA-256 of every other entry.
 //
 // Two modes:

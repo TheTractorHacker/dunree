@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth/sso/forward"
-	"imuslab.com/zoraxy/mod/auth/sso/zorxauth"
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/confpack"
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/auth/sso/forward"
+	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/confpack"
+	"github.com/foleyit/dunree/mod/database"
 )
 
 func settingsTestDB(t *testing.T) *database.Database {

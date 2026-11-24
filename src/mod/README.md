@@ -1,6 +1,6 @@
-# Zoraxy Modules
+# Dunree Modules
 
-This directory contains all the modular components that make up the Zoraxy reverse proxy server. Each module is designed to be independent and focused on a specific functionality, allowing for better maintainability and extensibility.
+This directory contains all the modular components that make up the Dunree reverse proxy server. Each module is designed to be independent and focused on a specific functionality, allowing for better maintainability and extensibility.
 
 ## Core Modules
 
@@ -217,7 +217,7 @@ When adding new modules:
 
 Modules may depend on:
 - Standard Go libraries
-- Other Zoraxy modules (through interfaces)
+- Other Dunree modules (through interfaces)
 - External libraries (documented in go.mod)
 
 For more detailed information about specific modules, refer to their individual README files or source code documentation.

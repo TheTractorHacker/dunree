@@ -74,7 +74,7 @@ of the WAF block (`.wafSourceSaveBtn`, `.wafChallengeSaveBtn`, `.wafSaveBtn`) ar
 ## 2. Easy and Advanced
 
 The switch is at the top of the dialog (`#hrpMode`, a kit segmented control) and is remembered per browser
-(`localStorage` key `zoraxy_site_editor_mode`; default Easy).
+(`localStorage` key `dunree_site_editor_mode`; default Easy).
 
 * **Easy** shows one column with the cards that carry `data-easy`: hostname, destinations, WebSocket on/off, **Header rewrite rules** (always shown: adding a header is a common task, and a rule without any custom header used to look as if the section was missing), **Protection**,
   **Access rule** (a plain picker), **HTTPS certificate** (status), and a "Show advanced settings" link. The section navigation is hidden.
@@ -151,7 +151,7 @@ What the presets deliberately do **not** do:
   turn on authentication; it is flagged `RequiresAuth`, so the dialogs warn when the rule has no provider.
 * **No WAF exclusions.** The engine has no exclusion field, and no exclusion is claimed for any app: presets use detection
   only, so false positives are logged and the WAF tuning assistant proposes exclusions from real traffic.
-* **No `X-Forwarded-Proto` header**: Zoraxy already sets it. No per-app body-size or WebDAV setting: Zoraxy imposes no body limit.
+* **No `X-Forwarded-Proto` header**: Dunree already sets it. No per-app body-size or WebDAV setting: Dunree imposes no body limit.
 * Notes about the app's own configuration (trusted proxies, root URL, ...) are text only.
 * **`NoDowngrade`** (set on every preset): the WAF source is only raised (off < inherit < detection only < block; a profile or a
   custom WAF is never replaced), a rate limit is only applied when the rule has none or a looser one, exploit blocking is never

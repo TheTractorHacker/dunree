@@ -15,11 +15,15 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/destguard"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
-// UserAgent identifies this bouncer to the LAPI
-const UserAgent = "zoraxy-crowdsec-bouncer/1.0"
+// UserAgent identifies this bouncer to the LAPI: "dunree-crowdsec-bouncer/1.0", with the inherited token
+// appended while the legacy names are on (plan row 13)
+func UserAgent() string {
+	return wirecompat.UserAgent("dunree-crowdsec-bouncer/1.0", "zoraxy-crowdsec-bouncer/1.0")
+}
 
 const (
 	maxStreamBytes   = 128 << 20 // a full answer larger than this is refused (the cache is bounded anyway)
@@ -144,7 +148,7 @@ func (c *Client) get(ctx context.Context, path string, q url.Values) (*http.Resp
 		return nil, err
 	}
 	req.Header.Set("X-Api-Key", c.key)
-	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("User-Agent", UserAgent())
 	req.Header.Set("Accept", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {

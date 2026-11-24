@@ -169,7 +169,7 @@ func (m *Manager) HandleDiff(w http.ResponseWriter, r *http.Request) {
 	out := DiffExport{Format: "zoraxy-history-diff", From: from, To: to,
 		Note: "Secret values are masked. This export contains no restorable data.", Files: files}
 	if formBool(r, "download") {
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="zoraxy-history-diff-%d-%d.json"`, from, to))
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="dunree-history-diff-%d-%d.json"`, from, to))
 	}
 	jsonOut(w, http.StatusOK, out)
 }

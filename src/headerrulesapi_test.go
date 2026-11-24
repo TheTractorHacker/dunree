@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
 )
 
 // /api/headerrules/set and get: the rule set options of #245 (mode, exceptions) through the API handlers.

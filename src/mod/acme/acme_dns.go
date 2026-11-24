@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/acme/acmedns"
 	"github.com/go-acme/lego/v5/challenge"
-	"imuslab.com/zoraxy/mod/acme/acmedns"
 )
 
 // credentialToInt reads an integer-like credential field sent by the UI as a

@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // initSiteLogs attaches the optional per-site request logs (disabled by default)

@@ -3,7 +3,7 @@ package forward
 import (
 	"strings"
 
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 /*

@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 // legacyIsIPBlacklisted is the pre-#986 implementation, kept as the reference the indexed

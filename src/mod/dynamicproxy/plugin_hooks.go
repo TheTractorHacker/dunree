@@ -3,8 +3,8 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/plugins"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/plugins"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*
@@ -16,7 +16,7 @@ import (
 
 // routePluginStage runs a request stage of the plugin filter hooks.
 // It returns true if the request has been answered by a plugin.
-func (router *Router) routePluginStage(w http.ResponseWriter, r *http.Request, sep *ProxyEndpoint, stage zoraxyPlugin.HookStage) bool {
+func (router *Router) routePluginStage(w http.ResponseWriter, r *http.Request, sep *ProxyEndpoint, stage dunreePlugin.HookStage) bool {
 	if router.Option.PluginManager == nil {
 		return false
 	}

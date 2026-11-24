@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 // EventLookup finds events by id.

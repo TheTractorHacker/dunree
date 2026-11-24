@@ -155,7 +155,7 @@ func TestUpstreamClientCertificate(t *testing.T) {
 	t.Cleanup(upstream.Close)
 	target, _ := url.Parse(upstream.URL)
 
-	cert := testClientCert(t, "zoraxy-proxy")
+	cert := testClientCert(t, "dunree-proxy")
 	do := func(opts *DpcoreOptions) (int, string, error) {
 		opts.IgnoreTLSVerification = true
 		core := NewDynamicProxyCore(target, "", opts)
@@ -165,7 +165,7 @@ func TestUpstreamClientCertificate(t *testing.T) {
 		return status, rw.Body.String(), err
 	}
 	status, body, err := do(&DpcoreOptions{ClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) { return &cert, nil }})
-	if err != nil || status != 200 || body != "zoraxy-proxy" {
+	if err != nil || status != 200 || body != "dunree-proxy" {
 		t.Fatalf("with client cert: status=%d body=%q err=%v", status, body, err)
 	}
 	if status, _, err := do(&DpcoreOptions{}); err == nil && status == 200 {

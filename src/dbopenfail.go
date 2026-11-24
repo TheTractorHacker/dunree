@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 /*

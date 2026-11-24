@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 var spoofableClientIPHeaders = []string{"X-Real-Ip", "CF-Connecting-IP", "Fastly-Client-IP", "X-Forwarded-For"}
@@ -171,7 +171,7 @@ func TestHandleCaptchaGating_VerificationSendsTrustedProxyClientIP(t *testing.T)
 	}
 }
 
-// A visitor who solved the CAPTCHA must not be challenged again after Zoraxy
+// A visitor who solved the CAPTCHA must not be challenged again after Dunree
 // restarts, and the session must be accepted by a second node with the same secret.
 func TestHandleCaptchaGating_SessionSurvivesRouterRestart(t *testing.T) {
 	endpoint := newTestCaptchaEndpoint("")

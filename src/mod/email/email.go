@@ -16,7 +16,7 @@ type Sender struct {
 	Port       int    //E.g. 587
 	Username   string //Username of the email account
 	Password   string //Password of the email account
-	SenderAddr string //e.g. admin@aroz.org
+	SenderAddr string //e.g. admin@example.com
 }
 
 // Create a new email sender object
@@ -44,7 +44,7 @@ SendEmail(
 func (s *Sender) SendEmail(to string, subject string, content string) error {
 	// Parse the email content
 	msg := []byte("To: " + to + "\n" +
-		"From: Zoraxy <" + s.SenderAddr + ">\n" +
+		"From: Dunree <" + s.SenderAddr + ">\n" +
 		"Subject: " + subject + "\n" +
 		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n" +
 		content + "\n\n")

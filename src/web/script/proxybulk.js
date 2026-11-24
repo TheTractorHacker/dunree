@@ -128,7 +128,7 @@
         }
         else if (act === "auth") {
             openModal("Authentication for " + n + " rule(s)",
-                '<div class="ui form"><div class="field"><label>Provider</label><select id="bulkAuth"><option value="oauth2">OAuth2 / OIDC (global provider)</option><option value="zorxauth">Zoraxy Auth (global provider)</option><option value="none">None (removes protection)</option></select></div>' +
+                '<div class="ui form"><div class="field"><label>Provider</label><select id="bulkAuth"><option value="oauth2">OAuth2 / OIDC (global provider)</option><option value="zorxauth">Dunree Auth (global provider)</option><option value="none">None (removes protection)</option></select></div>' +
                 '<div class="field"><div class="ui checkbox"><input type="checkbox" id="bulkAuthConfirm"><label>I understand that choosing "None" makes these rules public</label></div></div>' +
                 '<div class="ui basic message">Basic Auth and Forward Auth need per-rule credentials/URLs and cannot be set in bulk.</div></div>',
                 [{ label: "Preview", cls: "primary", fn: function(){

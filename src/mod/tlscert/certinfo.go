@@ -7,7 +7,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 // Managed-by values shown in the certificate list

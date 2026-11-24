@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"imuslab.com/zoraxy/mod/apitoken"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

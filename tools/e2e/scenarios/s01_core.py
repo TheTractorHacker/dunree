@@ -11,7 +11,7 @@ def ev(*parts):
 @scenario("core_routing", ["core"])
 def core_routing():
     """Host routing, alias, wrong host falls to default site, header pass-through, removal."""
-    with Zoraxy() as z, Backend(name="A") as a, Backend(name="B") as b:
+    with Dunree() as z, Backend(name="A") as a, Backend(name="B") as b:
         z.add_rule("a.test", a.addr)
         z.add_rule("b.test", b.addr)
         r = z.req("a.test", "/p/q?x=1", headers={"X-Foo": "bar"})
@@ -45,7 +45,7 @@ def core_routing():
 @scenario("vdir_longest_match", ["core"])
 def vdir_longest_match():
     """Virtual directories: longest prefix wins, prefix stripped/preserved as per config."""
-    with Zoraxy() as z, Backend(name="root") as a, Backend(name="api") as b, Backend(name="apiv2") as c:
+    with Dunree() as z, Backend(name="root") as a, Backend(name="api") as b, Backend(name="apiv2") as c:
         z.add_rule("v.test", a.addr)
         z.api("/api/proxy/vdir/add", type="host", endpoint="v.test", path="/api", domain=b.addr)
         z.api("/api/proxy/vdir/add", type="host", endpoint="v.test", path="/api/v2", domain=c.addr)
@@ -62,7 +62,7 @@ def vdir_longest_match():
 @scenario("default_site", ["core"])
 def default_site():
     """Root (default site) behaviours: reverse proxy, redirect, 404 page, no response."""
-    with Zoraxy() as z, Backend(name="root") as a:
+    with Dunree() as z, Backend(name="root") as a:
         # reverse proxy mode
         z.api("/api/proxy/add", type="root", ep=a.addr, tls=False, defaultSiteOpt=1, defaultSiteVal="-")
         r = z.req("anything.test", "/zz")
@@ -89,7 +89,7 @@ def default_site():
 @scenario("idn_punycode", ["458"])
 def idn_punycode():
     """Rule created with a unicode hostname matches the punycode Host header (and vice versa)."""
-    with Zoraxy() as z, Backend(name="idn") as a:
+    with Dunree() as z, Backend(name="idn") as a:
         z.add_rule("bücher.example", a.addr)
         r = z.req("xn--bcher-kva.example")
         check(r.status == 200 and r.json()["backend"] == "idn", "punycode Host did not match unicode rule: %r" % r)
@@ -105,12 +105,12 @@ def idn_punycode():
 @scenario("header_rules", ["core"])
 def header_rules():
     """Custom request/response header rules (add/remove) applied on proxied traffic."""
-    with Zoraxy() as z, Backend(name="h") as a:
+    with Dunree() as z, Backend(name="h") as a:
         z.add_rule("h.test", a.addr)
-        z.api("/api/proxy/header/add", type="add", domain="h.test", direction="toOrigin", name="X-From-Zoraxy", value="yes")
+        z.api("/api/proxy/header/add", type="add", domain="h.test", direction="toOrigin", name="X-From-Dunree", value="yes")
         z.api("/api/proxy/header/add", type="add", domain="h.test", direction="toClient", name="X-To-Client", value="1")
         r = z.req("h.test")
-        check(r.json()["headers"].get("x-from-zoraxy") == "yes", "request header rule not applied: %s" % r.json()["headers"])
+        check(r.json()["headers"].get("x-from-dunree") == "yes", "request header rule not applied: %s" % r.json()["headers"])
         check(r.h("x-to-client") == "1", "response header rule not applied: %s" % r.headers)
         return "toOrigin + toClient custom headers applied"
 
@@ -118,7 +118,7 @@ def header_rules():
 @scenario("redirect_rules", ["core"])
 def redirect_rules():
     """Redirect rules (plain, regex) answer without touching the backend."""
-    with Zoraxy() as z, Backend(name="r") as a:
+    with Dunree() as z, Backend(name="r") as a:
         z.add_rule("r.test", a.addr)
         z.api("/api/redirect/add", redirectUrl="old.example.com/path", destUrl="https://new.example.com/dest",
               forwardChildpath="true", redirectType="307")

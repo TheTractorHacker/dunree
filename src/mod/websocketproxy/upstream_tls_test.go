@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls/tlstest"
 	"github.com/gorilla/websocket"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls/tlstest"
 )
 
 func wssBackend(t *testing.T, cert tls.Certificate, clientCAs *x509.CertPool) *url.URL {

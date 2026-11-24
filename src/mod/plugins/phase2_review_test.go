@@ -190,7 +190,7 @@ func TestPermissionBaselineCoversPluginsThatFailedToLoadThen(t *testing.T) {
 		t.Fatal("the fixture must fail to load at the first boot")
 	}
 
-	//The same Zoraxy, later: "late" loads now; "gone" was removed and something else is installed under that folder name
+	//The same Dunree, later: "late" loads now; "gone" was removed and something else is installed under that folder name
 	conf := "mode=ok\nfeatures=hooks\napi_endpoints=GET " + epList + "\n"
 	if err := os.WriteFile(filepath.Join(late, "chaos.conf"), []byte(conf), 0o644); err != nil {
 		t.Fatal(err)

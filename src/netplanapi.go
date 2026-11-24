@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/netplan"
-	"imuslab.com/zoraxy/mod/posture"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/netplan"
+	"github.com/foleyit/dunree/mod/posture"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -26,7 +26,7 @@ import (
 
 	Security Center > Network plan (mod/netplan, docs/enterprise-dual-proxy-plan.md phase 4). The plan is a document the
 	administrator writes down (proxy, management and application networks, expected upstream proxies, permitted
-	backends and ports, who may administer). Zoraxy compares the real configuration with it through the posture checks
+	backends and ports, who may administer). Dunree compares the real configuration with it through the posture checks
 	netplan.* (mod/posture/checks_netplan.go) and can export firewall recommendations. It applies nothing to any firewall.
 
 	GET  /api/netplan/get      the plan, and what the posture checks find against it
@@ -312,7 +312,7 @@ func HandleNetPlanSet(w http.ResponseWriter, r *http.Request) {
 	utils.SendOK(w)
 }
 
-const netplanPolicyFile = "zoraxy-firewall-recommendations.md"
+const netplanPolicyFile = "dunree-firewall-recommendations.md"
 
 // HandleNetPlanPolicy returns the firewall recommendations. Nothing is applied anywhere.
 func HandleNetPlanPolicy(w http.ResponseWriter, r *http.Request) {

@@ -15,8 +15,8 @@ A clear and concise description of what you expect to see and what you have trie
 
 **Describe the networking setup you are using**
 Here are some example, commonly asked questions from our maintainers: 
-- Are you using the docker build of Zoraxy? [yes (with docker setup & networking config attach) /no]
-- Your Zoraxy version? [e.g. 3.0.4]
+- Are you using the docker build of Dunree? [yes (with docker setup & networking config attach) /no]
+- Your Dunree version? [e.g. 3.0.4]
 - Are you using Cloudflare? [yes/no]
 - Are your system hosted under a NAT router? [e.g. yes, with subnet is e.g. 192.168.0.0/24 and include port forwarding config if any]
 - DNS record (if any)

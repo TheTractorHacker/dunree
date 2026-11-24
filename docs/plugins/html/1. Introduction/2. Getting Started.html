@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-      Getting Started | Zoraxy Documentation
+      Getting Started | Dunree Documentation
     </title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -69,7 +69,7 @@
           <a href="#!" class="is-active item">
             Documents
           </a>
-          <a href="https://github.com/tobychui/zoraxy/tree/main/example/plugins" target="_blank" class="item">
+          <a href="../../../../example/plugins/" class="item">
             Examples
             <span class="ts-icon is-arrow-up-right-from-square-icon"></span>
           </a>
@@ -88,8 +88,8 @@
                   <span class="ts-icon is-caret-down-icon"></span>
                 </a>
                 <div class="ts-menu is-dense is-small is-horizontally-padded">
-                  <a class="item" href="/plugins/html/1. Introduction/1. What is Zoraxy Plugin.html">
-                    What is Zoraxy Plugin
+                  <a class="item" href="/plugins/html/1. Introduction/1. What is Dunree Plugin.html">
+                    What is Dunree Plugin
                   </a>
                   <a class="item is-active" href="/plugins/html/1. Introduction/2. Getting Started.html">
                     Getting Started
@@ -149,8 +149,8 @@
                 <a class="item" href="/plugins/html/index.html">
                   index
                 </a>
-                <a class="item" href="/plugins/html/zoraxy_plugin API.html">
-                  zoraxy_plugin API
+                <a class="item" href="/plugins/html/dunree_plugin API.html">
+                  dunree_plugin API
                 </a>
               </div>
             </div>
@@ -174,7 +174,7 @@
                 </p>
                 <div class="ts-list is-ordered">
                   <div class="item">
-                    The source code of Zoraxy
+                    The source code of Dunree
                   </div>
                   <div class="item">
                     Go compiler
@@ -184,30 +184,30 @@
                   </div>
                 </div>
                 <div class="ts-divider has-top-spaced-large"></div>
-                <h2 id="step-1-start-zoraxy-at-least-once">
-                  Step 1: Start Zoraxy at least once
+                <h2 id="step-1-start-dunree-at-least-once">
+                  Step 1: Start Dunree at least once
                 </h2>
                 <p>
                   <p class="ts-text">
-                    If you have just cloned Zoraxy from the Github repo, use the following to build and run it once.
+                    If you have just cloned Dunree from the Github repo, use the following to build and run it once.
                   </p>
                 </p>
                 <pre><code class="language-bash">cd src/
 go mod tidy
 go build
-sudo ./zoraxy
+sudo ./dunree
 </code></pre>
                 <p>
                   <p class="ts-text">
-                    This would allow Zoraxy to generate all the required folder structure on startup.
+                    This would allow Dunree to generate all the required folder structure on startup.
                   </p>
                 </p>
                 <p>
-                  After the startup process completes, you would see a folder named &ldquo;plugins&rdquo; in the working directory of Zoraxy.
+                  After the startup process completes, you would see a folder named &ldquo;plugins&rdquo; in the working directory of Dunree.
                 </p>
                 <div class="ts-divider has-top-spaced-large"></div>
-                <h2 id="steps-2-prepare-the-development-environment-for-zoraxy-plugin">
-                  Steps 2: Prepare the development environment for Zoraxy Plugin
+                <h2 id="steps-2-prepare-the-development-environment-for-dunree-plugin">
+                  Steps 2: Prepare the development environment for Dunree Plugin
                 </h2>
                 <p>
                   Next, you will need to think of a name for your plugin. Lets name our new plugin &ldquo;Lapwing&rdquo;.
@@ -240,18 +240,18 @@ sudo ./zoraxy
                     .
                   </p>
                 </p>
-                <h3 id="2-2-locate-and-copy-zoraxy-plugin-library">
-                  2.2 Locate and copy Zoraxy Plugin library
+                <h3 id="2-2-locate-and-copy-dunree-plugin-library">
+                  2.2 Locate and copy Dunree Plugin library
                 </h3>
                 <p>
                   <p class="ts-text">
-                    Locate the Zoraxy plugin library from the Zoraxy source code. You can find the
+                    Locate the Dunree plugin library from the Dunree source code. You can find the
                     <span class="ts-text is-code">
-                      zoraxy_plugin
+                      dunree_plugin
                     </span>
                     Go module under
                     <span class="ts-text is-code">
-                      src/mod/plugins/zoraxy_plugin
+                      src/mod/plugins/dunree_plugin
                     </span>
                     .
                   </p>
@@ -259,15 +259,15 @@ sudo ./zoraxy
                 <p>
                   Copy the
                   <span class="ts-text is-code">
-                    zoraxy_plugin
+                    dunree_plugin
                   </span>
-                  folder from the Zoraxy source code mod folder into the your plugin&rsquo;s mod folder. Let assume you use the same mod folder name as Zoraxy as
+                  folder from the Dunree source code mod folder into the your plugin&rsquo;s mod folder. Let assume you use the same mod folder name as Dunree as
                   <span class="ts-text is-code">
                     mod
                   </span>
                   , then your copied library path should be
                   <span class="ts-text is-code">
-                    plugins/Lapwing/mod/zoraxy_plugin
+                    plugins/Lapwing/mod/dunree_plugin
                   </span>
                   .
                 </p>
@@ -315,7 +315,7 @@ sudo ./zoraxy
                 </p>
                 <p>
                   <p class="ts-text">
-                    Now, you are ready to start developing Zoraxy plugin!
+                    Now, you are ready to start developing Dunree plugin!
                   </p>
                 </p>
               </div>
@@ -330,7 +330,7 @@ sudo ./zoraxy
       <div class="ts-divider"></div>
       <div class="ts-content">
         <div class="ts-text">
-          Zoraxy © tobychui
+          Dunree plugin documentation, based on the Zoraxy documentation © tobychui
           <span class="thisyear">
             2025
           </span>

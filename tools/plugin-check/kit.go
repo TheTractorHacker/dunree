@@ -27,15 +27,18 @@ import (
 	"time"
 )
 
-const toolVersion = "1.2.0" //1.2.0: knows proxyRuleAdded / proxyRuleEdited / proxyRuleRemoved and sends samples of them
+// 1.2.0: knows proxyRuleAdded / proxyRuleEdited / proxyRuleRemoved and sends samples of them
+// 1.3.0 (Dunree): sends every host header as X-Dunree-* and X-Zoraxy-*, adds the dunree_* configure fields for a
+// plugin that declares sdk_flavor "dunree"; the report names the tool dunree-plugin-check
+const toolVersion = "1.3.0"
 
 // Options of one run. The zero value is not usable: see defaultOptions.
 type Options struct {
-	Binary            string        //the entry point of the plugin (the program Zoraxy starts)
+	Binary            string        //the entry point of the plugin (the program Dunree starts)
 	WithFolder        bool          //copy the whole folder of the plugin, not only the program file
 	PortMin, PortMax  int           //ports the kit may use (0 = any free port)
-	IntrospectTimeout time.Duration //Zoraxy: 10 s
-	ReadyTimeout      time.Duration //Zoraxy (opt-in readiness gate): 10 s
+	IntrospectTimeout time.Duration //Dunree: 10 s
+	ReadyTimeout      time.Duration //Dunree (opt-in readiness gate): 10 s
 	MinRun            time.Duration //the plugin has to stay up at least this long
 	Calls             int           //calls made before the memory is compared
 	LoadCalls         int           //calls of the latency check
@@ -117,7 +120,7 @@ var checkOrder = []struct{ id, title string }{
 	{"token", "Refuses calls without the invoke token"},
 	{"load", "Latency under load"},
 	{"memory", "Memory after the calls"},
-	{"api", "Calls to the Zoraxy API"},
+	{"api", "Calls to the Dunree API"},
 	{"survive", "Stays up"},
 	{"term", "Ends on the terminate request"},
 	{"sigterm", "Ends within 5 s of SIGTERM"},
@@ -181,7 +184,7 @@ func (k *kit) procList() []*proc {
 // Run puts one plugin binary through all checks
 func Run(o Options) *Report {
 	k := &kit{o: o, logs: &logCounter{}, usedPorts: map[int]bool{}, uuid: randomHex(16)}
-	k.rep = &Report{Tool: "zoraxy-plugin-check", ToolVersion: toolVersion, Contract: contractMax, Time: time.Now().UTC().Format(time.RFC3339), Binary: o.Binary}
+	k.rep = &Report{Tool: "dunree-plugin-check", ToolVersion: toolVersion, Contract: contractMax, Time: time.Now().UTC().Format(time.RFC3339), Binary: o.Binary}
 	k.client = &http.Client{
 		Transport: &http.Transport{
 			Proxy:               nil,
@@ -275,7 +278,7 @@ func (k *kit) run() {
 	}
 	if len(k.m.PermittedAPIEndpoints) > 0 {
 		if err := k.startStub(); err != nil {
-			k.notRun = "the stand-in for the Zoraxy API could not be started: " + err.Error()
+			k.notRun = "the stand-in for the Dunree API could not be started: " + err.Error()
 			return
 		}
 	}
@@ -424,10 +427,10 @@ func (k *kit) checkIntrospect() bool {
 	k.notRun = "the manifest could not be read"
 	switch {
 	case ctx.Err() == context.DeadlineExceeded:
-		k.add("introspect", statusFail, fmt.Sprintf("No manifest within %s: Zoraxy lists the plugin as \"could not be loaded\".", k.o.IntrospectTimeout), begin, data)
+		k.add("introspect", statusFail, fmt.Sprintf("No manifest within %s: Dunree lists the plugin as \"could not be loaded\".", k.o.IntrospectTimeout), begin, data)
 		return false
 	case err != nil:
-		k.add("introspect", statusFail, "The introspect call failed ("+err.Error()+"): Zoraxy lists the plugin as \"could not be loaded\". "+firstLine(stderr.buf.String()), begin, data)
+		k.add("introspect", statusFail, "The introspect call failed ("+err.Error()+"): Dunree lists the plugin as \"could not be loaded\". "+firstLine(stderr.buf.String()), begin, data)
 		return false
 	}
 	if stdout.total > introspectMaxBytes {
@@ -437,14 +440,14 @@ func (k *kit) checkIntrospect() bool {
 	}
 	m, notes, err := decodeManifest(stdout.buf.Bytes())
 	if err != nil {
-		k.add("introspect", statusFail, "The introspect output is not a manifest in JSON ("+err.Error()+"): Zoraxy lists the plugin as \"could not be loaded\".", begin, data)
+		k.add("introspect", statusFail, "The introspect output is not a manifest in JSON ("+err.Error()+"): Dunree lists the plugin as \"could not be loaded\".", begin, data)
 		return false
 	}
 	k.m = m
 	k.rep.Plugin = &PluginInfo{ID: m.ID, Name: m.Name, Version: m.version(), Type: m.Type, APIVersion: m.APIVersion}
 	status, detail := statusPass, fmt.Sprintf("Manifest in %d ms.", took.Milliseconds())
 	if took > 2*time.Second {
-		status, detail = statusWarn, fmt.Sprintf("Manifest after %d ms. Zoraxy runs this at every start, one plugin after the other, and gives up after 10 s.", took.Milliseconds())
+		status, detail = statusWarn, fmt.Sprintf("Manifest after %d ms. Dunree runs this at every start, one plugin after the other, and gives up after 10 s.", took.Milliseconds())
 	}
 	if stderr.total > 0 {
 		status = statusWarn
@@ -539,7 +542,7 @@ func (k *kit) checkStart() bool {
 	}
 	status, detail := statusPass, fmt.Sprintf("Port open after %d ms.", took.Milliseconds())
 	if took > 5*time.Second {
-		status, detail = statusWarn, fmt.Sprintf("Port open after %d ms: more than half of the 10 s Zoraxy waits.", took.Milliseconds())
+		status, detail = statusWarn, fmt.Sprintf("Port open after %d ms: more than half of the 10 s Dunree waits.", took.Milliseconds())
 	}
 	k.add("readiness", status, detail, begin, map[string]any{"ms": took.Milliseconds()})
 	return true
@@ -585,6 +588,12 @@ func (k *kit) call(method, path string, body []byte, header map[string]string, t
 	}
 	for name, v := range header {
 		req.Header.Set(name, v)
+		// As Dunree does: every header of the host goes out under its Dunree name and under the
+		// name Zoraxy used, with the same value. A plugin built with the Zoraxy SDK reads // legacy-compat
+		// X-Zoraxy-*, one built with the Dunree SDK reads X-Dunree-* first.
+		if strings.HasPrefix(name, legacyHostHeaderPrefix) {
+			req.Header.Set(hostHeaderPrefix+name[len(legacyHostHeaderPrefix):], v)
+		}
 	}
 	resp, err := k.client.Do(req)
 	if err != nil {
@@ -599,6 +608,13 @@ func (k *kit) call(method, path string, body []byte, header map[string]string, t
 	}
 	return a
 }
+
+// Header names of the host. The kit writes the legacy name at every call site and call() adds
+// the Dunree name with the same value, so both are always sent together, as Dunree 1.x does.
+const (
+	hostHeaderPrefix       = "X-Dunree-"
+	legacyHostHeaderPrefix = "X-Zoraxy-"
+)
 
 func (k *kit) tokenHeader(requestID string) map[string]string {
 	h := map[string]string{"Content-Type": "application/json", "X-Zoraxy-Plugin-Token": k.p.token}
@@ -623,7 +639,7 @@ func (k *kit) checkBind() {
 		c, err := net.DialTimeout("tcp", net.JoinHostPort(ipn.IP.String(), strconv.Itoa(k.p.port)), 300*time.Millisecond)
 		if err == nil {
 			c.Close()
-			k.add("bind", statusFail, "The plugin also accepts connections on "+ipn.IP.String()+": it has to listen on 127.0.0.1 only. Its page and its other paths are open to the network without the login of Zoraxy.", begin, nil)
+			k.add("bind", statusFail, "The plugin also accepts connections on "+ipn.IP.String()+": it has to listen on 127.0.0.1 only. Its page and its other paths are open to the network without the login of Dunree.", begin, nil)
 			return
 		}
 		k.add("bind", statusPass, "Not reachable on "+ipn.IP.String()+".", begin, nil)
@@ -661,7 +677,7 @@ func shortErr(err error) string {
 func (k *kit) checkHealth() {
 	begin := time.Now()
 	if k.m.HealthPath == "" {
-		k.skip("health", "No health_path declared. The health check of Zoraxy can then only try a TCP connect, which does not see a plugin that accepts connections and no longer answers.")
+		k.skip("health", "No health_path declared. The health check of Dunree can then only try a TCP connect, which does not see a plugin that accepts connections and no longer answers.")
 		return
 	}
 	if why := k.gate(); why != "" {
@@ -676,7 +692,7 @@ func (k *kit) checkHealth() {
 		}
 		k.add("health", statusFail, "No answer on "+k.m.HealthPath+" within 2 s ("+shortErr(a.err)+").", begin, nil)
 	case a.status < 200 || a.status > 299:
-		k.add("health", statusFail, fmt.Sprintf("%s answers HTTP %d on a plugin that was just started: Zoraxy counts every status outside 200 to 299 as unhealthy.", k.m.HealthPath, a.status), begin, nil)
+		k.add("health", statusFail, fmt.Sprintf("%s answers HTTP %d on a plugin that was just started: Dunree counts every status outside 200 to 299 as unhealthy.", k.m.HealthPath, a.status), begin, nil)
 	default:
 		k.add("health", statusPass, fmt.Sprintf("HTTP %d in %d ms.", a.status, a.took.Milliseconds()), begin, nil)
 	}
@@ -718,7 +734,7 @@ func (k *kit) filterSamples(stage string) []filterSample {
 	for i, r := range requests {
 		fr := map[string]any{"version": hookAPIVersion, "stage": stage, "request_id": fmt.Sprintf("plugin-check-%s-%d", stage, i), "request": r.req}
 		if r.body != nil && k.m.wantsBody() && stage != "response" {
-			fr["body_preview"] = r.body //[]byte is base64 in JSON, as Zoraxy sends it
+			fr["body_preview"] = r.body //[]byte is base64 in JSON, as Dunree sends it
 		}
 		if stage == "response" {
 			fr["response"] = map[string]any{"status": 200, "header": map[string][]string{"Content-Type": {"text/html; charset=utf-8"}, "X-Powered-By": {"upstream"}, "Set-Cookie": {"sid=1; Path=/"}}}
@@ -767,7 +783,7 @@ func (k *kit) checkVerdict() {
 					warns = append(warns, s.name+": the verdict is \"capture\" but the manifest has no dynamic capture ingress")
 				}
 				if action == "capture" && stage == "pre_auth" {
-					warns = append(warns, s.name+": \"capture\" is not honoured at pre_auth (Zoraxy treats it as allow)")
+					warns = append(warns, s.name+": \"capture\" is not honoured at pre_auth (Dunree treats it as allow)")
 				}
 			}
 		}
@@ -782,7 +798,7 @@ stages:
 		}
 	}
 	if k.silent == "" {
-		//Calls Zoraxy never makes. Any answer will do, but the plugin has to answer and to go on working.
+		//Calls Dunree never makes. Any answer will do, but the plugin has to answer and to go on working.
 		stage := k.m.Hooks.Stages[0]
 		for name, body := range map[string][]byte{"a call that is not JSON": []byte("{this is not json"), "an empty call": nil, "a call with an unknown stage": []byte(`{"version":1,"stage":"later","request":{}}`)} {
 			if a := k.call(http.MethodPost, k.m.filterPath(stage), body, k.tokenHeader("plugin-check"), timeout, 8<<20); a.err != nil {
@@ -802,7 +818,7 @@ stages:
 	data := map[string]any{"valid": valid, "actions": actions, "timeout_ms": timeout.Milliseconds()}
 	switch {
 	case len(problems) > 0:
-		k.add("verdict", statusFail, fmt.Sprintf("%d of the answers Zoraxy would refuse. %s.", len(problems), joinMax(problems, 3)), begin, data)
+		k.add("verdict", statusFail, fmt.Sprintf("%d of the answers Dunree would refuse. %s.", len(problems), joinMax(problems, 3)), begin, data)
 	case len(warns) > 0:
 		k.add("verdict", statusWarn, fmt.Sprintf("%d valid verdicts. %s.", valid, joinMax(warns, 3)), begin, data)
 	default:
@@ -830,7 +846,7 @@ func countText(m map[string]int) string {
 	return strings.Join(parts, ", ")
 }
 
-const sniffReplyLimit = 4096 //Zoraxy reads at most this much of a sniff answer
+const sniffReplyLimit = 4096 //Dunree reads at most this much of a sniff answer
 
 func (k *kit) checkSniff() {
 	begin := time.Now()
@@ -861,7 +877,7 @@ func (k *kit) checkSniff() {
 				k.silent = "the plugin did not answer a sniff call in time"
 			}
 		case a.tooLarge:
-			problems = append(problems, fmt.Sprintf("the answer is larger than %d bytes: Zoraxy counts that as a failed call", sniffReplyLimit))
+			problems = append(problems, fmt.Sprintf("the answer is larger than %d bytes: Dunree counts that as a failed call", sniffReplyLimit))
 		default:
 			statuses[strconv.Itoa(a.status)]++
 			if a.status == http.StatusOK {
@@ -979,7 +995,7 @@ func (k *kit) checkEvents() {
 	case len(problems) > 0:
 		k.add("events", statusFail, joinMax(problems, 3)+".", begin, data)
 	case mean > 100*time.Millisecond || slowest > time.Second:
-		k.add("events", statusWarn, fmt.Sprintf("%d events acknowledged, but slowly (mean %s ms, slowest %s ms). Zoraxy sends one event at a time and keeps at most 1000 waiting: acknowledge first, work later.", sent, fmtMs(mean), fmtMs(slowest)), begin, data)
+		k.add("events", statusWarn, fmt.Sprintf("%d events acknowledged, but slowly (mean %s ms, slowest %s ms). Dunree sends one event at a time and keeps at most 1000 waiting: acknowledge first, work later.", sent, fmtMs(mean), fmtMs(slowest)), begin, data)
 	default:
 		k.add("events", statusPass, fmt.Sprintf("%d events acknowledged (mean %s ms, slowest %s ms).", sent, fmtMs(mean), fmtMs(slowest)), begin, data)
 	}
@@ -990,9 +1006,9 @@ func fmtMs(d time.Duration) string {
 	return strconv.FormatFloat(ms(d), 'f', -1, 64)
 }
 
-// checkToken calls every path Zoraxy protects with the invoke token without the
+// checkToken calls every path Dunree protects with the invoke token without the
 // token and with a wrong one. A plugin that answers such a call as it answers
-// Zoraxy can be driven by any local process.
+// Dunree can be driven by any local process.
 func (k *kit) checkToken() {
 	begin := time.Now()
 	type target struct {
@@ -1036,7 +1052,7 @@ func (k *kit) checkToken() {
 	}
 	var open, unclear []string
 	for _, t := range targets {
-		//What the plugin answers to Zoraxy (with the token), to compare with
+		//What the plugin answers to Dunree (with the token), to compare with
 		ref := k.call(http.MethodPost, t.path, t.body, k.tokenHeader("plugin-check-token"), 2*time.Second, maxVerdictBytes)
 		for _, how := range []string{"without the token", "with a wrong token"} {
 			hdr := map[string]string{"Content-Type": "application/json", "X-Zoraxy-RequestID": "plugin-check-token"}
@@ -1049,7 +1065,7 @@ func (k *kit) checkToken() {
 			case t.accepted(a):
 				open = append(open, t.what+" "+how)
 			case ref.err == nil && !t.accepted(ref) && a.status == ref.status:
-				//The plugin did not take the sample call from Zoraxy either, with the same
+				//The plugin did not take the sample call from Dunree either, with the same
 				//status: a refusal cannot be told from "not for me" (a sniff that skips)
 				unclear = append(unclear, fmt.Sprintf("%s %s (HTTP %d, the same as with the token)", t.what, how, a.status))
 			}
@@ -1058,9 +1074,9 @@ func (k *kit) checkToken() {
 	data := map[string]any{"paths": len(targets), "open": open, "unclear": unclear}
 	switch {
 	case len(open) > 0 && k.m.APIVersion >= 1:
-		k.add("token", statusFail, "Answered as if Zoraxy had called: "+joinMax(open, 4)+". Any local process can call these paths. Check the header X-Zoraxy-Plugin-Token (SDK: RequireInvokeToken).", begin, data)
+		k.add("token", statusFail, "Answered as if Dunree had called: "+joinMax(open, 4)+". Any local process can call these paths. Check the header X-Dunree-Plugin-Token (X-Zoraxy-Plugin-Token for a plugin built with the Zoraxy SDK; SDK: RequireInvokeToken).", begin, data) // legacy-compat
 	case len(open) > 0:
-		k.add("token", statusWarn, "Answered as if Zoraxy had called: "+joinMax(open, 4)+". Any local process can call these paths. A legacy plugin is not failed for this; a plugin of contract version 1 is.", begin, data)
+		k.add("token", statusWarn, "Answered as if Dunree had called: "+joinMax(open, 4)+". Any local process can call these paths. A legacy plugin is not failed for this; a plugin of contract version 1 is.", begin, data)
 	case len(unclear) > 0:
 		k.add("token", statusWarn, "Could not be told: "+joinMax(unclear, 2)+". The plugin does not take the sample request of the kit, with or without the token, so the kit cannot see whether it checks the token.", begin, data)
 	default:
@@ -1069,7 +1085,7 @@ func (k *kit) checkToken() {
 }
 
 // requestPathTarget returns the call the latency and memory checks repeat: the
-// call Zoraxy makes for every visitor request, or the page when the plugin is not
+// call Dunree makes for every visitor request, or the page when the plugin is not
 // in the request path.
 func (k *kit) requestPathTarget() (what string, inPath bool, do func() answer) {
 	timeout := time.Duration(k.m.hookTimeoutMs()) * time.Millisecond
@@ -1149,7 +1165,7 @@ func (k *kit) checkLoad() {
 	begin := time.Now()
 	what, inPath, do := k.requestPathTarget()
 	if !inPath {
-		k.skip("load", "The plugin has no filter hooks and no dynamic capture sniff: Zoraxy does not call it for visitor requests. (Static capture paths are not exercised by this kit.)")
+		k.skip("load", "The plugin has no filter hooks and no dynamic capture sniff: Dunree does not call it for visitor requests. (Static capture paths are not exercised by this kit.)")
 		return
 	}
 	if why := k.gate(); why != "" {
@@ -1173,7 +1189,7 @@ func (k *kit) checkLoad() {
 		}
 		k.add("load", statusFail, fmt.Sprintf("%d calls failed (%s). %s.", errs, firstErr, numbers), begin, data)
 	case p99 >= timeout:
-		k.add("load", statusFail, fmt.Sprintf("%s. The slowest calls reach the timeout of %d ms: Zoraxy counts them as failures.", numbers, timeout.Milliseconds()), begin, data)
+		k.add("load", statusFail, fmt.Sprintf("%s. The slowest calls reach the timeout of %d ms: Dunree counts them as failures.", numbers, timeout.Milliseconds()), begin, data)
 	case p95 > k.o.MaxLatency:
 		k.add("load", statusFail, fmt.Sprintf("%s. Every visitor request of an attached rule waits for this call; the limit of the kit for p95 is %s ms.", numbers, fmtMs(k.o.MaxLatency)), begin, data)
 	case p95 > k.o.WarnLatency:
@@ -1262,7 +1278,7 @@ func (k *kit) replace(id, status, detail string, begin time.Time) {
 func (k *kit) checkAPI() {
 	begin := time.Now()
 	if len(k.m.PermittedAPIEndpoints) == 0 || k.stub == nil {
-		k.skip("api", "The plugin asks for no Zoraxy API endpoints (and gets no API key).")
+		k.skip("api", "The plugin asks for no Dunree API endpoints (and gets no API key).")
 		return
 	}
 	calls, total := k.stub.snapshot()
@@ -1274,7 +1290,7 @@ func (k *kit) checkAPI() {
 		case !c.KeyOK:
 			msg = c.Method + " " + c.Path + " without the API key it was given"
 		case !c.Declared:
-			msg = c.Method + " " + c.Path + " is not in permitted_api_endpoints: Zoraxy refuses it"
+			msg = c.Method + " " + c.Path + " is not in permitted_api_endpoints: Dunree refuses it"
 		}
 		if msg != "" && !seen[msg] {
 			seen[msg] = true
@@ -1292,7 +1308,7 @@ func (k *kit) checkAPI() {
 	}
 }
 
-// checkStop: the stop sequence of Zoraxy, one step at a time
+// checkStop: the stop sequence of Dunree, one step at a time
 func (k *kit) checkStop() {
 	begin := time.Now()
 	p := k.p
@@ -1306,13 +1322,13 @@ func (k *kit) checkStop() {
 		gone := p.waitExit(2 * time.Second)
 		switch {
 		case a.err != nil && !gone:
-			k.add("term", statusWarn, "No answer to the terminate request within 3 s ("+shortErr(a.err)+"). Zoraxy goes on with SIGTERM.", begin, nil)
+			k.add("term", statusWarn, "No answer to the terminate request within 3 s ("+shortErr(a.err)+"). Dunree goes on with SIGTERM.", begin, nil)
 		case gone:
 			k.add("term", statusPass, fmt.Sprintf("Ended %d ms after the terminate request (%s).", time.Since(begin).Milliseconds(), p.exitText()), begin, nil)
 		case a.status == http.StatusNotFound:
-			k.add("term", statusPass, "The plugin has no terminate path (HTTP 404, which is allowed). Zoraxy ends it with SIGTERM.", begin, nil)
+			k.add("term", statusPass, "The plugin has no terminate path (HTTP 404, which is allowed). Dunree ends it with SIGTERM.", begin, nil)
 		default:
-			k.add("term", statusWarn, fmt.Sprintf("The terminate request was answered with HTTP %d and the plugin was still running 2 s later. Zoraxy goes on with SIGTERM.", a.status), begin, nil)
+			k.add("term", statusWarn, fmt.Sprintf("The terminate request was answered with HTTP %d and the plugin was still running 2 s later. Dunree goes on with SIGTERM.", a.status), begin, nil)
 		}
 	}
 
@@ -1329,7 +1345,7 @@ func (k *kit) checkStop() {
 			return
 		}
 		if _, ready := second.waitReady(k.o.ReadyTimeout); !ready {
-			k.add("sigterm", statusFail, fmt.Sprintf("Started a second time, the plugin did not open its port within %s (%s). Zoraxy starts a plugin again after every stop, update and restart.", k.o.ReadyTimeout, second.exitText()), begin, nil)
+			k.add("sigterm", statusFail, fmt.Sprintf("Started a second time, the plugin did not open its port within %s (%s). Dunree starts a plugin again after every stop, update and restart.", k.o.ReadyTimeout, second.exitText()), begin, nil)
 			second.signalGroup(syscall.SIGKILL)
 			second.waitExit(3 * time.Second)
 			k.checkCleanup()
@@ -1344,7 +1360,7 @@ func (k *kit) checkStop() {
 	if p.waitExit(5 * time.Second) {
 		k.add("sigterm", statusPass, fmt.Sprintf("Ended %d ms after SIGTERM (%s).", time.Since(begin).Milliseconds(), p.exitText()), begin, nil)
 	} else {
-		k.add("sigterm", statusFail, "Still running 5 s after SIGTERM: Zoraxy has to kill it (SIGKILL), and a stop or an update takes 5 s longer.", begin, nil)
+		k.add("sigterm", statusFail, "Still running 5 s after SIGTERM: Dunree has to kill it (SIGKILL), and a stop or an update takes 5 s longer.", begin, nil)
 		p.signalGroup(syscall.SIGKILL)
 		p.waitExit(3 * time.Second)
 	}
@@ -1388,9 +1404,9 @@ func (k *kit) checkCleanup() {
 	data := map[string]any{"in_group": left, "outside_group": len(outside), "descendants_tracked": tracksDescendants}
 	switch {
 	case len(outside) > 0:
-		k.add("cleanup", statusWarn, fmt.Sprintf("The plugin ended and left %d process(es) running that had left its process group (setsid or setpgid). Zoraxy ends the process group only: such a process stays after a stop, an update and a crash, until somebody ends it by hand. The kit ended it.", len(outside)), begin, data)
+		k.add("cleanup", statusWarn, fmt.Sprintf("The plugin ended and left %d process(es) running that had left its process group (setsid or setpgid). Dunree ends the process group only: such a process stays after a stop, an update and a crash, until somebody ends it by hand. The kit ended it.", len(outside)), begin, data)
 	case left > 0:
-		k.add("cleanup", statusWarn, "The plugin ended and left processes of its process group running. Zoraxy ends the whole group at a stop; after a crash such processes stay until then.", begin, data)
+		k.add("cleanup", statusWarn, "The plugin ended and left processes of its process group running. Dunree ends the whole group at a stop; after a crash such processes stay until then.", begin, data)
 	case tracksDescendants:
 		k.add("cleanup", statusPass, "No process of the plugin was left, in its process group or outside it.", begin, data)
 	default:
@@ -1414,9 +1430,9 @@ func (k *kit) checkLogs() {
 	numbers := fmt.Sprintf("%d lines, %d bytes during %d calls", lines, size, calls)
 	switch {
 	case longest > maxLogLine:
-		k.add("logs", statusFail, fmt.Sprintf("%s, and one line of %d bytes: Zoraxy cuts a line at %d bytes.", numbers, longest, maxLogLine), begin, data)
+		k.add("logs", statusFail, fmt.Sprintf("%s, and one line of %d bytes: Dunree cuts a line at %d bytes.", numbers, longest, maxLogLine), begin, data)
 	case size > maxLogBytes || lines > 200+2*calls:
-		k.add("logs", statusFail, numbers+": this fills the log of the plugin and pushes everything else out of the last 200 lines Zoraxy shows.", begin, data)
+		k.add("logs", statusFail, numbers+": this fills the log of the plugin and pushes everything else out of the last 200 lines Dunree shows.", begin, data)
 	case lines > 50+calls/10:
 		k.add("logs", statusWarn, numbers+": the plugin writes a line for many of its calls. Under visitor traffic that is a log line per request.", begin, data)
 	default:

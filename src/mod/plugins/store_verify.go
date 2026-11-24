@@ -23,8 +23,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/offline"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/plugins/addonindex"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*
@@ -32,6 +33,9 @@ import (
 
 	A plugin store index is one of two things:
 
+	- the Dunree add-on index (store_addon.go, docs/plugins/addon-store.md): a signed
+	  index with the store metadata of every add-on. It is checked exactly like the
+	  signed format below;
 	- the upstream format: a JSON list of plugins with download URLs. It carries no
 	  checksum and no signature and is shown as "unsigned";
 	- the signed format of this fork: a JSON object {"format":"zoraxy-plugin-index",
@@ -42,7 +46,7 @@ import (
 	  index cannot be served again later (replay).
 
 	The index is signed with a plugin key of its own, never with the release key.
-	Zoraxy only holds the public half, which the administrator configures (plugin
+	Dunree only holds the public half, which the administrator configures (plugin
 	safety settings or the start flag -plugin_index_pubkey). tools/plugin-index
 	creates a key pair and signs an index.
 
@@ -116,13 +120,14 @@ type signedIndex struct {
 
 type signedIndexEntry struct {
 	IconPath         string                    `json:"IconPath"`
-	PluginIntroSpect zoraxy_plugin.IntroSpect  `json:"PluginIntroSpect"`
+	PluginIntroSpect dunree_plugin.IntroSpect  `json:"PluginIntroSpect"`
 	Downloads        map[string]PinnedDownload `json:"Downloads"`
 }
 
 // SourceStatus is what the last sync found out about one index URL
 type SourceStatus struct {
 	Format    string `json:"format"`    //signed | legacy | "" (never fetched)
+	Schema    string `json:"schema"`    //which index format it is: dunree-addon-index/1 | zoraxy-plugin-index/1 | list | "" (never fetched)
 	Signature string `json:"signature"` //one of the Sig... states
 	Serial    int64  `json:"serial"`    //serial of the signed index, 0 for the upstream format
 	Plugins   int    `json:"plugins"`   //plugins this index offers
@@ -216,7 +221,7 @@ func (m *Manager) bumpStoreGen(pluginID string) {
 
 // declaredIDCollision refuses a downloaded binary whose manifest declares another
 // ID than the index lists (ownID) when that ID belongs to another plugin: one
-// that is loaded, or one Zoraxy has an install record for. Otherwise installing
+// that is loaded, or one Dunree has an install record for. Otherwise installing
 // an innocent looking plugin of one index would take over the record of a plugin
 // that was installed from another index (its source of updates, its checksum)
 // and, on an update, its slot in the plugin list. In every verification mode.
@@ -228,7 +233,7 @@ func (m *Manager) declaredIDCollision(declaredID string, ownID string) error {
 	if _, err := m.GetPluginByID(declaredID); err == nil {
 		what = "the ID of another installed plugin"
 	} else if m.installRecord(declaredID) != nil {
-		what = "an ID Zoraxy has the install record of another plugin for"
+		what = "an ID Dunree has the install record of another plugin for"
 	}
 	if what == "" {
 		return nil
@@ -294,7 +299,7 @@ func (m *Manager) indexPublicKey() (ed25519.PublicKey, string, error) {
 }
 
 // usableIndexPublicKey parses a plugin index public key and refuses the release
-// key of Zoraxy (decision D4: the plugin index has a key of its own). Both are
+// key of Dunree (decision D4: the plugin index has a key of its own). Both are
 // ed25519 signatures over the plain bytes of a file, with nothing that says what
 // kind of file was signed: with one key for both, a signature made for one could
 // be presented for the other.
@@ -304,7 +309,7 @@ func (m *Manager) usableIndexPublicKey(text string) (ed25519.PublicKey, error) {
 		return nil, err
 	}
 	if m.Options != nil && len(m.Options.ReleasePublicKey) == ed25519.PublicKeySize && pk.Equal(ed25519.PublicKey(m.Options.ReleasePublicKey)) {
-		return nil, errors.New("this is the key Zoraxy releases are signed with. The plugin index needs a key of its own (tools/plugin-index/sign_plugin_index.go -genkey)")
+		return nil, errors.New("this is the key Dunree releases are signed with. The plugin index needs a key of its own (tools/plugin-index/sign_plugin_index.go -genkey)")
 	}
 	return pk, nil
 }
@@ -323,6 +328,14 @@ func (m *Manager) indexKeyFingerprint() string {
 // storeGet fetches a small document (index, signature) with a size cap and a timeout.
 // The default transport is used on purpose: offline mode and its tests hook into it.
 func (m *Manager) storeGet(target string, limit int64) ([]byte, error) {
+	if isLocalSource(target) {
+		// An index in a local folder: no network, so offline mode does not apply
+		path, ok := pathFromFileURL(target)
+		if !ok {
+			return nil, errors.New("not the address of a local file")
+		}
+		return readLocalStoreFile(path, limit)
+	}
 	if err := offline.Check(); err != nil {
 		return nil, err
 	}
@@ -380,6 +393,7 @@ func (m *Manager) fetchIndex(indexURL string) ([]*DownloadablePlugin, SourceStat
 			return nil, st, fmt.Errorf("failed to unmarshal plugin list from %s: %w", indexURL, err)
 		}
 		st.Format = "legacy"
+		st.Schema = SchemaList
 		st.Signature = SigUnsigned
 		if mode == VerifyOff {
 			st.Signature = SigUnchecked
@@ -403,6 +417,17 @@ func (m *Manager) fetchIndex(indexURL string) ([]*DownloadablePlugin, SourceStat
 		return list, st, nil
 	}
 
+	var probe struct {
+		Format string `json:"format"`
+	}
+	if err := json.Unmarshal(trimmed, &probe); err != nil {
+		return nil, st, fmt.Errorf("failed to unmarshal plugin index from %s: %w", indexURL, err)
+	}
+	if probe.Format == addonindex.Format {
+		//The Dunree add-on index (store_addon.go)
+		return m.readAddonIndex(indexURL, raw, st)
+	}
+
 	var idx signedIndex
 	if err := json.Unmarshal(trimmed, &idx); err != nil {
 		return nil, st, fmt.Errorf("failed to unmarshal plugin index from %s: %w", indexURL, err)
@@ -411,9 +436,10 @@ func (m *Manager) fetchIndex(indexURL string) ([]*DownloadablePlugin, SourceStat
 		return nil, st, fmt.Errorf("%s is not a plugin index (format %q)", indexURL, clipText(idx.Format, 40))
 	}
 	if idx.Version != signedIndexVersion {
-		return nil, st, fmt.Errorf("%s is a plugin index of version %d, this Zoraxy reads version %d", indexURL, idx.Version, signedIndexVersion)
+		return nil, st, fmt.Errorf("%s is a plugin index of version %d, this Dunree reads version %d", indexURL, idx.Version, signedIndexVersion)
 	}
 	st.Format = "signed"
+	st.Schema = SchemaSignedIndex
 	st.Serial = idx.Serial
 
 	keyFP := ""
@@ -494,9 +520,9 @@ func (m *Manager) checkIndexSignature(indexURL string, raw []byte, serial int64)
 	last := m.store.seen[indexURL]
 	switch {
 	case serial < last.Serial:
-		return SigReplayed, "This index is validly signed but older (serial " + strconv.FormatInt(serial, 10) + ") than the one this Zoraxy has already seen from this address (serial " + strconv.FormatInt(last.Serial, 10) + "). An old index is being served again.", ""
+		return SigReplayed, "This index is validly signed but older (serial " + strconv.FormatInt(serial, 10) + ") than the one this Dunree has already seen from this address (serial " + strconv.FormatInt(last.Serial, 10) + "). An old index is being served again.", ""
 	case serial == last.Serial && last.SHA256 != "" && last.SHA256 != digest:
-		return SigReplayed, "This index is validly signed but has the same serial number (" + strconv.FormatInt(serial, 10) + ") as a different index this Zoraxy has already seen from this address. Every signed index needs a higher serial number.", ""
+		return SigReplayed, "This index is validly signed but has the same serial number (" + strconv.FormatInt(serial, 10) + ") as a different index this Dunree has already seen from this address. Every signed index needs a higher serial number.", ""
 	case serial > last.Serial:
 		m.store.seen[indexURL] = indexSeen{Serial: serial, SHA256: digest}
 		m.storeSeenLocked()
@@ -504,7 +530,7 @@ func (m *Manager) checkIndexSignature(indexURL string, raw []byte, serial int64)
 	return SigSigned, "", publicKeyFingerprint(pk)
 }
 
-// seenSerialOf is the highest serial of a validly signed index this Zoraxy has seen from an address, 0 = none
+// seenSerialOf is the highest serial of a validly signed index this Dunree has seen from an address, 0 = none
 func (m *Manager) seenSerialOf(indexURL string) int64 {
 	m.store.mu.Lock()
 	defer m.store.mu.Unlock()
@@ -633,6 +659,11 @@ func (m *Manager) maxDownloadBytes() int64 {
 // downloadTo downloads a file with a size cap and a timeout for the whole
 // transfer and returns its SHA-256 and size. Nothing is left at destPath on error.
 func (m *Manager) downloadTo(downloadURL string, destPath string, limit int64) (sum string, size int64, err error) {
+	if isLocalSource(downloadURL) {
+		// An artifact of a local folder (store_addon.go). Only files inside the
+		// folder of a configured local source are read, whatever index named this one.
+		return m.copyLocalArtifact(downloadURL, destPath, limit)
+	}
 	if err := offline.Check(); err != nil {
 		return "", 0, err
 	}
@@ -741,7 +772,7 @@ type InstalledVersion struct {
 	InstalledAt int64
 }
 
-// InstallRecord is what Zoraxy knows about the install of one plugin ID
+// InstallRecord is what Dunree knows about the install of one plugin ID
 type InstallRecord struct {
 	Source          string            //index URL the plugin was installed from. Updates only come from there. Empty: not known (installed before this was recorded, or copied in by hand), any index may update it
 	Current         InstalledVersion  //the binary in the plugin folder
@@ -749,7 +780,7 @@ type InstallRecord struct {
 	Previous        *InstalledVersion //the binary kept in .zoraxy-previous/, nil = none
 	LastChange      string            //install | update | rollback | auto_rollback
 	LastChangeAt    int64
-	LastChangeNote  string //one sentence, worded by Zoraxy
+	LastChangeNote  string //one sentence, worded by Dunree
 	LastChangeIssue bool   //the last update did not end well (failed health check, rolled back)
 }
 
@@ -870,7 +901,7 @@ func (e *errBinaryChanged) Error() string { return e.msg }
 
 // checkBinaryBeforeLoad compares the program file of a plugin folder with its
 // install record BEFORE the file is run with -introspect (boot and reload run
-// every plugin that way, as the user of Zoraxy). The record is found by the folder,
+// every plugin that way, as the user of Dunree). The record is found by the folder,
 // not by the ID the file declares. enforce: a file that is not the installed one
 // is not run (error). warn: recordID is the ID of the record the file does not
 // match; the caller loads it as before and calls noteChangedBinaryLoaded. off, or
@@ -896,7 +927,7 @@ func (m *Manager) checkBinaryBeforeLoad(folder string, pluginPath string) (recor
 		if m.auditOncePerFile(folder, sum, "plugins.binary.changed", id, map[string]string{"folder": folder, "sha256": sum, "installed": rec.Current.SHA256, "started": "false", "run": "false"}) {
 			m.Log("plugin folder "+folder+": the program file is not the one that was installed as plugin "+id+" (SHA-256 "+sum+", installed "+rec.Current.SHA256+"). It is not run (signature checking: enforce)", nil)
 		}
-		return id, &errBinaryChanged{msg: "the program file in this folder is not the one that was installed as plugin " + id + " (SHA-256 " + sum + ", installed " + rec.Current.SHA256 + "), and signature checking is set to enforce: the file was not run and the plugin is not loaded. Put the installed file back, or remove the folder and install the plugin again, or set signature checking to warn and restart Zoraxy"}
+		return id, &errBinaryChanged{msg: "the program file in this folder is not the one that was installed as plugin " + id + " (SHA-256 " + sum + ", installed " + rec.Current.SHA256 + "), and signature checking is set to enforce: the file was not run and the plugin is not loaded. Put the installed file back, or remove the folder and install the plugin again, or set signature checking to warn and restart Dunree"}
 	}
 	return id, nil
 }

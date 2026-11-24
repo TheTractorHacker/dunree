@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/notify"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/notify"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

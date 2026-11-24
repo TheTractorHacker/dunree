@@ -26,6 +26,7 @@ src/src/sys.db.lock
 src/conf/*
 src/ReverseProxy_*_*
 src/Zoraxy_*_*
+src/Dunree_*_*
 src/certs/*
 src/rules/*
 src/README.md
@@ -37,6 +38,7 @@ src/tmp/localhost.pem
 src/www/html/index.html
 src/sys.uuid
 src/zoraxy
+src/dunree
 src/log/
 
 # plugins

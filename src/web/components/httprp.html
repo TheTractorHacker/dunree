@@ -152,7 +152,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">HTTP Proxy</h2>
-            <p class="zx-page-header__sub">Every host name Zoraxy answers for, and the server on your network that each one is sent to.</p>
+            <p class="zx-page-header__sub">Every host name Dunree answers for, and the server on your network that each one is sent to.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" id="ptTemplates" onclick="openRuleTemplateManager();" title="Create and edit reusable rule templates"><i class="clone outline icon" aria-hidden="true"></i> Templates</button>
@@ -180,7 +180,7 @@
 
     <div class="zxs-list" id="ptList">
         <div class="zxs-list__bar ptTools" id="ptTools">
-            <!-- Prevent the browser from filling the saved Zoraxy login account into the search input below -->
+            <!-- Prevent the browser from filling the saved Dunree login account into the search input below -->
             <input type="password" autocomplete="off" hidden/>
             <div class="zxs-search ptSearch">
                 <i class="search icon" aria-hidden="true"></i>
@@ -330,7 +330,7 @@
 </section>
 <section class="zx-card hrp-card" data-hrp-card="health" rpcfg="upstream" data-hrp-nd="health" aria-labelledby="hrpc-health">
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-health">Health check</h3></div>
-<p class="zx-card__desc">Zoraxy checks the destinations and stops sending visitors to one that is down.</p>
+<p class="zx-card__desc">Dunree checks the destinations and stops sending visitors to one that is down.</p>
 <div class="zx-card__body">
                             <div class="ui checkbox" style="margin-top: 0.4em;">
                                 <input type="checkbox" class="EnableUptimeMonitor">
@@ -505,7 +505,7 @@
                                 <div class="field">
                                     <div class="ui radio checkbox">
                                         <input type="radio" value="4" name="authProviderType">
-                                        <label>Zoraxy sign-in</label>
+                                        <label>Dunree sign-in</label>
                                     </div>
                                 </div>
                             </div>
@@ -534,7 +534,7 @@
                             <br>
                             <div class="hrp-btnrow hrp-btnrow--equal">
 <button class="ui basic compact small button editBasicAuthCredentialsBtn"><i class="user circle icon"></i> Basic auth accounts</button>
-                            <button class="ui basic compact small button editZorxAuthExceptionsBtn"><i class="shield alternate icon"></i> Zoraxy sign-in exceptions</button>
+                            <button class="ui basic compact small button editZorxAuthExceptionsBtn"><i class="shield alternate icon"></i> Dunree sign-in exceptions</button>
                             <button class="ui basic compact small button editSsoExceptionsBtn"><i class="shield alternate icon"></i> Forward auth and OAuth2 exceptions</button>
 </div>
 </div>
@@ -721,12 +721,12 @@
                                             <small><a class="cpResetColors" style="cursor:pointer;">reset colours to default</a></small>
                                             <div class="three fields" style="margin-top:0.8em">
                                                 <div class="field"><label>Footer text</label><input type="text" data-cp="captchaFooterText" maxlength="200" placeholder="Performance &amp; security by"></div>
-                                                <div class="field"><label>Footer link label</label><input type="text" data-cp="captchaFooterLinkText" maxlength="120" placeholder="Zoraxy"></div>
-                                                <div class="field"><label>Footer link URL</label><input type="url" data-cp="captchaFooterLinkURL" maxlength="512" placeholder="https://zoraxy.aroz.org"></div>
+                                                <div class="field"><label>Footer link label</label><input type="text" data-cp="captchaFooterLinkText" maxlength="120" placeholder="Dunree" data-i18n-skip></div>
+                                                <div class="field"><label>Footer link URL</label><input type="url" data-cp="captchaFooterLinkURL" maxlength="512" placeholder="https://www.example.com" data-i18n-skip></div>
                                             </div>
                                             <div class="ui checkbox" style="display:block; margin-top: 0.8em;">
                                                 <input type="checkbox" data-cp="captchaHideFooter">
-                                                <label>Hide the default "Performance &amp; security by Zoraxy" footer (your own footer text above still shows)</label>
+                                                <label>Hide the default "Performance &amp; security by Dunree" footer (your own footer text above still shows)</label>
                                             </div>
 
                                             <div class="ui divider"></div>
@@ -1032,9 +1032,9 @@
 </section>
 <section class="zx-card hrp-card" data-hrp-card="certs" rpcfg="ssl" data-hrp-nd="tls" aria-labelledby="hrpc-certs">
 <div class="zx-card__head"><h3 class="zx-card__title" id="hrpc-certs">Certificate for each hostname</h3></div>
-<p class="zx-card__desc">Which certificate Zoraxy serves when a visitor asks for each of these names.</p>
+<p class="zx-card__desc">Which certificate Dunree serves when a visitor asks for each of these names.</p>
 <div class="zx-card__body">
-                            <p>The table below shows which certificate will be served by Zoraxy when a client request the following hostnames.</p>
+                            <p>The table below shows which certificate will be served by Dunree when a client request the following hostnames.</p>
                             <div class="ui blue message sni_grey_out_info" style="margin-bottom: 1em; display:none;">
                                 <i class="info circle icon"></i>
                                 Certificate dropdowns are greyed out because SNI is enabled

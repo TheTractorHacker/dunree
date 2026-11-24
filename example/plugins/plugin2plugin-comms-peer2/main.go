@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	plugin "aroz.org/zoraxy/plugins/plugin2plugin-comms-peer2/mod/zoraxy_plugin"
+	plugin "example.com/dunree/plugins/plugin2plugin-comms-peer2/mod/dunree_plugin"
 )
 
 // Notes:

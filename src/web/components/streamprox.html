@@ -37,7 +37,7 @@
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="streamFormTitle">Add a stream rule</h3>
             <button type="button" class="zxs-iconbtn" onclick="closeStreamForm();" aria-label="Close the form" title="Close"><i class="times icon" aria-hidden="true"></i></button>
-            <p class="zx-card__desc" id="streamFormDesc">Zoraxy listens on a port of this host and passes every connection to the target. A new rule is saved stopped: press Start in the list when you are ready.</p>
+            <p class="zx-card__desc" id="streamFormDesc">Dunree listens on a port of this host and passes every connection to the target. A new rule is saved stopped: press Start in the list when you are ready.</p>
         </div>
         <form id="streamProxyForm">
           <div class="zx-card__body">
@@ -347,7 +347,7 @@
             if (proxyConfigs.length === 0) {
                 var noResultsRow = $('<tr><td colspan="4" class="zx-empty-cell"><div class="zx-empty"><div class="zx-empty__icon"><i class="exchange icon" aria-hidden="true"></i></div><p class="zx-empty__title"></p><p class="zx-empty__text"></p><button type="button" class="zx-btn zx-btn--primary"><i class="plus icon" aria-hidden="true"></i> <span></span></button></div></td></tr>');
                 noResultsRow.find(".zx-empty__title").text(t("No stream rules yet"));
-                noResultsRow.find(".zx-empty__text").text(t("A stream rule forwards a raw TCP or UDP port, for things that are not web sites: a game server, SSH, a database, MQTT. Zoraxy listens on a port of this host and passes every connection to the server you name."));
+                noResultsRow.find(".zx-empty__text").text(t("A stream rule forwards a raw TCP or UDP port, for things that are not web sites: a game server, SSH, a database, MQTT. Dunree listens on a port of this host and passes every connection to the server you name."));
                 noResultsRow.find("button span").text(t("Add stream rule"));
                 noResultsRow.find("button").on("click", function(){ openStreamForm(); });
                 tableBody.append(noResultsRow);

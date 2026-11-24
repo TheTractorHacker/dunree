@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/secaudit"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/secaudit"
 )
 
 const ruleA = `{"RootOrMatchingDomain":"rule-a"}`
@@ -170,7 +170,7 @@ func TestExportDefaultIsFullBackupAndSharedModeIsRedacted(t *testing.T) {
 		t.Fatal("the default export must stay the full backup (secrets included)")
 	}
 	if strings.Contains(strings.Join(names, ","), "manifest.json") {
-		t.Fatal("the default full export keeps its historic layout: an older Zoraxy refuses an archive with manifest.json")
+		t.Fatal("the default full export keeps its historic layout: an older Dunree refuses an archive with manifest.json")
 	}
 	names, _ = zipText(t, exportMode(t, "?manifest=true"))
 	if !strings.Contains(strings.Join(names, ","), "manifest.json") {

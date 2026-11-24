@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 const tuningPostHogCookie = `ph_phc_abc123_posthog={"distinct_id":"anonymous_x.example.com","$sesid":[null,null,null],"$epp":true,"$initial_person_info":{"r":"$direct","u":"https://example.com/"}}`

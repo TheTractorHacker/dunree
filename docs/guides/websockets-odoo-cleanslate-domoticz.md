@@ -1,18 +1,18 @@
 # WebSockets, Odoo, CleanSlate (Hasura), Domoticz
 
 Answers upstream issues #314 (Odoo), #622 (CleanSlate) and #446 (Domoticz). Everything marked *verified* was
-reproduced with a throw-away Zoraxy instance and a fake backend that logs the request line it receives.
+reproduced with a throw-away Dunree instance and a fake backend that logs the request line it receives.
 
-## How Zoraxy handles WebSockets
+## How Dunree handles WebSockets
 
 * There is nothing to switch on. A request with `Upgrade: websocket` is detected automatically on a proxy rule
   and on a virtual directory. (The rule option **Enable WebSocket** (Advanced) can be unticked to turn it off.)
 * On a normal rule the path and query are forwarded unchanged: `wss://app.example.com/graphql` reaches
   `ws://upstream/graphql`.
-* Zoraxy sends `X-Forwarded-For`/`X-Forwarded-Proto` and keeps `Origin`, `Cookie`, `Sec-WebSocket-Protocol` and the
+* Dunree sends `X-Forwarded-For`/`X-Forwarded-Proto` and keeps `Origin`, `Cookie`, `Sec-WebSocket-Protocol` and the
   original `Host`. Custom headers are only copied to the upstream when the rule option
   **Enable WebSocket Custom Header** (in the rule's *Custom Headers* editor) is on.
-* "websocket: bad handshake" in the Zoraxy log means *the upstream answered the upgrade with something other than
+* "websocket: bad handshake" in the Dunree log means *the upstream answered the upgrade with something other than
   `101`*. Look at the upstream's own log for the reason. The two most common reasons are a wrong path (below) and an
   upstream that checks `Origin`/`Host`.
 
@@ -66,10 +66,10 @@ Not tested against real Hasura.
 ## Domoticz (#446)
 
 Reported symptom: the UI loads but images/JS/CSS show 404 in the browser console while the same URLs open fine
-when clicked. We could not reproduce this and found no Zoraxy-side cause; the proxy forwards those requests
+when clicked. We could not reproduce this and found no Dunree-side cause; the proxy forwards those requests
 unchanged. Things to try, in this order:
 
-1. Check *what* answers: the access log (Logs page) shows the status Zoraxy returned, the upstream's own log
+1. Check *what* answers: the access log (Logs page) shows the status Dunree returned, the upstream's own log
    shows what it saw. If both say 200 the 404 is browser side (cache, a service worker, mixed content).
 2. Domoticz's built-in web server is old and drops idle keep-alive connections. In the rule's upstream settings
    turn on **Disable connection reuse (keep-alive)**, and try **Force HTTP/1.1** in the rule's advanced options.

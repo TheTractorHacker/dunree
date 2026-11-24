@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 	"github.com/google/uuid"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
 )
 
 /*
@@ -23,7 +23,7 @@ import (
 
 	RunRequestStage executes the filter plugins of a request stage,
 	WrapResponse installs the response stage.
-	See zoraxy_plugin/hooks.go for the documented semantics.
+	See dunree_plugin/hooks.go for the documented semantics.
 */
 
 // Endpoint opt-out tags. Add them to a HTTP proxy rule to exclude plugins from it.
@@ -106,7 +106,7 @@ func (m *Manager) pluginsFor(tags []string) (active []*Plugin, down []*Plugin) {
 		var globals []*Plugin
 		m.loadedPluginsMutex.RLock()
 		for _, p := range m.LoadedPlugins {
-			if p.Spec != nil && p.Spec.Type == zoraxyPlugin.PluginType_Router && p.pathState() != pathOut && p.isGlobal() {
+			if p.Spec != nil && p.Spec.Type == dunreePlugin.PluginType_Router && p.pathState() != pathOut && p.isGlobal() {
 				globals = append(globals, p)
 			}
 		}
@@ -158,7 +158,7 @@ const downLogEvery = time.Minute
 // dynamic capture, "" when it has nothing in the request path.
 func guardStage(p *Plugin) string {
 	if h := p.Spec.Hooks; h != nil {
-		for _, st := range []zoraxyPlugin.HookStage{zoraxyPlugin.HookStagePreAuth, zoraxyPlugin.HookStagePostAuth, zoraxyPlugin.HookStageResponse} {
+		for _, st := range []dunreePlugin.HookStage{dunreePlugin.HookStagePreAuth, dunreePlugin.HookStagePostAuth, dunreePlugin.HookStageResponse} {
 			if h.HasStage(st) && h.PathForStage(st) != "" {
 				return string(st)
 			}
@@ -202,10 +202,10 @@ func (m *Manager) downLog(p *Plugin, msg string) {
 	if !p.obs.downLogAt.CompareAndSwap(last, now) {
 		return
 	}
-	m.logf(p, fmt.Sprintf("%s (passed %d, refused %d since Zoraxy started)", msg, p.obs.passedWhileDown.Load(), p.obs.blockedWhileDown.Load()), nil)
+	m.logf(p, fmt.Sprintf("%s (passed %d, refused %d since Dunree started)", msg, p.obs.passedWhileDown.Load(), p.obs.blockedWhileDown.Load()), nil)
 }
 
-func filterPluginsForStage(all []*Plugin, stage zoraxyPlugin.HookStage) []*Plugin {
+func filterPluginsForStage(all []*Plugin, stage dunreePlugin.HookStage) []*Plugin {
 	var out []*Plugin
 	for _, p := range all {
 		h := p.Spec.Hooks
@@ -223,7 +223,7 @@ type filterOutcome struct {
 }
 
 // runFilters calls the plugins concurrently with their own payload
-func (m *Manager) runFilters(plugins []*Plugin, stage zoraxyPlugin.HookStage, build func(p *Plugin) *zoraxyPlugin.FilterRequest) []filterOutcome {
+func (m *Manager) runFilters(plugins []*Plugin, stage dunreePlugin.HookStage, build func(p *Plugin) *dunreePlugin.FilterRequest) []filterOutcome {
 	out := make([]filterOutcome, len(plugins))
 	run := func(i int) {
 		p := plugins[i]
@@ -248,8 +248,8 @@ func (m *Manager) runFilters(plugins []*Plugin, stage zoraxyPlugin.HookStage, bu
 
 // RunRequestStage runs the filter hooks of pre_auth or post_auth.
 // For post_auth use HandleStage which also performs the legacy capture.
-func (m *Manager) RunRequestStage(w http.ResponseWriter, r *http.Request, tags []string, clientIP string, stage zoraxyPlugin.HookStage) StageResult {
-	if stage == zoraxyPlugin.HookStageResponse {
+func (m *Manager) RunRequestStage(w http.ResponseWriter, r *http.Request, tags []string, clientIP string, stage dunreePlugin.HookStage) StageResult {
+	if stage == dunreePlugin.HookStageResponse {
 		return StageResult{}
 	}
 	active, down := m.pluginsFor(tags)
@@ -265,11 +265,11 @@ func (m *Manager) RunRequestStage(w http.ResponseWriter, r *http.Request, tags [
 	}
 	reqID := requestID(r)
 	n, bodyBuf := m.previewBody(w, r, plugins)
-	snapshot := zoraxyPlugin.EncodeForwardRequestPayload(r, clientIP)
+	snapshot := dunreePlugin.EncodeForwardRequestPayload(r, clientIP)
 
-	results := m.runFilters(plugins, stage, func(p *Plugin) *zoraxyPlugin.FilterRequest {
-		fr := &zoraxyPlugin.FilterRequest{
-			Version:   zoraxyPlugin.HookAPIVersion,
+	results := m.runFilters(plugins, stage, func(p *Plugin) *dunreePlugin.FilterRequest {
+		fr := &dunreePlugin.FilterRequest{
+			Version:   dunreePlugin.HookAPIVersion,
 			Stage:     stage,
 			RequestID: reqID,
 			Request:   snapshot,
@@ -299,13 +299,13 @@ func (m *Manager) RunRequestStage(w http.ResponseWriter, r *http.Request, tags [
 		}
 		cv := res.verdict
 		switch cv.Action {
-		case zoraxyPlugin.ActionDeny:
+		case dunreePlugin.ActionDeny:
 			writeDeny(w, cv)
 			return StageResult{Handled: true, Denied: true, Status: cv.DenyStatus, PluginID: p.Spec.ID, Reason: cv.Reason}
-		case zoraxyPlugin.ActionModify:
+		case dunreePlugin.ActionModify:
 			applyRequestModify(r, cv)
-		case zoraxyPlugin.ActionCapture:
-			if stage != zoraxyPlugin.HookStagePostAuth {
+		case dunreePlugin.ActionCapture:
+			if stage != dunreePlugin.HookStagePostAuth {
 				m.logf(p, "capture verdict ignored at "+string(stage)+": capture would bypass authentication, register for post_auth instead", nil)
 				continue
 			}
@@ -399,9 +399,9 @@ func (m *Manager) WrapResponse(w http.ResponseWriter, r *http.Request, tags []st
 	active, down := m.pluginsFor(tags)
 	downBlock := false
 	if len(down) > 0 {
-		downBlock = m.guardDown(down, string(zoraxyPlugin.HookStageResponse)) != nil
+		downBlock = m.guardDown(down, string(dunreePlugin.HookStageResponse)) != nil
 	}
-	plugins := filterPluginsForStage(active, zoraxyPlugin.HookStageResponse)
+	plugins := filterPluginsForStage(active, dunreePlugin.HookStageResponse)
 	if len(plugins) == 0 && !downBlock {
 		return w
 	}
@@ -472,14 +472,14 @@ func (h *hookResponseWriter) runHooks(code int) {
 		return
 	}
 	reqID := requestID(h.r)
-	snapshot := zoraxyPlugin.EncodeForwardRequestPayload(h.r, h.clientIP)
+	snapshot := dunreePlugin.EncodeForwardRequestPayload(h.r, h.clientIP)
 	hdr := h.ResponseWriter.Header()
-	resInfo := &zoraxyPlugin.FilterResponseInfo{Status: code, Header: map[string][]string(hdr.Clone())}
+	resInfo := &dunreePlugin.FilterResponseInfo{Status: code, Header: map[string][]string(hdr.Clone())}
 
-	results := h.m.runFilters(h.plugins, zoraxyPlugin.HookStageResponse, func(p *Plugin) *zoraxyPlugin.FilterRequest {
-		return &zoraxyPlugin.FilterRequest{
-			Version:   zoraxyPlugin.HookAPIVersion,
-			Stage:     zoraxyPlugin.HookStageResponse,
+	results := h.m.runFilters(h.plugins, dunreePlugin.HookStageResponse, func(p *Plugin) *dunreePlugin.FilterRequest {
+		return &dunreePlugin.FilterRequest{
+			Version:   dunreePlugin.HookAPIVersion,
+			Stage:     dunreePlugin.HookStageResponse,
 			RequestID: reqID,
 			Request:   snapshot,
 			Response:  resInfo,
@@ -497,7 +497,7 @@ func (h *hookResponseWriter) runHooks(code int) {
 			}
 			continue
 		}
-		if res.verdict.Action == zoraxyPlugin.ActionModify {
+		if res.verdict.Action == dunreePlugin.ActionModify {
 			applyHeaderOps(hdr, res.verdict.ResHeaders)
 		}
 	}

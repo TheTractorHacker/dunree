@@ -18,7 +18,7 @@ type PortSpec struct {
 type DoctorOptions struct {
 	DBPath string
 	Ports  []PortSpec
-	Unit   string // systemd unit name, "zoraxy"
+	Unit   string // systemd unit name ("" = ProductUnit; see ChooseUnit)
 	Self   int    // pid of the doctor process, excluded from the process list
 }
 
@@ -26,7 +26,7 @@ type DoctorOptions struct {
 type Probe struct {
 	LockHolders func(path string) (LockMatch, error)
 	Describe    func(pid int) ProcInfo
-	ListZoraxy  func(exclude int) ([]ProcInfo, int)
+	ListDunree  func(exclude int) ([]ProcInfo, int)
 	Sockets     func() ([]ListenSocket, int, error)
 	Unit        func(name string) UnitStatus
 	OpensFile   func(pid int, path string) (opens, known bool) //nil = cannot tell
@@ -38,7 +38,7 @@ func RealProbe() Probe {
 	return Probe{
 		LockHolders: FindLockHolders,
 		Describe:    Describe,
-		ListZoraxy:  ListZoraxyProcesses,
+		ListDunree:  ListDunreeProcesses,
 		Sockets:     ListenSockets,
 		Unit:        QueryUnit,
 		OpensFile:   OpensFile,
@@ -94,9 +94,9 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 	var r Report
 	unit := strings.TrimSuffix(o.Unit, ".service")
 	if unit == "" {
-		unit = "zoraxy"
+		unit = ProductUnit
 	}
-	r.addf("Zoraxy doctor (read-only: the database is not opened and no port is bound)")
+	r.addf("Dunree doctor (read-only: the database is not opened and no port is bound)")
 	if !Supported {
 		r.addf("")
 		r.addf("This platform has no /proc, so processes and sockets cannot be inspected. Nothing was checked.")
@@ -105,11 +105,11 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 	var cannotSee []string
 
 	// 1. Processes
-	procs, unreadable := pr.ListZoraxy(o.Self)
+	procs, unreadable := pr.ListDunree(o.Self)
 	if unreadable > 0 && !pr.IsRoot {
 		cannotSee = append(cannotSee, fmt.Sprintf("%d process(es) of other users (their executable is hidden; run with sudo to see them)", unreadable))
 	}
-	{ //plugins are children of a Zoraxy and often carry the same name prefix: they are not other instances
+	{ //plugins are children of a Dunree and often carry the same name prefix: they are not other instances
 		ids := pidSet(procs)
 		kept := procs[:0:0]
 		for _, p := range procs {
@@ -160,9 +160,9 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 		holderSet[h] = true
 	}
 
-	// 3. Zoraxy processes
+	// 3. Dunree processes
 	r.addf("")
-	r.addf("Zoraxy processes (other than this doctor)")
+	r.addf("Dunree processes (other than this doctor)")
 	all := make([]ProcInfo, 0, len(known))
 	for _, p := range known {
 		all = append(all, p)
@@ -195,7 +195,7 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 		}
 	}
 	if zombies > 0 {
-		r.addf("  (%d exited Zoraxy process(es) not yet collected by their parent, they hold nothing)", zombies)
+		r.addf("  (%d exited Dunree process(es) not yet collected by their parent, they hold nothing)", zombies)
 	}
 	// A process that has the database file open but holds no lock is waiting for the lock holder.
 	// Processes whose descriptors we cannot read are counted but never accused.
@@ -226,7 +226,7 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 		txt := fmt.Sprintf("%s has the database open but holds no lock while PID %d holds it: it is most likely blocked waiting for the database lock, which is why a service can show 'active' while serving nothing.", strings.Join(waiting, ", "), hp.Pid)
 		r.problem(txt, "Stop the one that should not run (see the list above), then: sudo systemctl restart "+unit)
 	} else if runningProcs > 1 && len(holders) == 0 {
-		r.addf("  note: %d Zoraxy processes run; none was seen holding %s (other instances may use other databases)", runningProcs, o.DBPath)
+		r.addf("  note: %d Dunree processes run; none was seen holding %s (other instances may use other databases)", runningProcs, o.DBPath)
 	}
 	if len(unknownDB) > 0 && !pr.IsRoot {
 		cannotSee = append(cannotSee, "whether "+strings.Join(unknownDB, ", ")+" use this database (their descriptors are hidden; run with sudo)")
@@ -242,7 +242,7 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 	case !us.Available:
 		r.addf("  systemctl not available (or systemd is not running): skipped")
 	case !us.Exists:
-		r.addf("  no such unit (Zoraxy is not installed as a service on this machine)")
+		r.addf("  no such unit (Dunree is not installed as a service on this machine)")
 	default:
 		r.addf("  %s (%s), type=%s, main pid %d", us.Active, us.Sub, us.Type, us.MainPID)
 		if us.Fragment != "" {
@@ -250,7 +250,7 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 		}
 		active := us.Active == "active" || us.Active == "activating"
 		if us.Active == "activating" {
-			r.addf("  still starting. With Type=notify it stays 'activating' until Zoraxy reports it is listening; if this lasts long, the start is stuck.")
+			r.addf("  still starting. With Type=notify it stays 'activating' until Dunree reports it is listening; if this lasts long, the start is stuck.")
 		}
 		if active && us.MainPID > 0 {
 			if len(holders) > 0 && !holderSet[us.MainPID] {
@@ -295,7 +295,7 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 				if ps.Required && (len(all) > 0 || (us.Active == "active")) {
 					r.addf("  %-6d %s: nothing is listening", ps.Port, ps.Label)
 					if len(all) > 0 {
-						r.problem(fmt.Sprintf("Port %d (%s) has no listener although Zoraxy is running. It may still be starting, or be stuck before it binds.", ps.Port, ps.Label),
+						r.problem(fmt.Sprintf("Port %d (%s) has no listener although Dunree is running. It may still be starting, or be stuck before it binds.", ps.Port, ps.Label),
 							"journalctl -u "+unit+" -n 50 --no-pager")
 					}
 				} else {
@@ -305,18 +305,18 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 			}
 			for _, s := range on {
 				owner := "owner not visible"
-				ownerIsZoraxy := false
+				ownerIsDunree := false
 				if len(s.Owners) > 0 {
 					var names []string
 					for _, op := range s.Owners {
 						if _, ok := known[op]; ok {
-							ownerIsZoraxy = true
+							ownerIsDunree = true
 							names = append(names, fmt.Sprintf("PID %d (%s)", op, known[op].ExeBase()))
 						} else {
 							d := pr.Describe(op)
 							names = append(names, fmt.Sprintf("PID %d (%s)", op, d.ExeBase()))
-							if IsZoraxyName(d.ExeBase()) {
-								ownerIsZoraxy = true
+							if IsDunreeName(d.ExeBase()) {
+								ownerIsDunree = true
 							}
 						}
 					}
@@ -331,13 +331,13 @@ func RunDoctor(o DoctorOptions, pr Probe) Report {
 					r.problem(fmt.Sprintf("Port %d: the accept queue is full (%d waiting, limit %d): connections are piling up, nothing is accepting. Browsers get 'connection refused' or time out. The listening process (%s) is frozen or stuck.", ps.Port, s.RxQ, s.TxQ, owner),
 						"Find it above (state T = frozen) and run: sudo kill -CONT <pid>  or  sudo kill -9 <pid>")
 				}
-				if len(s.Owners) > 0 && !ownerIsZoraxy {
-					r.problem(fmt.Sprintf("Port %d (%s) is held by %s, not by Zoraxy. Zoraxy cannot bind it.", ps.Port, ps.Label, owner),
-						"Stop that program or change Zoraxy's port, then: sudo systemctl restart "+unit)
+				if len(s.Owners) > 0 && !ownerIsDunree {
+					r.problem(fmt.Sprintf("Port %d (%s) is held by %s, not by Dunree. Dunree cannot bind it.", ps.Port, ps.Label, owner),
+						"Stop that program or change Dunree's port, then: sudo systemctl restart "+unit)
 				}
 			}
 		}
-		// queues of any other socket a Zoraxy owns
+		// queues of any other socket a Dunree owns
 		for _, p := range all {
 			for _, s := range socksOf[p.Pid] {
 				if seenPort[s.Port] {

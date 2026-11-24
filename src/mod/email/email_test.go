@@ -83,7 +83,7 @@ func (f *fakeSMTP) serve(c net.Conn) {
 func TestSendEmailWithoutAuthentication(t *testing.T) {
 	f := newFakeSMTP(t)
 	addr := f.ln.Addr().(*net.TCPAddr)
-	s := NewEmailSender("127.0.0.1", addr.Port, "", "", "zoraxy@example.com")
+	s := NewEmailSender("127.0.0.1", addr.Port, "", "", "dunree@example.com")
 	if err := s.SendEmail("admin@example.com", "hi", "<p>body</p>"); err != nil {
 		t.Fatalf("send without auth failed: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestSendEmailWithoutAuthentication(t *testing.T) {
 func TestSendEmailUsernameOnlyDoesNotAuth(t *testing.T) {
 	f := newFakeSMTP(t)
 	addr := f.ln.Addr().(*net.TCPAddr)
-	s := NewEmailSender("127.0.0.1", addr.Port, "someone", "", "zoraxy@example.com")
+	s := NewEmailSender("127.0.0.1", addr.Port, "someone", "", "dunree@example.com")
 	if err := s.SendEmail("admin@example.com", "hi", "x"); err != nil {
 		t.Fatal(err)
 	}

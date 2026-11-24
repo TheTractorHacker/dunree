@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // newWAFTestProxy wires a real Router + ProxyHandler in front of a recording

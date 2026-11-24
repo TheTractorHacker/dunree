@@ -6,7 +6,7 @@ from lib import *
 
 def _ensure_running(z, pid):
     """Enable a plugin unless it already runs. A plugin folder that is seeded before the first start has no stored
-    "enabled" flag, which counts as enabled: Zoraxy starts it at boot, and enabling a running plugin is an error."""
+    "enabled" flag, which counts as enabled: Dunree starts it at boot, and enabling a running plugin is an error."""
     for p in z.get("/api/plugins/list"):
         if (p.get("Spec") or {}).get("id") == pid and ((p.get("Status") or {}).get("State") == "running" or p.get("Enabled")):
             return
@@ -18,7 +18,7 @@ def plugin_filter_hooks():
     """Example filter plugin (real process): pre_auth denies matching User-Agents, tags requests, adds response headers,
     and fails open when the plugin process dies."""
     binp = build_example_plugin("filter-example")
-    with Zoraxy(plugins=[("filter-example", binp)]) as z, Backend(lambda h, rec, b: send(h, 200, json.dumps({"headers": rec["headers"]}), {"X-Powered-By": "upstream"}, ctype="application/json"), name="app") as app:
+    with Dunree(plugins=[("filter-example", binp)]) as z, Backend(lambda h, rec, b: send(h, 200, json.dumps({"headers": rec["headers"]}), {"X-Powered-By": "upstream"}, ctype="application/json"), name="app") as app:
         z.add_rule("pl.test", app.addr)
         pid = None
         lst = z.get("/api/plugins/list")
@@ -50,13 +50,13 @@ def plugin_filter_hooks():
 
 @scenario("plugin_reference_plugins", ["plugins-phase3"])
 def plugin_reference_plugins():
-    """The three reference plugins of the fork (real processes) against a real Zoraxy: all start and report contract
+    """The three reference plugins of the fork (real processes) against a real Dunree: all start and report contract
     version 1; the filter marks requests and responses, denies its fixed path and fails open when killed (it declares
     fail_closed, nobody consented); the page-and-API plugin reads the access rules with its API key; the events plugin
     serves its counters through the admin proxy."""
     names = ["fork-ref-filter", "fork-ref-events", "fork-ref-ui-api"]
     ids = {"fork-ref-filter": "fork.zoraxy.ref.filter", "fork-ref-events": "fork.zoraxy.ref.events", "fork-ref-ui-api": "fork.zoraxy.ref.ui-api"}
-    with Zoraxy(plugins=[(n, build_example_plugin(n)) for n in names]) as z, Backend(lambda h, rec, b: send(h, 200, json.dumps({"headers": rec["headers"]}), ctype="application/json"), name="app") as app:
+    with Dunree(plugins=[(n, build_example_plugin(n)) for n in names]) as z, Backend(lambda h, rec, b: send(h, 200, json.dumps({"headers": rec["headers"]}), ctype="application/json"), name="app") as app:
         z.add_rule("ref.test", app.addr)
         lst = z.get("/api/plugins/list")
         found = {(p.get("Spec") or {}).get("id") for p in lst}
@@ -110,7 +110,7 @@ def plugin_proxy_rule_events():
     reads the access rules with the SDK helper that sets the Bearer header."""
     sub, call = "org.aroz.zoraxy.event_subscriber_example", "org.aroz.zoraxy.api_call_example"
     names = ["event-subscriber-example", "api-call-example"]
-    with Zoraxy(plugins=[(n, build_example_plugin(n)) for n in names]) as z:
+    with Dunree(plugins=[(n, build_example_plugin(n)) for n in names]) as z:
         for pid in (sub, call):
             _ensure_running(z, pid)
 
@@ -150,7 +150,7 @@ def plugin_proxy_rule_events():
         blocks = txt.split('<div class="response-block')[1:]
         check(len(blocks) == 4, "the page of the API call example has %d result blocks" % len(blocks))
         check("HTTP/1.1 200 OK" in blocks[0] and "Error fetching" not in blocks[0], "allowed endpoint with the helper: %s" % blocks[0][:400])
-        # (the fourth block, an endpoint of the admin API, is not checked: this Zoraxy runs with -noauth and answers it to anyone)
+        # (the fourth block, an endpoint of the admin API, is not checked: this Dunree runs with -noauth and answers it to anyone)
         for i, what in ((1, "invalid key"), (2, "endpoint that is not permitted")):
             check("HTTP/1.1 200" not in blocks[i] and "HTTP/1.1 4" in blocks[i], "%s was not refused: %s" % (what, blocks[i][:400]))
         return "subscriber got proxyRuleAdded, proxyRuleEdited, proxyRuleRemoved for ev149.test (documented fields only); API call example: allowed endpoint 200 through the SDK helper, invalid key and unpermitted endpoint refused"

@@ -10,7 +10,7 @@ package geodb
 
 import (
 	"errors"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 	"io"
 	"log"
 	"math/rand"
@@ -20,7 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 const (
@@ -190,7 +190,7 @@ func (u *Updater) UpdateNow() error {
 		return err
 	}
 
-	//Apply the newly downloaded dataset without restarting Zoraxy
+	//Apply the newly downloaded dataset without restarting Dunree
 	if err = u.store.ReloadGeoDB(); err != nil {
 		u.lastUpdateError.Store(err.Error())
 		return err

@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
 
 import os
+import shutil
 import signal
 import subprocess
 import sys
 import time
 
-zoraxy_proc = None
+dunree_proc = None
 zerotier_proc = None
 
 def getenv(key, default=None):
   return os.environ.get(key, default)
+
+# The Dunree image keeps everything under /opt/dunree (with /opt/zoraxy as a link to it) and the
+# program as dunree. An image built from an older Dockerfile only has /opt/zoraxy and zoraxy;
+# both layouts work. # legacy-compat
+def base_dir(exists=os.path.isdir):
+  return "/opt/dunree" if exists("/opt/dunree") else "/opt/zoraxy"
+
+def program(which=shutil.which):
+  return "dunree" if which("dunree") else "zoraxy"
 
 def run(command):
   try:
@@ -31,23 +41,23 @@ def popen(command):
 def cleanup(_signum, _frame):
   print("Shutdown signal received. Cleaning up...")
 
-  global zoraxy_proc, zerotier_proc
+  global dunree_proc, zerotier_proc
 
-  if zoraxy_proc and zoraxy_proc.poll() is None:
-    print("Terminating Zoraxy...")
-    zoraxy_proc.terminate()
+  if dunree_proc and dunree_proc.poll() is None:
+    print("Terminating Dunree...")
+    dunree_proc.terminate()
 
   if zerotier_proc and zerotier_proc.poll() is None:
     print("Terminating ZeroTier-One...")
     zerotier_proc.terminate()
 
-  # Wait for Zoraxy and ZeroTier to cleanly exit
-  if zoraxy_proc:
+  # Wait for Dunree and ZeroTier to cleanly exit
+  if dunree_proc:
     try:
-      zoraxy_proc.wait(timeout=8)
+      dunree_proc.wait(timeout=8)
     except subprocess.TimeoutExpired:
-      zoraxy_proc.kill()
-      zoraxy_proc.wait()
+      dunree_proc.kill()
+      dunree_proc.wait()
 
   if zerotier_proc:
     try:
@@ -70,7 +80,7 @@ def start_zerotier():
 
   global zerotier_proc
 
-  config_dir = "/opt/zoraxy/config/zerotier/"
+  config_dir = base_dir() + "/config/zerotier/"
   zt_path = "/var/lib/zerotier-one"
 
   os.makedirs(config_dir, exist_ok=True)
@@ -83,13 +93,13 @@ def start_zerotier():
 
   zerotier_proc = popen(["zerotier-one"])
 
-def start_zoraxy():
-  print("Starting Zoraxy...")
+def start_dunree():
+  print("Starting Dunree...")
 
-  global zoraxy_proc
+  global dunree_proc
 
-  zoraxy_args = [
-    "zoraxy",
+  dunree_args = [
+    program(),
     f"-autorenew={ getenv('AUTORENEW', '86400') }",
     f"-cfgupgrade={ getenv('CFGUPGRADE', 'true') }",
     f"-db={ getenv('DB', 'auto') }",
@@ -100,14 +110,14 @@ def start_zoraxy():
     f"-mdns={ getenv('MDNS', 'true') }",
     f"-mdnsname={ getenv('MDNSNAME', "''") }",
     f"-noauth={ getenv('NOAUTH', 'false') }",
-    f"-plugin={ getenv('PLUGIN', '/opt/zoraxy/plugin/') }",
+    f"-plugin={ getenv('PLUGIN', base_dir() + '/plugin/') }",
     f"-port=:{ getenv('PORT', '8000') }",
     f"-sshlb={ getenv('SSHLB', 'false') }",
     f"-version={ getenv('VERSION', 'false') }",
     f"-webroot={ getenv('WEBROOT', './www') }",
   ]
 
-  zoraxy_proc = popen(zoraxy_args)
+  dunree_proc = popen(dunree_args)
 
 def main():
   # Register signal handlers to allow clean shutdowns
@@ -119,14 +129,14 @@ def main():
 
   if getenv("UPDATE_GEOIP", "false").lower() == "true":
     print("Updating GeoIP data...")
-    run(["zoraxy", "-update_geoip=true"])
+    run([program(), "-update_geoip=true"])
 
-  os.chdir("/opt/zoraxy/config/")
+  os.chdir(base_dir() + "/config/")
 
   if getenv("ZEROTIER", "false") == "true":
     start_zerotier()
 
-  start_zoraxy()
+  start_dunree()
 
   signal.pause()
 

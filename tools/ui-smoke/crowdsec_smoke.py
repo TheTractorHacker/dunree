@@ -384,7 +384,7 @@ def crowdsec_ui(pg, ctx):
         pg.click("#csCheckGo")
         pg.wait_for_function("document.getElementById('csCheckOut').innerText.indexOf('Would be blocked') >= 0", timeout=8000)
         out = pane_text("#csCheckOut")
-        if "This one decides" not in out or "the mode is Log only" not in out or "smoke/manual ban" not in out or "Seen by Zoraxy" not in out:
+        if "This one decides" not in out or "the mode is Log only" not in out or "smoke/manual ban" not in out or "Seen by Dunree" not in out:
             fail("crowdsec-check", "the check of a banned address must name the decision and say why it is not enforced: " + out[:400])
         n_lookups = len([c for c in lapi.calls if c.startswith("/v1/decisions?ip=")])
         pg.fill("#csCheckIp", CS_CLEAN)
@@ -443,7 +443,7 @@ def crowdsec_ui(pg, ctx):
         pg.wait_for_selector("#csChartBox svg.cs-chart rect.cs-b-blocked", state="attached", timeout=15000)
         shot("crowdsec-enforce.png")
 
-        # ---------------------------------------------------------------- policies: they only make Zoraxy block less
+        # ---------------------------------------------------------------- policies: they only make Dunree block less
         current["page"] = "crowdsec-policy"
         if hit("/", CS_CAPI)[0] != 403 or hit("/", CS_OWN)[0] != 403:
             fail("crowdsec-policy", "enforce: by default decisions of every source are enforced")

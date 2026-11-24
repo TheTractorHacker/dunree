@@ -1,4 +1,4 @@
-// Package blocklog keeps a bounded log of the requests Zoraxy itself rejected (access list,
+// Package blocklog keeps a bounded log of the requests Dunree itself rejected (access list,
 // auto-ban, rate limit, WAF, bot / header / path rules, CAPTCHA, client certificate, auth ...)
 // so the "Blocked" counters of the Status page can be explained: what, who, and why.
 package blocklog

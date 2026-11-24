@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	plugin "example.com/zoraxy/helloworld/mod/zoraxy_plugin"
+	plugin "example.com/dunree/helloworld/mod/dunree_plugin"
 )
 
 const (
@@ -45,7 +45,7 @@ func main() {
 
 	// Create a new PluginEmbedUIRouter that will serve the UI from web folder
 	// The router will also help to handle the termination of the plugin when
-	// a user wants to stop the plugin via Zoraxy Web UI
+	// a user wants to stop the plugin via Dunree Web UI
 	embedWebRouter := plugin.NewPluginEmbedUIRouter(PLUGIN_ID, &content, WEB_ROOT, UI_PATH)
 	embedWebRouter.RegisterTerminateHandler(func() {
 		// Do cleanup here if needed

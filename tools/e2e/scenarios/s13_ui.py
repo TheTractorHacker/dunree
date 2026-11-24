@@ -20,7 +20,7 @@ def ui_new_rule_dialog_to_traffic():
     shots = os.environ.get("E2E_SHOTS")
     if shots:
         os.makedirs(shots, exist_ok=True)
-    with Zoraxy() as z, Backend(name="ui-app") as app:
+    with Dunree() as z, Backend(name="ui-app") as app:
         errors = []
         with sync_playwright() as p:
             b = p.chromium.launch()

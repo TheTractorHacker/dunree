@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 // selfPair returns PEM encoded certificate and key for a name.

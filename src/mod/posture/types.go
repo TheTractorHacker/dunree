@@ -1,8 +1,8 @@
-// Package posture computes the security posture of a Zoraxy instance: a list of
+// Package posture computes the security posture of a Dunree instance: a list of
 // evidence based checks, a transparent 0-100 score and a small set of safe,
 // previewable, reversible fixes.
 //
-// The package never reads Zoraxy state by itself. The host (src/posture_glue.go)
+// The package never reads Dunree state by itself. The host (src/posture_glue.go)
 // gathers a Facts snapshot and implements the Backend that applies settings, which
 // keeps every check and every action testable with plain fakes.
 //

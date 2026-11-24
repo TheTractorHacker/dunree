@@ -9,11 +9,11 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
-// fakeOutpost emulates the parts of an Authentik proxy outpost that Zoraxy talks to.
+// fakeOutpost emulates the parts of an Authentik proxy outpost that Dunree talks to.
 type fakeOutpost struct {
 	*httptest.Server
 	mu       sync.Mutex

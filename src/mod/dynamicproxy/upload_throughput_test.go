@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 type zeroReader struct{ left int64 }
@@ -47,7 +47,7 @@ func uploadRate(t *testing.T, url string, size int64) (float64, int64) {
 	return float64(size) / el, size
 }
 
-// Upstream #950: a speed test through Zoraxy reported an impossible upload rate. A proxy that buffers or
+// Upstream #950: a speed test through Dunree reported an impossible upload rate. A proxy that buffers or
 // peeks the request body would inflate the number the browser reports. Check that the body is streamed:
 // the upstream must receive every byte, and
 // the proxied rate may not collapse compared with talking to the backend directly (also with the WAF on).

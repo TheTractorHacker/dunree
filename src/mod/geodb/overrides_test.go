@@ -3,7 +3,7 @@ package geodb
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // Upstream #1334: Malaysian IPv6 prefixes resolved to AU because of a very wide AU row in the

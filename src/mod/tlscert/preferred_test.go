@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func servedCN(t *testing.T, m *Manager, host string) string {

@@ -1,6 +1,6 @@
 # Pocket ID + Navidrome: passing the user name in a header
 
-Answers upstream #1118. The OIDC claim -> header mapping is covered by Zoraxy's tests with a fake provider
+Answers upstream #1118. The OIDC claim -> header mapping is covered by Dunree's tests with a fake provider
 (`TestFullLoginPKCES256AndSessionCookieFlags`, `TestScrubIdentityHeaders`); **Pocket ID and Navidrome themselves were not run**.
 
 ## The mistake in the report
@@ -17,7 +17,7 @@ provider is delivered by the OAuth2 settings instead:
    X-Auth-User=preferred_username
    ```
 
-   (comma separated `Header=claim` pairs; add `X-Auth-Email=email,X-Auth-Name=name` if you want them). Zoraxy first
+   (comma separated `Header=claim` pairs; add `X-Auth-Email=email,X-Auth-Name=name` if you want them). Dunree first
    **deletes** these headers from the incoming request (clients cannot forge them) and then sets them from the
    verified ID token / userinfo claims.
 3. Scopes `openid profile email` (the `preferred_username` claim comes with `profile`; Pocket ID calls it the
@@ -33,11 +33,11 @@ Environment (names for Navidrome 0.55 and newer; older versions call them `ND_RE
 
 ```
 ND_EXTAUTH_USERHEADER=X-Auth-User
-ND_EXTAUTH_TRUSTEDSOURCES=172.18.0.0/16      # the address Zoraxy connects from, NOT 0.0.0.0/0
+ND_EXTAUTH_TRUSTEDSOURCES=172.18.0.0/16      # the address Dunree connects from, NOT 0.0.0.0/0
 ```
 
 `0.0.0.0/0` makes Navidrome trust the header from anybody who can reach its port, so any LAN host could log in as
-any user by sending `X-Auth-User`. Use the Zoraxy address / Docker network. Check the header arrives: temporarily point the rule
+any user by sending `X-Auth-User`. Use the Dunree address / Docker network. Check the header arrives: temporarily point the rule
 at a header-echo container such as `traefik/whoami`.
 
 ## Subsonic and mobile clients

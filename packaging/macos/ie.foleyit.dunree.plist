@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd job for Dunree (a system daemon: it runs as root so that it can bind ports 80 and 443).
+  Installed by the .pkg as /Library/LaunchDaemons/ie.foleyit.dunree.plist.
+
+  Program: /usr/local/bin/dunree
+  Data:    /usr/local/var/dunree        (conf, sys.db, log, plugins)
+  Output:  /usr/local/var/log/dunree/dunree.log
+
+  By hand:
+    sudo launchctl bootstrap system /Library/LaunchDaemons/ie.foleyit.dunree.plist   (load and start)
+    sudo launchctl bootout system/ie.foleyit.dunree                                  (stop and unload)
+    sudo launchctl kickstart -k system/ie.foleyit.dunree                             (restart)
+  To change the flags edit ProgramArguments below, then bootout and bootstrap again.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>ie.foleyit.dunree</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/dunree</string>
+		<string>-port=:8000</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/usr/local/var/dunree</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- Restart after a crash or a failed start, not after a clean stop. -->
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ThrottleInterval</key>
+	<integer>5</integer>
+	<!-- Dunree stops cleanly on SIGTERM (worst case 28 s) before launchd sends SIGKILL. -->
+	<key>ExitTimeOut</key>
+	<integer>30</integer>
+	<key>StandardOutPath</key>
+	<string>/usr/local/var/log/dunree/dunree.log</string>
+	<key>StandardErrorPath</key>
+	<string>/usr/local/var/log/dunree/dunree.log</string>
+	<!-- A proxy holds one file descriptor per connection. -->
+	<key>SoftResourceLimits</key>
+	<dict>
+		<key>NumberOfFiles</key>
+		<integer>65536</integer>
+	</dict>
+	<key>HardResourceLimits</key>
+	<dict>
+		<key>NumberOfFiles</key>
+		<integer>65536</integer>
+	</dict>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+</dict>
+</plist>

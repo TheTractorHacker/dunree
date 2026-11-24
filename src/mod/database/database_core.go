@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database/dbbolt"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/database/dbleveldb"
+	"github.com/foleyit/dunree/mod/database/dbbolt"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database/dbleveldb"
 )
 
 func newDatabase(dbfile string, backendType dbinc.BackendType) (*Database, error) {

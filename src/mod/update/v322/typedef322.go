@@ -1,6 +1,6 @@
 package v322
 
-import "imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
+import "github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
 
 /*
 

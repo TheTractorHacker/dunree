@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -29,14 +29,14 @@ import (
 
 	A new version that fails that check is left in place and reported, and the
 	administrator can roll back with one click; with the setting "roll back
-	automatically" (off by default) Zoraxy does it by itself. One previous version
+	automatically" (off by default) Dunree does it by itself. One previous version
 	is kept; a rollback uses it up.
 */
 
 const (
 	stagingDirName = ".staging"
 	// The folder inside a plugin folder that holds the binary an update replaced.
-	// A name of Zoraxy's own: a plugin that keeps data in a folder called
+	// A name of Dunree's own: a plugin that keeps data in a folder called
 	// "previous" must not lose it to an update.
 	previousDirName = ".zoraxy-previous"
 )
@@ -45,7 +45,7 @@ const (
 type stagedPlugin struct {
 	dir      string                   //the staging folder of this plugin
 	binPath  string                   //the downloaded binary inside it
-	spec     *zoraxyPlugin.IntroSpect //what the binary says about itself
+	spec     *dunreePlugin.IntroSpect //what the binary says about itself
 	sum      string
 	size     int64
 	verified string //Verified...
@@ -60,7 +60,7 @@ func (m *Manager) stagingDir(pluginID string) (string, error) {
 	return filepath.Join(m.Options.PluginDir, stagingDirName, name), nil
 }
 
-func versionOfSpec(spec *zoraxyPlugin.IntroSpect) string {
+func versionOfSpec(spec *dunreePlugin.IntroSpect) string {
 	return versionToString(spec.VersionMajor, spec.VersionMinor, spec.VersionPatch)
 }
 
@@ -75,6 +75,12 @@ func (m *Manager) stageDownload(entry *DownloadablePlugin, pluginID string, binN
 	}
 	if reason := m.installBlockedReason(entry); reason != "" {
 		return nil, errors.New(reason)
+	}
+	if reason := addonBlockedReason(entry); reason != "" {
+		return nil, errors.New(reason) //add-on index only: this host is older than the add-on needs
+	}
+	if reason := localArtifactRefused(entry.Source, downloadURL); reason != "" {
+		return nil, errors.New(reason) //a file of this server only from the folder of the local source the entry came from
 	}
 	dir, err := m.stagingDir(pluginID)
 	if err != nil {
@@ -454,16 +460,16 @@ func (m *Manager) folderIsLoaded(pluginPath string) bool {
 	return false
 }
 
-// repairPluginFolder is called for every plugin folder when Zoraxy starts, before
+// repairPluginFolder is called for every plugin folder when Dunree starts, before
 // anything of it is run. An update and a rollback swap the program file with two
-// renames; when Zoraxy is killed between the two, the folder has no program file
+// renames; when Dunree is killed between the two, the folder has no program file
 // and the plugin would not load (and the Roll back button needs a loaded plugin).
 // The file that was installed at that moment is renamed back:
 //   - a rollback was interrupted: it waits in .staging/.rollback-<id>/replaced-<file>
 //   - an update was interrupted: it waits in <plugin folder>/.zoraxy-previous/<file>
 //
 // Either way the folder holds again what its install record describes. Nothing is
-// done for a folder that has an entry point, and nothing outside a start of Zoraxy
+// done for a folder that has an entry point, and nothing outside a start of Dunree
 // (a reload may run while a swap is in progress).
 func (m *Manager) repairPluginFolder(folder string, pluginPath string) {
 	if _, err := m.GetPluginEntryPoint(pluginPath); err == nil {
@@ -494,7 +500,7 @@ func (m *Manager) repairPluginFolder(folder string, pluginPath string) {
 				m.Log("plugin folder "+folder+": a rollback was interrupted and the program file could not be put back from "+aside, err)
 				return
 			}
-			m.Log("plugin folder "+folder+": a rollback was interrupted (Zoraxy stopped in the middle of it). The program file that was installed was put back; the previous version is still kept, roll back again if you want it", nil)
+			m.Log("plugin folder "+folder+": a rollback was interrupted (Dunree stopped in the middle of it). The program file that was installed was put back; the previous version is still kept, roll back again if you want it", nil)
 			return
 		}
 	}
@@ -509,7 +515,7 @@ func (m *Manager) repairPluginFolder(folder string, pluginPath string) {
 		return
 	}
 	os.Remove(prevDir) //only when it is empty now
-	m.Log("plugin folder "+folder+": an update was interrupted (Zoraxy stopped in the middle of it). The program file that was installed was put back from "+previousDirName+"; the update was not installed", nil)
+	m.Log("plugin folder "+folder+": an update was interrupted (Dunree stopped in the middle of it). The program file that was installed was put back from "+previousDirName+"; the update was not installed", nil)
 	// The version an earlier update had kept was cleared to make room: there is nothing to roll back to
 	if id, rec := m.recordOfFolder(folder); rec != nil && rec.Previous != nil {
 		rec.Previous = nil
@@ -518,7 +524,7 @@ func (m *Manager) repairPluginFolder(folder string, pluginPath string) {
 }
 
 // clearStagingAtBoot removes what a download, update or rollback that was cut off
-// by the end of Zoraxy left in the staging folder. Only at a start of Zoraxy,
+// by the end of Dunree left in the staging folder. Only at a start of Dunree,
 // after repairPluginFolder had its look: nothing is downloading then.
 func (m *Manager) clearStagingAtBoot() {
 	stagingRoot := filepath.Join(m.Options.PluginDir, stagingDirName)

@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"imuslab.com/zoraxy/mod/adminallow"
+	"github.com/foleyit/dunree/mod/adminallow"
 	"log"
 	"net"
 	"net/http"
@@ -19,11 +19,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/forwardproxy/cproxy"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/forwardproxy/cproxy"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // ZrFilter decides which clients may use the forward proxy. The proxy listens on all interfaces, so by

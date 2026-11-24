@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Zoraxy from this checkout, start a throw-away -noauth instance in a temp dir
+# Build Dunree from this checkout, start a throw-away -noauth instance in a temp dir
 # (own conf/db/port; never your real config) and run smoke.py against it.
 # Needs a python with playwright + chromium installed (see DEVELOPMENT.md); set PY to override.
 # Extra arguments are passed to smoke.py (e.g. --out DIR).
@@ -11,7 +11,7 @@ PORT="${PORT:-18765}"
 tmp="$(mktemp -d)"
 pid=""
 trap '[ -n "$pid" ] && kill "$pid" 2>/dev/null || true; rm -rf "$tmp"' EXIT
-(cd "$root/src" && go build -o "$tmp/zoraxy" .)
+(cd "$root/src" && go build -o "$tmp/dunree" .)
 ln -s "$root/src/web" "$tmp/web"
 # fake zrok program for the Tunnels (zrok) flow: never a real zrok account
 mkdir -p "$tmp/fakebin"
@@ -24,8 +24,8 @@ case "$1" in
 esac
 EOF
 chmod +x "$tmp/fakebin/zrok"
-start_zoraxy() {
-  (cd "$tmp" && exec ./zoraxy -noauth -dev -allow_external_tools -default_inbound_port "$((PORT+1))" -port ":$PORT" -conf ./conf -dbpath ./sys.db >>zoraxy.log 2>&1) &
+start_dunree() {
+  (cd "$tmp" && exec ./dunree -noauth -dev -allow_external_tools -default_inbound_port "$((PORT+1))" -port ":$PORT" -conf ./conf -dbpath ./sys.db >>dunree.log 2>&1) &
   pid=$!
   for _ in $(seq 60); do curl -fs "http://127.0.0.1:$PORT/" >/dev/null && break; sleep 0.5; done
 }
@@ -35,7 +35,7 @@ start_zoraxy() {
 mkdir -p "$tmp/conf"
 echo "seeded by run.sh: marks this throw-away instance as an existing installation" >"$tmp/conf/existing-install.txt"
 # First start: creates the database and runs the config upgrades (they would rewrite a seeded config).
-start_zoraxy
+start_dunree
 kill "$pid" 2>/dev/null || true
 wait "$pid" 2>/dev/null || true
 # A rule from an older version whose host name is hostile markup. The API refuses such a name now, but configs written by
@@ -44,5 +44,5 @@ mkdir -p "$tmp/conf/proxy"
 cat >"$tmp/conf/proxy/\"><img src=x onerror=window.__xss=1>.smoke-xss.example.com.config" <<'EOF2'
 {"ProxyType":1,"RootOrMatchingDomain":"\"><img src=x onerror=window.__xss=1>.smoke-xss.example.com","MatchingDomainAlias":[],"ActiveOrigins":[{"OriginIpOrDomain":"127.0.0.1:9","Weight":1}],"InactiveOrigins":[],"AccessFilterUUID":"default"}
 EOF2
-start_zoraxy
+start_dunree
 "$PY" "$here/smoke.py" --zrok-fake "$tmp/fakebin/zrok" --url "http://127.0.0.1:$PORT" "$@"

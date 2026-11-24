@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
 )
 
 func TestUnixSocketUpstreamServesThroughProxyHandler(t *testing.T) {

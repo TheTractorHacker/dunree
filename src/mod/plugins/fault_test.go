@@ -15,14 +15,14 @@ import (
 	"testing"
 	"time"
 
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*
 	Fault-injection suite, phase 0 of docs/plugins/reliability-plan.md.
 
 	Every test starts the real chaos plugin (testdata/chaosplugin) through the real
-	lifecycle code and checks two things: what Zoraxy does with the request, and what
+	lifecycle code and checks two things: what Dunree does with the request, and what
 	the read-only status says. Where the behaviour is a known weakness that a later
 	phase changes, the test says "today" in its comment: it documents the behaviour,
 	it does not bless it.
@@ -143,7 +143,7 @@ func TestFaultCrashIsReportedWithExitCode(t *testing.T) {
 		t.Fatalf("unexpected crash status %+v", st)
 	}
 	if st.LastError == "" || strings.Contains(st.LastError, "simulated crash") {
-		t.Fatalf("LastError must be set by Zoraxy and must not carry plugin output: %q", st.LastError)
+		t.Fatalf("LastError must be set by Dunree and must not carry plugin output: %q", st.LastError)
 	}
 	eventually(t, 2*time.Second, "the crashed plugin to be detached", func() bool { return !p.isEnabled() })
 
@@ -389,7 +389,7 @@ func TestFaultLogFloodStaysBounded(t *testing.T) {
 	waitHealth(t, p, HealthOK)
 	time.Sleep(500 * time.Millisecond)
 
-	//Zoraxy keeps working while the plugin floods its output
+	//Dunree keeps working while the plugin floods its output
 	start := time.Now()
 	if v := listed(t, m, p.Spec.ID); v.Status.State != StateRunning {
 		t.Fatalf("flooding plugin is not running: %+v", v.Status)
@@ -398,7 +398,7 @@ func TestFaultLogFloodStaysBounded(t *testing.T) {
 		t.Fatalf("request during a log flood: handled=%v after %s", res.Handled, d)
 	}
 	if time.Since(start) > 2*time.Second {
-		t.Fatal("Zoraxy got slow during a log flood")
+		t.Fatal("Dunree got slow during a log flood")
 	}
 	out := p.recentOutput()
 	if len(out) == 0 || len(out) > outputRingLines {
@@ -409,7 +409,7 @@ func TestFaultLogFloodStaysBounded(t *testing.T) {
 			t.Fatalf("a ring line is %d bytes long", len(line))
 		}
 	}
-	//Today: every line still goes to the main Zoraxy log, there is no rate limit (phase 1)
+	//Today: every line still goes to the main Dunree log, there is no rate limit (phase 1)
 	pid := p.Status().PID
 	if err := m.StopPlugin(p.Spec.ID); err != nil {
 		t.Fatal(err)
@@ -764,7 +764,7 @@ func TestSafePluginFolderName(t *testing.T) {
 /* Findings of the phase 0 review */
 
 // The port probe is new behaviour, so it is off unless -plugin_port_probe is given:
-// by default Zoraxy never connects to a plugin only to look at it.
+// by default Dunree never connects to a plugin only to look at it.
 func TestFaultPortProbeIsOffByDefault(t *testing.T) {
 	m := newFaultManager(t)
 	p := loadChaos(t, m, "unprobed", "mode=hang_start\n", "t")

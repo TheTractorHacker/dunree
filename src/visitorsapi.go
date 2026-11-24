@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/notify"
-	"imuslab.com/zoraxy/mod/utils"
-	"imuslab.com/zoraxy/mod/visitors"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/notify"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/visitors"
 )
 
 /*

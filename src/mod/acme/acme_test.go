@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 // Test if the issuer extraction is working

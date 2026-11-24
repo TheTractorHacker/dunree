@@ -21,7 +21,7 @@ import (
 // address actually connected to (no rebinding gap between check and use).
 
 // ErrAdminPortDial is returned by DialControl for a refused dial
-var ErrAdminPortDial = errors.New("refused: upstream is the Zoraxy admin listener and the admin allow-list is on")
+var ErrAdminPortDial = errors.New("refused: upstream is the Dunree admin listener and the admin allow-list is on")
 
 type dialGuardState struct {
 	m      *Manager

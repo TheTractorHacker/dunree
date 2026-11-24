@@ -4,15 +4,19 @@ package main
 
 import (
 	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
-// testdata/verdicts.json is also checked against the rules of Zoraxy itself
-// (TestConformanceKitVerdictRulesMatchZoraxy in src/mod/plugins): the copy of the
+// testdata/verdicts.json is also checked against the rules of Dunree itself
+// (TestConformanceKitVerdictRulesMatchDunree in src/mod/plugins): the copy of the
 // rules in verdict.go must give the same answer for every entry.
 func TestVerdictFixtures(t *testing.T) {
 	raw, err := os.ReadFile("testdata/verdicts.json")
@@ -86,7 +90,7 @@ func TestManifestChecks(t *testing.T) {
 	m, _, _ := decodeManifest([]byte(`{"id":"a","name":"n","author":"a","description":"d","ui_path":"/ui","hooks":{"stages":["response","response"],"filter_request_path":"f","filter_response_path":"/r","timeout_ms":60000}}`))
 	checkManifest(m)
 	if m.hookTimeoutMs() != maxHookTimeoutMs || m.filterPath("response") != "/r" || m.filterPath("pre_auth") != "/f" || len(m.Hooks.Stages) != 1 {
-		t.Errorf("hooks are not normalised the way Zoraxy does: %+v", m.Hooks)
+		t.Errorf("hooks are not normalised the way Dunree does: %+v", m.Hooks)
 	}
 }
 
@@ -158,5 +162,47 @@ func TestProxyRuleEventsAreKnownAndSampled(t *testing.T) {
 	}
 	if toolVersion == "1.1.0" {
 		t.Error("the kit behaves differently from 1.1.0 (three more event names, new samples): it needs its own version")
+	}
+}
+
+// Dunree rebrand: the kit speaks to a plugin as Dunree does. Every plugin gets the configure fields
+// of Zoraxy; the Dunree fields are added for a plugin that declares sdk_flavor "dunree". Every // legacy-compat
+// header of the host goes out under both prefixes.
+func TestConfigurePayloadAndHeadersFollowTheHost(t *testing.T) {
+	k := &kit{uuid: "u-1", m: &manifest{PermittedAPIEndpoints: []permittedEndpoint{{Method: "GET", Endpoint: "/plugin/api/x"}}}, stub: &stubAPI{port: 4242, keys: map[string]bool{}}}
+	legacy, _ := json.Marshal(k.configurePayload(&proc{port: 5001, token: "t"}))
+	if strings.Contains(string(legacy), "dunree") || !strings.Contains(string(legacy), `"zoraxy_port":4242`) || !strings.Contains(string(legacy), `"zoraxy_uuid":"u-1"`) { // legacy-compat
+		t.Fatalf("payload for a plugin built for Zoraxy: %s", legacy) // legacy-compat
+	}
+	k.m.SDKFlavor = "dunree"
+	raw, _ := json.Marshal(k.configurePayload(&proc{port: 5001, token: "t"}))
+	var cur struct {
+		DunreePort   int `json:"dunree_port"`
+		ZoraxyPort   int `json:"zoraxy_port"` // legacy-compat
+		RuntimeConst struct {
+			DunreeUUID string `json:"dunree_uuid"`
+			ZoraxyUUID string `json:"zoraxy_uuid"` // legacy-compat
+			DunreeVer  string `json:"dunree_version"`
+		} `json:"runtime_const"`
+	}
+	if err := json.Unmarshal(raw, &cur); err != nil || cur.DunreePort != 4242 || cur.ZoraxyPort != 4242 || cur.RuntimeConst.DunreeUUID != "u-1" || cur.RuntimeConst.ZoraxyUUID != "u-1" || cur.RuntimeConst.DunreeVer == "" { // legacy-compat
+		t.Fatalf("payload for a Dunree SDK plugin: %s (%v)", raw, err)
+	}
+
+	var got http.Header
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { got = r.Header.Clone() }))
+	defer srv.Close()
+	_, portText, _ := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+	port, _ := strconv.Atoi(portText)
+	k = &kit{client: srv.Client(), p: &proc{port: port, token: "sekret"}}
+	hdr := k.tokenHeader("req-1")
+	hdr["X-Zoraxy-Event-Type"] = "blacklistedIpBlocked" // legacy-compat: call() adds the Dunree name
+	if a := k.call(http.MethodPost, "/x", []byte("{}"), hdr, 2*time.Second, 1024); a.err != nil {
+		t.Fatal(a.err)
+	}
+	for name, want := range map[string]string{"Plugin-Token": "sekret", "RequestID": "req-1", "Event-Type": "blacklistedIpBlocked"} {
+		if got.Get("X-Dunree-"+name) != want || got.Get("X-Zoraxy-"+name) != want { // legacy-compat
+			t.Errorf("%s: X-Dunree=%q X-Zoraxy=%q, want %q under both", name, got.Get("X-Dunree-"+name), got.Get("X-Zoraxy-"+name), want) // legacy-compat
+		}
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 	"io"
 	"net"
 	"net/http"
@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

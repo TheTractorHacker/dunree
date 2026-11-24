@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 /*
@@ -120,14 +120,14 @@ func wantsHTMLNavigation(r *http.Request) bool {
 	return strings.Contains(r.Header.Get("Accept"), "text/html")
 }
 
-// originalURL returns the externally visible URL of the request, built only from Zoraxy's own view
+// originalURL returns the externally visible URL of the request, built only from Dunree's own view
 // of it (never from a client supplied header or query value).
 func originalURL(r *http.Request) string {
 	return scheme(r) + "://" + r.Host + r.URL.RequestURI()
 }
 
 // startURL builds the sign-in URL that the browser is redirected to. The "rd" value is the
-// original URL computed by Zoraxy; no caller supplied redirect target is ever reflected.
+// original URL computed by Dunree; no caller supplied redirect target is ever reflected.
 func (ar *AuthRouter) startURL(r *http.Request) (string, bool) {
 	ar.outpostMu.RLock()
 	base := ar.outpostBase

@@ -20,6 +20,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -224,7 +226,7 @@ func (m *Manager) fleetRequest(ctx context.Context, cfg Config, method, p string
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+MakeToken(c.NodeKey, method, p, m.opt.NodeID, m.opt.Now()))
-	req.Header.Set("User-Agent", "zoraxy-fleet/"+m.opt.Version)
+	req.Header.Set("User-Agent", wirecompat.UserAgent("dunree-fleet/"+m.opt.Version, "zoraxy-fleet/"+m.opt.Version))
 	return req, nil
 }
 

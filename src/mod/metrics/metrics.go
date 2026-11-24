@@ -1,5 +1,5 @@
 // Package metrics is a small, dependency free Prometheus text exposition
-// (format 0.0.4) implementation for Zoraxy.
+// (format 0.0.4) implementation for Dunree.
 //
 // Design goals: near zero overhead when disabled (every hook is a nil/atomic
 // check), no per request allocation on the hot path once an endpoint has been

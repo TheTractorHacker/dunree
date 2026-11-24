@@ -7,11 +7,11 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/eventsystem"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // newNonTLSTestRouter builds a Router with a real access controller, redirect

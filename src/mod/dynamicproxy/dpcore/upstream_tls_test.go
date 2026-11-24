@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls/tlstest"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls/tlstest"
 )
 
 func startTLSUpstream(t *testing.T, cert tls.Certificate) *url.URL {

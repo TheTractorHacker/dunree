@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 // The proxy rule events (SDK 1.2.0) on the wire, and read back with ParseEvent as a plugin does

@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/plugins"
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/plugins"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*

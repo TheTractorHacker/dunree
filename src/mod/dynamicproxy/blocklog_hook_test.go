@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/botrules"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/visitors"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/visitors"
 )
 
 // waitBlocked waits until the log holds n entries (the router records from a goroutine)

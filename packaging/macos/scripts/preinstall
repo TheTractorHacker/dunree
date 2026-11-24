@@ -1,0 +1,4 @@
+#!/bin/sh
+# Dunree .pkg: before the files are copied. Stops a running Dunree so the program file can be replaced.
+launchctl bootout system/ie.foleyit.dunree >/dev/null 2>&1 || true
+exit 0

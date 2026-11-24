@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 )
 
 // Dials counts connection attempts since Install.

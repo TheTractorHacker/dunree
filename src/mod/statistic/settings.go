@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/blocklog"
+	"github.com/foleyit/dunree/mod/blocklog"
 )
 
 /*
@@ -17,7 +17,7 @@ import (
 
 	  - ExcludeNetworks: requests whose client IP is inside one of these CIDRs /
 	    addresses are not recorded at all (e.g. the admin's own IP)
-	  - ExcludeBlocked: requests that were rejected by Zoraxy itself (access
+	  - ExcludeBlocked: requests that were rejected by Dunree itself (access
 	    list, rate limit, WAF, CAPTCHA, ...) are not recorded
 	  - QueryMode: how the URL query string is stored in "Top requested paths"
 */
@@ -144,7 +144,7 @@ const pruneLookback = 3660
 // PruneOldDays deletes the daily records older than the retention setting and returns how many were deleted.
 // It probes the day keys one by one (a few thousand cheap lookups) instead of reading the table, whose values
 // can be hundreds of MB. Nothing happens while retention is 0. The file does not shrink by itself: freed pages are
-// reused, and "zoraxy -compact-db" returns them to the disk.
+// reused, and "dunree -compact-db" returns them to the disk.
 func (c *Collector) PruneOldDays() int {
 	days := c.RetentionDays()
 	if days == 0 || c.Option.Database == nil {
@@ -185,7 +185,7 @@ func (c *Collector) QueryMode() string {
 	return QueryModeStrip
 }
 
-// ExcludesBlocked reports whether requests rejected by Zoraxy itself are left out of the statistics
+// ExcludesBlocked reports whether requests rejected by Dunree itself are left out of the statistics
 func (c *Collector) ExcludesBlocked() bool {
 	cs := c.settings.v.Load()
 	return cs != nil && cs.ExcludeBlocked
@@ -235,7 +235,7 @@ func (c *Collector) shouldRecord(ri *RequestInfo) bool {
 }
 
 // IsBlockedForwardType reports whether a request class (the "forwardType"
-// given to the router log) means Zoraxy itself rejected the request:
+// given to the router log) means Dunree itself rejected the request:
 // access list, rate limit, WAF, CAPTCHA, exploit detection, path rules,
 // plugin or peer / client certificate denial. The classification lives in
 // mod/blocklog so the blocked-request log and these counters always agree.

@@ -23,7 +23,7 @@ def wait_entries(z, n, **q):
 def blocked_request_log():
     """WAF attack, blacklisted client, rate limit and bot rule each show up with their reason; clean traffic and
     the query string do not; filters, summary, clear and persistence over a restart work."""
-    with Zoraxy() as z, Backend(name="blk") as b:
+    with Dunree() as z, Backend(name="blk") as b:
         z.add_rule("blk.test", b.addr, rate=True, ratenum=2, rateburst=2)
         z.api("/api/waf/set", rootname="blk.test", config=json.dumps({"Mode": "block", "ParanoiaLevel": 1, "InboundThreshold": 5}))
         z.api("/api/botrules/set", config=json.dumps({"Enabled": True, "Categories": {"scanner": {"Enabled": True, "Action": "block"}}}))

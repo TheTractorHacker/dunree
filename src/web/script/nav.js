@@ -1,5 +1,5 @@
 /*
-    Zoraxy admin UI navigation (window.ZxNav)
+    Dunree admin UI navigation (window.ZxNav)
 
     THE MENU IS DEFINED HERE, in the NAV array below, and rendered into #navTree of index.html.
     Breadcrumbs and the command palette (script/palette.js) are derived from the same array.

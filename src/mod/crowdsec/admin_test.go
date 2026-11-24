@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	mID = "zoraxy-admin"
+	mID = "dunree-admin"
 	mPW = "MACHINE-PASSWORD-0123456789"
 )
 

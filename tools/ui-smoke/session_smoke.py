@@ -32,7 +32,7 @@ def check(cond, what, detail=""):
 
 def session_cookie(ctx):
     for c in ctx.cookies():
-        if c["name"] != "zoraxy_csrf" and c["expires"] and c["expires"] > 0:
+        if c["name"] not in ("dunree_csrf", "zoraxy_csrf") and c["expires"] and c["expires"] > 0:  # rebrand:keep (CSRF cookie, old and new name)
             return c
     return None
 

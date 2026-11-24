@@ -12,12 +12,12 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/ech"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/tlscert"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/ech"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/tlscert"
 )
 
 func echPostForm(path string, v url.Values) *http.Request {

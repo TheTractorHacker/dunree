@@ -1,4 +1,4 @@
-"""Shared helpers for the Zoraxy data-plane end-to-end harness.
+"""Shared helpers for the Dunree data-plane end-to-end harness.
 
 Standard library only; Playwright is imported lazily by the few scenarios that drive the admin UI.
 """
@@ -25,7 +25,7 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 SRC = os.path.join(ROOT, "src")
-BIN = os.environ.get("ZORAXY_BIN") or os.path.join(tempfile.gettempdir(), "zoraxy-e2e-bin")
+BIN = os.environ.get("DUNREE_BIN") or os.path.join(tempfile.gettempdir(), "dunree-e2e-bin")
 PORT_BASE = int(os.environ.get("E2E_PORT_BASE", "28810"))
 PORT_SPAN = 190
 
@@ -76,7 +76,7 @@ def build(force=False):
     return BIN
 
 
-HELPER_BIN = os.path.join(tempfile.gettempdir(), "zoraxy-e2e-helper")
+HELPER_BIN = os.path.join(tempfile.gettempdir(), "dunree-e2e-helper")
 
 
 def helper():
@@ -119,8 +119,8 @@ class Proc:
 
 # --------------------------------------------------------------------------- instance
 
-class Zoraxy:
-    """A throw-away Zoraxy instance: own conf/db/tmp dir, admin port, proxy port."""
+class Dunree:
+    """A throw-away Dunree instance: own conf/db/tmp dir, admin port, proxy port."""
 
     def __init__(self, tls=False, extra_args=None, noauth=True, name="z", certs=(), env=None, plugins=()):
         self.dir = tempfile.mkdtemp(prefix="zx-e2e-" + name + "-")
@@ -155,20 +155,20 @@ class Zoraxy:
         if self.noauth:
             args.append("-noauth")
         args += self.extra
-        self.log = open(os.path.join(self.dir, "zoraxy.log"), "ab")
+        self.log = open(os.path.join(self.dir, "dunree.log"), "ab")
         self.proc = subprocess.Popen(args, cwd=self.dir, stdout=self.log, stderr=subprocess.STDOUT,
                                      preexec_fn=os.setsid, env=dict(os.environ, **self.env))
         t0 = time.time()
         while time.time() - t0 < 40:
             if self.proc.poll() is not None:
-                raise Fail("zoraxy exited early:\n" + self.logtail())
+                raise Fail("Dunree exited early:\n" + self.logtail())
             try:
                 urllib.request.urlopen("http://127.0.0.1:%d/" % self.admin, timeout=1).read()
                 break
             except Exception:
                 time.sleep(0.3)
         else:
-            raise Fail("zoraxy admin did not come up:\n" + self.logtail())
+            raise Fail("Dunree admin did not come up:\n" + self.logtail())
         self._session()
         # ReverseProxyInit starts the listener asynchronously; API calls that restart it must not race that
         wait_for(lambda: "Dynamic Reverse Proxy service started" in self.logtail(200000), timeout=30, msg="proxy service start")
@@ -211,7 +211,7 @@ class Zoraxy:
 
     def logtail(self, n=3000):
         try:
-            with open(os.path.join(self.dir, "zoraxy.log"), "rb") as f:
+            with open(os.path.join(self.dir, "dunree.log"), "rb") as f:
                 return f.read()[-n:].decode("utf8", "replace")
         except Exception:
             return ""
@@ -514,7 +514,7 @@ def wait_for(fn, timeout=10, step=0.2, msg="condition"):
 class FakeHTTPS:
     """Stands in for external HTTPS APIs (Turnstile, reCAPTCHA, Friendly Captcha siteverify ...).
 
-    Zoraxy is started with HTTPS_PROXY=<this CONNECT proxy> and SSL_CERT_FILE=<our CA>, so the real
+    Dunree is started with HTTPS_PROXY=<this CONNECT proxy> and SSL_CERT_FILE=<our CA>, so the real
     binary talks to what it believes is e.g. challenges.cloudflare.com. handler(host, path, headers, body)
     returns (status, dict). .calls records (host, path, body).
     """
@@ -597,7 +597,7 @@ class FakeHTTPS:
 
 def build_example_plugin(name):
     """Builds example/plugins/<name> (needs only the SDK copy that is committed in its mod/ dir)."""
-    out = os.path.join(tempfile.gettempdir(), "zoraxy-e2e-plugin-" + name)
+    out = os.path.join(tempfile.gettempdir(), "dunree-e2e-plugin-" + name)
     d = os.path.join(ROOT, "example", "plugins", name)
     env = dict(os.environ, GOFLAGS="-mod=mod", GOTMPDIR=os.path.expanduser("~/.cache/go-tmp"))
     os.makedirs(env["GOTMPDIR"], exist_ok=True)

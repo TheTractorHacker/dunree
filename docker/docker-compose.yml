@@ -1,7 +1,10 @@
+# The image name is a variable: there is no default registry (see packaging/README.md). Build one with
+#   docker build -t dunree:local -f packaging/container/Dockerfile .     (from the repository root)
+# and run:  DUNREE_IMAGE=dunree:local docker compose up -d
 services:
-  zoraxy:
-    image: zoraxydocker/zoraxy:latest
-    container_name: zoraxy
+  dunree:
+    image: ${DUNREE_IMAGE:?set DUNREE_IMAGE to the Dunree image to run}
+    container_name: dunree
     restart: unless-stopped
     ports:
       - 80:80
@@ -9,8 +12,8 @@ services:
       - 443:443/udp  # HTTP/3 (QUIC) - only needed if QUIC is enabled in Global Settings
       - 8000:8000
     volumes:
-      - /path/to/zoraxy/config/:/opt/zoraxy/config/
-      - /path/to/zoraxy/plugin/:/opt/zoraxy/plugin/
+      - /path/to/dunree/config/:/opt/dunree/config/
+      - /path/to/dunree/plugin/:/opt/dunree/plugin/
       # The Docker socket is NOT mounted by default: read-write access to it is
       # equivalent to root on the host. The container picker ("Docker containers"
       # when adding a proxy rule) only needs to list containers and networks, so

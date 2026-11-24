@@ -42,7 +42,7 @@ const (
 	MaxConcurrency     = 32
 	DefaultHeapGrowth  = 64 << 20
 	maxRepBytes        = 1 << 20
-	stopSentinel       = "\x00zoraxy-script-stop"
+	stopSentinel       = "\x00dunree-script-stop"
 )
 
 var (

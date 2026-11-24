@@ -98,7 +98,7 @@
 
     <div id="zkErrorBox" class="zkBanner bad" style="display:none" role="alert"><i class="exclamation triangle icon"></i><div class="t"><b>Tunnels are not available</b><span id="zkErrorText"></span></div></div>
     <div class="zkBanner warn" id="zkNotAllowed" style="display:none" role="alert"><i class="lock icon"></i><div class="t"><b>External tools are disabled</b>
-        This page runs the external <code>zrok</code> program, which is a privilege, so it is off by default. Start Zoraxy with <code>-allow_external_tools</code>
+        This page runs the external <code>zrok</code> program, which is a privilege, so it is off by default. Start Dunree with <code>-allow_external_tools</code>
         (docker: add it to the command line) and reload. Nothing is executed until you do.</div></div>
 
   <div class="zkStack">
@@ -106,12 +106,12 @@
     <section class="zx-card" aria-labelledby="zkStateTitle">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="zkStateTitle">Current state</h3>
-            <p class="zx-card__desc">Zoraxy runs the external <a href="https://zrok.io" target="_blank" rel="noopener">zrok</a> program for you. Set it up in the three steps below.</p>
+            <p class="zx-card__desc">Dunree runs the external <a href="https://zrok.io" target="_blank" rel="noopener">zrok</a> program for you. Set it up in the three steps below.</p>
         </div>
         <div class="zx-card__body">
             <div class="zkFacts" id="zkFacts"></div>
             <details class="zx-disclosure" id="zkAbout"><summary>About this feature</summary>
-                <div class="zx-disclosure__body">The command lines follow the zrok 1.1 and 2.0 sources and were tested with a stand-in zrok program, not against a live zrok service. Please report differences you find with your zrok version. Tunnel programs run with their own home folder, are restarted automatically after a failure and are stopped when Zoraxy shuts down.</div></details>
+                <div class="zx-disclosure__body">The command lines follow the zrok 1.1 and 2.0 sources and were tested with a stand-in zrok program, not against a live zrok service. Please report differences you find with your zrok version. Tunnel programs run with their own home folder, are restarted automatically after a failure and are stopped when Dunree shuts down.</div></details>
         </div>
     </section>
 
@@ -119,7 +119,7 @@
     <section class="zx-card" aria-labelledby="zkS1Title">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="zkS1Title"><span class="zkStep" id="zkStep1">1</span> Install zrok</h3>
-            <p class="zx-card__desc">Zoraxy needs the zrok program on this machine.</p>
+            <p class="zx-card__desc">Dunree needs the zrok program on this machine.</p>
         </div>
         <div class="zx-card__body">
             <div id="zkInstallOk" style="display:none" class="zkMuted"></div>
@@ -127,7 +127,7 @@
                 <div class="zkBanner info"><i class="download icon"></i><div class="t"><b>zrok is not installed on this machine</b>
                     <ol style="margin:.5em 0 0; padding-left:1.2em; line-height:1.55">
                         <li>Download the release for this machine from <a href="https://github.com/openziti/zrok/releases" target="_blank" rel="noopener">github.com/openziti/zrok/releases</a> (binary <code>zrok</code> for 1.x, <code>zrok2</code> for 2.x).</li>
-                        <li>Put it on the <code>PATH</code> of the user running Zoraxy (for example <code>/usr/local/bin</code>), or enter its full path below. The file name must start with <code>zrok</code>.</li>
+                        <li>Put it on the <code>PATH</code> of the user running Dunree (for example <code>/usr/local/bin</code>), or enter its full path below. The file name must start with <code>zrok</code>.</li>
                         <li>Press <b>Check again</b>. In a container the binary must exist inside the container.</li>
                     </ol>
                     <details class="zx-disclosure" id="zkBinErrBox" style="margin: var(--zx-space-2) 0 0; border-top-color: currentColor;"><summary>Technical details</summary><div class="zx-disclosure__body" style="color: inherit;"><span id="zkBinErr"></span></div></details>
@@ -164,7 +164,7 @@
                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="zkTokenWhat" aria-label="How is the token stored?">?</button></label>
                 <input type="password" id="zkToken" autocomplete="off" placeholder="">
                 <span class="zkHelp">Stored on this machine and never shown again.</span>
-                <div class="zx-popover" id="zkTokenWhat" role="note" hidden>The token is saved in <code>conf/zrok/token</code> (file mode 0600) and removed from logs. zrok only accepts it as a command line argument of <code>zrok enable</code>, so it is visible in the process list for the few seconds that command runs. Zoraxy does not learn your account name from zrok: it only knows whether a token is stored and whether <code>zrok enable</code> succeeded.</div></div>
+                <div class="zx-popover" id="zkTokenWhat" role="note" hidden>The token is saved in <code>conf/zrok/token</code> (file mode 0600) and removed from logs. zrok only accepts it as a command line argument of <code>zrok enable</code>, so it is visible in the process list for the few seconds that command runs. Dunree does not learn your account name from zrok: it only knows whether a token is stored and whether <code>zrok enable</code> succeeded.</div></div>
         </div>
         <div class="zkBtns">
             <button type="button" class="zx-btn zx-btn--primary" id="zkEnable">Save token and enable</button>
@@ -225,7 +225,7 @@
                     <div class="field"><label for="zkBind">Bind address</label><input type="text" id="zkBind" placeholder="127.0.0.1:9191"></div>
                 </div>
             </div>
-            <label class="zx-toggle-row" style="border-top: 1px solid var(--zx-border); border-bottom: 0;"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Start automatically with Zoraxy</span><span class="zx-toggle-row__desc">Open this tunnel every time Zoraxy starts.</span></span><input type="checkbox" class="zx-switch" role="switch" id="zkAuto"></label>
+            <label class="zx-toggle-row" style="border-top: 1px solid var(--zx-border); border-bottom: 0;"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Start automatically with Dunree</span><span class="zx-toggle-row__desc">Open this tunnel every time Dunree starts.</span></span><input type="checkbox" class="zx-switch" role="switch" id="zkAuto"></label>
             <div class="zkBtns">
                 <button type="button" class="zx-btn zx-btn--secondary" id="zkTunnelSave">Save tunnel</button>
                 <button type="button" class="zx-btn zx-btn--ghost" id="zkTunnelReset">Clear form</button>
@@ -239,7 +239,7 @@
     <section class="zx-card" aria-labelledby="zkListTitle">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="zkListTitle">Your tunnels</h3>
-            <p class="zx-card__desc">Traffic counters are not available: zrok does not report them to Zoraxy. Uptime is measured since the last (re)start by Zoraxy.</p>
+            <p class="zx-card__desc">Traffic counters are not available: zrok does not report them to Dunree. Uptime is measured since the last (re)start by Dunree.</p>
         </div>
         <div class="zx-card__body"><div id="zkTunnels" class="zkTunnels"></div></div>
     </section>
@@ -257,8 +257,8 @@
         if (r && typeof r === "object" && r.error != undefined) { return cap(String(r.error)); }
         if (xhr && xhr.status === 401) { return "Your session has expired. Sign in again."; }
         if (xhr && xhr.status === 403) { return "You are not allowed to do this."; }
-        if (xhr && xhr.status >= 500) { return "Zoraxy returned a server error. Check the system log."; }
-        return "Zoraxy could not be reached. Check your connection and try again.";
+        if (xhr && xhr.status >= 500) { return "Dunree returned a server error. Check the system log."; }
+        return "Dunree could not be reached. Check your connection and try again.";
     }
     function uptime(iso){
         var t = new Date(iso).getTime(); if (!t || t < 86400000) return "-";
@@ -416,7 +416,7 @@
         $id("zkPill").removeClass("on off warn bad").addClass(pc).empty().append($("<i class='icon'>").addClass(pi)).append($("<span>").text(pt));
 
         var f = $id("zkFacts").empty();
-        f.append(fact("External tools", d.Allowed ? "Allowed" : "Disabled", d.Allowed ? "good" : "bad", d.Allowed ? "" : "Start Zoraxy with -allow_external_tools"));
+        f.append(fact("External tools", d.Allowed ? "Allowed" : "Disabled", d.Allowed ? "good" : "bad", d.Allowed ? "" : "Start Dunree with -allow_external_tools"));
         f.append(fact("zrok program", haveBin ? "Found" : "Not found", haveBin ? "good" : "bad", haveBin ? d.Binary : "Step 1"));
         if (haveBin) { f.append(fact("Version", d.Version || (d.Allowed ? "Unknown" : "Not queried"), "", "Command line " + flavor)); }
         f.append(fact("Account token", d.TokenSet ? "Stored" : "Not set", d.TokenSet ? "good" : "warn", d.TokenSet ? "" : "Step 2"));
@@ -433,7 +433,7 @@
         if (!haveBin) { $id("zkAdvanced").attr("open", "open"); }
         setKind(kind());
         //Step 3 opens once zrok is installed and the environment is enabled (a saved tunnel can still be edited)
-        var why = !d.Allowed ? "External tools are disabled, so Zoraxy cannot run zrok." : (!haveBin ? "Install zrok in step 1. A share cannot start without the program." : (!s.EnabledEnv ? "Enable the environment in step 2. zrok refuses to share before that." : ""));
+        var why = !d.Allowed ? "External tools are disabled, so Dunree cannot run zrok." : (!haveBin ? "Install zrok in step 1. A share cannot start without the program." : (!s.EnabledEnv ? "Enable the environment in step 2. zrok refuses to share before that." : ""));
         var locked = !!why && !$id("zkId").val();
         $id("zkLocked").prop("hidden", !locked); $id("zkLockedText").text(why);
         $id("zkForm").prop("disabled", locked);

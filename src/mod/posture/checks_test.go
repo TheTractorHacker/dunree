@@ -420,7 +420,7 @@ func TestChecks_Operations(t *testing.T) {
 	runCases(t, "ops.backup", []checkCase{
 		{"recent", nil, StatusOK, "2 days old"},
 		{"old", func(f *Facts) { f.Backup.Latest = t0.Add(-60 * 24 * time.Hour) }, StatusWarn, "60 days"},
-		{"none seen", func(f *Facts) { f.Backup.Count = 0 }, StatusUnknown, "outside Zoraxy"},
+		{"none seen", func(f *Facts) { f.Backup.Count = 0 }, StatusUnknown, "outside Dunree"},
 		{"unknown", func(f *Facts) { f.Backup = nil }, StatusUnknown, ""},
 	})
 	runCases(t, "ops.notifications", []checkCase{

@@ -1,7 +1,8 @@
 <!-- System > App Store (tag appstore). One column: stat row, the featured app (the one primary button of the page), a toolbar
      (search, sort, source, grid / list), category chips with counts, then the apps. No sidebar: a category is picked once, with the chips.
      Data and actions are unchanged (/api/plugins/store/*, /api/plugins/list); installed apps are managed in the Plugin Manager.
-     Help links (plugin documentation, request an app) are in the Related menu of the header. -->
+     Dunree ships without a store: while no source is configured the page shows "No add-on store configured" with the three
+     ways to add one (the Dunree add-on store, a custom index URL, a local folder) and fetches nothing (/api/plugins/store/setup). -->
 <style>
   #appstore .standardContainer > .zx-statrow { margin: 0 0 var(--zx-space-4); }
   #appstore .zx-page-header__actions a.zx-btn--secondary { color: var(--zx-text); text-decoration: none; }
@@ -80,6 +81,21 @@
   #asSettingsModal .as-source-add { display: flex; flex-wrap: wrap; gap: var(--zx-space-2); margin-top: var(--zx-space-3); }
   #asSettingsModal .as-source-add .zx-input { flex: 1 1 16rem; min-width: 0; max-width: none; }
   #asSettingsModal td.as-source-url, #asAppDetailModal td.as-detail-value { overflow-wrap: anywhere; }
+  #asSettingsModal .as-source-note { display: block; margin-top: 2px; color: var(--zx-text-muted); font-family: var(--zx-font); font-size: var(--zx-fs-xs); }
+  #asSettingsModal .as-source-kind { margin: var(--zx-space-4) 0 0; font-size: var(--zx-fs-sm); font-weight: 700; color: var(--zx-text); }
+  #asSettingsModal .as-source-kind + .zx-help { margin: 2px 0 0; }
+  /* No store configured: the three ways to add one */
+  #appstore .as-nostore { margin: 0 0 var(--zx-space-4); }
+  #appstore .as-nostore .zx-empty__text { max-width: 44rem; margin-left: auto; margin-right: auto; }
+  #appstore .as-nostore-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--zx-space-3); max-width: 56rem; margin: var(--zx-space-4) auto 0; text-align: left; }
+  #appstore .as-nostore-choice { display: flex; flex-direction: column; gap: var(--zx-space-2); padding: var(--zx-space-4); background: var(--zx-surface); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
+  #appstore .as-nostore-choice b { color: var(--zx-text); }
+  #appstore .as-nostore-choice span { flex: 1 1 auto; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.5; }
+  #appstore .as-nostore-choice .zx-btn { align-self: flex-start; }
+  #appstore .as-orphaned { margin: 0 0 var(--zx-space-4); }
+  #appstore .as-orphaned .zx-btn { margin-top: var(--zx-space-2); }
+  #asAppDetailModal .as-shots { display: flex; gap: var(--zx-space-2); overflow-x: auto; }
+  #asAppDetailModal .as-shots img { height: 120px; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-md); }
 
   @media (max-width: 900px) {
     #appstore .as-grid.as-listview .as-app-card, #appstore .as-grid.as-listview .as-app-body { flex-direction: column; align-items: stretch; gap: 0; }
@@ -108,7 +124,7 @@
       <div class="zx-page-header__main">
         <div class="zx-page-header__crumbs" data-zx-crumbs></div>
         <h2 class="zx-page-header__title">App Store</h2>
-        <p class="zx-page-header__sub">Add plugins from the official and community sources. Nothing is installed until you press Install; installed apps are switched on and off in the Plugin Manager.</p>
+        <p class="zx-page-header__sub">Add apps (add-ons) from the sources you choose. Dunree contacts no store until you add one. Nothing is installed until you press Install; installed apps are switched on and off in the Plugin Manager.</p>
       </div>
       <div class="zx-page-header__actions">
         <button type="button" class="zx-btn zx-btn--secondary" onclick="asOpenSettings();"><i class="server icon" aria-hidden="true"></i> Sources</button>
@@ -119,8 +135,6 @@
       <span class="zx-related__title">Related</span>
       <ul>
         <li><a href="#plugins" data-nav-open="plugins">Plugin Manager</a> <span>Switch installed apps on or off and assign them to sites</span></li>
-        <li><a href="https://zoraxy.aroz.org/plugins/html/" target="_blank" rel="noopener">Plugin documentation</a> <span>Build an app of your own (opens a new tab)</span></li>
-        <li><a href="https://github.com/aroz-online/zoraxy-official-plugins/issues" target="_blank" rel="noopener">Request an app</a> <span>Ask for one on GitHub (opens a new tab)</span></li>
       </ul>
     </aside>
 
@@ -130,6 +144,36 @@
       <div class="zx-stat"><span class="zx-stat__label">Updates available</span><span class="zx-stat__value" id="asStatUpdates">-</span><span class="zx-stat__hint" id="asStatUpdatesHint">Installed apps with a newer version</span></div>
     </div>
 
+    <!-- Installed apps whose source is no longer configured (they keep running, but get no updates) -->
+    <div class="zx-callout zx-callout--warn as-orphaned" id="asOrphaned" hidden>
+      <div class="zx-callout__body" id="asOrphanedBody"></div>
+    </div>
+
+    <!-- No store configured: nothing is fetched until one of these is chosen -->
+    <section class="zx-empty as-nostore" id="asNoStore" hidden aria-labelledby="asNoStoreTitle">
+      <div class="zx-empty__icon" aria-hidden="true"><i class="box icon"></i></div>
+      <div class="zx-empty__title" id="asNoStoreTitle">No add-on store configured</div>
+      <p class="zx-empty__text">Dunree does not contact any store until you choose one. Add a source to see the apps it offers. An app is a program that runs on this server, so only add sources you trust.</p>
+      <div class="as-nostore-choices">
+        <div class="as-nostore-choice">
+          <b>Dunree add-on store</b>
+          <span id="asDunreeStoreText">Add-ons published and signed by Foley IT.</span>
+          <button type="button" class="zx-btn zx-btn--primary" id="asDunreeStoreBtn" onclick="asAddDunreeStore(this);">Use the Dunree add-on store</button>
+        </div>
+        <div class="as-nostore-choice">
+          <b>Custom index URL</b>
+          <span>The address of an add-on index someone else publishes, for example your organisation or a community.</span>
+          <button type="button" class="zx-btn zx-btn--secondary" onclick="asOpenSettings('url');">Enter an index URL</button>
+        </div>
+        <div class="as-nostore-choice">
+          <b>Local folder</b>
+          <span>A folder on this server that holds an index.json and the app files. Works without internet access.</span>
+          <button type="button" class="zx-btn zx-btn--secondary" onclick="asOpenSettings('folder');">Choose a folder</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="asStoreBody">
     <!-- Featured app (hidden while a search or a category filter is active) -->
     <section class="zx-card as-featured" id="asFeaturedBanner" aria-label="Featured app">
       <div class="as-featured-inner">
@@ -184,10 +228,11 @@
     <details class="zx-disclosure as-compat">
       <summary>Platforms these apps are built for</summary>
       <div class="zx-disclosure__body">
-        <p class="zx-help" style="margin-top: 0;">How many apps offer a download for each platform. Zoraxy only installs the build that matches this server.</p>
+        <p class="zx-help" style="margin-top: 0;">How many apps offer a download for each platform. Dunree only installs the build that matches this server.</p>
         <div class="as-compat-list" id="asCompatList"></div>
       </div>
     </details>
+    </div>
 </div>
 
 <!-- Sources dialog -->
@@ -195,22 +240,36 @@
   <i class="close icon"></i>
   <div class="header">App Store sources</div>
   <div class="scrolling content">
-    <p class="zx-help" style="margin-top: 0;">Apps are loaded from the sources below. The official source is built in; add the address of a community plugin index to see its apps too. Only add sources you trust: an app runs on this server.</p>
+    <p class="zx-help" style="margin-top: 0;">Apps are loaded from the sources below, and from nowhere else. Dunree ships without a source. Only add sources you trust: an app runs on this server.</p>
     <div class="zx-table-wrap"><table class="zx-table">
       <thead>
         <tr>
-          <th>Source address</th>
+          <th>Source</th>
           <th>Type</th>
           <th><span class="zx-sr-only">Actions</span></th>
         </tr>
       </thead>
       <tbody id="asSourceTable"></tbody>
     </table></div>
+    <div id="asDunreeStoreRow">
+      <p class="as-source-kind">Dunree add-on store</p>
+      <p class="zx-help" id="asDunreeStoreRowText">Add-ons published and signed by Foley IT.</p>
+      <div class="as-source-add">
+        <button type="button" class="zx-btn zx-btn--secondary" id="asDunreeStoreRowBtn" onclick="asAddDunreeStore(this);"><i class="add icon" aria-hidden="true"></i> Use the Dunree add-on store</button>
+      </div>
+    </div>
+    <p class="as-source-kind">Custom index URL</p>
+    <p class="zx-help">The address of an add-on index (index.json). Plugin indexes in the older list format work too.</p>
     <div class="as-source-add">
-      <input class="zx-input" id="asNewSourceURL" type="url" placeholder="https://example.com/plugins/index.json" aria-label="Address of a plugin index">
+      <input class="zx-input" id="asNewSourceURL" type="url" placeholder="https://example.com/addons/index.json" aria-label="Address of an add-on index">
       <button type="button" class="zx-btn zx-btn--primary" onclick="asAddSource(this);"><i class="add icon" aria-hidden="true"></i> Add source</button>
     </div>
-    <p class="zx-help">The address must point to a plugin index JSON file in the Zoraxy plugin list format.</p>
+    <p class="as-source-kind">Local folder</p>
+    <p class="zx-help">A folder on the server Dunree runs on that holds an index.json and the app files. Nothing is fetched from the network.</p>
+    <div class="as-source-add">
+      <input class="zx-input" id="asNewSourceFolder" type="text" placeholder="/srv/dunree-addons" aria-label="Folder on this server" autocomplete="off" spellcheck="false" data-i18n-skip>
+      <button type="button" class="zx-btn zx-btn--secondary" onclick="asAddFolder(this);"><i class="add icon" aria-hidden="true"></i> Add folder</button>
+    </div>
   </div>
   <div class="actions">
     <button type="button" class="ui button" onclick="$('#asSettingsModal').modal('hide');">Close</button>
@@ -233,18 +292,20 @@
 
 <script>
   /*
-    Zoraxy App Store
+    Dunree App Store
 
     Data sources:
     - /api/plugins/store/list          list of downloadable apps (with Source URL)
     - /api/plugins/list                installed plugins
     - /api/plugins/store/checkUpdates  update state of installed apps
     - /api/plugins/store/sources       registered plugin store sources
+    - /api/plugins/store/setup         is a store configured at all, the one-click choice, sources installed apps lost
   */
   var asAvailableApps = [];   //DownloadablePlugin list from the store
   var asInstalledApps = [];   //Installed plugin list
   var asUpdateInfos = [];     //Update infos of installed apps
   var asStoreSources = [];    //Registered store sources
+  var asStoreSetup = null;    //{configured, dunreeStore: {ready, added}, orphaned: [...]}
 
   //Filter / render states
   var asActiveCategory = "all";
@@ -253,7 +314,7 @@
   var asShownCount = 0;
   var AS_PAGE_SIZE = 12;
 
-  //Featured apps (apps released by aroz.org, cycled in the banner)
+  //Featured apps (cycled in the banner)
   var asFeaturedApps = [];
   var asFeaturedIndex = 0;
   var asFeaturedTimer = null;
@@ -274,6 +335,10 @@
 
   function asGetAppCategory(app) {
     let spec = app.PluginIntroSpect;
+    //An add-on index names the category itself
+    if (app.Addon && app.Addon.categories && app.Addon.categories.length > 0 && String(app.Addon.categories[0]).trim() != "") {
+      return String(app.Addon.categories[0]).trim();
+    }
     let haystack = (spec.name + " " + spec.description + " " + spec.id).toLowerCase();
     for (const cat of AS_CATEGORY_KEYWORDS) {
       for (const kw of cat.keywords) {
@@ -360,10 +425,16 @@
             if (sources.error === undefined) {
               asStoreSources = sources || [];
             }
-            asRenderAll();
-            if (callback != undefined) {
-              callback();
-            }
+            $.get("/api/plugins/store/setup", function (setup) {
+              if (setup && setup.error === undefined) {
+                asStoreSetup = setup;
+              }
+            }).always(function () {
+              asRenderAll();
+              if (callback != undefined) {
+                callback();
+              }
+            });
           });
         });
       });
@@ -439,6 +510,11 @@
   function asActionHtml(spec, featured) {
     const id = asEscapeAttr(spec.id), updateInfo = asGetUpdateInfo(spec.id);
     const size = featured ? "" : " zx-btn--sm";
+    //An add-on index can say that this Dunree is too old for the app: it is not offered for install
+    const entry = asAvailableApps.find(a => a.PluginIntroSpect.id == spec.id && a.Addon && a.Addon.incompatible);
+    if (entry !== undefined && !asIsInstalled(spec.id)) {
+      return `<span class="zx-badge zx-badge--warn" title="${asEscapeAttr(entry.Addon.incompatible)}">${asEscapeHtml(t("Needs a newer Dunree"))}</span>`;
+    }
     if (asIsInstalled(spec.id)) {
       if (updateInfo != undefined && updateInfo.updateAvailable) {
         return `<button type="button" class="zx-btn zx-btn--secondary${size}" data-as-update="${id}" title="${asEscapeAttr(tf("Update to v{0}", updateInfo.latestVersion))}"><i class="arrow alternate circle up outline icon" aria-hidden="true"></i> ${asEscapeHtml(t("Update"))}</button>`;
@@ -449,7 +525,44 @@
   }
   function asEscapeAttr(text) { return ZxUI.esc(text); }
 
+  //True while no source is configured at all (Dunree ships that way)
+  function asNoStore() {
+    return asStoreSetup != null ? !asStoreSetup.configured : false;
+  }
+
+  //The empty state "No add-on store configured", the one-click choice and the notice about lost sources
+  function asRenderSetup() {
+    const none = asNoStore();
+    $("#asNoStore").prop("hidden", !none);
+    $("#asStoreBody").prop("hidden", none);
+    $("#asRefreshBtn").prop("disabled", none);
+    const ds = asStoreSetup != null ? asStoreSetup.dunreeStore : null;
+    const ready = ds != null && ds.ready, added = ds != null && ds.added;
+    const text = ready ? t("Add-ons published and signed by Foley IT.") : t("The Dunree add-on store is not open yet. This version of Dunree carries no address for it, and contacts nothing.");
+    $("#asDunreeStoreText, #asDunreeStoreRowText").text(text);
+    $("#asDunreeStoreBtn, #asDunreeStoreRowBtn").prop("disabled", !ready).attr("title", ready ? "" : t("Not available in this version"));
+    $("#asDunreeStoreRow").prop("hidden", added);
+
+    const orphaned = asStoreSetup != null ? (asStoreSetup.orphaned || []) : [];
+    const box = $("#asOrphanedBody").empty();
+    orphaned.forEach(o => {
+      const line = $("<p style='margin: 0 0 var(--zx-space-2);'></p>");
+      line.append($("<strong></strong>").text((o.plugins.length == 1 ? t("1 installed app gets no updates.") : tf("{0} installed apps get no updates.", o.plugins.length)) + " "));
+      line.append(document.createTextNode(t("They were installed from a source that is no longer configured:") + " "));
+      line.append($('<span class="zx-mono" data-i18n-skip></span>').text(o.source));
+      line.append(document.createTextNode(". " + t("They keep running. Add the source again to get updates from it, or leave it away.")));
+      box.append(line);
+      if (/^https?:\/\//i.test(o.source)) {
+        const btn = $('<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm"></button>').text(t("Add this source again"));
+        btn.on("click", function () { $("#asNewSourceURL").val(o.source); asAddSource(this); });
+        box.append(btn);
+      }
+    });
+    $("#asOrphaned").prop("hidden", orphaned.length == 0);
+  }
+
   function asRenderAll() {
+    asRenderSetup();
     asRenderStats();
     asRenderCategorySidebar();
     asRenderSourceSidebar();
@@ -507,7 +620,8 @@
   function asSourceLabel(source) {
     let hostname = "";
     try { hostname = new URL(source.url).hostname; } catch (e) {}
-    return source.official ? t("Official") : (hostname != "" ? hostname : t("Community"));
+    if (source.kind == "dunree" || source.kind == "zoraxy-community" || source.kind == "local") { return t(source.label); }
+    return source.official ? t("Built-in") : (hostname != "" ? hostname : t("Custom index"));
   }
   function asRenderSourceSidebar() {
     const sel = $("#asSourceSelect"), chosen = sel.val() || "";
@@ -553,10 +667,14 @@
     });
   }
 
-  /* Featured apps (apps released by aroz.org, shown one at a time) */
+  /* Featured apps, shown one at a time: what an add-on index marks as featured. For the community store of the
+     project Dunree is derived from (a source only installations that used it before still have) the apps of its
+     maintainers, as before. */
   function asRenderFeatured() {
+    const legacySources = asStoreSources.filter(s => s.kind == "zoraxy-community").map(s => s.url);
     asFeaturedApps = asDedupeApps(asAvailableApps).filter(app => {
-      return (app.PluginIntroSpect.author || "").toLowerCase().includes("aroz");
+      if (app.Addon) { return !!app.Addon.featured && !app.Addon.incompatible; }
+      return legacySources.includes(app.Source) && (app.PluginIntroSpect.author || "").toLowerCase().includes("aroz");
     });
 
     if (asFeaturedTimer != null) {
@@ -805,16 +923,33 @@
     const none = `<span class="zx-help">${asEscapeHtml(t("Not given"))}</span>`;
     const safeUrl = /^https?:\/\//i.test(spec.url || "");
 
+    const addon = app.Addon || null;
+    const sigText = { signed: t("Signed index, signature valid"), unsigned: t("Index without a signature"), no_key: t("Signed index, but no public key is configured"), missing: t("Signature file missing"),
+      bad_signature: t("Signature does not match"), replayed: t("An old index is being served again"), downgraded: t("Was signed before, now served without a signature"), unchecked: t("Not checked (signature checking is off)") };
     const rows = [
       { label: t("Description"), value: asEscapeHtml(spec.description) || none },
-      { label: t("Author"), value: asEscapeHtml(spec.author) || none },
-      { label: t("Version"), value: asEscapeHtml(asGetVersionString(spec)) },
+      { label: addon ? t("Publisher") : t("Author"), value: asEscapeHtml(spec.author) || none },
+      { label: t("Version"), value: asEscapeHtml(addon && addon.version ? addon.version : asGetVersionString(spec)) },
       { label: t("Category"), value: asEscapeHtml(t(asGetAppCategory(app))) },
       { label: t("Kind"), value: asEscapeHtml(spec.type == 0 ? t("Router: can handle requests of the sites it is assigned to") : t("Utility: adds a tool, does not touch traffic")) },
       { label: t("Website"), value: spec.url ? (safeUrl ? `<a href="${asEscapeAttr(spec.url)}" target="_blank" rel="noopener noreferrer">${asEscapeHtml(spec.url)}</a>` : asEscapeHtml(spec.url)) : none },
-      { label: t("Source"), value: asEscapeHtml(app.Source) || none },
+      { label: t("Source"), value: (asEscapeHtml(app.Source) || none) + (sigText[app.Signature] ? `<br><span class="zx-help">${asEscapeHtml(sigText[app.Signature])}</span>` : "") },
       { label: t("App ID"), value: `<span class="zx-mono">${asEscapeHtml(spec.id)}</span>` },
     ];
+    if (addon) {
+      if (addon.incompatible) { rows.unshift({ label: t("Cannot be installed"), value: `<span class="zx-badge zx-badge--warn">${asEscapeHtml(t("Needs a newer Dunree"))}</span> ${asEscapeHtml(addon.incompatible)}` }); }
+      else if (addon.note) { rows.unshift({ label: t("Note"), value: asEscapeHtml(addon.note) }); }
+      rows.push({ label: t("Licence"), value: asEscapeHtml(addon.licence) || none });
+      if (addon.minHostVersion) { rows.push({ label: t("Needs Dunree"), value: asEscapeHtml(tf("{0} or newer", addon.minHostVersion)) }); }
+      if (addon.changelog && addon.changelog.length > 0) {
+        rows.push({ label: t("Changes"), value: addon.changelog.slice(0, 10).map(c =>
+          `<div><b>${asEscapeHtml(c.version)}</b>${c.date ? " (" + asEscapeHtml(c.date) + ")" : ""}${c.notes ? ": " + asEscapeHtml(c.notes) : ""}</div>`).join("") });
+      }
+      const shots = (addon.screenshots || []).filter(u => /^https?:\/\//i.test(u));
+      if (shots.length > 0) {
+        rows.push({ label: t("Screenshots"), value: `<div class="as-shots">${shots.map(u => `<img src="${asEscapeAttr(u)}" alt="" loading="lazy" referrerpolicy="no-referrer">`).join("")}</div>` });
+      }
+    }
 
     if (app.DownloadURLs && Object.keys(app.DownloadURLs).length > 0) {
       rows.push({ label: t("Supported platforms"), value: Object.keys(app.DownloadURLs).map(p => asEscapeHtml(p)).join(", ") });
@@ -824,7 +959,7 @@
       const endpoints = spec.permitted_api_endpoints.map(ep =>
         `<div><b>${asEscapeHtml(ep.method)}</b> <span class="zx-mono">${asEscapeHtml(ep.endpoint)}</span>${ep.reason ? " - " + asEscapeHtml(ep.reason) : ""}</div>`
       ).join("");
-      rows.push({ label: t("Zoraxy API it may call"), value: endpoints });
+      rows.push({ label: t("Dunree API it may call"), value: endpoints });
     }
 
     const tbody = $("#asAppDetailTable");
@@ -837,28 +972,40 @@
   }
 
   /* ===== Sources dialog ===== */
-  function asOpenSettings() {
+  //focus: "url" or "folder" puts the cursor into that field (the choices of the empty state)
+  function asOpenSettings(focus) {
     asRenderSourceTable();
     $("#asSettingsModal").modal("show");
+    if (focus == "url" || focus == "folder") {
+      setTimeout(function () { $(focus == "url" ? "#asNewSourceURL" : "#asNewSourceFolder").trigger("focus"); }, 350);
+    }
+  }
+
+  function asSourceKindBadge(source) {
+    if (source.kind == "dunree") { return `<span class="zx-badge zx-badge--info">${asEscapeHtml(t("Dunree add-on store"))}</span>`; }
+    if (source.kind == "zoraxy-community") { return `<span class="zx-badge zx-badge--warn" title="${asEscapeAttr(t("Run by the Zoraxy project, not by Foley IT. This installation used it before it ran Dunree."))}">${asEscapeHtml(t("Zoraxy community store (third party)"))}</span>`; } // rebrand:keep
+    if (source.kind == "local") { return `<span class="zx-badge">${asEscapeHtml(t("Local folder"))}</span>`; }
+    if (source.official) { return `<span class="zx-badge zx-badge--info">${asEscapeHtml(t("Built-in"))}</span>`; }
+    return `<span class="zx-badge">${asEscapeHtml(t("Custom index"))}</span>`;
   }
 
   function asRenderSourceTable() {
     const tbody = $("#asSourceTable");
     tbody.empty();
     if (asStoreSources.length == 0) {
-      tbody.append(`<tr><td class="zx-empty-cell" colspan="3">${asEscapeHtml(t("No sources yet. Add the address of a plugin index below."))}</td></tr>`);
+      tbody.append(`<tr><td class="zx-empty-cell" colspan="3">${asEscapeHtml(t("No add-on store configured. Choose one below."))}</td></tr>`);
       return;
     }
     asStoreSources.forEach(source => {
       const row = $(`
         <tr>
-          <td class="as-source-url zx-mono" data-label="${asEscapeAttr(t("Source address"))}">${asEscapeHtml(source.url)}</td>
-          <td data-label="${asEscapeAttr(t("Type"))}">${source.official ? `<span class="zx-badge zx-badge--info">${asEscapeHtml(t("Official"))}</span>` : `<span class="zx-badge">${asEscapeHtml(t("Community"))}</span>`}</td>
+          <td class="as-source-url zx-mono" data-label="${asEscapeAttr(t("Source"))}"><span data-i18n-skip>${asEscapeHtml(source.kind == "local" && source.folder ? source.folder : source.url)}</span>${(source.error || source.note) ? `<span class="as-source-note">${asEscapeHtml(source.error || source.note)}</span>` : ""}</td>
+          <td data-label="${asEscapeAttr(t("Type"))}">${asSourceKindBadge(source)}</td>
           <td class="zx-num"></td>
         </tr>
       `);
       if (!source.official) {
-        const removeBtn = $(`<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm sy-quiet-danger"></button>`).text(t("Remove")).attr("aria-label", tf("Remove the source {0}", source.url));
+        const removeBtn = $(`<button type="button" class="zx-btn zx-btn--secondary zx-btn--sm sy-quiet-danger"></button>`).text(t("Remove")).attr("aria-label", tf("Remove the source {0}", source.kind == "local" && source.folder ? source.folder : source.url));
         removeBtn.on("click", function () {
           asRemoveSource(source.url, this);
         });
@@ -868,19 +1015,32 @@
     });
   }
 
+  //The three kinds of source: the Dunree add-on store (one click), a custom index URL, a local folder
+  function asAddDunreeStore(btn = undefined) { asPostSource({ "kind": "dunree" }, btn); }
+  function asAddFolder(btn = undefined) {
+    const folder = $("#asNewSourceFolder").val().trim();
+    if (folder == "") {
+      msgbox(t("Enter the folder that holds the index.json first"), false);
+      return;
+    }
+    asPostSource({ "kind": "local", "folder": folder }, btn);
+  }
   function asAddSource(btn = undefined) {
     const url = $("#asNewSourceURL").val().trim();
     if (url == "") {
-      msgbox(t("Enter the address of a plugin index first"), false);
+      msgbox(t("Enter the address of an add-on index first"), false);
       return;
     }
+    asPostSource({ "url": url }, btn);
+  }
+  function asPostSource(data, btn = undefined) {
     if (btn !== undefined) {
       asBusy(btn, true);
     }
     $.cjax({
       url: "/api/plugins/store/sources/add",
       type: "POST",
-      data: { "url": url },
+      data: data,
       success: function (data) {
         if (btn !== undefined) {
           asBusy(btn, false);
@@ -889,7 +1049,7 @@
           msgbox(asEscapeHtml(data.error), false) /* error texts can quote what a downloaded plugin or an index says; msgbox renders HTML */;
         } else {
           msgbox(t("Source added"), true);
-          $("#asNewSourceURL").val("");
+          $("#asNewSourceURL, #asNewSourceFolder").val("");
           asLoadData(function () {
             asRenderSourceTable();
           });

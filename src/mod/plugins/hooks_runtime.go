@@ -16,15 +16,15 @@ import (
 	"sync"
 	"time"
 
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
 	Hook runtime
 
 	Per plugin state for the filter API: admin settings (global attach, fail-closed
-	consent), the circuit breaker and the secret token Zoraxy sends to the plugin.
+	consent), the circuit breaker and the secret token Dunree sends to the plugin.
 */
 
 const (
@@ -78,10 +78,10 @@ type HookAdminState struct {
 func (p *Plugin) hookAdminState() HookAdminState {
 	p.hook.mu.Lock()
 	defer p.hook.mu.Unlock()
-	declared := p.Spec != nil && p.Spec.Hooks != nil && p.Spec.Hooks.FailurePolicy == zoraxyPlugin.FailureClosed
-	policy := zoraxyPlugin.FailureOpen
+	declared := p.Spec != nil && p.Spec.Hooks != nil && p.Spec.Hooks.FailurePolicy == dunreePlugin.FailureClosed
+	policy := dunreePlugin.FailureOpen
 	if declared && p.hook.failClosedConsent {
-		policy = zoraxyPlugin.FailureClosed
+		policy = dunreePlugin.FailureClosed
 	}
 	return HookAdminState{
 		Global:             p.hook.global,
@@ -104,7 +104,7 @@ func (p *Plugin) failsClosed() bool {
 	p.hook.mu.Lock()
 	defer p.hook.mu.Unlock()
 	return p.Spec != nil && p.Spec.Hooks != nil &&
-		p.Spec.Hooks.FailurePolicy == zoraxyPlugin.FailureClosed && p.hook.failClosedConsent
+		p.Spec.Hooks.FailurePolicy == dunreePlugin.FailureClosed && p.hook.failClosedConsent
 }
 
 func (p *Plugin) invokeToken() string {
@@ -122,12 +122,12 @@ func (p *Plugin) priority() int {
 
 func (p *Plugin) callTimeout() time.Duration {
 	if p.Spec == nil {
-		return time.Duration(zoraxyPlugin.DefaultHookTimeoutMs) * time.Millisecond
+		return time.Duration(dunreePlugin.DefaultHookTimeoutMs) * time.Millisecond
 	}
 	return p.Spec.Hooks.EffectiveTimeout() //nil-safe
 }
 
-// generateInvokeToken creates a fresh per-start secret for calls from Zoraxy to the plugin
+// generateInvokeToken creates a fresh per-start secret for calls from Dunree to the plugin
 func (p *Plugin) generateInvokeToken() (string, error) {
 	b := make([]byte, 24)
 	if _, err := rand.Read(b); err != nil {
@@ -221,7 +221,7 @@ var hookHTTPClient = &http.Client{
 		MaxIdleConns:          64,
 		MaxIdleConnsPerHost:   16,
 		IdleConnTimeout:       30 * time.Second,
-		ResponseHeaderTimeout: time.Duration(zoraxyPlugin.MaxHookTimeoutMs) * time.Millisecond,
+		ResponseHeaderTimeout: time.Duration(dunreePlugin.MaxHookTimeoutMs) * time.Millisecond,
 		DisableCompression:    true,
 	},
 	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
@@ -245,9 +245,9 @@ func (m *Manager) callPlugin(p *Plugin, path string, payload []byte, requestID s
 		return 0, nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(zoraxyPlugin.RequestIDHeader, requestID)
+	setHostHeader(req.Header, "RequestID", requestID)
 	if tok := p.invokeToken(); tok != "" {
-		req.Header.Set(zoraxyPlugin.InvokeTokenHeader, tok)
+		setHostHeader(req.Header, "Plugin-Token", tok)
 	}
 	resp, err := hookHTTPClient.Do(req)
 	if err != nil {
@@ -266,7 +266,7 @@ func (m *Manager) callPlugin(p *Plugin, path string, payload []byte, requestID s
 
 // callFilter calls the filter endpoint of the plugin for a stage and returns the validated verdict.
 // The circuit breaker is consulted and updated here.
-func (m *Manager) callFilter(p *Plugin, stage zoraxyPlugin.HookStage, fr *zoraxyPlugin.FilterRequest) (*cleanVerdict, error) {
+func (m *Manager) callFilter(p *Plugin, stage dunreePlugin.HookStage, fr *dunreePlugin.FilterRequest) (*cleanVerdict, error) {
 	if !m.breakerAdmit(p) {
 		return nil, errBreakerOpen
 	}
@@ -275,20 +275,20 @@ func (m *Manager) callFilter(p *Plugin, stage zoraxyPlugin.HookStage, fr *zoraxy
 	return cv, err
 }
 
-func (m *Manager) doFilterCall(p *Plugin, stage zoraxyPlugin.HookStage, fr *zoraxyPlugin.FilterRequest) (*cleanVerdict, error) {
+func (m *Manager) doFilterCall(p *Plugin, stage dunreePlugin.HookStage, fr *dunreePlugin.FilterRequest) (*cleanVerdict, error) {
 	payload, err := json.Marshal(fr)
 	if err != nil {
 		return nil, err
 	}
 	path := p.Spec.Hooks.PathForStage(stage)
-	status, body, err := m.callPlugin(p, path, payload, fr.RequestID, zoraxyPlugin.MaxVerdictBytes)
+	status, body, err := m.callPlugin(p, path, payload, fr.RequestID, dunreePlugin.MaxVerdictBytes)
 	if err != nil {
 		return nil, err
 	}
 	if status != http.StatusOK {
 		return nil, fmt.Errorf("plugin answered HTTP %d", status)
 	}
-	var verdict zoraxyPlugin.FilterVerdict
+	var verdict dunreePlugin.FilterVerdict
 	if err := json.Unmarshal(body, &verdict); err != nil {
 		return nil, &rejectedAnswerError{kind: "invalid verdict JSON", detail: err}
 	}
@@ -329,7 +329,7 @@ func (m *Manager) SetHookAdminSettings(pluginID string, global *bool, failClosed
 	if err != nil {
 		return err
 	}
-	if p.Spec.Type != zoraxyPlugin.PluginType_Router {
+	if p.Spec.Type != dunreePlugin.PluginType_Router {
 		return errors.New("plugin is not a router type plugin")
 	}
 	hasHooks := p.Spec.Hooks != nil && len(p.Spec.Hooks.Stages) > 0
@@ -337,7 +337,7 @@ func (m *Manager) SetHookAdminSettings(pluginID string, global *bool, failClosed
 		return errors.New("plugin has no filter hooks or dynamic capture, nothing to attach globally")
 	}
 	if failClosedConsent != nil && *failClosedConsent &&
-		(p.Spec.Hooks == nil || p.Spec.Hooks.FailurePolicy != zoraxyPlugin.FailureClosed) {
+		(p.Spec.Hooks == nil || p.Spec.Hooks.FailurePolicy != dunreePlugin.FailureClosed) {
 		return errors.New("plugin does not declare fail_closed in its manifest")
 	}
 	p.hook.mu.Lock()

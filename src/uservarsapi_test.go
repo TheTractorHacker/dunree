@@ -8,10 +8,10 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
-	"imuslab.com/zoraxy/mod/ruleset"
-	"imuslab.com/zoraxy/mod/uservars"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/foleyit/dunree/mod/uservars"
 )
 
 func withTestUserVars(t *testing.T, e *ruleset.Engine) *uservars.Store {

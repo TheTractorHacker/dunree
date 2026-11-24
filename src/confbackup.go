@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/aiassist"
-	"imuslab.com/zoraxy/mod/confpack"
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/aiassist"
+	"github.com/foleyit/dunree/mod/confpack"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -27,11 +27,11 @@ import (
 
 	Archive layout: every file of the config folder is stored as "conf/<relative path>" no matter where
 	the folder lives (-conf flag), the optional system database as "sys.db", and since fork.21 a
-	"manifest.json" (opt in for the full backup, always for shareable: schema version, Zoraxy version, mode, created time, size and SHA-256 of every entry).
+	"manifest.json" (opt in for the full backup, always for shareable: schema version, Dunree version, mode, created time, size and SHA-256 of every entry).
 	The logic lives in mod/confpack; this file is the HTTP side:
 
 	  GET  /api/conf/export?mode=full|shareable&includeDB=true&manifest=true   full is the historic backup and CONTAINS SECRETS (manifest=true adds
-                                                             manifest.json; without it the archive restores on older Zoraxy versions too);
+                                                             manifest.json; without it the archive restores on older Dunree versions too);
 	                                                             shareable is redacted and never carries keys or credentials
 	  POST /api/conf/importcheck   (file)  dry run: validates the archive and reports what an import would add, replace and
 	                                       remove. Changes nothing.
@@ -54,7 +54,7 @@ func skipFullExport(rel string) bool {
 // writeConfigZip writes the config folder (and optionally the system database) as a full backup archive
 func writeConfigZip(out io.Writer, confDir string, dbPath string) error {
 	_, err := confpack.WriteExport(out, confpack.ExportOptions{ConfDir: confDir, DBPath: dbPath, Mode: confpack.ModeFull,
-		ZoraxyVersion: SYSTEM_VERSION, SkipFull: skipFullExport, OmitManifest: true})
+		DunreeVersion: SYSTEM_VERSION, SkipFull: skipFullExport, OmitManifest: true})
 	return err
 }
 
@@ -80,18 +80,18 @@ func ExportConfigAsZip(w http.ResponseWriter, r *http.Request) {
 		dbPath = *path_database
 	}
 
-	name := "zoraxy-config-"
+	name := "dunree-config-"
 	if mode == confpack.ModeShareable {
-		name = "zoraxy-config-shareable-"
+		name = "dunree-config-shareable-"
 	}
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+name+time.Now().Format("2006-01-02-15-04-05")+".zip\"")
-	//the full backup keeps the historic layout (no manifest.json: an older Zoraxy refuses an archive that has one);
+	//the full backup keeps the historic layout (no manifest.json: an older Dunree refuses an archive that has one);
 	//manifest=true adds it for integrity checking. The shareable export always has one.
 	withManifest, _ := utils.GetBool(r, "manifest")
 	_, err := confpack.WriteExport(w, confpack.ExportOptions{ConfDir: CONF_FOLDER, DBPath: dbPath, Mode: mode,
-		ZoraxyVersion: SYSTEM_VERSION, SkipFull: skipFullExport, OmitManifest: mode == confpack.ModeFull && !withManifest})
+		DunreeVersion: SYSTEM_VERSION, SkipFull: skipFullExport, OmitManifest: mode == confpack.ModeFull && !withManifest})
 	if err != nil {
 		SystemWideLogger.PrintAndLog("Backup", "Unable to write the backup archive", err)
 	}

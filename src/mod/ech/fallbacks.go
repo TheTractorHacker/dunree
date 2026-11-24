@@ -8,7 +8,7 @@ package ech
 
 	The interesting case is the ECH outer name of another provider. A browser that offers ECH with a config published
 	in DNS by someone else (typically Cloudflare, public name cloudflare-ech.com) sends the OUTER public name as SNI:
-	Zoraxy cannot decrypt the inner hello, so the real host name (the key of every per-host certificate choice) is never
+	Dunree cannot decrypt the inner hello, so the real host name (the key of every per-host certificate choice) is never
 	visible and the fallback certificate is served. Chrome reports ERR_ECH_FALLBACK_CERTIFICATE_INVALID.
 */
 
@@ -22,7 +22,7 @@ import (
 // Classes of a name that was answered with the fallback certificate
 const (
 	FallbackForeignECH = "foreign-ech" // looks like the ECH public name of another provider
-	FallbackOwnECH     = "own-ech"     // Zoraxy's own ECH public name
+	FallbackOwnECH     = "own-ech"     // Dunree's own ECH public name
 	FallbackNoSNI      = "no-sni"      // the client sent no server name (IP access, old client)
 	FallbackUnknown    = "unknown"     // unknown host, scanner or access by IP: not guessed any further
 )
@@ -42,7 +42,7 @@ const (
 )
 
 // ClassifyFallback names the likely reason a server name reached the fallback certificate.
-// ownPublicName is Zoraxy's active ECH public name ("" when ECH is off).
+// ownPublicName is Dunree's active ECH public name ("" when ECH is off).
 func ClassifyFallback(name, ownPublicName string) string {
 	n := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(name)), ".")
 	if n == "" {

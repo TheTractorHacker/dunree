@@ -35,14 +35,14 @@ def verify(z, host, field, token, headers=None):
 
 def cookie_of(r):
     sc = " ".join(r.set_cookies)
-    m = re.search(r"zoraxy_captcha_session=([^;]+)", sc)
-    return ("zoraxy_captcha_session=" + m.group(1)) if m else None
+    m = re.search(r"dunree_captcha_session=([^;]+)", sc)
+    return ("dunree_captcha_session=" + m.group(1)) if m else None
 
 
 @scenario("captcha_altcha_flow", ["77", "222"])
 def captcha_altcha_flow():
     """Challenge page 403 (branded) -> Altcha PoW solved -> session cookie -> upstream; replay/tamper/foreign-host refused."""
-    with Zoraxy() as z, Backend(name="site") as b, Backend(name="other") as b2:
+    with Dunree() as z, Backend(name="site") as b, Backend(name="other") as b2:
         brand = dict(captchaTitle="Acme Gatekeeper", captchaHeading="Hold on, {domain}", captchaMessage="Prove you are not a robot.",
                      captchaAccent="#ff6600", captchaTheme="dark")
         z.add_rule("cap.test", b.addr, **ALTCHA, **brand)
@@ -90,7 +90,7 @@ def captcha_altcha_flow():
 @scenario("captcha_exemptions", ["228"])
 def captcha_exemptions():
     """Protected path prefixes and exemption rules (path prefix / exact / regex / CIDR), traversal and XFF spoofing."""
-    with Zoraxy() as z, Backend(name="site") as b:
+    with Dunree() as z, Backend(name="site") as b:
         z.add_rule("ex.test", b.addr, **ALTCHA, captchaPathPrefixes="/private")
         def st(p, **kw):
             return z.req("ex.test", p, **kw).status
@@ -163,7 +163,7 @@ def captcha_third_party_providers():
     d = tempfile.mkdtemp(prefix="zx-prov-")
     try:
         with FakeHTTPS(["challenges.cloudflare.com", "www.google.com", "global.frcapi.com", "eu.frcapi.com"], _providers(d), d) as fake:
-            with Zoraxy(env=fake.env) as z, Backend(name="site") as b:
+            with Dunree(env=fake.env) as z, Backend(name="site") as b:
                 ev = []
                 cases = [
                     ("ts.test", dict(captcha=True, captchaProvider=0, captchaSiteKey="1x00000000000000000000AA", captchaSecretKey="tsecret"), "cf-turnstile-response"),

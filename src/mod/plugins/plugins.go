@@ -1,7 +1,7 @@
 package plugins
 
 /*
-	Zoraxy Plugin Manager
+	Dunree Plugin Manager
 
 	This module is responsible for managing plugins
 	loading plugins from the disk
@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // NewPluginManager creates a new plugin manager
@@ -62,6 +62,12 @@ func NewPluginManager(options *ManagerOptions) *Manager {
 		PluginHash:         make(map[string]string),
 		/* Internal */
 		loadedPluginsMutex: sync.RWMutex{},
+	}
+
+	// Store sources: none on a new installation; an installation that existed
+	// before keeps the source it synced from (once, see store_sources.go)
+	if state := thisManager.migrateStoreSources(); state == "existing-migrated" && options.Logger != nil {
+		options.Logger.PrintAndLog("plugin-manager", "This installation used the plugin store of the Zoraxy project before. It was kept as a store source (\"Zoraxy community store (third party)\"); remove it under System > App Store > Sources if you do not want it. Dunree itself ships without a store source.", nil) // legacy-compat
 	}
 
 	//Check if hot reload is enabled
@@ -172,7 +178,7 @@ func (m *Manager) LoadPluginsFromDisk() error {
 	for _, folder := range foldersInPluginDir {
 		if folder.IsDir() && folder.Name() != stagingDirName { //the staging folder of downloads is not a plugin
 			pluginPath := filepath.Join(m.Options.PluginDir, folder.Name())
-			// A crash of Zoraxy in the middle of an update or rollback can leave the
+			// A crash of Dunree in the middle of an update or rollback can leave the
 			// folder without its program file: put it back
 			m.repairPluginFolder(folder.Name(), pluginPath)
 			// Before the program file is run for its manifest: is it the installed one?
@@ -226,7 +232,7 @@ func (m *Manager) LoadPluginsFromDisk() error {
 		}
 	}
 
-	m.clearStagingAtBoot() //leftovers of a download or swap that the end of Zoraxy cut off
+	m.clearStagingAtBoot() //leftovers of a download or swap that the end of Dunree cut off
 
 	// Every plugin that was installed before API permissions were tracked has its
 	// record now (see reviewPermissions). A plugin that shows up later starts with
@@ -423,13 +429,12 @@ func (p *Plugin) HandleStaticRoute(w http.ResponseWriter, r *http.Request, longe
 	}
 	r.URL, _ = url.Parse(rewrittenURL)
 
-	upstreamHeaders := [][]string{
-		{"X-Zoraxy-Capture", longestPrefix},
-		{"X-Zoraxy-URI", originalRequestURI},
-		{"X-Zoraxy-RequestID", requestID(r)},
-	}
+	//Every header of the host goes out under its Dunree name and the name Zoraxy used (hostHeaders, wire.go) // legacy-compat
+	upstreamHeaders := hostHeaders("Capture", longestPrefix)
+	upstreamHeaders = append(upstreamHeaders, hostHeaders("URI", originalRequestURI)...)
+	upstreamHeaders = append(upstreamHeaders, hostHeaders("RequestID", requestID(r))...)
 	if tok := p.invokeToken(); tok != "" {
-		upstreamHeaders = append(upstreamHeaders, []string{"X-Zoraxy-Plugin-Token", tok})
+		upstreamHeaders = append(upstreamHeaders, hostHeaders("Plugin-Token", tok)...)
 	}
 	if !p.beginCapture() {
 		writeCaptureUnavailable(w)

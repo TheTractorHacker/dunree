@@ -1,10 +1,14 @@
-name: CI (lints, tests (todo), and builds)
+name: CI (lints, tests, cross-platform builds, packaging)
 
 on:
   push:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+
+# Least privilege: every job only reads the code. Nothing is published from this workflow.
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
         with:
           go-version: 'stable'
           cache-dependency-path: src/go.sum
@@ -43,6 +47,10 @@ jobs:
         run: go test ./...
         working-directory: src
 
+      - name: Test the release signing tool
+        run: go test sign_release.go sign_release_test.go
+        working-directory: tools
+
       - name: install staticcheck
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
         working-directory: src
@@ -51,11 +59,208 @@ jobs:
         run: staticcheck ./...
         working-directory: src
 
+  # Every release target must compile; one target per operating system is also vetted
+  # (go vet type-checks the tests for that system too).
+  cross-build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: linux, goarch: arm, goarm: "6" }
+          - { goos: linux, goarch: "386" }
+          - { goos: linux, goarch: riscv64 }
+          - { goos: linux, goarch: mipsle }
+          - { goos: windows, goarch: amd64, vet: true }
+          - { goos: windows, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: darwin, goarch: arm64, vet: true }
+          - { goos: freebsd, goarch: amd64, vet: true }
+          - { goos: freebsd, goarch: arm64 }
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      GOARM: ${{ matrix.goarm }}
+      CGO_ENABLED: "0"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
+        with:
+          go-version: 'stable'
+          cache-dependency-path: src/go.sum
+
+      - name: Build every package
+        run: go build ./...
+        working-directory: src
+
+      - name: Build the program
+        run: go build -trimpath -ldflags "-s -w" -o "${RUNNER_TEMP}/dunree_${GOOS}_${GOARCH}" .
+        working-directory: src
+
+      - name: Vet for this operating system
+        if: matrix.vet
+        run: go vet ./...
+        working-directory: src
+
+  # The Windows service on a real Windows machine: install, start, answer, stop cleanly, uninstall.
+  windows-service:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
+        with:
+          go-version: 'stable'
+          cache-dependency-path: src/go.sum
+
+      - name: Build
+        run: go build -o dunree.exe .
+        working-directory: src
+
+      - name: Service unit tests
+        run: go test -count=1 -run "Service" .
+        working-directory: src
+
+      - name: PowerShell scripts parse
+        run: |
+          $failed = $false
+          foreach ($f in Get-ChildItem packaging/windows/*.ps1) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            foreach ($e in $errors) { Write-Host "$($f.Name): $e"; $failed = $true }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Windows service end to end
+        run: ./packaging/windows/test-service.ps1 -Exe src/dunree.exe
+
+      - name: Install script end to end (install, upgrade, uninstall)
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'dunree-zip'
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item src/dunree.exe, packaging/windows/install.ps1, packaging/windows/uninstall.ps1 $stage
+          $app = Join-Path $env:RUNNER_TEMP 'dunree-app'
+          $data = Join-Path $env:RUNNER_TEMP 'dunree-data'
+          $sum = (Get-FileHash (Join-Path $stage 'dunree.exe') -Algorithm SHA256).Hash
+          & (Join-Path $stage 'install.ps1') -InstallDir $app -DataDir $data -ExpectedSha256 $sum -ServiceArgs '-port=127.0.0.1:18001','-mdns=false','-default_inbound_enabled=false','-offline=true'
+          & (Join-Path $app 'dunree.exe') service status
+          if ($LASTEXITCODE -ne 0) { throw 'the service is not running after install.ps1' }
+          & (Join-Path $stage 'install.ps1') -InstallDir $app -DataDir $data
+          & (Join-Path $app 'dunree.exe') service status
+          if ($LASTEXITCODE -ne 0) { throw 'the service is not running after the upgrade' }
+          & (Join-Path $stage 'uninstall.ps1') -InstallDir $app -DataDir $data
+          if (Get-Service -Name 'Dunree' -ErrorAction SilentlyContinue) { throw 'the service is still registered' }
+          if (-not (Test-Path (Join-Path $data 'conf'))) { throw 'the data folder was not kept' }
+
+      - name: Inno Setup installer compiles (when Inno Setup is on the runner)
+        run: |
+          $iscc = Get-Command iscc.exe -ErrorAction SilentlyContinue
+          if (-not $iscc) { $iscc = Get-Item 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' -ErrorAction SilentlyContinue }
+          if (-not $iscc) { Write-Host '::notice::Inno Setup is not installed on this runner; dunree.iss was not compiled'; exit 0 }
+          $out = Join-Path $env:RUNNER_TEMP 'setup'
+          $path = if ($iscc.Source) { $iscc.Source } else { $iscc.FullName }
+          & $path "/DAppVersion=0.0.0-ci" "/DArch=amd64" "/DSourceExe=$((Resolve-Path src/dunree.exe).Path)" "/DOutputDir=$out" packaging/windows/dunree.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path (Join-Path $out 'dunree_0.0.0-ci_windows_amd64_setup.exe'))) { throw 'no installer was written' }
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
+        with:
+          go-version: 'stable'
+          cache-dependency-path: src/go.sum
+
+      - name: Build both architectures
+        run: |
+          mkdir -p "$RUNNER_TEMP/dist"
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOARCH=$arch go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/dist/dunree_darwin_$arch" .
+          done
+        working-directory: src
+
+      - name: Service unit tests
+        run: go test -count=1 -run "Service" .
+        working-directory: src
+
+      - name: The program starts and stops cleanly
+        run: |
+          work="$RUNNER_TEMP/run"
+          mkdir -p "$work" && cd "$work"
+          "$RUNNER_TEMP/dist/dunree_darwin_$(go env GOARCH)" -version
+          "$RUNNER_TEMP/dist/dunree_darwin_$(go env GOARCH)" -port=127.0.0.1:18002 -mdns=false -default_inbound_enabled=false -offline=true >out.log 2>&1 &
+          pid=$!
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:18002/ && break; sleep 1; done
+          curl -s -o /dev/null http://127.0.0.1:18002/ || { cat out.log; exit 1; }
+          kill -TERM "$pid"
+          wait "$pid" || { echo "exit code $? after SIGTERM"; cat out.log; exit 1; }
+
+      - name: launchd plist is valid
+        run: plutil -lint packaging/macos/ie.foleyit.dunree.plist
+
+      - name: Installer package builds (unsigned)
+        run: |
+          sh packaging/macos/build-pkg.sh --version 0.0.0-ci --dist "$RUNNER_TEMP/dist"
+          pkgutil --payload-files "$RUNNER_TEMP/dist/dunree_0.0.0-ci_darwin_universal.pkg" | tee payload.txt
+          grep -q 'usr/local/bin/dunree$' payload.txt
+          grep -q 'Library/LaunchDaemons/ie.foleyit.dunree.plist$' payload.txt
+
+  # Packaging files and the release script, with a throwaway key. Nothing is published.
+  packaging:
+    runs-on: ubuntu-latest
+    env:
+      NFPM_VERSION: v2.41.1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
+        with:
+          go-version: 'stable'
+          cache-dependency-path: src/go.sum
+
+      - name: Install nfpm (pinned)
+        run: go install "github.com/goreleaser/nfpm/v2/cmd/nfpm@${NFPM_VERSION}"
+
+      - name: Packaging checks (scripts, units, manifests, archive layout, .deb and .rpm)
+        run: packaging/test.sh
+
+      - name: Release script (dry run, then a real two-target build signed with a throwaway key)
+        run: tools/build_release_test.sh --build
+
+      - name: Container image builds (linux/amd64, without ZeroTier, not pushed)
+        run: docker build -f packaging/container/Dockerfile --build-arg WITH_ZEROTIER=false -t dunree:ci .
+
+      - name: Container starts and answers
+        run: |
+          docker run -d --name dunree-ci -p 127.0.0.1:18003:8000 -e MDNS=false dunree:ci
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:18003/ && break; sleep 1; done
+          curl -s -o /dev/null http://127.0.0.1:18003/ || { docker logs dunree-ci; exit 1; }
+          docker exec dunree-ci sh -c 'test -x /usr/local/bin/dunree && test -d /opt/zoraxy/config && test -f /usr/share/doc/dunree/NOTICE'
+          docker stop -t 30 dunree-ci
+
   check-i18n:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Check translations (catalogue up to date, no stale keys, placeholder parity)
         run: python3 tools/i18n/extract.py --check
@@ -64,19 +269,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7
         with:
           go-version: 'stable'
           cache-dependency-path: src/go.sum
 
-      - name: Verify dependencies (for zoraxy)
+      - name: Verify dependencies (for Dunree)
         run: go mod verify
         working-directory: src
 
-      - name: Install dependencies (for zoraxy)
+      - name: Install dependencies (for Dunree)
         run: go mod tidy
         working-directory: src
 

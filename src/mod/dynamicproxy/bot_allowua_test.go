@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/botrules"
+	"github.com/foleyit/dunree/mod/botrules"
 )
 
 func TestBotAllowUASkipsOnlyOnThisSite(t *testing.T) {

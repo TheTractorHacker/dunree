@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

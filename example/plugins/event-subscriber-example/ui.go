@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	plugin "aroz.org/zoraxy/event-subscriber-example/mod/zoraxy_plugin"
+	plugin "example.com/dunree/event-subscriber-example/mod/dunree_plugin"
 )
 
 func RenderUI(config *plugin.ConfigureSpec, w http.ResponseWriter, r *http.Request) {

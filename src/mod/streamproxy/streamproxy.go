@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/google/uuid"
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 /*

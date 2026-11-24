@@ -89,7 +89,7 @@ func TestNonGRPCChunkedBodyIsForwardedIntact(t *testing.T) {
 	target, _ := url.Parse(upstream.URL)
 	core := NewDynamicProxyCore(target, "", &DpcoreOptions{})
 
-	const body = "hello-zoraxy"
+	const body = "hello-dunree"
 	req := httptest.NewRequest(http.MethodPost, "http://front.example.com/", io.NopCloser(strings.NewReader(body)))
 	req.ContentLength = -1
 	req.Header.Set("Content-Type", "application/json")

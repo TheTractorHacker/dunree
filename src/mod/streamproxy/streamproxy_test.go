@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/streamproxy"
 )
 
 // freeLoopbackAddr returns a 127.0.0.1:port address that was free a moment ago.

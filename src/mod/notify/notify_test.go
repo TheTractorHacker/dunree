@@ -199,8 +199,8 @@ func TestCommandHookEnvNoShellTimeoutAndOutput(t *testing.T) {
 		t.Skip("shell script test")
 	}
 	dir := t.TempDir()
-	t.Setenv("ZORAXY_TEST_PARENT_SECRET", "leak")
-	script := writeScript(t, dir, `echo "event=$ZORAXY_EVENT domains=$ZORAXY_DOMAINS arg=$1 secret=[$ZORAXY_TEST_PARENT_SECRET]"`+"\n")
+	t.Setenv("DUNREE_TEST_PARENT_SECRET", "leak")
+	script := writeScript(t, dir, `echo "event=$ZORAXY_EVENT domains=$ZORAXY_DOMAINS arg=$1 secret=[$DUNREE_TEST_PARENT_SECRET]"`+"\n")
 	exp := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
 	s := &CommandSink{Cfg: CommandConfig{Enabled: true, Path: script, Args: []string{"$(touch " + filepath.Join(dir, "pwned") + ")"}}, Allowed: true}
 	out, err := s.Run(context.Background(), Event{Event: EventCertIssued, Domains: []string{"a.example", "b.example"}, Expiry: &exp})

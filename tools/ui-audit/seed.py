@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed a throw-away Zoraxy instance (started with -noauth -dev -default_inbound_port N) with realistic data:
+"""Seed a throw-away Dunree instance (started with -noauth -dev -default_inbound_port N) with realistic data:
 a dozen proxy rules, CAPTCHA on some of them, a WAF policy, and WAF events produced by attack-looking requests
 sent through the proxy to an in-process upstream. Never run it against a real instance.
 

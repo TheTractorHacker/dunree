@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
+	"github.com/foleyit/dunree/mod/auth"
 )
 
 func TestValidateUsername_LegacyHashVerifiesAndUpgrades(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/notify"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/notify"
 )
 
 // Issue #216: opt-in auto-tagging when the login of a rule is saved, and the auth.drift report.

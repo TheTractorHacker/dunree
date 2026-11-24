@@ -11,7 +11,7 @@ import (
 	"net"
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // HandleScanPort is the HTTP handler for scanning opened ports on a given IP address

@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/ruleset"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/ruleset"
 )
 
 /*

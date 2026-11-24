@@ -127,7 +127,7 @@ def live_map_ui(pg, ctx):
             fail("livemap", f"unexpected /api/stats/livemap answer: {d0}")
             return
         pg.set_viewport_size({"width": 1366, "height": 900})
-        pg.evaluate("localStorage.removeItem('zoraxy_trafficflow_mode'); localStorage.removeItem('zoraxy_trafficflow_anim'); localStorage.removeItem('zoraxy_status_diagram')")
+        pg.evaluate("localStorage.removeItem('dunree_trafficflow_mode'); localStorage.removeItem('dunree_trafficflow_anim'); localStorage.removeItem('dunree_status_diagram')")
         pg.goto(args.url + "/#status", wait_until="networkidle")
         pg.wait_for_selector("#trafficFlowDiagram")
         pg.wait_for_timeout(1500)
@@ -294,7 +294,7 @@ def live_map_ui(pg, ctx):
         txt = fr.evaluate("document.getElementById('live-text').textContent")
         if not txt.startswith("Today:"):
             fail("livemap", f"Today mode strip, got {txt!r}")
-        if fr.evaluate("localStorage.getItem('zoraxy_trafficflow_mode')") != "today":
+        if fr.evaluate("localStorage.getItem('dunree_trafficflow_mode')") != "today":
             fail("livemap", "the mode must be remembered in the browser")
         if poll_count(5000) != 0:
             fail("livemap", "Today mode must not poll /api/stats/livemap")
@@ -386,7 +386,7 @@ def live_map_ui(pg, ctx):
         lim = ra[0]["limiter"] if ra else {}
         if not lim.get("dryRun") or lim.get("denied", 0) < 10:
             fail("livemap", f"dry run: tune must report dryRun and the requests that would have been limited: {lim}")
-        pg.evaluate("localStorage.removeItem('zoraxy_trafficflow_mode')")
+        pg.evaluate("localStorage.removeItem('dunree_trafficflow_mode')")
         pg.goto(args.url + "/#status", wait_until="networkidle")
         pg.wait_for_selector("#diagramTuneBtn")
         pg.click("#diagramTuneBtn")

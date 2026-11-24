@@ -51,7 +51,7 @@ const (
 // Settings is the global ECH configuration
 type Settings struct {
 	Enabled          bool   // Master switch, default off
-	PublicName       string // Outer SNI (public_name) of generated configs. Must be a name Zoraxy serves a valid certificate for
+	PublicName       string // Outer SNI (public_name) of generated configs. Must be a name Dunree serves a valid certificate for
 	MaxNameLength    int    // maximum_name_length of generated configs (clients pad the inner SNI to this), default 64
 	RotateEveryHours int    // Automatic rotation interval, 0 = manual only
 	RetainHours      int    // How long retired keys keep decrypting, default 168 (7 days). Keep it above the DNS TTL
@@ -102,7 +102,7 @@ type Manager struct {
 
 // NoteOuterHandshake is called for every handshake whose SNI equals the public name. certOK says whether the
 // certificate that was served is valid for it. It returns true when the caller should log a warning (rate limited).
-// A handshake for the public name is what a client sends after Zoraxy rejected its ECH (stale or foreign config),
+// A handshake for the public name is what a client sends after Dunree rejected its ECH (stale or foreign config),
 // but it is also what a direct visit to the public name looks like: the server cannot tell the two apart.
 func (m *Manager) NoteOuterHandshake(certOK bool) (warn bool) {
 	m.outer.Add(1)

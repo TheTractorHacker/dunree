@@ -1,6 +1,6 @@
-# CAPTCHA Gating Feature for Zoraxy
+# CAPTCHA Gating Feature for Dunree
 
-This document describes the CAPTCHA gating feature that has been added to Zoraxy.
+This document describes the CAPTCHA gating feature that has been added to Dunree.
 
 ## Overview
 
@@ -102,7 +102,7 @@ You can exclude certain paths or IP addresses from CAPTCHA challenges:
    `X-Real-IP`, `CF-Connecting-IP` or `X-Forwarded-For` are only honored when
    **Enable Trusted Proxy Gating** is turned on for that access rule and the
    connection comes from a trusted proxy. Otherwise the connection address is
-   used. If Zoraxy runs behind a CDN or another reverse proxy, enable trusted
+   used. If Dunree runs behind a CDN or another reverse proxy, enable trusted
    proxy gating so IP-based exceptions match the real client address.
 
 ### Use Cases
@@ -124,7 +124,7 @@ The CAPTCHA session store (`CaptchaSessionStore`) is a global component that:
 
 When a user successfully completes a CAPTCHA:
 - A random 64-character session ID is generated
-- A cookie named `zoraxy_captcha_session` is set
+- A cookie named `dunree_captcha_session` is set (a `zoraxy_captcha_session` cookie from before the rename is honoured until it expires)
 - Cookie attributes:
   - `HttpOnly`: Yes (prevents JavaScript access)
   - `Secure`: Yes if TLS is enabled
@@ -139,7 +139,7 @@ When a user successfully completes a CAPTCHA:
 2. Navigate to Turnstile section
 3. Create a new site
 4. Copy the **Site Key** and **Secret Key**
-5. Configure in Zoraxy with `captchaProvider=0`
+5. Configure in Dunree with `captchaProvider=0`
 
 ### Google reCAPTCHA v2
 
@@ -147,7 +147,7 @@ When a user successfully completes a CAPTCHA:
 2. Register a new site
 3. Select reCAPTCHA v2 (checkbox)
 4. Copy the **Site Key** and **Secret Key**
-5. Configure in Zoraxy with:
+5. Configure in Dunree with:
    - `captchaProvider=1`
    - `captchaRecaptchaVersion=v2`
 
@@ -157,7 +157,7 @@ When a user successfully completes a CAPTCHA:
 2. Register a new site
 3. Select reCAPTCHA v3
 4. Copy the **Site Key** and **Secret Key**
-5. Configure in Zoraxy with:
+5. Configure in Dunree with:
    - `captchaProvider=1`
    - `captchaRecaptchaVersion=v3`
    - `captchaRecaptchaScore=0.5` (adjust as needed)
@@ -231,7 +231,7 @@ curl -i http://your-domain.com/
 
 # After solving CAPTCHA in browser, copy session cookie
 # Second request with session cookie - should proxy normally
-curl -i -H "Cookie: zoraxy_captcha_session=YOUR_SESSION_ID" http://your-domain.com/
+curl -i -H "Cookie: dunree_captcha_session=YOUR_SESSION_ID" http://your-domain.com/
 ```
 
 ## API Endpoints
@@ -250,7 +250,7 @@ Potential improvements for future versions:
 3. **Exception Rule Management API**: Dedicated endpoints for managing exception rules
 4. **Analytics**: Track CAPTCHA solve rates and bot detection statistics
 5. ~~Custom Challenge Pages~~: done, see "Customising CAPTCHA pages" in DEVELOPMENT.md
-6. **Distributed Sessions**: Support for session sharing across multiple Zoraxy instances
+6. **Distributed Sessions**: Support for session sharing across multiple Dunree instances
 
 ## Troubleshooting
 
@@ -274,11 +274,11 @@ Potential improvements for future versions:
 
 ## Credits
 
-Implemented following the existing Zoraxy architecture patterns:
+Implemented following the existing Dunree architecture patterns:
 - Rate limiting implementation for reference
 - Basic authentication exception rules for exception handling pattern
 - Access control for IP filtering patterns
 
 ---
 
-For questions or issues, please file a GitHub issue at https://github.com/tobychui/zoraxy/issues
+For questions or issues, please open an issue in the Dunree repository. Dunree problems do not go to the Zoraxy project (third party). <!-- rebrand:keep -->

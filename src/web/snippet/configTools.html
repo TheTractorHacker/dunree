@@ -23,8 +23,8 @@
                 </div>
             </div>
             <h3>Back up the current configuration</h3>
-            <p>This will download all your configuration on zoraxy in a zip file. This includes all the proxy configs and certificates. Please keep it somewhere safe and after migration, delete this if possible.</p>
-            <p>A shareable archive always carries a <code>manifest.json</code> (versions, mode, size and SHA-256 of each file) so a restore can verify it. For the other modes it is optional, because a Zoraxy that predates the manifest cannot restore an archive that has one.</p>
+            <p>This will download all your configuration on Dunree in a zip file. This includes all the proxy configs and certificates. Please keep it somewhere safe and after migration, delete this if possible.</p>
+            <p>A shareable archive always carries a <code>manifest.json</code> (versions, mode, size and SHA-256 of each file) so a restore can verify it. For the other modes it is optional, because an older version, from before the manifest existed, cannot restore an archive that has one.</p>
             <div class="ui form">
                 <div class="grouped fields">
                   <label>Backup Mode</label>
@@ -53,7 +53,7 @@
               <div class="inline field">
                 <div class="ui checkbox">
                   <input type="checkbox" id="withManifest">
-                  <label>Add an integrity manifest (an older Zoraxy cannot restore it)</label>
+                  <label>Add an integrity manifest (an older version cannot restore it)</label>
                 </div>
               </div>
             </div>
@@ -63,8 +63,8 @@
             <h3>Restore from a backup</h3>
             <p>You can restore your previous settings and database from a zip file config backup.</p>
             <div class="ui negative message">
-                <div class="header">Restoring a full system snapshot shuts Zoraxy down</div>
-                <p>Zoraxy exits when the restore completes. Make sure it is set up to restart automatically (for example with systemd) so it comes back with the restored configuration.</p>
+                <div class="header">Restoring a full system snapshot shuts Dunree down</div>
+                <p>Dunree exits when the restore completes. Make sure it is set up to restart automatically (for example with systemd) so it comes back with the restored configuration.</p>
             </div>
             <p><b>Check file</b> validates the archive and shows what would be added, replaced and removed without changing anything.</p>
             <form class="ui form" id="uploadForm" action="/api/conf/import" method="POST" enctype="multipart/form-data">
@@ -150,12 +150,12 @@
                 // a manifest proves the archive is intact, not who made it: never shown as a green "all clear"
                 head.append($("<b>").text(r.verified ? t("Integrity checked, not authenticity: ") : t("Unverified: ")));
                 head.append(document.createTextNode(r.verified
-                    ? tf("the manifest is present and every checksum matches ({0} backup{1}{2}). This proves the file is undamaged, not who created it.", r.mode, (r.zoraxyVersion ? tf(" from Zoraxy {0}", r.zoraxyVersion) : ""), (r.created ? tf(", created {0}", r.created) : ""))
-                    : t("this archive has no manifest (created by an older Zoraxy), so its integrity could not be checked. It passed the structure and JSON checks.")));
+                    ? tf("the manifest is present and every checksum matches ({0} backup{1}{2}). This proves the file is undamaged, not who created it.", r.mode, (r.zoraxyVersion ? tf(" from version {0}", r.zoraxyVersion) : ""), (r.created ? tf(", created {0}", r.created) : ""))
+                    : t("this archive has no manifest (created by an older version), so its integrity could not be checked. It passed the structure and JSON checks.")));
                 box.append(head);
-                var sum = $("<div>").text(tf("Would add {0}, replace {1}, remove {2}, keep {3} files as they are, {4} unchanged.", r.nAdded, r.nReplaced, r.nRemoved, r.nKept, r.unchanged) + (r.hasDB ? " " + t("The system database would be replaced and Zoraxy would exit.") : ""));
+                var sum = $("<div>").text(tf("Would add {0}, replace {1}, remove {2}, keep {3} files as they are, {4} unchanged.", r.nAdded, r.nReplaced, r.nRemoved, r.nKept, r.unchanged) + (r.hasDB ? " " + t("The system database would be replaced and Dunree would exit.") : ""));
                 box.append(sum);
-                if (r.restartRequired && !r.hasDB) box.append($("<div>").css({color: "#b36b00", marginTop: "0.3em"}).text(t("Restart Zoraxy after the restore: the running instance keeps its old settings in memory and could write them over the restored files.")));
+                if (r.restartRequired && !r.hasDB) box.append($("<div>").css({color: "#b36b00", marginTop: "0.3em"}).text(t("Restart Dunree after the restore: the running instance keeps its old settings in memory and could write them over the restored files.")));
                 if (r.mode == "shareable") box.append($("<div>").text(tf("Redacted fields keep their current value: {0}", r.secretsKept) + (r.secretsDropped ? " " + tf("{0} have none here and are left out.", r.secretsDropped) : "")));
                 (r.warnings || []).forEach(function(w){ if (!/^unverified/.test(w)) box.append($("<div>").css({color: "#b36b00", marginTop: "0.3em"}).text(w)); });
                 box.append(list("Added", r.added, r.nAdded), list("Replaced", r.replaced, r.nReplaced), list("Removed", r.removed, r.nRemoved), list("Kept as they are", r.kept, r.nKept));
@@ -197,7 +197,7 @@
                     contentType: false, // Not to set contentType
                     success: function(response) {
                         $("#restoreBtn").prop("disabled", true);
-                        var msg = t("Config restore succeed. Restart Zoraxy to apply changes.");
+                        var msg = t("Config restore succeed. Restart Dunree to apply changes.");
                         if (response && response.backupDir) msg += " " + tf("The previous configuration was kept in {0}", response.backupDir);
                         parent.msgbox(msg, true, 12000);
                     },

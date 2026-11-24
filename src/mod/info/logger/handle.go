@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // LogConfig represents the log rotation configuration

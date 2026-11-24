@@ -11,7 +11,7 @@ install, update, rollback) and 2.7 (isolated plugin UI) are built too: see "Phas
 three plugins installed on the build machine): see "Phase 3 results and known limits", the last section, which also
 lists what of phase 3 was **not** done (no signed plugin index entry, no upstream issues, no "conformance passed" flag).
 Sections 1 to 6 and the appendices describe the code as it was **before** phase 0. Branch `dev`, written
-2026-11-22 from a read-only review of the code (no build, no test run, no Zoraxy instance started). Every claim about today's behaviour cites `file:line`. Paths
+2026-11-22 from a read-only review of the code (no build, no test run, no Dunree instance started). Every claim about today's behaviour cites `file:line`. Paths
 are relative to `src/` unless they start with `docs/`, `tools/` or `example/`. Where I could not check something it says
 **not verified**.
 
@@ -22,35 +22,35 @@ signed releases, and every item ships with an automated test and a "known limits
 
 ## One-page summary (plain language)
 
-**What a plugin is today.** A plugin is a separate program that Zoraxy starts when you enable it. Zoraxy talks to it over
+**What a plugin is today.** A plugin is a separate program that Dunree starts when you enable it. Dunree talks to it over
 HTTP on `127.0.0.1` (a random port between 5800 and 6000). A plugin can do four things: show its own page inside the
 admin UI, sit in the visitor's request path (as a filter, or by "capturing" requests), receive events (for example "a
-blacklisted IP was blocked"), and call a small list of Zoraxy admin APIs that it asks for.
+blacklisted IP was blocked"), and call a small list of Dunree admin APIs that it asks for.
 
 **Your three plugins** (from the public plugin index, fetched 2026-11-22):
 
-| Plugin | Kind | In the visitor's request path? | Can change Zoraxy settings? |
+| Plugin | Kind | In the visitor's request path? | Can change Dunree settings? |
 |---|---|---|---|
 | Data-Shield Blocklist v1.4.0 | Router, "dynamic capture" (`/sniff`) | Yes, but **only** on proxy rules tagged with its plugin group, or if "Apply to all HTTP proxy rules" is ticked | No |
 | Resource Monitor v1.0.3 | Utility (own page only) | No | No |
 | Zoraxy Cloudflare WAF v0.4.0 (third party) | Utility + event subscriber | No, but it is sent one HTTP call **per blocked request** | Yes: it may add and remove IPs on your blacklists |
 
 **What is wrong today (the short list).**
-1. **Nobody watches the plugin process.** If a plugin crashes, Zoraxy marks it "stopped" in memory and does nothing else:
+1. **Nobody watches the plugin process.** If a plugin crashes, Dunree marks it "stopped" in memory and does nothing else:
    no restart, no alert, nothing in the UI except that it disappears from the side menu (which then says "No Plugins
-   Installed" even though plugins are installed). If a plugin exits *cleanly* by itself, Zoraxy does not notice at all
+   Installed" even though plugins are installed). If a plugin exits *cleanly* by itself, Dunree does not notice at all
    and keeps sending traffic to a dead port.
 2. **"Fail closed" does not mean what the checkbox says.** If you allowed a filter plugin to block traffic when it fails,
    that only happens when the plugin *hangs*. If it *crashes*, traffic flows through unfiltered.
 3. **Some failure paths give visitors a blank page.** When a capture plugin dies mid-request, the visitor gets an empty
    "200 OK" instead of an error page.
 4. **No limits on what a plugin may consume.** No memory, CPU or log limits; a chatty plugin writes every line into the
-   main Zoraxy log, and a line without a newline grows in Zoraxy's memory forever. Events are sent with no queue limit,
+   main Dunree log, and a line without a newline grows in Dunree's memory forever. Events are sent with no queue limit,
    so an attack against a blacklisted range plus a slow Cloudflare WAF plugin can pile up thousands of waiting calls.
 5. **Install and update are not safe.** Downloads are not checksummed or signed, the download URL is usually "latest"
    (so the version you get is not the version shown), an update deletes the old binary first and has no rollback, and a
    failed download leaves the plugin stopped.
-6. **Plugins are fully trusted.** By default a plugin runs as the same user as Zoraxy (root on your servers), its secrets
+6. **Plugins are fully trusted.** By default a plugin runs as the same user as Dunree (root on your servers), its secrets
    are visible to every local user in the process list, and its UI runs inside the admin page with your admin session,
    so a plugin UI can do anything you can do in the admin UI.
 
@@ -90,20 +90,20 @@ check whether Data-Shield is actually attached to any proxy rule, and look in th
 |---|---|---|
 | Separate process? | Yes, one OS process per enabled plugin, started with `exec.Command`. Entry point is `<dir>/<dir name>` (or `.exe`), else `start.sh`, else `start.bat` | `mod/plugins/lifecycle.go:69`, `mod/plugins/utils.go:27-53` |
 | How is it discovered? | At boot every sub-folder of `./plugins` (flag `-plugin`, **relative to the working directory**) is introspected by running the binary with `-introspect` (10 s timeout) and parsing the JSON it prints | `def.go:125`, `mod/plugins/plugins.go:133-165`, `mod/plugins/introspect.go:56-77` |
-| How is it configured? | Started with `-configure=<JSON>` on the **command line**: port, Zoraxy version/UUID, plugin API key, invoke token | `mod/plugins/lifecycle.go:41-69`, `mod/plugins/zoraxy_plugin/zoraxy_plugin.go` (`ConfigureSpec`) |
+| How is it configured? | Started with `-configure=<JSON>` on the **command line**: port, Dunree version/UUID, plugin API key, invoke token | `mod/plugins/lifecycle.go:41-69`, `mod/plugins/dunree_plugin/dunree_plugin.go` (`ConfigureSpec`) |
 | Which port? | Random 5800-6000, checked free before start (race: another process can take it before the plugin binds; the loop never ends if all 200 are busy; the comment says 49152-65535, which is wrong) | `mod/plugins/utils.go:14-17`, `:60-68` |
 | Is readiness checked? | No. `StartPlugin` returns right after `cmd.Start()`; routes and hooks are attached immediately | `mod/plugins/lifecycle.go:84-195` |
 | Which plugins start at boot? | Those whose DB flag is true. **A missing flag counts as true**, and installing from the store never writes the flag, so a plugin installed but never enabled **starts automatically at the next boot** | `mod/plugins/plugins.go:158`, `:219-227`, `mod/plugins/store.go:113-187` |
 | Boot order | Sequential, synchronous, during start-up; a hanging introspect adds up to 10 s per plugin to boot | `start.go:478`, `mod/plugins/introspect.go:58` |
-| Output | stdout and stderr read **one byte at a time**, split on newline, every line written to the main Zoraxy log under `plugin-manager`. A line with no newline grows in memory without limit | `mod/plugins/lifecycle.go:92-142`, `:230-246` |
+| Output | stdout and stderr read **one byte at a time**, split on newline, every line written to the main Dunree log under `plugin-manager`. A line with no newline grows in memory without limit | `mod/plugins/lifecycle.go:92-142`, `:230-246` |
 | Shutdown | `GET <ui_path>/term` (3 s), then SIGTERM, poll 5 x 1 s, then SIGKILL. Signals go to the direct child only (no process group), so children of a `start.sh` may survive. On Windows: kill after 300 ms | `mod/plugins/lifecycle.go:249-325` |
-| On Zoraxy stop | `Close()` stops every enabled plugin; the reference systemd unit also uses `KillMode=control-group`, so plugins die with the service. (True for the code this audit looked at. Since phase 1 a plugin **with a memory, CPU or task limit** runs in a systemd scope of its own, outside the cgroup of the service, and `KillMode=control-group` does not reach it: see "Third review round" and the known limit "A plugin with limits is outside the cgroup of Zoraxy") | `mod/plugins/plugins.go:251-266`, `start.go:629-633`, `docs/deploy/zoraxy.service:41` |
+| On Dunree stop | `Close()` stops every enabled plugin; the reference systemd unit also uses `KillMode=control-group`, so plugins die with the service. (True for the code this audit looked at. Since phase 1 a plugin **with a memory, CPU or task limit** runs in a systemd scope of its own, outside the cgroup of the service, and `KillMode=control-group` does not reach it: see "Third review round" and the known limit "A plugin with limits is outside the cgroup of Dunree") | `mod/plugins/plugins.go:251-266`, `start.go:629-633`, `docs/deploy/zoraxy.service:41` |
 
 ### 1.2 What happens when a plugin misbehaves
 
-| Event | What Zoraxy does | What the visitor sees | Evidence |
+| Event | What Dunree does | What the visitor sees | Evidence |
 |---|---|---|---|
-| **Crashes** (non-zero exit, signal) | Logs once, sets `Enabled=false` in memory, rebuilds the tag maps. **Does not** restart, unsubscribe its events, revoke its API key, or drop its UI proxy. DB flag stays true, so it starts again at the next Zoraxy restart | Filter / sniff plugins are skipped (fail **open**, even if you consented to fail-closed). Static capture paths disappear | `mod/plugins/lifecycle.go:145-158`, `mod/plugins/hooks_pipeline.go:72` |
+| **Crashes** (non-zero exit, signal) | Logs once, sets `Enabled=false` in memory, rebuilds the tag maps. **Does not** restart, unsubscribe its events, revoke its API key, or drop its UI proxy. DB flag stays true, so it starts again at the next Dunree restart | Filter / sniff plugins are skipped (fail **open**, even if you consented to fail-closed). Static capture paths disappear | `mod/plugins/lifecycle.go:145-158`, `mod/plugins/hooks_pipeline.go:72` |
 | **Exits cleanly** (exit 0) by itself | **Nothing.** `cmd.Wait` returns nil and the code only handles errors; plugin stays `Enabled=true` and `IsRunning()` stays true | Filters: each call fails (connection refused) -> breaker opens after 5 -> skipped (fail open), or **503 forever** if fail-closed consent was given. Static capture: blank `200 OK` (next row) | `mod/plugins/lifecycle.go:146-157`, `mod/plugins/plugins.go:343-345` |
 | Capture target (static or dynamic ingress) unreachable | `dpcore` returns `502, err` without writing; both callers **ignore the return value**, so nothing is written | Go sends an **empty 200 OK** (from reading the code; not verified by running) | `mod/plugins/plugins.go:330`, `mod/plugins/dynamic_forwarder.go:80`, `mod/dynamicproxy/dpcore/dpcore.go:555-560` |
 | **Hangs** (alive, never answers) | Filter / sniff calls time out (2 s default, max 10 s) and feed the breaker: 5 consecutive failures -> skipped for 30 s -> one probe call | Up to 2 s extra latency on requests until the breaker opens, then fail-open (or 503 with consent). Concurrent requests in that first window all wait | `mod/plugins/hooks_runtime.go:30-33`, `:145-189`, `:226-254` |
@@ -112,13 +112,13 @@ check whether Data-Shield is actually attached to any proxy rule, and look in th
 | Returns **garbage** to a filter call | Rejected: non-200, invalid JSON, oversize (>256 KiB) or invalid verdict counts as a failure; header / path / query changes are validated | Request continues untouched (fail open) | `mod/plugins/hooks_runtime.go:267-289`, `mod/plugins/hooks_validate.go:249`, tests `TestInvalidVerdictIsAFailureAndLeavesRequestUntouched`, `TestOversizedVerdictRejected` |
 | Returns garbage on a capture | Passed straight to the visitor: a capturing plugin owns the whole response | Whatever the plugin sent | `mod/plugins/plugins.go:302-340` |
 | Returns garbage at introspect | Not loaded, error logged; **the plugin does not appear in the UI at all** | n/a | `mod/plugins/plugins.go:143-147`, `mod/plugins/introspect.go:71-74` |
-| **Floods logs** | Every line goes to the main log, no rate limit, no per-plugin file. Event delivery failures are also logged once per event | Disk fills; real Zoraxy messages are drowned | `mod/plugins/lifecycle.go:230-246`, `mod/eventsystem/event_system.go:164-168` |
-| **Uses all memory / CPU** | No limit of any kind (no rlimit, no cgroup). Under systemd the plugin is in Zoraxy's cgroup, so a unit-level memory limit would hit Zoraxy too | Proxy slows or is OOM-killed | `mod/plugins/lifecycle.go:69-86` (nothing set); `docs/deploy/zoraxy.service` has no `MemoryMax` |
-| Event receiver slow / down | One goroutine **per event per subscriber**, new `http.Client` each time, 10 s timeout, no queue limit. After a crash the subscription is kept, so every event logs a delivery error | Under an attack from blacklisted IPs: goroutine pile-up and log flood in Zoraxy | `mod/plugins/eventlistener.go:23-84`, `mod/eventsystem/event_system.go:145-176`, emitted per blocked request at `mod/dynamicproxy/access.go:77-86` |
+| **Floods logs** | Every line goes to the main log, no rate limit, no per-plugin file. Event delivery failures are also logged once per event | Disk fills; real Dunree messages are drowned | `mod/plugins/lifecycle.go:230-246`, `mod/eventsystem/event_system.go:164-168` |
+| **Uses all memory / CPU** | No limit of any kind (no rlimit, no cgroup). Under systemd the plugin is in Dunree's cgroup, so a unit-level memory limit would hit Dunree too | Proxy slows or is OOM-killed | `mod/plugins/lifecycle.go:69-86` (nothing set); `docs/deploy/zoraxy.service` has no `MemoryMax` |
+| Event receiver slow / down | One goroutine **per event per subscriber**, new `http.Client` each time, 10 s timeout, no queue limit. After a crash the subscription is kept, so every event logs a delivery error | Under an attack from blacklisted IPs: goroutine pile-up and log flood in Dunree | `mod/plugins/eventlistener.go:23-84`, `mod/eventsystem/event_system.go:145-176`, emitted per blocked request at `mod/dynamicproxy/access.go:77-86` |
 | **Upgraded while running** (store update) | Stops the plugin, downloads to `.download`, **deletes the old binary**, renames, re-introspects, restarts. A failed download returns **with the plugin left stopped**. No checksum, no backup, no rollback, no health check after restart | Plugin feature gone until someone notices | `mod/plugins/store_update.go:103-206` (stop `:134-140`, failed download `:145-149`, delete `:152`) |
 | Binary replaced on disk by hand | Not noticed (hot reload only in `-dev`). Next start uses the new file without any check | n/a | `start.go:455`, `mod/plugins/development.go:63-113` |
 | **Fails to start at boot** | Error logged, no retry, UI shows "Start" with no reason | Plugin feature silently missing | `mod/plugins/plugins.go:158-163` |
-| Stop called on a plugin that never started | `thisPlugin.process` is nil -> **nil-pointer panic** in the HTTP handler (recovered by `net/http`, so Zoraxy survives; not verified by running) | n/a | `mod/plugins/lifecycle.go:288` |
+| Stop called on a plugin that never started | `thisPlugin.process` is nil -> **nil-pointer panic** in the HTTP handler (recovered by `net/http`, so Dunree survives; not verified by running) | n/a | `mod/plugins/lifecycle.go:288` |
 
 Also found while reading (correctness, not reliability features): `Plugin.Enabled` is written by the exit goroutine and
 read on every request with no lock, and `StopPlugin` polls `ProcessState`, which only the other goroutine's `cmd.Wait`
@@ -149,18 +149,18 @@ Plugins only apply to proxy rules whose **tags** match the plugin's group (`conf
 
 | Question | Answer | Evidence |
 |---|---|---|
-| Does a plugin run as root? | **By default it runs as the same user as Zoraxy** (root on your servers). Optional `-plugin_user` / `-plugin_group` drop to an unprivileged user; refuses uid/gid 0; Zoraxy must be root to use it | `def.go:126-127`, `mod/plugins/runas_unix.go:137-158` |
-| Is that applied everywhere? | **No.** `-introspect` (which runs every newly downloaded binary immediately) and "Rebuild" (`make` / `go build`) always run as Zoraxy's user | `mod/plugins/introspect.go:61`, `mod/plugins/hotrebuild.go:50-78` |
+| Does a plugin run as root? | **By default it runs as the same user as Dunree** (root on your servers). Optional `-plugin_user` / `-plugin_group` drop to an unprivileged user; refuses uid/gid 0; Dunree must be root to use it | `def.go:126-127`, `mod/plugins/runas_unix.go:137-158` |
+| Is that applied everywhere? | **No.** `-introspect` (which runs every newly downloaded binary immediately) and "Rebuild" (`make` / `go build`) always run as Dunree's user | `mod/plugins/introspect.go:61`, `mod/plugins/hotrebuild.go:50-78` |
 | What can it read? | Everything that user can read: with the default that is `sys.db`, `conf/`, private keys. No sandbox | (no confinement code exists) |
 | Secrets | API key and invoke token are in the command line, readable by **any local user** via `ps` / `/proc/<pid>/cmdline` | `mod/plugins/lifecycle.go:65-69` |
-| Zoraxy API surface | Only routes registered in `plugin_api.go` under `/plugin/api/...`, on a loopback listener, Bearer API key, exact method + path match. Includes **write** routes (blacklist/whitelist add/remove, upstream add/remove, draining) | `plugin_api.go:21-133`, `mod/auth/plugin_middleware.go:36-66`, `mod/auth/plugin_apikey_manager.go:79-93` |
+| Dunree API surface | Only routes registered in `plugin_api.go` under `/plugin/api/...`, on a loopback listener, Bearer API key, exact method + path match. Includes **write** routes (blacklist/whitelist add/remove, upstream add/remove, draining) | `plugin_api.go:21-133`, `mod/auth/plugin_middleware.go:36-66`, `mod/auth/plugin_apikey_manager.go:79-93` |
 | How are permissions declared? | The plugin lists `permitted_api_endpoints` in its own manifest. They are **granted automatically at every start**; you are shown them (store and info dialog) but never asked to approve, and a new version can ask for more without you noticing | `mod/plugins/lifecycle.go:54-63`, `web/snippet/pluginInfo.html:158`, `web/components/appstore.html:1202` |
 | Plugin UI | Proxied under the admin origin at `/plugin.ui/<id>/`, gets the admin CSRF token header and (from reading the code) the admin session cookie; shown in an iframe with `sandbox="allow-scripts allow-same-origin"`, which on the same origin is no real sandbox. **A plugin UI can call any admin API.** Viewer accounts are kept out | `mod/plugins/ui_router.go:47-57`, `web/components/plugincontext.html:26`, `router.go:47`, `:56-66` |
-| Calls from Zoraxy to the plugin | Filter, sniff and capture calls carry a per-start secret (`X-Zoraxy-Plugin-Token`); **event calls do not**, so any local process can fake events to a plugin | `mod/plugins/hooks_runtime.go:238-240`, `mod/plugins/eventlistener.go:54-55` |
+| Calls from Dunree to the plugin | Filter, sniff and capture calls carry a per-start secret (`X-Zoraxy-Plugin-Token`); **event calls do not**, so any local process can fake events to a plugin | `mod/plugins/hooks_runtime.go:238-240`, `mod/plugins/eventlistener.go:54-55` |
 | Store trust | Official index is a GitHub raw URL; extra sources may be added (http allowed). If two sources offer the same plugin ID, **the higher version wins**, so an added source can take over updates of a plugin. No checksum, no signature. Install folder is built from the plugin **name** (not sanitised; a name with `../` would escape `plugins/`) | `start.go:450-453`, `mod/plugins/store_sources.go:81-103`, `mod/plugins/store_update.go:52-63`, `mod/plugins/store.go:113-187` |
 | Audit | Admin changes through `/api/plugins/` are audit-logged under "plugins" | `mod/secaudit/http.go:56` |
 
-In one sentence: **an enabled plugin is as powerful as Zoraxy's own user, and its UI is as powerful as the admin.** That is
+In one sentence: **an enabled plugin is as powerful as Dunree's own user, and its UI is as powerful as the admin.** That is
 acceptable for code you trust, but it is why reliability and supply-chain checks matter.
 
 ### 1.5 The UI today
@@ -188,7 +188,7 @@ acceptable for code you trust, but it is why reliability and supply-chain checks
   Not in the request path, but every blocked request starts one goroutine and one HTTP call to it (section 1.2). It can
   change your blacklists. Its download URL is `.../releases/latest/download/...`, so what you install is whatever the
   author published last, not necessarily v0.4.0.
-- **No-code actions now:** run Zoraxy with `-plugin_user=zoraxy-plugins` (create the user; `chown -R` the plugin folders as
+- **No-code actions now:** run Dunree with `-plugin_user=dunree-plugins` (create the user; `chown -R` the plugin folders as
   the error message suggests); grep the log for `encounted a fatal error. Disabling plugin` and `Failed to dispatch`;
   keep fail-closed consent **off** until phase 1 fixes its crash behaviour.
 
@@ -217,7 +217,7 @@ Severity: **S1** visitor outage or security exposure, **S2** silent loss of prot
 | F14 | Tampered or swapped binary | no checksum or signature; "latest" URLs | sha256 + ed25519 signed index, pinned URLs; warn (default) / enforce | S1 |
 | F15 | Store source hijacks a plugin ID | higher version from any source wins | updates only from the source the plugin was installed from | S1 |
 | F16 | Path from plugin name | not sanitised | folder from sanitised ID | S2 |
-| F17 | Plugin is root | default same user as Zoraxy; introspect and rebuild always | documented recommendation; introspect under `-plugin_user` too | S1 |
+| F17 | Plugin is root | default same user as Dunree; introspect and rebuild always | documented recommendation; introspect under `-plugin_user` too | S1 |
 | F18 | Secrets on command line | visible via `ps` | delivered on stdin for SDKs that support it (negotiated), old way kept for old plugins | S2 |
 | F19 | Permissions granted silently | auto-granted at every start | shown as a diff on install/update; approval required (opt-in, log-only default) | S2 |
 | F20 | Plugin UI = admin | same origin, admin cookie, CSRF token | opt-in isolated UI origin without admin cookie | S1 |
@@ -247,9 +247,9 @@ Severity: **S1** visitor outage or security exposure, **S2** silent loss of prot
 | Version / API contract | `hooks.version` only | `api_version` in introspect, supported range in configure, compatibility matrix, warn on mismatch |
 | Safe install / upgrade / rollback | none | staging folder, size limit, sha256 + signature, introspect in staging as the plugin user, atomic swap, keep previous version, post-start health check, rollback |
 | Signature checks | release updater only (`tools/sign_release.go`) | the same ed25519 format for a fork-curated plugin index |
-| Conformance kit | none | `zoraxy-plugin-check`: runs a binary through introspect, configure, readiness, health, term, verdict schema, token check, timeouts, log and memory behaviour; JSON report |
+| Conformance kit | none | `dunree-plugin-check`: runs a binary through introspect, configure, readiness, health, term, verdict schema, token check, timeouts, log and memory behaviour; JSON report |
 | Fault-injection suite | `TestPluginDownDoesNotHang`, breaker / timeout tests with in-process fakes, e2e kill -9 in `tools/e2e/scenarios/s12_plugin.py` | a real "chaos" plugin binary with modes: crash at start / after N s, exit 0, panic in handler, hang, slow, bad JSON, huge body, no newline output, log flood, memory balloon, ignore SIGTERM, introspect hang / garbage, fork children |
-| Stable SDK with semver | copied folder (`example/plugins/build_all.sh` copies `src/mod/plugins/zoraxy_plugin`) | a Go module with tags (`sdk/v1.x.y`), changelog, compatibility tests with binaries built against older SDKs |
+| Stable SDK with semver | copied folder (`example/plugins/build_all.sh` copies `src/mod/plugins/dunree_plugin`) | a Go module with tags (`sdk/v1.x.y`), changelog, compatibility tests with binaries built against older SDKs |
 | Observability | log lines | Prometheus series per plugin (calls, failures, latency, breaker state, restarts, dropped events, log lines dropped) via the existing `-metrics` endpoint (off by default), per-plugin log file, last error in the API |
 | UI states | "experimental", "No Plugins Installed" | correct empty states ("3 installed, none running"), health column, banners for crashed / crash-looping / unsigned / new permissions |
 | Documentation | upstream author docs in `docs/plugins/docs/` | operator guide: trust model, `-plugin_user`, failure policies, known limits; author guide: contract, health endpoint, conformance; ROADMAP section 8 is stale (lists hooks as planned, `ROADMAP.md:100-103`) |
@@ -315,22 +315,22 @@ Tests that start real plugin processes are light (tiny Go or shell binaries) but
 
 | Item | Scope | Files / areas | Test that proves it | Known limits | Days | Risk |
 |---|---|---|---|---|---|---|
-| 1.1 Supervisor | per-plugin goroutine owns the process; restart policy `never` (default, = today) or `on-failure` with backoff 1 s -> 5 min and crash-loop stop (5 in 10 min); in `never` mode it logs "would restart in Xs" | new `mod/plugins/supervisor.go`, `lifecycle.go` | chaos crash every 1 s -> backoff timings, crash-loop state, no restart in `never` | backoff state in memory, reset on Zoraxy restart | 2.5 | medium |
-| 1.2 Readiness and health | measure time-to-listen (log-only); opt-in gate that attaches hooks only after TCP accept (timeout 10 s); optional liveness probe (`/health` if declared, else TCP) with restart after N failures | `supervisor.go`, SDK `zoraxy_plugin.go` (optional `HealthPath`) | chaos "slow start" and "hang"; probe-triggered restart only when opted in | TCP probe cannot see a deadlocked handler; `/health` needs SDK support | 1.5 | medium |
+| 1.1 Supervisor | per-plugin goroutine owns the process; restart policy `never` (default, = today) or `on-failure` with backoff 1 s -> 5 min and crash-loop stop (5 in 10 min); in `never` mode it logs "would restart in Xs" | new `mod/plugins/supervisor.go`, `lifecycle.go` | chaos crash every 1 s -> backoff timings, crash-loop state, no restart in `never` | backoff state in memory, reset on Dunree restart | 2.5 | medium |
+| 1.2 Readiness and health | measure time-to-listen (log-only); opt-in gate that attaches hooks only after TCP accept (timeout 10 s); optional liveness probe (`/health` if declared, else TCP) with restart after N failures | `supervisor.go`, SDK `dunree_plugin.go` (optional `HealthPath`) | chaos "slow start" and "hang"; probe-triggered restart only when opted in | TCP probe cannot see a deadlocked handler; `/health` needs SDK support | 1.5 | medium |
 | 1.3 Timeouts everywhere | capture ingress and UI proxies get a response-header timeout and the existing breaker; per-request total plugin budget (log-only: count and log requests over budget; opt-in enforce); admin can lower a plugin's timeout | `plugins.go`, `dynamic_forwarder.go`, `ui_router.go`, `hooks_pipeline.go`, `traffic_router.go` | chaos hang on static capture returns 504 within the timeout; budget counter | capture timeout default must be generous (long downloads); websockets exempt | 1.5 | medium |
 | 1.4 Consistent fail-closed | opt-in per plugin "also block while this plugin is not running"; default: log-only counter "N requests passed while a fail-closed plugin was down", shown in UI | `hooks_pipeline.go`, `traffic_router.go`, `hooks_runtime.go` | chaos crash with consent: default passes + counts; opted in: 503 | only for plugins that declare fail_closed | 1 | medium (can block traffic when turned on) |
 | 1.5 Bounded events | per-plugin queue (e.g. 1000), one worker, shared client, drop oldest + count, one log line per minute; invoke token sent on events (additive) | `eventlistener.go`, `mod/eventsystem/event_system.go` | 50k events at a hung subscriber: goroutines stay bounded, drops counted | dropped events are lost (by design) | 1 | low |
 | 1.6 Log handling | per-plugin log file with rotation and ring buffer (always); rate limit lines/s (opt-in, default off: count only) | `lifecycle.go`, `mod/info/logger` | chaos flood: main log stays small, counter matches | per-plugin files add disk use (capped) | 1 | low |
-| 1.7 Resource limits | opt-in per plugin: memory, CPU, tasks via `systemd-run --scope` when running under systemd as root; else `prlimit` (NOFILE, NPROC, CORE); process group kill (F27) | new `limits_linux.go`, `limits_other.go`, `runas_unix.go` | chaos memory balloon is killed at the limit and shows `crashed (OOM)`; Zoraxy unaffected | needs systemd + root for memory/CPU; `RLIMIT_AS` not used (breaks Go programs); none on Windows; reference unit has `ProtectControlGroups=yes`, so the scope route goes through systemd, not cgroupfs | 2 | medium-high |
+| 1.7 Resource limits | opt-in per plugin: memory, CPU, tasks via `systemd-run --scope` when running under systemd as root; else `prlimit` (NOFILE, NPROC, CORE); process group kill (F27) | new `limits_linux.go`, `limits_other.go`, `runas_unix.go` | chaos memory balloon is killed at the limit and shows `crashed (OOM)`; Dunree unaffected | needs systemd + root for memory/CPU; `RLIMIT_AS` not used (breaks Go programs); none on Windows; reference unit has `ProtectControlGroups=yes`, so the scope route goes through systemd, not cgroupfs | 2 | medium-high |
 | 1.8 UI health | health column, crash history, restart button, policy and limits per plugin, banners for crashed / crash-looping; drop the "experimental" label only when phase 1 is complete **and** the fault suite is green | `web/components/plugins.html`, `web/snippet/pluginInfo.html` | ui-smoke: crash shows red state and history; restart works | Chromium only | 1.5 | low |
 
 ### Phase 2: contract, SDK, signed store, safe install (12-16 days)
 
 | Item | Scope | Files / areas | Test that proves it | Known limits | Days | Risk |
 |---|---|---|---|---|---|---|
-| 2.1 Contract | `api_version` in introspect (missing = 0, legacy), supported range sent in configure; warn on mismatch (default), opt-in refuse; written spec `docs/plugins/contract.md` with stability rules | `zoraxy_plugin/zoraxy_plugin.go`, `introspect.go`, `lifecycle.go` | golden manifests from every example plugin and from the three installed plugins parse unchanged; mismatch warning test | old third-party plugins stay "legacy" until their authors update | 2 | low |
-| 2.2 SDK module | turn `zoraxy_plugin` into a Go module with semver tags and changelog; keep the copy workflow working; compatibility test: binaries built with SDK v1.0 still pass the fault suite against new Zoraxy | `src/mod/plugins/zoraxy_plugin/go.mod`, `example/plugins/build_all.sh`, CI | compat test job | module path decision (in-repo vs separate repo) | 2 | medium |
-| 2.3 Secrets off the command line | SDK declares `config_via: stdin`; Zoraxy writes configure JSON on stdin for such plugins, `-configure` stays for others | `lifecycle.go`, SDK | `ps`-style check: cmdline of a new-SDK plugin contains no key | old plugins keep the leak until rebuilt | 1 | low |
+| 2.1 Contract | `api_version` in introspect (missing = 0, legacy), supported range sent in configure; warn on mismatch (default), opt-in refuse; written spec `docs/plugins/contract.md` with stability rules | `dunree_plugin/dunree_plugin.go`, `introspect.go`, `lifecycle.go` | golden manifests from every example plugin and from the three installed plugins parse unchanged; mismatch warning test | old third-party plugins stay "legacy" until their authors update | 2 | low |
+| 2.2 SDK module | turn `dunree_plugin` into a Go module with semver tags and changelog; keep the copy workflow working; compatibility test: binaries built with SDK v1.0 still pass the fault suite against new Dunree | `src/mod/plugins/dunree_plugin/go.mod`, `example/plugins/build_all.sh`, CI | compat test job | module path decision (in-repo vs separate repo) | 2 | medium |
+| 2.3 Secrets off the command line | SDK declares `config_via: stdin`; Dunree writes configure JSON on stdin for such plugins, `-configure` stays for others | `lifecycle.go`, SDK | `ps`-style check: cmdline of a new-SDK plugin contains no key | old plugins keep the leak until rebuilt | 1 | low |
 | 2.4 Signed index | fork-curated index: per platform pinned URL + sha256 + size, signed with ed25519 in the `tools/sign_release.go` format (separate plugin key recommended); verification mode `off` / `warn` (default) / `enforce`; updates only from the source of install (F15) | `store.go`, `store_update.go`, `store_sources.go`, new `store_verify.go`, `tools/` | tampered binary, wrong hash, bad signature, replayed old index -> warn / refuse per mode | only plugins the fork curates are signed; upstream index has no hashes (shown "unsigned") | 3 | medium |
 | 2.5 Safe install / update / rollback | download to `plugins/.staging/<id>/` with size cap and timeouts, verify, introspect there **as the plugin user**, atomic swap keeping `previous/`, start, health check, auto-rollback (opt-in) or manual rollback button; failed download restarts the old version | `store.go`, `store_update.go`, `introspect.go`, UI | chaos "new version crashes at start" -> rollback restores old, plugin running | one previous version kept; script plugins excluded as today | 3 | medium |
 | 2.6 Permission approval | diff of `permitted_api_endpoints` on install/update; default log-only (audit entry + UI badge), opt-in "require approval" grants only approved endpoints | `lifecycle.go`, `mod/auth/plugin_apikey_manager.go`, UI | update that adds `blacklist/ip/add` is not granted until approved (opt-in) | a plugin may still misuse rights it was granted | 1.5 | low |
@@ -341,7 +341,7 @@ Tests that start real plugin processes are light (tiny Go or shell binaries) but
 | Item | Scope | Files / areas | Test that proves it | Known limits | Days | Risk |
 |---|---|---|---|---|---|---|
 | 3.1 Reference plugins | `fork-ref-filter`, `fork-ref-events`, `fork-ref-ui-api` (section 4), built and signed with releases, listed in the fork index | `example/plugins/fork-ref-*`, `tools/build_release.sh` | each passes the conformance kit and the fault suite; e2e scenario extended from `tools/e2e/scenarios/s12_plugin.py` | maintained by us; minimal features on purpose | 3-4 | low |
-| 3.2 Conformance kit | `zoraxy-plugin-check <binary>`: introspect validity and size, configure, readiness, health, `/term`, SIGTERM within 5 s, verdict schema, token check, latency under load, log volume, memory after 1k calls; JSON + text report | `tools/plugin-check/` | runs green on reference plugins, red on the chaos plugin in each bad mode | black-box; cannot prove absence of bugs | 4-5 | low |
+| 3.2 Conformance kit | `dunree-plugin-check <binary>`: introspect validity and size, configure, readiness, health, `/term`, SIGTERM within 5 s, verdict schema, token check, latency under load, log volume, memory after 1k calls; JSON + text report | `tools/plugin-check/` | runs green on reference plugins, red on the chaos plugin in each bad mode | black-box; cannot prove absence of bugs | 4-5 | low |
 | 3.3 Certify your plugins | run the kit against Data-Shield, Resource Monitor, Cloudflare WAF; publish results in `docs/plugins/`; open issues upstream with the authors; "conformance passed for API vX" flag in the fork index | docs, index | report committed | third-party fixes depend on their authors | 1-2 | low |
 
 ### Totals
@@ -363,7 +363,7 @@ opt-in for that reason), 1.4 (when switched on it can block traffic). Everything
 
 | # | Decision | My recommendation |
 |---|---|---|
-| D1 | Goal of "100 % reliable": every third-party plugin, or "the plugins you run + our reference plugins, with a kit that tells you whether any other plugin is safe"? | The second. We cannot fix other people's plugins; we can make Zoraxy survive them and tell you which ones misbehave. |
+| D1 | Goal of "100 % reliable": every third-party plugin, or "the plugins you run + our reference plugins, with a kit that tells you whether any other plugin is safe"? | The second. We cannot fix other people's plugins; we can make Dunree survive them and tell you which ones misbehave. |
 | D2 | Restart policy default once phase 1 ships | Keep `never` (today's behaviour) for all installs; turn on `on-failure` per plugin yourself after a few weeks of crash history. Revisit "on for new installs" in 4.0. |
 | D3 | Fail-closed when a consenting plugin is **not running** | Opt-in per plugin, default log-only counter. Keep fail-closed consent off on Proxy2 until then. |
 | D4 | Signed plugin index: who curates, which key, default mode | A fork-curated index signed with a **separate** plugin key (not the release key), mode `warn` by default, `enforce` opt-in. You approve each plugin added. |
@@ -403,7 +403,7 @@ Nothing here changes how a request is decided: no restart, no new timeout, no ne
 
 | Item | Where | Notes |
 |---|---|---|
-| 0.1 Chaos plugin | `src/mod/plugins/testdata/chaosplugin/main.go` | Standard library only, builds offline. Modes: `ok`, `crash`, `exit0`, `hang_start`, `never_ready`, `hang`, `slow`, `badjson`, `huge`, `logflood` (includes one 1 MiB line without newline), `ignore_sigterm`, `introspect_garbage`, `introspect_hang`. The mode comes from a `chaos.conf` file next to the binary (the plan said an environment variable; a file is needed because several chaos plugins with different modes run in one Zoraxy). `CHAOS_MODE` overrides it |
+| 0.1 Chaos plugin | `src/mod/plugins/testdata/chaosplugin/main.go` | Standard library only, builds offline. Modes: `ok`, `crash`, `exit0`, `hang_start`, `never_ready`, `hang`, `slow`, `badjson`, `huge`, `logflood` (includes one 1 MiB line without newline), `ignore_sigterm`, `introspect_garbage`, `introspect_hang`. The mode comes from a `chaos.conf` file next to the binary (the plan said an environment variable; a file is needed because several chaos plugins with different modes run in one Dunree). `CHAOS_MODE` overrides it |
 | 0.2 Fault suite | `src/mod/plugins/fault_test.go`, `fault_bugs_test.go`, `chaos_helper_test.go` | Starts the real binary through the real `StartPlugin` / `StopPlugin` / hook / capture code. 35 top-level tests (8 `TestBug...`, 27 others; 8 of them were added after the phase 0 review). Tests of a known weakness say "today" in a comment and assert today's behaviour |
 | 0.3 Status model | `src/mod/plugins/status.go`, `lifecycle.go`, `typdef.go` | Per plugin: state `running`, `stopped`, `crashed`, `exited`, `failed_to_start`; while running a health hint `ok`, `not_responding`, and in the status view of the Plugin Manager (or everywhere with the start flag `-plugin_port_probe`, off by default) also `starting` and `not_listening`; PID, started-at, exited-at, last-seen, exit code and reason, last problem, start count and restart count. Additive `Status` object in `/api/plugins/list`, `/api/plugins/info` and the tag listing. New admin route `/api/plugins/status` (GET: all plugins plus folders that failed to load; POST with `plugin_id`: one plugin plus its last 40 output lines; `probe=true` on any of them: also look whether the port of each running plugin is open) |
 | 0.4 UI | `src/web/components/plugins.html`, test: `tools/ui-smoke/plugins_smoke.py` (in `smoke.py`, alone with `--plugins-only`) and `plugins_run.sh` (adds real plugins) | Status column with badge, one line of context and the problem; "Details" row (process facts, last problem, last output); summary line; red notice for folders that could not be loaded; status refreshes every 10 s while the page is shown. Side menu: "No Plugins Installed" only when nothing is installed, else "N plugins installed, none running" or "N plugins stopped unexpectedly" (both open the Plugin Manager) |
@@ -427,7 +427,7 @@ files and the chaos plugin). Seven failed there without the race detector and pa
 | F25 | Stop of a plugin that never started: nil-pointer panic (observed, was "not verified" in 1.2) | `StopPlugin` returns `ErrPluginNotRunning`. `DisablePlugin` (the Stop button) stores enabled=false and answers OK, because what the administrator asked for is done | `TestBugStopNeverStartedPluginDoesNotPanic`, `TestFaultDisableOfDeadPluginSucceeds` |
 | F26 | Data races on `Enabled`, `ProcessState`, the proxy fields and the static capture map (a concurrent map write can end the whole process) | Runtime fields behind `Plugin.mu`; `StopPlugin` waits on a channel closed by the one goroutine that calls `Wait`; all JSON output goes through one locked snapshot | `TestBugNoDataRaceBetweenRequestsStopAndCrash`, `TestFaultConcurrentRequestsDuringStartStopCrash` under `-race` |
 | F4 | Capture target unreachable: the visitor got an **empty 200 OK** (observed, was "not verified" in 1.2) | `502` with a short text body; the failure is recorded as the last problem of the plugin. A body cut off after the headers aborts the connection, like the core proxy does | `TestBugCaptureTargetDownIs502NotEmpty200`, `TestFaultCaptureRaceWithExitGives502` |
-| F24 | A plugin installed from the store and never enabled started by itself at the next Zoraxy start | Every store install writes enabled=false, also when a state is left from an earlier install of the same ID | `TestBugInstalledPluginDoesNotAutostartAtNextBoot`, `TestFaultReinstallDoesNotInheritEnabledState` |
+| F24 | A plugin installed from the store and never enabled started by itself at the next Dunree start | Every store install writes enabled=false, also when a state is left from an earlier install of the same ID | `TestBugInstalledPluginDoesNotAutostartAtNextBoot`, `TestFaultReinstallDoesNotInheritEnabledState` |
 | F16 | The install folder was the plugin name from the store index (`../` could leave the plugin directory) | Name reduced to letters, digits, space, dot, dash, underscore; no `..`, no leading dot; falls back to the ID; the result must be a direct child of the plugin directory. Normal names are unchanged. An install into a folder that already holds something is refused (two store names can map to one folder), and a failed install removes the folder it created | `TestBugInstallFolderCannotLeavePluginDir`, `TestSafePluginFolderName`, `TestFaultInstallNeverWritesIntoAnOccupiedFolder` |
 | F10 (line cap part) | An output line without a newline grew in memory without limit; output was read one byte at a time | Lines are cut at 64 KiB and the rest of that line is dropped | `TestReadPluginOutputCutsLongLines`, `TestFaultLogFloodStaysBounded` |
 | 1.5 | Author name and contact link, descriptions and plugin IDs were put into the Plugin Manager HTML without escaping; the output of a failed "Rebuild" was put into the error dialog as HTML | Escaped; IDs are passed to the buttons as data attributes; build output is set as text | `tools/ui-smoke/plugins_smoke.py` (hostile manifest in a real instance, headless Chromium) |
@@ -450,7 +450,7 @@ before, a store update or "Rebuild" kept stale ones).
 - **Slow but inside the timeout**: counts as success, never trips the breaker, visible nowhere (F7).
 - **Bad JSON, oversized verdict**: rejected, request untouched (F8 confirmed).
 - **Hang at start**: the plugin is attached at once, calls fail fast with "connection refused" (F22).
-- **Log flood**: Zoraxy stays responsive; every line still goes to the main log (F10, the rate limit is phase 1).
+- **Log flood**: Dunree stays responsive; every line still goes to the main log (F10, the rate limit is phase 1).
 - **Ignores SIGTERM**: killed after the grace period (5 s), state `stopped`, reason `signal: killed`.
 - **Static capture after a crash**: the path falls through to the upstream of the rule.
 
@@ -467,7 +467,7 @@ before, a store update or "Rebuild" kept stale ones).
 5. After a crash the plugin's API key is revoked and its event subscriptions are removed at once.
 6. **The Plugin Manager page looks at the port of running plugins while it is on screen** (owner decision 1 in
    "Second review round" below). The page reads `/api/plugins/status?probe=true` when it is opened and every 10 s
-   while it is shown; for that call Zoraxy opens and closes one TCP connection to the loopback port of every running
+   while it is shown; for that call Dunree opens and closes one TCP connection to the loopback port of every running
    plugin, at most once per 2 s per plugin, to tell "Starting" and "Not listening" from "Running". No HTTP request is
    sent. Nothing else causes a connection: not the plugin list API (side menu, admin UI start, plugins that were
    granted the list endpoint), not a status call without `probe=true`, and not the page while another page or
@@ -496,13 +496,13 @@ before, a store update or "Rebuild" kept stale ones).
   - notes in DEVELOPMENT.md (outside this change; this section is the only documentation);
   - the "No Plugins Installed" placeholder of `index.html` (outside this change): it is still shown for the moment
     before the plugin list is loaded.
-- **Status is in memory.** It is lost when Zoraxy restarts and when a plugin is hot-reloaded in `-dev` mode.
+- **Status is in memory.** It is lost when Dunree restarts and when a plugin is hot-reloaded in `-dev` mode.
 - **Last output is 40 lines per plugin**, each cut at 512 bytes, memory only. It is returned only by
   `POST /api/plugins/status`. Plugins cannot reach it (it is not in `plugin_api.go`). Read-only (viewer) accounts are
   refused every POST that is not on their allow-list (`mod/auth/router.go`), and every POST under `/api/plugins/` is
   written to the security audit log (`mod/secaudit/http.go`), so opening "Details" leaves a `plugins.status` entry.
   Both follow from reading that code; neither was tested here.
-  The "last problem" text in the list API is worded by Zoraxy: it contains no plugin output, no text from a
+  The "last problem" text in the list API is worded by Dunree: it contains no plugin output, no text from a
   rejected plugin answer and no text of a network or HTTP client error (such a text can quote bytes the plugin sent,
   as in `malformed HTTP response "..."`, and the address or path that was called). Failed filter calls, health checks,
   captures and UI requests show one of a few fixed wordings ("the plugin did not answer in time", "connection
@@ -512,7 +512,7 @@ before, a store update or "Rebuild" kept stale ones).
   failed, an exit status, and numbers. Read-only accounts and plugins that were granted `/plugin/api/plugins/list`
   can read it. The **load failure** text of a folder that is not a plugin is the raw error of the JSON parser or the
   OS and is only in `/api/plugins/status`, which plugins cannot call.
-- **Restart count** counts starts by an administrator, a store update or a rebuild. Zoraxy still never restarts a plugin.
+- **Restart count** counts starts by an administrator, a store update or a rebuild. Dunree still never restarts a plugin.
 - **Manually copied plugins still autostart.** Only store installs write enabled=false; a folder dropped into
   `./plugins` by hand keeps the upstream rule "no stored state = start at boot" (and a state left from an earlier
   plugin with the same ID applies to it).
@@ -520,14 +520,14 @@ before, a store update or "Rebuild" kept stale ones).
   that failed to load) the store install fails with a message; the folder cannot be removed from the UI.
 - **A crash while a start or stop of the same plugin is under way** is cleaned up when that start or stop is done
   (they share one lock). A stop can take up to the grace period (5 s) plus 3 s.
-- **A stop sent a moment before the plugin crashes by itself** is still recorded as "stopped": Zoraxy cannot tell
+- **A stop sent a moment before the plugin crashes by itself** is still recorded as "stopped": Dunree cannot tell
   whether the process ended because of the request.
 - **Folder names**: Windows reserved names (`CON`, `NUL`, ...) are not handled. Existing folders are not renamed.
 - **Not covered by a test**: event unsubscription after a crash (the event system cannot list subscribers; the code path
   runs in `TestBugCrashCleansUp`), `introspect_hang` (would add 10 s per run; the
   mode exists), Windows (the suite skips), `-plugin_user` together with the new pipe handling (unit tests of `runas`
   pass, no root run was done).
-- **Children of `start.sh`** still survive a stop (F27). By design of the new pipe handling Zoraxy should now notice
+- **Children of `start.sh`** still survive a stop (F27). By design of the new pipe handling Dunree should now notice
   the exit of the script at once even if a child keeps the output pipe open; this case has no test.
 - **Failed-to-load folders** are shown with the raw error text of the JSON parser or the OS. The folder cannot be
   removed from the UI.
@@ -543,7 +543,7 @@ before, a store update or "Rebuild" kept stale ones).
 cd src
 GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test ./mod/plugins/ -run 'TestBug|TestFault' -count=1
 GOTMPDIR=$HOME/.cache/go-tmp CGO_ENABLED=1 ~/capped.sh go test -race ./mod/plugins/ -count=1     # needs gcc
-cd .. && PY=<python with playwright> tools/ui-smoke/plugins_run.sh     # UI scenario with real plugins; ZORAXY_BIN=<binary> skips the build
+cd .. && PY=<python with playwright> tools/ui-smoke/plugins_run.sh     # UI scenario with real plugins; DUNREE_BIN=<binary> skips the build
 PY=<python with playwright> tools/ui-smoke/smoke.py --url <throw-away instance> --plugins-only   # the mocked part alone
 ```
 
@@ -573,13 +573,13 @@ restart, no probe, fail-open, no limit, output in the main log.
 |---|---|---|---|
 | 1.1 Supervisor | `src/mod/plugins/supervisor.go`, `lifecycle.go` | Restart policy per plugin: `never`, `on-failure` (non-zero exit or signal), `always` (every exit nobody asked for). Backoff 1 s, 2 s, 4 s ... capped at 5 min, each delay multiplied by a random factor 0.8 to 1.2. A process that ran 1 minute resets the backoff. 5 unexpected exits (or failed automatic starts) within 10 minutes: state `crash_loop`, no more restarts until Start is pressed. New states `restarting` and `crash_loop`. Stop, Start, an update, a rebuild and setting the policy to `never` cancel a waiting restart. A plugin that fails to start at boot is retried with the same backoff. `Manager.Close` ends all of it | `never`: one log line says what a policy would have done ("it would be started again in about 1s") |
 | 1.2 Readiness | `supervisor.go` (`watchProcess`) | Opt-in "wait for the plugin": after a start the plugin joins the request path (filters, capture paths) only when its port accepts a TCP connection (poll every 100 ms; after 10 s it is shown as "Not listening" and polled every second). Time to ready is recorded | off: attached at once, nothing is measured |
-| 1.2 Health check | `supervisor.go`, SDK field `health_path` | Opt-in, `report` or `restart`: every 10 s a GET on the `health_path` of the manifest (any 2xx is healthy, 2 s timeout, carries the invoke token), or a TCP connect when the plugin declares none. 3 failures in a row: health `unhealthy`. In mode `restart` the process is ended (SIGTERM, SIGKILL after 2 s) and the restart policy starts it again; the mode is refused while the restart policy is `never` | off: Zoraxy never connects to a plugin only to look at it |
+| 1.2 Health check | `supervisor.go`, SDK field `health_path` | Opt-in, `report` or `restart`: every 10 s a GET on the `health_path` of the manifest (any 2xx is healthy, 2 s timeout, carries the invoke token), or a TCP connect when the plugin declares none. 3 failures in a row: health `unhealthy`. In mode `restart` the process is ended (SIGTERM, SIGKILL after 2 s) and the restart policy starts it again; the mode is refused while the restart policy is `never` | off: Dunree never connects to a plugin only to look at it |
 | 1.3 Timeout and breaker on capture and UI | `capture_guard.go`, `ui_router.go`, `plugins.go`, `dynamic_forwarder.go` | Opt-in "answer timeout" (100 ms to 10 min): the plugin gets that long to start answering a static capture, a dynamic capture or a request for its UI. Then: **504** with a text (capture) or a small page (UI). After 5 failures in a row the following requests get **503** with `Retry-After: 30` at once; after 30 s one request probes the plugin. A visitor who goes away, or a body that breaks after the headers, does not count against the plugin | off: no timeout, every request is tried (failures are counted) |
 | 1.4 Fail-closed for crashes | `hooks_pipeline.go` (`guardDown`), `traffic_router.go` | Opt-in "also block requests while this plugin is not running". Needs `fail_closed` in the manifest **and** the existing consent; withdrawing the consent switches it off for good. "Not running" = crashed, exited, failed to start, waiting for a restart, crash loop, or started but not ready (readiness gate). Not: stopped by the administrator, never started. Covers pre_auth, post_auth (503), the response stage (502, upstream response dropped) and a plugin that only has a dynamic capture. Opt-out tags are respected | off: such requests pass as before, are counted (`PassedWhileDown`), logged once per minute and shown in the UI |
 | 1.5 Bounded events | `eventlistener.go` | One queue of 1000 events and one worker per plugin, one shared HTTP client. Full queue: the oldest waiting event is dropped and counted. Problems are logged at most once per minute per plugin. The invoke token is sent with events. When the process ends, the delivery in flight is cancelled and the queue is emptied | **always on** (see "changed for existing installs") |
 | 1.6 Output | `pluginlog.go` | Opt-in log file per plugin (`<log folder>/plugins/<plugin id>.log`, rotated at the size limit, one old file kept, so at most about twice the limit on disk; default limit 1 MiB). Opt-in rate limit in lines per second (burst of one second); dropped lines are counted and one line per 10 s says how many. Lines are always counted. The output ring in memory is now 200 lines (was 40) | main log, no rate limit |
 | 1.7 Limits | `limits_linux.go`, `limits_other.go`, `procgroup_unix.go` | Opt-in memory, CPU and task limits: the plugin is started through `systemd-run --scope` (as root a system scope, otherwise a user scope) with `MemoryMax` + `MemorySwapMax=0`, `CPUQuota`, `TasksMax`. Opt-in open file limit with `prlimit(2)`. A plugin killed while a memory limit applies is reported as "most likely the kernel ending it at that limit". When a limit cannot be arranged the plugin **still starts** and the status says that the limit is not enforced. Every plugin now runs in its own process group (see below) | no limit; no `systemd-run` in the command line |
-| F18 Secrets | `lifecycle.go`, SDK (`zoraxy_plugin.go`: `ConfigureVia`, `ConfigureStdinFlag`) | A plugin whose manifest says `configure_via: "stdin"` is started with `-configure-stdin` and reads the configure JSON (API key, invoke token) from its standard input. `RecvConfigureSpec` of the SDK handles both ways. Every other plugin gets `-configure=<json>` as before | per plugin, declared by the plugin |
+| F18 Secrets | `lifecycle.go`, SDK (`dunree_plugin.go`: `ConfigureVia`, `ConfigureStdinFlag`) | A plugin whose manifest says `configure_via: "stdin"` is started with `-configure-stdin` and reads the configure JSON (API key, invoke token) from its standard input. `RecvConfigureSpec` of the SDK handles both ways. Every other plugin gets `-configure=<json>` as before | per plugin, declared by the plugin |
 | 0.3 leftovers | `status.go`, `supervisor.go` | Exit history (last 20: kind, exit code, how long it ran, what the supervisor did), counters per plugin (calls, failures, timeouts, breaker opens, capture requests / failures / rejected, events sent / failed / dropped / waiting, output lines / dropped, passed and refused while down, health checks). In `/api/plugins/list` (`Status.Policy`, `Status.Counters`, additive); the history and the log file path only in `POST /api/plugins/status` | always (read-only) |
 | API | `policy.go`, `api.go` | `GET /api/plugins/policy?plugin_id=`, `POST /api/plugins/policy` (any of `restart`, `health_check`, `readiness_gate`, `block_when_down`, `capture_timeout_ms`, `log_target`, `log_max_kb`, `log_rate_limit`, `memory_max_mb`, `cpu_quota_percent`, `tasks_max`, `max_open_files`), `POST /api/plugins/restart`. Stored in the database table `plugin_policy`, keyed by plugin ID. No existing route changed | |
 | 1.8 UI | `src/web/components/plugins.html` | New **Health** column (check passing / failing / not checked, restart policy, automatic restarts, and the counters that mean trouble). Status badges "Restarting" (with the time of the next start), "Crash loop", "Unhealthy". Red notice when a plugin is in a crash loop, yellow notice when requests passed unfiltered while a fail-closed plugin was down. **Details** now also shows counters, the exit history and a **Supervision** form for every option above. **Restart** button; **Stop** also cancels a waiting restart. The checkbox "Also block requests while this plugin is not running" sits under the fail-closed consent | |
@@ -601,7 +601,7 @@ because" under each says why (owner decisions 2 to 6 in "Second review round" be
    setting away. Events are only lost where the old code piled them up without limit, and every loss is counted.
 2. **Event calls carry `X-Zoraxy-Plugin-Token`** (additive header).
    *Kept because* it only adds a header that existing plugins ignore, and it is the only way a plugin can tell an
-   event from Zoraxy from one faked by another local process.
+   event from Dunree from one faked by another local process.
 3. **The plugin UI path answers with a status code and a small HTML page** when it cannot be served: 503 (not running,
    or breaker open), 502 (not reachable), 504 (answer timeout), 404 (unknown plugin, plugin without a page). Before:
    a JSON `{"error": ...}` with status 200. A plugin page that breaks after its headers were sent now aborts the
@@ -612,7 +612,7 @@ because" under each says why (owner decisions 2 to 6 in "Second review round" be
 4. **Every plugin runs in its own process group**, and the group is signalled on stop and killed when the plugin
    process is gone. Children of a `start.sh` no longer survive a stop (F27). A plugin that deliberately leaves a
    helper process behind in the same process group loses it. Ctrl-C in a terminal no longer reaches plugins directly;
-   Zoraxy stops them as part of its own shutdown.
+   Dunree stops them as part of its own shutdown.
    *Kept because* a process that keeps running, and keeps its port, after the administrator pressed Stop is the bug
    (F27), and since phase 0 the end of the plugin process detaches its routes anyway, so a helper that outlived it
    could not serve anything. A helper that must outlive the plugin can still leave the group with `setsid`.
@@ -621,7 +621,7 @@ because" under each says why (owner decisions 2 to 6 in "Second review round" be
    consent, and the stricter option must not outlive the consent it depends on. No install from before phase 1 has it.
 6. Nothing else. In particular a crashed plugin is **not** restarted, a crashed fail-closed plugin still lets requests
    pass (now counted), captures have no timeout, output goes to the main log, and no health check or readiness
-   check runs. The one connection Zoraxy makes to a plugin only to look at it is the port probe of phase 0: a TCP
+   check runs. The one connection Dunree makes to a plugin only to look at it is the port probe of phase 0: a TCP
    connect per running plugin while the Plugin Manager page is on screen (owner decision 1 below), and for every
    listing with the start flag `-plugin_port_probe`.
 
@@ -690,8 +690,8 @@ on phones.
 
 ### Known limits
 
-- **Supervisor state is in memory.** Backoff, crash-loop count, exit history and counters are lost when Zoraxy
-  restarts; the policy itself is stored. After a Zoraxy restart a plugin in a crash loop is started again once.
+- **Supervisor state is in memory.** Backoff, crash-loop count, exit history and counters are lost when Dunree
+  restarts; the policy itself is stored. After a Dunree restart a plugin in a crash loop is started again once.
 - **Automatic restart is not instant.** At least 0.8 s, and while the plugin is down its filters are skipped
   (fail-open) unless block-while-not-running is on. A plugin with `always` that exits cleanly every few minutes is
   restarted for ever: the crash loop only triggers at 5 exits in 10 minutes.
@@ -714,52 +714,52 @@ on phones.
 - **Block-while-not-running** does not apply while the administrator, a store update, a rebuild or a hot reload has
   the plugin stopped (those are "stopped", not "down"), and not to static capture paths (they fall through to the
   upstream when the plugin is gone, as before). It does apply when a start fails, also a start pressed by the
-  administrator or done by an update after a stop, and after a Zoraxy restart when the plugin is enabled but
+  administrator or done by an update after a stop, and after a Dunree restart when the plugin is enabled but
   fails to start. A start by the administrator, an update or a rebuild that fails is **not retried** by the restart
   policy: the caller got the error. With it on, a plugin in a crash loop means 503 on every rule it is attached to until someone acts:
   that is what was asked for, and why it is off by default.
 - **Events**: delivery is in order and one at a time, so one hung subscriber call (10 s) delays the next events for
   that plugin; dropped events are lost. Events are not retried.
-- **Log file**: rotation keeps one old file; the file is written by Zoraxy (as its user) and its name is the plugin ID
+- **Log file**: rotation keeps one old file; the file is written by Dunree (as its user) and its name is the plugin ID
   with unusual characters replaced. Lines dropped by the rate limit are not in the "last output" either. The limiter
   works on lines, and a line can be up to 64 KiB.
 - **Limits are Linux only and need systemd.** Memory, CPU and tasks need a working `systemd-run --scope` (probed with
   `true`; the first use waits for the probe, up to 5 s, after that the last answer is served at once and refreshed in
   the background when it is older than 5 minutes, so a bus that comes up later is noticed one start late); without it
   the plugin starts **without** those limits and the status says so.
-  The scope gets the description "Zoraxy plugin <id>". For a plugin that still gets `-configure=` on its command line,
+  The scope gets the description "Dunree plugin <id>". For a plugin that still gets `-configure=` on its command line,
   the secrets are also in the command line of `systemd-run` (the same process, the same exposure as without limits),
   but no longer in the journal or the unit description. Journal lines written by a build before this fix stay in the
   journal; every start of a plugin issues a new API key and invoke token, so the logged ones are void after a restart.
-  Only the **user scope** was tested (Zoraxy not root). As root (the reference unit) a system scope is used; with
+  Only the **user scope** was tested (Dunree not root). As root (the reference unit) a system scope is used; with
   `-plugin_user` the user switch is handed to `systemd-run --uid/--gid`: **neither was run**. The reference unit's
   sandboxing may forbid `systemd-run`; not checked. `RLIMIT_AS` is not used (it breaks Go programs). The "killed at the
   memory limit" text is an inference (SIGKILL while a memory limit applies), not read from the cgroup. The open file
   limit is set a moment after the process started.
-- **A plugin with limits is outside the cgroup of Zoraxy.** Its systemd scope is a cgroup of its own, so
-  `KillMode=control-group` of the Zoraxy unit does not end it. When Zoraxy crashes, is killed (SIGKILL, OOM killer)
+- **A plugin with limits is outside the cgroup of Dunree.** Its systemd scope is a cgroup of its own, so
+  `KillMode=control-group` of the Dunree unit does not end it. When Dunree crashes, is killed (SIGKILL, OOM killer)
   or gives up on the "plugin manager" shutdown step (3 s for all plugins together; one slow plugin is enough), such a
   plugin is left running. Two things then end it (see "Third review round"):
-  - *Zoraxy runs in a systemd service of the same manager* (root in a system service such as the reference unit, or
+  - *Dunree runs in a systemd service of the same manager* (root in a system service such as the reference unit, or
     a user service of the same user): the scope is bound to that service and systemd kills it **40 s after the
     service is gone**, not at once. Until then the orphan keeps its memory and its port. The 40 s are there because
-    systemd also "stops" the scope at the same moment as a normal `systemctl stop zoraxy`, and the plugin must
-    survive that until Zoraxy has drained its requests and stops the plugin itself; a stop of Zoraxy that takes
+    systemd also "stops" the scope at the same moment as a normal `systemctl stop dunree`, and the plugin must
+    survive that until Dunree has drained its requests and stops the plugin itself; a stop of Dunree that takes
     longer than 40 s (the documented worst case is 28 s) gets its limited plugins killed under it. For the same
-    reason `systemctl stop zoraxy-plugin-<...>.scope` by hand takes 40 s. `RestartMode=direct` in the unit of Zoraxy
+    reason `systemctl stop zoraxy-plugin-<...>.scope` by hand takes 40 s. `RestartMode=direct` in the unit of Dunree
     (not in the reference unit) may hide the crash from the binding (not tested). **Only the user manager was tested**, with a
     stand-in service; as root in the reference unit the same options are used but **were not run**. The Supervision
     form says "which systemd ends when <unit> is gone" when the binding is in use; when it says nothing, it is not.
   - *Every start of a plugin with limits* first kills (SIGKILL) what is left in older scopes of the same plugin of
-    the same install. That covers the restart inside the 40 s and Zoraxy outside a service (terminal, container,
+    the same install. That covers the restart inside the 40 s and Dunree outside a service (terminal, container,
     a system service that does not run as root). "Same install" is the absolute path of the plugin directory: after
     moving the install, or when the plugin is no longer started (disabled, uninstalled, its limits removed) nothing
     kills the orphan before the 40 s, and outside a service nothing at all: look for it with
     `systemctl [--user] list-units 'zoraxy-plugin-*'`. Side effect: a child of a limited plugin that left the process
     group with `setsid` survives the stop as before, but not the next start of that plugin.
-  A plugin **without** such a limit is in the cgroup of Zoraxy as before: it ends with the service under the
-  reference unit, and outlives a killed Zoraxy that was started any other way (unchanged, upstream behaviour).
-- **Close waits for a start that is under way.** A stop of Zoraxy during an automatic restart of a plugin waits for
+  A plugin **without** such a limit is in the cgroup of Dunree as before: it ends with the service under the
+  reference unit, and outlives a killed Dunree that was started any other way (unchanged, upstream behaviour).
+- **Close waits for a start that is under way.** A stop of Dunree during an automatic restart of a plugin waits for
   that start (up to 5 s with limits on the first use of systemd) before it can stop the plugin; the shutdown step
   has 3 s, so in that corner the step is abandoned and the cases above apply.
 - **Health "Not responding" and the answer timeout.** With the answer timeout on, the Health column says "Not
@@ -769,7 +769,7 @@ on phones.
   Linux the group is killed while the ended plugin is still a zombie, so its PID cannot have been reused; on other
   Unix systems it is killed directly after the reap, which leaves a very short window for PID reuse.
 - **Secrets on stdin** only for plugins that declare it. `last-configure.json` in the tests is a chaos plugin feature,
-  not something Zoraxy writes.
+  not something Dunree writes.
 - **Read-only accounts** can read the policy (`GET /api/plugins/policy`) and, as before, the status with its counters.
   Not tested with a viewer account.
 - **Audit log**: an open Details row loads its content again (a POST, which is audited) whenever the counters of the
@@ -790,7 +790,7 @@ package without `-run` for all of them).
 
 | Finding | Fix | Test |
 |---|---|---|
-| A systemd scope without `--description` put the whole command line, with `-configure=<secrets>` of legacy plugins, into the journal and the unit description (major) | `--description=Zoraxy plugin <sanitised id>` and `--unit=zoraxy-plugin-<sanitised id>-<8 hex digits>.scope` on every scope (the description also on the probe) | `TestLimitsScopeNeverCarriesTheCommandLineAsDescription` (no option before `--` holds `-configure=`), `TestFaultLimitsScopeDescriptionOnThisHost` (starts a real user scope and reads its name, its Description and every other property systemd shows for it) |
+| A systemd scope without `--description` put the whole command line, with `-configure=<secrets>` of legacy plugins, into the journal and the unit description (major) | `--description=Dunree plugin <sanitised id>` and `--unit=zoraxy-plugin-<sanitised id>-<8 hex digits>.scope` on every scope (the description also on the probe) | `TestLimitsScopeNeverCarriesTheCommandLineAsDescription` (no option before `--` holds `-configure=`), `TestFaultLimitsScopeDescriptionOnThisHost` (starts a real user scope and reads its name, its Description and every other property systemd shows for it) |
 | A visitor abort counted as a success: it reset the failure streak and closed an open capture breaker | `captureBreaker.release()`: only the probe slot is given back | `TestCaptureBreakerClientAbortIsNotASuccess`, `TestFaultAbortedRequestsToAHungCaptureDoNotResetTheBreaker` |
 | The half-open probe slot was held until the request ended (a WebSocket could hold it for hours) | The breaker gets its verdict when the plugin starts to answer (final status, 101, hijack); the end of that request no longer touches it | `TestCaptureBreakerProbeIsSettledWhenThePluginAnswers`, `TestCaptureBreakerHijackSettlesTheProbe` (unit level: no real WebSocket through the proxy core) |
 | A start that failed after a stop stayed "stopped on purpose", so block-while-not-running did not apply | `StartPlugin` clears the flag before the attempt | `TestFaultFailedStartAfterAStopIsDownNotStopped` |
@@ -810,7 +810,7 @@ What this round added:
 
 | Item | Change | Test |
 |---|---|---|
-| systemd scope | A unit name of its own next to the description (see the table above). Checked on this host: the user journal shows `Started zoraxy-plugin-test.chaos.balloon-<id>.scope - Zoraxy plugin test.chaos.balloon.` and no `-configure=` | `TestLimitsScopeNeverCarriesTheCommandLineAsDescription`, `TestFaultLimitsScopeDescriptionOnThisHost` |
+| systemd scope | A unit name of its own next to the description (see the table above). Checked on this host: the user journal shows `Started zoraxy-plugin-test.chaos.balloon-<id>.scope - Dunree plugin test.chaos.balloon.` and no `-configure=` | `TestLimitsScopeNeverCarriesTheCommandLineAsDescription`, `TestFaultLimitsScopeDescriptionOnThisHost` |
 | "Last problem" | The claim "never holds plugin text" was still not true for network errors (`malformed HTTP response "<bytes of the plugin>"`, and the path a visitor asked for). Fixed wording for every failed exchange with a plugin; the error text goes to the log only, quoted, cut, once a minute | `TestLastProblemNeverQuotesANetworkError` |
 | Port probe | Was: off unless `-plugin_port_probe`. Now: also for the status view of the Plugin Manager while that page is on screen, and for nothing else (owner decision 1) | `TestFaultPortProbeOnlyForTheStatusView`, `plugins_smoke.py` |
 | UI test | `plugins_smoke.py` is part of `smoke.py` (mocked plugin API: one good plugin with a hostile manifest, one crashed plugin, one broken folder): status badges, Details row, escaping of author / description / ID / output / last problem / limits note, the Supervision form, the probe rule. `plugins_run.sh` runs the same file plus the part against three real chaos plugins | the scenario itself |
@@ -820,7 +820,7 @@ What this round added:
 
 | Finding | Fix | Test |
 |---|---|---|
-| A plugin with a memory, CPU or task limit runs in its own systemd scope, outside the cgroup of Zoraxy: it outlived a crashed or killed Zoraxy and a shutdown step that was abandoned, kept its port and memory, and the next start added a second copy. Section 1.1 said plugins die with the service (minor) | (1) When Zoraxy runs in a service of the manager the scopes are created in (read from `/proc/self/cgroup`), the scope gets `BindsTo=<unit>`, `KillSignal=SIGCONT`, `TimeoutStopSec=40`: systemd kills it 40 s after the service is gone. No `After=` (a stop of Zoraxy would wait for the plugin) and no SIGTERM on stop (the plugin would leave the request path while Zoraxy drains). The binding is part of the systemd probe and only used when the probe with it worked, so it cannot keep a plugin from starting. (2) The scope name is now `zoraxy-plugin-<id>-<8 hex digits of the install>-<8 random hex digits>.scope`, and every start of a limited plugin first runs `systemctl kill --signal=SIGKILL` on the older scopes of that plugin of that install. Both only touch plugins with limits (opt-in); nothing changes for the others | `TestFaultLimitedPluginEndsWithTheServiceOfZoraxy` (real user scope bound to a stand-in service; the service is SIGKILLed, and in a second run stopped: the plugin is still there after 1 s and gone after the grace time), `TestFaultLeftoverScopeIsKilledAtTheNextStart` (real scopes: the orphan is killed, the new process, another plugin with a longer ID and the same plugin of another install are not), `TestSystemdUnitOfCgroup`, `TestScopePatternMatchesOnlyThePluginOfThisInstance`, `TestLimitsStartKillsLeftoverScopesAndBindsOnlyWhenTheProbeAllowsIt` |
+| A plugin with a memory, CPU or task limit runs in its own systemd scope, outside the cgroup of Dunree: it outlived a crashed or killed Dunree and a shutdown step that was abandoned, kept its port and memory, and the next start added a second copy. Section 1.1 said plugins die with the service (minor) | (1) When Dunree runs in a service of the manager the scopes are created in (read from `/proc/self/cgroup`), the scope gets `BindsTo=<unit>`, `KillSignal=SIGCONT`, `TimeoutStopSec=40`: systemd kills it 40 s after the service is gone. No `After=` (a stop of Dunree would wait for the plugin) and no SIGTERM on stop (the plugin would leave the request path while Dunree drains). The binding is part of the systemd probe and only used when the probe with it worked, so it cannot keep a plugin from starting. (2) The scope name is now `zoraxy-plugin-<id>-<8 hex digits of the install>-<8 random hex digits>.scope`, and every start of a limited plugin first runs `systemctl kill --signal=SIGKILL` on the older scopes of that plugin of that install. Both only touch plugins with limits (opt-in); nothing changes for the others | `TestFaultLimitedPluginEndsWithTheServiceOfDunree` (real user scope bound to a stand-in service; the service is SIGKILLed, and in a second run stopped: the plugin is still there after 1 s and gone after the grace time), `TestFaultLeftoverScopeIsKilledAtTheNextStart` (real scopes: the orphan is killed, the new process, another plugin with a longer ID and the same plugin of another install are not), `TestSystemdUnitOfCgroup`, `TestScopePatternMatchesOnlyThePluginOfThisInstance`, `TestLimitsStartKillsLeftoverScopesAndBindsOnlyWhenTheProbeAllowsIt` |
 | `Close` chose the plugins to stop with `IsRunning()` without the start / stop lock: an automatic restart in the middle of its start was skipped and its process never stopped (minor, needs a restart policy) | `Close` takes the lock of each plugin before it looks; an automatic restart holds it for the whole start and checks "closing" again under it | `TestFaultCloseWaitsForAnAutomaticRestartThatIsUnderWay` (fails without the fix) |
 | Health said OK while the capture / UI breaker answered every request 503 (minor) | An open capture breaker (with the answer timeout on) is "Not responding", like the filter breaker | assertion in `TestFaultHungCaptureTimesOutAndOpensTheBreaker` |
 | The help of `-plugin_port_probe`, item 6 of "Behaviour that changed" and `docs/ux/changes.md` still said nothing connects to a plugin without the flag (minor) | Reworded: the Plugin Manager page probes while it is shown, the flag extends that to every listing | text only |
@@ -864,18 +864,18 @@ phase 1, with the additions listed under "Behaviour that changed for existing in
 
 | Item | Where | What it does | Default |
 |---|---|---|---|
-| 2.1 Contract version | `src/mod/plugins/contract.go`, `introspect.go`, `lifecycle.go`, SDK `zoraxy_plugin.go` | Manifest field `api_version` (missing = 0 = legacy). Zoraxy supports 0 to 1. A plugin that declares 1 or more gets `api_version_min` / `api_version_max` in its configure payload. A plugin built for a newer contract is reported: log line at load and at start, `Status.Contract` in the API, a line in the Health column and a row in Details | **warn**: the plugin is started anyway |
+| 2.1 Contract version | `src/mod/plugins/contract.go`, `introspect.go`, `lifecycle.go`, SDK `dunree_plugin.go` | Manifest field `api_version` (missing = 0 = legacy). Dunree supports 0 to 1. A plugin that declares 1 or more gets `api_version_min` / `api_version_max` in its configure payload. A plugin built for a newer contract is reported: log line at load and at start, `Status.Contract` in the API, a line in the Health column and a row in Details | **warn**: the plugin is started anyway |
 | 2.1 Opt-in refuse | `contract.go` (`ManagerSettings.ContractMode`), `GET/POST /api/plugins/settings`, "Plugin safety settings" in the Plugin Manager | `contract_mode=refuse`: a plugin of an unsupported contract version is not started (state `failed_to_start` with the reason). Legacy plugins and plugins inside the range are never affected. A restart policy does not retry such a plugin, at boot or after a crash | off |
 | 2.1 Written contract | `docs/plugins/contract.md` | Versions, introspect, configure, calls in both directions, stop sequence, permissions, seven stability rules, and the tests that hold each claim | |
 | 2.1 Golden manifests | `src/mod/plugins/testdata/manifests/examples` (11), `.../installed` (3) | The `-introspect` output of every example plugin as built with SDK 1.0.0, and of the three plugins installed on this machine (see known limits for how they were taken) | |
-| 2.2 SDK version | `src/mod/plugins/zoraxy_plugin/zoraxy_plugin.go`, `CHANGELOG.md`, `README.txt` | `SDKVersion = "1.1.0"` (semantic versioning), `APIVersion = 1`, changelog, tag scheme `sdk/v<version>`. New in 1.1.0: `IntroSpect.APIVersion` (filled in by `ServeIntroSpect`), `ConfigureSpec.APIVersionMin/Max` with `ContractKnown`, `ContractSupported`, `SupportsAPIVersion`, a one-line warning on standard error when Zoraxy does not support the SDK's contract, `HealthHandler` | |
-| 2.2 Module path decision | `docs/plugins/contract.md` section 9 | **The SDK stays a package inside the Zoraxy module and is distributed by copying the folder; it is not a Go module of its own.** Reasons and what replaces the module (version constant, changelog, tags, frozen copy, compatibility test) are written there | |
+| 2.2 SDK version | `src/mod/plugins/dunree_plugin/dunree_plugin.go`, `CHANGELOG.md`, `README.txt` | `SDKVersion = "1.1.0"` (semantic versioning), `APIVersion = 1`, changelog, tag scheme `sdk/v<version>`. New in 1.1.0: `IntroSpect.APIVersion` (filled in by `ServeIntroSpect`), `ConfigureSpec.APIVersionMin/Max` with `ContractKnown`, `ContractSupported`, `SupportsAPIVersion`, a one-line warning on standard error when Dunree does not support the SDK's contract, `HealthHandler` | |
+| 2.2 Module path decision | `docs/plugins/contract.md` section 9 | **The SDK stays a package inside the Dunree module and is distributed by copying the folder; it is not a Go module of its own.** Reasons and what replaces the module (version constant, changelog, tags, frozen copy, compatibility test) are written there | |
 | 2.2 Compatibility test | `testdata/sdk-1.0.0/` (frozen SDK), `testdata/sdkplugin/` (fixture plugin written against the public SDK API), `phase2_helper_test.go`, `phase2_contract_test.go` | The fixture is built twice, offline: against the frozen SDK 1.0.0 and against the current SDK. Each binary goes through load, start, configure, API key, filter (modify and deny), static capture, UI, 20 events with the invoke token, crash, automatic restart, stop | |
 | 2.3 Secrets off the command line | phase 1 code in `lifecycle.go` (confirmed, unchanged), SDK `RecvConfigureSpec`, examples | The lifecycle side was built in phase 1 and is confirmed by a new test with a plugin built from the real SDK. New: the reference examples `api-call-example` and `filter-example` declare `ConfigureVia: plugin.ConfigureViaStdin` (and `HealthPath` with `plugin.HealthHandler`); the test now also reads `/proc/<pid>/environ` | per plugin, declared by the plugin |
-| 2.6 Permission approval | `src/mod/plugins/permissions.go`, `lifecycle.go`, `mod/auth/plugin_apikey_manager.go` (`SetPermittedEndpointsForPlugin`), `GET/POST /api/plugins/permissions` | Per plugin ID Zoraxy stores which `permitted_api_endpoints` (method + path) are approved (table `plugin_permissions`). At every load (boot, install, update, reload) the manifest is compared with it. Endpoints that are not approved: one log line, one security audit entry `plugins.permissions.new` (actor "plugin manager", with the endpoints and whether they were granted), `Status.Permissions` in the API, a line in the Health column, a notice above the list, and a "Zoraxy API permissions" block in Details with Approve / Withdraw per endpoint and "Approve the N ..." | **log-only**: every endpoint of the manifest is granted, as before |
+| 2.6 Permission approval | `src/mod/plugins/permissions.go`, `lifecycle.go`, `mod/auth/plugin_apikey_manager.go` (`SetPermittedEndpointsForPlugin`), `GET/POST /api/plugins/permissions` | Per plugin ID Dunree stores which `permitted_api_endpoints` (method + path) are approved (table `plugin_permissions`). At every load (boot, install, update, reload) the manifest is compared with it. Endpoints that are not approved: one log line, one security audit entry `plugins.permissions.new` (actor "plugin manager", with the endpoints and whether they were granted), `Status.Permissions` in the API, a line in the Health column, a notice above the list, and a "Dunree API permissions" block in Details with Approve / Withdraw per endpoint and "Approve the N ..." | **log-only**: every endpoint of the manifest is granted, as before |
 | 2.6 Opt-in "require approval" | `ManagerSettings.RequirePermissionApproval`, "Plugin safety settings" | Only approved endpoints are granted. The plugin still gets an API key; a call to an endpoint that is not approved is answered as not permitted. Approving or withdrawing changes what the key of the **running** process opens, at once | off |
-| Example plugins | `example/plugins/*/mod/zoraxy_plugin` | All eleven examples carry SDK 1.1.0 and build offline with it | |
-| Author docs | `docs/plugins/docs/2. Architecture/8. Contract Version, Health and Secrets.md`, note in `3. Configure.md`, `zoraxy_plugin API.md` regenerated, `index.json` | `api_version`, `health_path`, `configure_via`, and what approval means for authors | |
+| Example plugins | `example/plugins/*/mod/dunree_plugin` | All eleven examples carry SDK 1.1.0 and build offline with it | |
+| Author docs | `docs/plugins/docs/2. Architecture/8. Contract Version, Health and Secrets.md`, note in `3. Configure.md`, `dunree_plugin API.md` regenerated, `index.json` | `api_version`, `health_path`, `configure_via`, and what approval means for authors | |
 | UI | `src/web/components/plugins.html` | As above, plus the disclosure "Plugin safety settings" with the two switches | |
 
 ### Behaviour that changed for existing installs
@@ -887,12 +887,12 @@ phase 1, with the additions listed under "Behaviour that changed for existing in
    approved" in the Plugin Manager and gets one audit entry. It still receives every endpoint it asks for.
 3. **`/api/plugins/list`, `/api/plugins/info` and `/api/plugins/status`** carry two more objects in `Status`:
    `Contract` and `Permissions` (additive).
-4. **A plugin that is rebuilt with SDK 1.1.0** declares `"api_version": 1` without a code change, and Zoraxy then
+4. **A plugin that is rebuilt with SDK 1.1.0** declares `"api_version": 1` without a code change, and Dunree then
    adds `api_version_min` / `api_version_max` to its configure payload. A plugin that is not rebuilt gets byte for
    byte what it got before (`TestFaultContractRangeOnlyForPluginsThatDeclareAVersion`,
    `TestSDKCompatBinaryBuiltWithOldSDKStillPasses`).
 5. **The example plugins `api-call-example` and `filter-example`** now receive their configuration on standard
-   input and serve `/health`. Both still work with a Zoraxy that passes `-configure=`.
+   input and serve `/health`. Both still work with a Dunree that passes `-configure=`.
 6. **Uninstall** also forgets the approved permissions of the plugin ID.
 7. Nothing else. No request is decided differently, no plugin is refused, no permission is withheld unless one of
    the two switches is turned on.
@@ -908,10 +908,10 @@ phase 1, with the additions listed under "Behaviour that changed for existing in
 | Version states, invalid values | `TestContractStatesAndSanitize`, `TestSDKContractHelpers` |
 | Mismatch: warn by default, refuse on opt-in, setting stored, legacy and current plugins unaffected | `TestFaultContractMismatchWarnsByDefaultAndRefusesOnOptIn`, `TestFaultRefusedPluginIsNotRetriedAtBoot` |
 | Range only for plugins that declare a version | `TestFaultContractRangeOnlyForPluginsThatDeclareAVersion` |
-| A binary built with the old SDK passes against this Zoraxy; so does one built with the current SDK | `TestSDKCompatBinaryBuiltWithOldSDKStillPasses`, `TestSDKCompatBinaryBuiltWithCurrentSDKPasses`, `TestSDKFrozenCopyIsNotTheCurrentSDK` (the frozen copy was not overwritten; the changelog has an entry for `SDKVersion`) |
+| A binary built with the old SDK passes against this Dunree; so does one built with the current SDK | `TestSDKCompatBinaryBuiltWithOldSDKStillPasses`, `TestSDKCompatBinaryBuiltWithCurrentSDKPasses`, `TestSDKFrozenCopyIsNotTheCurrentSDK` (the frozen copy was not overwritten; the changelog has an entry for `SDKVersion`) |
 | ps-style check with the real SDK: no key, no token in the command line or the environment | `TestFaultSDKPluginSecretsAreNotInTheProcessList`; from phase 1: `TestFaultSecretsOnStdinAreNotOnTheCommandLine` |
 | `HealthHandler` of the SDK with the health check | `TestFaultSDKHealthHandlerIsSeenByTheHealthCheck` |
-| Baseline, new plugin pending, reported once, also after a Zoraxy restart | `TestPermissionBaselineThenNewPluginsArePending` |
+| Baseline, new plugin pending, reported once, also after a Dunree restart | `TestPermissionBaselineThenNewPluginsArePending` |
 | Default: an update that adds an endpoint gets it, with an audit entry and a badge | `TestFaultPermissionAddedByAnUpdateIsGrantedAndReportedByDefault` (real `UpdatePlugin` through a local store fixture) |
 | Opt-in: an update that adds `blacklist/ip/add` is not granted until approved; approve one, refuse nonsense, withdraw, approve all, restart, endpoint dropped and re-added is new again, option off again | `TestFaultPermissionAddedByAnUpdateIsNotGrantedUntilApproved` |
 | Opt-in: a new plugin gets a key that opens nothing; approval stored | `TestFaultNewPluginGetsNothingUntilApprovedWhenApprovalIsRequired` |
@@ -942,9 +942,9 @@ exact runs. `go vet ./mod/plugins/...`, `GOOS=windows go vet ./mod/plugins/...` 
 
 ### Known limits
 
-- **The contract version is a declaration, not a proof.** Zoraxy cannot tell whether a plugin that says
+- **The contract version is a declaration, not a proof.** Dunree cannot tell whether a plugin that says
   `api_version: 1` follows the contract; that is the conformance kit of phase 3. The only mismatch that exists
-  today is "newer than this Zoraxy"; there is no "too old", because version 0 is supported.
+  today is "newer than this Dunree"; there is no "too old", because version 0 is supported.
 - **Warn mode warns in the log, the API and the Plugin Manager only.** No notification, no audit entry.
 - **Refuse applies to starts.** Turning it on does not stop a plugin that is already running; it is refused at its
   next start. Until then the Plugin Manager says "still running, will not be started again". A restart policy that
@@ -955,7 +955,7 @@ exact runs. `go vet ./mod/plugins/...`, `GOOS=windows go vet ./mod/plugins/...` 
   field. Nothing changes for them.
 - **How the three "installed" golden manifests were taken:** by running each binary under `/home/sysadmin/plugins`
   once with `-introspect` (as the unprivileged build user, working directory in a scratch folder, 10 s limit), the
-  same call Zoraxy makes at every boot. They are Data-Shield Blocklist 1.3.0, Resource Monitor 1.0.3 and Zoraxy
+  same call Dunree makes at every boot. They are Data-Shield Blocklist 1.3.0, Resource Monitor 1.0.3 and Dunree
   Cloudflare WAF 0.3.4, which is what is installed here; section 1 of this plan quotes the public index
   (1.4.0 / 0.4.0). The plugins on the other proxy were not looked at.
 - **SDK 1.0.0 is the SDK as the example plugins carried it** (identical to commit `ff33f5be`, with hooks and the
@@ -970,7 +970,7 @@ exact runs. `go vet ./mod/plugins/...`, `GOOS=windows go vet ./mod/plugins/...` 
   A plugin with limits is started through `systemd-run --scope`. Checked by hand on this host
   (`echo ... | systemd-run --user --scope -q -- cat` prints the line): standard input passes through a user scope.
   There is **no automated test** of `configure_via` together with limits (the phase 1 limits tests use the command
-  line way), and a system scope (Zoraxy as root) was not tried.
+  line way), and a system scope (Dunree as root) was not tried.
 - **Permissions are per plugin ID, not per binary.** Whoever can replace the binary of an approved plugin, or
   install another plugin under the same ID after an uninstall was skipped, inherits its approvals. Binding
   approvals to a checksum needs the signed index (2.4).
@@ -986,7 +986,7 @@ exact runs. `go vet ./mod/plugins/...`, `GOOS=windows go vet ./mod/plugins/...` 
   folder that is deleted and created again between two reloads still counts as the old one. A plugin whose first
   load fails *after* the baseline was taken is a new plugin.
 - **A reload does not look at the permissions of plugins that are already loaded.** A binary that was replaced by
-  hand is introspected again only by an update or the next start of Zoraxy; until then the approvals, the Plugin
+  hand is introspected again only by an update or the next start of Dunree; until then the approvals, the Plugin
   Manager and the API key all describe the manifest that was loaded. The process itself is the new binary from its
   next start on (unchanged from before).
 - **In the default mode an approval binds nothing.** It records that the administrator has seen the endpoint and
@@ -1050,13 +1050,13 @@ cd src
 GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -p 1 ./mod/plugins/ ./mod/auth/ -count=1 \
   -run 'TestContract|TestSDK|TestPermission|TestSettings|TestFaultContract|TestFaultRefused|TestFaultSDK|TestFaultPermission|TestFaultNewPlugin|TestFaultPluginWith|TestFaultReloadDoesNot|TestSetPermittedEndpoints'
 GOTMPDIR=$HOME/.cache/go-tmp CGO_ENABLED=1 ~/capped.sh go test -p 1 -race ./mod/plugins/... -count=1     # everything, needs gcc
-cd .. && PY=<python with playwright> PORT=20710 tools/ui-smoke/plugins_run.sh     # ZORAXY_BIN=<binary> skips the build
+cd .. && PY=<python with playwright> PORT=20710 tools/ui-smoke/plugins_run.sh     # DUNREE_BIN=<binary> skips the build
 cd example/plugins/filter-example && GOFLAGS=-mod=mod GOPROXY=off go build -o /tmp/filter-example .     # every example builds offline
 ```
 
 The SDK compatibility tests need the `go` command at run time (two small offline builds, in the folder the chaos
-plugin is built in). To freeze the next SDK version: copy `src/mod/plugins/zoraxy_plugin` to
-`src/mod/plugins/testdata/sdk-<version>/zoraxy_plugin` before changing it, and add that version to
+plugin is built in). To freeze the next SDK version: copy `src/mod/plugins/dunree_plugin` to
+`src/mod/plugins/testdata/sdk-<version>/dunree_plugin` before changing it, and add that version to
 `phase2_helper_test.go`.
 
 ---
@@ -1066,25 +1066,25 @@ plugin is built in). To freeze the next SDK version: copy `src/mod/plugins/zorax
 Built 2026-11-23 on `dev`. This section covers the three items the section above left open: the signed plugin
 index (2.4), safe install, update and rollback (2.5) and the isolated plugin UI (2.7). Owner decisions used: D4 (a
 separate plugin key, mode warn by default, enforce opt-in, no index published or curated here). **No real key was
-read, copied or created**: Zoraxy only verifies with a public key you configure, the tool creates a key pair when
+read, copied or created**: Dunree only verifies with a public key you configure, the tool creates a key pair when
 you run it, and the tests use keys the tool creates in a temporary folder. Phase 3 was not built when this section was written (it is now: see the last section).
 
 ### What was built
 
 | Item | Where | What it does | Default |
 |---|---|---|---|
-| 2.4 Signed index format | `src/mod/plugins/store_verify.go` | A second index format next to the upstream list: `{"format":"zoraxy-plugin-index","version":1,"serial":N,"plugins":[{IconPath, PluginIntroSpect, Downloads:{"linux_amd64":{url, sha256, size}}}]}` with a detached signature at `<index URL>.sig` (the raw 64 bytes of an ed25519 signature over the exact bytes of the index, PKCS#8 / SPKI PEM keys: the format of `tools/sign_release.go`). `serial` only goes up; Zoraxy stores the highest serial it has seen per index URL (with the checksum of that index) and treats a lower one, or the same one with other content, as a replay | |
+| 2.4 Signed index format | `src/mod/plugins/store_verify.go` | A second index format next to the upstream list: `{"format":"zoraxy-plugin-index","version":1,"serial":N,"plugins":[{IconPath, PluginIntroSpect, Downloads:{"linux_amd64":{url, sha256, size}}}]}` with a detached signature at `<index URL>.sig` (the raw 64 bytes of an ed25519 signature over the exact bytes of the index, PKCS#8 / SPKI PEM keys: the format of `tools/sign_release.go`). `serial` only goes up; Dunree stores the highest serial it has seen per index URL (with the checksum of that index) and treats a lower one, or the same one with other content, as a replay | |
 | 2.4 Key | settings `IndexPublicKey`, start flag `-plugin_index_pubkey=<file>` (wins over the setting) | The public half of the plugin key: PEM, or 32 bytes in base64 or hex. A private key pasted there is refused with a clear error | none |
 | 2.4 Verification mode | settings `VerifyMode`, "Plugin safety settings" in the Plugin Manager | `off`: no signature file is fetched, nothing compared. `warn`: every finding (no key, signature missing, signature not valid, replay, download does not match checksum or size) is logged, written to the security audit log once per change and shown; nothing is refused. `enforce`: a plugin is installed or updated only from a validly signed, not replayed index with checksum and size for the platform, and only when the download matches; the download is cut off at the size of the index; the binary must declare the ID of the index; while an index is not valid the plugins of its last valid version stay on offer | **warn** |
-| 2.4 Changed binary | `checkBinaryForStart`, `checkBinaryBeforeLoad` in `store_verify.go`, `lifecycle.go`, `plugins.go` | For a plugin with an install record the SHA-256 of the program file is compared with what was installed: at every start, and **before the file is run for its manifest** at a start of Zoraxy and at every reload. For that second check the record is found by the plugin **folder** (stored in the record, table `plugin_install_folders`), not by the ID the file declares. warn: log line, one audit entry (`plugins.binary.changed`), red line in the Plugin Manager, loaded and started anyway. enforce: at a start it is not started (state `failed_to_start`, not retried by a restart policy); at a start of Zoraxy the changed file is **not run at all** and the folder is listed under "could not be loaded" with the reason; at a reload it is not run and the plugin that is loaded stays as it is. off: not looked at | warn |
+| 2.4 Changed binary | `checkBinaryForStart`, `checkBinaryBeforeLoad` in `store_verify.go`, `lifecycle.go`, `plugins.go` | For a plugin with an install record the SHA-256 of the program file is compared with what was installed: at every start, and **before the file is run for its manifest** at a start of Dunree and at every reload. For that second check the record is found by the plugin **folder** (stored in the record, table `plugin_install_folders`), not by the ID the file declares. warn: log line, one audit entry (`plugins.binary.changed`), red line in the Plugin Manager, loaded and started anyway. enforce: at a start it is not started (state `failed_to_start`, not retried by a restart policy); at a start of Dunree the changed file is **not run at all** and the folder is listed under "could not be loaded" with the reason; at a reload it is not run and the plugin that is loaded stays as it is. off: not looked at | warn |
 | 2.4 Source of install (F15) | `InstallRecord` in table `plugin_installs`, `updateCandidate` | Every install records the index URL, the version, checksum, size, the signature state of the index and how the download was checked. Update information and updates of that plugin come from that index only. `POST /api/plugins/store/releaseSource` (button "Allow updates from any index") lifts the binding | on for new installs, see "Behaviour that changed" |
 | 2.4 Tool | `tools/plugin-index/sign_plugin_index.go` (standard library only, outside the Go module) | `-genkey PRIVATE.pem PUBLIC.pem` (refuses to overwrite, private key mode 0600), sign (`-index DRAFT -out index.json -key ... -serial N [-files DIR] [-fetch] [-pub ...]`: fills in checksum and size from local files or by download, refuses a serial that is not higher than the one at `-out`, refuses http and "latest" URLs, verifies its own output), `-verify`. It refuses a key file named like the release key or equal to `$ZORAXY_RELEASE_KEY` | |
 | 2.5 Staging | `src/mod/plugins/store_safe.go`, `store.go`, `store_update.go` | Install and update download to `<plugin dir>/.staging/<plugin id>/` with a size cap (256 MB, setting `MaxDownloadMB`; in enforce the size of the index) and a timeout (10 minutes per download, 30 s for an index), compare with the index, and run the binary there with `-introspect`, **as the plugin user** when `-plugin_user` is set. The staging folder is skipped by the plugin loader | always |
-| 2.5 Swap and previous version | `swapIn`, `swapBack` | Only after all of that the plugin is stopped and the binary swapped by two renames inside the plugin directory; the replaced binary goes to `<plugin folder>/.zoraxy-previous/` (a name of Zoraxy's own, so a plugin that keeps data in a folder called `previous` does not lose it). A failed second rename undoes the first. An install moves the whole staged folder into place with one rename | always |
+| 2.5 Swap and previous version | `swapIn`, `swapBack` | Only after all of that the plugin is stopped and the binary swapped by two renames inside the plugin directory; the replaced binary goes to `<plugin folder>/.zoraxy-previous/` (a name of Dunree's own, so a plugin that keeps data in a folder called `previous` does not lose it). A failed second rename undoes the first. An install moves the whole staged folder into place with one rename | always |
 | 2.5 Health check | `waitHealthyAfterUpdate` | After an update of a plugin that was running (or waiting for an automatic restart) the new process has to answer (its `health_path`, else a TCP connect) within 15 s and then stay up, as the same process, for 2 s | always, for plugins that were running |
 | 2.5 Rollback | `RollbackPlugin`, `POST /api/plugins/store/rollback`, button "Roll back to version X" in Details | Puts the binary of `.zoraxy-previous/` back, reads its manifest, starts the plugin if it was meant to run. One previous version is kept; a rollback uses it up | manual |
 | 2.5 Automatic rollback | setting `AutoRollback` | A new version that fails to start or fails the health check is replaced by the previous one, which is started | **off**: the new version stays in place, the failure is reported with the way out |
-| 2.7 Isolated plugin UI | `src/mod/plugins/ui_isolation.go`, `ui_router.go`, `src/pluginui.go`, `web/components/plugincontext.html` | Settings `IsolatePluginUI`, `PluginUIListen`, `PluginUIOrigin`. On: Zoraxy opens a second listener (default: the host of the admin UI, next port; TLS with the web UI certificate when the admin UI uses TLS; the admin allow-list in front). The admin page asks `POST /api/plugins/ui/ticket` and opens `<origin>/t/<ticket>/` in an iframe sandboxed without `allow-same-origin`. Requests go to the plugin without `Cookie`, `Authorization` and CSRF token (header `X-Zoraxy-Ui-Isolated: true` instead); `Set-Cookie` of the plugin is dropped; every answer carries `Content-Security-Policy: sandbox ...` and `Referrer-Policy: no-referrer`; `/plugin.ui/` under the admin origin answers 403. The public style and script files plugin pages load by absolute path (`/script/`, `/main.css`, `/darktheme.css`, `/img/public/`, `/locales/`, `/favicon.png`) are served there too | **off** |
+| 2.7 Isolated plugin UI | `src/mod/plugins/ui_isolation.go`, `ui_router.go`, `src/pluginui.go`, `web/components/plugincontext.html` | Settings `IsolatePluginUI`, `PluginUIListen`, `PluginUIOrigin`. On: Dunree opens a second listener (default: the host of the admin UI, next port; TLS with the web UI certificate when the admin UI uses TLS; the admin allow-list in front). The admin page asks `POST /api/plugins/ui/ticket` and opens `<origin>/t/<ticket>/` in an iframe sandboxed without `allow-same-origin`. Requests go to the plugin without `Cookie`, `Authorization` and CSRF token (header `X-Zoraxy-Ui-Isolated: true` instead); `Set-Cookie` of the plugin is dropped; every answer carries `Content-Security-Policy: sandbox ...` and `Referrer-Policy: no-referrer`; `/plugin.ui/` under the admin origin answers 403. The public style and script files plugin pages load by absolute path (`/script/`, `/main.css`, `/darktheme.css`, `/img/public/`, `/locales/`, `/favicon.png`) are served there too | **off** |
 | UI | `src/web/components/plugins.html` | Plugin safety settings: signature checking (select), public key, list of indexes with their signature state, automatic rollback, plugin page isolation with its addresses and state. Details of a plugin: block "Install and updates" (index, signature badge, download check, checksum, program file state, last change, previous version, "Roll back to version X", "Allow updates from any index"). Health column and notices for a changed program file and for an update that did not start properly | |
 | API | `/api/plugins/settings` (more fields, also the index list), `Status.Install` in list / info / status, `/api/plugins/store/list` (`Downloads`, `Signature`, `IndexSerial`), `/api/plugins/store/checkUpdates` (`source`, `boundToSource`, `signature`, `blocked`), `/api/plugins/store/sources` (format, signature, serial, note), `/api/plugins/store/install` (optional `source`) | additive | |
 | Chaos plugin | `src/mod/plugins/testdata/chaosplugin/main.go` | Setting `version`; settings appended to the binary after `##CHAOS-TRAILER##` (makes "version 2" of a plugin with another checksum and, say, `mode=crash`); feature `adminprobe` (its page and its process try to use the admin session); `/ui/headers` | |
@@ -1099,7 +1099,7 @@ you run it, and the tests use keys the tool creates in a temporary folder. Phase
 3. **Plugins installed from the store from now on** are bound to their index from the start. If you run a second
    index that offers the same plugin ID with a higher version, it no longer takes over updates.
 4. **Install and update run the binary once more than before**: in the staging folder, before anything is replaced
-   (and, with `-plugin_user`, as that user; before, the first run of a new binary was always as Zoraxy's user).
+   (and, with `-plugin_user`, as that user; before, the first run of a new binary was always as Dunree's user).
    A download that is not a loadable plugin is now refused before the installed version is stopped.
 5. **An update no longer stops the plugin before the download.** It keeps running until the new binary passed its
    checks. A failed download leaves it running (before: stopped).
@@ -1169,7 +1169,7 @@ green (plugins package about 100 s); both tool test files green; `plugins_run.sh
 - **Rollback of more than one version, rollback of the icon, rollback of the plugin's own data files**: not built.
 - **Script plugins** (`start.sh`) are not updated by the store, as before, so they have no rollback.
 - **Hot rebuild** (developer mode) does not update the install record; a rebuilt plugin shows "changed since
-  install", and under enforce it is not started and not loaded at the next start of Zoraxy.
+  install", and under enforce it is not started and not loaded at the next start of Dunree.
 - **DEVELOPMENT.md, `docs/plugins/contract.md`, author docs, translations** (new texts are English), Prometheus series.
 - **`web/index.html`** was not touched: its theme switch calls into the plugin frame. `plugincontext.html` gives an
   isolated frame a stand-in so that call does nothing; the dark theme is not passed to an isolated page.
@@ -1185,20 +1185,20 @@ green (plugins package about 100 s); both tool test files green; `plugins_run.sh
   an old (validly signed) index once. An index that is withheld altogether cannot be told from one that has no news.
 - **warn installs what it warns about.** That is the meaning of the default; a mismatching download is on record
   (Details, audit log), not blocked.
-- **enforce and plugins without a record:** they start as before, because Zoraxy has no checksum for them. Their
+- **enforce and plugins without a record:** they start as before, because Dunree has no checksum for them. Their
   updates are refused unless the index is signed.
-- **The check of the program file happens at start, at a start of Zoraxy and at a reload**, not while the plugin
+- **The check of the program file happens at start, at a start of Dunree and at a reload**, not while the plugin
   runs, and covers the entry binary only, not other files in the plugin folder (a `start.sh` next to a missing
   binary, a library the binary loads). It costs one SHA-256 of the binary per start and per reload.
 - **enforce keeps a changed file from running only for a folder with an install record.** A folder that was copied
   in by hand, or a plugin installed before installs were recorded, is run for its manifest at every start and
-  reload as before, as Zoraxy's user. Whoever can write into the plugin directory can also add such a folder.
+  reload as before, as Dunree's user. Whoever can write into the plugin directory can also add such a folder.
   enforce is about what the store installed, not a lock on the plugin directory.
-- **Under enforce a plugin whose file changed is not loaded at the next start of Zoraxy**: it is not in the plugin
+- **Under enforce a plugin whose file changed is not loaded at the next start of Dunree**: it is not in the plugin
   list (the folder is listed as not loadable, with the reason), so it cannot be updated or rolled back from the UI.
   Put the installed file back, or remove the folder and install again, or switch to warn and restart. That
   includes a plugin you rebuilt with hot rebuild (developer mode), which does not update the install record.
-- **warn still runs a changed file**, at a start of Zoraxy and at the start of the plugin. When the file declares
+- **warn still runs a changed file**, at a start of Dunree and at the start of the plugin. When the file declares
   the ID of its record, the start reports it; when it declares another ID, the load reports it (audit entry with
   `declared`). A changed file of a plugin that is never started and keeps its ID is only reported when started.
 - **Switching the mode or the key re-reads the indexes** when a list was loaded before. Entries read with
@@ -1206,16 +1206,16 @@ green (plugins package about 100 s); both tool test files green; `plugins_run.sh
 - **Two download timeouts:** 10 minutes for the whole transfer, and a stall timeout of 60 s (a download that
   delivers no byte for that long is ended; every byte that arrives gives it another 60 s). Neither is a setting.
   Redirects are followed as before; the checksum is what pins the content, so a "pinned URL" is a rule of the signing tool
-  (it refuses "latest" URLs), not something Zoraxy can verify.
+  (it refuses "latest" URLs), not something Dunree can verify.
 - **Introspect in staging as the plugin user needs root**, like every use of `-plugin_user`. Not root with the flag
   set: the install is refused with the same message a start gives. The run as another user was **not tested**
   (tests do not run as root); the test shows that the staging introspect goes through that setting. The boot-time
-  introspect of installed plugins still runs as Zoraxy's user (F17 is only closed for new binaries).
+  introspect of installed plugins still runs as Dunree's user (F17 is only closed for new binaries).
 - **The staged binary is run with `-introspect` before the administrator sees its manifest.** Verification comes
   first; in warn mode a binary that failed verification is still run.
 - **The swap is two renames, not one.** Between them the plugin folder has no binary; the plugin is stopped then.
-  A crash of Zoraxy in that window leaves the installed binary in `.zoraxy-previous/` (update) or in
-  `.staging/.rollback-<id>/` (rollback). The **next start of Zoraxy** renames it back (see "Review fixes"); until
+  A crash of Dunree in that window leaves the installed binary in `.zoraxy-previous/` (update) or in
+  `.staging/.rollback-<id>/` (rollback). The **next start of Dunree** renames it back (see "Review fixes"); until
   then the plugin has no program file. The Roll back button cannot help in that state: it needs a loaded plugin.
   The repair only runs at a start, never at a reload, and only for a folder whose program file is named after the
   folder (script plugins are not updated by the store). After an interrupted update the version an *earlier*
@@ -1230,14 +1230,14 @@ green (plugins package about 100 s); both tool test files green; `plugins_run.sh
 - **An update of a plugin that changes its ID** is allowed in off and warn (as before) and refused in enforce.
 - **Isolated plugin pages need a second port your browser can reach.** Behind another reverse proxy or a firewall
   you have to publish that port and set "Address your browser uses". If the listener cannot be opened when you
-  turn the setting on, the setting is refused. If it cannot be opened at a later start of Zoraxy, plugin pages are
+  turn the setting on, the setting is refused. If it cannot be opened at a later start of Dunree, plugin pages are
   unavailable (the admin origin refuses them) until you fix the address or turn the setting off.
 - **A plugin page that needs the admin API, cookies, `localStorage` or same-origin access stops working when
   isolated.** Which of your three plugins do was **not checked**. The shared script files of the admin UI are
   served, but those that use storage (theme) throw inside the sandbox.
 - **The ticket is the key to a plugin page**: 8 hours, per plugin, in the address. Whoever has the address can open
   that plugin's page (not the admin UI) until it expires; a logout does not end it. Tickets live in memory and end
-  when Zoraxy restarts or isolation is turned off. At most 512 are kept.
+  when Dunree restarts or isolation is turned off. At most 512 are kept.
 - **The isolated listener** has the admin allow-list in front but not the dial guard that keeps proxy rules from
   targeting the admin listener, and no login of its own: static files on it are the ones that are public anyway.
 - **An isolated page can still open a window on the admin address.** The sandbox has `allow-popups` (links in
@@ -1263,10 +1263,10 @@ Each finding was checked against the code first. Tests: `src/mod/plugins/phase2_
 
 | Finding | Fix | Test |
 |---|---|---|
-| Under enforce a program file that changed on disk was still run: every start of Zoraxy and every reload ran it with `-introspect` as Zoraxy's user before anything was compared, and a file that declared another ID had no record and was never compared (major) | The install record stores the plugin folder; `plugin_install_folders` maps folder to plugin ID. `checkBinaryBeforeLoad` hashes the entry point before `LoadPluginSpec` runs it, at boot and reload. enforce: a mismatching file is not run; at boot the folder is a load failure with the reason, at a reload the loaded plugin is left as it is; one audit entry per changed file. warn: loaded as before, and a file that declares another ID than its record is logged and audited (`declared`). A record without a folder (written before this fix) gets it at the next boot. The UI texts about enforce say what happens | `TestChangedBinaryIsNotRunBeforeItIsCompared` (the replacement leaves a marker file when run), `TestInstallRecordLearnsItsFolderAtBoot` |
+| Under enforce a program file that changed on disk was still run: every start of Dunree and every reload ran it with `-introspect` as Dunree's user before anything was compared, and a file that declared another ID had no record and was never compared (major) | The install record stores the plugin folder; `plugin_install_folders` maps folder to plugin ID. `checkBinaryBeforeLoad` hashes the entry point before `LoadPluginSpec` runs it, at boot and reload. enforce: a mismatching file is not run; at boot the folder is a load failure with the reason, at a reload the loaded plugin is left as it is; one audit entry per changed file. warn: loaded as before, and a file that declares another ID than its record is logged and audited (`declared`). A record without a folder (written before this fix) gets it at the next boot. The UI texts about enforce say what happens | `TestChangedBinaryIsNotRunBeforeItIsCompared` (the replacement leaves a marker file when run), `TestInstallRecordLearnsItsFolderAtBoot` |
 | Docs and two comments said `previous/`, the code uses `.zoraxy-previous/` | Corrected everywhere in this section and in `store_safe.go`, `store_verify.go` | |
 | Docs said there is no stall detection; the 60 s stall timeout had no test | Doc corrected | `TestStalledDownloadIsEndedByTheStallTimeout` (bytes keep arriving past the stall time, then stop; the overall timeout stays at 10 minutes) |
-| A crash between the two renames left a folder without program file; "use Roll back" could not work, nothing cleaned `.staging/` | At a start of Zoraxy `repairPluginFolder` renames the installed file back (from `.staging/.rollback-<id>/` after an interrupted rollback, else from `.zoraxy-previous/` after an interrupted update), with a log line, and `clearStagingAtBoot` empties `.staging/`. Doc corrected | `TestInterruptedSwapIsRepairedAtBoot` |
+| A crash between the two renames left a folder without program file; "use Roll back" could not work, nothing cleaned `.staging/` | At a start of Dunree `repairPluginFolder` renames the installed file back (from `.staging/.rollback-<id>/` after an interrupted rollback, else from `.zoraxy-previous/` after an interrupted update), with a log line, and `clearStagingAtBoot` empties `.staging/`. Doc corrected | `TestInterruptedSwapIsRepairedAtBoot` |
 | No badge for the signature state `downgraded` (an index that was signed and is now served unsigned showed "Unknown") | Red badge "Signature removed" | badge check in `plugins_smoke.py` |
 | An index entry without icon no longer got `/img/plugin_icon.png`; the old store page showed a broken image | Default restored for both index formats | `TestIndexEntryWithoutIconGetsTheDefault` |
 | Install and update errors quote the ID a downloaded binary declares; the App Store and the old store page passed them to `msgbox`, which renders HTML | Every `msgbox(data.error)` of `web/components/appstore.html` and `web/snippet/pluginstore.html` passes the text escaped (also the resync and source errors, which can quote an index) | `plugins_smoke.py`: an install error with markup in the App Store is shown as text |
@@ -1274,7 +1274,7 @@ Each finding was checked against the code first. Tests: `src/mod/plugins/phase2_
 
 Behaviour that changed with these fixes, all for plugins with an install record or for a state that was broken:
 under enforce a changed program file is no longer run at boot or reload (before: run for its manifest, then not
-started), and such a plugin is missing from the plugin list after a restart; a start of Zoraxy empties
+started), and such a plugin is missing from the plugin list after a restart; a start of Dunree empties
 `<plugin dir>/.staging/` and repairs a plugin folder that an interrupted swap left without program file; one more
 database table (`plugin_install_folders`). Nothing changes in off or warn except one more log line and audit entry
 for a changed file that declares another ID.
@@ -1298,7 +1298,7 @@ go run tools/plugin-index/sign_plugin_index.go -index draft.json -out index.json
 ```
 
 Publish `index.json` and `index.json.sig` side by side, add the URL as a store source, paste `plugin-index.pub`
-into Plugin Manager > Plugin safety settings (or start Zoraxy with `-plugin_index_pubkey=<file>`), check that the
+into Plugin Manager > Plugin safety settings (or start Dunree with `-plugin_index_pubkey=<file>`), check that the
 index shows "Signed", and only then consider `enforce`. The draft format is in the comment at the top of the tool.
 
 ---
@@ -1309,7 +1309,7 @@ Built 2026-11-23 on `dev`. This section covers the three items of phase 3: the r
 conformance kit (3.2) and a run of the kit against the plugins installed on the build machine (3.3). Owner decisions
 used: D1 (the goal is the plugins you run plus first-party reference plugins, with a kit that says whether any other
 plugin is safe), D4 (nothing here is signed with the release key, no index is published or curated), D5
-(Data-Shield is not touched: it was only run, as a copy, by the kit). **Nothing in this phase changes Zoraxy itself**:
+(Data-Shield is not touched: it was only run, as a copy, by the kit). **Nothing in this phase changes Dunree itself**:
 no file under `src/` was changed except one new test file.
 
 ### What was built
@@ -1322,12 +1322,12 @@ no file under `src/` was changed except one new test file.
 | 3.1 Build | `tools/build_ref_plugins.sh`, `tools/build_release.sh -p` | Builds the three plugins for the release architectures into a folder, writes a plain `SHA256SUMS`, and with `-c` runs the conformance kit on the ones the machine can run (a failure stops the build). `build_release.sh` calls it only with the new flag `-p`, after the release is signed and verified, into `DIST_DIR/plugins` |
 | 3.2 Conformance kit | `tools/plugin-check` (a Go module of its own, standard library only) | `plugin-check <binary>` (version 1.1.0 since the review fixes): 21 checks (introspect validity and size, manifest, configure, secrets, readiness, loopback only, page, health, verdict rules, sniff, events, invoke token, latency under load, memory after 1000 calls, API calls, stays up, terminate request, SIGTERM within 5 s, leftover processes, log volume). Text and JSON report, exit code 0 / 1 / 2. Method, every rule and the limits: `docs/plugins/conformance.md` |
 | 3.3 Certification run | `docs/plugins/conformance.md` section 5, `docs/plugins/conformance-reports/*.json` | The kit against Data-Shield Blocklist 1.3.0, Resource Monitor 1.0.3 and Zoraxy Cloudflare WAF plugin 0.3.4 as installed under `~/plugins` on the build machine |
-| e2e | `tools/e2e/scenarios/s12_plugin.py` | New scenario `plugin_reference_plugins` (real Zoraxy, the three reference plugins as real processes). The existing scenario `plugin_filter_hooks` was failing before this change and is repaired (see "Found on the way") |
+| e2e | `tools/e2e/scenarios/s12_plugin.py` | New scenario `plugin_reference_plugins` (real Dunree, the three reference plugins as real processes). The existing scenario `plugin_filter_hooks` was failing before this change and is repaired (see "Found on the way") |
 | Docs | `docs/plugins/conformance.md` (new), `docs/plugins/contract.md` (sniff row corrected, two rows in section 8), `example/plugins/README.md` | |
 
 ### Behaviour that changed for existing installs
 
-1. **Nothing in Zoraxy.** No code under `src/` changed besides the new test file `src/mod/plugins/phase3_reference_test.go`.
+1. **Nothing in Dunree.** No code under `src/` changed besides the new test file `src/mod/plugins/phase3_reference_test.go`.
 2. **The default release is the same.** `tools/build_release.sh` without `-p` builds, signs and verifies exactly
    what it did; `-p` adds a sub-folder after that. The reference plugins are not in `SHA256SUMS` of the release.
 3. **`example/plugins/build_all.sh` now also builds the three `fork-ref-*` folders** (it builds every folder).
@@ -1343,13 +1343,13 @@ no file under `src/` was changed except one new test file.
 | A plugin on every address fails; calls without the key or outside the manifest fail | `TestPluginThatListensOnEveryAddressFails`, `TestStubAPIRecordsWhatIsNotAllowed` |
 | Exit codes, JSON report, text report, report file | `TestCommandLine` |
 | The plugin folder is not written to and the scratch folder is removed | `TestPluginFolderIsNotTouched` |
-| Verdict rules of the kit = verdict rules of Zoraxy, on 64 verdicts | `TestVerdictFixtures` (kit), `TestConformanceKitVerdictRulesMatchZoraxy` (`src/mod/plugins`) |
+| Verdict rules of the kit = verdict rules of Dunree, on 64 verdicts | `TestVerdictFixtures` (kit), `TestConformanceKitVerdictRulesMatchDunree` (`src/mod/plugins`) |
 | Manifest rules, log counter, percentiles | `TestManifestChecks`, `TestLogCounter`, `TestPercentile` |
 | `fork-ref-filter` through the real pipeline: contract version 1, token not on the command line, health check, both stages, deny, token required, fail-open after a crash although it declares `fail_closed` (no consent), automatic restart, stop without kill | `TestFaultReferenceFilter` (`src/mod/plugins/phase3_reference_test.go`) |
-| `fork-ref-events` under 600 events with a worker of 25 ms per event: Zoraxy drops and fails none, the plugin's list stays at 256 and counts its drops; events without or with a wrong token are refused | `TestFaultReferenceEventsBackPressure` |
+| `fork-ref-events` under 600 events with a worker of 25 ms per event: Dunree drops and fails none, the plugin's list stays at 256 and counts its drops; events without or with a wrong token are refused | `TestFaultReferenceEventsBackPressure` |
 | `fork-ref-ui-api` against a stand-in API that checks the key as the real middleware does: default grants both; "require my approval" grants nothing, then the read only, then both; write only with the page's value, POST and a documentation address (`0.0.0.0/0`, `::/0`, private, loopback, real and too wide ranges are refused and never reach the API), at most 16 writes per start; the read gives a count; the log line does not say "administrator"; key not in the page or the command line | `TestFaultReferenceUIAPIPermissions` |
 | The SDK copies of the reference plugins are the SDK of the tree | `TestReferencePluginsCarryTheCurrentSDK` |
-| End to end with a real Zoraxy | `tools/e2e/run.sh --only plugin_` (`plugin_reference_plugins`, `plugin_filter_hooks`) |
+| End to end with a real Dunree | `tools/e2e/run.sh --only plugin_` (`plugin_reference_plugins`, `plugin_filter_hooks`) |
 
 Results (2026-11-23, shared 4-core machine, through `~/capped.sh`): `go vet ./mod/plugins/...`,
 `GOOS=windows go vet ./mod/plugins/...` and `go build ./...` clean; `go test -p 1 -race ./mod/plugins/...` green
@@ -1373,13 +1373,13 @@ All three installed binaries **pass** (no failed check). Details and how they we
 
 - **The e2e scenario `plugin_filter_hooks` was failing before this change** (`POST /api/plugins/enable -> plugin is
   already running`). A plugin folder that is there before the first start has no stored "enabled" flag, which
-  counts as enabled, so Zoraxy starts it at boot, and enabling a running plugin is an error. The scenario now
+  counts as enabled, so Dunree starts it at boot, and enabling a running plugin is an error. The scenario now
   enables only what is not running. Since when it failed was not looked up; `docs/verification/e2e-dataplane.md`
   still shows the older PASS and was not regenerated.
-- **`docs/plugins/contract.md` said a sniff answers 280 / 284 / 580.** Zoraxy reads 200 as "take it" and anything
+- **`docs/plugins/contract.md` said a sniff answers 280 / 284 / 580.** Dunree reads 200 as "take it" and anything
   else as "skip" (`dynamic_forwarder.go`), and the SDK answers 200 or 501. The row is corrected. The three
-  constants are still in the SDK and unused by Zoraxy; they were left alone.
-- **At a start of Zoraxy, plugins are started before the plugin API listens.** A plugin that calls the API in its
+  constants are still in the SDK and unused by Dunree; they were left alone.
+- **At a start of Dunree, plugins are started before the plugin API listens.** A plugin that calls the API in its
   first second gets "connection refused". `fork-ref-ui-api` tries its read at start again for up to 30 s. Other
   plugins have to do the same; this is not in `contract.md` yet.
 
@@ -1406,7 +1406,7 @@ All three installed binaries **pass** (no failed check). Details and how they we
   pressed.
 - **The kit does not confine the plugin it runs.** Scratch folder, loopback ports, a stand-in API and (since the
   review fixes) an environment without the variables of your shell keep it away from the plugin's own files, from
-  Zoraxy and from tokens in the environment; a plugin can still open files by absolute path (your real home
+  Dunree and from tokens in the environment; a plugin can still open files by absolute path (your real home
   included) and use the network. `-no-egress` only works for plugins that honour the proxy variables. Do not run
   the kit as root.
 - **The search for left processes is not a cgroup.** On Linux the kit finds and ends children that left the process
@@ -1415,7 +1415,7 @@ All three installed binaries **pass** (no failed check). Details and how they we
   is missed. On other Unix systems only the process group is looked at. When the kit is killed with SIGKILL the
   kernel ends the plugin process (Linux), not its children, and the scratch folder stays.
 - **The page path and `/term` of every plugin are without authentication on the plugin port.** Any local user or
-  process on the host can call them directly; Zoraxy's admin login guards the way through the admin address only,
+  process on the host can call them directly; Dunree's admin login guards the way through the admin address only,
   and the page proxy adds no secret a plugin could check. So any local process can stop any plugin with
   `GET <ui_path>/term` (a logged-in administrator can reach the same path through the page proxy): for a filter
   that is a bypass (fail-open, the default) or a 503 on its rules (with the `fail_closed` consent), and with the
@@ -1423,20 +1423,20 @@ All three installed binaries **pass** (no failed check). Details and how they we
   process can do. This is upstream's design, unchanged by the fork, now written down in `contract.md` section 4.
   Closing it needs a token on the page path and on `/term`, which is a new contract version: not built. The kit
   prints no warning about it.
-- **Thresholds are the kit's own where Zoraxy has none** (introspect size, p95 latency of 250 ms, memory growth of
+- **Thresholds are the kit's own where Dunree has none** (introspect size, p95 latency of 250 ms, memory growth of
   64 MiB, log lines per call). They are options, and they are judgement, not contract.
 - **The invoke token check fails only plugins that declare contract version 1.** Legacy plugins get a warning,
   and a sniff path that does not take the sample request cannot be judged at all.
 - **The verdict rules in the kit are a copy** of `hooks_validate.go`, held together by a shared fixture list of 64
-  verdicts. A new rule in Zoraxy needs a fixture, or the copy drifts unnoticed.
+  verdicts. A new rule in Dunree needs a fixture, or the copy drifts unnoticed.
 - **Latency and memory numbers come from one shared machine** and from one short run each.
 - **`sigterm` on a second start**: when a plugin ends on the terminate request (most do), SIGTERM is tried on a
   second start. A plugin that cannot be started twice in a row fails there.
 - **Reference plugins are minimal on purpose.** `fork-ref-filter` sets a header on every request and response of
   the rules it is attached to; do not attach it to production rules. `fork-ref-ui-api` can add to a blacklist and
-  cannot remove (remove in the Zoraxy access page). **Its write is not protected against local processes:** any
-  user on the host can read its page from the plugin port and post the form, without logging in to Zoraxy. The
-  value in the page and the CSRF token of Zoraxy only protect the browser of the administrator. What keeps it
+  cannot remove (remove in the Dunree access page). **Its write is not protected against local processes:** any
+  user on the host can read its page from the plugin port and post the form, without logging in to Dunree. The
+  value in the page and the CSRF token of Dunree only protect the browser of the administrator. What keeps it
   harmless is that the plugin refuses everything but documentation addresses (never routed) and passes on at most
   16 writes per start; a local user can therefore add up to 16 useless entries per start to a blacklist, and learn
   how many access rules exist. Do not copy the page-value pattern into a plugin whose write matters.
@@ -1454,8 +1454,8 @@ All three installed binaries **pass** (no failed check). Details and how they we
 ### Phase 3 review fixes
 
 Findings of the independent review of phase 3 and what was done. Each was checked against the code first (the first
-one is plain in the old source: the page with the value was served to anybody who asked the port). No file of Zoraxy
-under `src/` changed besides the test file; no default of Zoraxy changed.
+one is plain in the old source: the page with the value was served to anybody who asked the port). No file of Dunree
+under `src/` changed besides the test file; no default of Dunree changed.
 
 | Finding | Fix | Test |
 |---|---|---|
@@ -1477,7 +1477,7 @@ cd tools/plugin-check && GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -count
 cd src && GOTMPDIR=$HOME/.cache/go-tmp ~/capped.sh go test -p 1 -count=1 ./mod/plugins/ \
   -run 'TestReferencePlugins|TestFaultReference|TestConformanceKit'
 PLUGIN_CHECK_PORTS=20740-20799 tools/build_ref_plugins.sh -o /tmp/ref-plugins -a amd64 -c  # build + kit
-E2E_PORT_BASE=20700 tools/e2e/run.sh --only plugin_ --results /tmp/e2e.json                # real Zoraxy
+E2E_PORT_BASE=20700 tools/e2e/run.sh --only plugin_ --results /tmp/e2e.json                # real Dunree
 tools/build_release.sh -t <tag> -p                                                         # release plus DIST_DIR/plugins (optional)
 ```
 
@@ -1487,8 +1487,8 @@ tools/build_release.sh -t <tag> -p                                              
 
 | Item | Where | What |
 |---|---|---|
-| Events `proxyRuleAdded`, `proxyRuleEdited`, `proxyRuleRemoved` | `zoraxy_plugin/events/events.go`, `src/config.go` (`SaveReverseProxyConfig`, `RemoveReverseProxyConfig`) | Sent from the one place every stored change of an HTTP proxy rule goes through, so every admin page and API that changes a rule is covered without a call in each handler. Payload: host name, aliases, default site or not, switched off or not, tags |
-| SDK 1.2.0 | `zoraxy_plugin/api_client.go`, `CHANGELOG.md` | `ConfigureSpec.DoAPIRequest`, `NewAPIRequest`, `SetAPIAuth`, `APIURL`, `ErrNoAPIKey`, `ErrAPIEndpoint`: the plugin no longer writes the `Authorization: Bearer` header itself. Contract version unchanged (1). SDK 1.1.0 frozen under `testdata/sdk-1.1.0` and added to the compatibility suite |
+| Events `proxyRuleAdded`, `proxyRuleEdited`, `proxyRuleRemoved` | `dunree_plugin/events/events.go`, `src/config.go` (`SaveReverseProxyConfig`, `RemoveReverseProxyConfig`) | Sent from the one place every stored change of an HTTP proxy rule goes through, so every admin page and API that changes a rule is covered without a call in each handler. Payload: host name, aliases, default site or not, switched off or not, tags |
+| SDK 1.2.0 | `dunree_plugin/api_client.go`, `CHANGELOG.md` | `ConfigureSpec.DoAPIRequest`, `NewAPIRequest`, `SetAPIAuth`, `APIURL`, `ErrNoAPIKey`, `ErrAPIEndpoint`: the plugin no longer writes the `Authorization: Bearer` header itself. Contract version unchanged (1). SDK 1.1.0 frozen under `testdata/sdk-1.1.0` and added to the compatibility suite |
 | Examples | `example/plugins/api-call-example` uses the helpers; `event-subscriber-example` also subscribes to the three new events; all example copies of the SDK are 1.2.0 |
 | Conformance kit | `tools/plugin-check` | knows the three event names and sends sample payloads for them (kit version unchanged) |
 | API key generation review | `contract.md` section 6 | reviewed, nothing changed |

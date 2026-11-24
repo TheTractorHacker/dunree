@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database/dbbolt"
+	"github.com/foleyit/dunree/mod/database/dbbolt"
 )
 
 func TestNewBoltDatabase(t *testing.T) {

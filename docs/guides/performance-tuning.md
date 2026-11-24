@@ -12,19 +12,19 @@ returned 404). It needs the same admin login as the rest of the management API a
 ```bash
 # 30 second CPU profile while the load test runs (copy your session cookie from the browser, or use a lab instance started with -noauth)
 curl -s -b 'session-cookie-name=VALUE' -o cpu.pprof 'http://127.0.0.1:8000/api/info/pprof/profile?seconds=30'
-go tool pprof -top -cum -nodecount=40 ./zoraxy cpu.pprof      # text summary
-go tool pprof -http=:8080 ./zoraxy cpu.pprof                    # flame graph in the browser
+go tool pprof -top -cum -nodecount=40 ./dunree cpu.pprof      # text summary
+go tool pprof -http=:8080 ./dunree cpu.pprof                    # flame graph in the browser
 # memory / goroutines
 curl -s -b '...' -o heap.pprof 'http://127.0.0.1:8000/api/info/pprof/heap'
 curl -s -b '...' 'http://127.0.0.1:8000/api/info/pprof/goroutine?debug=1' | head
 ```
 
 (`profile`, `heap`, `goroutine`, `allocs`, `block`, `mutex`, `threadcreate`, `trace`, `cmdline`, `symbol`.) Read
-the biggest `cum` lines that belong to `imuslab.com/zoraxy/...`; everything under `crypto/tls` is handshake/encryption cost, under
+the biggest `cum` lines that belong to `github.com/foleyit/dunree/...`; everything under `crypto/tls` is handshake/encryption cost, under
 `net/http` + `syscall` is plain I/O. Attach the profile when you report a performance problem.
 
 Reproduction note: a quick run on a 4 core VM (64 keep-alive TLS connections, trivial backend, no features enabled) gave about
-1,300 requests/second with no Zoraxy specific hotspot in the profile (time in syscalls, dialing the backend and GC).
+1,300 requests/second with no Dunree specific hotspot in the profile (time in syscalls, dialing the backend and GC).
 That is not a benchmark, it only shows the endpoint works and how to look.
 
 ## 2. Usual causes, cheapest fix first
@@ -32,7 +32,7 @@ That is not a benchmark, it only shows the endpoint works and how to look.
 | Cause | What to do |
 |---|---|
 | New TLS connection per request (`wrk` without keep-alive, clients that reconnect) | each handshake is real CPU. Test with keep-alive; prefer an ECDSA certificate (Certificates > ACME *key type*, upstream #1123) over RSA 4096; leave "Minimum TLS version"/cipher profile on the defaults |
-| Upstream that closes the connection after every response | Zoraxy then dials per request. Fix the upstream (enable keep-alive); the rule's upstream option **Disable connection reuse** must stay *off* |
+| Upstream that closes the connection after every response | Dunree then dials per request. Fix the upstream (enable keep-alive); the rule's upstream option **Disable connection reuse** must stay *off* |
 | Per-request work you do not need | per rule: **Disable Statistic Collection** and **Disable Requests Logging** (HTTP Proxy > edit rule); turn off per-site log files (per-site log files are off by default); lower detail in the CAPTCHA/WAF only where needed |
 | WAF / exploit blocking / bot rules inspect every request | each costs CPU in proportion to request count. The WAF skips bodies above its size limit and gRPC/WebSocket. Enable it on the rules that face the internet, use *Trusted paths* for health checks and static assets |
 | GeoIP lookups (country rules) | keep the default `-fastgeoip=true` (precomputed, more RAM, much less CPU). Only turn it off on very small devices |

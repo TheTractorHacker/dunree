@@ -29,7 +29,7 @@
             s.replace(/\{(\d+)\}/g, function (m, n) { return a[+n] !== undefined ? a[+n] : m; });
     }
 
-    var MODE_KEY = "zoraxy_site_editor_mode";
+    var MODE_KEY = "dunree_site_editor_mode";
     var SECTIONS = ["general", "routing", "security", "tls", "advanced"];
     // old tab names (cfgpage / rpcfg) -> section
     var LEGACY = { downstream: "general", upstream: "general", alias: "general", tags: "general", vdirs: "routing", websocket: "routing",

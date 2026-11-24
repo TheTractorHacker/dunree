@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two-Zoraxy integration harness: client -> EXTERNAL -> INTERNAL -> backend app.
+"""Two-Dunree integration harness: client -> EXTERNAL -> INTERNAL -> backend app.
 
   client (127.0.0.55) --http--> EXTERNAL (role external, rule app.test -> INTERNAL, HTTPS to a private CA)
                       --https/mTLS--> INTERNAL (role internal, trusted proxy 127.0.0.1, peer gate on) --http--> app
@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 sys.path.insert(0, HERE)
 import lib  # noqa: E402
-from lib import Zoraxy, Fail, make_ca, make_leaf, wait_for, http_req  # noqa: E402
+from lib import Dunree, Fail, make_ca, make_leaf, wait_for, http_req  # noqa: E402
 from app import App  # noqa: E402
 
 PUBLIC_HOST = "app.test"
@@ -98,7 +98,7 @@ class DualProxy:
         return self
 
     def configure_internal(self):
-        z = self.internal = Zoraxy(tls=True, name="int")
+        z = self.internal = Dunree(tls=True, name="int")
         z.start()
         upload_cert(z, "internal", *self.srv_cert)
         # the access rule the sites use must trust forwarded headers from trusted proxies only (Trusted Proxy Gating)
@@ -111,7 +111,7 @@ class DualProxy:
                 dict(Mode="require_and_verify", CAPEM=self.ca_pem)))
 
     def configure_external(self):
-        z = self.external = Zoraxy(tls=False, name="ext")
+        z = self.external = Dunree(tls=False, name="ext")
         z.start()
         set_trusted_proxies(z, [])   # visitors connect directly: no CDN, nothing trusted in front
         z.api("/api/deployrole/set", config=json.dumps(dict(role="external", hardenHeaders=True, peerGate=False, directCIDRs=[])))
@@ -223,7 +223,7 @@ def main():
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args()
     if not os.path.exists(lib.BIN):
-        print("FAIL setup: zoraxy binary %s missing (use run.sh)" % lib.BIN)
+        print("FAIL setup: dunree binary %s missing (use run.sh)" % lib.BIN)
         return 2
     failed = 0
     for m in (["tls", "mtls"] if a.mode == "both" else [a.mode]):

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 )
 
 func writeCert(t *testing.T, dir, name string, notAfter time.Time) {

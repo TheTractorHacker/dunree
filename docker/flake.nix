@@ -37,7 +37,7 @@
           runtimeInputs = with pkgs; [ docker ];
           text = ''
             cp -lr ../src/ ./
-            docker build . -t test-zoraxy --cache-from zoraxydocker/zoraxy:latest ;\
+            docker build . -t test-dunree ;\
             rm -r ./src/
           '';
           meta.mainProgram = "build";
@@ -55,7 +55,7 @@
           runtimeInputs = with pkgs; [ docker trivy ];
           text = ''
             ${build}
-            trivy image test-zoraxy
+            trivy image test-dunree
           '';
         };
       };

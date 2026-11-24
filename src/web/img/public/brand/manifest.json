@@ -1,0 +1,15 @@
+{
+  "name": "Dunree",
+  "short_name": "Dunree",
+  "description": "Reverse proxy and web gateway",
+  "start_url": "../../../",
+  "scope": "../../../",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#1a56c4",
+  "icons": [
+    { "src": "dunree-app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "dunree-app-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "dunree-app-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

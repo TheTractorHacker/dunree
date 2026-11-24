@@ -5,7 +5,7 @@ and part of #446. Verified with a throw-away instance and a fake backend that lo
 
 ## There are no nginx `location` blocks
 
-Zoraxy routes in two steps:
+Dunree routes in two steps:
 
 1. **Host**: the `Host` header selects a proxy rule (`ha.example.com`). Wildcards (`*.example.com`) and aliases work.
 2. **Path (optional)**: *virtual directories* on that rule send a path prefix to a **different** upstream.
@@ -24,7 +24,7 @@ Assistant must trust the proxy, otherwise it answers 400: in `configuration.yaml
 http:
   use_x_forwarded_for: true
   trusted_proxies:
-    - 192.168.1.10   # the address Zoraxy connects from
+    - 192.168.1.10   # the address Dunree connects from
 ```
 
 Regular expressions in paths are not supported by virtual directories. Redirect rules (HTTP Proxy > Redirection
@@ -52,7 +52,7 @@ Request `/web-check/style.css` through a virtual directory `/web-check` -> `192.
 
 ## #418: apps that emit root-relative URLs
 
-Zoraxy does **not** rewrite HTML/JS/CSS bodies. If the app writes `<link href="/css/style.css">`, the browser asks
+Dunree does **not** rewrite HTML/JS/CSS bodies. If the app writes `<link href="/css/style.css">`, the browser asks
 `https://mydomain.com/css/style.css`, which is not under `/app/` and therefore not routed to the container (404).
 Options, best first:
 

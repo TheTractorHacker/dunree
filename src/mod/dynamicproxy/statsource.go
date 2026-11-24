@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/textproto"
 
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 /*

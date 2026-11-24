@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/info/logger"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/info/logger"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 //go:embed no_img.png
@@ -20,7 +20,7 @@ var noImg []byte
 
 type Plugin struct {
 	RootDir string                   //The root directory of the plugin
-	Spec    *zoraxyPlugin.IntroSpect //The plugin specification
+	Spec    *dunreePlugin.IntroSpect //The plugin specification
 	Enabled bool                     //Whether the plugin is enabled (its process is running). Guarded by mu once the plugin is loaded, use isEnabled()
 
 	//Runtime, guarded by mu (see status.go)
@@ -42,7 +42,7 @@ type Plugin struct {
 	notReady   bool            //guarded by mu: the readiness gate of the running plugin still waits for its port, so it is not in the request path yet
 	wantDown   bool            //guarded by mu: the last thing the administrator (or an update / rebuild) did was stop the plugin, so it is not "down" for block-when-down
 	polMu      sync.RWMutex    //guards pol
-	pol        PluginPolicy    //what the administrator allows Zoraxy to do about this plugin, zero value = behaviour without supervision
+	pol        PluginPolicy    //what the administrator allows Dunree to do about this plugin, zero value = behaviour without supervision
 	sup        supervisorState //restart backoff, crash loop and exit history
 	capBreaker captureBreaker  //circuit breaker of the capture and UI paths (only enforced with a capture timeout)
 	evq        eventQueue      //bounded queue of events waiting to be sent to the plugin
@@ -59,17 +59,18 @@ type ManagerOptions struct {
 	PluginGroupsConfig string              //The group / tag configuration file, if set the plugin groups will be loaded from this file
 
 	/* Plugin Downloader */
-	PluginStoreURLs         []string              //The plugin store URLs, used to download the plugins
+	PluginStoreURLs         []string              //Built-in store sources. Empty in the Dunree binary: the administrator chooses the sources (store_sources.go)
+	ExistingInstall         bool                  //This installation existed before this start (not a new install). Only read once, by the migration of the store sources (store_sources.go)
 	DownloadablePluginCache []*DownloadablePlugin //The cache for the downloadable plugins, key is the plugin ID and value is the DownloadablePlugin struct
 	LastSuccPluginSyncTime  int64                 //The last sync time for the plugin store URLs, used to check if the plugin store URLs need to be synced again
 
-	/* Run plugins as an unprivileged OS user (Unix only, requires root, see runas_unix.go). Empty = same user as Zoraxy */
+	/* Run plugins as an unprivileged OS user (Unix only, requires root, see runas_unix.go). Empty = same user as Dunree */
 	RunAsUser  string
 	RunAsGroup string
 
 	/* Runtime */
-	SystemConst  *zoraxyPlugin.RuntimeConstantValue //The system constant value
-	ZoraxyPort   int                                //The port of the Zoraxy instance, used for API calls
+	SystemConst  *dunreePlugin.RuntimeConstantValue //The system constant value
+	DunreePort   int                                //The port of the Dunree instance, used for API calls
 	CSRFTokenGen func(*http.Request) string         `json:"-"` //The CSRF token generator function
 	Database     *database.Database                 `json:"-"`
 	Logger       *logger.Logger                     `json:"-"`
@@ -85,7 +86,7 @@ type ManagerOptions struct {
 
 	/* Signed plugin index (store_verify.go). Path of a file with the ed25519 public key of the plugin index. Empty = the key of the plugin safety settings */
 	IndexPublicKeyFile string
-	/* Optional: the 32 bytes of the ed25519 key Zoraxy releases are verified with. That key is refused as the plugin index key (the index has a key of its own) */
+	/* Optional: the 32 bytes of the ed25519 key Dunree releases are verified with. That key is refused as the plugin index key (the index has a key of its own) */
 	ReleasePublicKey []byte `json:"-"`
 
 	/* Isolated plugin UI (ui_isolation.go), only used when the setting is turned on */

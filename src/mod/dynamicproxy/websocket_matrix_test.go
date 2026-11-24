@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
 	"github.com/gorilla/websocket"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
 )
 
 // Upstream #974: WebSocket towards HTTP and HTTPS (self signed) upstreams. "wss to an HTTP upstream" is not a

@@ -25,6 +25,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 const (
@@ -381,7 +383,7 @@ func (g *Gate) fetch(ctx context.Context) (*Outcome, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Zoraxy-Sablier")
+	req.Header.Set("User-Agent", wirecompat.UserAgent("Dunree-Sablier", "Zoraxy-Sablier"))
 	req.Header.Set("Accept", "text/html, application/json;q=0.9, */*;q=0.8")
 	resp, err := g.client.Do(req)
 	if err != nil {

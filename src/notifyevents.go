@@ -8,17 +8,17 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/notify"
-	"imuslab.com/zoraxy/mod/uptime"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/notify"
+	"github.com/foleyit/dunree/mod/uptime"
 )
 
 /*
 	notifyevents.go
 
 	Wires the event sources of the notification centre (mod/notify) into the rest of
-	Zoraxy: uptime up/down (debounced), WAF block spikes, fleet node offline, admin login
+	Dunree: uptime up/down (debounced), WAF block spikes, fleet node offline, admin login
 	failures / logins from a new address and "update available".
 	Certificate events live in certhooks.go; auto-ban events are emitted by their own
 	module with notify.Emit (see mod/notify/events_ext.go for the schema).
@@ -156,7 +156,7 @@ func noteLoginAddress(user, ip string) {
 }
 
 // notifyUpdaterCheckWrap emits updater.available when an administrator's update check finds a
-// release (Zoraxy checks on its own only when the optional daily check is on, see updateauto.go). Each tag is announced once.
+// release (Dunree checks on its own only when the optional daily check is on, see updateauto.go). Each tag is announced once.
 func notifyUpdaterCheckWrap(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c := &capture{ResponseWriter: w, limit: 256 << 10}

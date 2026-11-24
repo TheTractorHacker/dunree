@@ -2,7 +2,6 @@ package updater
 
 import (
 	"os"
-	"strings"
 	"time"
 )
 
@@ -48,7 +47,8 @@ type BackupInfo struct {
 	Latest time.Time
 }
 
-// Backups lists the pre-update backups (zoraxy-pre-update-*.zip) without reading them.
+// Backups lists the pre-update backups (dunree-pre-update-*.zip, and zoraxy-pre-update-*.zip written
+// before the rename) without reading them.
 func (m *Manager) Backups() (BackupInfo, error) {
 	return ScanBackups(BackupDir(m.cfg.ConfDir))
 }
@@ -65,7 +65,7 @@ func ScanBackups(dir string) (BackupInfo, error) {
 		return info, err
 	}
 	for _, e := range ents {
-		if e.IsDir() || !strings.HasPrefix(e.Name(), "zoraxy-pre-update-") || !strings.HasSuffix(e.Name(), ".zip") {
+		if e.IsDir() || !IsBackupName(e.Name()) {
 			continue
 		}
 		fi, err := e.Info()

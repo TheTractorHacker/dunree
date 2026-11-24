@@ -1,31 +1,33 @@
+# Development builds (unsigned). Signed release files, named dunree_<os>_<arch> and zoraxy_<os>_<arch>
+# for the in-app updaters of existing installs, are made by tools/build_release.sh.
 # PLATFORMS := darwin/amd64 darwin/arm64 freebsd/amd64 linux/386 linux/amd64 linux/arm linux/arm64 linux/mipsle windows/386 windows/amd64 windows/arm windows/arm64
 PLATFORMS := linux/amd64 linux/386 linux/arm linux/arm64 linux/mipsle linux/riscv64 windows/amd64 freebsd/amd64 darwin/amd64 darwin/arm64
 temp = $(subst /, ,$@)
 os = $(word 1, $(temp))
 arch = $(word 2, $(temp))
 
-#all:  web.tar.gz $(PLATFORMS) fixwindows zoraxy_file_checksum.sha1
+#all:  web.tar.gz $(PLATFORMS) fixwindows dunree_file_checksum.sha1
 all:  clear_old $(PLATFORMS) fixwindows
 
 binary: $(PLATFORMS)
 
-hash: zoraxy_file_checksum.sha1
+hash: dunree_file_checksum.sha1
 
 web: web.tar.gz
 
 clean: 
-	rm -f zoraxy_*_*
+	rm -f dunree_*_* zoraxy_*_*
 	rm -f web.tar.gz
 
 $(PLATFORMS):
 	@echo "Building $(os)/$(arch)"
-	GOROOT_FINAL=Git/ GOOS=$(os) GOARCH=$(arch) $(if $(filter linux/arm,$(os)/$(arch)),GOARM=6,) CGO_ENABLED="0" go build -o './dist/zoraxy_$(os)_$(arch)'  -ldflags "-s -w" -trimpath
-#	GOROOT_FINAL=Git/ GOOS=$(os) GOARCH=$(arch) GOARM=6 go build -o './dist/zoraxy_$(os)_$(arch)'  -ldflags "-s -w" -trimpath
+	GOROOT_FINAL=Git/ GOOS=$(os) GOARCH=$(arch) $(if $(filter linux/arm,$(os)/$(arch)),GOARM=6,) CGO_ENABLED="0" go build -o './dist/dunree_$(os)_$(arch)'  -ldflags "-s -w" -trimpath
+#	GOROOT_FINAL=Git/ GOOS=$(os) GOARCH=$(arch) GOARM=6 go build -o './dist/dunree_$(os)_$(arch)'  -ldflags "-s -w" -trimpath
 
 
 fixwindows:
-	-mv ./dist/zoraxy_windows_amd64 ./dist/zoraxy_windows_amd64.exe
-#	-mv ./dist/zoraxy_windows_arm64 ./dist/zoraxy_windows_arm64.exe
+	-mv ./dist/dunree_windows_amd64 ./dist/dunree_windows_amd64.exe
+#	-mv ./dist/dunree_windows_arm64 ./dist/dunree_windows_arm64.exe
 
 
 clear_old:
@@ -56,6 +58,6 @@ web.tar.gz:
 	-rm -rf "./dist/web"
 	-rm -rf "./dist/system"
 
-zoraxy_file_checksum.sha1:
+dunree_file_checksum.sha1:
 	@echo "Generating the checksum, if sha1sum installed"
-	-sha1sum ./dist/web.tar.gz > ./dist/zoraxy_file_checksum.sha1
+	-sha1sum ./dist/web.tar.gz > ./dist/dunree_file_checksum.sha1

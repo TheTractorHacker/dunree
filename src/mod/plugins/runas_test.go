@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newRunAsManager(userName, group string) *Manager {
@@ -73,7 +73,7 @@ func TestRunAs_SetsCredentialAndEnv(t *testing.T) {
 		t.Fatalf("uid = %d, want %s", cmd.SysProcAttr.Credential.Uid, cur.Uid)
 	}
 	if len(cmd.SysProcAttr.Credential.Groups) != 0 {
-		t.Fatal("supplementary groups of the Zoraxy process would be inherited")
+		t.Fatal("supplementary groups of the Dunree process would be inherited")
 	}
 	hasHome := false
 	for _, kv := range cmd.Env {

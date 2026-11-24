@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*
@@ -108,10 +108,10 @@ func TestPermissionBaselineThenNewPluginsArePending(t *testing.T) {
 	}
 	again, _ := next.GetPluginByID("test.chaos.newcomer")
 	if st := next.permissionStateOf(again); st.Pending != 2 {
-		t.Fatalf("after a restart of Zoraxy the new plugin must still wait for a review: %+v", st)
+		t.Fatalf("after a restart of Dunree the new plugin must still wait for a review: %+v", st)
 	}
 	if st := next.permissionStateOf(mustPlugin(t, next, "test.chaos.veteran")); st.Pending != 0 {
-		t.Fatalf("after a restart of Zoraxy the baseline must hold: %+v", st)
+		t.Fatalf("after a restart of Dunree the baseline must hold: %+v", st)
 	}
 }
 
@@ -317,7 +317,7 @@ func TestFaultNewPluginGetsNothingUntilApprovedWhenApprovalIsRequired(t *testing
 		t.Fatalf("%+v", st)
 	}
 
-	//The approval is stored: the next Zoraxy start grants it without asking again
+	//The approval is stored: the next Dunree start grants it without asking again
 	next := newFaultManager(t)
 	next.Options.Database = m.Options.Database
 	if !next.Settings().RequirePermissionApproval {

@@ -139,7 +139,7 @@ func TestForwardBehindTLSTerminatingTunnel(t *testing.T) {
 }
 
 // Authelia answers an unauthenticated browser navigation with 302 + Location to its portal (the portal
-// URL contains the rd= target). Zoraxy has to pass the redirect through untouched (#698).
+// URL contains the rd= target). Dunree has to pass the redirect through untouched (#698).
 func TestForwardAutheliaRedirectPassthrough(t *testing.T) {
 	var seen seenAuthReq
 	au := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +196,7 @@ func TestForwardAutheliaRedirectPassthrough(t *testing.T) {
 }
 
 // VoidAuth (#958): the session cookie is set by the auth server on its own domain; the auth subrequest must
-// carry the browser Cookie header and Zoraxy must relay Set-Cookie from the auth reply when configured, and
+// carry the browser Cookie header and Dunree must relay Set-Cookie from the auth reply when configured, and
 // must not follow the auth server's redirect itself (which would otherwise look like a loop).
 func TestForwardVoidAuthCookieAndRedirect(t *testing.T) {
 	var seen seenAuthReq
@@ -230,7 +230,7 @@ func TestForwardVoidAuthCookieAndRedirect(t *testing.T) {
 	}
 	mu.Lock()
 	if hits != 1 {
-		t.Fatalf("auth redirect must not be followed by Zoraxy, hits=%d", hits)
+		t.Fatalf("auth redirect must not be followed by Dunree, hits=%d", hits)
 	}
 	mu.Unlock()
 

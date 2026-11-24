@@ -1,4 +1,4 @@
-// Package updater implements the in-app "Update" page backend of this Zoraxy
+// Package updater implements the in-app "Update" page backend of this Dunree
 // fork: release discovery on GitHub, ed25519 + SHA-256 verification, backup,
 // atomic binary replacement, restart and automatic rollback.
 //

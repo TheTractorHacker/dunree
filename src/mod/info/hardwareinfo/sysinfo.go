@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/info/shellexec"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/info/shellexec"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 func Ifconfig(w http.ResponseWriter, r *http.Request) {

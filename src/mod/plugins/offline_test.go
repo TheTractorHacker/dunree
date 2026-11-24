@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/offline"
-	"imuslab.com/zoraxy/mod/offline/offlinetest"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/offline/offlinetest"
 )
 
 func TestPluginStoreDoesNotDialOffline(t *testing.T) {

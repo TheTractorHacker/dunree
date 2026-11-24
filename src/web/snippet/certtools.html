@@ -75,8 +75,8 @@
 
       <!-- Mapped directory -->
       <div class="ui bottom attached tab segment" data-tab="mapdir">
-        <p>Zoraxy can import certificates from a folder managed by certbot, acme.sh, cert-manager or a secrets mount. Start Zoraxy with <code>-certs_dir /path/to/certs</code> (and optionally <code>-certs_dir_interval seconds</code>). Supported layouts: <code>fullchain.pem + privkey.pem</code> (also in <code>live/&lt;name&gt;/</code> and any sub folder), <code>&lt;name&gt;.crt + &lt;name&gt;.key</code>, <code>tls.crt + tls.key</code>.</p>
-        <p>Imported certificates are copies: the source files are never changed or deleted, a certificate whose key does not match is rejected, and Zoraxy will not try to renew them.</p>
+        <p>Dunree can import certificates from a folder managed by certbot, acme.sh, cert-manager or a secrets mount. Start Dunree with <code>-certs_dir /path/to/certs</code> (and optionally <code>-certs_dir_interval seconds</code>). Supported layouts: <code>fullchain.pem + privkey.pem</code> (also in <code>live/&lt;name&gt;/</code> and any sub folder), <code>&lt;name&gt;.crt + &lt;name&gt;.key</code>, <code>tls.crt + tls.key</code>.</p>
+        <p>Imported certificates are copies: the source files are never changed or deleted, a certificate whose key does not match is rejected, and Dunree will not try to renew them.</p>
         <div id="mapdirState"><i class="loading spinner icon"></i></div>
         <table class="ui very compact celled unstackable table" id="mapdirTable" style="display:none;">
           <thead><tr><th>Name</th><th>Source</th><th>State</th><th>Checked</th></tr></thead>
@@ -98,10 +98,10 @@
           <input type="hidden" id="hookId">
           <div class="two fields">
             <div class="field"><label>Name</label><input type="text" id="hookName"></div>
-            <div class="field"><label>URL (https)</label><input type="text" id="hookURL" placeholder="https://hooks.example.com/zoraxy"></div>
+            <div class="field"><label>URL (https)</label><input type="text" id="hookURL" placeholder="https://hooks.example.com/dunree"></div>
           </div>
           <div class="two fields">
-            <div class="field"><label>Signing secret (optional, HMAC-SHA256)</label><input type="password" id="hookSecret" autocomplete="off"><small>Requests carry <code>X-Zoraxy-Signature: sha256=HMAC(secret, timestamp + "." + body)</code> and <code>X-Zoraxy-Timestamp</code>.</small></div>
+            <div class="field"><label>Signing secret (optional, HMAC-SHA256)</label><input type="password" id="hookSecret" autocomplete="off"><small>Requests carry <code>X-Dunree-Signature: sha256=HMAC(secret, timestamp + "." + body)</code> and <code>X-Dunree-Timestamp</code> (also sent as <code>X-Zoraxy-Signature</code> and <code>X-Zoraxy-Timestamp</code> while the legacy names are on).</small></div>
             <div class="field"><label>Events (none selected = all)</label>
               <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.issued"><label>issued / renewed</label></div><br>
               <div class="ui checkbox"><input type="checkbox" class="hookEv" value="certificate.renewal_failed"><label>renewal failed</label></div><br>
@@ -133,14 +133,14 @@
         <div class="ui divider"></div>
         <h4>Command hook</h4>
         <div id="cmdDisabled" class="ui message" style="display:none;">
-          Command hooks are disabled. They let an administrator make Zoraxy execute a program, so they are only available when Zoraxy was started with <code>-allow_hook_commands</code>.
+          Command hooks are disabled. They let an administrator make Dunree execute a program, so they are only available when Dunree was started with <code>-allow_hook_commands</code>.
         </div>
         <div class="ui form" id="cmdForm" style="display:none;">
           <div class="two fields">
             <div class="field"><label>Program (absolute path, run without a shell)</label><input type="text" id="cmdPath" placeholder="/usr/local/bin/cert-hook"></div>
             <div class="field"><label>Arguments (JSON array, optional)</label><input type="text" id="cmdArgs" placeholder='["--flag"]'></div>
           </div>
-          <p><small>The event is passed in environment variables: <code>ZORAXY_EVENT, ZORAXY_DOMAINS, ZORAXY_SUBJECT, ZORAXY_EXPIRY, ZORAXY_DAYS_LEFT, ZORAXY_CA, ZORAXY_ERROR, ZORAXY_EVENT_JSON</code>. 30 second timeout, output is logged (first 4 KB).</small></p>
+          <p><small>The event is passed in environment variables: <code>DUNREE_EVENT, DUNREE_DOMAINS, DUNREE_SUBJECT, DUNREE_EXPIRY, DUNREE_DAYS_LEFT, DUNREE_CA, DUNREE_ERROR, DUNREE_EVENT_JSON</code> (and the same values as <code>ZORAXY_*</code> while the legacy names are on). 30 second timeout, output is logged (first 4 KB).</small></p>
           <div class="field"><div class="ui checkbox"><input type="checkbox" id="cmdEnabled"><label>Enabled</label></div></div>
           <button class="ui basic button" onclick="saveCommand();"><i class="save icon"></i> Save command hook</button>
         </div>
@@ -218,7 +218,7 @@
       function loadMapDir(){
         $.get("/api/cert/mapdir", function(d){
           if (!d.enabled){
-            $("#mapdirState").html(`<div class="ui message">Not enabled. Start Zoraxy with <code>-certs_dir</code>.</div>`);
+            $("#mapdirState").html(`<div class="ui message">Not enabled. Start Dunree with <code>-certs_dir</code>.</div>`);
             return;
           }
           $("#mapdirState").html(`Watching <code>${esc(d.dir)}</code> every ${esc(d.intervalSeconds)} seconds.`);

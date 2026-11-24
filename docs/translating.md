@@ -1,4 +1,4 @@
-# Translating the Zoraxy admin UI
+# Translating the Dunree admin UI
 
 The admin UI is plain HTML and jQuery with English text written directly in the pages, and there is no build step.
 Translation therefore happens **at runtime in the browser**: `src/web/script/i18n.js` looks every piece of visible
@@ -32,7 +32,7 @@ valuable contribution you can make.
 * **`rules`** are regular expressions (`re`, JavaScript syntax) with `$1`-style groups, for sentences the extractor cannot
   turn into keys. Prefer `strings` whenever possible.
 * Missing keys silently stay English. A partial translation is fine.
-* Do not translate product and protocol names (Zoraxy, ACME, TLS, OIDC, HTTP, CAPTCHA, ...). Follow
+* Do not translate product and protocol names (Dunree, ACME, TLS, OIDC, HTTP, CAPTCHA, ...). Follow
   `src/web/locales/GLOSSARY.md` so the same term is used everywhere.
 * Machine-readable text that must stay English (identifiers, config keys, code samples) can be excluded with the attribute
   `data-i18n-skip` on the element. `code`, `pre`, `textarea`, `script` and `style` content is never translated.

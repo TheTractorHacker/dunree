@@ -41,7 +41,7 @@ def forward_auth():
         else:
             send(h, 401, "login required")
 
-    with Zoraxy() as z, Backend(authelia, name="authelia") as au, Backend(name="app") as app:
+    with Dunree() as z, Backend(authelia, name="authelia") as au, Backend(name="app") as app:
         z.api("/api/sso/forward-auth", address="http://%s/api/authz/forward-auth" % au.addr, responseHeaders="Remote-User,Remote-Groups,Remote-Email",
               outpostUrl="http://" + au.addr)
         z.add_rule("fa.test", app.addr)
@@ -51,7 +51,7 @@ def forward_auth():
         check(r.status in (401, 302, 403) and len(app.log) == n, "unauthenticated request reached the app: %d" % r.status)
         # what the auth server was told
         call = [s for s in seen if s["path"].startswith("/api/authz/forward-auth")][-1]["headers"]
-        check(call.get("x-forwarded-host") == "fa.test" and call.get("x-forwarded-uri") == "/private", "subrequest headers not computed by zoraxy: %s" % call)
+        check(call.get("x-forwarded-host") == "fa.test" and call.get("x-forwarded-uri") == "/private", "subrequest headers not computed by Dunree: %s" % call)
         ok = z.req("fa.test", "/private", headers={"Cookie": "authelia_session=alice", "Remote-User": "root", "Remote-Groups": "evil"})
         check(ok.status == 200, "authenticated request refused (%d)" % ok.status)
         hd = ok.json()["headers"]
@@ -110,7 +110,7 @@ def oidc_two_providers():
     exemptions, provider isolation (a session of one provider is useless on the other rule)."""
     with fakes.FakeIdP("one", {"sub": "u1", "email": "alice@example.com", "email_verified": True, "groups": ["staff"], "name": "Alice"}) as i1, \
             fakes.FakeIdP("two", {"sub": "u2", "email": "bob@other.org", "email_verified": True, "groups": ["guests"], "name": "Bob"}) as i2, \
-            Zoraxy() as z, Backend(name="app") as app:
+            Dunree() as z, Backend(name="app") as app:
         for pid, idp, cid in (("one", i1, "client-one"), ("two", i2, "client-two")):
             z.api("/api/sso/OAuth2/providers", id=pid, name=pid, oauth2WellKnownUrl=idp.base + "/.well-known/openid-configuration", oauth2Issuer=idp.base,
                   oauth2ClientId=cid, oauth2ClientSecret="s3cret-" + pid, oauth2CodeChallengeMethod="PKCE_S256", oauth2Scopes="openid email profile",
@@ -162,7 +162,7 @@ def oidc_two_providers():
 @scenario("basic_auth", ["core"])
 def basic_auth():
     """Basic auth on a rule: 401 challenge, wrong password, right password, X-Remote-User not forgeable, backoff."""
-    with Zoraxy() as z, Backend(name="app") as app:
+    with Dunree() as z, Backend(name="app") as app:
         z.add_rule("ba.test", app.addr, bauth=True, cred=json.dumps([{"username": "alice", "password": "pw-alice-1"}]))
         r = z.req("ba.test")
         check(r.status == 401 and "basic" in r.h("www-authenticate", "").lower(), "no challenge: %d %s" % (r.status, r.headers))

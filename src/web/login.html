@@ -6,8 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
-    <link rel="icon" type="image/png" href="./favicon.png" />
-    <title>Login | Zoraxy</title>
+    <!-- Dunree icons (brand/README.md). The files are in img/public/brand, readable without a login. -->
+    <link rel="icon" type="image/svg+xml" href="img/public/brand/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/public/brand/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/public/brand/favicon-16.png">
+    <link rel="shortcut icon" href="img/public/brand/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/public/brand/apple-touch-icon.png">
+    <link rel="manifest" href="img/public/brand/manifest.json">
+    <title>Login | Dunree</title>
     <link rel="stylesheet" href="script/semantic/semantic.min.css">
     <script src="script/i18n.js"></script>
     <script type="application/javascript" src="script/jquery-3.6.0.min.js"></script>
@@ -73,8 +79,10 @@
         @keyframes lgIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
         #loginForm.shake { animation: lgShake .45s ease; }
         @keyframes lgShake { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } 100% { transform: none; } }
-        #loginForm .lg-logo { display: block; width: 78%; max-width: 15em; margin: 0 auto 1.1em; pointer-events: none; user-select: none; }
-        body.night #loginForm .lg-logo { filter: invert(.94) hue-rotate(180deg); }
+        /* Dunree lockup. Light and dark are separate files (brand/README.md): the dark one is shown on the night card, never a filter. */
+        #loginForm .lg-logo { display: block; width: 70%; max-width: 13.5em; height: auto; margin: .3em auto 1.3em; pointer-events: none; user-select: none; }
+        #loginForm .lg-logo--dark, body.night #loginForm .lg-logo--light { display: none; }
+        body.night #loginForm .lg-logo--dark { display: block; }
         .lg-title { margin: 0 0 1.2em; text-align: center; color: var(--lg-muted); font-size: .95em; letter-spacing: .02em; }
 
         #loginForm form { margin: 0; }
@@ -143,6 +151,7 @@
 
         .wavebase { position: fixed; z-index: 3; left: 0; right: 0; bottom: 0; padding: .7em 1em .9em; text-align: center; font-size: .9em; color: var(--lg-foot); }
         .wavebase p { margin: 0; opacity: .85; }
+        .wavebase .lg-foot-small { font-size: .88em; }
         .wavebase a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
         @media (max-width: 480px) {
@@ -183,7 +192,8 @@
         <main id="loginForm">
             
             <form id="lgForm" class="ui large form content" autocomplete="on">
-                <img class="lg-logo" src="img/public/logo.svg" alt="Zoraxy">
+                <img class="lg-logo lg-logo--light" src="img/public/brand/dunree-lockup.svg" alt="Dunree" width="299" height="64">
+                <img class="lg-logo lg-logo--dark" src="img/public/brand/dunree-lockup-dark.svg" alt="" width="299" height="64">
                 <p class="lg-title registerOnly">Account Setup</p>
                 <div class="field">
                     <div class="ui left icon input">
@@ -223,7 +233,8 @@
             </form>
         </main>
         <div class="wavebase">
-            <p>Proudly powered by <a href="https://zoraxy.aroz.org" target="_blank" rel="noopener">Zoraxy</a></p>
+            <!-- Attribution. The credit to the project Dunree is based on and to its authors must stay (NOTICE). No link: the page is shown before a login. -->
+            <p id="lgBrandFooter"><strong data-i18n-skip>Dunree</strong> <span class="lg-foot-sep" aria-hidden="true">·</span> Reverse proxy and web gateway <span class="lg-foot-sep" aria-hidden="true">·</span> Published by Foley IT<br><span class="lg-foot-small">Based on Zoraxy v3.3.6 by tobychui and imuslab, AGPL-3.0</span></p>
         </div>
     <script>
         /* Background: drifting light motes and five layers of waves that swell, cross and follow the pointer a little.

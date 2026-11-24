@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os/exec"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // GetDriveStat returns the free space of each mounted filesystem.

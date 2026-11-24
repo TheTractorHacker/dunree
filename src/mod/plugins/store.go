@@ -11,27 +11,30 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/eventsystem"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
 	Plugin Store
 */
 
-// See https://github.com/aroz-online/zoraxy-official-plugins/blob/main/directories/index2.json for the standard format
+// DownloadablePlugin is one entry of a store index. The JSON field names are the
+// ones of the list format of the Zoraxy plugin store ("index2.json"), which the // legacy-compat
+// store page and existing community indexes use.
 
 type DownloadablePlugin struct {
 	IconPath         string                   `json:"IconPath"`         //Icon path or URL for the plugin
-	PluginIntroSpect zoraxy_plugin.IntroSpect `json:"PluginIntroSpect"` //Plugin introspect information
+	PluginIntroSpect dunree_plugin.IntroSpect `json:"PluginIntroSpect"` //Plugin introspect information
 	DownloadURLs     map[string]string        `json:"DownloadURLs"`     //Download URLs for different platforms
 	Source           string                   `json:"Source"`           //The plugin store index URL this plugin was fetched from
 
-	//Set by Zoraxy when the index is read (store_verify.go), never taken from an unsigned index
+	//Set by Dunree when the index is read (store_verify.go), never taken from an unsigned index
 	Downloads   map[string]PinnedDownload `json:"Downloads,omitempty"` //signed index only: URL, SHA-256 and size per platform
 	Signature   string                    `json:"Signature"`           //signed | unsigned | no_key | missing | bad_signature | replayed | downgraded | unchecked
+	Addon       *AddonMeta                `json:"Addon,omitempty"`     //Dunree add-on index only: publisher, licence, categories, changelog, screenshots, minimum host version
 	IndexSerial int64                     `json:"IndexSerial"`         //serial of the signed index, 0 for an unsigned one
 
 	// Fingerprint of the public key the signature of the index was verified with
@@ -216,7 +219,7 @@ func (m *Manager) InstallPlugin(plugin *DownloadablePlugin) (err error) {
 	// A freshly installed plugin is shown as stopped. Store that, otherwise a
 	// missing flag counts as "enabled" (and a flag left from an earlier install of
 	// the same ID may say "enabled"), and the plugin starts by itself at the next
-	// Zoraxy start although nobody enabled this install.
+	// Dunree start although nobody enabled this install.
 	m.markInstalledPluginDisabled(pluginDir, plugin.PluginIntroSpect.ID)
 
 	return nil

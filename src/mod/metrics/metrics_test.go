@@ -158,40 +158,40 @@ func TestExpositionRoundTrip(t *testing.T) {
 	r.Event(EventCaptchaChallenge, "app.example.com", "required")
 
 	r.AddCollector(func(e *Emitter) {
-		e.Gauge("zoraxy_test_gauge", "a gauge", 1.5, "k", "v")
-		e.Gauge("zoraxy_test_gauge", "a gauge", 2, "k", "w")
+		e.Gauge("dunree_test_gauge", "a gauge", 1.5, "k", "v")
+		e.Gauge("dunree_test_gauge", "a gauge", 2, "k", "w")
 	})
 	r.AddCollector(func(e *Emitter) { panic("boom") }) //must not break the scrape
 
 	text := scrape(t, r)
 	ss, types := parseExposition(t, text)
 
-	if types["zoraxy_http_requests_total"] != "counter" || types["zoraxy_http_request_duration_seconds"] != "histogram" {
+	if types["dunree_http_requests_total"] != "counter" || types["dunree_http_request_duration_seconds"] != "histogram" {
 		t.Fatalf("types: %v", types)
 	}
-	if s, ok := find(ss, "zoraxy_http_requests_total", "endpoint", "app.example.com", "status_class", "4xx", "method", "POST"); !ok || s.value != 1 {
+	if s, ok := find(ss, "dunree_http_requests_total", "endpoint", "app.example.com", "status_class", "4xx", "method", "POST"); !ok || s.value != 1 {
 		t.Fatalf("missing 4xx POST sample: %v", ok)
 	}
-	if s, ok := find(ss, "zoraxy_http_requests_total", "endpoint", "app.example.com", "status_class", "2xx", "method", "GET"); !ok || s.value != 1 {
+	if s, ok := find(ss, "dunree_http_requests_total", "endpoint", "app.example.com", "status_class", "2xx", "method", "GET"); !ok || s.value != 1 {
 		t.Fatal("missing 2xx GET sample")
 	}
-	if _, ok := find(ss, "zoraxy_http_requests_total", "method", "OTHER"); !ok {
+	if _, ok := find(ss, "dunree_http_requests_total", "method", "OTHER"); !ok {
 		t.Fatal("unknown methods must fold into OTHER")
 	}
-	if s, _ := find(ss, "zoraxy_http_request_bytes_total", "endpoint", "app.example.com"); s.value != 8 {
+	if s, _ := find(ss, "dunree_http_request_bytes_total", "endpoint", "app.example.com"); s.value != 8 {
 		t.Fatalf("bytes in = %v", s.value)
 	}
-	if s, _ := find(ss, "zoraxy_http_response_bytes_total", "endpoint", "app.example.com"); s.value != 7 {
+	if s, _ := find(ss, "dunree_http_response_bytes_total", "endpoint", "app.example.com"); s.value != 7 {
 		t.Fatalf("bytes out = %v", s.value)
 	}
-	if s, _ := find(ss, "zoraxy_http_requests_in_flight", "endpoint", "app.example.com"); s.value != 0 {
+	if s, _ := find(ss, "dunree_http_requests_in_flight", "endpoint", "app.example.com"); s.value != 0 {
 		t.Fatal("in flight not back to zero")
 	}
 	// histogram: cumulative buckets, +Inf == _count
 	var last float64 = -1
 	n := 0
 	for _, s := range ss {
-		if s.name == "zoraxy_http_request_duration_seconds_bucket" && s.labels["endpoint"] == "app.example.com" {
+		if s.name == "dunree_http_request_duration_seconds_bucket" && s.labels["endpoint"] == "app.example.com" {
 			if s.value < last {
 				t.Fatal("histogram buckets not cumulative")
 			}
@@ -202,16 +202,16 @@ func TestExpositionRoundTrip(t *testing.T) {
 	if n != len(DurationBuckets)+1 {
 		t.Fatalf("bucket count %d", n)
 	}
-	if c, _ := find(ss, "zoraxy_http_request_duration_seconds_count", "endpoint", "app.example.com"); c.value != 2 || last != 2 {
+	if c, _ := find(ss, "dunree_http_request_duration_seconds_count", "endpoint", "app.example.com"); c.value != 2 || last != 2 {
 		t.Fatalf("count %v inf %v", c.value, last)
 	}
-	if _, ok := find(ss, "zoraxy_ratelimit_rejected_total", "endpoint", "app.example.com", "reason", "limit"); !ok {
+	if _, ok := find(ss, "dunree_ratelimit_rejected_total", "endpoint", "app.example.com", "reason", "limit"); !ok {
 		t.Fatal("rate limit event missing")
 	}
-	if _, ok := find(ss, "zoraxy_access_blocked_total", "reason", "blacklist"); !ok {
+	if _, ok := find(ss, "dunree_access_blocked_total", "reason", "blacklist"); !ok {
 		t.Fatal("access event missing")
 	}
-	if _, ok := find(ss, "zoraxy_test_gauge", "k", "w"); !ok {
+	if _, ok := find(ss, "dunree_test_gauge", "k", "w"); !ok {
 		t.Fatal("collector sample missing")
 	}
 	// escaping of the weird endpoint label
@@ -230,7 +230,7 @@ func TestEndpointCardinalityCap(t *testing.T) {
 		t.Fatalf("endpoint labels not capped: %d", n)
 	}
 	ss, _ := parseExposition(t, scrape(t, r))
-	s, ok := find(ss, "zoraxy_http_requests_total", "endpoint", OverflowLabel)
+	s, ok := find(ss, "dunree_http_requests_total", "endpoint", OverflowLabel)
 	if !ok || s.value != 300 {
 		t.Fatalf("overflow series missing or wrong: %v %v", ok, s.value)
 	}
@@ -268,10 +268,10 @@ func TestStatusAndInterfaces(t *testing.T) {
 		t.Fatal("Flusher/Unwrap lost")
 	}
 	ss, _ := parseExposition(t, scrape(t, r))
-	if s, _ := find(ss, "zoraxy_http_requests_total", "status_class", "5xx"); s.value != 1 {
+	if s, _ := find(ss, "dunree_http_requests_total", "status_class", "5xx"); s.value != 1 {
 		t.Fatal("5xx not counted")
 	}
-	if s, _ := find(ss, "zoraxy_http_requests_total", "status_class", "2xx"); s.value != 2 {
+	if s, _ := find(ss, "dunree_http_requests_total", "status_class", "2xx"); s.value != 2 {
 		t.Fatalf("2xx = %v", s.value)
 	}
 }
@@ -347,7 +347,7 @@ func TestConcurrency(t *testing.T) {
 	ss, _ := parseExposition(t, scrape(t, r))
 	total := 0.0
 	for _, s := range ss {
-		if s.name == "zoraxy_http_requests_total" {
+		if s.name == "dunree_http_requests_total" {
 			total += s.value
 		}
 	}

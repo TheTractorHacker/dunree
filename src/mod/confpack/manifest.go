@@ -36,7 +36,7 @@ type Manifest struct {
 	Format         string         `json:"format"`
 	SchemaVersion  int            `json:"schemaVersion"`
 	ConfigSchema   int            `json:"configSchema"`
-	ZoraxyVersion  string         `json:"zoraxyVersion"`
+	DunreeVersion  string         `json:"zoraxyVersion"`
 	Mode           string         `json:"mode"`
 	Created        string         `json:"created"`
 	IncludesDB     bool           `json:"includesDB"`
@@ -47,7 +47,7 @@ type Manifest struct {
 
 var (
 	// ErrNewerSchema: the archive was written by a newer build.
-	ErrNewerSchema = errors.New("this archive was created by a newer Zoraxy (manifest schema version is higher than this build supports); update Zoraxy before importing it")
+	ErrNewerSchema = errors.New("this archive was created by a newer Dunree (manifest schema version is higher than this build supports); update Dunree before importing it")
 	// ErrBadManifest: manifest.json is unreadable or does not match the archive.
 	ErrBadManifest = errors.New("manifest.json is invalid")
 )
@@ -66,7 +66,7 @@ func ValidEntryName(name string) (rel string, kind string, err error) {
 		return "", "", fmt.Errorf("invalid entry name %q", clip(name))
 	}
 	if !strings.HasPrefix(name, ConfPrefix) {
-		return "", "", fmt.Errorf("entry %q is outside conf/ (not a Zoraxy backup, or from a version that is too old)", clip(name))
+		return "", "", fmt.Errorf("entry %q is outside conf/ (not a Dunree backup, or from a version that is too old)", clip(name))
 	}
 	rel = strings.TrimPrefix(name, ConfPrefix)
 	if rel == "" || strings.HasPrefix(rel, "/") || strings.HasSuffix(rel, "/") {

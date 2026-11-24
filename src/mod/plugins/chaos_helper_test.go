@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/eventsystem"
-	"imuslab.com/zoraxy/mod/info/logger"
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/info/logger"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*
@@ -66,7 +66,9 @@ func chaosBuildRoot() string {
 // TestMain). Only folders older than 30 minutes are removed, so a run of this
 // package in another checkout at the same time is not disturbed.
 func sweepStaleChaosBuilds() {
-	old, _ := filepath.Glob(filepath.Join(chaosBuildRoot(), "zoraxy-chaos-*"))
+	old, _ := filepath.Glob(filepath.Join(chaosBuildRoot(), "dunree-chaos-*"))
+	earlier, _ := filepath.Glob(filepath.Join(chaosBuildRoot(), "zoraxy-chaos-*")) // folders of runs before the rename
+	old = append(old, earlier...)
 	for _, dir := range old {
 		if fi, err := os.Stat(dir); err == nil && fi.IsDir() && time.Since(fi.ModTime()) > 30*time.Minute {
 			os.RemoveAll(dir)
@@ -86,7 +88,7 @@ func chaosBinary(t testing.TB) string {
 			chaosBuild.err = errors.New("go toolchain not found: " + err.Error())
 			return
 		}
-		dir, err := os.MkdirTemp(chaosBuildRoot(), "zoraxy-chaos-")
+		dir, err := os.MkdirTemp(chaosBuildRoot(), "dunree-chaos-")
 		if err != nil {
 			chaosBuild.err = err
 			return
@@ -187,7 +189,7 @@ func newFaultManager(t testing.TB) *Manager {
 		Options: &ManagerOptions{
 			PluginDir:     filepath.Join(t.TempDir(), "plugins"),
 			PluginGroups:  map[string][]string{},
-			SystemConst:   &zp.RuntimeConstantValue{ZoraxyVersion: "test"},
+			SystemConst:   &zp.RuntimeConstantValue{DunreeVersion: "test"},
 			Logger:        lg,
 			Database:      &database.Database{Backend: &memBackend{}},
 			APIKeyManager: auth.NewAPIKeyManager(),

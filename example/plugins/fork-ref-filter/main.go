@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	plugin "example.com/zoraxy/fork-ref-filter/mod/zoraxy_plugin"
+	plugin "example.com/dunree/fork-ref-filter/mod/dunree_plugin"
 )
 
 /*
@@ -34,7 +34,7 @@ import (
 	- start configuration on standard input (no secret on the command line)
 	- the invoke token is required on the filter path
 	- a health path
-	- failure policy fail_closed is DECLARED. Zoraxy only honours it after the
+	- failure policy fail_closed is DECLARED. Dunree only honours it after the
 	  administrator ticked the consent for this plugin; without it the plugin fails open
 	- it ends on the terminate request and on SIGTERM
 	- it writes two log lines per start and none per request
@@ -83,7 +83,7 @@ func main() {
 	cfg, err := plugin.ServeAndRecvSpec(&plugin.IntroSpect{
 		ID:            "fork.zoraxy.ref.filter",
 		Name:          "Fork Reference Filter",
-		Author:        "Zoraxy fork",
+		Author:        "Dunree fork",
 		AuthorContact: "see the repository of the fork",
 		Description:   "Reference filter plugin and test fixture: marks requests and responses with a header and denies one fixed path. Not a feature.",
 		Type:          plugin.PluginType_Router,

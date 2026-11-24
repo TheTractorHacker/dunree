@@ -4,14 +4,15 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/errorpages"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
 	blockref.go
 
-	The reference ID a visitor gets with a block page (header X-Zoraxy-Ref and the {{ref}} placeholder
+	The reference ID a visitor gets with a block page (header X-Dunree-Ref, also sent as X-Zoraxy-Ref while the legacy names are on, and the {{ref}} placeholder
 	of the error page) and that the blocked-request log stores with the entry, so an admin can search
 	it. The ID says nothing about the rule: the rule name is never sent to the visitor.
 
@@ -21,9 +22,9 @@ import (
 
 // refRequestKey keeps the reference on the request while it is handled. A blocked request is never
 // forwarded, so the value cannot reach an upstream.
-const refRequestKey = "X-Zoraxy-Internal-Ref"
+const refRequestKey = "X-Dunree-Internal-Ref"
 
-// stripInternalHeaders removes the headers Zoraxy uses internally from a request that comes from
+// stripInternalHeaders removes the headers Dunree uses internally from a request that comes from
 // the network, so a client cannot choose the reference of its own block (or have the header
 // reach an upstream).
 func stripInternalHeaders(r *http.Request) {
@@ -32,8 +33,16 @@ func stripInternalHeaders(r *http.Request) {
 	}
 }
 
-// RefHeader is the response header that carries the reference ID of a block page
-const RefHeader = "X-Zoraxy-Ref"
+// RefHeader is the response header that carries the reference ID of a block page.
+// LegacyRefHeader is the name Zoraxy used: it is sent as well while wirecompat.EmitLegacy is on. // legacy-compat
+const (
+	refHeaderSuffix = "Ref"
+	RefHeader       = wirecompat.HeaderPrefix + refHeaderSuffix
+	LegacyRefHeader = wirecompat.LegacyHeaderPrefix + refHeaderSuffix
+)
+
+// setRefHeader writes the reference ID of a block page to the response headers
+func setRefHeader(h http.Header, ref string) { wirecompat.SetHeader(h, refHeaderSuffix, ref) }
 
 // blockRefEnabled reports whether blocks of this router get a reference ID: only when the
 // blocked-request log records them, otherwise the ID could not be found again.
@@ -120,7 +129,7 @@ func (router *Router) writeForbiddenPage(w http.ResponseWriter, r *http.Request,
 	ref := router.requestRef(r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if ref != "" {
-		w.Header().Set(RefHeader, blocklog.FormatRef(ref))
+		setRefHeader(w.Header(), blocklog.FormatRef(ref))
 	}
 	w.WriteHeader(status)
 	w.Write(renderErrorPage(page, ref, region))

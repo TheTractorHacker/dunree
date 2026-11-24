@@ -34,7 +34,7 @@
             </div>
         </div>
         <ul class="sx-rows" id="usrRows"><li class="zx-empty zx-empty--inline"><p class="zx-empty__text">Loading...</p></li></ul>
-        <p class="sx-note" id="usrResetNote">The last enabled admin cannot be removed, disabled or made a viewer. Locked out? Start Zoraxy once with the reset option (<code>-reset_ac</code>).</p>
+        <p class="sx-note" id="usrResetNote">The last enabled admin cannot be removed, disabled or made a viewer. Locked out? Start Dunree once with the reset option (<code>-reset_ac</code>).</p>
     </div>
 </section>
 
@@ -215,12 +215,12 @@
     });
     $.get("/api/auth/authEnabled", function (on) {
         if (on === false) {
-            $("#usrRows").html('<li class="zx-empty zx-empty--inline"><span class="zx-empty__icon" aria-hidden="true"><i class="unlock icon"></i></span><p class="zx-empty__text">' + esc(t("The admin panel runs without a login, so there are no accounts to manage. Start Zoraxy with authentication to add accounts.")) + "</p></li>");
+            $("#usrRows").html('<li class="zx-empty zx-empty--inline"><span class="zx-empty__icon" aria-hidden="true"><i class="unlock icon"></i></span><p class="zx-empty__text">' + esc(t("The admin panel runs without a login, so there are no accounts to manage. Start Dunree with authentication to add accounts.")) + "</p></li>");
             // no login, no accounts: the Add button and the note about the last admin would only mislead
             $("#usrNew, #usrAddBox, #usrResetNote").prop("hidden", true);
             ["#usrFAdmins", "#usrFViewers", "#usrFOff"].forEach(function (s) { ZxSec.fact(s, t("None")); });
             ZxSec.fact("#usrFLast", t("No login"), t("nobody signs in"));
-            ZxSec.status("#usrStatus", { state: "danger", badge: t("No login"), title: t("Anyone who can reach this panel is an admin"), desc: t("Zoraxy was started without a login (-noauth), so there are no accounts. Restart it without that option to require a sign-in.") });
+            ZxSec.status("#usrStatus", { state: "danger", badge: t("No login"), title: t("Anyone who can reach this panel is an admin"), desc: t("Dunree was started without a login (-noauth), so there are no accounts. Restart it without that option to require a sign-in.") });
         } else { load(); }
     });
 })();

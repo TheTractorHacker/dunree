@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
 )
 
 // Saves after the midnight reset must not overwrite the previous day

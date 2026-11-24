@@ -1,6 +1,6 @@
 package dockerux
 
-import "imuslab.com/zoraxy/mod/info/logger"
+import "github.com/foleyit/dunree/mod/info/logger"
 
 /*
 	Docker Optimizer

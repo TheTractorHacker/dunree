@@ -3,7 +3,7 @@ package acme_test
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 // An API client may send non-string JSON for these fields. That must never

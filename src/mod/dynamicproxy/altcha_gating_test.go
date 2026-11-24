@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 func TestAltchaChallengeEndpointThroughGatingAndCountryChallenge(t *testing.T) {

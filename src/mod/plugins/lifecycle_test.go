@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/info/logger"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // TestStartPluginOutputReadersDoNotRaceProcessField starts a plugin that writes
@@ -30,11 +30,11 @@ func TestStartPluginOutputReadersDoNotRaceProcessField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := &Plugin{RootDir: dir, Spec: &zoraxyPlugin.IntroSpect{ID: "racer", Name: "racer"}}
+	p := &Plugin{RootDir: dir, Spec: &dunreePlugin.IntroSpect{ID: "racer", Name: "racer"}}
 	m := &Manager{
 		LoadedPlugins: map[string]*Plugin{"racer": p},
 		Options: &ManagerOptions{
-			SystemConst: &zoraxyPlugin.RuntimeConstantValue{},
+			SystemConst: &dunreePlugin.RuntimeConstantValue{},
 			Logger:      lg,
 		},
 	}

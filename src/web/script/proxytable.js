@@ -63,7 +63,7 @@
     /* ------------------------------------------------------------------ derived values */
     function authLabel(r) {
         var m = r.AuthenticationProvider ? r.AuthenticationProvider.AuthMethod : 0;
-        return { 1: "Basic Auth", 2: "Forward Auth", 3: "OAuth2", 4: "Zoraxy Auth" }[m] || "";
+        return { 1: "Basic Auth", 2: "Forward Auth", 3: "OAuth2", 4: "Dunree Auth" }[m] || "";
     }
 
     // "on" enabled and fine, "err" enabled but cannot serve, "off" disabled
@@ -272,7 +272,7 @@
 
     // first line: is the server behind the host answering (uptime monitor), with the latency of the last check
     function healthHtml(r) {
-        if (r.Disabled) { return '<span class="zxs-health zxs-health--off ptLiveOff" title="' + esc(tr("This host is disabled: Zoraxy does not answer for it")) + '">' + esc(tr("Off")) + '</span>'; }
+        if (r.Disabled) { return '<span class="zxs-health zxs-health--off ptLiveOff" title="' + esc(tr("This host is disabled: Dunree does not answer for it")) + '">' + esc(tr("Off")) + '</span>'; }
         if (!r.ActiveOrigins || r.ActiveOrigins.length === 0) { return '<span class="zxs-health zxs-health--danger" title="' + esc(tr("Enabled, but no active upstream")) + '">' + esc(tr("No upstream")) + '</span>'; }
         var h = healthInfo(r);
         if (h.state === "down") { return '<span class="zxs-health zxs-health--danger" title="' + esc(tr("The uptime monitor cannot reach the upstream")) + '">' + esc(tr("Down")) + '</span>'; }
@@ -349,7 +349,7 @@
         if (!state.list.length) {
             $body.html('<tr class="ptEmptyRow"><td colspan="' + cols + '"><div class="zx-empty ptEmpty"><div class="zx-empty__icon"><i class="sitemap icon" aria-hidden="true"></i></div>' +
                 '<p class="zx-empty__title">' + esc(tr("No hosts yet")) + '</p>' +
-                '<p class="zx-empty__text">' + esc(tr("A proxy rule tells Zoraxy which server on your network answers for a host name, for example app.example.com to 192.168.1.20:8080. Create the first one, or start from a template.")) + '</p>' +
+                '<p class="zx-empty__text">' + esc(tr("A proxy rule tells Dunree which server on your network answers for a host name, for example app.example.com to 192.168.1.20:8080. Create the first one, or start from a template.")) + '</p>' +
                 '<div class="zx-btn-row" style="justify-content:center;"><button type="button" class="zx-btn zx-btn--primary" onclick="openNewRuleDialog()"><i class="plus icon" aria-hidden="true"></i> ' + esc(tr("New proxy rule")) + '</button>' +
                 '<button type="button" class="zx-btn zx-btn--secondary" onclick="openRuleTemplateManager()"><i class="clone outline icon" aria-hidden="true"></i> ' + esc(tr("Templates")) + '</button></div></div></td></tr>');
         } else if (!rows.length) {

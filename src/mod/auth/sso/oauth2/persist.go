@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/database"
 )
 
 /*

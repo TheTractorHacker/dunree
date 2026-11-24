@@ -181,8 +181,8 @@
         </button>
         <button type="button" class="item ssoMethod" role="tab" id="ssoTabZorx" data-tab="zoraxy_sso_tab" data-sso-method="zorx" aria-controls="ssoPanelZorx" aria-selected="false" tabindex="-1">
             <span class="ssoMethod__icon" aria-hidden="true"><i class="user circle icon"></i></span>
-            <span class="ssoMethod__name">Zoraxy Auth</span>
-            <span class="ssoMethod__desc">The login page built into Zoraxy. You keep the users here.</span>
+            <span class="ssoMethod__name">Dunree Auth</span>
+            <span class="ssoMethod__desc">The login page built into Dunree. You keep the users here.</span>
             <span class="ssoMethod__state"><span class="zx-badge zx-badge--dot" data-sso-badge>Loading...</span><span class="ssoMethod__sites" data-sso-sites></span></span>
         </button>
     </div>
@@ -192,7 +192,7 @@
         <header class="zx-sectionhead ssoHead">
             <h3 class="zx-sectionhead__title">Forward auth</h3>
             <span class="zx-badge zx-badge--dot" data-sso-headbadge="fwd">Loading...</span>
-            <p class="zx-sectionhead__desc">For every request to a protected site Zoraxy first asks your authorization server. An answer of 200 to 299 lets the request through; any other answer, usually a redirect to the login page, is sent to the visitor.</p>
+            <p class="zx-sectionhead__desc">For every request to a protected site Dunree first asks your authorization server. An answer of 200 to 299 lets the request through; any other answer, usually a redirect to the login page, is sent to the visitor.</p>
         </header>
         <div class="zx-statrow" id="ssoStatsFwd" aria-live="polite"></div>
         <div class="zx-callout zx-callout--warn" role="note" id="ssoWarnFwd" hidden>
@@ -204,7 +204,7 @@
             <section class="zx-card ssoStep" id="ssoFwdStep1">
                 <div class="zx-card__head">
                     <span class="ssoStep__num" aria-hidden="true">1</span>
-                    <h3 class="zx-card__title">Point Zoraxy at your authorization server</h3>
+                    <h3 class="zx-card__title">Point Dunree at your authorization server</h3>
                     <span class="zx-badge" data-sso-stepbadge></span>
                     <p class="zx-card__desc">Works with <a href="https://www.authelia.com" rel="noopener noreferrer" target="_blank">Authelia</a>, <a href="https://goauthentik.io/" rel="noopener noreferrer" target="_blank">Authentik</a>, <a href="https://oauth2-proxy.github.io/oauth2-proxy/" rel="noopener noreferrer" target="_blank">OAuth2 Proxy</a> and other servers with a forward auth endpoint. Nothing is checked until an address is saved.</p>
                 </div>
@@ -233,7 +233,7 @@
                             <div class="zx-field">
                                 <div class="zx-field__label-row"><label class="zx-field__label" for="forwardAuthOutpostUrl">Outpost URL</label></div>
                                 <input class="zx-input" type="text" id="forwardAuthOutpostUrl" name="forwardAuthOutpostUrl" placeholder="https://auth.example.com" autocomplete="off" spellcheck="false">
-                                <p class="zx-help">Base URL of the Authentik proxy outpost. When set, Zoraxy passes <code>/outpost.goauthentik.io/</code> (callback, start, sign_out, static files) on every Forward auth protected site to this URL <b>without</b> a login. Authentik needs this so that its session cookie is set on the site's own domain.</p>
+                                <p class="zx-help">Base URL of the Authentik proxy outpost. When set, Dunree passes <code>/outpost.goauthentik.io/</code> (callback, start, sign_out, static files) on every Forward auth protected site to this URL <b>without</b> a login. Authentik needs this so that its session cookie is set on the site's own domain.</p>
                             </div>
                             <div class="zx-field">
                                 <div class="zx-field__label-row"><label class="zx-field__label" for="forwardAuthStartRedirect">When a visitor is not signed in</label></div>
@@ -242,7 +242,7 @@
                                     <option value="local">Redirect to /outpost.goauthentik.io/start on the protected site (one application)</option>
                                     <option value="outpost">Redirect to /outpost.goauthentik.io/start on the outpost URL (whole domain)</option>
                                 </select>
-                                <p class="zx-help">Authentik answers <code>401</code> with an HTML page to browsers that are not signed in. With a redirect Zoraxy sends browsers to <code>.../outpost.goauthentik.io/start?rd=&lt;original URL&gt;</code> instead. Zoraxy builds the <code>rd</code> value from the request it received; nothing supplied by the client is reflected. API clients still get a plain 401.</p>
+                                <p class="zx-help">Authentik answers <code>401</code> with an HTML page to browsers that are not signed in. With a redirect Dunree sends browsers to <code>.../outpost.goauthentik.io/start?rd=&lt;original URL&gt;</code> instead. Dunree builds the <code>rd</code> value from the request it received; nothing supplied by the client is reflected. API clients still get a plain 401.</p>
                             </div>
                             <div class="ssoCheck">
                                 <label class="zx-check"><input type="checkbox" id="forwardAuthPreserveHost" name="forwardAuthPreserveHost" data-zx-label="Send the protected host name"><span>Send the protected host name as the Host header of the check<span class="zx-help">Required for Authentik: the outpost picks the application by its host name. Leave off for Authelia.</span></span></label>
@@ -385,7 +385,7 @@
         <header class="zx-sectionhead ssoHead">
             <h3 class="zx-sectionhead__title">OAuth 2.0</h3>
             <span class="zx-badge zx-badge--dot" data-sso-headbadge="oauth">Loading...</span>
-            <p class="zx-sectionhead__desc">Zoraxy sends visitors to an identity provider to sign in, checks the answer itself and keeps the session. Your application needs no login of its own; it can read who signed in from request headers.</p>
+            <p class="zx-sectionhead__desc">Dunree sends visitors to an identity provider to sign in, checks the answer itself and keeps the session. Your application needs no login of its own; it can read who signed in from request headers.</p>
         </header>
         <div class="zx-statrow" id="ssoStatsOauth" aria-live="polite"></div>
 
@@ -413,7 +413,7 @@
                     <dt>Any other provider</dt><dd>https://&lt;site&gt;/internal/oauth2/p/&lt;provider ID&gt;</dd>
                     <dt>Sign out</dt><dd>&lt;callback address&gt;/logout</dd>
                 </dl>
-                <p class="zx-help" style="margin-top: var(--zx-space-3);">Sessions are stored encrypted in the Zoraxy database and survive a restart. Refresh tokens never leave the server.</p>
+                <p class="zx-help" style="margin-top: var(--zx-space-3);">Sessions are stored encrypted in the Dunree database and survive a restart. Refresh tokens never leave the server.</p>
             </div>
         </section>
 
@@ -422,7 +422,7 @@
         <section class="zx-card" id="oauth2Presets">
             <div class="zx-card__head">
                 <h4 class="zx-card__title">Quick setup</h4>
-                <p class="zx-card__desc">Pick the kind of provider and Zoraxy fills in the form below with what that provider needs. Nothing is saved until you press Save provider.</p>
+                <p class="zx-card__desc">Pick the kind of provider and Dunree fills in the form below with what that provider needs. Nothing is saved until you press Save provider.</p>
             </div>
             <div class="zx-card__body">
                 <div class="zx-form-grid">
@@ -470,7 +470,7 @@
                         <input class="zx-input" type="text" id="oauth2Issuer" name="oauth2Issuer" placeholder="https://auth.example.com/application/o/my-app-slug/" autocomplete="off" spellcheck="false">
                         <button class="zx-btn zx-btn--secondary" type="button" id="oauth2TestDiscovery"><i class="plug icon" aria-hidden="true"></i> Test discovery</button>
                     </div>
-                    <p class="zx-help">Zoraxy reads the provider's settings from <code>&lt;issuer&gt;/.well-known/openid-configuration</code> and checks every login against them.</p>
+                    <p class="zx-help">Dunree reads the provider's settings from <code>&lt;issuer&gt;/.well-known/openid-configuration</code> and checks every login against them.</p>
                     <div id="oauth2DiscoveryResult" class="ssoResult" aria-live="polite"></div>
                 </div>
                 <details class="zx-disclosure ssoEndpoints"><summary>Endpoints and scopes (filled in by discovery)</summary><div class="zx-disclosure__body">
@@ -488,12 +488,12 @@
                     <div class="zx-field">
                         <div class="zx-field__label-row"><label class="zx-field__label" for="oauth2TokenUrl">Token URL</label></div>
                         <input class="zx-input" type="text" id="oauth2TokenUrl" name="oauth2TokenUrl" placeholder="https://auth.example.com/token" autocomplete="off" spellcheck="false">
-                        <p class="zx-help">Where Zoraxy exchanges the sign-in code for a token. Optional when discovery is set.</p>
+                        <p class="zx-help">Where Dunree exchanges the sign-in code for a token. Optional when discovery is set.</p>
                     </div>
                     <div class="zx-field">
                         <div class="zx-field__label-row"><label class="zx-field__label" for="oauth2UserInfoUrl">User info URL</label></div>
                         <input class="zx-input" type="text" id="oauth2UserInfoUrl" name="oauth2UserInfoUrl" placeholder="https://auth.example.com/userinfo" autocomplete="off" spellcheck="false">
-                        <p class="zx-help">Where Zoraxy looks up the signed-in user. Optional when discovery is set.</p>
+                        <p class="zx-help">Where Dunree looks up the signed-in user. Optional when discovery is set.</p>
                     </div>
                     <div class="zx-field">
                         <div class="zx-field__label-row"><label class="zx-field__label" for="oauth2Scopes">Scopes</label></div>
@@ -628,12 +628,12 @@
         </section>
     </div>
 
-    <!-- ============================================================ Zoraxy Auth -->
+    <!-- ============================================================ Dunree Auth -->
     <div class="ui tab ssoPanel" data-tab="zoraxy_sso_tab" id="ssoPanelZorx" role="tabpanel" aria-labelledby="ssoTabZorx">
         <header class="zx-sectionhead ssoHead">
-            <h3 class="zx-sectionhead__title">Zoraxy Auth</h3>
+            <h3 class="zx-sectionhead__title">Dunree Auth</h3>
             <span class="zx-badge zx-badge--dot zorxAuthGatewayState" id="zorxAuthGatewayRunningState" role="status" data-sso-headbadge="zorx"><span class="zorxAuthGateway_status">Loading...</span></span>
-            <p class="zx-sectionhead__desc">A login page that Zoraxy serves itself, with users you manage here. No other software is needed. The gateway is off by default.</p>
+            <p class="zx-sectionhead__desc">A login page that Dunree serves itself, with users you manage here. No other software is needed. The gateway is off by default.</p>
         </header>
         <div class="zx-statrow" id="ssoStatsZorx" aria-live="polite"></div>
         <div class="zx-callout zx-callout--warn" role="note" id="ssoWarnZorx" hidden>
@@ -647,7 +647,7 @@
                     <span class="ssoStep__num" aria-hidden="true">1</span>
                     <h3 class="zx-card__title">Switch on the login page</h3>
                     <span class="zx-badge" data-sso-stepbadge></span>
-                    <p class="zx-card__desc">The gateway is a small web server inside Zoraxy that shows the login page. It listens on a port of this machine, so it also needs a public address that visitors can be sent to.</p>
+                    <p class="zx-card__desc">The gateway is a small web server inside Dunree that shows the login page. It listens on a port of this machine, so it also needs a public address that visitors can be sent to.</p>
                 </div>
                 <div class="zx-card__body">
                     <div class="ssoToggles" id="zorxAuthGatewaySettings" data-sso-group="gw">
@@ -712,11 +712,11 @@
                     <span class="ssoStep__num" aria-hidden="true">3</span>
                     <h3 class="zx-card__title">Switch it on for your sites</h3>
                     <span class="zx-badge" data-sso-stepbadge></span>
-                    <p class="zx-card__desc">Open a site, go to Security and choose <b>Zoraxy Auth</b> as its authentication method. From then on its visitors must sign in first.</p>
+                    <p class="zx-card__desc">Open a site, go to Security and choose <b>Dunree Auth</b> as its authentication method. From then on its visitors must sign in first.</p>
                 </div>
                 <div class="zx-card__body">
                     <ul class="ssoSites" data-sso-sitelist hidden></ul>
-                    <p class="ssoNone" data-sso-nosite>No site uses Zoraxy Auth yet.</p>
+                    <p class="ssoNone" data-sso-nosite>No site uses Dunree Auth yet.</p>
                     <div class="zx-btn-row" data-sso-nosites hidden><button type="button" class="zx-btn zx-btn--secondary" data-sso-gohttp><i class="plus icon" aria-hidden="true"></i> Create a site on HTTP Proxy</button></div>
                     <div class="ssoAttach">
                         <div class="zx-field ssoNoTrack">
@@ -731,7 +731,7 @@
             <section class="zx-card" id="zorxAuthSettings">
                 <div class="zx-card__head">
                     <h3 class="zx-card__title">Sessions and sign-in protection</h3>
-                    <p class="zx-card__desc">How long a sign-in lasts and how Zoraxy slows down password guessing. The defaults are a good start.</p>
+                    <p class="zx-card__desc">How long a sign-in lasts and how Dunree slows down password guessing. The defaults are a good start.</p>
                 </div>
                 <div class="zx-card__body" data-sso-group="zx">
                     <div class="zx-form-grid">
@@ -790,7 +790,7 @@
                 <div class="zx-card__body">
                     <ul class="ssoActions">
                         <li>
-                            <div class="ssoActions__text"><b>Log out all users</b><span>Ends every Zoraxy Auth session at once, for example after a password leak. Everyone has to sign in again.</span></div>
+                            <div class="ssoActions__text"><b>Log out all users</b><span>Ends every Dunree Auth session at once, for example after a password leak. Everyone has to sign in again.</span></div>
                             <button class="zx-btn zx-btn--danger-outline" type="button" id="ssoLogoutAll"><i class="sign-out icon" aria-hidden="true"></i> Log out all users</button>
                         </li>
                         <li>
@@ -810,13 +810,13 @@
     var esc = (window.ZxUI && ZxUI.esc) ? ZxUI.esc : function (s) { return $("<div>").text(s == null ? "" : String(s)).html(); };
     /* auth method numbers of a proxy rule (dynamicproxy.AuthMethod) */
     var METHOD = { fwd: 2, oauth: 3, zorx: 4 };
-    var METHOD_NAME = { fwd: "Forward auth", oauth: "OAuth 2.0", zorx: "Zoraxy Auth" };
+    var METHOD_NAME = { fwd: "Forward auth", oauth: "OAuth 2.0", zorx: "Dunree Auth" };
     var st = {
         sites: null,            // proxy rules (null = not loaded)
         fwd: null,              // forward auth settings
         providers: null,        // OAuth2 providers
         gw: null,               // {gatewayEnabled, gatewayPort, isRunning}
-        zx: null,               // Zoraxy Auth provider settings
+        zx: null,               // Dunree Auth provider settings
         users: null, groups: []
     };
     var ssoBar = null;
@@ -933,7 +933,7 @@
             stepState("oauth2ListCard", np > 0);
             stepState("ssoOauthStep2", os > 0, os > 0 && !np ? t("Waiting on step 1") : "");
         }
-        /* Zoraxy Auth */
+        /* Dunree Auth */
         if (st.gw && st.zx) {
             var zs = sitesOf("zorx").length, on = st.gw.gatewayEnabled === true, running = st.gw.isRunning === true;
             var port = st.gw.gatewayPort || 5489, url = (st.zx.ssoRedirectURL || "").trim(), users = st.users || [];
@@ -950,7 +950,7 @@
             /* the one thing that needs attention now */
             var wt = "", wx = "";
             if (on && !running) { wt = t("The gateway is switched on but not running"); wx = tf("Port {0} is probably used by another program. Choose another port in step 1 and save.", port); }
-            else if (zs > 0 && !on) { wt = t("Sites use Zoraxy Auth, but the gateway is off"); wx = t("Their visitors cannot sign in. Switch the login gateway on in step 1."); }
+            else if (zs > 0 && !on) { wt = t("Sites use Dunree Auth, but the gateway is off"); wx = t("Their visitors cannot sign in. Switch the login gateway on in step 1."); }
             else if (on && !url) { wt = t("The login page has no public address"); wx = t("Visitors who are not signed in cannot be sent to the login page. Enter its address in step 1."); }
             else if (on && st.users !== null && users.length === 0) { wt = t("Nobody can sign in yet"); wx = t("The login page is running but there are no users. Add the first one in step 2."); }
             $("#ssoWarnZorx").prop("hidden", !wt);
@@ -987,7 +987,7 @@
             $pick.append($("<option value=''></option>").text(t("Choose a site")));
             others.forEach(function (r) {
                 var m = (r.AuthenticationProvider || {}).AuthMethod || 0;
-                var cur = m === 0 ? t("no login") : (m === 1 ? t("basic auth") : (m === 2 ? "Forward auth" : (m === 3 ? "OAuth 2.0" : "Zoraxy Auth")));
+                var cur = m === 0 ? t("no login") : (m === 1 ? t("basic auth") : (m === 2 ? "Forward auth" : (m === 3 ? "OAuth 2.0" : "Dunree Auth")));
                 $pick.append($("<option></option>").val(r.RootOrMatchingDomain).text(r.RootOrMatchingDomain + "  (" + cur + ")"));
             });
             if (was) { $pick.val(was); if (!$pick.val()) { $pick.prop("selectedIndex", 0); } }
@@ -1388,7 +1388,7 @@
         var used = p.usedBy || [], label = p.name && p.name !== id ? p.name + " (" + id + ")" : id;
         var shown = used.slice(0, 5).join(", ") + (used.length > 5 ? " " + tf("and {0} more", used.length - 5) : "");
         if (used.length) {
-            // Zoraxy refuses to delete a provider that sites sign in with: say so before asking, and offer the way out
+            // Dunree refuses to delete a provider that sites sign in with: say so before asking, and offer the way out
             ZxUI.confirm({
                 title: tf("{0} is still in use", label),
                 message: (used.length === 1 ? tf("1 site signs in with it: {0}.", shown) : tf("{0} sites sign in with it: {1}.", used.length, shown)) + " " +
@@ -1403,7 +1403,7 @@
         }
         ZxUI.confirm({
             title: tf("Delete the provider {0}?", label),
-            message: t("No site uses it. Its client ID and secret are removed from Zoraxy.") + " " + t("This cannot be undone."),
+            message: t("No site uses it. Its client ID and secret are removed from Dunree.") + " " + t("This cannot be undone."),
             confirmLabel: t("Delete provider"), danger: true
         }).then(function (ok) {
             if (!ok) { return; }
@@ -1426,7 +1426,7 @@
     });
     oauth2ResetEditor();
 
-    /* ------------------------------------------------------------------ Zoraxy Auth */
+    /* ------------------------------------------------------------------ Dunree Auth */
     function getZorxAuthSettings() {
         return $.cjax({
             url: "/api/sso/zorxauth/provider", method: "GET", dataType: "json",
@@ -1447,7 +1447,7 @@
                 zorxFieldState();
                 render();
             },
-            error: function (jqXHR, textStatus, errorThrown) { console.error("Error fetching Zoraxy Auth settings:", textStatus, errorThrown); }
+            error: function (jqXHR, textStatus, errorThrown) { console.error("Error fetching Dunree Auth settings:", textStatus, errorThrown); }
         });
     }
     window.getZorxAuthSettings = getZorxAuthSettings;
@@ -1463,7 +1463,7 @@
                 commit("gw");
                 render();
             },
-            error: function (jqXHR, textStatus, errorThrown) { console.error("Error fetching Zoraxy Auth Gateway settings:", textStatus, errorThrown); }
+            error: function (jqXHR, textStatus, errorThrown) { console.error("Error fetching Dunree Auth Gateway settings:", textStatus, errorThrown); }
         });
     }
     window.getZorxAuthGatewaySettings = getZorxAuthGatewaySettings;
@@ -1559,7 +1559,7 @@
         event.preventDefault();
         ZxUI.confirm({
             title: t("Reset the login settings?"),
-            message: t("The public address, sessions, sign-in protection and advanced values go back to their defaults. Sites that use Zoraxy Auth cannot send visitors to the login page until you enter the public address again. Users and groups are kept."),
+            message: t("The public address, sessions, sign-in protection and advanced values go back to their defaults. Sites that use Dunree Auth cannot send visitors to the login page until you enter the public address again. Users and groups are kept."),
             confirmLabel: t("Reset settings"), danger: true
         }).then(function (ok) {
             if (!ok) { return; }
@@ -1568,11 +1568,11 @@
                 success: function (data) {
                     if (data.error !== undefined) { toast(data.error, false); return; }
                     getZorxAuthSettings();
-                    toast(t("Zoraxy Auth settings cleared"), true);
+                    toast(t("Dunree Auth settings cleared"), true);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    console.error("Error clearing Zoraxy Auth settings:", textStatus, errorThrown);
-                    toast(t("Error clearing Zoraxy Auth settings, check console"), false);
+                    console.error("Error clearing Dunree Auth settings:", textStatus, errorThrown);
+                    toast(t("Error clearing Dunree Auth settings, check console"), false);
                 }
             });
         });
@@ -1659,7 +1659,7 @@
     function logoutAllUsers() {
         ZxUI.confirm({
             title: t("Log out all users?"),
-            message: t("Every Zoraxy Auth session ends now. Everyone has to sign in again. This cannot be undone."),
+            message: t("Every Dunree Auth session ends now. Everyone has to sign in again. This cannot be undone."),
             confirmLabel: t("Log out all users"), danger: true
         }).then(function (ok) {
             if (!ok) { return; }

@@ -212,7 +212,7 @@ func rSetIPHeader(r, req *http.Request, headers ...string) {
 }
 
 // scrubForwardingHeaders removes every client supplied forwarding/original-URL header from the
-// auth subrequest so that only values computed by Zoraxy reach the auth server.
+// auth subrequest so that only values computed by Dunree reach the auth server.
 func scrubForwardingHeaders(req *http.Request) {
 	for _, h := range []string{HeaderXForwardedProto, HeaderXForwardedHost, HeaderXForwardedURI,
 		HeaderXForwardedFor, HeaderXForwardedMethod, HeaderXOriginalURL, HeaderXOriginalIP, HeaderXOriginalMethod} {

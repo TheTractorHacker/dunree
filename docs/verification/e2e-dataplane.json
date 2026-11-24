@@ -446,7 +446,7 @@
   "scenario": "tls_sni_certificate_selection",
   "issues": [],
   "status": "PASS",
-  "evidence": "served CN per SNI: {'a.test': 'a.test', 'm2.test': 'm1.test', 'x.wild.test': '*.wild.test', 'unknown.test': 'Zoraxy Self-host', 'pinned.test': 'preferred.test'} (rerun: tools/e2e/run.sh --only tls_sni_certificate_selection)",
+  "evidence": "served CN per SNI: {'a.test': 'a.test', 'm2.test': 'm1.test', 'x.wild.test': '*.wild.test', 'unknown.test': 'Dunree Self-host', 'pinned.test': 'preferred.test'} (rerun: tools/e2e/run.sh --only tls_sni_certificate_selection)",
   "commits": [],
   "notes": "[area: core]"
  },
@@ -541,7 +541,7 @@
   "status": "NOT-TESTABLE",
   "evidence": "Real CF-Connecting-IP / Cloudflare IP ranges / Turnstile widget need Cloudflare in front of the proxy. The header handling itself is covered by client_ip_trust_and_spoofing.",
   "commits": [],
-  "notes": "A Cloudflare proxied hostname pointing at a Zoraxy with the Cloudflare ranges as trusted proxies; request through it and check the client IP in the access log."
+  "notes": "A Cloudflare proxied hostname pointing at a Dunree with the Cloudflare ranges as trusted proxies; request through it and check the client IP in the access log."
  },
  {
   "scenario": "captcha_widget_in_browser",
@@ -591,7 +591,7 @@
   "status": "NOT-TESTABLE",
   "evidence": "Only a fake following Sablier's documented HTTP contract; no Docker/Swarm/Kubernetes provider involved.",
   "commits": [],
-  "notes": "A Sablier instance with a sleeping container, wake it through Zoraxy and compare the waiting page and timing."
+  "notes": "A Sablier instance with a sleeping container, wake it through Dunree and compare the waiting page and timing."
  },
  {
   "scenario": "http3_quic_listener",

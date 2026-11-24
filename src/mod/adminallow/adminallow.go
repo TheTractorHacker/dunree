@@ -3,7 +3,7 @@
 // no restriction: the middleware is then one atomic load and the request is passed on untouched.
 //
 // Lock-out safety: Set refuses a non-empty list that does not contain the address of the client
-// that saves it. If an admin is locked out anyway (changed network, wrong entry), start Zoraxy once
+// that saves it. If an admin is locked out anyway (changed network, wrong entry), start Dunree once
 // with -reset_admin_allowlist, which clears the list before the admin port starts serving.
 package adminallow
 

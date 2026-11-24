@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/shirou/gopsutil/v4/net"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 // Float stat store the change of RX and TX

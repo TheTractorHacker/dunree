@@ -302,7 +302,7 @@
     }
 
     /* ----------------------------------------------------------------- recent */
-    var RECENT_KEY = "zoraxy_palette_recent";
+    var RECENT_KEY = "dunree_palette_recent";
     function getRecent() { try { return JSON.parse(zxStore.get(RECENT_KEY) || "[]") || []; } catch (e) { return []; } }
     function pushRecent(key) {
         var r = getRecent().filter(function (k) { return k !== key; });

@@ -211,7 +211,7 @@ func TestSMTPChannel(t *testing.T) {
 	var sent []string
 	var mu sync.Mutex
 	c := ChannelConfig{Name: "mail", Type: ChanSMTP, Enabled: true, AllowPrivate: true,
-		Settings: map[string]string{"host": "mail.example", "port": "587", "from": "zoraxy@example.com", "to": "a@example.com, b@example.com", "password": "s3cretpw"}}
+		Settings: map[string]string{"host": "mail.example", "port": "587", "from": "dunree@example.com", "to": "a@example.com, b@example.com", "password": "s3cretpw"}}
 	s := &ChannelSink{Cfg: c, Attempts: 1, smtpSend: func(cc ChannelConfig, to, subj, body string) error {
 		mu.Lock()
 		defer mu.Unlock()

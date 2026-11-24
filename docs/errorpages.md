@@ -5,7 +5,7 @@ Admin UI: **Sites > Error pages**. Code: `src/mod/errorpages` (store, validation
 
 ## What it does
 
-Zoraxy answers some requests by itself: a block (403), a 404, a rate limit (429), "the server behind this site is down" (521 / 504),
+Dunree answers some requests by itself: a block (403), a 404, a rate limit (429), "the server behind this site is down" (521 / 504),
 the "not found" page of the Default Site and a 503 when every upstream is busy. This feature lets the owner change what the visitor sees
 in those cases:
 
@@ -26,12 +26,12 @@ or for a page class (or host) that was not customised, every caller writes exact
 | `403` Access denied | 403 | access rules, countries, WAF, auto-ban, CrowdSec, bot rules, security rules (block / challenge unavailable), header rules, allowed peers, path rules, "Block common exploits" and "Block AI crawlers" with the 403 action |
 | `404` Not found | 404 | the upstream host name cannot be resolved, no upstream on the plain-HTTP path, a header rule that answers 404, "Block common exploits" and "Block AI crawlers" with the 404 action |
 | `429` Too many requests | 429 | rate limit of a site, of a path rule, of a security rule (built in, the first two have no body) |
-| `5xx` Server error | 521, 504 | the upstream is down or refuses the connection (521), a route timeout answered by Zoraxy (504) |
+| `5xx` Server error | 521, 504 | the upstream is down or refuses the connection (521), a route timeout answered by Dunree (504) |
 | `nohost` No such host | 404 | Default Site set to "not found page" and no site matches the host name |
 | `maintenance` Busy or maintenance | 503 | every upstream of the site is at its connection limit |
 
 Resolution for a request: page of the exact host, else of the longest matching `*.wildcard`, else the page of all sites, else (only when
-"Use this look for every page" is on) the themed built-in page, else the built-in answer of Zoraxy.
+"Use this look for every page" is on) the themed built-in page, else the built-in answer of Dunree.
 
 ## Templates
 
@@ -42,7 +42,7 @@ Resolution for a request: page of the exact host, else of the longest matching `
 
 * Every value is escaped for the place it is written to (text, attribute, URL, CSS). `Host` comes from the request and is attacker
   controlled: it is only ever written through the template engine (`TestErrorPages_HostileHostIsEscaped`).
-* `RequestID` is the block reference (`ZX-XXXX-XXXX`, the one in Statistics > Blocked and in the `X-Zoraxy-Ref` header) for a 403, else
+* `RequestID` is the block reference (`ZX-XXXX-XXXX`, the one in Statistics > Blocked and in the `X-Dunree-Ref` header) for a 403, else
   the WAF transaction ID or the request ID of the site. Empty when "Show the reference" is off.
 * `ClientIP` is empty unless the owner switches on "Show the visitor's address".
 * `Host` is the host name the visitor asked for, as sent, without the port (`nosuch.test:8443` is shown as `nosuch.test`).
@@ -55,13 +55,13 @@ Resolution for a request: page of the exact host, else of the longest matching `
   more than the template is long (`TestTemplatesAreStraightLine`).
 * Title, message, logo text and footer text: at most 500 characters each (characters, not bytes).
 * A template is parsed and test-rendered when it is saved; a broken one is refused with the reason. A template that still fails for a
-  request (or a hand-edited file) falls back to the built-in page of Zoraxy and is logged once (`errorpages` in the system log).
+  request (or a hand-edited file) falls back to the built-in page of Dunree and is logged once (`errorpages` in the system log).
 * The server never fetches anything. A logo is an `https://` address, a path on the site or a small `data:image/` URL; the visitor's
   browser loads it.
 
 Response of a customised page: the status code it always had, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`,
 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`.
-Headers the caller set before (`Retry-After`, `X-Zoraxy-Ref`, `X-Request-Id`) are kept. HEAD gets the headers only.
+Headers the caller set before (`Retry-After`, `X-Dunree-Ref`, `X-Request-Id`; also `X-Zoraxy-Ref` while the legacy names are on) are kept. HEAD gets the headers only.
 
 ## API (admin session, CSRF token like every other admin API; POST only for changes; viewer accounts can read)
 
@@ -75,7 +75,7 @@ Headers the caller set before (`Retry-After`, `X-Zoraxy-Ref`, `X-Request-Id`) ar
 | `POST /api/errorpages/template/delete` | `class`, optional `host` (`host` without `class`: all pages of that site) |
 | `POST /api/errorpages/preview` | `class`, optional `host`, `page` (JSON), `theme` (JSON) -> `{"html"}`; sample values, saves nothing |
 | `POST /api/errorpages/reset` | removes everything |
-| `GET /api/errorpages/test?class=403[&host=]` | what a visitor gets now, with status and headers (`X-Zoraxy-Error-Page: custom` or `built-in`) |
+| `GET /api/errorpages/test?class=403[&host=]` | what a visitor gets now, with status and headers (`X-Dunree-Error-Page: custom` or `built-in`) |
 
 State: `<conf>/errorpages.json` (0600, written atomically). Changes are in the security audit log (`errorpages.*`) and in System > History.
 
@@ -95,13 +95,13 @@ State: `<conf>/errorpages.json` (0600, written atomically). Changes are in the s
   those codes), the CAPTCHA and SSO pages, plain-text refusals (misconfigured rules, client certificate, WebSocket, request too large,
   security rules with their own body or a status other than 403 / 429), plugin errors, the stream proxy and the admin UI itself.
 * **No 502 page.** A dead upstream is answered with 521 and a route timeout with 504; both are the "Server error" class. The 502 answers
-  Zoraxy gives itself (failed WebSocket upgrade, unreachable virtual directory target) are plain text and are not customised.
+  Dunree gives itself (failed WebSocket upgrade, unreachable virtual directory target) are plain text and are not customised.
 * **"Block common exploits" / "Block AI crawlers"** are customised for the 403 and 404 actions only. "400 Bad Request" stays plain text,
   "drop the connection" sends nothing, and the CAPTCHA action shows the CAPTCHA pages.
 * **No loops or helper functions in templates** (see Templates). A page that needs repeated markup has to write it out.
 * **A page larger than 1 MiB is not served.** Only a large inline logo written many times can reach that; the built-in page answers
   instead and the system log says so once.
-* **There is no maintenance switch.** The "Busy or maintenance" page is only served for the 503 Zoraxy answers when every upstream is at
+* **There is no maintenance switch.** The "Busy or maintenance" page is only served for the 503 Dunree answers when every upstream is at
   its connection limit. A real maintenance mode for a site would be a separate feature.
 * **No scripts.** The Content-Security-Policy blocks JavaScript, frames and forms on customised pages. The built-in 403 page shows the
   local time and the address with a script; a customised page gets the UTC time from the server instead.

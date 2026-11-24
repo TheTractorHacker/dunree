@@ -1,0 +1,65 @@
+Dunree
+Reverse proxy and web gateway
+
+Copyright (C) 2026 Foley IT
+
+Dunree is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License, version 3 (AGPL-3.0), as
+published by the Free Software Foundation. The full text is in the file
+LICENSE. Dunree is distributed WITHOUT ANY WARRANTY; see the licence for
+details.
+
+
+Based on Zoraxy
+---------------
+
+Dunree is based on Zoraxy v3.3.6.
+
+    Zoraxy
+    Copyright (C) 2021-2026 tobychui and imuslab, and the Zoraxy contributors
+    Original project: https://github.com/tobychui/zoraxy
+    Licensed under the GNU Affero General Public License, version 3
+
+Dunree is a modified, independent derivative of Zoraxy. It is a separate
+project. It is not affiliated with, sponsored by or endorsed by tobychui,
+imuslab or the Zoraxy contributors. Please do not report Dunree problems to
+the Zoraxy project.
+
+The Zoraxy authors wrote Zoraxy. They did not write, review or approve the
+parts that were added or changed for Dunree, and they are not responsible
+for them. Those parts are Copyright (C) Foley IT and its contributors.
+
+Modified files: this work has been changed from Zoraxy v3.3.6, starting in
+2026. The changes are recorded in the history of the source repository and
+summarised in CHANGELOG.md. Copyright and licence headers of the original
+authors are kept in the files they belong to.
+
+
+Names and logos
+---------------
+
+"Dunree" and the Dunree logo identify the releases published by Foley IT.
+The AGPL-3.0 covers the code; it does not grant the right to use the name or
+the logo for other products or for modified builds in a way that suggests
+they come from Foley IT (see brand/README.md).
+
+"Zoraxy" is the name of the project of tobychui and imuslab. It is used here
+only to say what Dunree is based on and what it is compatible with.
+
+
+Third-party components
+----------------------
+
+Dunree contains third-party components under their own licences. They are
+listed in THIRD_PARTY_NOTICES.md, with the licence texts in
+third_party/licenses/.
+
+
+Source code
+-----------
+
+Dunree is licensed under AGPL-3.0. If you run a modified version and let
+other people use it over a network, section 13 of the licence requires you to
+offer those people the source code of your version. The About page of the
+admin interface (System > Utilities > About Dunree) shows where the
+source code of the running build can be obtained.

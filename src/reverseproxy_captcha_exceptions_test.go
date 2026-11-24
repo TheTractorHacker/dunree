@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 // Editing an endpoint rebuilds the CAPTCHA config from form fields, which do

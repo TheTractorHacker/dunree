@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 /*
@@ -17,7 +17,7 @@ import (
 	ZorxAuth SSO Authentication Module
 
 	This module is designed to replace forward auth providers like Authelia/Authentik with a lightweight SSO authentication solution
-	that only works in Zoraxy environment. It is ideal for lazy homelab sysadmins who don't want to setup a dedicated authentication
+	that only works in Dunree environment. It is ideal for lazy homelab sysadmins who don't want to setup a dedicated authentication
 	server just for a few services running in their homelab.
 
  	SSORedirectURL is the URL of the SSO authentication endpoint, e.g. https://auth.example.com.

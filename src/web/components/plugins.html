@@ -238,7 +238,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Plugin Manager</h2>
-            <p class="zx-page-header__sub">Add custom features to Zoraxy.</p>
+            <p class="zx-page-header__sub">Add custom features to Dunree.</p>
         </div>
         <div class="zx-page-header__actions zx-btn-row">
             <button type="button" class="ui primary button" onclick="openPluginStore();"><i class="shopping bag icon"></i> Open App Store</button>
@@ -333,17 +333,17 @@
         <summary>Plugin safety settings</summary>
         <div class="zx-disclosure__body pm-safety">
           <p class="zx-help" style="margin: 0 0 var(--zx-space-3);">Nothing here refuses or changes anything unless you turn it on. The settings apply to every plugin.</p>
-          <label class="pm-check"><input type="checkbox" id="pluginRequireApproval"> <span><strong>Require my approval for Zoraxy API permissions</strong><br>
-            Off: a plugin may call every Zoraxy API endpoint it asks for, and permissions you have not approved are only reported (in the plugin list and in the security audit log).
+          <label class="pm-check"><input type="checkbox" id="pluginRequireApproval"> <span><strong>Require my approval for Dunree API permissions</strong><br>
+            Off: a plugin may call every Dunree API endpoint it asks for, and permissions you have not approved are only reported (in the plugin list and in the security audit log).
             On: a plugin may only call the endpoints you approved under Details. An update that asks for more does not get it until you approve it.
             Plugins that were installed before this option existed keep what they had.</span></label>
           <label class="pm-check"><input type="checkbox" id="pluginContractRefuse"> <span><strong>Do not start plugins built for a newer plugin contract</strong><br>
-            Off: a plugin that was built for a newer Zoraxy than this one is started anyway, with a warning. On: it is not started.
+            Off: a plugin that was built for a newer Dunree than this one is started anyway, with a warning. On: it is not started.
             Plugins that declare no contract version (older plugins) are never affected.</span></label>
           <p class="zx-help" id="pluginContractInfo" style="margin: 0;"></p>
 
           <p class="pm-safety__group">Signed plugin index</p>
-          <p class="zx-help" style="margin: 0 0 var(--zx-space-3);">A signed index lists the exact download, checksum and size of every plugin and is signed with a plugin key. The index that ships with Zoraxy is not signed, so its plugins show as "Unsigned". Whatever you choose, a plugin is only updated from the index it was installed from.</p>
+          <p class="zx-help" style="margin: 0 0 var(--zx-space-3);">A signed index lists the exact download, checksum and size of every plugin and is signed with a plugin key. The index that ships with Dunree is not signed, so its plugins show as "Unsigned". Whatever you choose, a plugin is only updated from the index it was installed from.</p>
           <div class="zx-field">
             <div class="zx-field__label-row"><label class="zx-field__label" for="pluginVerifyMode">Signature checking</label></div>
             <select class="zx-select" id="pluginVerifyMode">
@@ -368,7 +368,7 @@
           <label class="pm-check"><input type="checkbox" id="pluginAutoRollback"> <span><strong>Roll back automatically when a new version does not start</strong><br>
             An update keeps the version it replaces. After the update the plugin has to start and answer.
             Off: a new version that fails is left in place and reported, and you roll back with one click under Details.
-            On: Zoraxy puts the previous version back and starts it.</span></label>
+            On: Dunree puts the previous version back and starts it.</span></label>
 
           <p class="pm-safety__group">Plugin pages</p>
           <label class="pm-check"><input type="checkbox" id="pluginIsolateUI"> <span><strong>Isolate plugin pages from the admin session</strong><br>
@@ -379,7 +379,7 @@
             <div class="zx-field">
               <div class="zx-field__label-row"><label class="zx-field__label" for="pluginUIListen">Listen address of the plugin pages</label></div>
               <input class="zx-input" type="text" id="pluginUIListen" spellcheck="false" autocomplete="off" placeholder=":8001">
-              <p class="zx-help" id="pluginUIListenHelp">Port (and optionally host) Zoraxy opens for plugin pages. Your browser has to reach it.</p>
+              <p class="zx-help" id="pluginUIListenHelp">Port (and optionally host) Dunree opens for plugin pages. Your browser has to reach it.</p>
             </div>
             <div class="zx-field">
               <div class="zx-field__label-row"><label class="zx-field__label" for="pluginUIOrigin">Address your browser uses for it (optional)</label></div>
@@ -398,7 +398,7 @@
         <div class="zx-disclosure__body ui form">
           <div class="zx-callout zx-callout--warn" role="note">
             <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
-            <div class="zx-callout__body"><div class="zx-callout__title">For developers only</div>These functions are intended for developers only. Enabling them may add latency to plugin loading &amp; routing. Proceed with caution. Tip: start Zoraxy with -dev=true to enable auto-reload at start.</div>
+            <div class="zx-callout__body"><div class="zx-callout__title">For developers only</div>These functions are intended for developers only. Enabling them may add latency to plugin loading &amp; routing. Proceed with caution. Tip: start Dunree with -dev=true to enable auto-reload at start.</div>
           </div>
           <div id="enablePluginAutoReload" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox" style="margin-top: var(--zx-space-3);">
             <input id="enable_plugin_auto_reload" type="checkbox">
@@ -537,7 +537,7 @@ function initSelectablePluginList(){
       $("#selectablePluginList").append(`
         <div class="item" style="pointer-events: none; user-select: none; color: var(--zx-text-muted);">
           <p><i class="info circle icon"></i> No plugins available to assign</p>
-          <p>Plugins can be installed to Zoraxy by placing the plugin files in the plugins directory.</p>
+          <p>Plugins can be installed to Dunree by placing the plugin files in the plugins directory.</p>
         </div>
       `);
     }
@@ -625,7 +625,7 @@ function removePluginFromTag(pluginId, tag){
 }
 
 /* Plugin List */
-//Render the plugin list to Zoraxy homepage side menu
+//Render the plugin list to Dunree homepage side menu
 //A plugin whose process ended by itself (crashed, exited, failed to start) is not "not installed": say what happened
 function pluginStoppedUnexpectedly(plugin){
   const st = (plugin.Status || {}).State;
@@ -768,7 +768,7 @@ function setPluginHookSetting(pluginId, key, value){
   });
 }
 
-/* Plugin status (read-only): what Zoraxy knows about the process of each plugin */
+/* Plugin status (read-only): what Dunree knows about the process of each plugin */
 
 //"3 min ago", for a Unix time in seconds
 function pluginTimeAgo(unix){
@@ -814,7 +814,7 @@ function pluginStatusInfo(plugin){
         info.problem = t("The process is running but its port is closed.");
       } else if (st.Health == "not_responding"){
         info.badge = "zx-badge--warn"; info.label = t("Not responding"); info.warn = true;
-        info.problem = t("The process is running but it does not answer Zoraxy.");
+        info.problem = t("The process is running but it does not answer Dunree.");
       } else if (st.Health == "unhealthy"){
         info.badge = "zx-badge--warn"; info.label = t("Unhealthy"); info.warn = true;
         info.problem = t("The process is running but it fails its health check.");
@@ -827,7 +827,7 @@ function pluginStatusInfo(plugin){
       break;
     case "crash_loop":
       info.badge = "zx-badge--danger"; info.label = t("Crash loop");
-      info.problem = tf("It ended {0} times in a short time, so Zoraxy stopped restarting it.", st.RecentFailures || st.CrashLoopLimit || 0);
+      info.problem = tf("It ended {0} times in a short time, so Dunree stopped restarting it.", st.RecentFailures || st.CrashLoopLimit || 0);
       break;
     case "crashed":
       info.badge = "zx-badge--danger"; info.label = t("Crashed");
@@ -870,7 +870,7 @@ function pluginRestartPolicyText(policy){
   return t("Restart: never");
 }
 
-//Health column: what Zoraxy can tell about a plugin beyond "the process exists"
+//Health column: what Dunree can tell about a plugin beyond "the process exists"
 function pluginHealthInfo(plugin){
   const st = plugin.Status || {};
   const pol = st.Policy || {};
@@ -911,11 +911,11 @@ function pluginHealthInfo(plugin){
   if (con.State == "unsupported"){
     // "Not started" only when a start was refused. The setting does not stop a plugin
     // that is running, and a plugin that was stopped or never started was not refused yet.
-    let contractText = t("Built for a newer Zoraxy: may not work");
+    let contractText = t("Built for a newer Dunree: may not work");
     if (con.Refused){
-      if (st.State == "failed_to_start"){ contractText = t("Built for a newer Zoraxy: not started"); }
-      else if (st.State == "running"){ contractText = t("Built for a newer Zoraxy: still running, will not be started again"); }
-      else { contractText = t("Built for a newer Zoraxy: will not be started"); }
+      if (st.State == "failed_to_start"){ contractText = t("Built for a newer Dunree: not started"); }
+      else if (st.State == "running"){ contractText = t("Built for a newer Dunree: still running, will not be started again"); }
+      else { contractText = t("Built for a newer Dunree: will not be started"); }
     }
     info.lines.push({text: contractText, cls: "pm-health__line--warn pm-health__line--contract"});
   }
@@ -995,7 +995,7 @@ function renderPluginAlerts(data){
   if (unapproved.length){
     html += `<div class="zx-callout zx-callout--warn" role="note" data-alert="permissions">
         <span class="zx-callout__icon" aria-hidden="true"><i class="key icon"></i></span>
-        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(unapproved.length == 1 ? t("1 plugin asks for Zoraxy API permissions you have not approved") : tf("{0} plugins ask for Zoraxy API permissions you have not approved", unapproved.length))}</div>
+        <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(unapproved.length == 1 ? t("1 plugin asks for Dunree API permissions you have not approved") : tf("{0} plugins ask for Dunree API permissions you have not approved", unapproved.length))}</div>
         ${ZxUI.esc(unapproved.join(", "))}. ${ZxUI.esc(approvalRequired ? t("These permissions are not granted until you approve them. Open Details of the plugin to see and approve them.") : t("They are granted, because approval is not required. Open Details of the plugin to see and approve them, or turn on \"Require my approval\" under Plugin safety settings."))}</div>
       </div>`;
   }
@@ -1046,14 +1046,14 @@ function renderPluginLoadFailures(data){
     $("#pluginLoadFailures").html(`<div class="zx-callout zx-callout--danger" role="alert">
         <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
         <div class="zx-callout__body"><div class="zx-callout__title">${ZxUI.esc(fails.length == 1 ? t("1 plugin folder could not be loaded") : tf("{0} plugin folders could not be loaded", fails.length))}</div>
-        ${ZxUI.esc(t("These folders are in the plugin directory but Zoraxy could not read a plugin from them, so they are not in the list below."))}
+        ${ZxUI.esc(t("These folders are in the plugin directory but Dunree could not read a plugin from them, so they are not in the list below."))}
         <ul>${items}</ul></div>
       </div>`);
   }
 }
 
-//The plugin list as this page shows it. The list itself (/api/plugins/list) never makes Zoraxy connect to a plugin.
-//The status view adds one thing on top: with probe=true Zoraxy looks whether the port of each running plugin is open
+//The plugin list as this page shows it. The list itself (/api/plugins/list) never makes Dunree connect to a plugin.
+//The status view adds one thing on top: with probe=true Dunree looks whether the port of each running plugin is open
 //(at most once per 2 seconds per plugin, no HTTP request), which is what shows "Starting" and "Not listening".
 //Only this page asks for it, so it only happens while the Plugin Manager is shown.
 function loadPluginListWithStatus(done){
@@ -1087,7 +1087,7 @@ function pluginDetailHtml(detail){
   if (st.LastSeen){
     add(t("Last sign of life"), pluginClockTime(st.LastSeen) + " (" + pluginTimeAgo(st.LastSeen) + ")");
   }
-  add(t("Starts since Zoraxy started"), String(st.StartCount || 0) + (st.AutoRestartCount ? " (" + tf("{0} by the restart policy", st.AutoRestartCount) + ")" : ""));
+  add(t("Starts since Dunree started"), String(st.StartCount || 0) + (st.AutoRestartCount ? " (" + tf("{0} by the restart policy", st.AutoRestartCount) + ")" : ""));
   if (st.State == "restarting" && st.NextRestartAt){
     add(t("Next automatic start"), pluginClockTime(st.NextRestartAt) + " (" + pluginTimeUntil(st.NextRestartAt) + ")");
   }
@@ -1108,9 +1108,9 @@ function pluginDetailHtml(detail){
   } else if (con.State == "unsupported"){
     add(t("Plugin contract"), con.Refused
       ? (st.State == "running"
-        ? tf("Version {0}. This Zoraxy supports {1} to {2}, and you chose not to start such plugins. This one was already running and keeps running; it will not be started again.", con.APIVersion, con.SupportedMin, con.SupportedMax)
-        : tf("Version {0}. This Zoraxy supports {1} to {2}, and you chose not to start such plugins.", con.APIVersion, con.SupportedMin, con.SupportedMax))
-      : tf("Version {0}. This Zoraxy supports {1} to {2}: the plugin is started anyway and may not work as expected.", con.APIVersion, con.SupportedMin, con.SupportedMax));
+        ? tf("Version {0}. This Dunree supports {1} to {2}, and you chose not to start such plugins. This one was already running and keeps running; it will not be started again.", con.APIVersion, con.SupportedMin, con.SupportedMax)
+        : tf("Version {0}. This Dunree supports {1} to {2}, and you chose not to start such plugins.", con.APIVersion, con.SupportedMin, con.SupportedMax))
+      : tf("Version {0}. This Dunree supports {1} to {2}: the plugin is started anyway and may not work as expected.", con.APIVersion, con.SupportedMin, con.SupportedMax));
   }
   if (st.LastError){
     add(t("Last problem"), st.LastError + (st.LastErrorAt ? " (" + pluginTimeAgo(st.LastErrorAt) + ")" : ""));
@@ -1118,13 +1118,13 @@ function pluginDetailHtml(detail){
   let hint = "";
   const restartPolicy = (st.Policy || {}).Restart || "never";
   if ((st.State == "crashed" || st.State == "exited") && restartPolicy == "never"){
-    hint = t("The restart policy of this plugin is \"never\", so Zoraxy leaves it stopped. Press Start to run it again, or set a restart policy below. It also starts again when Zoraxy restarts.");
+    hint = t("The restart policy of this plugin is \"never\", so Dunree leaves it stopped. Press Start to run it again, or set a restart policy below. It also starts again when Dunree restarts.");
   } else if (st.State == "exited"){
     hint = t("The plugin ended without an error, and the restart policy \"when it crashes\" does not restart it then. Press Start to run it again.");
   } else if (st.State == "restarting"){
-    hint = t("Zoraxy starts the plugin again by itself. Each further failure doubles the wait, up to 5 minutes. Stop cancels the restart.");
+    hint = t("Dunree starts the plugin again by itself. Each further failure doubles the wait, up to 5 minutes. Stop cancels the restart.");
   } else if (st.State == "crash_loop"){
-    hint = t("Zoraxy stopped restarting the plugin because it ended too often in a short time. Look at the exit history and the last output, fix the cause, then press Start.");
+    hint = t("Dunree stopped restarting the plugin because it ended too often in a short time. Look at the exit history and the last output, fix the cause, then press Start.");
   } else if (st.State == "failed_to_start"){
     hint = t("Fix the problem above, then press Start.");
   } else if (st.Health == "not_responding" || st.Health == "not_listening" || st.Health == "unhealthy"){
@@ -1140,7 +1140,7 @@ function pluginDetailHtml(detail){
       </div>
       <div>
         <p class="pm-detail__title">${ZxUI.esc(t("Last output of the plugin"))}</p>
-        ${out.length ? `<div class="zx-codeblock" tabindex="0"><pre>${ZxUI.esc(out.join("\n"))}</pre></div>` : `<p class="zx-muted">${ZxUI.esc(t("The plugin has not printed anything since Zoraxy started."))}</p>`}
+        ${out.length ? `<div class="zx-codeblock" tabindex="0"><pre>${ZxUI.esc(out.join("\n"))}</pre></div>` : `<p class="zx-muted">${ZxUI.esc(t("The plugin has not printed anything since Dunree started."))}</p>`}
       </div>
     </div>
     ${pluginHistoryHtml(detail.ExitHistory || [])}
@@ -1186,7 +1186,7 @@ function pluginInstallHtml(pluginId, inst){
     if (inst.SHA256) add(t("SHA-256 of the program file"), `<code>${ZxUI.esc(inst.SHA256)}</code>`);
   }
   if (inst.BinaryState == "changed"){
-    add(t("Program file"), `<span class="zx-badge zx-badge--dot zx-badge--danger">${ZxUI.esc(t("Changed since install"))}</span><br>${ZxUI.esc(t("The file in the plugin folder is not the one that was installed. With signature checking set to enforce Zoraxy does not start it, and does not run or load it at its next start or reload. With warn it is run as before."))}`);
+    add(t("Program file"), `<span class="zx-badge zx-badge--dot zx-badge--danger">${ZxUI.esc(t("Changed since install"))}</span><br>${ZxUI.esc(t("The file in the plugin folder is not the one that was installed. With signature checking set to enforce Dunree does not start it, and does not run or load it at its next start or reload. With warn it is run as before."))}`);
   } else if (inst.BinaryState == "ok"){
     add(t("Program file"), `<span class="zx-badge zx-badge--dot zx-badge--ok">${ZxUI.esc(t("As installed"))}</span>`);
   }
@@ -1247,7 +1247,7 @@ function releasePluginSource(pluginId, btn){
   });
 }
 
-//Counters since Zoraxy started: only the ones that are not zero
+//Counters since Dunree started: only the ones that are not zero
 function pluginCountersHtml(c){
   const rows = [];
   const add = (k, v) => { if (v) rows.push(`<dt>${ZxUI.esc(k)}</dt><dd>${ZxUI.esc(String(v))}</dd>`); };
@@ -1261,10 +1261,10 @@ function pluginCountersHtml(c){
   add(t("Health checks"), (c.HealthChecksOK || c.HealthChecksFail) ? tf("{0} passed, {1} failed", c.HealthChecksOK || 0, c.HealthChecksFail || 0) : "");
   add(t("Output lines"), c.LogLines ? (c.LogLinesDropped ? tf("{0} ({1} dropped by the rate limit)", c.LogLines, c.LogLinesDropped) : String(c.LogLines)) : "");
   if (rows.length == 0) return "";
-  return `<p class="pm-detail__title" style="margin-top: var(--zx-space-4);">${ZxUI.esc(t("Since Zoraxy started"))}</p><dl class="zx-kv pm-counters">${rows.join("")}</dl>`;
+  return `<p class="pm-detail__title" style="margin-top: var(--zx-space-4);">${ZxUI.esc(t("Since Dunree started"))}</p><dl class="zx-kv pm-counters">${rows.join("")}</dl>`;
 }
 
-//What ended a process, and what Zoraxy did about it. Newest first.
+//What ended a process, and what Dunree did about it. Newest first.
 function pluginHistoryHtml(history){
   if (history.length == 0) return "";
   const what = h => {
@@ -1272,9 +1272,9 @@ function pluginHistoryHtml(history){
     switch (h.Kind){
       case "crashed": return tf("Crashed ({0})", exit);
       case "exited": return tf("Ended by itself ({0})", exit);
-      case "stopped": return t("Stopped by Zoraxy");
+      case "stopped": return t("Stopped by Dunree");
       case "failed_to_start": return t("Could not be started");
-      case "unhealthy": return t("Ended by Zoraxy: health check failed");
+      case "unhealthy": return t("Ended by Dunree: health check failed");
     }
     return h.Kind;
   };
@@ -1294,9 +1294,9 @@ function pluginHistoryHtml(history){
       <span role="cell">${ZxUI.esc(did(h))}</span>
     </div>`).join("");
   return `<div class="pm-detail__block">
-      <p class="pm-detail__title">${ZxUI.esc(history.length == 1 ? t("Exit history (1 exit since Zoraxy started)") : tf("Exit history (last {0} exits since Zoraxy started)", history.length))}</p>
+      <p class="pm-detail__title">${ZxUI.esc(history.length == 1 ? t("Exit history (1 exit since Dunree started)") : tf("Exit history (last {0} exits since Dunree started)", history.length))}</p>
       <div class="pm-history-wrap" tabindex="0"><div class="pm-history" role="table" aria-label="${ZxUI.esc(t("Exit history"))}">
-        <div class="pm-history__row pm-history__row--head" role="row"><span role="columnheader">${ZxUI.esc(t("When"))}</span><span role="columnheader">${ZxUI.esc(t("What happened"))}</span><span role="columnheader">${ZxUI.esc(t("Ran for"))}</span><span role="columnheader">${ZxUI.esc(t("What Zoraxy did"))}</span></div>
+        <div class="pm-history__row pm-history__row--head" role="row"><span role="columnheader">${ZxUI.esc(t("When"))}</span><span role="columnheader">${ZxUI.esc(t("What happened"))}</span><span role="columnheader">${ZxUI.esc(t("Ran for"))}</span><span role="columnheader">${ZxUI.esc(t("What Dunree did"))}</span></div>
         ${rows}
       </div></div>
     </div>`;
@@ -1314,10 +1314,10 @@ function pluginSettingsHtml(view){
         <div class="zx-inputgroup"><input class="zx-input zx-input--short" type="number" min="0" step="${step || 1}" inputmode="${step ? "decimal" : "numeric"}" id="pmset-${name}-${pid}" data-key="${name}" value="${Number(value) || 0}" ${enabled ? "" : "disabled"}>${unit ? `<span class="zx-inputgroup__unit">${ZxUI.esc(unit)}</span>` : ""}</div>
         <p class="zx-help">${ZxUI.esc(help)}</p>
       </div>`;
-  const healthHow = view.HealthPath ? tf("Every 10 seconds Zoraxy asks the plugin at {0}.", view.HealthPath) : t("This plugin has no health address, so Zoraxy can only test every 10 seconds that its port is open. A plugin that accepts connections but no longer answers is not noticed this way.");
+  const healthHow = view.HealthPath ? tf("Every 10 seconds Dunree asks the plugin at {0}.", view.HealthPath) : t("This plugin has no health address, so Dunree can only test every 10 seconds that its port is open. A plugin that accepts connections but no longer answers is not noticed this way.");
   return `<form class="pm-settings" data-pid="${pid}" onsubmit="savePluginSettings(this); return false;">
       <p class="pm-detail__title">${ZxUI.esc(t("Supervision"))}</p>
-      <p class="zx-help" style="margin-bottom: var(--zx-space-3);">${ZxUI.esc(t("Everything here is off unless you turn it on. Without it Zoraxy only reports what happens to the plugin."))}</p>
+      <p class="zx-help" style="margin-bottom: var(--zx-space-3);">${ZxUI.esc(t("Everything here is off unless you turn it on. Without it Dunree only reports what happens to the plugin."))}</p>
       <div class="zx-form-grid">
         <div class="zx-field">
           <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-restart-${pid}">${ZxUI.esc(t("When the plugin stops by itself"))}</label></div>
@@ -1326,7 +1326,7 @@ function pluginSettingsHtml(view){
             ${opt("on-failure", t("Start it again when it crashed"), pol.Restart)}
             ${opt("always", t("Always start it again"), pol.Restart)}
           </select>
-          <p class="zx-help">${ZxUI.esc(t("Zoraxy waits 1 second before the first restart and doubles the wait after each further failure, up to 5 minutes. After 5 exits within 10 minutes it stops trying until you press Start."))}</p>
+          <p class="zx-help">${ZxUI.esc(t("Dunree waits 1 second before the first restart and doubles the wait after each further failure, up to 5 minutes. After 5 exits within 10 minutes it stops trying until you press Start."))}</p>
         </div>
         <div class="zx-field">
           <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-health-${pid}">${ZxUI.esc(t("Health check"))}</label></div>
@@ -1347,7 +1347,7 @@ function pluginSettingsHtml(view){
         <div class="zx-field">
           <div class="zx-field__label-row"><label class="zx-field__label" for="pmset-log-${pid}">${ZxUI.esc(t("Write the output to"))}</label></div>
           <select class="zx-select" id="pmset-log-${pid}" data-key="log_target">
-            ${opt("main", t("The main Zoraxy log (default)"), pol.LogTarget)}
+            ${opt("main", t("The main Dunree log (default)"), pol.LogTarget)}
             ${opt("file", t("A log file of its own"), pol.LogTarget)}
           </select>
           <p class="zx-help">${ZxUI.esc(t("Its own file is kept below the size limit: when it is full it is renamed and one old file is kept."))}</p>
@@ -1430,14 +1430,14 @@ function setPluginPolicyValue(pluginId, values){
   });
 }
 
-/* Zoraxy API permissions of one plugin, see /api/plugins/permissions */
+/* Dunree API permissions of one plugin, see /api/plugins/permissions */
 function pluginPermissionsHtml(view){
   const pid = ZxUI.esc(view.ID);
   const list = view.Requested || [];
   if (list.length == 0){
     return `<div class="pm-perms" data-pid="${pid}">
-        <p class="pm-detail__title">${ZxUI.esc(t("Zoraxy API permissions"))}</p>
-        <p class="zx-muted" style="margin: 0;">${ZxUI.esc(t("This plugin does not ask for access to the Zoraxy API."))}</p>
+        <p class="pm-detail__title">${ZxUI.esc(t("Dunree API permissions"))}</p>
+        <p class="zx-muted" style="margin: 0;">${ZxUI.esc(t("This plugin does not ask for access to the Dunree API."))}</p>
       </div>`;
   }
   const how = view.RequireApproval
@@ -1455,8 +1455,8 @@ function pluginPermissionsHtml(view){
   }).join("");
   const pending = view.Pending || 0;
   return `<div class="pm-perms" data-pid="${pid}" data-pending="${pending}" data-withheld="${view.Withheld || 0}" data-require="${view.RequireApproval ? "true" : "false"}">
-      <p class="pm-detail__title">${ZxUI.esc(t("Zoraxy API permissions"))}</p>
-      <p class="zx-help" style="margin: 0;">${ZxUI.esc(t("What this plugin asks to do in Zoraxy through the plugin API. The reason next to each one is the text of the plugin author."))} ${ZxUI.esc(how)}</p>
+      <p class="pm-detail__title">${ZxUI.esc(t("Dunree API permissions"))}</p>
+      <p class="zx-help" style="margin: 0;">${ZxUI.esc(t("What this plugin asks to do in Dunree through the plugin API. The reason next to each one is the text of the plugin author."))} ${ZxUI.esc(how)}</p>
       <div class="pm-perms__list">${rows}</div>
       <div class="pm-perms__foot">
         ${pending > 0 ? `<button type="button" class="ui primary button pm-perms__all" data-pid="${pid}" onclick="setPluginPermission(this.dataset.pid, 'approve', Array.from(this.closest('.pm-perms').querySelectorAll('.pm-perms__row[data-approved=false]')), this);">${ZxUI.esc(pending == 1 ? t("Approve the 1 permission shown as not approved") : tf("Approve the {0} permissions shown as not approved", pending))}</button>` : ""}
@@ -1932,7 +1932,7 @@ function uninstallPlugin(pluginId, pluginName, btn=undefined) {
       if (!data || data.error != undefined) return;
       $("#pluginRequireApproval").prop("checked", !!data.RequirePermissionApproval);
       $("#pluginContractRefuse").prop("checked", data.ContractMode == "refuse");
-      $("#pluginContractInfo").text(tf("This Zoraxy supports plugin contract versions {0} to {1} (plugin SDK {2}).", data.ContractVersionMin, data.ContractVersionMax, data.SDKVersion));
+      $("#pluginContractInfo").text(tf("This Dunree supports plugin contract versions {0} to {1} (plugin SDK {2}).", data.ContractVersionMin, data.ContractVersionMax, data.SDKVersion));
       renderPluginStoreSafety(data);
     });
   }
@@ -1942,7 +1942,7 @@ function uninstallPlugin(pluginId, pluginName, btn=undefined) {
     $("#pluginVerifyModeHelp").text({
       off: t("Now: nothing is checked. Indexes and downloads are taken as they come."),
       warn: t("Now: a signature or checksum that does not match is logged, written to the security audit log and shown here. The plugin is installed anyway."),
-      enforce: t("Now: a plugin is only installed or updated when its index is validly signed and the download matches it. Plugins of an unsigned index cannot be installed or updated. A plugin whose program file was changed after the install is not started, and at a start or reload of Zoraxy the changed file is not run or loaded.")
+      enforce: t("Now: a plugin is only installed or updated when its index is validly signed and the download matches it. Plugins of an unsigned index cannot be installed or updated. A plugin whose program file was changed after the install is not started, and at a start or reload of Dunree the changed file is not run or loaded.")
     }[data.VerifyMode] || "");
     const keyBox = $("#pluginIndexKey");
     if (!keyBox.is(":focus")){ keyBox.val(data.IndexPublicKey || ""); }
@@ -1971,8 +1971,8 @@ function uninstallPlugin(pluginId, pluginName, btn=undefined) {
     if (!$("#pluginUIOrigin").is(":focus")){ $("#pluginUIOrigin").val(data.PluginUIOrigin || ""); }
     $("#pluginUIListen").attr("placeholder", iso.DefaultListen || ":8001");
     $("#pluginUIListenHelp").text(iso.DefaultListen
-      ? tf("Port (and optionally host) Zoraxy opens for plugin pages. Your browser has to reach it. Empty: {0}.", iso.DefaultListen)
-      : t("Port (and optionally host) Zoraxy opens for plugin pages. Your browser has to reach it."));
+      ? tf("Port (and optionally host) Dunree opens for plugin pages. Your browser has to reach it. Empty: {0}.", iso.DefaultListen)
+      : t("Port (and optionally host) Dunree opens for plugin pages. Your browser has to reach it."));
     let uiState = t("Plugin pages are not isolated.");
     if (data.IsolatePluginUI){
       uiState = iso.Listening ? tf("Plugin pages are isolated and served on {0}.", iso.ListenAddr) : tf("Plugin pages are isolated but cannot be served: {0}. Plugin pages are not available until this is fixed.", iso.Error || t("the listener is not running"));

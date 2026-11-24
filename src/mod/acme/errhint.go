@@ -32,7 +32,7 @@ func explainACMEError(err error, useDNS bool) error {
 		if useDNS {
 			hint = "the CA could not reach the validation host. DNS-01 normally does not need inbound access; check that the DNS records are published and propagated."
 		} else {
-			hint = "the CA could not fetch http://<domain>/.well-known/acme-challenge/<token> from this server. Check that the domain's public DNS (A/AAAA/CNAME, including IPv6 and any dynamic DNS name) points to this Zoraxy, that port 80 is forwarded to it from the internet, and that no firewall, CDN proxy or other web server answers on port 80. Use the DNS challenge for wildcard or internal-only hosts."
+			hint = "the CA could not fetch http://<domain>/.well-known/acme-challenge/<token> from this server. Check that the domain's public DNS (A/AAAA/CNAME, including IPv6 and any dynamic DNS name) points to this Dunree, that port 80 is forwarded to it from the internet, and that no firewall, CDN proxy or other web server answers on port 80. Use the DNS challenge for wildcard or internal-only hosts."
 		}
 	case strings.Contains(msg, "acme:error:unauthorized") || strings.Contains(msg, "invalid response from"):
 		hint = "the CA reached a server but received the wrong challenge answer. Another web server or a redirect on port 80 is probably answering for this domain."

@@ -39,7 +39,7 @@ func assertTotals(t *testing.T, tracker *dashboardBandwidthTracker, wantRx int64
 }
 
 // The first reading of an interface must only record a baseline, otherwise the
-// counter history from before Zoraxy started shows up as a one-off spike.
+// counter history from before Dunree started shows up as a one-off spike.
 func TestBandwidthFirstSampleOnlyBaselines(t *testing.T) {
 	now := time.Date(2026, 7, 25, 10, 0, 0, 0, time.Local)
 	tracker := newTestBandwidthTracker(now)

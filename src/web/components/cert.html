@@ -67,7 +67,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">TLS / SSL Certificates</h2>
-            <p class="zx-page-header__sub">The certificates Zoraxy serves over HTTPS: when each one expires, which names it covers and whether it renews by itself.</p>
+            <p class="zx-page-header__sub">The certificates Dunree serves over HTTPS: when each one expires, which names it covers and whether it renews by itself.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Certificate"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -96,7 +96,7 @@
                     <input type="radio" name="certPath" value="acme">
                     <span class="cx-choice__icon" aria-hidden="true"><i class="magic icon"></i></span>
                     <span class="cx-choice__title">Get a free certificate automatically <span class="cx-choice__tag">Recommended</span></span>
-                    <span class="cx-choice__desc">A trusted certificate from Let's Encrypt (ACME). Zoraxy requests it and can renew it for you. For a public domain that points at this server.</span>
+                    <span class="cx-choice__desc">A trusted certificate from Let's Encrypt (ACME). Dunree requests it and can renew it for you. For a public domain that points at this server.</span>
                 </label>
                 <label class="cx-choice__item" data-cert-path="upload">
                     <input type="radio" name="certPath" value="upload">
@@ -108,7 +108,7 @@
                     <input type="radio" name="certPath" value="self">
                     <span class="cx-choice__icon" aria-hidden="true"><i class="pencil alternate icon"></i></span>
                     <span class="cx-choice__title">Self-signed</span>
-                    <span class="cx-choice__desc">Zoraxy creates one here, for testing or names that only exist in your network. Browsers show a warning until you trust it.</span>
+                    <span class="cx-choice__desc">Dunree creates one here, for testing or names that only exist in your network. Browsers show a warning until you trust it.</span>
                 </label>
             </fieldset>
 
@@ -134,7 +134,7 @@
                         <div class="cx-path__title" role="heading" aria-level="4" id="certAcmeNeedsTitle">Before you request</div>
                         <ul class="cx-needs">
                             <li><i class="globe icon" aria-hidden="true"></i><span>The name already points at this server in public DNS.</span></li>
-                            <li><i class="plug icon" aria-hidden="true"></i><span>Port 80 is reachable from the internet. Zoraxy opens it for the check if it is closed.</span></li>
+                            <li><i class="plug icon" aria-hidden="true"></i><span>Port 80 is reachable from the internet. Dunree opens it for the check if it is closed.</span></li>
                             <li><i class="clock outline icon" aria-hidden="true"></i><span>It takes about a minute. Keep this page open until you see the result.</span></li>
                         </ul>
                     </aside>
@@ -185,11 +185,11 @@
                                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="certSniWhat" aria-label="What are server names and SNI?">?</button></div>
                             <input type="text" id="certdomain" class="zx-input" placeholder="app.example.com" autocomplete="off" spellcheck="false" aria-describedby="certdomainHelp certUploadErr">
                             <div class="zx-popover" id="certSniWhat" role="note" hidden>
-    <strong>Server names and SNI.</strong> SNI is the host name a browser sends before the encrypted connection starts; Zoraxy uses it to pick the certificate.
+    <strong>Server names and SNI.</strong> SNI is the host name a browser sends before the encrypted connection starts; Dunree uses it to pick the certificate.
     <ul>
         <li>For <code>a.example.com</code> and <code>b.example.com</code> a separate certificate for each answers fastest.</li>
         <li>A wildcard certificate for <code>*.example.com</code> is added by entering <code>example.com</code> as the server name.</li>
-        <li>A certificate with several hosts: enter the first domain and Zoraxy matches the remaining CN/DNS names.</li>
+        <li>A certificate with several hosts: enter the first domain and Dunree matches the remaining CN/DNS names.</li>
     </ul>
 </div>
                             <p class="zx-help" id="certdomainHelp">Filled in from the certificate when it can be read. For a wildcard certificate (*.example.com) enter example.com.</p>
@@ -460,7 +460,7 @@
                 done(false, t("Unable to obtain certificate: ACME email not set"));
                 return;
             }
-            //Zoraxy file names are the matching name for domains. With several domains (a host with aliases) the certificate
+            //Dunree file names are the matching name for domains. With several domains (a host with aliases) the certificate
             //store matches by the names inside the certificate, so the file is named after the first (primary) domain.
             let filename = domains.split(",")[0].trim();
             if (filename == ""){
@@ -494,7 +494,7 @@
                     },
                     error: function(error) {
                         console.log("Failed to install certificate:", error);
-                        done(false, t("The request did not reach Zoraxy or took too long. Check the certificate list before you try again."));
+                        done(false, t("The request did not reach Dunree or took too long. Check the certificate list before you try again."));
                     }
                 });
             }
@@ -569,9 +569,9 @@
 
     function managedByLabel(entry){
         switch (entry.ManagedBy){
-            case "acme": return `<span class="ui mini teal label" title="Issued and renewed by Zoraxy via ACME">ACME</span>`;
-            case "mapdir": return `<span class="ui mini purple label" title="Imported from the watched certificate folder: ${certEsc(entry.Source)}. Externally managed, not renewed by Zoraxy.">Folder (external)</span>`;
-            case "csr": return `<span class="ui mini orange label" title="Issued by your CA for a signing request created here. Externally managed, not renewed by Zoraxy.">CSR (external)</span>`;
+            case "acme": return `<span class="ui mini teal label" title="Issued and renewed by Dunree via ACME">ACME</span>`;
+            case "mapdir": return `<span class="ui mini purple label" title="Imported from the watched certificate folder: ${certEsc(entry.Source)}. Externally managed, not renewed by Dunree.">Folder (external)</span>`;
+            case "csr": return `<span class="ui mini orange label" title="Issued by your CA for a signing request created here. Externally managed, not renewed by Dunree.">CSR (external)</span>`;
             default: return `<span class="ui mini grey label" title="Uploaded manually">Uploaded</span>`;
         }
     }
@@ -655,9 +655,9 @@
 
     function managedByChip(entry){
         switch (entry.ManagedBy){
-            case "acme": return `<span class="zx-badge zx-badge--info" title="Issued and renewed by Zoraxy via ACME">ACME</span>`;
-            case "mapdir": return `<span class="zx-badge" title="Imported from the watched certificate folder: ${certEsc(entry.Source)}. Externally managed, not renewed by Zoraxy.">Folder (external)</span>`;
-            case "csr": return `<span class="zx-badge" title="Issued by your CA for a signing request created here. Externally managed, not renewed by Zoraxy.">CSR (external)</span>`;
+            case "acme": return `<span class="zx-badge zx-badge--info" title="Issued and renewed by Dunree via ACME">ACME</span>`;
+            case "mapdir": return `<span class="zx-badge" title="Imported from the watched certificate folder: ${certEsc(entry.Source)}. Externally managed, not renewed by Dunree.">Folder (external)</span>`;
+            case "csr": return `<span class="zx-badge" title="Issued by your CA for a signing request created here. Externally managed, not renewed by Dunree.">CSR (external)</span>`;
             default: return `<span class="zx-badge" title="Uploaded manually">Uploaded</span>`;
         }
     }
@@ -666,7 +666,7 @@
 
     //Does the auto-renewer look after this certificate? {yes, why}
     function certAutoRenewState(entry, ctx){
-        if (entry.ManagedBy == "mapdir" || entry.ManagedBy == "csr"){ return {yes: false, why: t("Managed outside Zoraxy")}; }
+        if (entry.ManagedBy == "mapdir" || entry.ManagedBy == "csr"){ return {yes: false, why: t("Managed outside Dunree")}; }
         if (!ctx.renewOn){ return {yes: false, why: t("Auto-renew is off")}; }
         var all = ctx.renewList.length == 1 && ctx.renewList[0] === "*";
         if (!all && ctx.renewList.indexOf(entry.Filename) < 0){ return {yes: false, why: t("Not selected for auto-renew")}; }
@@ -974,7 +974,7 @@
                 if (!ok){
                     certSetResult("danger", t("The certificate was not issued"), t("Nothing was changed. The reason given:"), message, [
                         t("Check that the name points at the public address of this server."),
-                        t("Check that port 80 reaches Zoraxy from the internet (router, firewall, CDN)."),
+                        t("Check that port 80 reaches Dunree from the internet (router, firewall, CDN)."),
                         t("After several failed tries the authority makes you wait before the next one.")], true);
                     return;
                 }

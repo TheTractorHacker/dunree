@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zoraxy admin UI performance probe (Playwright + CDP, headless Chromium).
+"""Dunree admin UI performance probe (Playwright + CDP, headless Chromium).
 
 Seeds a THROW-AWAY instance with realistic data (many proxy rules, a few hundred
 proxied requests) and then measures, for every menu page:
@@ -13,7 +13,7 @@ and for typical interactions the click-to-next-paint latency, plus the frame rat
 while dragging the traffic diagram.
 
 Usage:
-  perf.py --spawn ./zoraxy --web ../../src/web --port 28781 [--json out.json]   # start a scratch instance itself
+  perf.py --spawn ./dunree --web ../../src/web --port 28781 [--json out.json]   # start a scratch instance itself
   perf.py --url http://127.0.0.1:28781 --proxy-port 28782                        # use one you started (-noauth -dev)
 
 Only run it against a scratch instance (-noauth -dev with temp -conf/-dbpath): it
@@ -43,7 +43,7 @@ ap.add_argument("--rules", type=int, default=30)
 ap.add_argument("--requests", type=int, default=600)
 ap.add_argument("--idle", type=float, default=5.0, help="idle measurement window per page (s)")
 ap.add_argument("--json", help="write the raw result to this file")
-ap.add_argument("--spawn", help="zoraxy binary to start as a scratch instance")
+ap.add_argument("--spawn", help="dunree binary to start as a scratch instance")
 ap.add_argument("--web", help="web dir for --spawn (symlinked next to the binary)")
 ap.add_argument("--port", type=int, default=28781, help="management port for --spawn")
 ap.add_argument("--only", help="comma separated page tags to measure")
@@ -279,7 +279,7 @@ def main():
     proc = None
     tmp = None
     if args.spawn:
-        tmp = tempfile.mkdtemp(prefix="zoraxy-perf-")
+        tmp = tempfile.mkdtemp(prefix="dunree-perf-")
         os.symlink(os.path.abspath(args.web), os.path.join(tmp, "web"))
         proc = subprocess.Popen([os.path.abspath(args.spawn), "-noauth", "-dev", "-port", f":{args.port}", "-conf", "./conf", "-dbpath", "./sys.db"],
                                 cwd=tmp, stdout=open(os.path.join(tmp, "z.log"), "w"), stderr=subprocess.STDOUT)

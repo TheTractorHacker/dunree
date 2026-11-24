@@ -43,7 +43,7 @@ func builtinChecks() []Check {
 					return unknown("the admin interface settings could not be read")
 				}
 				if !f.Admin.AuthRequired {
-					return Result{Status: StatusFail, Evidence: []string{"Zoraxy was started with -noauth: the admin interface does not ask for a login"}}
+					return Result{Status: StatusFail, Evidence: []string{"Dunree was started with -noauth: the admin interface does not ask for a login"}}
 				}
 				return Result{Status: StatusOK, Evidence: []string{"the admin interface asks for a login"}}
 			},
@@ -51,7 +51,7 @@ func builtinChecks() []Check {
 		{
 			ID: "admin.tls", Title: "Admin interface is served over HTTPS", Category: CatExposure, Weight: 6,
 			Why:         "Over plain HTTP the admin password and session cookie cross the network readable by anyone on the path.",
-			Remediation: Remediation{Label: "Start with -webui_tls=auto", Hint: "Start Zoraxy with -webui_tls=auto (self-signed) or -webui_tls=custom and your own certificate."},
+			Remediation: Remediation{Label: "Start with -webui_tls=auto", Hint: "Start Dunree with -webui_tls=auto (self-signed) or -webui_tls=custom and your own certificate."},
 			Run: func(f *Facts) Result {
 				a := f.Admin
 				if a == nil {
@@ -69,7 +69,7 @@ func builtinChecks() []Check {
 		{
 			ID: "admin.bind", Title: "Admin port is not open on every interface", Category: CatExposure, Weight: 4,
 			Why:         "An admin port on all interfaces is reachable from every network the machine is on, including the internet if the firewall allows it.",
-			Remediation: Remediation{Label: "Bind the admin port to one address", Hint: "Start Zoraxy with -port=127.0.0.1:8000 (or a LAN address) and reach it through a VPN or an SSH tunnel; or restrict the port in the firewall."},
+			Remediation: Remediation{Label: "Bind the admin port to one address", Hint: "Start Dunree with -port=127.0.0.1:8000 (or a LAN address) and reach it through a VPN or an SSH tunnel; or restrict the port in the firewall."},
 			Run: func(f *Facts) Result {
 				a := f.Admin
 				if a == nil {
@@ -109,7 +109,7 @@ func builtinChecks() []Check {
 				}
 				//Warning, not failure: an existing configuration may have been working like this for years (upgrade note in docs/ux/changes.md).
 				//While the admin allow-list is on, the proxy refuses to connect to the admin port at all.
-				return Result{Status: StatusWarn, Evidence: []string{"Warning, nothing was changed: the upstream of " + listNames(bad, 8) + " is the admin interface of this instance, so that site publishes the admin panel and bypasses network limits on the admin port. Point it elsewhere or remove it. With the admin allow-list on, Zoraxy refuses to connect to its own admin port from a proxy rule"}}
+				return Result{Status: StatusWarn, Evidence: []string{"Warning, nothing was changed: the upstream of " + listNames(bad, 8) + " is the admin interface of this instance, so that site publishes the admin panel and bypasses network limits on the admin port. Point it elsewhere or remove it. With the admin allow-list on, Dunree refuses to connect to its own admin port from a proxy rule"}}
 			},
 		},
 		{
@@ -190,7 +190,7 @@ func builtinChecks() []Check {
 		},
 		{
 			ID: "exposure.webssh_loopback", Title: "Web terminal to this machine is not allowed", Category: CatExposure, Weight: 5,
-			Why:         "-sshlb lets the web terminal open a shell on the server that runs Zoraxy. Anyone who gets into the admin interface then gets a shell.",
+			Why:         "-sshlb lets the web terminal open a shell on the server that runs Dunree. Anyone who gets into the admin interface then gets a shell.",
 			Remediation: Remediation{Label: "Restart without -sshlb", Hint: "Remove the -sshlb start flag."},
 			Run: func(f *Facts) Result {
 				if f.Tools == nil {
@@ -419,7 +419,7 @@ func builtinChecks() []Check {
 		},
 		{
 			ID: "access.trusted_proxy_gating", Title: "Client address headers are only trusted from known proxies", Category: CatAbuse, Weight: 3,
-			Why:         "Behind a CDN, the real visitor address comes in a header. If Zoraxy trusts that header from anyone, an attacker can forge it to dodge blocklists and rate limits.",
+			Why:         "Behind a CDN, the real visitor address comes in a header. If Dunree trusts that header from anyone, an attacker can forge it to dodge blocklists and rate limits.",
 			Remediation: Remediation{Label: "Open Access Rules", Page: "access"},
 			Run: func(f *Facts) Result {
 				if f.Access == nil || f.Visitors == nil {
@@ -673,7 +673,7 @@ func builtinChecks() []Check {
 		},
 		{
 			ID: "cert.coverage", Title: "Every site has a matching certificate", Category: CatCerts, Weight: 6,
-			Why:         "A site without a matching certificate shows a browser warning (Zoraxy would present its built-in self-signed certificate), and a self-signed one is not trusted by visitors.",
+			Why:         "A site without a matching certificate shows a browser warning (Dunree would present its built-in self-signed certificate), and a self-signed one is not trusted by visitors.",
 			Remediation: Remediation{Label: "Open Certificates", Page: "cert"},
 			Run: func(f *Facts) Result {
 				if f.Proxy == nil || f.Certs == nil {
@@ -772,8 +772,8 @@ func builtinChecks() []Check {
 
 		/* ---------------- Operations ---------------- */
 		{
-			ID: "ops.updates", Title: "Zoraxy is up to date", Category: CatOps, Weight: 4,
-			Why:         "Updates carry security fixes. Zoraxy does not check for updates on its own, so the Update page has to be opened now and then.",
+			ID: "ops.updates", Title: "Dunree is up to date", Category: CatOps, Weight: 4,
+			Why:         "Updates carry security fixes. Dunree does not check for updates on its own, so the Update page has to be opened now and then.",
 			Remediation: Remediation{Label: "Open Update", Page: "updater"},
 			Run: func(f *Facts) Result {
 				u := f.Updater
@@ -784,7 +784,7 @@ func builtinChecks() []Check {
 					return na("offline mode is on, no update checks are made")
 				}
 				if !u.Checked {
-					return unknown("Zoraxy has not checked for updates yet (it never does so on its own)")
+					return unknown("Dunree has not checked for updates yet (it never does so on its own)")
 				}
 				age := int(f.Now.Sub(u.CheckedAt).Hours() / 24)
 				if u.UpdateAvailable {
@@ -798,7 +798,7 @@ func builtinChecks() []Check {
 		},
 		{
 			ID: "ops.backup", Title: "A recent backup exists", Category: CatOps, Weight: 3,
-			Why:         "If the configuration is lost or a change goes wrong, a backup is the way back. Zoraxy only sees the backups it makes itself before an update; backups made elsewhere (VM snapshot, exported zip) are invisible to it.",
+			Why:         "If the configuration is lost or a change goes wrong, a backup is the way back. Dunree only sees the backups it makes itself before an update; backups made elsewhere (VM snapshot, exported zip) are invisible to it.",
 			Remediation: Remediation{Label: "Open Utilities", Page: "utils"},
 			Run: func(f *Facts) Result {
 				b := f.Backup
@@ -806,7 +806,7 @@ func builtinChecks() []Check {
 					return unknown("the backup folder could not be read")
 				}
 				if b.Count == 0 {
-					return unknown("Zoraxy has made no backup that it can see (backups made outside Zoraxy are not visible to it)")
+					return unknown("Dunree has made no backup that it can see (backups made outside Dunree are not visible to it)")
 				}
 				age := int(f.Now.Sub(b.Latest).Hours() / 24)
 				if age > 30 {

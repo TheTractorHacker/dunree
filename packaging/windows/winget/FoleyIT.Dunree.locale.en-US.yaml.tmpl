@@ -1,0 +1,27 @@
+# winget default locale manifest template. packaging/windows/winget/render.sh fills in ${...}.
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: FoleyIT.Dunree
+PackageVersion: ${VERSION}
+PackageLocale: en-US
+Publisher: Foley IT
+PublisherUrl: ${PUBLISHER_URL}
+PackageName: Dunree
+PackageUrl: ${PACKAGE_URL}
+License: AGPL-3.0-only
+LicenseUrl: ${LICENSE_URL}
+Copyright: Copyright (C) 2026 Foley IT. Based on Zoraxy, Copyright (C) tobychui and imuslab.
+ShortDescription: Reverse proxy and web gateway
+Description: |-
+  Dunree is a reverse proxy and web gateway with a web admin interface: HTTP and stream
+  proxying, TLS certificates (ACME), access control, a web application firewall and plugins.
+  Dunree is based on Zoraxy v3.3.6 by tobychui and imuslab and is an independent project
+  that is not endorsed by them.
+Moniker: dunree
+Tags:
+  - reverse-proxy
+  - gateway
+  - tls
+  - acme
+  - waf
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

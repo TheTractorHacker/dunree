@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/database"
 )
 
 // newTestGateway creates an AuthRouter backed by a temporary database with the

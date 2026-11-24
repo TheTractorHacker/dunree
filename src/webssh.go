@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/sshprox"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/sshprox"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

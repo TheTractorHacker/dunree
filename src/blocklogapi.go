@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
-	Blocked requests API (what Zoraxy rejected, and why)
+	Blocked requests API (what Dunree rejected, and why)
 
 	GET  /api/blocked/overview   filters + before,limit   summary + one page of entries (one request for the page)
 	GET  /api/blocked/summary    filters                  counts by reason, top IPs / hosts / paths, hourly series

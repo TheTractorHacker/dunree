@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // Through the real request handler: if the upstream drops the connection after it

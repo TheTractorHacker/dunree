@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/apitoken"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/secaudit"
+	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/secaudit"
 )
 
 func useSecAudit(t *testing.T) (*secaudit.Logger, string) {

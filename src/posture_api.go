@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/notify"
-	"imuslab.com/zoraxy/mod/posture"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/notify"
+	"github.com/foleyit/dunree/mod/posture"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

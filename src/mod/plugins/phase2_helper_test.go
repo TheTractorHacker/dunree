@@ -16,14 +16,14 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
 )
 
 /*
 	Helpers for the phase 2 tests (contract, SDK compatibility, permissions).
 
 	The SDK fixture plugin (testdata/sdkplugin) is a plugin written against the
-	public API of the zoraxy_plugin package. It is built twice: against the frozen
+	public API of the dunree_plugin package. It is built twice: against the frozen
 	copy of SDK 1.0.0 (testdata/sdk-1.0.0) and against the SDK of this source
 	tree. Both builds are offline: the SDK has no dependency outside the standard
 	library.
@@ -31,8 +31,9 @@ import (
 
 const (
 	sdkOld     = "1.0.0"   //the frozen copy: what plugins in the field were built with
-	sdk11      = "1.1.0"   //the frozen copy of the release before the current one (testdata/sdk-1.1.0)
-	sdkCurrent = "current" //src/mod/plugins/zoraxy_plugin of this tree
+	sdk11      = "1.1.0"   //the frozen copy of the release before 1.2.0 (testdata/sdk-1.1.0)
+	sdk12      = "1.2.0"   //the last Zoraxy SDK, frozen from the revision before the Dunree rebrand (testdata/sdk-1.2.0): package zoraxy_plugin, zoraxy_* fields, X-Zoraxy-* headers // legacy-compat
+	sdkCurrent = "current" //src/mod/plugins/dunree_plugin of this tree
 )
 
 var sdkBuild struct {
@@ -86,17 +87,17 @@ func sdkPluginBinary(t testing.TB, version string) string {
 		t.Fatal(err)
 		return ""
 	}
-	sdkDir, tags := "zoraxy_plugin", "sdk11"
+	sdkDir, tags := "dunree_plugin", "sdk11"
 	if version == sdkOld {
-		sdkDir, tags = filepath.Join("testdata", "sdk-"+sdkOld, "zoraxy_plugin"), ""
-	} else if version == sdk11 {
-		sdkDir = filepath.Join("testdata", "sdk-"+sdk11, "zoraxy_plugin")
+		sdkDir, tags = filepath.Join("testdata", "sdk-"+sdkOld, "zoraxy_plugin"), "" // legacy-compat: frozen old-SDK fixture keeps the old directory name
+	} else if version == sdk11 || version == sdk12 {
+		sdkDir = filepath.Join("testdata", "sdk-"+version, "zoraxy_plugin") // legacy-compat: frozen old-SDK fixture keeps the old directory name
 	}
 	work := filepath.Join(chaosBuild.dir, "sdkplugin-"+version)
 	if err := copyTree(filepath.Join("testdata", "sdkplugin"), work); err != nil {
 		return fail(err)
 	}
-	if err := copyTree(sdkDir, filepath.Join(work, "mod", "zoraxy_plugin")); err != nil {
+	if err := copyTree(sdkDir, filepath.Join(work, "mod", "zoraxy_plugin")); err != nil { // legacy-compat: frozen old-SDK fixture keeps the old directory name
 		return fail(err)
 	}
 	if err := os.WriteFile(filepath.Join(work, "go.mod"), []byte("module example.com/zoraxy/sdkplugin\n\ngo 1.21\n"), 0o644); err != nil {

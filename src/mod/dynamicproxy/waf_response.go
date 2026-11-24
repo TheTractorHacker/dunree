@@ -3,8 +3,8 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 /*

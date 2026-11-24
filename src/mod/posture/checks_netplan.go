@@ -6,7 +6,7 @@ import (
 	"net/netip"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/destguard"
+	"github.com/foleyit/dunree/mod/destguard"
 )
 
 /*
@@ -126,7 +126,7 @@ func netplanChecks() []Check {
 	return []Check{
 		{
 			ID: "netplan.backend_zone", Title: "Proxy rule backends are inside the declared application network", Category: CatExposure, Weight: 5,
-			Why:         "Your network plan says where the application servers live. A proxy rule that forwards to an address outside it either means the plan is out of date or the rule points somewhere it should not. Backends written as host names are not checked (Zoraxy does not look names up here).",
+			Why:         "Your network plan says where the application servers live. A proxy rule that forwards to an address outside it either means the plan is out of date or the rule points somewhere it should not. Backends written as host names are not checked (Dunree does not look names up here).",
 			Remediation: netplanFix,
 			Run: func(f *Facts) Result {
 				n, early := planFacts(f)

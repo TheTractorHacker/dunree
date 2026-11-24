@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"imuslab.com/zoraxy/mod/acme/acmedns"
-	"imuslab.com/zoraxy/mod/acme/acmewizard"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/dynamicproxy/domainsniff"
-	"imuslab.com/zoraxy/mod/info/hardwareinfo"
-	"imuslab.com/zoraxy/mod/ipscan"
-	"imuslab.com/zoraxy/mod/netcalc"
-	"imuslab.com/zoraxy/mod/netstat"
-	"imuslab.com/zoraxy/mod/netutils"
-	"imuslab.com/zoraxy/mod/tlscert"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/acme/acmedns"
+	"github.com/foleyit/dunree/mod/acme/acmewizard"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/dynamicproxy/domainsniff"
+	"github.com/foleyit/dunree/mod/info/hardwareinfo"
+	"github.com/foleyit/dunree/mod/ipscan"
+	"github.com/foleyit/dunree/mod/netcalc"
+	"github.com/foleyit/dunree/mod/netstat"
+	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -273,7 +273,7 @@ func RegisterStatisticalAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/sysinfo/drives", hardwareinfo.CachedGetDriveStat)
 	authRouter.HandleFunc("/api/sysinfo/nic", hardwareinfo.CachedIfconfig)
 	authRouter.HandleFunc("/api/sysinfo/usb", hardwareinfo.CachedGetUSB)
-	/* Zoraxy Analytic */
+	/* Dunree Analytic */
 	authRouter.HandleFunc("/api/analytic/list", AnalyticLoader.HandleSummaryList)
 	authRouter.HandleFunc("/api/analytic/load", AnalyticLoader.HandleLoadTargetDaySummary)
 	authRouter.HandleFunc("/api/analytic/loadRange", AnalyticLoader.HandleLoadTargetRangeSummary)
@@ -410,6 +410,7 @@ func RegisterPluginAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/plugins/store/releaseSource", pluginManager.HandleReleaseInstallSource) //let any index update a plugin again (default: only the index it was installed from)
 	authRouter.HandleFunc("/api/plugins/ui/ticket", pluginManager.HandlePluginUITicket)                 //where the page of a plugin is: under the admin origin, or (isolated plugin UI, opt-in) a ticket address on the isolated listener
 	authRouter.HandleFunc("/api/plugins/store/sources", pluginManager.HandleListStoreSources)
+	authRouter.HandleFunc("/api/plugins/store/setup", pluginManager.HandleStoreSetup) //read-only: is a store configured, the one-click choices, sources installed plugins lost
 	authRouter.HandleFunc("/api/plugins/store/sources/add", pluginManager.HandleAddStoreSource)
 	authRouter.HandleFunc("/api/plugins/store/sources/remove", pluginManager.HandleRemoveStoreSource)
 
@@ -528,6 +529,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	RegisterHistoryAPIs(authRouter)
 	RegisterSecurityAuditAPIs(authRouter)
 	RegisterMetricsAPIs(authRouter)
+	RegisterWireCompatAPIs(authRouter) //legacy X-Zoraxy-* / zoraxy_* names, see wirecompatapi.go
 	RegisterACMEAndAutoRenewerAPIs(authRouter)
 	RegisterStaticWebServerAPIs(authRouter)
 	RegisterAPIv1(authRouter)
@@ -551,7 +553,7 @@ func initAPIs(targetMux *http.ServeMux) {
 	authRouter.HandleFunc("/api/docker/containers", DockerUXOptimizer.HandleDockerContainersList)
 
 	//Others
-	targetMux.HandleFunc("/api/info/x", HandleZoraxyInfo)
+	targetMux.HandleFunc("/api/info/x", HandleDunreeInfo)
 	authRouter.HandleFunc("/api/info/geoip", HandleGeoIpLookup)
 	authRouter.HandleFunc("/api/info/ipcheck", HandleIpAccessCheck)
 	authRouter.HandleFunc("/api/geodb/updateStatus", HandleGeoDBUpdateStatus)

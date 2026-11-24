@@ -1,5 +1,5 @@
 /*
-    Zoraxy admin UI - change history helper (window.ZxHistory)
+    Dunree admin UI - change history helper (window.ZxHistory)
 
     Thin wrapper around /api/history/* for any page or script. It has no UI of
     its own; the History page (components/history.html) is the UI.

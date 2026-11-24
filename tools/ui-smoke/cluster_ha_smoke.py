@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cluster / HA scenario over two Zoraxy processes on one host (Playwright + plain HTTP). Started by cluster_ha_run.sh:
+"""Cluster / HA scenario over two Dunree processes on one host (Playwright + plain HTTP). Started by cluster_ha_run.sh:
 both instances run with -noauth and hold the same cluster secret. Shared SSO portal sign-ins are opt-in: the primary has
 them switched on in its conf/cluster.json, the follower starts with the default (off) and switches them on in the UI.
 
@@ -322,7 +322,7 @@ with sync_playwright() as p:
     check(code != 403, "the incoming port stays editable on a follower that keeps its own listening ports", f"{code} {r}")
     check(os.path.exists(os.path.join(args.follower_dir, "conf", ".cluster", "dbsync-baseline.json")), "the follower saved its own settings before the first import")
     mode = os.stat(os.path.join(args.follower_dir, "conf", "dbsync", "zorxauth_users.json")).st_mode & 0o777
-    check(mode & 0o077 == 0, "synced settings files are private to the Zoraxy user", oct(mode))
+    check(mode & 0o077 == 0, "synced settings files are private to the Dunree user", oct(mode))
 
     pb.reload()
     pb.wait_for_function("typeof openTabById === 'function'", timeout=15000)

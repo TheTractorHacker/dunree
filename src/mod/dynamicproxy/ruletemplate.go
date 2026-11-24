@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 )
 
 /*
@@ -64,17 +64,17 @@ var wafSourceNames = map[string]bool{"inherit": true, "off": true, "detection_on
 
 // securityHeaderSet is the header block of the "SecurityHeaders" option
 var securityHeaderSet = []rewrite.UserDefinedHeader{
-	{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "X-Content-Type-Options", Value: "nosniff"},
-	{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "X-Frame-Options", Value: "SAMEORIGIN"},
-	{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "Referrer-Policy", Value: "strict-origin-when-cross-origin"},
-	{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "Cross-Origin-Opener-Policy", Value: "same-origin"},
+	{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "X-Content-Type-Options", Value: "nosniff"},
+	{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "X-Frame-Options", Value: "SAMEORIGIN"},
+	{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "Referrer-Policy", Value: "strict-origin-when-cross-origin"},
+	{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "Cross-Origin-Opener-Policy", Value: "same-origin"},
 }
 
 func i64(v int64) *int64    { return &v }
 func bptr(v bool) *bool     { return &v }
 func sptr(v string) *string { return &v }
 
-// BuiltinRuleTemplates are shipped with Zoraxy and cannot be edited
+// BuiltinRuleTemplates are shipped with Dunree and cannot be edited
 func BuiltinRuleTemplates() []*RuleTemplate {
 	return append([]*RuleTemplate{
 		{Name: "Secure web app", Builtin: true, Description: "HSTS (1 year), browser hardening headers, exploit blocking, uptime monitor, WAF in detection mode",

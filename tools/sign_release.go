@@ -1,12 +1,14 @@
 // sign_release.go - release signing helper for the in-app updater.
 //
-// This is a standalone program (stdlib only). It is NOT part of the Zoraxy
+// This is a standalone program (stdlib only). It is NOT part of the Dunree
 // binary and not part of the Go module; run it with `go run tools/sign_release.go`.
 //
 // Modes:
 //
 //	sign    (default)  go run tools/sign_release.go -dist DIR -key PRIVATE.pem -tag vX.Y.Z[-topic.N] -build N [-pub PUBLIC.pem]
-//	        Writes DIR/SHA256SUMS (sha256sum format, over every zoraxy_* file in DIR
+//	        Writes DIR/SHA256SUMS (sha256sum format, over every dunree_* and zoraxy_*
+//	        file in DIR (binaries and packages; zoraxy_* are the legacy asset names
+//	        the updater of an existing install looks for)
 //	        plus the fixed extra assets listed in extraAssets when present,
 //	        preceded by the signed header line
 //	        "# zoraxy-release tag=<tag> build=<n> upstream=<X.Y.Z>" that binds the
@@ -19,7 +21,8 @@
 //	genkey             go run tools/sign_release.go -genkey PRIVATE.pem PUBLIC.pem
 //	        Creates a (throwaway or real) ed25519 key pair; refuses to overwrite.
 //
-// The private key path may also come from $ZORAXY_RELEASE_KEY. The key is read
+// The private key path may also come from $DUNREE_RELEASE_KEY or, when that is
+// not set, from the older $ZORAXY_RELEASE_KEY. The key is read
 // only to sign; its contents are never printed or logged.
 package main
 
@@ -52,8 +55,8 @@ const (
 )
 
 func main() {
-	dist := flag.String("dist", "", "directory containing the zoraxy_* release binaries")
-	keyPath := flag.String("key", os.Getenv("ZORAXY_RELEASE_KEY"), "path to the ed25519 private key (PKCS#8 PEM); default $ZORAXY_RELEASE_KEY")
+	dist := flag.String("dist", "", "directory containing the dunree_* (and legacy zoraxy_*) release files")
+	keyPath := flag.String("key", keyFromEnv(os.Getenv), "path to the ed25519 private key (PKCS#8 PEM); default $DUNREE_RELEASE_KEY, then $ZORAXY_RELEASE_KEY")
 	pubPath := flag.String("pub", "", "path to the ed25519 public key (SPKI PEM) used to verify")
 	tag := flag.String("tag", "", "release tag the signature is bound to, e.g. v3.3.6-topic.1 (must equal the GitHub release tag)")
 	build := flag.Int("build", 0, "monotonically increasing build number (must exceed the previous release's)")
@@ -78,6 +81,27 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
+}
+
+// assetPrefixes are the file name prefixes of the release files that are signed.
+// "zoraxy_" stays: releases also carry the asset names an existing install asks for.
+var assetPrefixes = []string{"dunree_", "zoraxy_"}
+
+func isReleaseAsset(name string) bool {
+	for _, p := range assetPrefixes {
+		if strings.HasPrefix(name, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// keyFromEnv returns the private key path from the environment: the Dunree name first, then the older one.
+func keyFromEnv(getenv func(string) string) string {
+	if v := getenv("DUNREE_RELEASE_KEY"); v != "" {
+		return v
+	}
+	return getenv("ZORAXY_RELEASE_KEY")
 }
 
 func generateKey(privPath, pubPath string) error {
@@ -113,7 +137,7 @@ func writeNew(path string, data []byte, mode os.FileMode) error {
 
 func loadPrivate(path string) (ed25519.PrivateKey, error) {
 	if path == "" {
-		return nil, errors.New("no private key: pass -key or set ZORAXY_RELEASE_KEY")
+		return nil, errors.New("no private key: pass -key or set DUNREE_RELEASE_KEY")
 	}
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -190,12 +214,12 @@ func signDist(dist, keyPath, pubPath, tag string, build int) error {
 	}
 	var names []string
 	for _, e := range ents {
-		if e.Type().IsRegular() && strings.HasPrefix(e.Name(), "zoraxy_") {
+		if e.Type().IsRegular() && isReleaseAsset(e.Name()) {
 			names = append(names, e.Name())
 		}
 	}
 	if len(names) == 0 {
-		return fmt.Errorf("no zoraxy_* files found in %s", dist)
+		return fmt.Errorf("no dunree_* or zoraxy_* files found in %s", dist)
 	}
 	for _, n := range extraAssets {
 		if st, err := os.Lstat(filepath.Join(dist, n)); err == nil && st.Mode().IsRegular() {

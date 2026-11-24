@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -670,12 +670,12 @@ func (v *Viewer) HandleSearchDownload(geo CountryResolver) http.HandlerFunc {
 		stamp := time.Now().Format("20060102-150405")
 		if format == "json" {
 			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Content-Disposition", "attachment; filename=zoraxy-access-log-"+stamp+".json")
+			w.Header().Set("Content-Disposition", "attachment; filename=dunree-access-log-"+stamp+".json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"truncated": truncated, "truncatedReason": res.TruncatedReason, "entries": res.Entries})
 			return
 		}
 		w.Header().Set("Content-Type", "text/csv")
-		w.Header().Set("Content-Disposition", "attachment; filename=zoraxy-access-log-"+stamp+".csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=dunree-access-log-"+stamp+".csv")
 		cw := csv.NewWriter(w)
 		cw.Write([]string{"time", "source", "origin", "client", "country", "method", "uri", "status", "class", "useragent"})
 		for _, e := range res.Entries {

@@ -1,4 +1,4 @@
-<!-- Security Center > Overview: the posture of this Zoraxy on one page. One request (GET /api/security/overview) refreshed every 10 s while
+<!-- Security Center > Overview: the posture of this Dunree on one page. One request (GET /api/security/overview) refreshed every 10 s while
      visible, plus three small read-only ones (auto-ban, bot rules, blocked summary) every 30 s.
      Order: score and today's numbers, what needs attention, every protection as a checklist, the baseline, traffic and offenders, the system. -->
 <style>
@@ -136,8 +136,8 @@
         <div class="ov-hero__top">
             <div class="ov-ring" id="ovRing" role="img" aria-label="Security score"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="52"></circle><circle class="arc" cx="60" cy="60" r="52" stroke-dasharray="0 327"></circle></svg><div class="ov-ring__num"><b id="ovScore">-</b><span>of 100</span></div></div>
             <div>
-                <h4 class="ov-hero__title" id="ovHeroTitle">Checking this Zoraxy...</h4>
-                <p class="ov-hero__desc" id="ovHeroDesc">Every protection of this Zoraxy at a glance.</p>
+                <h4 class="ov-hero__title" id="ovHeroTitle">Checking this Dunree...</h4>
+                <p class="ov-hero__desc" id="ovHeroDesc">Every protection of this Dunree at a glance.</p>
             </div>
             <div class="ov-hero__tools">
                 <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="ovRefresh"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
@@ -154,7 +154,7 @@
     <div id="ovSkel" class="ov-skel" aria-busy="true"><div></div><div></div><div></div><div></div></div>
     <div id="ovGrid" hidden></div>
     <section id="blCard" tabindex="-1" class="zx-card bl-card" aria-labelledby="blTitle" aria-busy="true"></section>
-    <p class="ov-lead" id="ovStampLead">Everything here comes from this Zoraxy itself; no outside service is contacted. It refreshes every 10 seconds while you look at it.</p>
+    <p class="ov-lead" id="ovStampLead">Everything here comes from this Dunree itself; no outside service is contacted. It refreshes every 10 seconds while you look at it.</p>
 </div>
 <script>
 (function () {
@@ -229,7 +229,7 @@
         $("#ovRing .arc").attr("stroke-dasharray", (C * v / 100).toFixed(1) + " " + C.toFixed(1));
         $("#ovScore").text(sc ? v : "-");
         var open = items.length + (w.more || 0);
-        $("#ovHeroTitle").text(!sc ? t("Protection of this Zoraxy") : (sc.label || "") + (sc.grade && sc.grade !== "?" ? " · " + t("grade {0}").replace("{0}", sc.grade) : ""));
+        $("#ovHeroTitle").text(!sc ? t("Protection of this Dunree") : (sc.label || "") + (sc.grade && sc.grade !== "?" ? " · " + t("grade {0}").replace("{0}", sc.grade) : ""));
         $("#ovHeroDesc").html(esc(!w.available ? t("The checks could not be run just now.") : (open ? (open === 1 ? t("1 thing needs attention.") : t("{0} things need attention.").replace("{0}", open)) : t("Nothing needs attention.")) + " " +
             t("{0} checks pass, {1} do not apply to this setup.").replace("{0}", w.ok || 0).replace("{1}", w.notApplicable || 0)) + " " + go("secoverview", "", t("How the score is computed")));
         ZxSec.fact("#ovFBlocked", num(t0.blockedToday), t("{0} in the last minute").replace("{0}", num(t0.blockedPerMin)), t0.blockedToday ? "warn" : "");

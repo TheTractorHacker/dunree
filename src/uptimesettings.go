@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/uptime"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/uptime"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: Zoraxy REST API
+  title: Dunree REST API
   version: "1.0.0"
   description: |
-    Stable, token authenticated subset of the Zoraxy management API.
+    Stable, token authenticated subset of the Dunree management API.
 
     Create a token in the admin panel (Others > API Tokens). Send it as
     `Authorization: Bearer zrx_...`. Tokens have a scope: `read` allows GET and
@@ -207,7 +207,7 @@ paths:
         "429": {$ref: "#/components/responses/TooManyRequests"}
   /api/v1/stats/blocked:
     get:
-      summary: Requests Zoraxy blocked, and why
+      summary: Requests Dunree blocked, and why
       description: >
         Summary (counts by reason, top client IPs, hosts and paths, hourly series of the last 24 hours) plus one
         page of the bounded blocked-request log (the last 2000 entries, newest first). Honours the statistics
@@ -290,7 +290,7 @@ paths:
       summary: Security overview (posture score and checks)
       description: >
         Read only. Every check with its status, the evidence it looked at and the score arithmetic. The score reflects
-        Zoraxy's configuration, it is not a penetration test. Fixes can only be previewed and applied in the admin panel.
+        Dunree's configuration, it is not a penetration test. Fixes can only be previewed and applied in the admin panel.
       operationId: getSecurityPosture
       responses:
         "200": {description: Score, checks and available fixes, content: {application/json: {schema: {}}}}

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
+	"github.com/foleyit/dunree/mod/auth"
 )
 
 /*

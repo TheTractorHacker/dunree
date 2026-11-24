@@ -21,7 +21,7 @@ BoltDB (the default backend) never gives pages back to the file system. Deleted 
 | `auth` | Admin accounts: password hashes, e-mail, role, disabled flag, session version, session key. | One set of keys per account. | Bounded by the number of accounts. | None. |
 | `notifyknownip` | Known sign-in addresses per admin account (key `ips/<user>`) and the last update tag. | New addresses per account. | 20 addresses per account (`maxKnownIPs`), oldest dropped. | None. |
 | `oauth2_sessions` | Server side sessions of the OAuth2 sign-in. | One key per sign-in. | At most 5000 (`maxPersistedSessions`, earliest expiry dropped first), expired records are removed. | None. |
-| `zorxauth_browser_sessions`, `zorxauth_gateway_sessions` | Sessions of the Zoraxy authentication gateway. Written from memory when Zoraxy shuts down. | One key per live session at shutdown. | Expired ones are removed when Zoraxy starts and when the gateway settings are cleared; no limit on the count of live ones. | Low risk. |
+| `zorxauth_browser_sessions`, `zorxauth_gateway_sessions` | Sessions of the Dunree authentication gateway. Written from memory when Dunree shuts down. | One key per live session at shutdown. | Expired ones are removed when Dunree starts and when the gateway settings are cleared; no limit on the count of live ones. | Low risk. |
 | `posture` | Security overview: the baseline and a journal of the fixes that were applied (so they can be undone). | One entry per applied fix, appended to a per action list. | None found in the code. | Low risk: it only grows by manual clicks. |
 | `apitokens`, `ruletemplates`, `plugins`, `plugin_hooks`, `wolmac`, `fwdproxy`, `webserv`, `acme`, `acmepref`, `redirect`, `statsettings`, `uptime`, `visitors`, `blocklog`, `dashboard`, `geodb`, `oauth2`, `oauth2_providers`, `auth_sso_forward`, `zorxauth`, `zorxauth_users`, `authelia`, `authentik` | Settings, one record per configured object (token, template, plugin, certificate, user, provider) or a few fixed keys (`dashboard` holds one daily bandwidth counter). | Only what an admin configures. | None needed, bounded by configuration. | None. |
 
@@ -36,13 +36,15 @@ These were checked because they look like they could, and they keep their data e
 
 ## Compacting the database (offline)
 
-Compaction copies every table into a fresh file and drops the free pages. It needs Zoraxy **stopped**: the compactor opens the database with the same fail-fast lock as startup and refuses to run (after waiting 10 seconds) when another process has it.
+Compaction copies every table into a fresh file and drops the free pages. It needs Dunree **stopped**: the compactor opens the database with the same fail-fast lock as startup and refuses to run (after waiting 10 seconds) when another process has it.
 
 ```bash
-sudo systemctl stop zoraxy
-./zoraxy -compact-db -dbpath /path/to/sys.db
-sudo systemctl start zoraxy
+sudo systemctl stop dunree
+./dunree -compact-db -dbpath /path/to/sys.db
+sudo systemctl start dunree
 ```
+
+On an install upgraded in place from Zoraxy the service and the program file keep the name `zoraxy`. <!-- rebrand:keep -->
 
 Use the path the running instance uses (the Database card shows it), the service name of your installation and the same user as the service, or fix the owner afterwards (the compactor copies the owner of the old file when it is allowed to). What it does, in order, and stops at the first problem:
 
@@ -52,6 +54,6 @@ Use the path the running instance uses (the Database card shows it), the service
 4. Checks the new file: it opens, passes BoltDB's consistency check, and every table has the same key count, nested table count and stored bytes as the old one.
 5. Replaces `sys.db` with one atomic rename.
 
-Until step 5 the original file is never modified, and a failure at any step removes the temporary file, so there is always a valid `sys.db`. It prints the size before and after. The backup is never deleted by Zoraxy; remove it yourself once the new file has been in use for a while. Compaction only applies to the BoltDB backend (LevelDB compacts itself).
+Until step 5 the original file is never modified, and a failure at any step removes the temporary file, so there is always a valid `sys.db`. It prints the size before and after. The backup is never deleted by Dunree; remove it yourself once the new file has been in use for a while. Compaction only applies to the BoltDB backend (LevelDB compacts itself).
 
-If a second copy of Zoraxy ever hangs at start, it is a locked database: since this change it exits after 10 seconds with the path and the commands `sudo lsof <path>` and `ps -eo pid,etimes,args | grep [z]oraxy` to find the process that holds it.
+If a second copy of Dunree ever hangs at start, it is a locked database: since this change it exits after 10 seconds with the path and the commands `sudo lsof <path>` and `ps -eo pid,etimes,args | grep [z]oraxy` to find the process that holds it.

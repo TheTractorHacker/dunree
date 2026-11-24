@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 func day(total int64, sites map[string]*statistic.SiteSummaryExport) *statistic.DailySummaryExport {

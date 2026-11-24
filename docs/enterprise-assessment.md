@@ -4,7 +4,7 @@ Fork line `v3.3.6-fork.22`. Plan: [enterprise-dual-proxy-plan.md](enterprise-dua
 [guides/enterprise-dual-proxy.md](guides/enterprise-dual-proxy.md).
 
 Evidence conventions. **E2E** = `tools/e2e/dual_proxy/run.sh enterprise` (`enterprise.py`, check ids 1a ... 11; two
-Zoraxy instances, a backend, a private CA, a fake LAPI, all on loopback). Last full run: **23 PASS, 0 FAIL, 0 NOT RUN**
+Dunree instances, a backend, a private CA, a fake LAPI, all on loopback). Last full run: **23 PASS, 0 FAIL, 0 NOT RUN**
 (5d and 7c failed before defect D1 below was fixed; they pass with the host-overwrite workaround removed). **Unit** = Go tests under `src/`. **UI** =
 `tools/ui-smoke/*`. Status words: DONE (built and observed working in the tests named), PARTIAL (built, with a stated gap or
 untested part), NOT DONE.

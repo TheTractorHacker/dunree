@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/database"
 )
 
 func TestUILanguageAPI(t *testing.T) {

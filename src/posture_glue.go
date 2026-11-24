@@ -12,15 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/offline"
-	"imuslab.com/zoraxy/mod/posture"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/posture"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

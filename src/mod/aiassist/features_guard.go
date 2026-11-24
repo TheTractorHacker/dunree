@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 // exclusionPathOK is true for paths that may be excluded: absolute, short, without delimiters or

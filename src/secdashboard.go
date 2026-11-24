@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/confpack"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/offline"
-	"imuslab.com/zoraxy/mod/posture"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/confpack"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/posture"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

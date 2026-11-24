@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/info/logger"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /* Test helpers */

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 	"github.com/google/uuid"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
 )
 
 // Test (de)serialization of events

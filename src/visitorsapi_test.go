@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/visitors"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/visitors"
 )
 
 func setupVisitorAPI(t *testing.T) *visitors.Tracker {

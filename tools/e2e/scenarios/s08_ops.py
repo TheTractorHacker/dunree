@@ -16,7 +16,7 @@ def ops_error_pages_static_cors():
         else:
             send(hh, 200, "app")
 
-    with Zoraxy() as z, Backend(h, name="ops") as b:
+    with Dunree() as z, Backend(h, name="ops") as b:
         z.add_rule("ops.test", b.addr, rate=True, ratenum=1000)
         cfg = {
             "ErrorPages": {"Mode": "on", "Statuses": [502, 503], "Template": "<html><body>custom {{.Status}} for {{.Host}} id={{.RequestID}} rule={{.RuleName}}</body></html>"},
@@ -55,7 +55,7 @@ def ops_error_pages_static_cors():
 @scenario("ops_bandwidth", ["689"])
 def ops_bandwidth():
     """Per-response bandwidth limit slows a 256 KiB download to roughly the configured rate."""
-    with Zoraxy() as z, Backend(lambda h, rec, b: send(h, 200, b"z" * (256 * 1024)), name="bw") as b:
+    with Dunree() as z, Backend(lambda h, rec, b: send(h, 200, b"z" * (256 * 1024)), name="bw") as b:
         z.add_rule("bw.test", b.addr)
         t0 = time.time()
         r = z.req("bw.test")
@@ -74,7 +74,7 @@ def ops_bandwidth():
 @scenario("redirect_advanced_regex", ["826"])
 def redirect_advanced_regex():
     """Advanced (lookahead) regex redirects with capture substitution; catastrophic pattern times out instead of hanging."""
-    with Zoraxy() as z, Backend(name="r") as b:
+    with Dunree() as z, Backend(name="r") as b:
         z.add_rule("rx.test", b.addr)
         z.api("/api/redirect/regex", enable=True)
         z.api("/api/redirect/advancedregex", enable=True)
@@ -95,7 +95,7 @@ def redirect_advanced_regex():
 @scenario("rule_templates_bulk_edit", ["924"])
 def rule_templates_bulk_edit():
     """Create rule from a built-in template, then bulk edit (tags, WAF source, rate limit, disable, delete w/o confirm)."""
-    with Zoraxy() as z, Backend(name="bk") as b:
+    with Dunree() as z, Backend(name="bk") as b:
         tpl = z.get("/api/proxy/templates/list")
         names = [t.get("Name") for t in tpl]
         check("Secure web app" in names, "built-in templates: %s" % names)
@@ -130,7 +130,7 @@ def rule_templates_bulk_edit():
 @scenario("api_v1_tokens", ["382"])
 def api_v1_tokens():
     """/api/v1 with Bearer tokens: read vs readwrite scope, expiry, IP allow-list, revocation; no cookie/CSRF needed."""
-    with Zoraxy() as z, Backend(name="v1") as b:
+    with Dunree() as z, Backend(name="v1") as b:
         z.add_rule("v1.test", b.addr)
         def call(tok, method, path, body=None):
             req = urllib.request.Request("http://127.0.0.1:%d%s" % (z.admin, path), method=method,

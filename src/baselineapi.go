@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/baseline"
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/baseline"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -66,7 +66,7 @@ func (baselineHardenItem) Info() baseline.Info {
 		ID:     "harden-headers",
 		Title:  "Clean up forwarded client-address headers",
 		Why:    "A visitor can write X-Forwarded-For, X-Real-Ip and similar headers themselves. With the clean-up on, those headers are only believed when they come from a proxy listed under Trusted Proxies, so rate limits, bans, GeoIP and logs cannot be fooled by a forged address.",
-		Effect: "Does not block anything. If this Zoraxy sits behind a proxy or CDN that is not listed under Trusted Proxies, the client address (and X-Forwarded-Proto/Host) that proxy sends is ignored and sites see the proxy's address instead. List the proxy first. On an existing install the button only applies it when the trusted proxy list is not empty.",
+		Effect: "Does not block anything. If this Dunree sits behind a proxy or CDN that is not listed under Trusted Proxies, the client address (and X-Forwarded-Proto/Host) that proxy sends is ignored and sites see the proxy's address instead. List the proxy first. On an existing install the button only applies it when the trusted proxy list is not empty.",
 		Page:   "seccenter", Anchor: "deployment",
 	}
 }
@@ -85,7 +85,7 @@ func (baselineHardenItem) Eligible(fresh bool) (bool, string) {
 		return false, "the deployment role manages this itself"
 	}
 	if !fresh && (accessController == nil || len(accessController.ListTrustedProxies()) == 0) {
-		return false, "no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, list it under Trusted Proxies first, otherwise its client addresses would be ignored"
+		return false, "no trusted proxy is listed. If a proxy or CDN is in front of this Dunree, list it under Trusted Proxies first, otherwise its client addresses would be ignored"
 	}
 	return true, ""
 }
@@ -294,12 +294,12 @@ func initBaseline() {
 }
 
 // baselineWarnings lists conditions the card must show next to the status. The forwarded-header clean-up
-// is applied on a new install without a trusted proxy (a directly exposed Zoraxy is the common case), but
+// is applied on a new install without a trusted proxy (a directly exposed Dunree is the common case), but
 // behind a CDN or another proxy it would hide the real visitor address until that proxy is listed.
 func baselineWarnings() []string {
 	var w []string
 	if deployRoleMgr != nil && deployRoleMgr.HardenActive() && (accessController == nil || len(accessController.ListTrustedProxies()) == 0) {
-		w = append(w, "The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.")
+		w = append(w, "The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Dunree, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.")
 	}
 	return w
 }

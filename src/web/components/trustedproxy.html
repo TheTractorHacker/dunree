@@ -27,7 +27,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Trusted proxies</h2>
-            <p class="zx-page-header__sub">Which proxies in front of Zoraxy it may believe about the visitor's real address.</p>
+            <p class="zx-page-header__sub">Which proxies in front of Dunree it may believe about the visitor's real address.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Trusted proxies"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -50,8 +50,8 @@
             <button id="toggleTextEditBtn" class="ui basic small button" style="margin-left:auto;" onclick="window.toggleTrustedProxyTextEdit();">
                 <i class="edit icon"></i> Edit as text
             </button>
-            <p class="zx-card__desc">Zoraxy reads the visitor's real address from headers such as <code>X-Forwarded-For</code> only when the connection comes from an address on this list.</p>
-            <div class="zx-popover" id="tpWhat" role="note" hidden>Headers such as <code>X-Forwarded-For</code> can be forged by anyone. With gating on, Zoraxy only reads the real client IP from them when the connection comes from an address on this list; otherwise the header is ignored. Only add proxies you control or that are run by a service you trust, for example the published address ranges of your CDN.</div>
+            <p class="zx-card__desc">Dunree reads the visitor's real address from headers such as <code>X-Forwarded-For</code> only when the connection comes from an address on this list.</p>
+            <div class="zx-popover" id="tpWhat" role="note" hidden>Headers such as <code>X-Forwarded-For</code> can be forged by anyone. With gating on, Dunree only reads the real client IP from them when the connection comes from an address on this list; otherwise the header is ignored. Only add proxies you control or that are run by a service you trust, for example the published address ranges of your CDN.</div>
         </div>
         <div class="zx-card__body">
             <!-- Table view (default) -->
@@ -188,7 +188,7 @@
                 $('#trustedProxyTable').append(`
                 <tr>
                     <td class="zx-empty-cell" colspan="3"><div class="zx-empty zx-empty--inline"><div class="zx-empty__title">No trusted proxies configured</div>
-                    <p class="zx-empty__text">Zoraxy ignores forwarded address headers from every source. If your sites are behind a CDN or another proxy, add its address ranges below.</p>
+                    <p class="zx-empty__text">Dunree ignores forwarded address headers from every source. If your sites are behind a CDN or another proxy, add its address ranges below.</p>
                     <button type="button" class="zx-btn zx-btn--primary" onclick="$('#trustedProxyIpInput').focus();">Add a trusted proxy</button></div></td>
                 </tr>
                 `);

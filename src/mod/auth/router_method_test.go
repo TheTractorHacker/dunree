@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // A GET (which skips the CSRF token check and is open to viewer accounts) must not be able to

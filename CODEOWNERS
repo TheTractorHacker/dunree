@@ -1,17 +1,19 @@
-# tobycui is the default owner for all files in this repository
-*       @tobychui
+# Code owners of Dunree (published by Foley IT).
+#
+# OWNER: the GitHub organisation of Dunree is not decided yet. Replace the
+# placeholder team below with the real team or user names before this file
+# is used; until then it names no existing account on purpose.
+#
+# The people who maintain parts of Zoraxy (the project Dunree is based on) are
+# NOT code owners of Dunree and must not be requested for review here. They are
+# credited in README.md and CHANGELOG.md.
 
-# PassiveLemon is the docker maintainer
-/docker @PassiveLemon
+*       @dunree-maintainers-placeholder
 
-# james-d-elliott is the community maintainer for forward-auth related functions
-# /src/mod/auth/sso/forward @james-d-elliott
-
-# jemmy1794 maintains the stream proxy module
-/src/mod/streamproxy @jemmy1794
-
-# AnthonyMichaelTDM maintains the plugin and event systems
-/src/mod/plugins @AnthonyMichaelTDM
-/example/plugins @AnthonyMichaelTDM
-/src/**/plugin_*.go @AnthonyMichaelTDM
-/src/mod/eventsystem @AnthonyMichaelTDM
+# Areas that need a second look before a release
+/src/mod/updater/           @dunree-maintainers-placeholder
+/tools/sign_release.go      @dunree-maintainers-placeholder
+/LICENSE                    @dunree-maintainers-placeholder
+/NOTICE                     @dunree-maintainers-placeholder
+/THIRD_PARTY_NOTICES.md     @dunree-maintainers-placeholder
+/brand/                     @dunree-maintainers-placeholder

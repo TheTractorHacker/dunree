@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
-	"imuslab.com/zoraxy/mod/uservars"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/uservars"
 )
 
 /*

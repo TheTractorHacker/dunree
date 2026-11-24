@@ -2,17 +2,18 @@ package dynamicproxy
 
 import (
 	"context"
-	"imuslab.com/zoraxy/mod/errorpages"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/foleyit/dunree/mod/pathmatch"
 	"net/http"
 	"strconv"
 	"time"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/metrics"
-	"imuslab.com/zoraxy/mod/ruleset"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -246,12 +247,15 @@ func (router *Router) ruleRateLimited(w http.ResponseWriter, r *http.Request, se
 // challenge: the endpoint's CAPTCHA, remembered by a signed pass cookie (the approach of the WAF graduated
 // response, with its own cookie and signing scope so passing a rule challenge does not pass a WAF challenge)
 
-const ruleChallengeCookie = "zoraxy_rule_challenge"
+const (
+	ruleChallengeCookie       = "dunree_rule_challenge"
+	legacyRuleChallengeCookie = "zoraxy_rule_challenge" // legacy-compat: honoured until it expires, never set again
+)
 
 func ruleChallengeScope(sep *ProxyEndpoint) string { return "ruleset|" + sep.RootOrMatchingDomain }
 
 func (router *Router) ruleChallengeValid(r *http.Request, sep *ProxyEndpoint, clientIP string) bool {
-	c, err := r.Cookie(ruleChallengeCookie)
+	c, err := wirecompat.Cookie(r, ruleChallengeCookie, legacyRuleChallengeCookie)
 	if err != nil {
 		return false
 	}
@@ -275,7 +279,7 @@ func (router *Router) ruleChallenge(w http.ResponseWriter, r *http.Request, sep 
 	}
 	abuseNoteKind(r, "") //a challenge is not a block
 	applyRespHeaders(w, r)
-	w.Header().Set("X-Zoraxy-Captcha-Reason", "rule-challenge")
+	wirecompat.SetHeader(w.Header(), "Captcha-Reason", "rule-challenge")
 	domain := r.Host
 	if domain == "" {
 		domain = sep.RootOrMatchingDomain
@@ -292,11 +296,11 @@ func (router *Router) ruleChallengeEndpoints(w http.ResponseWriter, r *http.Requ
 	if !router.wafChallengeAvailable(sep) {
 		return false
 	}
-	if r.URL.Path == captcha.AltchaChallengePath && sep.EffectiveCaptchaConfig().Provider == captcha.ProviderAltcha {
+	if captcha.IsAltchaChallengePath(r.URL.Path) && sep.EffectiveCaptchaConfig().Provider == captcha.ProviderAltcha {
 		captcha.HandleAltchaChallenge(w, r, sep.EffectiveCaptchaConfig())
 		return true
 	}
-	if r.URL.Path != captcha.VerifyPath {
+	if !captcha.IsVerifyPath(r.URL.Path) {
 		return false
 	}
 	ttl := time.Duration(router.Option.Rules.ChallengeTTLMinutes()) * time.Minute

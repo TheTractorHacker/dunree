@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/abuse"
+	"github.com/foleyit/dunree/mod/abuse"
 )
 
 func newAbuseRouter(t *testing.T, status int, mod func(*abuse.Config)) (*Router, *ProxyEndpoint, *abuse.Manager) {

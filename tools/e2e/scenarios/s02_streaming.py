@@ -70,7 +70,7 @@ def read_request_head(c):
 @scenario("websocket_proxy", ["70", "199"])
 def websocket_proxy():
     """WebSocket echo through a host rule, and through a vdir with a base path."""
-    with Zoraxy() as z, ws.WSEchoServer() as w:
+    with Dunree() as z, ws.WSEchoServer() as w:
         z.add_rule("ws.test", w.addr)
         s, st, h = ws.ws_connect(z.proxy, "ws.test", "/chat?room=1")
         check("101" in st, "handshake status: " + st)
@@ -102,7 +102,7 @@ def websocket_proxy():
 @scenario("websocket_origin_and_disable", ["70"])
 def websocket_origin_and_disable():
     """Cross-origin WS is refused unless 'bypass origin check'; per-rule WS disable works."""
-    with Zoraxy() as z, ws.WSEchoServer() as w:
+    with Dunree() as z, ws.WSEchoServer() as w:
         z.add_rule("wo.test", w.addr, bpwsorg=False)
         s, st, h = ws.ws_connect(z.proxy, "wo.test", "/", headers={"Origin": "http://evil.example"})
         bad = "101" not in st
@@ -131,7 +131,7 @@ def streaming_chunked():
             time.sleep(0.4)
         c.sendall(b"0\r\n\r\n")
 
-    with Zoraxy() as z, RawServer(handler) as b:
+    with Dunree() as z, RawServer(handler) as b:
         z.add_rule("st.test", b.addr)
         conn = http.client.HTTPConnection("127.0.0.1", z.proxy, timeout=10)
         conn.request("GET", "/", headers={"Host": "st.test"})
@@ -165,7 +165,7 @@ def large_transfer_integrity():
             for _ in range(total_dl):
                 h.wfile.write(blob)
 
-    with Zoraxy() as z, Backend(handler) as b:
+    with Dunree() as z, Backend(handler) as b:
         z.add_rule("big.test", b.addr)
         up = os.urandom(24 << 20)
         r = z.req("big.test", "/up", "POST", {"Content-Type": "application/octet-stream"}, up, timeout=60)
@@ -202,7 +202,7 @@ def upstream_abort_midstream():
         time.sleep(0.2)
 
     results = []
-    with Zoraxy() as z, RawServer(declared) as d, RawServer(chunked) as ch:
+    with Dunree() as z, RawServer(declared) as d, RawServer(chunked) as ch:
         z.add_rule("d.test", d.addr)
         z.add_rule("c.test", ch.addr)
         for host in ("d.test", "c.test"):
@@ -227,7 +227,7 @@ def unix_socket_upstream():
     d = tempfile.mkdtemp(prefix="zx-uds-")
     sock = os.path.join(d, "b.sock")
     try:
-        with Zoraxy() as z, Backend(name="uds", unix=sock) as b:
+        with Dunree() as z, Backend(name="uds", unix=sock) as b:
             z.add_rule("u.test", "unix:" + sock)
             r = z.req("u.test", "/via/uds?a=1")
             check(r.status == 200, "status %d body %r log=%s" % (r.status, r.body[:200], z.logtail(500)))

@@ -18,7 +18,7 @@ type DNSCheckResult struct {
 	HasHTTPS    bool     // At least one HTTPS record exists
 	HasECH      bool     // At least one record carries an ech= parameter
 	Published   []string // Base64 ECHConfigLists found in the records
-	Expected    string   // Base64 ECHConfigList Zoraxy advertises (empty if no active key)
+	Expected    string   // Base64 ECHConfigList Dunree advertises (empty if no active key)
 	Match       bool     // One published list is byte-identical to the expected one
 	Stale       bool     // ECH is published but it is not the current list (rotation not yet in DNS, or a retired key)
 	Advice      string
@@ -109,7 +109,7 @@ func analyse(host, resolver string, rrs []*dns.HTTPS, expected string) *DNSCheck
 	case !res.HasECH:
 		res.Advice = "An HTTPS record exists but has no ech= parameter. Add the ECHConfigList shown above."
 	case expected == "":
-		res.Advice = "DNS publishes ECH but Zoraxy has no active key. Generate a key first."
+		res.Advice = "DNS publishes ECH but Dunree has no active key. Generate a key first."
 	case res.Match:
 		res.Advice = "DNS matches the current ECHConfigList."
 	default:

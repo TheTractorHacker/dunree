@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
 )
 
 func botEntry(env *fixEnv, ua string) blocklog.Entry {

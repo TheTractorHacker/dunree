@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/foleyit/dunree/mod/destguard"
 	"github.com/go-ping/ping"
-	"imuslab.com/zoraxy/mod/destguard"
 )
 
 /*

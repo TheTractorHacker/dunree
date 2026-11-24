@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/baseline"
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/secaudit"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/baseline"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/secaudit"
 )
 
 func baselineSetup(t *testing.T, fresh bool) {

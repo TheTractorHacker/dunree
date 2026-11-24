@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 func setCountries(router *Router, m map[string]string) {

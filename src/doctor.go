@@ -3,7 +3,7 @@ package main
 /*
 	doctor.go
 
-	"zoraxy -doctor": a read-only report on why Zoraxy might not be answering. It never opens the
+	"dunree -doctor": a read-only report on why Dunree might not be answering. It never opens the
 	database and never binds a port, so it is safe to run next to a live or frozen instance.
 	It also holds the systemd readiness plumbing (mod/instance) used by main().
 */
@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/instance"
+	"github.com/foleyit/dunree/mod/instance"
 )
 
-var doctorMode = flag.Bool("doctor", false, "Diagnose this machine and exit: other Zoraxy processes, who holds the database lock, frozen (Ctrl+Z) processes, systemd state and stuck listening ports. Read-only, does not open the database. Exit code 0 healthy, 1 problems found")
+var doctorMode = flag.Bool("doctor", false, "Diagnose this machine and exit: other Dunree processes, who holds the database lock, frozen (Ctrl+Z) processes, systemd state and stuck listening ports. Read-only, does not open the database. Exit code 0 healthy, 1 problems found")
 
 // runDoctor prints the report and returns the exit code.
 func runDoctor() int {
@@ -34,7 +34,7 @@ func runDoctor() int {
 	rep := instance.RunDoctor(instance.DoctorOptions{
 		DBPath: *path_database,
 		Ports:  ports,
-		Unit:   "zoraxy",
+		Unit:   instance.ChooseUnit(instance.Describe(os.Getpid()).Unit, instance.QueryUnit),
 		Self:   os.Getpid(),
 	}, instance.RealProbe())
 	fmt.Print(rep.String())
@@ -52,7 +52,7 @@ func signalProxyStartSettled() {
 	proxyStartSettledOnce.Do(func() { close(proxyStartSettled) })
 }
 
-// announceReady tells systemd (Type=notify) that Zoraxy is up. Call it once the admin listener is bound,
+// announceReady tells systemd (Type=notify) that Dunree is up. Call it once the admin listener is bound,
 // just before serving it. READY=1 is held back until the reverse proxy has also finished its first
 // attempt to bind (so "active" means the ports are really open). There is no fallback timer: if the
 // proxy start never settles, systemd keeps showing "activating (start)" with a STATUS line saying what

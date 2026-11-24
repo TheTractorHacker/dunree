@@ -77,7 +77,7 @@ func fixture(t *testing.T) string {
 func export(t *testing.T, conf, mode string, db string) ([]byte, *Manifest) {
 	t.Helper()
 	var buf bytes.Buffer
-	m, err := WriteExport(&buf, ExportOptions{ConfDir: conf, DBPath: db, Mode: mode, ZoraxyVersion: "t", Now: func() time.Time { return time.Unix(1700000000, 0) },
+	m, err := WriteExport(&buf, ExportOptions{ConfDir: conf, DBPath: db, Mode: mode, DunreeVersion: "t", Now: func() time.Time { return time.Unix(1700000000, 0) },
 		SkipFull: func(rel string) bool { return strings.HasPrefix(rel, "security_audit.log") }})
 	if err != nil {
 		t.Fatal(err)
@@ -174,7 +174,7 @@ func TestShareableExportHasNoSecrets(t *testing.T) {
 			t.Errorf("shareable export misses %s (%s)", good, names)
 		}
 	}
-	if m.Mode != ModeShareable || m.SchemaVersion != 1 || m.ZoraxyVersion != "t" || m.Created == "" || m.IncludesDB || m.RedactedFields == 0 {
+	if m.Mode != ModeShareable || m.SchemaVersion != 1 || m.DunreeVersion != "t" || m.Created == "" || m.IncludesDB || m.RedactedFields == 0 {
 		t.Errorf("bad manifest %+v", m)
 	}
 	// the structure survives: the non credential fields are intact, the username is kept

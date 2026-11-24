@@ -1,6 +1,6 @@
 // Package offline holds the process wide "offline mode" switch (start flag -offline).
 //
-// When enabled, every outbound request that Zoraxy makes on its own initiative (start-up or
+// When enabled, every outbound request that Dunree makes on its own initiative (start-up or
 // background) or that is a convenience feature (GeoIP database download, public IP lookup,
 // update check, plugin store sync, setup wizard IP lookup) is refused with ErrOffline before any
 // socket is opened. Traffic that is the point of the product is NOT affected: proxied requests,

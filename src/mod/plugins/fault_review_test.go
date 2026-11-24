@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
 )
 
 /*
@@ -401,7 +401,7 @@ func TestLastProblemNeverQuotesANetworkError(t *testing.T) {
 	if got := publicCallError(refused); !strings.Contains(got, "connection refused") {
 		t.Errorf("a refused connection should be named: %q", got)
 	}
-	// Errors worded by Zoraxy itself stay as they are
+	// Errors worded by Dunree itself stay as they are
 	if got := publicCallError(errors.New("plugin answered HTTP 500")); got != "plugin answered HTTP 500" {
 		t.Errorf("own wording changed: %q", got)
 	}

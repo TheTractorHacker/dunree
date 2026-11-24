@@ -20,7 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -29,7 +30,7 @@ import (
 	Admin-only network diagnostics: DNS lookup, TLS certificate inspector and HTTP request tester
 	(redirect chain and timing). Routes: /api/tools/dns, /api/tools/tlsinspect, /api/tools/httptest.
 
-	These tools make Zoraxy connect to a host the admin names, which is a server side request
+	These tools make Dunree connect to a host the admin names, which is a server side request
 	forgery primitive by design. They are behind the admin login, and in addition connections to cloud
 	metadata services (169.254.0.0/16 link-local incl. 169.254.169.254 and 168.63.129.16 of Azure, the
 	AWS IPv6 endpoint fd00:ec2::254, Alibaba 100.100.100.200) are refused by default. The check runs on the
@@ -404,7 +405,7 @@ func HTTPTest(ctx context.Context, rawURL, method string, followRedirects bool, 
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("User-Agent", "Zoraxy-HTTPTest")
+		req.Header.Set("User-Agent", wirecompat.UserAgent("Dunree-HTTPTest", "Zoraxy-HTTPTest"))
 		resp, err := client.Do(req)
 		if err != nil {
 			h.Error = err.Error()

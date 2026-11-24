@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"sync"
 
-	plugin "aroz.org/zoraxy/event-subscriber-example/mod/zoraxy_plugin"
-	"aroz.org/zoraxy/event-subscriber-example/mod/zoraxy_plugin/events"
+	plugin "example.com/dunree/event-subscriber-example/mod/dunree_plugin"
+	"example.com/dunree/event-subscriber-example/mod/dunree_plugin/events"
 )
 
 const (

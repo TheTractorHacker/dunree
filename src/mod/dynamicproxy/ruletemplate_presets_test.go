@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 )
 
 func newTestHeader(k, v string) *rewrite.UserDefinedHeader {
-	return &rewrite.UserDefinedHeader{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: k, Value: v}
+	return &rewrite.UserDefinedHeader{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: k, Value: v}
 }
 
 func presetTestRule() *ProxyEndpoint {

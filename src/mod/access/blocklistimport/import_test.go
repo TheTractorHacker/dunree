@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newRule(t testing.TB) (*access.Controller, *access.AccessRule) {

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/favicon.png" type="image/png">
-    <meta name="description" content="Secure authentication gateway for Zoraxy Auth.">
-    <meta name="author" content="Zoraxy">
+    <meta name="description" content="Secure authentication gateway for Dunree Auth.">
+    <meta name="author" content="Dunree">
     <meta name="robots" content="noindex, nofollow">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="color-scheme" content="light dark">
@@ -29,7 +29,7 @@
             --danger-text: #b42318;
             --warning-text: #b54708;
             --logo-arc: #1f2a44;
-            --logo-dot: #4a90d9;
+            --logo-dot: #1a56c4; /* Dunree blue, light backgrounds */
             --radius: 8px;
         }
 
@@ -52,7 +52,7 @@
                 --danger-text: #fda29b;
                 --warning-text: #fdb022;
                 --logo-arc: #e6e8f2;
-                --logo-dot: #a9d1f3;
+                --logo-dot: #6d9bff; /* Dunree blue, dark backgrounds */
             }
         }
 
@@ -104,6 +104,8 @@
             display: block;
             border-radius: 0.5em;
         }
+        /* the built-in mark: on its 16 px grid, corners not rounded (brand/README.md) */
+        svg.brand-mark { width: 32px; height: 32px; border-radius: 0; }
 
         .pane-form-body {
             flex: 1;
@@ -512,7 +514,7 @@
                     </form>
 
                     <div class="info-box" id="secureInfo">
-                        <p>🔒 Secured by Zoraxy Auth. This connection is encrypted end to end.</p>
+                        <p>🔒 Secured by Dunree Auth. This connection is encrypted end to end.</p>
                     </div>
 
                     <div class="info-box warning" id="warningInfo">
@@ -771,7 +773,7 @@
         document.getElementById('username').addEventListener('input', hideError);
         document.getElementById('password').addEventListener('input', hideError);
 
-        // Password resets are handled by the Zoraxy administrator, not self-service
+        // Password resets are handled by the Dunree administrator, not self-service
         document.getElementById('forgotLink').addEventListener('click', function() {
             showError('Password resets are handled by your administrator. Please contact them to regain access.');
         });

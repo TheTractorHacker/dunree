@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth/sso/forward"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/auth/sso/forward"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func exRule(mode, pattern string, nocase bool) *AuthExceptionRule {

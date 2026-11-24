@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 // ---------- helpers: every test uses a mock provider on loopback, never the real network ----------

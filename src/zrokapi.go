@@ -4,7 +4,7 @@ package main
 	zrokapi.go
 
 	Optional zrok tunnels (fork #63 / upstream #136), the zrok counterpart of the ZeroTier helper of the docker image.
-	Logic in mod/zrok: it supervises the external zrok CLI, so everything is refused unless Zoraxy was started with
+	Logic in mod/zrok: it supervises the external zrok CLI, so everything is refused unless Dunree was started with
 	-allow_external_tools (same philosophy as -allow_hook_commands).
 
 	GET  /api/zrok/status            flag state, binary, version, settings (token never returned), tunnels with runtime state
@@ -26,12 +26,12 @@ import (
 	"strconv"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/utils"
-	"imuslab.com/zoraxy/mod/zrok"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/zrok"
 )
 
-var allowExternalTools = flag.Bool("allow_external_tools", false, "Allow Zoraxy to run external helper programs it supervises (currently: the zrok CLI for the Tunnels (zrok) page). Executing a binary is a privilege: off by default")
+var allowExternalTools = flag.Bool("allow_external_tools", false, "Allow Dunree to run external helper programs it supervises (currently: the zrok CLI for the Tunnels (zrok) page). Executing a binary is a privilege: off by default")
 
 var zrokMgr *zrok.Manager
 
@@ -86,7 +86,7 @@ func zrokMutating(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	if !zrokMgr.Allowed() {
-		utils.SendErrorResponse(w, "Running external tools is disabled. Start Zoraxy with -allow_external_tools to use zrok.")
+		utils.SendErrorResponse(w, "Running external tools is disabled. Start Dunree with -allow_external_tools to use zrok.")
 		return false
 	}
 	return true
@@ -137,7 +137,7 @@ func HandleZrokTargets(w http.ResponseWriter, r *http.Request) {
 		if dynamicProxyRouter.Option.UseTls {
 			scheme = "https"
 		}
-		out = append(out, target{"Zoraxy proxy listener (all rules, routed by Host)", scheme + "://127.0.0.1:" + strconv.Itoa(dynamicProxyRouter.Option.Port)})
+		out = append(out, target{"Dunree proxy listener (all rules, routed by Host)", scheme + "://127.0.0.1:" + strconv.Itoa(dynamicProxyRouter.Option.Port)})
 		for name, ep := range dynamicProxyRouter.GetProxyEndpointsAsMap() {
 			for _, o := range ep.ActiveOrigins {
 				origin := o.OriginIpOrDomain

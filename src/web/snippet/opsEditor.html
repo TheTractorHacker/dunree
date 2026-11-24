@@ -49,7 +49,7 @@
                     <div class="field">
                         <label>Status codes to replace (comma separated, 400-599)</label>
                         <input type="text" id="epStatuses" placeholder="502, 503, 504">
-                        <small>When the upstream answers with one of these codes, or Zoraxy itself fails (no upstream, timeout: 521, 404 for a DNS failure, 503 when busy), the page below is sent instead of the original body. Streaming (event-stream), gRPC and WebSocket upgrade responses are never replaced.</small>
+                        <small>When the upstream answers with one of these codes, or Dunree itself fails (no upstream, timeout: 521, 404 for a DNS failure, 503 when busy), the page below is sent instead of the original body. Streaming (event-stream), gRPC and WebSocket upgrade responses are never replaced.</small>
                     </div>
                     <div class="field">
                         <label>Page template (HTML, leave empty for the built in page)</label>
@@ -75,7 +75,7 @@
 
             <!-- Static responses -->
             <div class="ui bottom attached tab segment" data-tab="stat">
-                <p>Answered by Zoraxy without contacting the upstream, e.g. <code>/robots.txt</code>, <code>/.well-known/security.txt</code>, <code>/healthz</code>. Body and header values accept <code>{{host}}</code> <code>{{client_ip}}</code> <code>{{request_id}}</code> <code>{{rule_name}}</code> <code>{{external_ip}}</code>.</p>
+                <p>Answered by Dunree without contacting the upstream, e.g. <code>/robots.txt</code>, <code>/.well-known/security.txt</code>, <code>/healthz</code>. Body and header values accept <code>{{host}}</code> <code>{{client_ip}}</code> <code>{{request_id}}</code> <code>{{rule_name}}</code> <code>{{external_ip}}</code>.</p>
                 <div style="overflow-x:auto;">
                 <table class="ui very compact celled table" id="staticTable">
                     <thead><tr><th>Path</th><th>Match</th><th>Status</th><th>Content type</th><th>Body</th><th>Location</th><th>Extra headers (Name: value per line)</th><th>Public</th><th></th></tr></thead>

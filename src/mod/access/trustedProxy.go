@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/netutils"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -196,7 +196,7 @@ var clientIPHeaders = []string{
 // request that did not come from a trusted proxy. It only acts when the access
 // rule opted in to TrustProxyHeadersOnly, so setups that never enabled the
 // trusted proxy list keep forwarding the headers untouched. Without this a
-// direct client could choose the X-Forwarded-For / X-Real-IP values Zoraxy
+// direct client could choose the X-Forwarded-For / X-Real-IP values Dunree
 // forwards to the upstream (upstream #1359). Returns true if headers were removed.
 func (s *AccessRule) StripUntrustedClientIPHeaders(r *http.Request) bool {
 	if !s.TrustProxyHeadersOnly || s.parent == nil {

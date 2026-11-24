@@ -1,5 +1,12 @@
 # supporters.txt
 #
+# Supporters of the Zoraxy project by tobychui and imuslab, as listed in
+# Zoraxy v3.3.6, which Dunree is based on. These people donated to
+# Zoraxy. They did not donate to Dunree or to Foley IT and are not associated
+# with Dunree; the list is kept as a credit to the work Dunree builds on.
+#
+# The words of the Zoraxy project to its supporters:
+#
 # A heartfelt thank you to each and every one of the wonderful individuals
 # listed below. Your generous donations have made a tremendous difference
 # to the Zoraxy project and the community around it.

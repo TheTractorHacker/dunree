@@ -25,7 +25,7 @@ def setup():
     priv, pub = os.path.join(d, "priv.pem"), os.path.join(d, "pub.pem")
     api_port = lib.PORT_MAX  # baked into the test binary; reserved for the fake release server
     lib._ports_used.add(api_port)
-    old, new = os.path.join(d, "zoraxy-old"), os.path.join(d, "zoraxy-new")
+    old, new = os.path.join(d, "dunree-old"), os.path.join(d, "dunree-new")
     if all(os.path.exists(x) for x in (priv, pub, old, new)):
         _ctx.update(dir=d, priv=priv, pub=pub, old=old, new=new, api_port=api_port)
         return _ctx
@@ -121,7 +121,7 @@ def start_inst(ctx, name):
     exe = os.path.join(d, "zoraxy")
     shutil.copy(ctx["old"], exe)
     os.chmod(exe, 0o755)
-    inst = Instance(name, workdir=d, binary=exe, flags=["-update_repo", "e2e/zoraxy"])
+    inst = Instance(name, workdir=d, binary=exe, flags=["-update_repo", "e2e/dunree"])
     inst.start()
     return inst, exe
 
@@ -239,9 +239,9 @@ def updater_autorollback():
     gh = FakeGH(ctx["api_port"])
     inst = None
     try:
-        bad = os.path.join(ctx["dir"], "zoraxy-bad")
+        bad = os.path.join(ctx["dir"], "dunree-bad")
         # passes the `-version` smoke test and the upstream version check, then exits immediately
-        open(bad, "w").write('#!/bin/sh\nif [ "$1" = "-version" ]; then echo "Zoraxy - Version 3.3.5"; exit 0; fi\nexit 1\n')
+        open(bad, "w").write('#!/bin/sh\nif [ "$1" = "-version" ]; then echo "Dunree - Version 3.3.5"; exit 0; fi\nexit 1\n')
         os.chmod(bad, 0o755)
         rel = make_release(ctx, "v3.3.5-e2e.9", 900, bad, "bad")
         gh.releases = [{"tag": "v3.3.5-e2e.9", "dist": rel, "published": "2099-03-01T00:00:00Z"}]

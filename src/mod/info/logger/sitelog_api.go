@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // LoadSiteLogConfig reads the config file; a missing or malformed file yields the (disabled) defaults

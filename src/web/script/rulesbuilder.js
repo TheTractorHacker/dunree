@@ -415,7 +415,7 @@
         if (res.fields) {
             var tb = h("tbody");
             Object.keys(res.fields).sort().forEach(function (k) { tb.appendChild(h("tr", {}, h("th", { scope: "row", class: "zx-mono", text: k }), h("td", { class: "zx-mono", text: res.fields[k] }))); });
-            box.appendChild(h("details", { class: "rb-fields" }, h("summary", {}, t("How Zoraxy read this request")), h("div", { class: "zx-table-wrap" }, h("table", { class: "zx-table zx-table--compact" }, tb))));
+            box.appendChild(h("details", { class: "rb-fields" }, h("summary", {}, t("How Dunree read this request")), h("div", { class: "zx-table-wrap" }, h("table", { class: "zx-table zx-table--compact" }, tb))));
         }
         return box;
     }
@@ -497,7 +497,7 @@
         function probe(url, ip) { return RB.post("./api/ruleset/test", Object.assign({ site: site, method: "GET", url: url, client_ip: ip }, cand)).then(function (r) { return !!(r && r.rules && r.rules[0] && r.rules[0].matched); }, function () { return false; }); }
         return Promise.all([probe("https://" + host + "/", "203.0.113.50"), probe("https://probe.invalid/", "198.51.100.23"), probe("https://" + host + "/", "192.168.1.10")]).then(function (r) {
             var out = [];
-            if (r[0]) { out.push(tf("It matches a request to the admin address {0}. If you reach Zoraxy's admin interface through a proxy rule, enforcing it can lock you out.", host)); }
+            if (r[0]) { out.push(tf("It matches a request to the admin address {0}. If you reach Dunree's admin interface through a proxy rule, enforcing it can lock you out.", host)); }
             if (r[1] && r[0]) { out.push(t("It matches an unrelated host too: this rule is very broad.")); }
             else if (r[1]) { out.push(t("It matches requests to an unrelated host: this rule is very broad.")); }
             if (r[2]) { out.push(t("It matches requests from private (LAN) addresses, which is how you may reach the admin interface.")); }

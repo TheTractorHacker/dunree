@@ -3,11 +3,11 @@ package netutils_test
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 func TestHandleTraceRoute(t *testing.T) {
-	results, err := netutils.TraceRoute("imuslab.com", 64)
+	results, err := netutils.TraceRoute("example.com", 64)
 	if err != nil {
 		t.Skipf("Skipping test (requires network/ICMP access): %v", err)
 	}

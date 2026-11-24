@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -24,7 +23,7 @@ func BackupDir(confDir string) string {
 }
 
 // CreateBackup zips the conf directory, the database (file or directory) and
-// the uuid file into <conf>/../backups/zoraxy-pre-update-<ts>.zip. Entries are
+// the uuid file into <conf>/../backups/dunree-pre-update-<ts>.zip. Entries are
 // stored as conf/..., sys.db... and sys.uuid. Missing optional items (db,
 // uuid) are skipped; a missing conf directory is an error. The archive is
 // written to a temporary name and renamed on success so a failure never
@@ -37,7 +36,7 @@ func CreateBackup(confDir, dbPath, uuidPath string, now time.Time) (string, erro
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return "", err
 	}
-	final := filepath.Join(dir, "zoraxy-pre-update-"+now.UTC().Format("20060102-150405")+".zip")
+	final := filepath.Join(dir, BackupPrefix+now.UTC().Format("20060102-150405")+".zip")
 	tmp := final + ".partial"
 	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o640)
 	if err != nil {
@@ -135,11 +134,12 @@ func pruneBackups(dir string) {
 	}
 	var names []string
 	for _, e := range ents {
-		if strings.HasPrefix(e.Name(), "zoraxy-pre-update-") && strings.HasSuffix(e.Name(), ".zip") {
+		if IsBackupName(e.Name()) {
 			names = append(names, e.Name())
 		}
 	}
-	sort.Strings(names) // timestamp in name sorts chronologically
+	// the timestamp after the prefix sorts chronologically, whichever of the two prefixes a file has
+	sort.Slice(names, func(i, j int) bool { return backupStamp(names[i]) < backupStamp(names[j]) })
 	for len(names) > keepBackups {
 		os.Remove(filepath.Join(dir, names[0]))
 		names = names[1:]

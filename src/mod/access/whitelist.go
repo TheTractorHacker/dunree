@@ -3,7 +3,7 @@ package access
 import (
 	"strings"
 
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 /*

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
 )
 
 // Upstream #561: today's statistics must survive a restart of the process.

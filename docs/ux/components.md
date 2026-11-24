@@ -12,7 +12,7 @@ The kit is plain CSS plus one small helper (`ZxUI`) on top of jQuery and Fomanti
 | Menu, breadcrumb and palette CSS | `src/web/ui/nav.css` |
 | Living documentation: every component in light and dark with copyable markup | `src/web/ui/kit.html` (+ `kit.js`) |
 
-**Living page.** Start Zoraxy with `-dev` and open `/ui/kit.html` (System > UI kit in the menu). Without `-dev` the page is not served (404) and the menu entry is hidden. The page also shows the live contrast ratios of the tokens.
+**Living page.** Start Dunree with `-dev` and open `/ui/kit.html` (System > UI kit in the menu). Without `-dev` the page is not served (404) and the menu entry is hidden. The page also shows the live contrast ratios of the tokens.
 
 **Used by:** the proxy rule editor ([site-editor.md](site-editor.md): five sections, Easy / Advanced, one Save bar, app presets).
 
@@ -81,7 +81,7 @@ var bar = ZxUI.saveBar({
 ```
 
 * The bar (sticky at the bottom of the page) appears when a tracked control differs from its baseline and shows how many changes and which fields. Changing a value back hides it.
-* Save is disabled while saving; success shows "Saved" briefly; failure keeps the bar, shows the reason and leaves the form dirty. Failure = rejected promise, thrown error, `false`, or a result object with `error` (Zoraxy APIs answer `{error: "..."}` with HTTP 200). `$.cjax` returns the jqXHR for this.
+* Save is disabled while saving; success shows "Saved" briefly; failure keeps the bar, shows the reason and leaves the form dirty. Failure = rejected promise, thrown error, `false`, or a result object with `error` (Dunree APIs answer `{error: "..."}` with HTTP 200). `$.cjax` returns the jqXHR for this.
 * Discard puts the fields back to the baseline. Ctrl/Cmd+S in the form saves.
 * **Programmatic changes never make the form dirty**: only trusted (real) events count, plus untrusted events fired by page code within 600 ms of a pointer or keyboard action in the form (Fomantic dropdowns and checkboxes fire their change events from script). Code that fills the form must call `bar.reset()` (or `ctx.tracker.commit`) afterwards.
 * Control keys: `name`, else `id`, else the id of the nearest ancestor with an id plus an index. Labels: `data-zx-label`, `label[for]`, wrapping label, `aria-label`, placeholder. Put `data-zx-ignore` on controls that are not form state.
@@ -120,7 +120,7 @@ plus the page container in `index.html`: `<div id="mypage" class="functiontab" t
 
 Groups (8): **Overview** (Status, Quick Start), **Sites** (HTTP Proxy, Default Site, Redirection, Path routes, Stream Proxy, Static Web Server, Raw rule form), **Security** (Security Center, WAF, Access Rules, SSO / OAuth2, CAPTCHA), **Certificates** (TLS / SSL, ACME), **Traffic** (Statistics, Visitors, Uptime Monitor), **Network** (Listeners, Trusted Proxies, Tunnels, Encrypted Client Hello, Network Interfaces, Network Tools), **Fleet & HA** (Fleet, Cluster / HA), **System** (Update, API Tokens, Plugin Manager, App Store, Utilities, Settings, UI kit in `-dev`).
 
-Compatibility: all `tag` ids, `#hash` deep links and `openTabById()` calls are unchanged; only the placement changed. Renamed labels (D4): Ingress -> Listeners, Virtual Directories -> Path routes, Advanced Rule Form -> Raw rule form (labels only, ids and API paths untouched). Saved menu state (`localStorage.zoraxy_menu_groups`) is migrated to version 3. Groups start collapsed except Overview on a first visit; opening a page expands its group and no longer collapses the others.
+Compatibility: all `tag` ids, `#hash` deep links and `openTabById()` calls are unchanged; only the placement changed. Renamed labels (D4): Ingress -> Listeners, Virtual Directories -> Path routes, Advanced Rule Form -> Raw rule form (labels only, ids and API paths untouched). Saved menu state (`localStorage.dunree_menu_groups`) is migrated to version 3. Groups start collapsed except Overview on a first visit; opening a page expands its group and no longer collapses the others.
 
 Behaviour: groups are `role=button` headers with `aria-expanded`/`aria-controls`; Up/Down/Home/End move through the menu, Left/Right collapse/expand a group (Left on an item jumps to its header), Enter/Space activate; the active page has `aria-current="page"`. On phones the menu is the existing slide-in panel behind the hamburger button, rows are 44px high.
 
@@ -136,14 +136,14 @@ To add a setting: one line in `SETTINGS`, `{label: N_("..."), page: "tag", pre: 
 
 ### 3.4 Top bar
 
-`<div class="menubar zx-topbar">` in `index.html`, logic in `script/topbar.js` (`window.ZxTopbar`), styles in `ui/topbar.css`. Left to right: logo (links to Status), **status pills**, then the controls: **Search** (Ctrl+K, primary-coloured border so it stays the most prominent), **Theme**, **Language**, **Account** (only with authentication), and on phones **More** and the hamburger of the page menu. Every control is a `.zx-topbtn`: 36px high (40px at 748px and below), 8px radius, `--zx-border-strong` border, `--zx-focus` 2px focus ring. Colours only from `--zx-*` tokens; the bar is `--zx-surface` in both themes.
+`<div class="menubar zx-topbar">` in `index.html`, logic in `script/topbar.js` (`window.ZxTopbar`), styles in `ui/topbar.css`. Left to right: the Dunree logo (links to Status; markup and rules in section 11), **status pills**, then the controls: **Search** (Ctrl+K, primary-coloured border so it stays the most prominent), **Theme**, **Language**, **Account** (only with authentication), and on phones **More** and the hamburger of the page menu. Every control is a `.zx-topbtn`: 36px high (40px at 748px and below), 8px radius, `--zx-border-strong` border, `--zx-focus` 2px focus ring. Colours only from `--zx-*` tokens; the bar is `--zx-surface` in both themes.
 
 * **Theme menu**: Light / Dark / System (the button shows the current mode as icon + word). System = no stored choice, the OS preference decides and follows changes. Light and Dark store `localStorage.theme` as before, `toggleTheme()` (palette action "Toggle dark mode") still works and `darktheme.js` fires `zoraxy:theme` so the button follows.
 * **Language menu**: globe + current code (`EN`, `DE`, `ZH-CN` ...), all languages of `i18n.languages` by their native names, the current one checked. Scrolls inside the menu when the list is long. The native `select.i18n-picker` stays on the Settings page.
 * **Account menu** (hidden when `GET /api/auth/authEnabled` is false): user name and role (`/api/auth/username`, `/api/auth/role`), Change password (opens Utilities), Log out.
 * **Status pills** (one light poll, `ZxTopbar.refresh()` forces it): health ("Online", or a danger "Proxy stopped"; the tooltip names the listening port), "N sites down" (Uptime Monitor, only when something is down), "N certificates expiring" (Certificates, only within the 30 day warning window of the Status page, danger at 7 days or less), "Update vX" (Update page), "N blocked today - See why" (opens Statistics > Blocked). Each pill is a real `<a href="#page">` with a tooltip and `aria-label`; when no data can be read one neutral "Status unavailable" pill is shown (never a spinner).
   * Data reused, nothing new on the server: `GET /api/stats/glance` (blocked today, upstreams down, certificates; what the Status tiles use) and `GET /api/proxy/status` (Running, port; what the Status banner uses), both every 45 s, only while the tab is visible (plus one refresh when it becomes visible after 30 s or more).
-  * **The update badge makes no request of its own.** Zoraxy never contacts GitHub by itself (the Update page says "Not checked yet"), so the badge shows the result of the last check made on the Update page in this browser (`ZxTopbar.setUpdate(result)`, `localStorage.zoraxy.topbar.update`, kept 14 days, dropped when the running version changes).
+  * **The update badge makes no request of its own.** Dunree never contacts GitHub by itself (the Update page says "Not checked yet"), so the badge shows the result of the last check made on the Update page in this browser (`ZxTopbar.setUpdate(result)`, `localStorage.dunree.topbar.update`, kept 14 days, dropped when the running version changes).
 * **Widths**: above 1180px full text; 749-1180px pills shrink to icon + number, Search to an icon, theme / language / account to icon (the full text stays in `aria-label` and tooltip); 748px and below: pills, theme, language and account fold into one **More** menu (a dot marks it when something needs attention) next to Search and the hamburger. Pills that do not fit are clipped in priority order (health first, blocked counter last), never wrapped over the content.
 * **Keyboard**: Tab order is logo, pills, Search, Theme, Language, Account (phone: Search, More, hamburger). Enter / Space / ArrowDown open a menu with focus on the current choice; Up/Down/Home/End move; Enter chooses and returns focus to the button; Esc closes and returns focus; Tab and an outside click close. Menus are `role=menu` with `menuitemradio` (`aria-checked`) / `menuitem`; buttons carry `aria-haspopup="menu"` and `aria-expanded`.
 * Adding a pill = one entry in `pills()` of `topbar.js` (state `ok|warn|danger|info|neutral`, icon, `tag` of an existing page). Do not add a pill that has no page to open.
@@ -191,7 +191,7 @@ Added in `src/web/ui/zxpages.css` and `src/web/script/zxpage.js` (loaded by `ind
 
 ### 7.1 History hook
 
-`ZxUI.toast(msg, {action: {label, run}})` shows one extra, non-destructive action. `ZxHistory.savedToast(msg, object)` is the standard success toast with a **View history** action; `ZxHistory.view(object)` opens System > History with the Object filter set (it never restores: every restore restarts Zoraxy, so a toast must not trigger one). `ZxUI.saveBar({historyObject: "Auto-ban"})` shows that toast after every successful save. The object is a substring of the history entry label ("Certificate", "ACME", "WAF", "Access rule", "Auto-ban", "Virtual directory", ...).
+`ZxUI.toast(msg, {action: {label, run}})` shows one extra, non-destructive action. `ZxHistory.savedToast(msg, object)` is the standard success toast with a **View history** action; `ZxHistory.view(object)` opens System > History with the Object filter set (it never restores: every restore restarts Dunree, so a toast must not trigger one). `ZxUI.saveBar({historyObject: "Auto-ban"})` shows that toast after every successful save. The object is a substring of the history entry label ("Certificate", "ACME", "WAF", "Access rule", "Auto-ban", "Virtual directory", ...).
 
 ### 7.2 Save model decision (D2 applied)
 
@@ -333,3 +333,26 @@ Checked by `tools/ui-smoke/smoke.py --storage-only` (second part) and, for the U
 * Not covered: the bundled Fomantic scripts use `localStorage` in three optional features (nag, remote dropdown cache, API cache) that the admin UI does not use.
 
 Checked by `tools/ui-smoke/smoke.py --storage-only`: two fresh browser contexts in which storage throws (the methods, then the `window.localStorage` property itself); every menu page opens, menu groups, Recent, pins and the theme menu work, no console error.
+
+## 11. Brand: logo, icons, About
+
+Dunree's logo and icons come from `brand/` (rules: `brand/README.md`). The admin UI uses copies in `src/web/img/public/brand/`, a folder that is readable without a login because the login page needs it. `TestWebBrandAssetsMatchBrandFolder` (`src/brandweb_test.go`) fails when a copy differs from its source: change the file in `brand/` and copy it, never edit the copy.
+
+* **Light and dark are separate files**, chosen by the theme class, never by a CSS filter and never by `prefers-color-scheme` inside the SVG. `#1a56c4` (`--zx-primary`) is for light backgrounds only; on dark the mark is `#6d9bff`.
+
+  ```html
+  <a class="zx-top-logo" href="#status" aria-label="Dunree, go to Status">
+      <img class="zx-brand zx-brand--lockup zx-brand--light" src="img/public/brand/dunree-lockup.svg" alt="" width="150" height="32">
+      <img class="zx-brand zx-brand--lockup zx-brand--dark"  src="img/public/brand/dunree-lockup-dark.svg" alt="" width="150" height="32">
+      <img class="zx-brand zx-brand--mark zx-brand--light"   src="img/public/brand/dunree-mark.svg" alt="" width="32" height="32">
+      <img class="zx-brand zx-brand--mark zx-brand--dark"    src="img/public/brand/dunree-mark-dark.svg" alt="" width="32" height="32">
+  </a>
+  ```
+
+  `ui/topbar.css` shows one of the four: the lockup from 749 px, the mark alone below; `body.darkTheme` picks the dark file. The login page does the same with `body.night`, the About card with `body.darkTheme`.
+* **Sizes**: 32 px high in the top bar (a multiple of 16 keeps the battlements on whole pixels), 48 px on the About card. The lockup is never shown under 20 px; below that use the mark.
+* **Icons**: every page that has a `<head>` of its own carries the same six lines (SVG icon, 32 and 16 px PNG, `favicon.ico`, the 180 px touch icon, `manifest.json`). `favicon.png` in the web root still exists for pages and plugins that link it.
+* **Old paths** `img/logo.svg`, `img/logo_white.svg`, `img/logo.png`, `img/public/logo.svg`, `img/icon.png`, `img/small_icon.png` and so on keep working and now hold the Dunree files.
+* **Names and version are not typed into pages.** `GET /api/info/x` reports `Product`, `ProductVersion`, `Publisher`, `BasedOn`, `BasedOnVersion`, `BasedOnAuthors`, `License`, `SourceURL` and `ProductURL` from `src/mod/brand`; `components/utils.html` fills the About card (`#dunreeabout`) and the page footer (`#zxBrandFooter`) from it. The English text in the markup is only what shows before the answer arrives.
+* **Attribution stays.** The footer, the login page and the About card say "Based on Zoraxy v3.3.6 by tobychui and imuslab, AGPL-3.0". Do not remove or shorten it; `TestAttributionInAdminUI` checks it.
+* **Visitor pages** (CAPTCHA, error pages, the default page of the static web server) say Dunree in text only. They carry no logo, and the CAPTCHA footer has a link only when the build names a product website.

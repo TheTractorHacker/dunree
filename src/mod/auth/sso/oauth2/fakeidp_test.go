@@ -16,14 +16,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
 )
 
 const (
-	testClientID     = "zoraxy-client"
+	testClientID     = "dunree-client"
 	testClientSecret = "s3cret-s3cret-s3cret-s3cret-s3cret-0123456789"
 )
 

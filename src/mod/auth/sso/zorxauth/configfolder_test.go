@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/database"
 )
 
 // With a custom -conf folder, group policies and branding must be stored below it,

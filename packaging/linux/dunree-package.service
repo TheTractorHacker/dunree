@@ -1,0 +1,45 @@
+# systemd unit installed by the Dunree .deb and .rpm packages as
+# /usr/lib/systemd/system/dunree.service.
+#
+# Program: /usr/bin/dunree. Data (conf, sys.db, log, plugins): /var/lib/dunree.
+# Flags: DUNREE_ARGS in /etc/default/dunree. To change anything else use a drop-in
+# (sudo systemctl edit dunree); this file is replaced on every package upgrade.
+#
+# The package does not enable or start the service. After checking that no other
+# reverse proxy (for example an existing zoraxy.service) holds the same ports:
+#   sudo systemctl enable --now dunree
+
+[Unit]
+Description=Dunree reverse proxy and web gateway
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+NotifyAccess=main
+
+WorkingDirectory=/var/lib/dunree
+# "-" in front: the file may be missing.
+EnvironmentFile=-/etc/default/dunree
+ExecStart=/usr/bin/dunree $DUNREE_ARGS
+
+TimeoutStartSec=120
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+LimitNOFILE=1048576
+
+# Hardening, the same conservative set as the tarball unit. /usr is read-only for the service:
+# the program file belongs to the package manager and is upgraded with it, not by the Update page.
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

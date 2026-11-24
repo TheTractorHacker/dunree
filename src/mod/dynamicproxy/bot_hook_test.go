@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/botrules"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 func newBotRouter(t *testing.T, mod func(*botrules.Config)) (*Router, *ProxyEndpoint, *botrules.Engine) {

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/adminallow"
-	"imuslab.com/zoraxy/mod/confhistory"
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/posture"
-	"imuslab.com/zoraxy/mod/secaudit"
+	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/foleyit/dunree/mod/confhistory"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/posture"
+	"github.com/foleyit/dunree/mod/secaudit"
 )
 
 func planPost(cfg string) *httptest.ResponseRecorder {
@@ -253,7 +253,7 @@ func TestNetPlanPolicyExport(t *testing.T) {
 		t.Fatalf("%v %s", err, w.Body.String())
 	}
 	md := out.Markdown
-	if strings.Count(md, "NOT APPLIED") < 2 || !strings.Contains(md, "Zoraxy has NOT applied") || out.Disclaimer == "" {
+	if strings.Count(md, "NOT APPLIED") < 2 || !strings.Contains(md, "Dunree has NOT applied") || out.Disclaimer == "" {
 		t.Fatalf("the disclaimer is missing:\n%s", md)
 	}
 	if !strings.Contains(md, "10.0.2.9") || !strings.Contains(md, "8443") || !strings.Contains(md, "10.0.9.0/24") {

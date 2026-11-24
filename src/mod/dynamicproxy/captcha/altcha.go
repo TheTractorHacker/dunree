@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -37,7 +39,9 @@ import (
 
 const (
 	// AltchaChallengePath serves challenges
-	AltchaChallengePath = "/.zoraxy/captcha/altcha"
+	AltchaChallengePath = wirecompat.PathPrefix + "/captcha/altcha"
+	// LegacyAltchaChallengePath is the path Zoraxy used: still answered (a saved custom template may name it) // legacy-compat
+	LegacyAltchaChallengePath = wirecompat.LegacyPathPrefix + "/captcha/altcha"
 	// AltchaField is the form field the solved payload is POSTed as
 	AltchaField = "altcha"
 
@@ -203,3 +207,7 @@ func VerifyAltcha(payload, secret string, now time.Time) error {
 	}
 	return nil
 }
+
+// IsAltchaChallengePath reports whether a request path is the ALTCHA challenge path, under its
+// Dunree name or the name it had in Zoraxy. // legacy-compat
+func IsAltchaChallengePath(path string) bool { return wirecompat.IsPath(path, AltchaChallengePath) }

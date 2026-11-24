@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/tlscert"
+	"github.com/foleyit/dunree/mod/tlscert"
 )
 
 func freeTCPPort(t *testing.T) int {

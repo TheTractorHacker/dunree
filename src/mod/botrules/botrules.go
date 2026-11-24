@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/exploits"
+	"github.com/foleyit/dunree/mod/dynamicproxy/exploits"
 )
 
 const (

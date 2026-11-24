@@ -1,12 +1,12 @@
-# Reference systemd unit for Zoraxy.
+# Reference systemd unit for Dunree.
 # Copy to /etc/systemd/system/zoraxy.service, adjust the three paths marked CHANGE, then:
 #   sudo systemctl daemon-reload && sudo systemctl enable --now zoraxy
 # See docs/deploy/README.md for switching an existing unit and for what each line is for.
 
 [Unit]
-Description=Zoraxy reverse proxy
+Description=Dunree reverse proxy
 Documentation=https://github.com/tobychui/zoraxy
-# The network must be up before Zoraxy binds addresses and talks to ACME / upstreams.
+# The network must be up before Dunree binds addresses and talks to ACME / upstreams.
 After=network-online.target
 Wants=network-online.target
 # Do not give up restarting after a few quick failures (a held port or database often clears on its own).
@@ -14,10 +14,10 @@ Wants=network-online.target
 StartLimitIntervalSec=0
 
 [Service]
-# Zoraxy tells systemd when it is really listening (admin port and proxy ports bound).
+# Dunree tells systemd when it is really listening (admin port and proxy ports bound).
 # Until then "systemctl status" shows "activating (start)" instead of a misleading "active".
 Type=notify
-# Needed so only Zoraxy itself (not its plugin children) may send readiness messages. This is the
+# Needed so only Dunree itself (not its plugin children) may send readiness messages. This is the
 # default for Type=notify, spelled out so nobody changes it by accident.
 NotifyAccess=main
 
@@ -29,15 +29,15 @@ ExecStart=/opt/zoraxy/zoraxy -port=:8000
 # A start that has not reported READY within 2 minutes (for example blocked on a locked database)
 # is killed and shown as "failed", instead of sitting "active" and silent forever.
 TimeoutStartSec=120
-# Time Zoraxy gets to shut down cleanly after SIGTERM (it saves statistics and logs) before SIGKILL.
+# Time Dunree gets to shut down cleanly after SIGTERM (it saves statistics and logs) before SIGKILL.
 TimeoutStopSec=30
 
 # Restart after a crash or a failed start, but not after a deliberate "systemctl stop".
 Restart=on-failure
 RestartSec=5
 
-# Stop the whole control group: Zoraxy AND every plugin process it started. Without this a plugin
-# could outlive Zoraxy and keep a port or file busy.
+# Stop the whole control group: Dunree AND every plugin process it started. Without this a plugin
+# could outlive Dunree and keep a port or file busy.
 KillMode=control-group
 
 # A proxy holds one file descriptor per connection (plus certificates, logs, plugins).
@@ -47,10 +47,10 @@ LimitNOFILE=1048576
 # --- running as root (needed for ports below 1024 and for -plugin_user).
 # Gives the service its own /tmp, invisible to other programs.
 PrivateTmp=yes
-# /usr, /boot and /etc become read-only for the service. Zoraxy writes only below WorkingDirectory.
+# /usr, /boot and /etc become read-only for the service. Dunree writes only below WorkingDirectory.
 # Remove this line if WorkingDirectory is below /etc or /usr.
 ProtectSystem=full
-# Zoraxy needs no access to the kernel module loader, kernel logs or to change cgroups.
+# Dunree needs no access to the kernel module loader, kernel logs or to change cgroups.
 ProtectKernelModules=yes
 ProtectKernelLogs=yes
 ProtectControlGroups=yes

@@ -222,7 +222,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Network tools</h2>
-            <p class="zx-page-header__sub">Test a host from where Zoraxy stands, find devices on the local network, and run the small network services of this machine.</p>
+            <p class="zx-page-header__sub">Test a host from where Dunree stands, find devices on the local network, and run the small network services of this machine.</p>
         </div>
     </header>
 
@@ -504,9 +504,9 @@ window.ntConsole = (function(){
     }
     function runNote(k){
         return ({
-            ping: t("Sent from the machine Zoraxy runs on, not from your browser. ICMP needs raw socket permission; TCP and UDP probes work without it."),
-            trace: t("Sent from the machine Zoraxy runs on. Needs raw socket permission (root or CAP_NET_RAW). A long route can take a minute."),
-            dns: t("Asked by the machine Zoraxy runs on. Leave the DNS server empty to use its own resolver, or enter one such as 1.1.1.1 to compare."),
+            ping: t("Sent from the machine Dunree runs on, not from your browser. ICMP needs raw socket permission; TCP and UDP probes work without it."),
+            trace: t("Sent from the machine Dunree runs on. Needs raw socket permission (root or CAP_NET_RAW). A long route can take a minute."),
+            dns: t("Asked by the machine Dunree runs on. Leave the DNS server empty to use its own resolver, or enter one such as 1.1.1.1 to compare."),
             port: t("Tries every TCP port of the address from this machine, so only check machines you run. Leave the ports empty to list all open ones."),
             tls: t("Connects from this machine and reads the certificate; nothing is sent to the server after the handshake. Cloud metadata and link-local addresses are refused unless you allow them."),
             http: t("Sent from this machine without cookies or a body. Cloud metadata and link-local addresses are refused unless you allow them."),
@@ -588,12 +588,12 @@ window.ntConsole = (function(){
     }
     function wrap(tb){ return el("div", "zx-table-wrap zx-table-wrap--flush").append(tb); }
     /* the Go ICMP error is long and technical: say what to do, keep the original behind "Details" */
-    var SETCAP = "sudo setcap cap_net_raw+ep /path/to/zoraxy";
+    var SETCAP = "sudo setcap cap_net_raw+ep /path/to/dunree";
     function friendlyError(msg){
         msg = String(msg || "");
         if (/CAP_NET_RAW|raw socket|operation not permitted/i.test(msg)){
-            return {title: t("ICMP is not available to Zoraxy on this machine"),
-                    text: t("Sending ICMP needs the raw socket permission (CAP_NET_RAW). Run Zoraxy as root, or give the program the permission once and restart it:"),
+            return {title: t("ICMP is not available to Dunree on this machine"),
+                    text: t("Sending ICMP needs the raw socket permission (CAP_NET_RAW). Run Dunree as root, or give the program the permission once and restart it:"),
                     code: SETCAP, raw: msg};
         }
         return {title: null, text: msg, raw: msg};
@@ -1109,7 +1109,7 @@ window.ntConsole = (function(){
                 if (data && data.error !== undefined){ return $.Deferred().reject(String(data.error)).promise(); }
                 return data;
             }, function(xhr){
-                return $.Deferred().reject(xhr && xhr.status ? tf("The request failed (HTTP {0}).", xhr.status) : t("The request failed. Zoraxy did not answer.")).promise();
+                return $.Deferred().reject(xhr && xhr.status ? tf("The request failed (HTTP {0}).", xhr.status) : t("The request failed. Dunree did not answer.")).promise();
             });
         }
         var meta = q.allowmetadata ? {allowmetadata: "true"} : {};

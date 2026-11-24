@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/foleyit/dunree/mod/apitoken"
 	"github.com/gorilla/csrf"
 	"gopkg.in/yaml.v3"
-	"imuslab.com/zoraxy/mod/apitoken"
 )
 
 type v1KV struct {
@@ -192,7 +192,7 @@ func TestAPIv1NoCSRFOnlyForTokensAndCookiePathsUnchanged(t *testing.T) {
 	}
 	// cookie only (no token) on v1 is rejected
 	r := httptest.NewRequest("GET", "/api/v1/proxy-rules", nil)
-	r.AddCookie(&http.Cookie{Name: "Zoraxy", Value: "session"})
+	r.AddCookie(&http.Cookie{Name: "Dunree", Value: "session"})
 	r.RemoteAddr = "10.0.0.9:1"
 	w := httptest.NewRecorder()
 	entry.ServeHTTP(w, r)

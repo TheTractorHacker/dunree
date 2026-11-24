@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // StartDynamicForwardRouter create and start a dynamic forward router for
@@ -60,7 +60,7 @@ func (m *Manager) sniffPlugin(p *Plugin, r *http.Request, clientIP string, reqID
 	if !m.breakerAdmit(p) {
 		return false, errBreakerOpen
 	}
-	forwardReq := zoraxy_plugin.EncodeForwardRequestPayload(r, clientIP)
+	forwardReq := dunree_plugin.EncodeForwardRequestPayload(r, clientIP)
 	forwardReq.Rule = RuleInfoFromRequest(r)
 	jsonData, err := json.Marshal(forwardReq)
 	if err != nil {
@@ -85,9 +85,9 @@ func normalizeEndpoint(s string) string {
 
 // serveDynamicCapture proxies the whole request to the dynamic capture ingress of the plugin
 func (p *Plugin) serveDynamicCapture(w http.ResponseWriter, r *http.Request, reqID string) {
-	headers := [][]string{{"X-Zoraxy-RequestID", reqID}}
+	headers := hostHeaders("RequestID", reqID)
 	if tok := p.invokeToken(); tok != "" {
-		headers = append(headers, []string{zoraxy_plugin.InvokeTokenHeader, tok})
+		headers = append(headers, hostHeaders("Plugin-Token", tok)...)
 	}
 	proxy, port := p.dynamicProxyAndPort()
 	if proxy == nil {

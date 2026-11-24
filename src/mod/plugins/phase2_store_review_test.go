@@ -17,7 +17,7 @@ import (
 	fixes" of the section on 2.4, 2.5 and 2.7)
 */
 
-// nextBoot is a second Zoraxy on the same plugin directory and database
+// nextBoot is a second Dunree on the same plugin directory and database
 func nextBoot(t *testing.T, m *Manager, mode string, pub string) (*Manager, *auditTrap) {
 	t.Helper()
 	next := newFaultManager(t)
@@ -73,7 +73,7 @@ func TestChangedBinaryIsNotRunBeforeItIsCompared(t *testing.T) {
 		return err == nil
 	}
 
-	// enforce, reload of the running Zoraxy: not run, the loaded plugin stays as it is
+	// enforce, reload of the running Dunree: not run, the loaded plugin stays as it is
 	m.ReloadPluginFromDisk()
 	if wasRun() {
 		t.Fatal("enforce: a reload ran the changed program file")
@@ -170,7 +170,7 @@ func TestInstallRecordLearnsItsFolderAtBoot(t *testing.T) {
 	}
 }
 
-// Zoraxy killed between the two renames of a swap: the plugin folder has no
+// Dunree killed between the two renames of a swap: the plugin folder has no
 // program file. The next start puts the installed one back and clears .staging.
 func TestInterruptedSwapIsRepairedAtBoot(t *testing.T) {
 	f := newStoreFix(t)

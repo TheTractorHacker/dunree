@@ -1,9 +1,9 @@
 package dynamicproxy
 
 import (
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 	"github.com/google/uuid"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
 )
 
 /*

@@ -23,8 +23,8 @@ func Describe(pid int) ProcInfo {
 	return ProcInfo{Pid: pid, Uid: -1, Note: "process inspection is only available on Linux"}
 }
 
-// ListZoraxyProcesses finds nothing off Linux.
-func ListZoraxyProcesses(exclude int) ([]ProcInfo, int) { return nil, 0 }
+// ListDunreeProcesses finds nothing off Linux.
+func ListDunreeProcesses(exclude int) ([]ProcInfo, int) { return nil, 0 }
 
 // ListenSocket is a LISTEN socket plus its owner pids.
 type ListenSocket struct {

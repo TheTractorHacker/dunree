@@ -16,16 +16,17 @@ import (
 
 	"encoding/hex"
 
+	db "github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
-	db "imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 type AuthAgent struct {
 	//Session related
 	SessionName             string
+	LegacySessionNames      []string //cookie names an earlier build used for the session, still accepted (legacy_session.go)
 	SessionStore            *sessions.CookieStore
 	Database                *db.Database
 	LoginRedirectionHandler func(http.ResponseWriter, *http.Request)
@@ -256,6 +257,7 @@ func (a *AuthAgent) Logout(w http.ResponseWriter, r *http.Request) error {
 	session.Values["authenticated"] = false
 	session.Values["username"] = nil
 	session.Options.MaxAge = -1
+	a.expireLegacySessions(w, r) //a cookie under an old name must not log the browser back in
 	return session.Save(r, w)
 }
 

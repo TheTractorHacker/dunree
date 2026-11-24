@@ -2,7 +2,7 @@ package access
 
 import (
 	"errors"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 	"io"
 	"net"
 	"net/http"

@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"plugins.zoraxy.aroz.org/zoraxy/upnp/mod/upnpc"
-	plugin "plugins.zoraxy.aroz.org/zoraxy/upnp/mod/zoraxy_plugin"
+	plugin "example.com/dunree/upnp/mod/dunree_plugin"
+	"example.com/dunree/upnp/mod/upnpc"
 )
 
 const (
@@ -53,7 +53,7 @@ func main() {
 		Name:          "UPnP Forwarder",
 		Author:        "aroz.org",
 		AuthorContact: "https://github.com/aroz-online",
-		Description:   "A UPnP Port Forwarder Plugin for Zoraxy",
+		Description:   "A UPnP Port Forwarder Plugin for Dunree",
 		URL:           "https://github.com/aroz-online",
 		Type:          plugin.PluginType_Utilities,
 		VersionMajor:  1,
@@ -63,7 +63,7 @@ func main() {
 	})
 	if err != nil {
 		//Terminate or enter standalone mode here
-		fmt.Println("This is a plugin for Zoraxy and should not be run standalone\n Visit zoraxy.aroz.org to download Zoraxy.")
+		fmt.Println("This is a plugin for Dunree and should not be run standalone.")
 		panic(err)
 	}
 

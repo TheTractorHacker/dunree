@@ -81,6 +81,9 @@ Tokens only (`--zx-*`, both themes). Per role:
 * **State:** `--zx-{ok,warn,danger,info}-*`. A state colour never stands alone: icon or dot plus the word.
   Running or enabled things are *not* green buttons; green is a result, not an action.
 * **Borders:** `--zx-border` for separation, `--zx-border-strong` for things you can type in or press.
+* **Brand:** the Dunree blue is `--zx-primary` (`#1a56c4`) in the light theme and `#6d9bff` in the dark theme, so the
+  logo and the primary button share one colour. The logo is an image from `brand/` in its light or dark file; it is never
+  recoloured with CSS. Rules: `brand/README.md`; markup: [components.md](components.md), section 11.
 
 ## 5. Page anatomy
 

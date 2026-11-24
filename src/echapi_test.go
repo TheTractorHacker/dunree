@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/ech"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/ech"
 )
 
 func TestEchFallbackHookAndAPI(t *testing.T) {

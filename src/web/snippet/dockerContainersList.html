@@ -45,9 +45,9 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
       <!--  Networked Containers Lists -->
       <div class="ui header">
         <div class="content">
-          Containers on Zoraxy's Networks
+          Containers on Dunree's Networks
           <div class="sub header">
-            These containers share a network with Zoraxy.<br />
+            These containers share a network with Dunree.<br />
             Your networks must support Docker DNS-based name resolution.
           </div>
         </div>
@@ -73,7 +73,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
         <div class="content">
           Containers on different Networks
           <div class="sub header">
-            These containers are not connected to Zoraxy's networks.<br />
+            These containers are not connected to Dunree's networks.<br />
             Manual configuration is required.
           </div>
         </div>
@@ -210,16 +210,16 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
           )
         );
 
-        // identify the Zoraxy container to determine shared networks
-        const zoraxyContainer = containers.find(
+        // identify the Dunree container to determine shared networks
+        const dunreeContainer = containers.find(
           (container) =>
             container.Labels &&
             container.Labels["com.imuslab.zoraxy.container-identifier"] ===
               "Zoraxy"
         );
 
-        const zoraxyNetworkIDs = zoraxyContainer
-          ? Object.values((zoraxyContainer.NetworkSettings || {}).Networks || {}).map(
+        const dunreeNetworkIDs = dunreeContainer
+          ? Object.values((dunreeContainer.NetworkSettings || {}).Networks || {}).map(
               (network) => network.NetworkID
             )
           : [];
@@ -259,10 +259,10 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
             return;
           }
 
-          // networks that are shared with Zoraxy
+          // networks that are shared with Dunree
           const sharedNetworks = Object.values(
             (container.NetworkSettings || {}).Networks || {}
-          ).filter((network) => zoraxyNetworkIDs.includes(network.NetworkID));
+          ).filter((network) => dunreeNetworkIDs.includes(network.NetworkID));
 
           if (!sharedNetworks.length) {
             const ips = Object.values((container.NetworkSettings || {}).Networks || {}).map(

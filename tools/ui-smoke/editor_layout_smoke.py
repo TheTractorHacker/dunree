@@ -26,7 +26,7 @@ def editor_layout_ui(pg, ctx):
         return
     try:
         for layout in ("sections", "tabs"):
-            js("localStorage.setItem('zoraxy_site_editor_layout', %s)" % json.dumps(layout))
+            js("localStorage.setItem('dunree_site_editor_layout', %s)" % json.dumps(layout))
             for (w, h) in ((1366, 600), (1366, 900), (800, 560)):
                 pg.set_viewport_size({"width": w, "height": h})
                 js("openTabById('httprp')")
@@ -88,7 +88,7 @@ def editor_layout_ui(pg, ctx):
                     js("() => { if (typeof hideHttpProxyRuleEditorModal === 'function') hideHttpProxyRuleEditorModal(); }")
                     pg.wait_for_timeout(500)
         # the Header rewrite rules editor itself, light and dark, desktop and phone width (Easy mode: it is always there)
-        js("localStorage.setItem('zoraxy_site_editor_layout', 'sections'); localStorage.setItem('zoraxy_site_editor_mode', 'easy')")
+        js("localStorage.setItem('dunree_site_editor_layout', 'sections'); localStorage.setItem('dunree_site_editor_mode', 'easy')")
         for theme in ("light", "dark"):
             for (w, h) in ((1366, 720), (390, 780)):
                 js("setDarkTheme(%s)" % ("true" if theme == "dark" else "false"))
@@ -112,6 +112,6 @@ def editor_layout_ui(pg, ctx):
                 js("() => { if (typeof hideHttpProxyRuleEditorModal === 'function') hideHttpProxyRuleEditorModal(); }")
                 pg.wait_for_timeout(500)
     finally:
-        js("localStorage.removeItem('theme'); localStorage.removeItem('zoraxy_site_editor_mode')")
-        js("localStorage.removeItem('zoraxy_site_editor_layout')")
+        js("localStorage.removeItem('theme'); localStorage.removeItem('dunree_site_editor_mode')")
+        js("localStorage.removeItem('dunree_site_editor_layout')")
         post("/api/proxy/del", {"ep": EL_HOST})

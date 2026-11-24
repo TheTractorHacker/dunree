@@ -4,10 +4,16 @@
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1"/>
         <meta charset="UTF-8">
-        <meta name="theme-color" content="#4b75ff">
+        <meta name="theme-color" content="#1a56c4">
         <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
-        <link rel="icon" type="image/png" href="./favicon.png" />
-        <title>Control Panel | Zoraxy</title>
+        <!-- Dunree icons (brand/README.md). The files are in img/public/brand, readable without a login. -->
+        <link rel="icon" type="image/svg+xml" href="img/public/brand/favicon.svg">
+        <link rel="icon" type="image/png" sizes="32x32" href="img/public/brand/favicon-32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="img/public/brand/favicon-16.png">
+        <link rel="shortcut icon" href="img/public/brand/favicon.ico">
+        <link rel="apple-touch-icon" sizes="180x180" href="img/public/brand/apple-touch-icon.png">
+        <link rel="manifest" href="img/public/brand/manifest.json">
+        <title>Control Panel | Dunree</title>
         <link rel="stylesheet" href="script/semantic/semantic.min.css">
         <script src="script/safestorage.js"></script> <!-- first: every script that stores something goes through zxStore -->
         <script src="script/i18n.js"></script>
@@ -34,7 +40,13 @@
     <body>
         <script src="script/darktheme.js"></script>
         <div class="menubar zx-topbar" role="banner">
-            <a class="zx-top-logo" href="#status" aria-label="Zoraxy, go to Status"><img class="logo" src="img/logo.svg" alt=""></a>
+            <!-- Dunree lockup: light and dark variant as separate files, shown by the theme class (ui/topbar.css); the mark alone on a phone -->
+            <a class="zx-top-logo" href="#status" aria-label="Dunree, go to Status">
+                <img class="zx-brand zx-brand--lockup zx-brand--light" src="img/public/brand/dunree-lockup.svg" alt="" width="150" height="32">
+                <img class="zx-brand zx-brand--lockup zx-brand--dark" src="img/public/brand/dunree-lockup-dark.svg" alt="" width="150" height="32">
+                <img class="zx-brand zx-brand--mark zx-brand--light" src="img/public/brand/dunree-mark.svg" alt="" width="32" height="32">
+                <img class="zx-brand zx-brand--mark zx-brand--dark" src="img/public/brand/dunree-mark-dark.svg" alt="" width="32" height="32">
+            </a>
             <!-- live status pills: filled by script/topbar.js (only things that need attention, plus the blocked counter) -->
             <div id="zxTopStatus" class="zx-top-status" role="group" aria-label="Proxy status"></div>
             <div class="zx-top-actions">
@@ -206,7 +218,14 @@
         <br>
         <div class="ui divider"></div>
         <div class="ui container zx-footer-text" style="font-size: 90%; padding-bottom: 1em;">
-            <p><a href="https://zoraxy.aroz.org" target="_blank">Zoraxy</a> <span class="zrversion"></span> © 2021 - <span class="year"></span> tobychui. Licensed under AGPL</p>
+            <!-- Attribution footer. Names and version come from /api/info/x (mod/brand); components/utils.html fills the spans.
+                 The credit to the project Dunree is based on and to its authors must stay (NOTICE). -->
+            <p id="zxBrandFooter"><strong class="zx-brand-name" data-i18n-skip>Dunree</strong> <span class="zrversion" data-i18n-skip></span>
+                <span class="zx-footer-sep" aria-hidden="true">·</span> <span class="zx-brand-publisher">Published by Foley IT</span>
+                <span class="zx-footer-sep" aria-hidden="true">·</span> <span class="zx-brand-basedon">Based on Zoraxy v3.3.6 by tobychui and imuslab, AGPL-3.0</span>
+                <span class="zx-footer-sep" aria-hidden="true">·</span> <a href="legal/LICENSE.txt" target="_blank" rel="noopener">Licence</a>
+                <span class="zx-footer-sep" aria-hidden="true">·</span> <a href="legal/NOTICE.txt" target="_blank" rel="noopener">Notice</a>
+                <span class="zx-footer-sep" aria-hidden="true">·</span> <a href="#utils" class="zx-brand-about">About</a></p>
         </div>
         
         <div id="messageBox" class="ui green floating big compact message">
@@ -225,7 +244,7 @@
         </div>
 
         <div id="tourModal" class="nofocus" position="center">
-            <h4 class="tourStepTitle">Welcome to Zoraxy Tour</h4>
+            <h4 class="tourStepTitle">Welcome to Dunree Tour</h4>
             <p class="tourStepContent">This is a simplified tour to show some of what it can do.
                 Use your keyboard or click the next button to get going.</p>
             <div class="ui divider"></div>
@@ -485,7 +504,7 @@
 
                 // Update document title
                 var tabLabel = $(targetBtn).clone().children('i').remove().end().text().trim();
-                document.title = (tabLabel ? tabLabel + ' | ' : '') + 'Zoraxy';
+                document.title = (tabLabel ? tabLabel + ' | ' : '') + 'Dunree';
 
                 // Expand the group containing this tab if it is collapsed
                 expandGroupContaining(tabID);
@@ -673,7 +692,7 @@
                 return map;
             })();
 
-            // Saved state (localStorage zoraxy_menu_groups) is {groupId: expanded, _v: version}.
+            // Saved state (localStorage dunree_menu_groups) is {groupId: expanded, _v: version}.
             // v2 renamed the groups, v3 (navigation by task: Sites, Traffic, Network, Fleet & HA, ...) renamed them again;
             // state saved under an old id is carried over to the group that took its place.
             var MENU_GROUP_MIGRATION_V1 = { reverseproxy: 'proxy', security: 'security', services: 'tools', others: 'system' };
@@ -681,7 +700,7 @@
             var MENU_GROUP_DEFAULT_OPEN = { recent: true, overview: true }; // groups without a saved state: open; all others start collapsed
             function getMenuGroupStates() {
                 var states;
-                try { states = JSON.parse(zxStore.get('zoraxy_menu_groups') || '{}') || {}; }
+                try { states = JSON.parse(zxStore.get('dunree_menu_groups') || '{}') || {}; }
                 catch(e) { return {}; }
                 if (states._v !== 3) {
                     var migrated = { _v: 3 };
@@ -698,13 +717,13 @@
                         if (states[oldId] !== undefined) { migrated[MENU_GROUP_MIGRATION_V2[oldId]] = states[oldId]; }
                     });
                     states = migrated;
-                    try { zxStore.set('zoraxy_menu_groups', JSON.stringify(states)); } catch(e) {}
+                    try { zxStore.set('dunree_menu_groups', JSON.stringify(states)); } catch(e) {}
                 }
                 return states;
             }
 
             function saveMenuGroupStates(states) {
-                zxStore.set('zoraxy_menu_groups', JSON.stringify(states));
+                zxStore.set('dunree_menu_groups', JSON.stringify(states));
             }
 
             // Accordion: opening a menu group closes the other page groups, so the menu never grows past one screen.
@@ -788,17 +807,17 @@
             var RECENT_HISTORY_MAX = 15; // how many recent entries to retain in storage
 
             function getRecentTabs() {
-                try { return JSON.parse(zxStore.get('zoraxy_recent_tabs') || '[]'); }
+                try { return JSON.parse(zxStore.get('dunree_recent_tabs') || '[]'); }
                 catch(e) { return []; }
             }
 
             function getPinnedTabs() {
-                try { return JSON.parse(zxStore.get('zoraxy_pinned_tabs') || '[]'); }
+                try { return JSON.parse(zxStore.get('dunree_pinned_tabs') || '[]'); }
                 catch(e) { return []; }
             }
 
             function savePinnedTabs(pinned) {
-                zxStore.set('zoraxy_pinned_tabs', JSON.stringify(pinned));
+                zxStore.set('dunree_pinned_tabs', JSON.stringify(pinned));
             }
 
             function isTabPinned(tabID) {
@@ -827,7 +846,7 @@
                 var recent    = getRecentTabs().filter(function(t) { return t.tag !== tabID; });
                 recent.unshift({ tag: tabID, label: label, icon: iconClass });
                 recent = recent.slice(0, RECENT_HISTORY_MAX);
-                zxStore.set('zoraxy_recent_tabs', JSON.stringify(recent));
+                zxStore.set('dunree_recent_tabs', JSON.stringify(recent));
                 renderRecentItems();
             }
 

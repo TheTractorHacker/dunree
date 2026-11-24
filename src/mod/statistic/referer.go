@@ -13,7 +13,7 @@ import (
 
 	A request with a Referer header is recorded under that header, as before.
 	A request WITHOUT one used to land under the empty key, shown as one line
-	"Unknown or hidden". Zoraxy cannot invent a header the client never sent,
+	"Unknown or hidden". Dunree cannot invent a header the client never sent,
 	but the other headers of the same request say why it is missing. They are
 	read here and the request is counted under a sentinel key instead.
 
@@ -241,7 +241,7 @@ var nonBrowserUAMarks = []string{
 	"crawl", "spider", "slurp", "scan", "curl", "wget", "python", "go-http-client", "java/", "okhttp",
 	"axios", "node", "libwww", "httpclient", "http-client", "scrapy", "postman", "insomnia", "headless",
 	"monitor", "uptime", "healthcheck", "health-check", "probe", "pingdom", "feed", "fetch", "ruby", "perl", "php",
-	"powershell", "aiohttp", "httpx", "restsharp", "dart", "zoraxy", "facebookexternalhit", "preview",
+	"powershell", "aiohttp", "httpx", "restsharp", "dart", "dunree", "zoraxy", "facebookexternalhit", "preview",
 }
 
 // IsNonBrowserUserAgent reports whether a User-Agent looks like a bot, a library, a

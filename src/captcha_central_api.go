@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

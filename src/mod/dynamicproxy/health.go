@@ -3,15 +3,15 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/cluster"
+	"github.com/foleyit/dunree/mod/cluster"
 )
 
 /*
 	health.go
 
-	Serves /.zoraxy/health on the proxy listeners before any host routing so
+	Serves /.dunree/health (and /.zoraxy/health, the path existing monitors probe) on the proxy listeners before any host routing so
 	external load balancers and keepalived scripts get an answer regardless
-	of the Host header. Only that exact path is intercepted.
+	of the Host header. Only these exact paths are intercepted.
 */
 
 // sessionSecretFor returns the key input for session signing.

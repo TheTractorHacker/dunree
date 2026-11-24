@@ -25,7 +25,7 @@ import (
 )
 
 /*
-	Starting, watching and ending the plugin process, the way Zoraxy does it:
+	Starting, watching and ending the plugin process, the way Dunree does it:
 	working directory = the folder of the plugin, a process group of its own,
 	the configure payload on the command line or on standard input, output read
 	from pipes, SIGTERM and SIGKILL to the group.
@@ -226,26 +226,42 @@ func (k *kit) pickPort() (int, error) {
 	return ln.Addr().(*net.TCPAddr).Port, nil
 }
 
-// start starts the plugin with a configure payload as Zoraxy builds it
+// configurePayload builds the configure payload for one start, as Dunree builds it
+func (k *kit) configurePayload(p *proc) map[string]any {
+	payload := map[string]any{
+		"port":          p.port,
+		"runtime_const": map[string]any{"zoraxy_version": "plugin-check " + toolVersion, "zoraxy_uuid": k.uuid, "development_build": false},
+		"invoke_token":  p.token,
+	}
+	// The Dunree names go to a plugin that declares sdk_flavor "dunree" (every plugin built with the
+	// Dunree SDK). Any other plugin gets the payload of Zoraxy, unchanged. // legacy-compat
+	speaksDunree := k.m.SDKFlavor == "dunree"
+	if speaksDunree {
+		rc := payload["runtime_const"].(map[string]any)
+		rc["dunree_version"], rc["dunree_uuid"] = "plugin-check "+toolVersion, k.uuid
+	}
+	if len(k.m.PermittedAPIEndpoints) > 0 && k.stub != nil {
+		p.apiKey = randomHex(24)
+		payload["api_key"], payload["zoraxy_port"] = p.apiKey, k.stub.port
+		if speaksDunree {
+			payload["dunree_port"] = k.stub.port
+		}
+		k.stub.setKey(p.apiKey)
+	}
+	if k.m.APIVersion >= 1 {
+		payload["api_version_max"] = contractMax //the lower end is 0 and is left out, as Dunree does
+	}
+	return payload
+}
+
+// start starts the plugin with a configure payload as Dunree builds it
 func (k *kit) start() (*proc, error) {
 	port, err := k.pickPort()
 	if err != nil {
 		return nil, err
 	}
 	p := &proc{port: port, token: randomHex(24), done: make(chan struct{})}
-	payload := map[string]any{
-		"port":          port,
-		"runtime_const": map[string]any{"zoraxy_version": "plugin-check " + toolVersion, "zoraxy_uuid": k.uuid, "development_build": false},
-		"invoke_token":  p.token,
-	}
-	if len(k.m.PermittedAPIEndpoints) > 0 && k.stub != nil {
-		p.apiKey = randomHex(24)
-		payload["api_key"], payload["zoraxy_port"] = p.apiKey, k.stub.port
-		k.stub.setKey(p.apiKey)
-	}
-	if k.m.APIVersion >= 1 {
-		payload["api_version_max"] = contractMax //the lower end is 0 and is left out, as Zoraxy does
-	}
+	payload := k.configurePayload(p)
 	js, _ := json.Marshal(payload)
 	var cmd *exec.Cmd
 	if k.m.ConfigureVia == "stdin" {
@@ -356,9 +372,9 @@ func groupRSS(pid int) (int64, bool) {
 }
 
 /*
-A stand-in for the plugin API of Zoraxy. A plugin that asks for API endpoints
-gets the port of this listener as zoraxy_port and a key. Nothing here is a real
-Zoraxy: every call is recorded and answered with an empty result.
+A stand-in for the plugin API of Dunree. A plugin that asks for API endpoints
+gets the port of this listener as zoraxy_port (and dunree_port) and a key. Nothing here is a real
+Dunree: every call is recorded and answered with an empty result.
 */
 type apiCall struct {
 	Method   string `json:"method"`

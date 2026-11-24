@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/cluster"
+	"github.com/foleyit/dunree/mod/cluster"
 )
 
 func newHealthTestRouter(health *cluster.HealthEndpoint) *Router {

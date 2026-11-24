@@ -115,7 +115,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Listeners</h2>
-            <p class="zx-page-header__sub">The ports where Zoraxy accepts visitors, and how it speaks HTTP and TLS on them.</p>
+            <p class="zx-page-header__sub">The ports where Dunree accepts visitors, and how it speaks HTTP and TLS on them.</p>
         </div>
     </header>
     <aside class="zx-related" aria-label="Related pages">
@@ -137,7 +137,7 @@
         <div class="zx-card__head lsHead">
             <div>
                 <h3 class="zx-card__title" id="lsNowTitle">Listening now</h3>
-                <p class="zx-card__desc">Every address Zoraxy accepts visitors on. The first three are set on this page; extra ports belong to single sites.</p>
+                <p class="zx-card__desc">Every address Dunree accepts visitors on. The first three are set on this page; extra ports belong to single sites.</p>
             </div>
             <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" onclick="loadSecondaryListeners();" aria-label="Refresh the list"><i class="sync icon" aria-hidden="true"></i> Refresh</button>
         </div>
@@ -147,7 +147,7 @@
                 <ul class="lsList" id="lsMainListeners" aria-label="Listeners set on this page"></ul>
                 <ul class="lsList" id="secondaryListenersTable" aria-label="Extra ports of single sites"></ul>
             </div>
-            <p class="zx-help lsFootnote" id="lsExtraNote" hidden>Extra ports are shown as configured: Zoraxy does not report whether each one could be opened. If a port does not answer, look in the system log for "address already in use".</p>
+            <p class="zx-help lsFootnote" id="lsExtraNote" hidden>Extra ports are shown as configured: Dunree does not report whether each one could be opened. If a port does not answer, look in the system log for "address already in use".</p>
         </div>
     </section>
 
@@ -155,7 +155,7 @@
     <section class="zx-card" aria-labelledby="lsAddTitle">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="lsAddTitle">Add a listening port for one site</h3>
-            <p class="zx-card__desc">Let one site also answer on a port of its own, for example <code>:8443</code>. It keeps answering on the main listener. Zoraxy tries to open the port at once.</p>
+            <p class="zx-card__desc">Let one site also answer on a port of its own, for example <code>:8443</code>. It keeps answering on the main listener. Dunree tries to open the port at once.</p>
         </div>
         <div class="zx-card__body">
             <form class="lsRow" id="lsAddForm" data-zx-ignore novalidate onsubmit="lsAddPort(); return false;">
@@ -195,7 +195,7 @@
                 <div id="tls" class="ui toggle notloopbackOnly checkbox">
                     <input type="checkbox">
                     <label>Serve sites over HTTPS (TLS)
-                    <small>On: visitors connect with https:// and Zoraxy answers with the certificate of the site. Off: plain HTTP, for use behind another proxy that already does TLS.</small></label>
+                    <small>On: visitors connect with https:// and Dunree answers with the certificate of the site. Off: plain HTTP, for use behind another proxy that already does TLS.</small></label>
                 </div>
             </div>
         </div>
@@ -295,7 +295,7 @@
             <div id="proxyProtocol" class="ui toggle notloopbackOnly tlsEnabledOnly checkbox">
                 <input type="checkbox">
                 <label>PROXY protocol
-                <small>Read the visitor's address from the PROXY protocol v1 / v2 header a load balancer in front of Zoraxy sends. Only switch it on when every connection comes through that load balancer.</small></label>
+                <small>Read the visitor's address from the PROXY protocol v1 / v2 header a load balancer in front of Dunree sends. Only switch it on when every connection comes through that load balancer.</small></label>
             </div>
         </div>
     </section>
@@ -305,7 +305,7 @@
         <div class="zx-card__head lsHead">
             <div>
                 <h3 class="zx-card__title" id="lsTimeTitle">Timeouts</h3>
-                <p class="zx-card__desc">How long Zoraxy waits for a slow client. In whole seconds; 0 means no limit. Saving restarts the proxy if it is running.</p>
+                <p class="zx-card__desc">How long Dunree waits for a slow client. In whole seconds; 0 means no limit. Saving restarts the proxy if it is running.</p>
             </div>
             <span class="zx-badge ingressLiveBadge">Applied with Save changes</span>
         </div>
@@ -441,6 +441,25 @@
                 <label>Development mode
                 <small>Sends Cache-Control: no-store on every response so browsers always fetch fresh content. Turn it off in production.</small></label>
             </div>
+        </div>
+    </section>
+
+    <!-- ============ compatibility: legacy X-Zoraxy-* / zoraxy_* names (API /api/compat/legacy, wirecompatapi.go) ============ -->
+    <section class="zx-card" id="lsCompatCard" aria-labelledby="lsCompatTitle" data-zx-ignore>
+        <div class="zx-card__head lsHead">
+            <div>
+                <h3 class="zx-card__title" id="lsCompatTitle">Compatibility</h3>
+                <p class="zx-card__desc">Dunree is based on Zoraxy. Tools set up for Zoraxy can keep using the names they know.</p>
+            </div>
+            <span class="zx-badge zx-badge--info ingressLiveBadge">Applies immediately</span>
+        </div>
+        <div class="zx-card__body">
+            <div id="legacyNames" class="ui toggle checkbox">
+                <input type="checkbox">
+                <label>Also send legacy X-Zoraxy-* headers
+                <small>On by default. Response and webhook headers are sent as X-Dunree-* and again as X-Zoraxy-*, and Prometheus metrics as dunree_* and again as zoraxy_*. Turn it off when nothing of yours reads the old names any more: monitors, webhook receivers, dashboards and alert rules. Old names that come in (request headers, /.zoraxy/ paths) are always accepted, and plugins always get both.</small></label>
+            </div>
+            <p class="zx-card__desc" id="legacyPathUse" style="display:none; margin:12px 0 0;" role="status"></p>
         </div>
     </section>
 </div>
@@ -790,6 +809,35 @@
     }
     initDevelopmentMode();
 
+    //Compatibility: legacy X-Zoraxy-* / zoraxy_* names on output (default on)
+    function initLegacyNames(){
+        $.get("/api/compat/legacy", function(data){
+            if (!data || data.error != undefined){ return; }
+            setToggleStateSilently("#legacyNames", data.enabled === true);
+            let paths = Object.keys(data.legacyPathHits || {}).sort();
+            if (paths.length > 0){
+                let tr = (typeof tf === "function") ? tf : function(s, a){ return s.replace("{0}", a); };
+                $("#legacyPathUse").text(tr("Old paths requested since Dunree started: {0}. They are still answered.", paths.map(function(p){ return p + " (" + data.legacyPathHits[p] + ")"; }).join(", "))).show();
+            }else{
+                $("#legacyPathUse").hide();
+            }
+            $("#legacyNames").off("change").on("change", function(){
+                let enable = ($(this).find("input[type='checkbox']")[0].checked);
+                $.cjax({url: "/api/compat/legacy", method: "POST", data: {enable: enable}}).done(function(resp){
+                    if (resp && resp.error != undefined){
+                        msgbox(resp.error, false, 5000);
+                        setToggleStateSilently("#legacyNames", !enable);
+                        return;
+                    }
+                    msgbox(enable ? "Legacy X-Zoraxy-* names are sent as well" : "Only Dunree names are sent now");
+                }).fail(function(){
+                    setToggleStateSilently("#legacyNames", !enable);
+                });
+            });
+        });
+    }
+    initLegacyNames();
+
     function initSanitiseClientIP(){
         $.get("/api/proxy/sanitiseClientIP", function(data){
             setToggleStateSilently("#sanitiseClientIP", data === true);
@@ -1097,7 +1145,7 @@
             return data;
         });
     }
-    //A port another listener of Zoraxy already has cannot be opened a second time: say so before anything is stored.
+    //A port another listener of Dunree already has cannot be opened a second time: say so before anything is stored.
     //Returns the reason, or "" when the port is free as far as this page knows.
     function lsPortOf(addr){ let m = /:(\d+)$/.exec(String(addr || "").trim()); return m ? Number(m[1]) : 0; }
     function lsPortTaken(addr){
@@ -1105,7 +1153,7 @@
         if (!port){ return ""; }
         if (port === Number(currentListeningPort)){ return tf("Port {0} is the main listener: every site already answers there. Choose another port.", port); }
         let admin = Number(window.location.port) || (window.location.protocol === "https:" ? 443 : 80);
-        if (!lsViaProxy && port === admin){ return tf("Port {0} is the management interface of Zoraxy. Choose another port.", port); }
+        if (!lsViaProxy && port === admin){ return tf("Port {0} is the management interface of Dunree. Choose another port.", port); }
         if (port === lsPortOf(lsHttpAddr)){ return tf("Port {0} belongs to the plain HTTP listener. Choose another port.", port); }
         return "";
     }

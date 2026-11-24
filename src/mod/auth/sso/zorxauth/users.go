@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/google/uuid"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 type UserResponse struct {

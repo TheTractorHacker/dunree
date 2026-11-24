@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/aiassist"
-	"imuslab.com/zoraxy/mod/ruleset"
+	"github.com/foleyit/dunree/mod/aiassist"
+	"github.com/foleyit/dunree/mod/ruleset"
 )
 
 /*

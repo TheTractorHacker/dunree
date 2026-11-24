@@ -3,8 +3,8 @@ package dynamicproxy
 import (
 	"errors"
 	"fmt"
-	"imuslab.com/zoraxy/mod/errorpages"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/foleyit/dunree/mod/metrics"
 	"net/http"
 	"strings"
 	"sync"

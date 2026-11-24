@@ -19,6 +19,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // WebhookConfig is one outgoing webhook.
@@ -36,9 +38,18 @@ type WebhookConfig struct {
 
 // Header names of the webhook request
 const (
-	HeaderSignature = "X-Zoraxy-Signature" // "sha256=<hex hmac of timestamp + '.' + body>", only when a secret is set
-	HeaderTimestamp = "X-Zoraxy-Timestamp" // unix seconds, included in the signed material to stop replays
-	HeaderEvent     = "X-Zoraxy-Event"
+	HeaderSignature = wirecompat.HeaderPrefix + "Signature" // "sha256=<hex hmac of timestamp + '.' + body>", only when a secret is set
+	HeaderTimestamp = wirecompat.HeaderPrefix + "Timestamp" // unix seconds, included in the signed material to stop replays
+	HeaderEvent     = wirecompat.HeaderPrefix + "Event"
+)
+
+// The names Zoraxy used for the same headers. They are sent as well, with the same values, while // legacy-compat
+// wirecompat.EmitLegacy is on: the header name is not part of the signed material, so a receiver
+// that checks X-Zoraxy-Signature keeps verifying.
+const (
+	LegacyHeaderSignature = wirecompat.LegacyHeaderPrefix + "Signature"
+	LegacyHeaderTimestamp = wirecompat.LegacyHeaderPrefix + "Timestamp"
+	LegacyHeaderEvent     = wirecompat.LegacyHeaderPrefix + "Event"
 )
 
 // IsBlockedAddr reports addresses an SSRF-safe webhook must not connect to: loopback, private (RFC1918, ULA),
@@ -233,11 +244,11 @@ func (s *WebhookSink) post(ctx context.Context, client *http.Client, eventName s
 	}
 	ts := strconv.FormatInt(time.Now().Unix(), 10)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Zoraxy-Webhook")
-	req.Header.Set(HeaderEvent, eventName)
-	req.Header.Set(HeaderTimestamp, ts)
+	req.Header.Set("User-Agent", wirecompat.UserAgent("Dunree-Webhook", "Zoraxy-Webhook"))
+	wirecompat.SetHeader(req.Header, "Event", eventName)
+	wirecompat.SetHeader(req.Header, "Timestamp", ts)
 	if s.Cfg.Secret != "" {
-		req.Header.Set(HeaderSignature, Sign(s.Cfg.Secret, ts, body))
+		wirecompat.SetHeader(req.Header, "Signature", Sign(s.Cfg.Secret, ts, body))
 	}
 	resp, err := client.Do(req)
 	if err != nil {

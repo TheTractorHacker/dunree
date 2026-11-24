@@ -1,4 +1,4 @@
-module plugins.zoraxy.aroz.org/zoraxy/upnp
+module example.com/dunree/upnp
 
 go 1.23.6
 

@@ -1,9 +1,9 @@
 package v315
 
 import (
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 )
 
 // A proxy endpoint record, a general interface for handling inbound routing

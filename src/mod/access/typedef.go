@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 type Options struct {

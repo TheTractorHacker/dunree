@@ -12,7 +12,7 @@ func TestLockedErrorNamesTheHolder(t *testing.T) {
 	e := &LockedError{Path: "/x/sys.db", Backend: "BoltDB", Waited: 10 * time.Second}
 
 	HolderSummary = func(string) string {
-		return "held by PID 3479504 (zoraxy, started 2h ago), state: FROZEN (stopped, probably Ctrl+Z or SIGSTOP). Resume it: kill -CONT 3479504, or stop it: kill -9 3479504"
+		return "held by PID 3479504 (dunree, started 2h ago), state: FROZEN (stopped, probably Ctrl+Z or SIGSTOP). Resume it: kill -CONT 3479504, or stop it: kill -9 3479504"
 	}
 	for _, s := range []string{e.Describe(), e.Error()} {
 		if !strings.Contains(s, "kill -CONT 3479504") || !strings.Contains(s, "FROZEN") {

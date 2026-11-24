@@ -20,7 +20,7 @@ import (
 	any other check of the chain runs. It is applied on the TLS listener and on the plain HTTP paths
 	(port 80 bypass, secondary ports) alike because it lives in runEndpointChain.
 
-	When Zoraxy itself sits behind a PROXY protocol load balancer ("Use PROXY protocol" listener option)
+	When Dunree itself sits behind a PROXY protocol load balancer ("Use PROXY protocol" listener option)
 	the peer is the client address announced in the PROXY header, as that is what the listener reports.
 	An empty list disables the rule.
 */

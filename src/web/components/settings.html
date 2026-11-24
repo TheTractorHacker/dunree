@@ -14,7 +14,7 @@
         <span class="zx-related__title">Related</span>
         <ul>
             <li><a href="#utils" data-nav-open="utils">Utilities</a> <span>Password, backups, updates, logs and Geo-IP data</span></li>
-            <li><a href="#errorpages" data-nav-open="errorpages">Error pages</a> <span>Design the pages Zoraxy shows when it blocks or fails</span></li>
+            <li><a href="#errorpages" data-nav-open="errorpages">Error pages</a> <span>Design the pages Dunree shows when it blocks or fails</span></li>
             <li><a href="#globalsettings" data-nav-open="globalsettings">Listeners</a> <span>Ports, TLS and timeouts</span></li>
             <li><a href="#updater" data-nav-open="updater">Update</a> <span>Check for and install a new version</span></li>
         </ul>
@@ -31,7 +31,7 @@
                     <span class="sy-row__icon" aria-hidden="true"><i class="language icon"></i></span>
                     <div class="sy-row__main">
                         <label class="sy-row__title" for="uiLanguageSetting">Interface language</label>
-                        <span class="sy-row__sub">Choose a language, then save. It only changes the text of this admin interface, not the pages your visitors see. Translations are machine-assisted; <a href="https://github.com/tobychui/zoraxy/blob/main/docs/translating.md" target="_blank" rel="noopener">help translate</a>.</span>
+                        <span class="sy-row__sub">Choose a language, then save. It only changes the text of this admin interface, not the pages your visitors see. Translations are machine-assisted. To help translate, see <code>docs/translating.md</code> in the Dunree source.</span>
                     </div>
                     <div class="sy-row__end">
                         <select class="zx-select" id="uiLanguageSetting" aria-label="Interface language"></select>
@@ -128,7 +128,7 @@
                 <details class="zx-disclosure db-compact" id="dbCompactHelp">
                     <summary>Compact the database file (offline)</summary>
                     <div class="zx-disclosure__body">
-                    <p class="zx-help">Zoraxy must be stopped first: the compactor refuses to run while the database is in use. It keeps a timestamped backup next to the file, verifies the new file table by table and only then replaces the old one. Run these in a terminal on the server (use your own service name or stop Zoraxy any other way):</p>
+                    <p class="zx-help">Dunree must be stopped first: the compactor refuses to run while the database is in use. It keeps a timestamped backup next to the file, verifies the new file table by table and only then replaces the old one. Run these in a terminal on the server (use your own service name or stop Dunree any other way):</p>
                     <pre class="db-cmd" id="dbCompactCmd" tabindex="0"></pre>
                     <p class="zx-help">The backup file is named sys.db.bak-DATE-TIME and is kept until you delete it.</p>
                     </div>
@@ -205,10 +205,10 @@
             "oauth2_providers": t("OAuth2 providers"),
             "oauth2_sessions": t("OAuth2 sign-in sessions (limited to 5000, expired ones are removed)"),
             "auth_sso_forward": t("Forward authentication settings"),
-            "zorxauth": t("Zoraxy authentication gateway settings"),
-            "zorxauth_users": t("Zoraxy authentication gateway users"),
-            "zorxauth_browser_sessions": t("Zoraxy authentication gateway browser sessions"),
-            "zorxauth_gateway_sessions": t("Zoraxy authentication gateway sessions"),
+            "zorxauth": t("Dunree authentication gateway settings"),
+            "zorxauth_users": t("Dunree authentication gateway users"),
+            "zorxauth_browser_sessions": t("Dunree authentication gateway browser sessions"),
+            "zorxauth_gateway_sessions": t("Dunree authentication gateway sessions"),
             "authelia": t("Legacy Authelia settings"),
             "authentik": t("Legacy Authentik settings")
         };
@@ -245,7 +245,7 @@
             u.tables.forEach(function (x) { if (x.bytes > big) { big = x.bytes; } });
             var html = "";
             u.tables.forEach(function (x, i) {
-                var what = KNOWN[x.name] || t("Not a table Zoraxy knows (a plugin or a newer version)");
+                var what = KNOWN[x.name] || t("Not a table Dunree knows (a plugin or a newer version)");
                 var size = x.truncated && !x.bytes ? esc(t("not counted")) : human(x.bytes) + (x.truncated ? "+" : "");
                 var pct = x.bytes > 0 && big > 0 ? Math.max(1, Math.round(x.bytes * 100 / big)) : 0;
                 html += "<tr" + (i >= SHOWN ? " class=\"db-extra\" hidden" : "") + "><td class=\"db-first\"><span class=\"db-name\">" + esc(x.name) + "</span><span class=\"db-what\">" + esc(what) + "</span></td>" +
@@ -259,9 +259,9 @@
             applyMore(u.tables.length);
             // the exact commands for this server (the absolute path as the running instance sees it)
             document.getElementById("dbCompactCmd").textContent =
-                "sudo systemctl stop zoraxy\n" +
-                "./zoraxy -compact-db -dbpath " + shQuote(d.path) + "\n" +
-                "sudo systemctl start zoraxy";
+                "sudo systemctl stop " + (d.service || "dunree") + "\n" +
+                (d.command || "./dunree") + " -compact-db -dbpath " + shQuote(d.path) + "\n" +
+                "sudo systemctl start " + (d.service || "dunree");
             if (u.fileBytes >= d.largeBytes) { document.getElementById("dbCompactHelp").open = true; }
             show("main");
         }

@@ -8,7 +8,7 @@ import (
 )
 
 // DefaultKeyType is the certificate key type used when nothing else is configured.
-// It is the historic Zoraxy default and must not change silently.
+// It is the historic Dunree default and must not change silently.
 const DefaultKeyType = "RSA2048"
 
 // KeyTypeNames lists the key types a certificate (or CSR) can be requested with, in UI order.

@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/ech"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/ech"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 const echTestPublic = "public.ech.test"

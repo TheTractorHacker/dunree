@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/tlscert"
+	"github.com/foleyit/dunree/mod/tlscert"
 )
 
 // The production wiring of the ECH note: the real main TLS listener (StartProxyService) and a real secondary TLS

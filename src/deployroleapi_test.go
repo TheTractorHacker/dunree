@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func deployTestSetup(t *testing.T) {

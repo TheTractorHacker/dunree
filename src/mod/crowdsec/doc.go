@@ -1,4 +1,4 @@
-// Package crowdsec is a CrowdSec "remediation component" (bouncer) for Zoraxy. It talks to a CrowdSec Local API
+// Package crowdsec is a CrowdSec "remediation component" (bouncer) for Dunree. It talks to a CrowdSec Local API
 // (LAPI) that the administrator runs, keeps the ban decisions in a bounded in-memory cache (stream mode) and tells
 // the request path whether a client address is currently decided against.
 //
@@ -17,7 +17,7 @@
 //
 // Not implemented (documented as known limits): TLS client certificate authentication to the LAPI
 // (https://docs.crowdsec.net/docs/local_api/tls_auth), the optional scopes/origins/types filters of the stream, reporting
-// alerts back to CrowdSec, and any replication between two Zoraxy instances (each one queries the same LAPI).
+// alerts back to CrowdSec, and any replication between two Dunree instances (each one queries the same LAPI).
 //
 // Visibility and policy (stats.go, settings.go): Check, CheckForwarded and CheckUnknown only decide. The request path
 // reports what it really did with Report, and that is what the counters (168 hourly buckets), the top lists, the feed

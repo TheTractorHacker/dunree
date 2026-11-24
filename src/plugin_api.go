@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/netstat"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/netstat"
 )
 
 /*
@@ -89,7 +89,7 @@ func RegisterStatisticalRestAPI(authRouter *auth.PluginAuthMiddleware) {
 	authRouter.HandleFunc("/api/stats/netstat", netstatBuffers.HandleGetNetworkInterfaceStats)
 	authRouter.HandleFunc("/api/stats/netstatgraph", netstatBuffers.HandleGetBufferedNetworkInterfaceStats)
 	authRouter.HandleFunc("/api/stats/listnic", netstat.HandleListNetworkInterfaces)
-	/* Zoraxy Analytic */
+	/* Dunree Analytic */
 	authRouter.HandleFunc("/api/analytic/list", AnalyticLoader.HandleSummaryList)
 	authRouter.HandleFunc("/api/analytic/load", AnalyticLoader.HandleLoadTargetDaySummary)
 	authRouter.HandleFunc("/api/analytic/loadRange", AnalyticLoader.HandleLoadTargetRangeSummary)

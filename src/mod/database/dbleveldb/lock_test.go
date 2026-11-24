@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/database/dbleveldb"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database/dbleveldb"
 )
 
 // LevelDB takes a non-blocking lock: a second open fails at once (it never hangs) and

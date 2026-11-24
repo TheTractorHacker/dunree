@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 type RuleTable struct {

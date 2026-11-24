@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newTestWebDAV(t *testing.T) (*WebServer, *WebDAVServer, *database.Database) {

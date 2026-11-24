@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/i18n"
+	"github.com/foleyit/dunree/mod/i18n"
 )
 
 /*
@@ -62,8 +62,8 @@ type PageStrings struct {
 	Error         string
 	Retry         string
 	FooterBy      string // "Performance & security by" (footer, localised or custom)
-	FooterLink    string // footer link label, "Zoraxy" by default
-	FooterLinkURL string // footer link target (validated http/https)
+	FooterLink    string // footer link label, "Dunree" by default
+	FooterLinkURL string // footer link target (validated http/https); "" = the label is not a link
 }
 
 // ClientConfig is serialised as a JSON object into the page script. Custom
@@ -200,7 +200,7 @@ func buildData(cfg *Config, kind PageKind, domain, nonce string, opts RenderOpti
 		Lang:       i18n.HTMLLang(opts.Lang),
 		Accent:     DefaultAccentColor,
 		Theme:      ThemeAuto,
-		// "hide footer" removes the built-in Zoraxy credit; a footer the admin
+		// "hide footer" removes the built-in Dunree credit; a footer the admin
 		// wrote themselves is still shown
 		ShowFooter: !b.HideFooter || b.FooterText != "" || b.FooterLinkText != "" || b.FooterLinkURL != "",
 		LogoURL:    safeLogo(b.LogoURL),
@@ -235,8 +235,8 @@ func buildData(cfg *Config, kind PageKind, domain, nonce string, opts RenderOpti
 		Error:         text(b.ErrorText, DefaultErrorText),
 		Retry:         text(b.RetryText, DefaultRetryText),
 		FooterBy:      text(b.FooterText, "Performance & security by"),
-		FooterLink:    pick(b.FooterLinkText, "Zoraxy"),
-		FooterLinkURL: pick(safeFooterURL(b.FooterLinkURL), DefaultFooterURL),
+		FooterLink:    pick(b.FooterLinkText, DefaultFooterLabel),
+		FooterLinkURL: pick(safeFooterURL(b.FooterLinkURL), DefaultFooterURL()), // "" = no link: the label is plain text
 	}
 
 	switch kind {
@@ -499,7 +499,7 @@ func legacyTemplateName(prov string) string {
 func retryURLFor(r *http.Request) string {
 	if ref, err := url.Parse(r.Referer()); err == nil && ref.Host != "" && sameHost(ref.Host, r.Host) {
 		p := ref.EscapedPath()
-		if strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "//") && p != VerifyPath {
+		if strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "//") && !IsVerifyPath(p) {
 			if ref.RawQuery != "" {
 				p += "?" + ref.RawQuery
 			}

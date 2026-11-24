@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Script-level check of the enterprise baseline on FRESH starts (no browser, standard library only).
 
-Starts throw-away Zoraxy instances (-noauth, own temp dir under $HOME, unique high ports) and verifies through the admin API:
+Starts throw-away Dunree instances (-noauth, own temp dir under $HOME, unique high ports) and verifies through the admin API:
   1. an empty directory: the baseline is applied automatically (state.decision fresh, state.source fresh, the forwarded-header
      clean-up and the new-site security headers are on, audit log has baseline.apply with source fresh);
   2. Undo puts both back (and writes baseline.undo); restarting the SAME directory does not apply it again (items stay off, still
      only one baseline.apply in the audit log, the Apply button stays available);
   3. a directory that already holds a file in conf/ is an existing installation: nothing is applied, decision existing, no audit entry;
   4. an existing-style start that restarts keeps doing nothing.
-Usage: baseline_fresh_check.py --bin PATH_TO_ZORAXY --web PATH_TO_src/web [--port 28430] [--work DIR]   (uses PORT and PORT+1, +2, +3)
+Usage: baseline_fresh_check.py --bin PATH_TO_DUNREE --web PATH_TO_src/web [--port 28430] [--work DIR]   (uses PORT and PORT+1, +2, +3)
 Exit status 0 and the line "OK, fresh-start checks passed" when everything holds."""
 
 import argparse
@@ -25,7 +25,7 @@ import urllib.error
 import urllib.request
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--bin", required=True, help="the Zoraxy binary to start")
+ap.add_argument("--bin", required=True, help="the Dunree binary to start")
 ap.add_argument("--web", required=True, help="the src/web folder (linked into each throw-away directory)")
 ap.add_argument("--port", type=int, default=28430, help="first of 4 free ports (admin A, proxy A, admin B, proxy B)")
 ap.add_argument("--work", default=os.path.expanduser("~/bl-fresh-work"), help="parent folder for the throw-away instances (removed at the end)")
@@ -56,7 +56,7 @@ class Inst:
         os.makedirs(self.dir, exist_ok=True)
         if not os.path.exists(os.path.join(self.dir, "web")):
             os.symlink(os.path.abspath(args.web), os.path.join(self.dir, "web"))
-        log = open(os.path.join(self.dir, "zoraxy.log"), "ab")
+        log = open(os.path.join(self.dir, "dunree.log"), "ab")
         self.proc = subprocess.Popen([os.path.abspath(args.bin), "-noauth", "-dev", "-default_inbound_port", str(self.proxy), "-port", ":%d" % self.admin,
                                       "-conf", "./conf", "-dbpath", "./sys.db"], cwd=self.dir, stdout=log, stderr=log)
         end = time.time() + 60

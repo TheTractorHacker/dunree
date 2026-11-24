@@ -29,10 +29,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/errorpages"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 var errorPageMgr *errorpages.Manager
@@ -301,13 +302,13 @@ func HandleErrorPageTest(w http.ResponseWriter, r *http.Request) {
 	clientIP, _, _ := net.SplitHostPort(r.RemoteAddr)
 	w.Header().Set("X-Robots-Tag", "noindex")
 	if body, ok := errorPageMgr.Render(errorpages.Request{Class: info.ID, Status: info.SampleStatus, Host: host, RequestID: "ZX-TEST-TEST", ClientIP: clientIP}); ok {
-		w.Header().Set("X-Zoraxy-Error-Page", "custom")
+		wirecompat.SetHeader(w.Header(), "Error-Page", "custom")
 		errorpages.SetHeaders(w.Header(), len(body))
 		w.WriteHeader(info.SampleStatus)
 		w.Write(body)
 		return
 	}
-	w.Header().Set("X-Zoraxy-Error-Page", "built-in")
+	wirecompat.SetHeader(w.Header(), "Error-Page", "built-in")
 	w.Header().Set("Cache-Control", "no-store")
 	body, html := dynamicproxy.BuiltinErrorPage(info.ID)
 	if html {

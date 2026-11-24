@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 	"net/http"
 	"net/mail"
 	"os"
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -402,7 +402,7 @@ func (a *AutoRenewer) renewExpiredDomains(certs []*ExpiredCerts) ([]string, erro
 			continue
 		}
 
-		//For upgrading config from older version of Zoraxy which don't have timeout
+		//For upgrading config from older version of Dunree which don't have timeout
 		if certInfo.PropTimeout == 0 {
 			//Set default timeout
 			certInfo.PropTimeout = 300

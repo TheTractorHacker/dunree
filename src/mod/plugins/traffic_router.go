@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/armon/go-radix"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // HandleRoute handles the request to the plugin at the post_auth stage: filter
@@ -12,18 +12,18 @@ import (
 // return true if the request is handled by the plugin
 // clientIP must be the trusted-proxy resolved client IP, not re-derived from raw request headers
 func (m *Manager) HandleRoute(w http.ResponseWriter, r *http.Request, tags []string, clientIP string) bool {
-	return m.HandleStage(w, r, tags, clientIP, zoraxyPlugin.HookStagePostAuth).Handled
+	return m.HandleStage(w, r, tags, clientIP, dunreePlugin.HookStagePostAuth).Handled
 }
 
 // HandleStage runs one request stage (pre_auth or post_auth) for a request.
-func (m *Manager) HandleStage(w http.ResponseWriter, r *http.Request, tags []string, clientIP string, stage zoraxyPlugin.HookStage) StageResult {
-	if stage == zoraxyPlugin.HookStageResponse {
+func (m *Manager) HandleStage(w http.ResponseWriter, r *http.Request, tags []string, clientIP string, stage dunreePlugin.HookStage) StageResult {
+	if stage == dunreePlugin.HookStageResponse {
 		return StageResult{}
 	}
 	if res := m.RunRequestStage(w, r, tags, clientIP, stage); res.Handled {
 		return res
 	}
-	if stage != zoraxyPlugin.HookStagePostAuth {
+	if stage != dunreePlugin.HookStagePostAuth {
 		return StageResult{}
 	}
 	if m.handleLegacyCapture(w, r, tags, clientIP) {

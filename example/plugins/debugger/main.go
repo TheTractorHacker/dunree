@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	plugin "aroz.org/zoraxy/debugger/mod/zoraxy_plugin"
+	plugin "example.com/dunree/debugger/mod/dunree_plugin"
 )
 
 const (
@@ -24,7 +24,7 @@ func main() {
 		Name:          "Plugin Debugger",
 		Author:        "aroz.org",
 		AuthorContact: "https://aroz.org",
-		Description:   "A debugger for Zoraxy <-> plugin communication pipeline",
+		Description:   "A debugger for Dunree <-> plugin communication pipeline",
 		URL:           "https://zoraxy.aroz.org",
 		Type:          plugin.PluginType_Router,
 		VersionMajor:  1,

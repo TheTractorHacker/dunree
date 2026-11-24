@@ -7,7 +7,7 @@ import (
 )
 
 // Start the web server for reciving test request
-// in Zoraxy, point test.localhost to this server at the given port in the start variables
+// in Dunree, point test.localhost to this server at the given port in the start variables
 func startWebServer() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Print the request details to console

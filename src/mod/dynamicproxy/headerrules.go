@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 /*

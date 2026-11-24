@@ -4,12 +4,12 @@
         <span class="sx-status__icon" aria-hidden="true"><i class="shield alternate icon"></i></span>
         <div class="sx-status__text">
             <h4 class="sx-status__title"><span class="sx-status__name">Network exposure</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
-            <p class="sx-status__desc">Two limits that work next to your firewall, not instead of it: who may open this admin panel, and where Zoraxy itself may connect to. Both are off until you fill them in.</p>
+            <p class="sx-status__desc">Two limits that work next to your firewall, not instead of it: who may open this admin panel, and where Dunree itself may connect to. Both are off until you fill them in.</p>
         </div>
     </div>
     <dl class="sx-facts sx-facts--3">
         <div class="sx-fact"><dt>Admin panel</dt><dd id="exFAdmin">-</dd></div>
-        <div class="sx-fact"><dt>Where Zoraxy may connect</dt><dd id="exFDest">-</dd></div>
+        <div class="sx-fact"><dt>Where Dunree may connect</dt><dd id="exFDest">-</dd></div>
         <div class="sx-fact"><dt>Your address</dt><dd id="exFYou">-</dd></div>
     </dl>
 </section>
@@ -28,7 +28,7 @@
             <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="exAddMe"><i class="plus icon" aria-hidden="true"></i> Add my address</button></div>
             <details class="zx-disclosure"><summary>What else is covered, and how to get back in</summary><div class="zx-disclosure__body">
                 <p>The API, plugin and Fleet or cluster endpoints on the admin port are covered too, so list the hosts that use them. Requests that a proxy rule forwards to the admin port are refused while a list is set.</p>
-                <p>If you are locked out anyway, stop Zoraxy and start it once with <code>-reset_admin_allowlist</code>.</p>
+                <p>If you are locked out anyway, stop Dunree and start it once with <code>-reset_admin_allowlist</code>.</p>
             </div></details>
             <div id="aaMsg" class="ui negative message" style="display:none" role="alert"></div>
         </div>
@@ -39,9 +39,9 @@
 <div class="ui form" id="dgForm">
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title">Where Zoraxy may connect to</h3>
+            <h3 class="zx-card__title">Where Dunree may connect to</h3>
             <span class="zx-badge zx-badge--dot" id="exDgBadge">Anywhere</span>
-            <p class="zx-card__desc">Stops this Zoraxy from being used to reach places it should not, such as other machines in your network. Nothing changes for an existing setup until you configure it.</p>
+            <p class="zx-card__desc">Stops this Dunree from being used to reach places it should not, such as other machines in your network. Nothing changes for an existing setup until you configure it.</p>
         </div>
         <div class="zx-card__body">
             <div class="field zx-field"><label for="dgAllowed">Allowed backend destinations</label>
@@ -135,7 +135,7 @@
             } });
         };
         if (list.length) {
-            ZxUI.confirm({ title: t("Limit the admin panel to these networks?"), message: t("Everyone else, including this panel from another address, is refused at once. Your own address must be in the list. Recovery if locked out: start Zoraxy with -reset_admin_allowlist."), confirmLabel: t("Save list") }).then(function (ok) { if (ok) { go(); } });
+            ZxUI.confirm({ title: t("Limit the admin panel to these networks?"), message: t("Everyone else, including this panel from another address, is refused at once. Your own address must be in the list. Recovery if locked out: start Dunree with -reset_admin_allowlist."), confirmLabel: t("Save list") }).then(function (ok) { if (ok) { go(); } });
             return;
         }
         go();

@@ -18,7 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/email"
+	"github.com/foleyit/dunree/mod/email"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -297,7 +298,7 @@ func (s *ChannelSink) build(ev Event) (*chanRequest, error) {
 	switch s.Cfg.Type {
 	case ChanDiscord:
 		return &chanRequest{url: set["url"], headers: jsonHdr, body: js(map[string]any{
-			"username":         "Zoraxy",
+			"username":         "Dunree",
 			"allowed_mentions": map[string]any{"parse": []string{}},
 			"embeds": []any{map[string]any{"title": cleanText(title, 250), "description": cleanText(strings.Join(lines, "\n"), 3500),
 				"color": sevColor(sev), "timestamp": ev.Time.UTC().Format(time.RFC3339)}},
@@ -433,7 +434,7 @@ func (s *ChannelSink) post(ctx context.Context, client *http.Client, cr *chanReq
 	if err != nil {
 		return &permanentError{errors.New("invalid request")}
 	}
-	r.Header.Set("User-Agent", "Zoraxy-Notify")
+	r.Header.Set("User-Agent", wirecompat.UserAgent("Dunree-Notify", "Zoraxy-Notify"))
 	for k, v := range cr.headers {
 		r.Header.Set(k, v)
 	}
@@ -484,7 +485,7 @@ func (s *ChannelSink) deliverSMTP(ctx context.Context, ev Event) error {
 	for _, l := range lines {
 		b.WriteString("<p>" + html.EscapeString(l) + "</p>")
 	}
-	subject := "[Zoraxy] " + crlfFree(title)
+	subject := "[Dunree] " + crlfFree(title)
 	send := s.smtpSend
 	if send == nil {
 		send = func(c ChannelConfig, to, subj, body string) error {

@@ -142,3 +142,56 @@ func TestReleaseKeyIsRefused(t *testing.T) {
 		t.Fatalf("the key $ZORAXY_RELEASE_KEY points at must be refused, got %v", err)
 	}
 }
+
+func TestSignRawAddonIndex(t *testing.T) {
+	dir := t.TempDir()
+	priv, pub := filepath.Join(dir, "addon-index.pem"), filepath.Join(dir, "addon-index.pub")
+	if err := generateKey(priv, pub); err != nil {
+		t.Fatal(err)
+	}
+	sum := strings.Repeat("ab", 32)
+	doc := `{"format":"dunree-addon-index","version":1,"serial":3,"addons":[{"id":"ie.example.a","artifacts":{"linux_amd64":{"url":"a/x","sha256":"` + sum + `","size":5}}}]}` + "\n"
+	index := filepath.Join(dir, "index.json")
+	if err := os.WriteFile(index, []byte(doc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := signRawIndex(index, priv, pub); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(index); string(got) != doc {
+		t.Fatal("-sign-raw must not change a byte of the index")
+	}
+	if err := verifyIndex(index, pub, ""); err != nil {
+		t.Fatalf("verify: %v", err)
+	}
+	// One changed byte: the signature no longer matches
+	if err := os.WriteFile(index, []byte(strings.Replace(doc, `"size":5`, `"size":6`, 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyIndex(index, pub, ""); err == nil {
+		t.Fatal("a changed index must not verify")
+	}
+	// Refused: no serial, no checksum, a plugin index, another key than -pub
+	for name, bad := range map[string]string{
+		"no serial":    `{"format":"dunree-addon-index","version":1,"serial":0,"addons":[]}`,
+		"no checksum":  `{"format":"dunree-addon-index","version":1,"serial":1,"addons":[{"id":"a","artifacts":{"linux_amd64":{"url":"x","sha256":"","size":5}}}]}`,
+		"plugin index": `{"format":"zoraxy-plugin-index","version":1,"serial":1,"plugins":[]}`,
+	} {
+		p := filepath.Join(dir, "bad.json")
+		os.WriteFile(p, []byte(bad), 0o644)
+		if err := signRawIndex(p, priv, pub); err == nil {
+			t.Errorf("%s: must be refused", name)
+		}
+		if _, err := os.Stat(p + ".sig"); err == nil {
+			t.Errorf("%s: no signature may be written", name)
+		}
+	}
+	otherPriv, otherPub := filepath.Join(dir, "other.pem"), filepath.Join(dir, "other.pub")
+	if err := generateKey(otherPriv, otherPub); err != nil {
+		t.Fatal(err)
+	}
+	os.WriteFile(index, []byte(doc), 0o644)
+	if err := signRawIndex(index, otherPriv, pub); err == nil {
+		t.Fatal("a private key that does not match -pub must be refused")
+	}
+}

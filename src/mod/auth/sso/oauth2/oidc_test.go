@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foleyit/dunree/mod/info/logger"
 	"github.com/go-jose/go-jose/v4"
-	"imuslab.com/zoraxy/mod/info/logger"
 )
 
 const appURL = "http://app.example.com"

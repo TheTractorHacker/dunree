@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
 )
 
 func authProviderForm(values url.Values) *http.Request {

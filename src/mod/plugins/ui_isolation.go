@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -282,7 +282,7 @@ func (m *Manager) serveIsolatedUI(w http.ResponseWriter, r *http.Request) {
 	token, _, hasSlash := strings.Cut(rest, "/")
 	pluginID, ok := m.uiTicketPlugin(token)
 	if !ok {
-		writePluginUIError(w, http.StatusForbidden, "This plugin page link is not valid any more", "Open the plugin from the Zoraxy admin page again.")
+		writePluginUIError(w, http.StatusForbidden, "This plugin page link is not valid any more", "Open the plugin from the Dunree admin page again.")
 		return
 	}
 	// The page has an opaque origin: a request of its scripts to its own address is

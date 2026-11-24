@@ -9,11 +9,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/info/usageinfo"
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/shirou/gopsutil/v4/disk"
 	gonet "github.com/shirou/gopsutil/v4/net"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/info/usageinfo"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 /*
@@ -303,7 +303,7 @@ func HandleDashboardOverview(w http.ResponseWriter, r *http.Request) {
 		UniqueVisitors int
 	}
 	type Overview struct {
-		SystemUptime        int64 //Seconds since Zoraxy started
+		SystemUptime        int64 //Seconds since Dunree started
 		ProxyRunning        bool
 		TotalRequestToday   int64
 		ErrorRequestToday   int64
@@ -394,7 +394,7 @@ func HandleSystemResourceUsage(w http.ResponseWriter, r *http.Request) {
 		result.HostName = hostname
 	}
 
-	//Disk usage of the volume Zoraxy is running (and storing config) on
+	//Disk usage of the volume Dunree is running (and storing config) on
 	if wd, err := os.Getwd(); err == nil {
 		if du, err := disk.Usage(wd); err == nil {
 			result.DiskUsed = du.Used

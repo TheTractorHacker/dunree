@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // SecretMask replaces the webhook secret in API responses; sending it back keeps the stored secret.
@@ -194,7 +194,7 @@ func (m *Manager) DeleteWebhook(id string) error {
 // SetCommand stores the command hook. It is refused unless -allow_hook_commands was given.
 func (m *Manager) SetCommand(c CommandConfig) error {
 	if !m.commandsAllowed {
-		return errors.New("command hooks are disabled: start Zoraxy with -allow_hook_commands to configure them")
+		return errors.New("command hooks are disabled: start Dunree with -allow_hook_commands to configure them")
 	}
 	if c.Enabled || c.Path != "" {
 		if err := ValidateCommandPath(c.Path); err != nil {
@@ -272,7 +272,7 @@ func (m *Manager) SendTest(id string) error {
 	sink := &WebhookSink{Cfg: *found, AllowPrivate: allow, Offline: m.offline, Attempts: 1}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	return sink.Deliver(ctx, Event{Event: EventTest, Time: time.Now().UTC(), Source: "test", Subject: "test event from Zoraxy"})
+	return sink.Deliver(ctx, Event{Event: EventTest, Time: time.Now().UTC(), Source: "test", Subject: "test event from Dunree"})
 }
 
 func jsonOut(w http.ResponseWriter, v any) {

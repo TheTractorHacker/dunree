@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/metrics"
 )
 
 /*

@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/info/shellexec"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
-	"imuslab.com/zoraxy/mod/info/shellexec"
 )
 
 /*
@@ -21,7 +21,7 @@ import (
 	native terminal commands
 
 	Note: Unlike the arozos version, the Windows implementation uses
-	gopsutil (already a Zoraxy dependency) instead of the external
+	gopsutil (already a Dunree dependency) instead of the external
 	helper executables shipped with arozos.
 */
 

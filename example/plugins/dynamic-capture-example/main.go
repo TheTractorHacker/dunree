@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	plugin "example.com/zoraxy/dynamic-capture-example/mod/zoraxy_plugin"
+	plugin "example.com/dunree/dynamic-capture-example/mod/dunree_plugin"
 )
 
 const (
@@ -24,7 +24,7 @@ func main() {
 		Name:          "Dynamic Capture Example",
 		Author:        "aroz.org",
 		AuthorContact: "https://aroz.org",
-		Description:   "This is an example plugin for Zoraxy that demonstrates how to use dynamic captures.",
+		Description:   "This is an example plugin for Dunree that demonstrates how to use dynamic captures.",
 		URL:           "https://zoraxy.aroz.org",
 		Type:          plugin.PluginType_Router,
 		VersionMajor:  1,

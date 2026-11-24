@@ -2,7 +2,7 @@
 
 Agreed terms for the admin UI. Keep them consistent across every string; if you
 change a term, change it everywhere in that locale. **Never translate** product,
-protocol and identifier names: Zoraxy, ACME, TLS, SSL, OIDC, OAuth2, SSO, HTTP, HTTPS,
+protocol and identifier names: Dunree, ACME, TLS, SSL, OIDC, OAuth2, SSO, HTTP, HTTPS,
 HTTP/2, WebSocket, DNS, CAPTCHA (brand words: Turnstile, reCAPTCHA, Altcha, Friendly Captcha),
 WAF (the acronym stays; the long form may be spelled out once), CIDR, IP, CORS, JWT, API,
 GeoIP, Docker, Lua, Prometheus, Let's Encrypt, Cloudflare, Authentik, zrok, Sablier, ECH, mTLS,

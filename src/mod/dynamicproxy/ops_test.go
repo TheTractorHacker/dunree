@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 )
 
 func opsBackend(t *testing.T, h http.HandlerFunc) string {
@@ -100,7 +100,7 @@ func TestErrorPage_StreamingAndGRPCNotIntercepted(t *testing.T) {
 	}
 }
 
-// The 521 raised by Zoraxy itself happens after the proxy rewrote r.Host / r.URL for the upstream call;
+// The 521 raised by Dunree itself happens after the proxy rewrote r.Host / r.URL for the upstream call;
 // the page must still show the host and path the visitor asked for (upstream #1095 / #1102).
 func TestErrorPage_OwnErrorShowsRequestedHostAndPath(t *testing.T) {
 	router, sep := newOpsTestRouter(t, "127.0.0.1:1") //nothing listens: connection refused -> 521
@@ -430,9 +430,9 @@ func TestRequestIDAndRuleNameReachUpstreamHeaders(t *testing.T) {
 	sep.Ops = &OpsConfig{ExposeRequestID: true}
 	sep.HeaderRewriteRules = GetDefaultHeaderRewriteRules()
 	sep.HeaderRewriteRules.UserDefinedHeaders = []*rewrite.UserDefinedHeader{
-		{Direction: rewrite.HeaderDirection_ZoraxyToUpstream, Key: "X-Req", Value: "{{request_id}}"},
-		{Direction: rewrite.HeaderDirection_ZoraxyToUpstream, Key: "X-Rule", Value: "{{rule_name}}"},
-		{Direction: rewrite.HeaderDirection_ZoraxyToUpstream, Key: "X-Ext", Value: "{{external_ip}}"},
+		{Direction: rewrite.HeaderDirection_DunreeToUpstream, Key: "X-Req", Value: "{{request_id}}"},
+		{Direction: rewrite.HeaderDirection_DunreeToUpstream, Key: "X-Rule", Value: "{{rule_name}}"},
+		{Direction: rewrite.HeaderDirection_DunreeToUpstream, Key: "X-Ext", Value: "{{external_ip}}"},
 	}
 	w := serveOps(router, "GET", "/", nil)
 	if gotRule != "app.example.com" || gotExt != "198.51.100.77" || len(gotID) != 16 || w.Header().Get("X-Request-Id") != gotID {

@@ -71,7 +71,7 @@ func fileExists(filePath string) bool {
 	return false
 }
 
-// This function define the DNS not supported by zoraxy
+// This function define the DNS not supported by Dunree
 func getExcludedDNSProviders() []string {
 	return []string{
 		"edgedns",      // Too complex data structure
@@ -80,7 +80,7 @@ func getExcludedDNSProviders() []string {
 		"manual",       // Not a DNS provider
 		"oraclecloud",  // Evil company
 		"selectelv2",   // Not sure why not working with our code generator
-		"designate",    // OpenStack, if you are using this you shd not be using zoraxy
+		"designate",    // OpenStack, if you are using this you shd not be using Dunree
 		"mythicbeasts", // Module require url.URL, which cannot be automatically parsed
 	}
 }

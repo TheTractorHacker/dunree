@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 /*

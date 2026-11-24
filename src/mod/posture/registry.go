@@ -90,7 +90,7 @@ func runSafely(c Check, f *Facts) (res Result) {
 	return res
 }
 
-// Default is the registry used by Zoraxy; the built-in checks register into it in init().
+// Default is the registry used by Dunree; the built-in checks register into it in init().
 var Default = NewRegistry()
 
 // Register adds a check to the default registry (for other modules)

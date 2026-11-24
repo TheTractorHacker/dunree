@@ -4,15 +4,15 @@
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 cd "${SCRIPT_DIR}"
 
-echo "Copying zoraxy_plugin to all mods"
+echo "Copying dunree_plugin to all mods"
 for dir in ./*; do
   if [ -d "$dir" ]; then
-    # remove existing zoraxy_plugin module, if it exists
-    if [ -d "${dir}/mod/zoraxy_plugin" ]; then
-      rm -r "${dir}"/mod/zoraxy_plugin
+    # remove existing dunree_plugin module, if it exists
+    if [ -d "${dir}/mod/dunree_plugin" ]; then
+      rm -r "${dir}"/mod/dunree_plugin
     fi
     # copy over updated module
-    cp -r ../../src/mod/plugins/zoraxy_plugin "$dir/mod"
+    cp -r ../../src/mod/plugins/dunree_plugin "$dir/mod"
   fi
 done
 

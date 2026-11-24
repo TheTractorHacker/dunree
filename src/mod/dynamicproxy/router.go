@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/dynamicproxy/exploits"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/exploits"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

@@ -1,4 +1,4 @@
-"""Helpers for the admin end-to-end suite: throw-away Zoraxy instances, an API client
+"""Helpers for the admin end-to-end suite: throw-away Dunree instances, an API client
 (cookie session + CSRF), local receiver/backend servers and a result recorder.
 
 Everything runs under a temp dir with its own conf/db/ports. Nothing here touches a real install."""
@@ -6,7 +6,7 @@ import http.cookiejar, http.server, json, os, re, shutil, signal, socket, ssl, s
 import tempfile, threading, time, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-BIN = os.environ.get("ZORAXY_BIN", os.path.join(os.path.dirname(os.path.abspath(__file__)), ".build", "zoraxy"))
+BIN = os.environ.get("DUNREE_BIN", os.path.join(os.path.dirname(os.path.abspath(__file__)), ".build", "dunree"))
 PORT_BASE = int(os.environ.get("E2E_PORT_BASE", "28830"))
 PORT_MAX = PORT_BASE + 19
 _ports_used = set()
@@ -163,7 +163,7 @@ class Instance:
         args = [self.bin, "-port", f":{self.port}", "-conf", "./conf", "-dbpath", "./sys.db", "-mdns=false",
                 "-fastgeoip=false", "-dev"] + (["-noauth"] if self.noauth else []) + self.flags
         env = dict(os.environ, **self.env)
-        self.log = open(os.path.join(self.dir, "zoraxy.log"), "ab")
+        self.log = open(os.path.join(self.dir, "dunree.log"), "ab")
         self.proc = subprocess.Popen(args, cwd=self.dir, stdout=self.log, stderr=subprocess.STDOUT, env=env,
                                      start_new_session=True)
         _procs.append(self.proc)
@@ -189,7 +189,7 @@ class Instance:
 
     def tail(self, n=1500):
         try:
-            return open(os.path.join(self.dir, "zoraxy.log"), errors="replace").read()[-n:]
+            return open(os.path.join(self.dir, "dunree.log"), errors="replace").read()[-n:]
         except Exception:
             return ""
 

@@ -12,7 +12,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Default Site</h2>
-            <p class="zx-page-header__sub">What visitors get when they reach Zoraxy with an address that none of your hosts use.</p>
+            <p class="zx-page-header__sub">What visitors get when they reach Dunree with an address that none of your hosts use.</p>
         </div>
     </header>
     <aside class="zx-related" aria-label="Related pages">
@@ -87,7 +87,7 @@
                 </div>
                 <label class="zxs-check" style="margin-bottom:0;">
                     <input type="checkbox" id="rootReqTLS">
-                    <span><b>The target needs a TLS connection</b><small>Tick this if the target address starts with https://. Zoraxy checks the target and ticks it for you when it can.</small></span>
+                    <span><b>The target needs a TLS connection</b><small>Tick this if the target address starts with https://. Dunree checks the target and ticks it for you when it can.</small></span>
                 </label>
             </div>
 
@@ -217,7 +217,7 @@
                         });
                     });
                 }
-                if (!last){ setDefaultSiteNowState("", t("Target not checked"), t("The uptime monitor has no check for this address, so Zoraxy cannot tell whether it answers.")); }
+                if (!last){ setDefaultSiteNowState("", t("Target not checked"), t("The uptime monitor has no check for this address, so Dunree cannot tell whether it answers.")); }
                 else if (last.Online){ setDefaultSiteNowState("ok", t("Target answers"), t("The target answered the last uptime check.")); }
                 else { setDefaultSiteNowState("warn", t("Target does not answer"), t("The target failed the last uptime check, so visitors with an unknown address get an error.")); }
             }).fail(function(){ if (seq == defaultSiteNowSeq){ setDefaultSiteNowState("", t("Target not checked"), ""); } });

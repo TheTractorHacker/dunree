@@ -1,17 +1,17 @@
-# CrowdSec in Docker, for use with Zoraxy's CrowdSec bouncer (Security Center > CrowdSec).
-# Shipped with Zoraxy releases; Zoraxy never runs this for you. See CROWDSEC-README.md.
+# CrowdSec in Docker, for use with Dunree's CrowdSec bouncer (Security Center > CrowdSec).
+# Shipped with Dunree releases; Dunree never runs this for you. See CROWDSEC-README.md.
 #
 # Before `docker compose up -d`:
-#   * Replace /path/to/your-zoraxy-log-folder with the full path of Zoraxy's log folder
-#     (default ./log next to the Zoraxy program) and un-comment the two volume lines below,
-#     only if you want CrowdSec to read Zoraxy's logs. They are commented out so the file starts as is.
+#   * Replace /path/to/your-dunree-log-folder with the full path of Dunree's log folder
+#     (default ./log next to the Dunree program) and un-comment the two volume lines below,
+#     only if you want CrowdSec to read Dunree's logs. They are commented out so the file starts as is.
 #   * Optional log reading: create ./crowdsec/acquis.yaml containing
 #         filenames:
-#           - /var/log/zoraxy/zr_*.log
+#           - /var/log/dunree/zr_*.log
 #         labels:
-#           type: zoraxy
+#           type: dunree
 #     (the path is the one INSIDE the container).
-# Then create a bouncer key inside the container with `cscli bouncers add zoraxy-<hostname>`
+# Then create a bouncer key inside the container with `cscli bouncers add dunree-<hostname>`
 # (see CROWDSEC-README.md); it is printed once.
 services:
   crowdsec:
@@ -25,7 +25,7 @@ services:
       # Optional log reading (see the notes at the top): remove the two leading '#' marks after creating
       # ./crowdsec/acquis.yaml and putting your real log folder path in place of the placeholder.
       # - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
-      # - /path/to/your-zoraxy-log-folder:/var/log/zoraxy:ro
+      # - /path/to/your-dunree-log-folder:/var/log/dunree:ro
       - crowdsec-db:/var/lib/crowdsec/data/
       - crowdsec-config:/etc/crowdsec/
 volumes:

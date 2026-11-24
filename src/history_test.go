@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/apitoken"
-	"imuslab.com/zoraxy/mod/confhistory"
+	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/foleyit/dunree/mod/confhistory"
 )
 
 // A REST API v1 change made with a token creates a version attributed to the token,

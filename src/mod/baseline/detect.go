@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"imuslab.com/zoraxy/mod/confpack"
+	"github.com/foleyit/dunree/mod/confpack"
 )
 
 // Probe is what is looked at, before this start touches anything, to decide whether this is a new install.

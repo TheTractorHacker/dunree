@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/luascript"
+	"github.com/foleyit/dunree/mod/luascript"
 )
 
 /*

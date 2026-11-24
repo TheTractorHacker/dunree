@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/foleyit/dunree/mod/brand"
 )
 
 /*
@@ -79,10 +81,10 @@ type Branding struct {
 	AccentColor     string `json:"AccentColor,omitempty"`     // CSS hex colour, default #2c7cb0
 	BackgroundColor string `json:"BackgroundColor,omitempty"` // CSS hex colour, default follows the theme
 	Theme           string `json:"Theme,omitempty"`           // auto (default), light or dark
-	HideFooter      bool   `json:"HideFooter,omitempty"`      // hide the "Performance & security by Zoraxy" footer
+	HideFooter      bool   `json:"HideFooter,omitempty"`      // hide the "Performance & security by Dunree" footer
 	FooterText      string `json:"FooterText,omitempty"`      // replaces "Performance & security by"
-	FooterLinkText  string `json:"FooterLinkText,omitempty"`  // replaces the link label "Zoraxy"
-	FooterLinkURL   string `json:"FooterLinkURL,omitempty"`   // http(s) URL of the footer link; empty = Zoraxy website
+	FooterLinkText  string `json:"FooterLinkText,omitempty"`  // replaces the link label "Dunree"
+	FooterLinkURL   string `json:"FooterLinkURL,omitempty"`   // http(s) URL of the footer link; empty = the product website of the build, or no link
 
 	// CustomTemplate replaces the built-in challenge page for this endpoint.
 	// It is an html/template, see DEVELOPMENT.md ("Customising CAPTCHA pages").
@@ -268,8 +270,13 @@ func safeLogo(logo string) template.URL {
 	return template.URL(logo)
 }
 
-// DefaultFooterURL is where the footer link leads unless branding overrides it.
-const DefaultFooterURL = "https://zoraxy.aroz.org"
+// DefaultFooterLabel is the name in the built-in footer ("Performance & security by Dunree").
+const DefaultFooterLabel = brand.Name
+
+// DefaultFooterURL is where the footer name links to unless branding overrides
+// it: the product website of this build. It is empty while that address is not
+// set (mod/brand); the name is then shown as plain text, without a link.
+func DefaultFooterURL() string { return brand.SafeURL(brand.ProductURL) }
 
 // safeFooterURL returns u if it is a plain http(s) URL, otherwise "".
 func safeFooterURL(u string) string {

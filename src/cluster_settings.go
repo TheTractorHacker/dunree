@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"imuslab.com/zoraxy/mod/auth/sso/forward"
-	"imuslab.com/zoraxy/mod/auth/sso/oauth2"
-	"imuslab.com/zoraxy/mod/auth/sso/zorxauth"
-	"imuslab.com/zoraxy/mod/cluster"
+	"github.com/foleyit/dunree/mod/auth/sso/forward"
+	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
+	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
+	"github.com/foleyit/dunree/mod/cluster"
 )
 
 /*

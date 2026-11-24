@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // Run config update. Version numbers are int. For example

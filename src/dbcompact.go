@@ -6,16 +6,16 @@ import (
 	"io"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
 )
 
 /*
 	dbcompact.go
 
-	zoraxy -compact-db -dbpath ./sys.db
+	dunree -compact-db -dbpath ./sys.db
 
-	Offline compaction of the BoltDB database. Zoraxy must be stopped: a database
+	Offline compaction of the BoltDB database. Dunree must be stopped: a database
 	that another process holds is refused after the normal 10 second lock wait.
 	The steps and the safety rules are in mod/database/dbbolt/compact.go.
 */
@@ -26,7 +26,7 @@ func runCompactDatabase(dbPath string, backend string, out, errOut io.Writer) in
 		fmt.Fprintln(errOut, "-compact-db works on the BoltDB database file only (LevelDB compacts itself).")
 		return 1
 	}
-	fmt.Fprintf(out, "Compacting %s (Zoraxy must not be running; waiting up to 10 seconds if the database is locked)\n", dbPath)
+	fmt.Fprintf(out, "Compacting %s (Dunree must not be running; waiting up to 10 seconds if the database is locked)\n", dbPath)
 	res, err := database.CompactFile(dbPath, dbinc.CompactOptions{
 		Logf: func(format string, a ...interface{}) { fmt.Fprintf(out, "  "+format+"\n", a...) },
 	})
@@ -34,7 +34,7 @@ func runCompactDatabase(dbPath string, backend string, out, errOut io.Writer) in
 		var locked *dbinc.LockedError
 		if errors.As(err, &locked) {
 			fmt.Fprintln(errOut, "Cannot compact: "+locked.Describe())
-			fmt.Fprintln(errOut, "Stop that process (for a service: sudo systemctl stop zoraxy), then run this compact command again.")
+			fmt.Fprintln(errOut, "Stop that process (for a service: sudo systemctl stop dunree, or zoraxy on an install upgraded from Zoraxy), then run this compact command again.") // legacy-compat
 		} else {
 			fmt.Fprintln(errOut, "Compaction failed: "+err.Error())
 		}
@@ -44,7 +44,7 @@ func runCompactDatabase(dbPath string, backend string, out, errOut io.Writer) in
 	fmt.Fprintf(out, "Done in %s: %s -> %s (%s smaller), %d tables, %d keys, all verified.\n",
 		res.Elapsed.Round(10_000_000), humanBytes(res.BytesBefore), humanBytes(res.BytesAfter),
 		humanBytes(res.BytesBefore-res.BytesAfter), res.Tables, res.Keys)
-	fmt.Fprintf(out, "Backup of the old database: %s\nDelete the backup yourself once Zoraxy has run fine with the new file.\n", res.BackupPath)
+	fmt.Fprintf(out, "Backup of the old database: %s\nDelete the backup yourself once Dunree has run fine with the new file.\n", res.BackupPath)
 	return 0
 }
 

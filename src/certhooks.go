@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/notify"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/notify"
+	"github.com/foleyit/dunree/mod/offline"
 )
 
 /*
@@ -32,7 +32,7 @@ func initCertHooks() {
 		notifyManager, _ = notify.NewManager("", *allowHookCommands, offline.Enabled, nil)
 	}
 	if *allowHookCommands {
-		SystemWideLogger.PrintAndLog("notify", "Command hooks are ENABLED (-allow_hook_commands): an administrator can make Zoraxy execute a program", nil)
+		SystemWideLogger.PrintAndLog("notify", "Command hooks are ENABLED (-allow_hook_commands): an administrator can make Dunree execute a program", nil)
 	}
 	certExpiryWatcher = &notify.ExpiryWatcher{
 		CertDir:  CONF_CERT_STORE,

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/adminallow"
 	"golang.org/x/net/http2"
-	"imuslab.com/zoraxy/mod/adminallow"
 )
 
 /*

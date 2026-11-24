@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Plugin Manager scenario (phases 0, 1 and 2 of docs/plugins/reliability-plan.md): builds Zoraxy and the chaos test plugin
+# Plugin Manager scenario (phases 0, 1 and 2 of docs/plugins/reliability-plan.md): builds Dunree and the chaos test plugin
 # (src/mod/plugins/testdata/chaosplugin, standard library only), starts ONE throw-away -noauth instance in a temp dir with three
 # plugin folders and runs smoke.py --plugins-only --plugins-live (plugins_smoke.py: the mocked part, which is also in the full
 # smoke.py run, plus the part against these real plugins) against it:
@@ -13,7 +13,7 @@
 # to use the admin session, for the isolated plugin pages, which listen on PORT+2). The index is signed with a throw-away key
 # made here by tools/plugin-index; no real key is read.
 # Env: PY (python with playwright + chromium), PORT (default 18830), OUT (screenshot directory),
-#      ZORAXY_BIN (use this Zoraxy binary instead of building one; it must contain the Go code of this checkout).
+#      DUNREE_BIN (use this Dunree binary instead of building one; it must contain the Go code of this checkout).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$here/../.."
@@ -23,22 +23,22 @@ tmp="$(mktemp -d)"
 pid=""
 spid=""
 trap '[ -n "$pid" ] && kill "$pid" 2>/dev/null || true; [ -n "$spid" ] && kill "$spid" 2>/dev/null || true; sleep 1; rm -rf "$tmp"' EXIT
-if [ -n "${ZORAXY_BIN:-}" ]; then
-  cp "$ZORAXY_BIN" "$tmp/zoraxy"
+if [ -n "${DUNREE_BIN:-}" ]; then
+  cp "$DUNREE_BIN" "$tmp/dunree"
 else
-  (cd "$root/src" && go build -o "$tmp/zoraxy" .)
+  (cd "$root/src" && go build -o "$tmp/dunree" .)
 fi
 (cd "$root/src" && CGO_ENABLED=0 go build -o "$tmp/chaos" ./mod/plugins/testdata/chaosplugin)
 ln -s "$root/src/web" "$tmp/web"
 mkdir -p "$tmp/conf"
 echo "seeded by plugins_run.sh: marks this throw-away instance as an existing installation" >"$tmp/conf/existing-install.txt"
-start_zoraxy() {
-  (cd "$tmp" && exec ./zoraxy -noauth -dev -default_inbound_port "$((PORT+1))" -port ":$PORT" -conf ./conf -dbpath ./sys.db >>zoraxy.log 2>&1) &
+start_dunree() {
+  (cd "$tmp" && exec ./dunree -noauth -dev -default_inbound_port "$((PORT+1))" -port ":$PORT" -conf ./conf -dbpath ./sys.db >>dunree.log 2>&1) &
   pid=$!
   for _ in $(seq 60); do curl -fs "http://127.0.0.1:$PORT/" >/dev/null && break; sleep 0.5; done
 }
 # First start: creates the database and runs the config upgrades, without plugins.
-start_zoraxy
+start_dunree
 kill "$pid" 2>/dev/null || true
 wait "$pid" 2>/dev/null || true
 chaos() { # chaos FOLDER  (chaos.conf on stdin)
@@ -89,7 +89,7 @@ indextool -index "$tmp/draft1.json" -out "$store/index.json" -key "$tmp/keys/ind
 indextool -index "$tmp/draft2.json" -out "$store/next/index.json" -key "$tmp/keys/index.pem" -serial 2 -files "$store" -allow-http >/dev/null
 (cd "$store" && exec "$PY" -m http.server "$SPORT" --bind 127.0.0.1 >/dev/null 2>&1) &
 spid=$!
-# Folders dropped into the plugin directory have no stored state, so Zoraxy starts them at boot (the upstream rule).
-start_zoraxy
+# Folders dropped into the plugin directory have no stored state, so Dunree starts them at boot (the upstream rule).
+start_dunree
 PLUGINS_STORE_URL="http://127.0.0.1:$SPORT" PLUGINS_STORE_DIR="$store" PLUGINS_INDEX_PUB="$tmp/keys/index.pub" PLUGINS_UI_LISTEN="127.0.0.1:$((PORT+2))" \
 "$PY" "$here/smoke.py" --url "http://127.0.0.1:$PORT" --plugins-only --plugins-live ${OUT:+--out "$OUT"} "$@"

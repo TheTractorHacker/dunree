@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"imuslab.com/zoraxy/mod/update/updateutil"
+	"github.com/foleyit/dunree/mod/update/updateutil"
 )
 
 func UpdateFrom314To315(confDir string) error {

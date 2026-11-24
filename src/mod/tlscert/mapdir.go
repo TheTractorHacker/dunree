@@ -16,15 +16,15 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
 	mapdir.go
 
 	Certificates from a mapped directory (upstream #798), for setups where certbot, acme.sh, cert-manager
-	or a secrets mount keeps the files up to date outside Zoraxy.
+	or a secrets mount keeps the files up to date outside Dunree.
 
 	The directory is polled every Interval seconds (no new dependency, works on network and
 	container mounts where inotify does not). Supported layouts, all relative to the directory:

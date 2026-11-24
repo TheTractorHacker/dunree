@@ -1,14 +1,14 @@
-# Authentik with Zoraxy
+# Authentik with Dunree
 
-Zoraxy can protect a host with [Authentik](https://goauthentik.io) in two ways. Pick one per deployment (the
+Dunree can protect a host with [Authentik](https://goauthentik.io) in two ways. Pick one per deployment (the
 Forward Auth and OAuth 2.0 settings are global, the choice of provider is per proxy rule, see
 *HTTP Proxy > Edit rule > Authentication*).
 
 | | Forward auth (proxy outpost) | OIDC (OAuth2/OpenID provider) |
 |---|---|---|
 | Authentik objects | Proxy Provider + Outpost | OAuth2/OpenID Provider |
-| Who authenticates the request | Authentik outpost, asked by Zoraxy on every request | Zoraxy, after a one-time login |
-| Group based access | Authentik policy bindings on the application | Authentik policy bindings **and** Zoraxy "Allowed groups" |
+| Who authenticates the request | Authentik outpost, asked by Dunree on every request | Dunree, after a one-time login |
+| Group based access | Authentik policy bindings on the application | Authentik policy bindings **and** Dunree "Allowed groups" |
 | Identity to the backend | `X-authentik-*` headers | headers you map from claims (e.g. `X-Auth-User`) |
 | Extra load on Authentik | one subrequest per request | none after login (token refresh every access token lifetime) |
 
@@ -40,7 +40,7 @@ Use this when one login should cover many hosts under one parent domain.
    * Cookie domain: `example.com`
 2. Application + Outpost as in A1. One provider/application covers every host under `*.example.com`.
 
-### A3. Zoraxy side
+### A3. Dunree side
 
 1. **SSO > Forward Auth**.
 2. Enter the **outpost base URL** in *Authorization server base URL*:
@@ -63,14 +63,14 @@ Use this when one login should cover many hosts under one parent domain.
 4. **Apply Change**.
 5. On each host to protect: *HTTP Proxy > edit the rule > Authentication > Forward Auth*.
 
-### What Zoraxy does
+### What Dunree does
 
 * `GET <Address>` as a subrequest with the client's cookies/headers, `X-Original-URL` and `X-Forwarded-Host/Proto/Uri/Method/For`
-  computed by Zoraxy (client supplied copies of these headers are dropped), and `Host` set to the protected host.
+  computed by Dunree (client supplied copies of these headers are dropped), and `Host` set to the protected host.
 * `2xx`: the listed *Response Headers* replace any client supplied value (a trailing `*` is a prefix match, e.g.
   `X-authentik-meta-*`), *Response Client Headers* (`Set-Cookie`) go back to the browser, the request continues.
 * `401` and a browser navigation: redirect (302) to `/outpost.goauthentik.io/start?rd=<original URL>`. `rd` is built
-  only from the request Zoraxy itself received, so it cannot be steered to another site. Non-browser callers get 401.
+  only from the request Dunree itself received, so it cannot be steered to another site. Non-browser callers get 401.
 * `3xx` from the outpost is passed through.
 * Anything else, or an error/timeout (15 s) talking to the outpost: the request is **denied** (fail closed).
 * `/outpost.goauthentik.io/...` on the protected host is reverse proxied to the Outpost URL **without**
@@ -94,29 +94,29 @@ Sign out: link users to `https://app.example.com/outpost.goauthentik.io/sign_out
    * Redirect URIs/Origins: add **`https://app.example.com/internal/oauth2`** with matching mode *Strict*
      (one entry per protected host, or one *Regex* entry such as `https://.*\.example\.com/internal/oauth2`)
    * Signing Key: select a certificate (e.g. *authentik Self-signed Certificate*). Without a signing key Authentik
-     signs ID tokens with HS256 using the client secret; Zoraxy accepts that only because discovery advertises it, but
+     signs ID tokens with HS256 using the client secret; Dunree accepts that only because discovery advertises it, but
      RS256/ES256 is strongly preferred.
    * Advanced protocol settings > Scopes: keep `openid`, `profile`, `email`; **add `offline_access`** (needed for refresh
      tokens). The `profile` scope delivers `preferred_username`, `name` and `groups`.
    * Subject mode / Include claims in id_token: defaults are fine (include claims on).
-   * Access token validity (default 5 minutes) is also how often Zoraxy refreshes; Refresh token validity default 30 days.
+   * Access token validity (default 5 minutes) is also how often Dunree refreshes; Refresh token validity default 30 days.
    * Copy **Client ID** and **Client Secret**.
 2. **Applications > Applications > Create** with Provider `app-oidc`. Copy the **slug**.
    The issuer is `https://auth.example.com/application/o/<slug>/` (trailing slash included).
 3. (Optional) Logout: add `https://app.example.com/` under *Post logout redirect URIs* if your Authentik version has the field.
 
-### B2. Zoraxy side
+### B2. Dunree side
 
 1. **SSO > OAuth 2.0**.
 2. Enter the issuer URL in the preset box and click **Authentik (OIDC)**. It fills Issuer, Scopes
    `openid profile email offline_access`, Code Challenge Method **PKCE (S256)**, Groups claim `groups` and header
    mappings `X-Auth-User=preferred_username,X-Auth-Email=email,X-Auth-Name=name,X-Auth-Groups=groups`.
 3. Paste Client ID/Secret. Optionally fill **Allowed groups** (comma separated Authentik group names; a user needs at
-   least one). Press **Test discovery**: Zoraxy fetches the discovery document server side and shows issuer, endpoints,
+   least one). Press **Test discovery**: Dunree fetches the discovery document server side and shows issuer, endpoints,
    PKCE S256 support, ID token algorithms and whether the JWKS is reachable and contains keys.
 4. **Apply Change**, then select *OAuth2* as the authentication provider on the proxy rule.
 
-### What Zoraxy does
+### What Dunree does
 
 * Discovery from `<issuer>/.well-known/openid-configuration`; the reported issuer must equal the configured one;
   an `https` issuer must not point to `http` endpoints. Metadata is cached (default 60 s, stale copy reused if Authentik is briefly down).
@@ -130,7 +130,7 @@ Sign out: link users to `https://app.example.com/outpost.goauthentik.io/sign_out
 * `userinfo` is merged for missing claims (`sub` must match). Groups claim default `groups`, dotted paths allowed.
 * Session: an opaque random id in an HttpOnly, `SameSite=Lax` cookie (`Secure` on HTTPS) signed with a key derived from the
   node UUID; tokens never reach the browser. Sessions are in memory (a restart sends users through login again; they are
-  not shared between Zoraxy nodes).
+  not shared between Dunree nodes).
 * Refresh: when the access token is within 60 s of expiry the refresh token is used; claims/groups are re-evaluated, a
   user removed from the allowed group is locked out at the next refresh. Refresh failure restarts login.
 * Logout: `https://app.example.com/internal/oauth2/logout` destroys the session and redirects to the provider's
@@ -169,7 +169,7 @@ OIDC:
 ## Troubleshooting
 
 * *redirect_uri mismatch*: the Authentik redirect URI must be exactly `https://<host>/internal/oauth2` (scheme as seen by
-  the browser). If another TLS terminator sits in front of Zoraxy the scheme Zoraxy sees may be `http`.
+  the browser). If another TLS terminator sits in front of Dunree the scheme Dunree sees may be `http`.
 * Forward auth loop: the outpost does not know the application by Host. Check *Send protected host as Host header* and the
   provider's *External host*.
 * Cookie not set / endless login in forward auth: `Set-Cookie` must be in *Response Client Headers* and `/outpost.goauthentik.io/`

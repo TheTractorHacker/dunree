@@ -12,7 +12,7 @@ import (
 	Boot guard
 
 	A snapshot can be valid JSON and still keep the node from starting
-	(Zoraxy restarts itself to load new files). Before the restart the
+	(Dunree restarts itself to load new files). Before the restart the
 	follower writes pending.json. If the next start does not reach the
 	healthy point (MarkHealthy) and the process starts again, for example
 	under systemd or a container restart policy, the previous files are

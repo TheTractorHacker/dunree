@@ -74,7 +74,7 @@ func NotifyIgnoredReason() string {
 		return ""
 	}
 	if v[0] == '@' {
-		return "NOTIFY_SOCKET is an abstract socket (" + v + "); Zoraxy only reports readiness to a path socket such as /run/systemd/notify, so systemd readiness is off"
+		return "NOTIFY_SOCKET is an abstract socket (" + v + "); Dunree only reports readiness to a path socket such as /run/systemd/notify, so systemd readiness is off"
 	}
 	return "NOTIFY_SOCKET has an unsupported form, so systemd readiness is off"
 }

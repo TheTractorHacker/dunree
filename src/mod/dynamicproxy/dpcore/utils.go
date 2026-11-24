@@ -18,7 +18,7 @@ func replaceLocationHost(urlString string, rrr *ResponseRewriteRuleSet, useTLS b
 	}
 
 	//Update the schemetic if the proxying target is http
-	//but exposed as https to the internet via Zoraxy
+	//but exposed as https to the internet via Dunree
 	if useTLS {
 		u.Scheme = "https"
 	} else {

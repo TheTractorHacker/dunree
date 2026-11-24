@@ -5,11 +5,11 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 /*

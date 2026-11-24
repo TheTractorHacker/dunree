@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 const csTestKey = "hook-test-key-123456"

@@ -21,13 +21,13 @@ type ExportOptions struct {
 	ConfDir       string
 	DBPath        string // "" = no system database (never used in shareable mode)
 	Mode          string // ModeFull (default) or ModeShareable
-	ZoraxyVersion string
+	DunreeVersion string
 	// SkipFull names conf files that even a full backup leaves out (per install secrets the app keeps sealed,
 	// the audit log). The shareable mode has its own, stricter rules.
 	SkipFull func(rel string) bool
 	Now      func() time.Time
 	// OmitManifest (full mode only) leaves manifest.json out, which gives the byte for byte layout of the historic
-	// backup: a Zoraxy that predates the manifest restores that archive, and refuses one that carries manifest.json.
+	// backup: a Dunree that predates the manifest restores that archive, and refuses one that carries manifest.json.
 	OmitManifest bool
 }
 
@@ -65,7 +65,7 @@ func WriteExport(out io.Writer, o ExportOptions) (*Manifest, error) {
 		o.Now = time.Now
 	}
 	sink := &zipSink{zw: zip.NewWriter(out)}
-	m := &Manifest{Format: ManifestFmt, SchemaVersion: SchemaVersion, ConfigSchema: CurrentConfigSchema, ZoraxyVersion: o.ZoraxyVersion,
+	m := &Manifest{Format: ManifestFmt, SchemaVersion: SchemaVersion, ConfigSchema: CurrentConfigSchema, DunreeVersion: o.DunreeVersion,
 		Mode: o.Mode, Created: o.Now().UTC().Format(time.RFC3339)}
 
 	var rels []string

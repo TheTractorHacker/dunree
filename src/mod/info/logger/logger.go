@@ -11,9 +11,9 @@ import (
 )
 
 /*
-	Zoraxy Logger
+	Dunree Logger
 
-	This script is designed to make a managed log for the Zoraxy
+	This script is designed to make a managed log for the Dunree
 	and replace the ton of log.Println in the system core.
 	The core logger is based in golang's build-in log package
 */

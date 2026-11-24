@@ -30,7 +30,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Cluster / HA</h2>
-            <p class="zx-page-header__sub">Run two or more Zoraxy nodes behind a load balancer: they share one secret, and a primary can copy its configuration to followers.
+            <p class="zx-page-header__sub">Run two or more Dunree nodes behind a load balancer: they share one secret, and a primary can copy its configuration to followers.
                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="clModeWhat" aria-label="More about shared-secret mode">?</button></p>
             <div class="zx-popover" id="clModeWhat" role="note" hidden>The shared secret makes visitor sessions (CAPTCHA, load balancer stickiness) valid on every node. Followers pull a signed, encrypted snapshot of the primary's proxy configuration. Standalone nodes (the default) are unaffected. Fleet, the other tab, adds per-node credentials, groups and staged rollouts; a node uses one of the two modes.</div>
         </div>
@@ -54,7 +54,7 @@
         </div>
         <div id="clRestart" class="zx-callout zx-callout--warn" role="note" style="display:none;">
             <span class="zx-callout__icon" aria-hidden="true"><i class="redo icon"></i></span>
-            <div class="zx-callout__body">Restart Zoraxy to switch session cookies to the new secret.</div>
+            <div class="zx-callout__body">Restart Dunree to switch session cookies to the new secret.</div>
         </div>
         <div id="clSharedSsoRestart" class="zx-callout zx-callout--warn" role="note" style="display:none;">
             <span class="zx-callout__icon" aria-hidden="true"><i class="redo icon"></i></span>
@@ -252,7 +252,7 @@
         let title = {standalone: t("This node runs on its own"), primary: t("This node is the primary"), follower: t("This node follows a primary")}[s.role] || t("The role of this node is managed by Fleet");
         let desc = {standalone: t("The default. It keeps its own configuration. Give every node the same secret and they accept each other's visitor sessions."),
             primary: t("You configure this node. Followers pull a signed, encrypted snapshot of its proxy configuration."),
-            follower: t("It copies the configuration of the primary on a schedule. The settings the primary manages are read-only here.")}[s.role] || t("This Zoraxy is part of a fleet, so the shared-secret roles do not apply. The secret and the health endpoint below still work.");
+            follower: t("It copies the configuration of the primary on a schedule. The settings the primary manages are read-only here.")}[s.role] || t("This Dunree is part of a fleet, so the shared-secret roles do not apply. The secret and the health endpoint below still work.");
         //the icon tile shows the role (neutral blue for primary and follower, never a state colour); the state is the dot badge in words
         let kind = "", word = "";
         if (s.role == "primary") {

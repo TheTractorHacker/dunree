@@ -24,12 +24,13 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/mdns"
-	"imuslab.com/zoraxy/mod/uptime"
-	"imuslab.com/zoraxy/mod/utils"
-	"imuslab.com/zoraxy/mod/wakeonlan"
+	"github.com/foleyit/dunree/mod/brand"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/mdns"
+	"github.com/foleyit/dunree/mod/uptime"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/wakeonlan"
 )
 
 /*
@@ -438,11 +439,12 @@ func HandleWakeOnLan(w http.ResponseWriter, r *http.Request) {
 }
 
 /*
-	Zoraxy Host Info
+	Dunree Host Info
 */
 
-func HandleZoraxyInfo(w http.ResponseWriter, r *http.Request) {
-	type ZoraxyInfo struct {
+func HandleDunreeInfo(w http.ResponseWriter, r *http.Request) {
+	type DunreeInfo struct {
+		brand.Info        //Product, ProductVersion, Publisher, BasedOn...: what the About page and the footer show (mod/brand)
 		Version           string
 		NodeUUID          string
 		Development       bool
@@ -461,8 +463,9 @@ func HandleZoraxyInfo(w http.ResponseWriter, r *http.Request) {
 		displayBootTime = 0
 	}
 
-	info := ZoraxyInfo{
-		Version:           SYSTEM_VERSION,
+	info := DunreeInfo{
+		Info:              brand.Get(),
+		Version:           SYSTEM_VERSION, //the version the updater and config migrations compare; the Dunree version is ProductVersion
 		NodeUUID:          displayUUID,
 		Development:       *development_build,
 		BootTime:          displayBootTime,

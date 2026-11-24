@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/apitoken"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/confhistory"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/confhistory"
 )
 
 /*
 	history.go
 
-	Glue between Zoraxy and mod/confhistory (change history and undo).
+	Glue between Dunree and mod/confhistory (change history and undo).
 	Design, what is captured and the restore flow: DEVELOPMENT.md, "Change history".
 */
 
@@ -87,7 +87,7 @@ func stopHistory() {
 	}
 }
 
-// historyReload restarts Zoraxy so it loads restored files. Same mechanism as
+// historyReload restarts Dunree so it loads restored files. Same mechanism as
 // the cluster apply: restart in place after a short delay so the HTTP
 // response of the restore request can be delivered first.
 func historyReload() error {

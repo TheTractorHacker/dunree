@@ -17,7 +17,7 @@ def client_seen(r):
 def client_ip_trust_and_spoofing():
     """Forwarded headers from untrusted peers are ignored for access control and (optionally) sanitised towards the
     upstream; a trusted proxy's CF-Connecting-IP / X-Forwarded-For is honoured."""
-    with Zoraxy() as z, Backend(name="ip") as b:
+    with Dunree() as z, Backend(name="ip") as b:
         z.add_rule("ip.test", b.addr)
         z.api("/api/blacklist/ip/add", ip="9.9.9.9", id="default", comment="e2e")
         z.api("/api/blacklist/enable", enable=True, id="default")
@@ -67,7 +67,7 @@ def proxy_protocol():
     try:
         ca = make_ca(d)
         crt = make_leaf(d, "pp.test", ca)
-        with Zoraxy(tls=True, certs=[("pp.test", crt[0], crt[1])]) as z, Backend(name="pp") as b:
+        with Dunree(tls=True, certs=[("pp.test", crt[0], crt[1])]) as z, Backend(name="pp") as b:
             z.add_rule("pp.test", b.addr)
             z.api("/api/blacklist/ip/add", ip="198.51.100.7", id="default", comment="e2e")
             z.api("/api/blacklist/enable", enable=True, id="default")
@@ -125,7 +125,7 @@ def proxy_protocol_upstream():
         c.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n" + body)
 
     from scenarios.s02_streaming import RawServer
-    with Zoraxy() as z, RawServer(handler) as up:
+    with Dunree() as z, RawServer(handler) as up:
         z.add_rule("pu.test", up.addr)
         z.api("/api/proxy/upstream/update", ep="pu.test", origin=up.addr, payload=json.dumps({"ProxyProtocol": 1}), active=True)
         r = z.req("pu.test", src="127.0.0.6")
@@ -144,7 +144,7 @@ def proxy_protocol_upstream():
 @scenario("access_rules_lists", ["512"])
 def access_rules_lists():
     """Blacklist and whitelist (IP, CIDR, wildcard), per-rule attach, and bulk import of 200k entries without slowing requests."""
-    with Zoraxy() as z, Backend(name="acl") as b:
+    with Dunree() as z, Backend(name="acl") as b:
         z.add_rule("acl.test", b.addr)
         z.add_rule("free.test", b.addr)
         z.api("/api/access/create", name="strict", desc="e2e", trustProxy=False)
@@ -193,7 +193,7 @@ def access_rules_lists():
 @scenario("country_block_geoip", ["238"])
 def country_block_geoip():
     """Country blacklist and country 'challenge' using a trusted proxy to present foreign client addresses."""
-    with Zoraxy() as z, Backend(name="geo") as b:
+    with Dunree() as z, Backend(name="geo") as b:
         z.add_rule("geo.test", b.addr)
         info = z.get("/api/info/geoip", ip="8.8.8.8")
         cc = (info.get("CountryIsoCode") or info.get("country") or json.dumps(info))
@@ -214,7 +214,7 @@ def country_block_geoip():
 @scenario("country_challenge", ["281"])
 def country_challenge():
     """Access-rule challenge countries get the rule's CAPTCHA instead of a block; others pass."""
-    with Zoraxy() as z, Backend(name="cc") as b:
+    with Dunree() as z, Backend(name="cc") as b:
         info = z.get("/api/info/geoip", ip="8.8.8.8")
         if "US" not in json.dumps(info):
             raise Skip("GeoIP database has no entry for 8.8.8.8: %s" % json.dumps(info)[:120])
@@ -227,7 +227,7 @@ def country_challenge():
         check(no_captcha.status == 403 and "altcha" not in no_captcha.text.lower(), "no CAPTCHA configured: expected block, got %d" % no_captcha.status)
         z.edit_rule("cc.test", captcha=True, captchaProvider=2, captchaSecretKey="e2e-altcha-secret-0123456789abcdef0123456789")
         us = z.req("cc.test", src="127.0.0.8", headers={"X-Forwarded-For": "8.8.8.8", "Accept": "text/html"})
-        check(us.status == 403 and "zoraxy/captcha" in us.text.lower(), "US visitor did not get the CAPTCHA page (%d)" % us.status)
+        check(us.status == 403 and "dunree/captcha" in us.text.lower(), "US visitor did not get the CAPTCHA page (%d)" % us.status)
         # a client from another country passes straight through (the rule has no RequireCaptcha for everyone)
         other = z.req("cc.test", src="127.0.0.8", headers={"X-Forwarded-For": "81.2.69.142"})
         check(other.status in (200, 403), "unexpected %d" % other.status)
@@ -242,7 +242,7 @@ def plain_http_listener_chain():
     try:
         ca = make_ca(d)
         crt = make_leaf(d, "tls.test", ca)
-        with Zoraxy(tls=True, certs=[("tls.test", crt[0], crt[1])]) as z, Backend(name="app") as b:
+        with Dunree(tls=True, certs=[("tls.test", crt[0], crt[1])]) as z, Backend(name="app") as b:
             plain = free_port()
             z.add_rule("tls.test", b.addr, bypassGlobalTLS=False)
             z.add_rule("open.test", b.addr, bypassGlobalTLS=True)

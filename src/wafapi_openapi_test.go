@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 const apiTestSpec = `openapi: 3.0.0

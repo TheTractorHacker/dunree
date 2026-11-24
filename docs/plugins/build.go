@@ -157,7 +157,7 @@ func build() {
 
 				templateBody := string(templateBytes)
 				// Replace placeholders in the template
-				htmlContent := strings.ReplaceAll(templateBody, "{{title}}", n.Title+" | Zoraxy Documentation")
+				htmlContent := strings.ReplaceAll(templateBody, "{{title}}", n.Title+" | Dunree Documentation")
 				htmlContent = strings.ReplaceAll(htmlContent, "{{content}}", string(docContent))
 				htmlContent = strings.ReplaceAll(htmlContent, "{{sideMenu}}", sideMenuHTML)
 				htmlContent = strings.ReplaceAll(htmlContent, "{{root_url}}", *root_url)

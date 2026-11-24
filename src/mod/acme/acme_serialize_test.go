@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newTestHandler(t *testing.T) *ACMEHandler {

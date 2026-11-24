@@ -8,12 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/grandcat/zeroconf"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 type MDNSHost struct {
 	MDNS          *zeroconf.Server
+	aliases       []*zeroconf.Server //further instance names of this host (RegisterAlias)
+	txt           []string
 	Host          *NetworkHost
 	IfaceOverride *net.Interface
 }
@@ -104,16 +106,36 @@ func NewMDNS(config NetworkHost, MacOverride string) (*MDNSHost, error) {
 
 	return &MDNSHost{
 		MDNS:          server,
+		txt:           []string{"version_build=" + config.BuildVersion, "vendor=" + config.Vendor, "model=" + config.Model, "uuid=" + config.UUID, "domain=" + config.Domain, "mac_addr=" + macAddressBoardcast},
 		Host:          &config,
 		IfaceOverride: overrideIface,
 	}, nil
 }
 
 func (m *MDNSHost) Close() {
-	if m != nil {
+	if m == nil {
+		return
+	}
+	if m.MDNS != nil {
 		m.MDNS.Shutdown()
 	}
+	for _, a := range m.aliases {
+		a.Shutdown()
+	}
+}
 
+// RegisterAlias announces the same service under a second instance name (same port and TXT
+// record), for example the name an older build of this host was known by.
+func (m *MDNSHost) RegisterAlias(instance string) error {
+	if m == nil || m.Host == nil {
+		return fmt.Errorf("mDNS is not running")
+	}
+	s, err := zeroconf.Register(instance, "_http._tcp", "local.", m.Host.Port, m.txt, nil)
+	if err != nil {
+		return err
+	}
+	m.aliases = append(m.aliases, s)
+	return nil
 }
 
 // Scan with given timeout and domain filter. Use m.Host.Domain for scanning similar typed devices
@@ -138,7 +160,7 @@ func (m *MDNSHost) Scan(timeout int, domainFilter string) []*NetworkHost {
 	go func(results <-chan *zeroconf.ServiceEntry) {
 		for entry := range results {
 			if domainFilter == "" {
-				//This is a ArOZ Online Host
+				//No domain filter: read the identity properties of every host that answers
 				//Split the required information out of the text element
 				TEXT := entry.Text
 				properties := map[string]string{}

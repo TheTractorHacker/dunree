@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
 )
 
 // Upstream #403 (Uptime Kuma): external monitors probe with HEAD, with keep-alive connections and against names

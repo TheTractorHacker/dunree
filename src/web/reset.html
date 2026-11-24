@@ -5,17 +5,24 @@
     <meta name="robots" content="noindex" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="refresh" content="5;url=/">
-    <link rel="icon" type="image/png" href="./favicon.png" />
-    <title>Account Reset | Zoraxy</title>
+    <!-- Dunree icons (brand/README.md). The files are in img/public/brand, readable without a login. -->
+    <link rel="icon" type="image/svg+xml" href="img/public/brand/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/public/brand/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/public/brand/favicon-16.png">
+    <link rel="shortcut icon" href="img/public/brand/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/public/brand/apple-touch-icon.png">
+    <link rel="manifest" href="img/public/brand/manifest.json">
+    <title>Account Reset | Dunree</title>
     <link rel="stylesheet" href="script/semantic/semantic.min.css">
     <script type="application/javascript" src="script/jquery-3.6.0.min.js"></script>
     </head>
     <body style="display:flex; align-items:center; justify-content:center; height:100vh; background:#f5f5f5;">
         <div style="text-align:center; max-width:480px; padding:2em; background:white; border-radius:1em; box-shadow:0 2px 12px rgba(0,0,0,0.1);">
-            <i class="ui large info circle icon" style="color:#2185d0;"></i>
+            <img src="img/public/brand/dunree-lockup.svg" alt="Dunree" width="150" height="32" style="display:block; margin:0 auto 1.2em;">
+            <i class="ui large info circle icon" style="color:#1a56c4;"></i>
             <h2>Email-based Password Reset Removed</h2>
             <p>SMTP-based password reset has been removed. To reset your admin password, use the command-line flag:</p>
-            <pre style="background:#f0f0f0; padding:0.8em; border-radius:0.4em; font-size:1em;">./zoraxy -reset_ac</pre>
+            <pre style="background:#f0f0f0; padding:0.8em; border-radius:0.4em; font-size:1em;">./dunree -reset_ac</pre>
             <p style="color:grey; font-size:0.9em;">Redirecting to <a href="/">login page</a> in 5 seconds&hellip;</p>
         </div>
     </body>

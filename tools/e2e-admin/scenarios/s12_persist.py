@@ -23,8 +23,8 @@ def altcha_cookie(port, host, secret="e2e-altcha-secret-key-0123456789", extra_h
     r = c.getresponse()
     r.read()
     ck = r.getheader("Set-Cookie") or ""
-    check(r.status == 200 and "zoraxy_captcha_session=" in ck, f"verify failed {r.status} {ck}")
-    return ck.split("zoraxy_captcha_session=")[1].split(";")[0]
+    check(r.status == 200 and "dunree_captcha_session=" in ck, f"verify failed {r.status} {ck}")
+    return ck.split("dunree_captcha_session=")[1].split(";")[0]
 
 
 def captcha_rule(e_or_inst, c, host, backend_port, secret="e2e-altcha-secret-key-0123456789"):
@@ -34,7 +34,7 @@ def captcha_rule(e_or_inst, c, host, backend_port, secret="e2e-altcha-secret-key
 
 
 def get_with_cookie(port, host, ck):
-    return http_get(f"http://127.0.0.1:{port}/page", host=host, headers={"Cookie": "zoraxy_captcha_session=" + ck} if ck else None)
+    return http_get(f"http://127.0.0.1:{port}/page", host=host, headers={"Cookie": "dunree_captcha_session=" + ck} if ck else None)
 
 
 @scenario("persist-restart-captcha-bans-visitors-stats", [])

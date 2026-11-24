@@ -84,7 +84,7 @@ func (ca *testCA) issue(t *testing.T, o issueOpt) tls.Certificate {
 	}
 	tpl := &x509.Certificate{
 		SerialNumber: o.serial,
-		Subject:      pkix.Name{CommonName: o.cn, Organization: []string{"Zoraxy Test"}},
+		Subject:      pkix.Name{CommonName: o.cn, Organization: []string{"Dunree Test"}},
 		DNSNames:     o.dns,
 		NotBefore:    o.notBefore,
 		NotAfter:     o.notAfter,
@@ -140,7 +140,7 @@ func newMTLSHarness(t *testing.T, endpoints ...*ProxyEndpoint) *mtlsHarness {
 	}
 
 	serverCA := newTestCA(t, "server root", nil)
-	serverCert := serverCA.issue(t, issueOpt{cn: "zoraxy test", dns: []string{"open.test", "mtls.test", "mtls-b.test", "plain.test", "*.test"}, server: true})
+	serverCert := serverCA.issue(t, issueOpt{cn: "dunree test", dns: []string{"open.test", "mtls.test", "mtls-b.test", "plain.test", "*.test"}, server: true})
 	h.rootCAs = x509.NewCertPool()
 	h.rootCAs.AddCert(serverCA.cert)
 

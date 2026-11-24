@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/foleyit/dunree/mod/auth"
+	db "github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/posture"
 	"github.com/gorilla/csrf"
-	"imuslab.com/zoraxy/mod/apitoken"
-	"imuslab.com/zoraxy/mod/auth"
-	db "imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/posture"
 )
 
 const postureSentinel = "SENTINEL-SECRET-d41d8cd9"

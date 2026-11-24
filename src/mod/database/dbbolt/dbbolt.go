@@ -8,8 +8,8 @@ import (
 	"time"
 
 	bolt "go.etcd.io/bbolt"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/instance"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/instance"
 )
 
 /*

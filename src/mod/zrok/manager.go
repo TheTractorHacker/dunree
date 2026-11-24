@@ -1,15 +1,15 @@
 // Package zrok supervises the zrok CLI (https://zrok.io, openziti based tunnels), like the docker image does for ZeroTier.
 //
-// Zoraxy never links zrok code. It runs the external `zrok` / `zrok2` binary as a child process, so the feature is opt-in
+// Dunree never links zrok code. It runs the external `zrok` / `zrok2` binary as a child process, so the feature is opt-in
 // twice: the process must be started with -allow_external_tools and an administrator must configure the binary.
 //
 // Security model:
 //   - no shell: commands are exec'd with an argument vector built from whitelisted, validated values (args.go);
-//   - the child gets a minimal environment (PATH, HOME/USERPROFILE pointing into conf/zrok/home, temp dir), not Zoraxy's;
+//   - the child gets a minimal environment (PATH, HOME/USERPROFILE pointing into conf/zrok/home, temp dir), not Dunree's;
 //   - the account token lives in conf/zrok/token (0600), is never returned by the API and is redacted from captured output.
 //     zrok accepts the token only as a positional argument of `zrok enable <token>` (no environment variable or stdin
 //     mechanism exists in the zrok source), so it is visible in the process list for the few seconds the enable command runs;
-//   - children are stopped with SIGTERM and killed after a grace period when Zoraxy shuts down;
+//   - children are stopped with SIGTERM and killed after a grace period when Dunree shuts down;
 //   - crashes are restarted with exponential backoff; repeated immediate failures stop the tunnel instead of looping.
 package zrok
 
@@ -146,7 +146,7 @@ func (m *Manager) saveLocked() error {
 // Allowed reports whether external tools may be executed
 func (m *Manager) Allowed() bool { return m.allowed }
 
-var errNotAllowed = errors.New("running external tools is disabled: start Zoraxy with -allow_external_tools to use zrok")
+var errNotAllowed = errors.New("running external tools is disabled: start Dunree with -allow_external_tools to use zrok")
 
 // ---- settings and token ----
 
@@ -355,7 +355,7 @@ func (m *Manager) Enable(ctx context.Context) (string, error) {
 		}
 	}
 	host, _ := os.Hostname()
-	desc := "zoraxy-" + sanitizeDesc(host)
+	desc := "dunree-" + sanitizeDesc(host)
 	//The token has to be an argument (zrok offers nothing else); it is validated above and redacted from the captured output
 	out, err := m.runOnce(ctx, 90*time.Second, "enable", tok, "--headless", "--description", desc)
 	log.WriteString(out)
@@ -554,7 +554,7 @@ func (m *Manager) StopAll() {
 	}
 }
 
-// Close stops everything and refuses new starts (Zoraxy shutdown)
+// Close stops everything and refuses new starts (Dunree shutdown)
 func (m *Manager) Close() {
 	m.mu.Lock()
 	m.closed = true

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // StartHotReloadTicker starts the hot reload ticker

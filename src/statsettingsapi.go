@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

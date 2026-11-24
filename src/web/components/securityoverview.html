@@ -172,7 +172,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Security Overview</h2>
-            <p class="zx-page-header__sub">How well this Zoraxy is protected and what to fix first.</p>
+            <p class="zx-page-header__sub">How well this Dunree is protected and what to fix first.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" id="soRecheck"><i class="sync alternate icon" aria-hidden="true"></i> Re-check</button>
@@ -212,7 +212,7 @@
             <h3 class="soH zx-section__title">Blocked in the last 24 hours</h3>
             <a href="#" class="soGo" id="soGoBlocked">All blocked requests on Status</a>
         </div>
-        <p class="soSub">Requests Zoraxy refused, who sent them and why. Kept in memory on this Zoraxy only.</p>
+        <p class="soSub">Requests Dunree refused, who sent them and why. Kept in memory on this Dunree only.</p>
         <div class="soTrio" id="soActivity">
             <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Blocked requests</h3></div><div class="zx-card__body" id="soBlkTotal"><p class="soEmptyLine">Loading...</p></div></section>
             <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Top offenders</h3></div><div class="zx-card__body" id="soBlkTop"><p class="soEmptyLine">Loading...</p></div></section>
@@ -332,7 +332,7 @@
         var nRefused = (d.actions || []).filter(function(a){ return a.state === "refused"; }).length;
         var h;
         if (d.managed) h = '<p class="soRecLead">' + esc(tr("Disabled on this node")) + '</p><p class="soRecTxt">' + esc(d.managed) + '</p>';
-        else if (!avail.length) h = '<p class="soRecLead"><span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(tr("In place")) + '</span></p><p class="soRecTxt">' + esc(tr("Everything Zoraxy can safely switch on for you is already in place or does not apply yet.")) + '</p>';
+        else if (!avail.length) h = '<p class="soRecLead"><span class="zx-badge zx-badge--dot zx-badge--ok">' + esc(tr("In place")) + '</span></p><p class="soRecTxt">' + esc(tr("Everything Dunree can safely switch on for you is already in place or does not apply yet.")) + '</p>';
         else h = '<p class="soRecLead">' + esc(avail.length === 1 ? tr("1 safe fix is ready") : tr("{0} safe fixes are ready").replace("{0}", avail.length)) + '</p>' +
             '<p class="soRecTxt">' + esc(tr("You see exactly what would change before anything is applied, and can undo most of it. The WAF is only ever started in detection-only mode.")) + (nRefused ? ' ' + esc(nRefused === 1 ? tr("1 more is listed as not available, with the reason.") : tr("{0} more are listed as not available, with the reason.").replace("{0}", nRefused)) : '') + '</p>' +
             '<button type="button" class="zx-btn zx-btn--primary" id="soRecBtn"><i class="magic icon" aria-hidden="true"></i> ' + esc(tr("Review recommended protection")) + '</button>';
@@ -414,7 +414,7 @@
             if (d && d.error) { msgbox(d.error, false, 6000); return; }
             render(d); if (done) done(d);
         }).fail(function(){
-            $("#soScoreBox").html('<div class="zx-empty"><div class="zx-empty__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></div><p class="zx-empty__title">The security overview could not be loaded.</p><p class="zx-empty__text">Check that Zoraxy is running, then press Re-check.</p></div>');
+            $("#soScoreBox").html('<div class="zx-empty"><div class="zx-empty__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></div><p class="zx-empty__title">The security overview could not be loaded.</p><p class="zx-empty__text">Check that Dunree is running, then press Re-check.</p></div>');
         }).always(function(){ S.loading = false; $("#soRecheck").prop("disabled", false); });
     }
 

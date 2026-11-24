@@ -10,7 +10,7 @@ package main
                              __/ |
                             |___/
 
-Zoraxy - A general purpose HTTP reverse proxy and forwarding tool
+Dunree - A general purpose HTTP reverse proxy and forwarding tool
 Author: tobychui
 License: AGPLv3
 
@@ -33,8 +33,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import (
 	"flag"
 	"fmt"
-	"imuslab.com/zoraxy/mod/baseline"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/baseline"
+	"github.com/foleyit/dunree/mod/offline"
 	"log"
 	"net"
 	"net/http"
@@ -43,31 +43,35 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/instance"
+	"github.com/foleyit/dunree/mod/update"
+	"github.com/foleyit/dunree/mod/updater"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/webuitls"
 	"github.com/google/uuid"
-	"github.com/gorilla/csrf"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/instance"
-	"imuslab.com/zoraxy/mod/update"
-	"imuslab.com/zoraxy/mod/updater"
-	"imuslab.com/zoraxy/mod/utils"
-	"imuslab.com/zoraxy/mod/webuitls"
 )
 
 /* SIGTERM handler, do shutdown sequences before closing */
 func SetupCloseHandler() {
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, stopSignals...)
+	c := stopRequests //service.go: also receives the stop request of the Windows service manager
+	//service.go: not under the Windows service manager (a user logoff would stop the service)
+	notifyStopSignals(c, signal.Notify)
 	go stopOnSignals(c, func() {
 		instance.NotifyStopping() //so systemd shows a slow stop as stopping, not as a hang
 		if clusterMgr != nil {
 			clusterMgr.MarkHealthy() //a deliberate stop is not a failed start
 		}
-	}, ShutdownSeq, os.Exit, shutdownLog)
+	}, ShutdownSeq, func(code int) { exitProcess(code) }, shutdownLog)
 }
 
 func main() {
+	//"dunree service ..." and a start by the Windows service manager (service.go). Does nothing otherwise
+	if serviceEntry() {
+		return
+	}
 	//Parse startup flags
 	flag.Parse()
 	if *doctorMode {
@@ -164,7 +168,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	/* Main Zoraxy Routines */
+	/* Main Dunree Routines */
 	//If this start follows an in-app update, arm the automatic rollback timer.
 	//Only touches local files; MarkHealthy() below disarms it.
 	updateManager.StartGuard()
@@ -180,6 +184,9 @@ func main() {
 		fmt.Println("Invalid -webui_tls value. Use off, auto or custom.")
 		os.Exit(1)
 	}
+
+	//First Dunree start on this config folder: an existing install gets one copy aside before anything writes to it (dunreecompat.go)
+	runDunreeFirstStart(CONF_FOLDER, *path_database, baselineProbe)
 
 	if *enableAutoUpdate {
 		fmt.Println("Checking required config update")
@@ -209,13 +216,7 @@ func main() {
 	//Create a new webmin mux, plugin mux and csrf middleware layer
 	webminPanelMux = http.NewServeMux()
 	pluginAPIMux := http.NewServeMux()
-	csrfMiddleware = csrf.Protect(
-		[]byte(nodeUUID),
-		csrf.CookieName(CSRF_COOKIENAME),
-		csrf.Secure(webUITLSEnabled()),
-		csrf.Path("/"),
-		csrf.SameSite(csrf.SameSiteLaxMode),
-	)
+	csrfMiddleware = newAdminCSRF([]byte(nodeUUID), webUITLSEnabled()) //dunreecompat.go: also accepts the CSRF cookie name of an upgraded install
 
 	//Prepare web UI TLS (if enabled) before modules start, as plugins need the loopback port
 	var webUICert *webuitls.CertInfo
@@ -273,7 +274,8 @@ func main() {
 	startHistory()
 	startMetrics()
 
-	var adminHandler http.Handler = adminHandlerWithAllowList(entryMux) //pass-through unless an allow-list is set
+	//a browser that still holds the session cookie under the name of an upgraded install stays logged in (mod/auth/legacy_session.go)
+	var adminHandler http.Handler = adminHandlerWithAllowList(authAgent.LegacySessionMiddleware(entryMux)) //pass-through unless an allow-list is set
 	if webUICert != nil {
 		webUIFingerprint = webUICert.Fingerprint
 		if *webUIHSTS {
@@ -285,7 +287,7 @@ func main() {
 				guarded.ServeHTTP(w, r)
 			})
 		}
-		// Plugins talk to Zoraxy over plain HTTP on a loopback-only port
+		// Plugins talk to Dunree over plain HTTP on a loopback-only port
 		go func() {
 			if err := newAdminHTTPServer(newPluginLoopbackHandler(pluginAPIMux)).Serve(webUILoopbackListener); err != nil {
 				SystemWideLogger.PrintAndLog("webui", "Plugin loopback listener stopped", err)
@@ -306,6 +308,7 @@ func main() {
 		//rolled back after 90 seconds.
 		updateManager.MarkHealthy()
 		SystemWideLogger.Println("Plain HTTP requests on this port are redirected to HTTPS. Plugins use loopback " + webUILoopbackListener.Addr().String())
+		serviceReady() //Windows service: report "running" (no-op otherwise)
 		announceReady(ln.Addr().String())
 		err = newAdminHTTPServer(adminHandler).Serve(webuitls.NewSniffListener(ln, webuitls.ServerTLSConfig(webUICert)))
 		if err != nil {
@@ -329,6 +332,7 @@ func main() {
 	//start is healthy, so confirm a pending in-app update.
 	updateManager.MarkHealthy()
 
+	serviceReady() //Windows service: report "running" (no-op otherwise)
 	announceReady(listener.Addr().String())
 	err = newAdminHTTPServer(adminHandler).Serve(listener)
 

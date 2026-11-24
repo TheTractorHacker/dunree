@@ -21,7 +21,7 @@ const maxListed = 300
 type Report struct {
 	Mode            string   `json:"mode"`
 	Verified        bool     `json:"verified"`
-	ZoraxyVersion   string   `json:"zoraxyVersion,omitempty"`
+	DunreeVersion   string   `json:"zoraxyVersion,omitempty"`
 	Created         string   `json:"created,omitempty"`
 	SchemaVersion   int      `json:"schemaVersion"`
 	HasDB           bool     `json:"hasDB"`
@@ -143,7 +143,7 @@ func plan(a *Archive, o PlanOptions) (*planned, error) {
 	r.Warnings = append([]string{}, a.Warnings...)
 	r.Added, r.Replaced, r.Removed, r.Kept = []string{}, []string{}, []string{}, []string{}
 	if m := a.Manifest; m != nil {
-		r.ZoraxyVersion, r.Created, r.SchemaVersion = m.ZoraxyVersion, m.Created, m.SchemaVersion
+		r.DunreeVersion, r.Created, r.SchemaVersion = m.DunreeVersion, m.Created, m.SchemaVersion
 	}
 	live, symlinks, err := liveFiles(o.ConfDir)
 	if err != nil {

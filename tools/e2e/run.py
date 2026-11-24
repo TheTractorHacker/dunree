@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Zoraxy data-plane end-to-end runner.
+"""Dunree data-plane end-to-end runner.
 
   run.py [--only name[,name...]] [--list] [--results FILE] [--keep-going]
 
-Each scenario starts its own throw-away Zoraxy (own conf/db/ports in a temp dir, ports 28810-28999)
+Each scenario starts its own throw-away Dunree (own conf/db/ports in a temp dir, ports 28810-28999)
 plus local backends, drives it through the admin API (the same calls the UI makes) and sends real
 HTTP traffic to the proxy listener. Result per scenario: PASS, FAIL, NOT-TESTABLE (reason printed).
 """
@@ -44,7 +44,7 @@ def main():
         want = [w.strip() for w in args.only.split(",") if w.strip()]
         names = [n for n in names if any(n == w or n.startswith(w) for w in want)]
     if not args.no_build:
-        print("building zoraxy ...", flush=True)
+        print("building dunree ...", flush=True)
         lib.build()
     results = []
     counts = {"PASS": 0, "FAIL": 0, "NOT-TESTABLE": 0}

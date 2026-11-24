@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 	"golang.org/x/oauth2"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 const (
@@ -243,7 +243,7 @@ func (ar *OAuth2Router) handleSetOAuthSettingsDELETE(w http.ResponseWriter, r *h
 
 /* Discovery test API */
 
-// HandleDiscoveryTest fetches the discovery document server side and reports what Zoraxy found.
+// HandleDiscoveryTest fetches the discovery document server side and reports what Dunree found.
 // Parameters (all optional, falling back to the saved settings): oauth2Issuer, oauth2WellKnownUrl.
 func (ar *OAuth2Router) HandleDiscoveryTest(w http.ResponseWriter, r *http.Request) {
 	o := ar.snapshot()
@@ -311,7 +311,7 @@ func (ar *OAuth2Router) HandleDiscoveryTest(w http.ResponseWriter, r *http.Reque
 		warnings = append(warnings, "Provider does not advertise PKCE S256 support")
 	}
 	if doc.EndSessionEndpoint == "" {
-		warnings = append(warnings, "No end_session_endpoint: logout will only clear the Zoraxy session")
+		warnings = append(warnings, "No end_session_endpoint: logout will only clear the Dunree session")
 	}
 	if strings.HasPrefix(doc.Issuer, "http://") {
 		warnings = append(warnings, "The issuer is plain http: tokens travel unencrypted")

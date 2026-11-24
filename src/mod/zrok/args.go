@@ -58,7 +58,7 @@ type Tunnel struct {
 	BackendMode string //share: proxy (default), tcpTunnel, udpTunnel (private shares only)
 	Frontend    string `json:",omitempty"` //public share: v1 --frontend / v2 --name-selection
 	UniqueName  string `json:",omitempty"` //v1: reserved share name (reserve + share reserved). v2: ignored (use Frontend "namespace:name")
-	Insecure    bool   `json:",omitempty"` //Do not verify the TLS certificate of the backend (self-signed Zoraxy listener)
+	Insecure    bool   `json:",omitempty"` //Do not verify the TLS certificate of the backend (self-signed Dunree listener)
 	ShareToken  string `json:",omitempty"` //access: token of the private share to bind
 	Bind        string `json:",omitempty"` //access: local bind address, default 127.0.0.1:9191
 	AutoStart   bool

@@ -18,9 +18,9 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/dnsresponder"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dnsresponder"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 var (

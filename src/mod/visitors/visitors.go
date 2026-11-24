@@ -204,7 +204,7 @@ func (t *Tracker) SetExcluder(f func(ip string) bool) {
 	t.excluded.Store(&f)
 }
 
-// SetExcludeBlocked installs a switch: while it returns true, requests that Zoraxy itself rejected
+// SetExcludeBlocked installs a switch: while it returns true, requests that Dunree itself rejected
 // (access list, WAF, rate limit ...) are not recorded (the statistics "exclude blocked" toggle)
 func (t *Tracker) SetExcludeBlocked(f func() bool) {
 	if f == nil {

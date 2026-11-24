@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/database"
 )
 
 /* Handle account reset by removing all users from the system */

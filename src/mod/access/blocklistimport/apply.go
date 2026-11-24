@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/access"
+	"github.com/foleyit/dunree/mod/access"
 )
 
 // Report is the validation / import result shown to the admin. Counts are

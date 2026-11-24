@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 //go:embed providers.json

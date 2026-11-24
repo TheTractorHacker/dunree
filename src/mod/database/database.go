@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database/dbinc"
 )
 
 type Database struct {

@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/adminallow"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func exposureSetup(t *testing.T) {

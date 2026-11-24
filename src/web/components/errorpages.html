@@ -1,4 +1,4 @@
-<!-- Error pages (tag errorpages): what a visitor sees when Zoraxy itself answers with an error (403 block pages, 404, 429, 5xx, unknown host, 503).
+<!-- Error pages (tag errorpages): what a visitor sees when Dunree itself answers with an error (403 block pages, 404, 429, 5xx, unknown host, 503).
      Kit page header, Related menu, sectioned navigation (#epNav), ONE save bar (ZxUI.saveBar on the whole page, #errorPagesPage,
      because the master switch #epEnabled sits in the page header). Styles: ui/zxpages.css, "area: errorpages".
      API: /api/errorpages/* (src/errorpagesapi.go). Off by default: nothing a visitor gets changes until the switch in the header is on and saved.
@@ -9,7 +9,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Error pages</h2>
-            <p class="zx-page-header__sub">Choose what visitors see when Zoraxy blocks a request or a site is down. Until you switch this on, everybody gets the built-in pages.</p>
+            <p class="zx-page-header__sub">Choose what visitors see when Dunree blocks a request or a site is down. Until you switch this on, everybody gets the built-in pages.</p>
         </div>
         <div class="zx-page-header__actions">
             <!-- the Related menu is moved in front of this by zxpage.js -->
@@ -51,11 +51,11 @@
             <div class="zx-sectionnav__group" role="group" aria-labelledby="epGrpPages">
                 <div class="zx-sectionnav__label" id="epGrpPages">Pages</div>
                 <button type="button" class="zx-sectionnav__item" data-ep="403"><i class="ban icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Access denied</span><span class="zx-sectionnav__desc" hidden>The page a blocked visitor gets. It carries the reference you can look up under Statistics.</span></button>
-                <button type="button" class="zx-sectionnav__item" data-ep="404"><i class="search icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Not found</span><span class="zx-sectionnav__desc" hidden>The page for a 404 that Zoraxy answers for one of your sites.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="404"><i class="search icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Not found</span><span class="zx-sectionnav__desc" hidden>The page for a 404 that Dunree answers for one of your sites.</span></button>
                 <button type="button" class="zx-sectionnav__item" data-ep="429"><i class="hourglass half icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Too many requests</span><span class="zx-sectionnav__desc" hidden>The page a visitor gets after reaching a rate limit. Built in, this answer is empty.</span></button>
                 <button type="button" class="zx-sectionnav__item" data-ep="5xx"><i class="plug icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Server error</span><span class="zx-sectionnav__desc" hidden>The page a visitor gets while the server behind a site is down or too slow.</span></button>
                 <button type="button" class="zx-sectionnav__item" data-ep="nohost"><i class="question circle outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">No such host</span><span class="zx-sectionnav__desc" hidden>The page for a host name nobody configured, when the Default Site shows a "not found" page.</span></button>
-                <button type="button" class="zx-sectionnav__item" data-ep="maintenance"><i class="wrench icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Busy or maintenance</span><span class="zx-sectionnav__desc" hidden>The page for a 503 that Zoraxy answers when every server of a site is busy.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-ep="maintenance"><i class="wrench icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Busy or maintenance</span><span class="zx-sectionnav__desc" hidden>The page for a 503 that Dunree answers when every server of a site is busy.</span></button>
             </div>
             <!-- the words of the state dots (the dots carry the word for assistive technology, and the section picker of narrow screens shows it) -->
             <p class="ep-legend" aria-hidden="true"><span class="ep-legend__item ep-legend__item--on">Customised</span><span class="ep-legend__item">Built-in</span></p>
@@ -113,7 +113,7 @@
                                                 <button type="button" class="zx-btn zx-btn--secondary" id="epLogoPick" data-zx-ignore><i class="upload icon" aria-hidden="true"></i> Use an image file</button>
                                                 <input type="file" id="epLogoFile" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" hidden data-zx-ignore>
                                             </div>
-                                            <p class="zx-help">An address that starts with https://, or a small image file (up to 64 KB) that is stored inside the page. Zoraxy never downloads the logo: the visitor's browser loads it.</p>
+                                            <p class="zx-help">An address that starts with https://, or a small image file (up to 64 KB) that is stored inside the page. Dunree never downloads the logo: the visitor's browser loads it.</p>
                                             <p class="zx-error" id="epLogoError" role="alert"></p>
                                         </div>
                                         <div class="zx-field zx-field--wide">

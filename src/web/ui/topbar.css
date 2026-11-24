@@ -23,6 +23,17 @@ body.darkTheme .menubar.zx-topbar { background: var(--zx-surface); }
 .zx-top-logo { display: inline-flex; align-items: center; flex: 0 0 auto; border-radius: var(--zx-radius-sm); }
 .zx-top-logo:focus-visible { outline: 2px solid var(--zx-focus); outline-offset: 3px; }
 .zx-topbar .logo { display: block; height: 34px; width: auto; }
+/* Dunree logo. Light and dark are separate files (brand/README.md: #1a56c4 must not sit on a dark background);
+   the theme class picks one. 32 px keeps the battlements on whole pixels. On a phone the mark stands alone. */
+.zx-top-logo .zx-brand { display: none; height: 32px; width: auto; }
+body:not(.darkTheme) .zx-top-logo .zx-brand--lockup.zx-brand--light,
+body.darkTheme .zx-top-logo .zx-brand--lockup.zx-brand--dark { display: block; }
+@media (max-width: 748px) {
+    body:not(.darkTheme) .zx-top-logo .zx-brand--lockup.zx-brand--light,
+    body.darkTheme .zx-top-logo .zx-brand--lockup.zx-brand--dark { display: none; }
+    body:not(.darkTheme) .zx-top-logo .zx-brand--mark.zx-brand--light,
+    body.darkTheme .zx-top-logo .zx-brand--mark.zx-brand--dark { display: block; }
+}
 
 /* ------------------------------------------------------------------ controls */
 .zx-topbtn {

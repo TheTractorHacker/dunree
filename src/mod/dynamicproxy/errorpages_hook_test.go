@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/errorpages"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/errorpages"
 )
 
 // useErrorPages installs a manager for one test and removes it afterwards (the hook is package wide)

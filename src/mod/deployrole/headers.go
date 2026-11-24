@@ -15,7 +15,7 @@ import (
 	Peer is NOT a trusted proxy: every header that names a client, a protocol or a host
 	on behalf of someone else is removed (a direct client can only speak for itself),
 	X-Client-Cert-* identity headers included, and a fresh RFC 7239 Forwarded header
-	describing this hop is set. Zoraxy then builds X-Forwarded-For / X-Real-Ip from the
+	describing this hop is set. Dunree then builds X-Forwarded-For / X-Real-Ip from the
 	real TCP peer.
 
 	Peer IS a trusted proxy: the client address is the right-most X-Forwarded-For entry that

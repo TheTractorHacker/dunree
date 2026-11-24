@@ -48,11 +48,11 @@ type Options struct {
 	ConfDir         string
 	NodeID          string //stable id of this node (the node UUID)
 	NodeName        string
-	Version         string //Zoraxy version
+	Version         string //Dunree version
 	FlagSecret      string //value of -cluster_secret, wins over the file
 	AllowLocalEdits bool   //-cluster_allow_local_edits
 	// Reload is called after a follower applied new files. It should make the
-	// process pick them up (Zoraxy restarts itself). Returning an error rolls
+	// process pick them up (Dunree restarts itself). Returning an error rolls
 	// the files back.
 	Reload func() error
 	// Validate optionally checks a snapshot against the real config schemas

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
 )
 
 // An endpoint config written by a version without load balancing options.

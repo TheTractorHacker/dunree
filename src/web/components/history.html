@@ -214,7 +214,7 @@
         </div>
         <div id="hxPreview" style="margin-top:1em;"></div>
         <div id="hxConfirmWrap" style="margin-top:1em; display:none;">
-            <div class="ui warning message">Restoring the whole configuration replaces your current settings and restarts Zoraxy.
+            <div class="ui warning message">Restoring the whole configuration replaces your current settings and restarts Dunree.
                 A version of the current state is saved first, so you can go back. Type <b>RESTORE</b> to continue.</div>
             <div class="ui form"><div class="field">
                 <label for="hxConfirmWord">Type RESTORE to confirm</label>
@@ -252,7 +252,7 @@
     // What a change is called: the server names the stored object (a file or a table of the settings database);
     // the reader gets the name the interface uses for it. Unknown ones are tidied up, never shown as a file name.
     var TABLES = { "settings": N_("General settings"), "oauth2": N_("OAuth2 settings"), "oauth2_providers": N_("OAuth2 providers"), "auth_sso_forward": N_("Forward authentication settings"),
-        "zorxauth": N_("Zoraxy Auth settings"), "zorxauth_users": N_("Zoraxy Auth users"), "redirect": N_("Redirect options"), "acmepref": N_("ACME account and preferences"),
+        "zorxauth": N_("Dunree Auth settings"), "zorxauth_users": N_("Dunree Auth users"), "redirect": N_("Redirect options"), "acmepref": N_("ACME account and preferences"),
         "statsettings": N_("Statistics settings"), "webserv": N_("Static web server settings"), "uptime": N_("Uptime monitor settings"), "visitors": N_("Visitor tracking settings"),
         "blocklog": N_("Blocked request log settings"), "plugins": N_("Plugin settings"), "geodb": N_("Geo-IP update settings"), "fwdproxy": N_("Forward proxy settings") };
     var FILES = { "acme_conf.json": N_("ACME settings"), "log_conf.json": N_("Log settings"), "plugin_groups.json": N_("Plugin groups"), "waf_central.json": N_("WAF settings for all sites"),
@@ -303,7 +303,7 @@
     function renderBanner(res) {
         var lr = res.lastRestore, html = "";
         if (res.restorePending) {
-            html = '<div class="ui warning message"><i class="hourglass half icon"></i> A restore is waiting for confirmation after the restart. If Zoraxy does not stay healthy for ' +
+            html = '<div class="ui warning message"><i class="hourglass half icon"></i> A restore is waiting for confirmation after the restart. If Dunree does not stay healthy for ' +
                 esc(res.healthyAfterSeconds) + ' seconds, the previous configuration is put back automatically.</div>';
         } else if (lr && lr.result === "rolled_back") {
             html = '<div class="ui negative message"><i class="exclamation triangle icon"></i> The last restore (version ' + esc(lr.from) +
@@ -311,7 +311,7 @@
         } else if (lr && lr.result === "failed") {
             html = '<div class="ui negative message"><i class="times circle icon"></i> The last restore (version ' + esc(lr.from) + ') failed: ' + esc(lr.detail || "") + '</div>';
         } else if (lr && lr.result === "confirmed" && Date.now() / 1000 - lr.at < 86400) {
-            html = '<div class="ui positive message"><i class="check circle icon"></i> Version ' + esc(lr.from) + ' was restored and Zoraxy is running healthy with it.</div>';
+            html = '<div class="ui positive message"><i class="check circle icon"></i> Version ' + esc(lr.from) + ' was restored and Dunree is running healthy with it.</div>';
         }
         $("#hxBanner").html(html);
     }
@@ -393,7 +393,7 @@
             var blob = new Blob([JSON.stringify(res, null, 2)], { type: "application/json" });
             var a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = "zoraxy-history-diff-" + res.from + "-" + res.to + ".json";
+            a.download = "dunree-history-diff-" + res.from + "-" + res.to + ".json";
             document.body.appendChild(a); a.click(); a.remove();
             setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
         }, function (e) { toast(e.message, false); });
@@ -430,7 +430,7 @@
                 html += '<div class="ui warning message"><b>Skipped (managed elsewhere):</b><ul class="hx-list">' +
                     res.skipped.map(function (s) { return '<li>' + esc(nice(s.label, s.path)) + ' - ' + esc(s.reason) + '</li>'; }).join("") + '</ul></div>';
             }
-            html += '<p class="zx-help">Applying a restore restarts Zoraxy. If it does not come back healthy, the previous configuration is put back automatically.</p>';
+            html += '<p class="zx-help">Applying a restore restarts Dunree. If it does not come back healthy, the previous configuration is put back automatically.</p>';
             $("#hxPreview").html(html);
             $("#hxDiffWrap").html(diffHtml);
             S.previewOK = res.items.length > 0;
@@ -459,7 +459,7 @@
     }
 
     function waitForRestart() {
-        $("#hxRestoreResult").html('<div class="ui info message"><i class="notched circle loading icon"></i> Zoraxy is restarting with the restored configuration...</div>');
+        $("#hxRestoreResult").html('<div class="ui info message"><i class="notched circle loading icon"></i> Dunree is restarting with the restored configuration...</div>');
         var down = false, tries = 0;
         (function poll() {
             tries++;

@@ -87,7 +87,7 @@ func PingIP(ipOrDomain string) (string, time.Duration, int, error) {
 // instead of showing only the raw operating system error.
 func icmpPermissionHint(err error) error {
 	if err != nil && (errors.Is(err, os.ErrPermission) || strings.Contains(err.Error(), "operation not permitted")) {
-		return fmt.Errorf("ICMP needs raw socket permission: run Zoraxy as root or grant it CAP_NET_RAW (setcap cap_net_raw+ep <zoraxy binary>) (%v)", err)
+		return fmt.Errorf("ICMP needs raw socket permission: run Dunree as root or grant it CAP_NET_RAW (setcap cap_net_raw+ep <dunree binary>) (%v)", err)
 	}
 	return err
 }

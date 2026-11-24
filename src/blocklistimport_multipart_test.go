@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/access"
+	"github.com/foleyit/dunree/mod/access"
 )
 
 // The admin UI sends the import form as multipart/form-data (FormData, also for pasted text and uploaded files).

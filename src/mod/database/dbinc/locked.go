@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/instance"
+	"github.com/foleyit/dunree/mod/instance"
 )
 
 // HolderSummary names the process holding the lock on a path ("" when unknown). A var so tests can
@@ -24,9 +24,9 @@ type LockedError struct {
 	Err     error         //the underlying error
 }
 
-// Error is the full text for starting Zoraxy (ends with the stop-then-start advice)
+// Error is the full text for starting Dunree (ends with the stop-then-start advice)
 func (e *LockedError) Error() string {
-	return e.Describe() + "\n" + "Stop that process (for a service: sudo systemctl stop zoraxy), then start Zoraxy again."
+	return e.Describe() + "\n" + "Stop that process (for a service: sudo systemctl stop dunree, or zoraxy on an install upgraded from Zoraxy), then start Dunree again." // legacy-compat
 }
 
 // Describe is the explanation without the closing advice, for callers whose next step differs
@@ -40,7 +40,7 @@ func (e *LockedError) Describe() string {
 	if h := HolderSummary(e.Path); h != "" {
 		b.WriteString("The lock is " + h + "\n")
 	}
-	b.WriteString("Another Zoraxy process (or another program) most likely has it open. Only one process can use the database at a time.\n")
+	b.WriteString("Another Dunree process (or another program) most likely has it open. Only one process can use the database at a time.\n")
 	b.WriteString("Find the process holding it:\n")
 	b.WriteString("    sudo lsof " + e.Path + "\n")
 	b.WriteString("    ps -eo pid,etimes,args | grep [z]oraxy")

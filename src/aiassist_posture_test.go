@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/aiassist"
-	"imuslab.com/zoraxy/mod/posture"
+	"github.com/foleyit/dunree/mod/aiassist"
+	"github.com/foleyit/dunree/mod/posture"
 )
 
 func TestAIPostureAdapterMapsChecksAndIsReadOnly(t *testing.T) {

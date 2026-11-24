@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# FreeBSD rc.d script for Dunree. Copy to /usr/local/etc/rc.d/dunree (mode 755).
+#
+# PROVIDE: dunree
+# REQUIRE: LOGIN NETWORKING
+# KEYWORD: shutdown
+#
+# Add to /etc/rc.conf:
+#   dunree_enable="YES"
+# Optional:
+#   dunree_dir="/var/db/dunree"                 data folder (conf, sys.db, log, plugins)
+#   dunree_args="-port=:8000"                   Dunree flags, see dunree -h
+#                                               (not dunree_flags: rc.subr gives those to daemon(8))
+#   dunree_program="/usr/local/bin/dunree"      the program
+#   dunree_logfile="/var/log/dunree.log"        standard output and errors
+#
+# Dunree runs as root (ports 80 and 443) under daemon(8), which restarts it 5 seconds after a
+# crash. "service dunree stop" sends SIGTERM and waits for the clean stop (worst case 28 s).
+
+. /etc/rc.subr
+
+name="dunree"
+rcvar="dunree_enable"
+
+load_rc_config $name
+
+: ${dunree_enable:="NO"}
+: ${dunree_dir:="/var/db/dunree"}
+: ${dunree_args:="-port=:8000"}
+: ${dunree_program:="/usr/local/bin/dunree"}
+: ${dunree_logfile:="/var/log/dunree.log"}
+
+pidfile="/var/run/${name}.pid"
+childpidfile="/var/run/${name}_child.pid"
+procname="/usr/sbin/daemon"
+command="/usr/sbin/daemon"
+command_args="-f -R 5 -P ${pidfile} -p ${childpidfile} -o ${dunree_logfile} -t ${name} ${dunree_program} ${dunree_args}"
+required_files="${dunree_program}"
+dunree_chdir="${dunree_dir}"
+start_precmd="dunree_prestart"
+
+dunree_prestart()
+{
+	if [ ! -d "${dunree_dir}" ]; then
+		# Database, private keys and tokens: root only.
+		install -d -o root -g wheel -m 750 "${dunree_dir}" || return 1
+	fi
+}
+
+run_rc_command "$1"

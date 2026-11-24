@@ -1,12 +1,12 @@
 // sign_plugin_index.go - key pair and signing helper for the signed plugin index.
 //
-// This is a standalone program (stdlib only). It is NOT part of the Zoraxy
+// This is a standalone program (stdlib only). It is NOT part of the Dunree
 // binary and not part of the Go module; run it with
 // `go run tools/plugin-index/sign_plugin_index.go`.
 //
 // The plugin index is signed with a key of its own. It must never be the key
-// that signs Zoraxy releases: whoever holds the plugin key decides which plugin
-// binaries a proxy accepts, whoever holds the release key decides which Zoraxy
+// that signs Dunree releases: whoever holds the plugin key decides which plugin
+// binaries a proxy accepts, whoever holds the release key decides which Dunree
 // it runs. This tool refuses a key file that is $ZORAXY_RELEASE_KEY or is named
 // like the release key.
 //
@@ -15,7 +15,7 @@
 //	genkey   go run tools/plugin-index/sign_plugin_index.go -genkey PRIVATE.pem PUBLIC.pem
 //	         Creates an ed25519 key pair (PKCS#8 / SPKI PEM, the format of
 //	         tools/sign_release.go); refuses to overwrite. Give PUBLIC.pem to
-//	         Zoraxy (Plugin Manager > Plugin safety settings, or the start flag
+//	         Dunree (Plugin Manager > Plugin safety settings, or the start flag
 //	         -plugin_index_pubkey). Keep PRIVATE.pem off the proxies.
 //
 //	sign     go run tools/plugin-index/sign_plugin_index.go -index DRAFT.json -out index.json \
@@ -29,7 +29,7 @@
 //	         of the URL> or DIR/<file name of the URL> (-files), or the URL itself
 //	         (-fetch, network access).
 //	         -serial must be higher than the serial of the index that is already at
-//	         -out: Zoraxy refuses a signed index that is older than one it has seen
+//	         -out: Dunree refuses a signed index that is older than one it has seen
 //	         (replay protection).
 //	         A download URL has to be https and must not point at a moving target
 //	         ("/releases/latest/"); -allow-http and -allow-unpinned lift that for
@@ -38,6 +38,14 @@
 //	verify   go run tools/plugin-index/sign_plugin_index.go -verify -index index.json -pub PUBLIC.pem [-files DIR]
 //	         Checks the signature, and with -files the checksum of every download
 //	         that is present locally.
+//
+//	sign-raw go run tools/plugin-index/sign_plugin_index.go -sign-raw -index index.json -key PRIVATE.pem [-pub PUBLIC.pem]
+//	         Signs a finished Dunree add-on index ("format": "dunree-addon-index",
+//	         docs/plugins/addon-store.md) exactly as it is: not a byte of the index
+//	         is changed, only <index>.sig is written, and the result is verified.
+//	         tools/addon-store writes such an index, with the checksums and the
+//	         serial number already in it, and calls this mode. -verify reads this
+//	         format too.
 //
 // The private key path may also come from $ZORAXY_PLUGIN_INDEX_KEY. The key is
 // read only to sign; its contents are never printed or logged.
@@ -88,7 +96,10 @@ import (
 const (
 	indexFormat  = "zoraxy-plugin-index"
 	indexVersion = 1
-	maxDownload  = 1 << 30
+	// The Dunree add-on index (written by tools/addon-store, signed here as it is)
+	addonIndexFormat  = "dunree-addon-index"
+	addonIndexVersion = 1
+	maxDownload       = 1 << 30
 )
 
 type download struct {
@@ -123,6 +134,7 @@ func main() {
 	allowUnpinned := flag.Bool("allow-unpinned", false, "accept download URLs that point at a moving target such as /releases/latest/ (tests)")
 	verify := flag.Bool("verify", false, "verify a signed index instead of signing")
 	genkey := flag.Bool("genkey", false, "generate a key pair: -genkey PRIVATE.pem PUBLIC.pem")
+	signRaw := flag.Bool("sign-raw", false, "sign a finished Dunree add-on index as it is (writes <index>.sig only): -sign-raw -index index.json -key PRIVATE.pem [-pub PUBLIC.pem]")
 	flag.Parse()
 
 	var err error
@@ -133,6 +145,8 @@ func main() {
 		} else {
 			err = generateKey(flag.Arg(0), flag.Arg(1))
 		}
+	case *signRaw:
+		err = signRawIndex(*indexPath, *keyPath, *pubPath)
 	case *verify:
 		err = verifyIndex(*indexPath, *pubPath, *filesDir)
 	default:
@@ -181,7 +195,7 @@ func generateKey(privPath, pubPath string) error {
 	if err := writeNew(pubPath, pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: spki}), 0o644); err != nil {
 		return err
 	}
-	fmt.Printf("wrote %s (private, keep it off the proxies) and %s (public, give it to Zoraxy)\n", privPath, pubPath)
+	fmt.Printf("wrote %s (private, keep it off the proxies) and %s (public, give it to Dunree)\n", privPath, pubPath)
 	return nil
 }
 
@@ -364,7 +378,7 @@ func signIndex(o signOptions) error {
 		return err
 	}
 	if old, _, err := readIndex(o.outPath); err == nil && old.Serial >= o.serial {
-		return fmt.Errorf("the index at %s has serial %d: -serial must be higher (Zoraxy refuses an index that is older than one it has seen)", o.outPath, old.Serial)
+		return fmt.Errorf("the index at %s has serial %d: -serial must be higher (Dunree refuses an index that is older than one it has seen)", o.outPath, old.Serial)
 	}
 	seen := map[string]bool{}
 	filled := 0
@@ -474,7 +488,101 @@ func verifyIndex(indexPath, pubPath, filesDir string) error {
 	return nil
 }
 
+// addonIndex is what this tool needs to see of a Dunree add-on index
+type addonIndex struct {
+	Format  string `json:"format"`
+	Version int    `json:"version"`
+	Serial  int64  `json:"serial"`
+	Addons  []struct {
+		ID        string              `json:"id"`
+		Artifacts map[string]download `json:"artifacts"`
+	} `json:"addons"`
+}
+
+// readAddonIndex reads a Dunree add-on index. isAddon is false (and err nil)
+// when the file is some other JSON document, for example a plugin index.
+func readAddonIndex(p string) (idx *addonIndex, raw []byte, isAddon bool, err error) {
+	raw, err = os.ReadFile(p)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	var doc addonIndex
+	if json.Unmarshal(raw, &doc) != nil || doc.Format != addonIndexFormat {
+		return nil, raw, false, nil
+	}
+	if doc.Version != addonIndexVersion {
+		return nil, raw, true, fmt.Errorf("%s: \"version\" must be %d", p, addonIndexVersion)
+	}
+	if doc.Serial <= 0 {
+		return nil, raw, true, fmt.Errorf("%s has no serial number", p)
+	}
+	for _, a := range doc.Addons {
+		if a.ID == "" {
+			return nil, raw, true, fmt.Errorf("%s: an add-on has no id", p)
+		}
+		if len(a.Artifacts) == 0 {
+			return nil, raw, true, fmt.Errorf("%s: add-on %s has no artifacts", p, a.ID)
+		}
+		for platform, d := range a.Artifacts {
+			if sum, err := hex.DecodeString(d.SHA256); err != nil || len(sum) != sha256.Size || d.Size <= 0 || d.URL == "" {
+				return nil, raw, true, fmt.Errorf("%s: add-on %s, %s: no url, checksum or size", p, a.ID, platform)
+			}
+		}
+	}
+	return &doc, raw, true, nil
+}
+
+// signRawIndex signs a finished add-on index without rewriting it
+func signRawIndex(indexPath, keyPath, pubPath string) error {
+	if indexPath == "" {
+		return errors.New("-sign-raw needs -index")
+	}
+	idx, raw, isAddon, err := readAddonIndex(indexPath)
+	if err != nil {
+		return err
+	}
+	if !isAddon {
+		return fmt.Errorf("%s is not a Dunree add-on index (\"format\" must be %q). A plugin index draft is signed without -sign-raw", indexPath, addonIndexFormat)
+	}
+	priv, err := loadPrivate(keyPath)
+	if err != nil {
+		return err
+	}
+	derived := priv.Public().(ed25519.PublicKey)
+	if pubPath != "" {
+		want, err := loadPublic(pubPath)
+		if err != nil {
+			return err
+		}
+		if !derived.Equal(want) {
+			return errors.New("the private key does not match the expected public key (-pub); nothing was written")
+		}
+	}
+	if err := os.WriteFile(indexPath+".sig", ed25519.Sign(priv, raw), 0o644); err != nil {
+		return err
+	}
+	if err := verifyWith(indexPath, derived, ""); err != nil {
+		return fmt.Errorf("self-verification failed: %w", err)
+	}
+	sum := sha256.Sum256(derived)
+	fmt.Printf("signed %d add-ons (serial %d); wrote %s.sig\npublic key fingerprint: %s\n", len(idx.Addons), idx.Serial, indexPath, hex.EncodeToString(sum[:8]))
+	return nil
+}
+
 func verifyWith(indexPath string, pub ed25519.PublicKey, filesDir string) error {
+	if _, raw, isAddon, err := readAddonIndex(indexPath); isAddon {
+		if err != nil {
+			return err
+		}
+		sig, err := os.ReadFile(indexPath + ".sig")
+		if err != nil {
+			return err
+		}
+		if len(sig) != ed25519.SignatureSize || !ed25519.Verify(pub, raw, sig) {
+			return errors.New("bad signature over " + indexPath)
+		}
+		return nil
+	}
 	idx, raw, err := readIndex(indexPath)
 	if err != nil {
 		return err

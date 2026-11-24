@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
 )
 
 func testCAPEM(t *testing.T) string {

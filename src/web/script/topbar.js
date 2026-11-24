@@ -29,7 +29,7 @@
     function lsSet(k, v) { try { if (v === null) { zxStore.remove(k); } else { zxStore.set(k, v); } } catch (e) { /* storage blocked */ } }
 
     var POLL_MS = 45000;
-    var UPDATE_TTL_MS = 14 * 24 * 3600 * 1000, UPDATE_KEY = "zoraxy.topbar.update";
+    var UPDATE_TTL_MS = 14 * 24 * 3600 * 1000, UPDATE_KEY = "dunree.topbar.update";
 
     /* ---------------------------------------------------------------- icons (inline, stroke = currentColor) */
     function svg(body, cls) { return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"" + (cls ? " class=\"" + cls + "\"" : "") + ">" + body + "</svg>"; }

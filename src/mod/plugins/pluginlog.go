@@ -15,7 +15,7 @@ import (
 	Every output line of a plugin is counted and kept in a small ring in memory
 	(shown in the Plugin Manager). Where it goes after that is a per plugin policy:
 
-	- LogTarget = main (default): into the main Zoraxy log, as always;
+	- LogTarget = main (default): into the main Dunree log, as always;
 	- LogTarget = file: into <plugin log dir>/<plugin id>.log, rotated at LogMaxKB
 	  with one old file kept, so a plugin can use at most about twice that on disk.
 
@@ -199,7 +199,7 @@ func (m *Manager) routePluginOutput(p *Plugin, proc *pluginProc, pid int, stream
 	if proc != nil {
 		ok, report := proc.logLimit.allow(now)
 		if report > 0 {
-			m.writePluginLine(p, pid, now, "log", "[zoraxy] "+strconv.FormatInt(report, 10)+" output lines of this plugin were dropped by its rate limit of "+strconv.Itoa(proc.logLimit.perSecond)+" lines per second")
+			m.writePluginLine(p, pid, now, "log", "[dunree] "+strconv.FormatInt(report, 10)+" output lines of this plugin were dropped by its rate limit of "+strconv.Itoa(proc.logLimit.perSecond)+" lines per second")
 		}
 		if !ok {
 			p.obs.logDropped.Add(1)

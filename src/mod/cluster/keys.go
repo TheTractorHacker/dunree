@@ -1,5 +1,5 @@
 // Package cluster implements the optional high availability features of
-// Zoraxy: a shared secret for node independent session keys, a health
+// Dunree: a shared secret for node independent session keys, a health
 // endpoint for external load balancers and a primary to follower
 // configuration sync.
 //

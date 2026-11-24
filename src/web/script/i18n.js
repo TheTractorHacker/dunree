@@ -1,5 +1,5 @@
 /*
-    i18n.js - runtime translation layer for the Zoraxy admin UI
+    i18n.js - runtime translation layer for the Dunree admin UI
 
     There is no build step and the UI text is plain English in the HTML, so translation is done
     at runtime: locales/<code>.json maps the exact English text (trimmed, whitespace collapsed)
@@ -25,7 +25,7 @@
     var LANGS = [["zh-CN", "简体中文"], ["zh-TW", "繁體中文"], ["es", "Español"], ["de", "Deutsch"], ["fr", "Français"],
         ["ja", "日本語"], ["pt-BR", "Português"], ["ru", "Русский"], ["en", "English"]];
     var RTL = { ar: 1, he: 1, fa: 1, ur: 1 };
-    var STORE_KEY = "zoraxy.lang";
+    var STORE_KEY = "dunree.lang";
     var ATTRS = ["placeholder", "title", "aria-label", "alt", "label", "data-content", "data-tooltip"];
     var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, CODE: 1, PRE: 1, TEXTAREA: 1, NOSCRIPT: 1, SVG: 1, svg: 1, TITLE: 1 };
     var BUTTON_INPUT = { button: 1, submit: 1, reset: 1 };
@@ -55,7 +55,13 @@
     }
     function load(k) {
         if (window.zxStore) return zxStore.get(k);
-        try { return localStorage.getItem(k); } catch (e) { return null; }
+        try {
+            var v = localStorage.getItem(k);
+            // a page without the helper (login) on a browser that last ran the UI under its earlier name:
+            // read the key that UI wrote (safestorage.js copies it once on the first admin page)
+            if (v === null && k.lastIndexOf("dunree", 0) === 0) v = localStorage.getItem("zoraxy" + k.substring(6)); // rebrand:keep
+            return v;
+        } catch (e) { return null; }
     }
 
     // "zh-Hans-CN" -> "zh-CN", "pt" -> "pt-BR" ... null when not shipped

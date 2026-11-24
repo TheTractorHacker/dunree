@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-// Decision types Zoraxy acts on. Anything else is counted and logged, never enforced.
+// Decision types Dunree acts on. Anything else is counted and logged, never enforced.
 const (
 	TypeBan     = "ban"
 	TypeCaptcha = "captcha"
 )
 
-// Scopes Zoraxy understands (LAPI scope names are "Ip" and "Range"); any other scope is counted and ignored.
+// Scopes Dunree understands (LAPI scope names are "Ip" and "Range"); any other scope is counted and ignored.
 const (
 	ScopeIP    = "ip"
 	ScopeRange = "range"

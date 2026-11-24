@@ -60,27 +60,27 @@
             <img src="img/banner.png" width="100%">
         </div>
         <h1>Introduction</h1>
-        <h2>What is Zoraxy Plugin?</h2>
+        <h2>What is Dunree Plugin?</h2>
         <p>
-            Zoraxy Plugin is a powerful extension feature designed to enhance the functionality of the Zoraxy system.
+            Dunree Plugin is a powerful extension feature designed to enhance the functionality of the Dunree system.
             It provides additional features and capabilities that are not part of the core system, allowing users to customize their experience and optimize performance.
-            The plugin is built to be modular and flexible, enabling users to tailor their Zoraxy environment to meet specific needs.
+            The plugin is built to be modular and flexible, enabling users to tailor their Dunree environment to meet specific needs.
         </p>
         <p>
-            Zoraxy plugins are distributed as binaries, and developers have the flexibility to choose whether to open source them or not  
+            Dunree plugins are distributed as binaries, and developers have the flexibility to choose whether to open source them or not  
             <span class="ts-text is-heavy">as the plugin library and interface are open source under the LGPL license</span>. 
             <br><br>
             There are two primary types of plugins: router and utilities. Router-type plugins are involved with connections from HTTP proxy rules, 
-            while utility plugins provide user interfaces for various network features that operate independently of the Zoraxy core.
+            while utility plugins provide user interfaces for various network features that operate independently of the Dunree core.
         </p>
 
         <div class="ts-divider"></div>
         <h2>How plugins are distributed & installed</h2>
         <p>
-            Zoraxy plugins are distributed as platform-dependent binaries, making them tailored to specific operating systems and CPU architectures. 
+            Dunree plugins are distributed as platform-dependent binaries, making them tailored to specific operating systems and CPU architectures. 
             These binaries are named following a convention that includes the operating system, CPU architecture, and plugin name, such as <span class="ts-text is-code">linux_amd64_foobar</span>, <span class="ts-text is-code">windows_amd64_foobar.exe</span>, or <span class="ts-text is-code">linux_arm64_foobar</span>. 
             <br><br>
-            To manually install a plugins for testing, simply place the binary file into the <span class="ts-text is-code">/plugins/{plugin_name}/</span> folder within your Zoraxy installation directory.
+            To manually install a plugins for testing, simply place the binary file into the <span class="ts-text is-code">/plugins/{plugin_name}/</span> folder within your Dunree installation directory.
         </p>
 
         <div class="ts-box is-warning is-start-indicated">
@@ -103,12 +103,12 @@
         <div class="ts-divider"></div>
         <h2>Plugin vs Pull Request</h2>
         <p>
-            The Zoraxy plugin was introduced to address specific use cases that enhance its functionality.
-            It serves as an extension to the core Zoraxy system, providing additional features and capabilities while maintaining the integrity of the core system.
+            The Dunree plugin was introduced to address specific use cases that enhance its functionality.
+            It serves as an extension to the core Dunree system, providing additional features and capabilities while maintaining the integrity of the core system.
         </p>
         <ul>
             <li>
-                It is designed to handle features that are challenging to integrate directly into the Zoraxy core.
+                It is designed to handle features that are challenging to integrate directly into the Dunree core.
             </li>
             <li>
                 It caters to scenarios where certain features are only applicable in limited situations, avoiding unnecessary resource consumption for other users.
@@ -120,11 +120,11 @@
 
         <h3>When should you add a core PR or a plugin?</h3>
         <p>
-        In certain situations, implementing a feature as a plugin is more reasonable than directly integrating it into the Zoraxy core:
+        In certain situations, implementing a feature as a plugin is more reasonable than directly integrating it into the Dunree core:
         </p>
         <ul>
             <li>
-                <strong>Core PR:</strong> If the feature is relevant to most users and enhances Zoraxy's core functionality, consider submitting a core Pull Request (PR).
+                <strong>Core PR:</strong> If the feature is relevant to most users and enhances Dunree's core functionality, consider submitting a core Pull Request (PR).
             </li>
             <li>
                 <strong>Plugin:</strong> If the feature is targeted at a smaller user base or requires additional dependencies that not all users need, it should be developed as a plugin.
@@ -145,9 +145,9 @@
         </div>
         
         <div class="ts-container has-top-padded-large">
-            <h3>Will a plugin crash the whole Zoraxy?</h3>
+            <h3>Will a plugin crash the whole Dunree?</h3>
             <p>
-            No. Plugins operate in a separate process from Zoraxy. If a plugin crashes, Zoraxy will terminate and disable that plugin without affecting the core operations. This is by design to ensure stability.
+            No. Plugins operate in a separate process from Dunree. If a plugin crashes, Dunree will terminate and disable that plugin without affecting the core operations. This is by design to ensure stability.
             </p>
         </div>
 
@@ -185,27 +185,27 @@
             <img src="img/banner.png" width="100%">
         </div>
         <h1>介紹</h1>
-        <h2>Zoraxy 插件是什麼？</h2>
+        <h2>Dunree 插件是什麼？</h2>
         <p>
-            Zoraxy 插件是一個強大的擴展功能，旨在增強 Zoraxy 系統的功能。
+            Dunree 插件是一個強大的擴展功能，旨在增強 Dunree 系統的功能。
             它提供了核心系統中沒有的額外功能和能力，允許用戶自定義體驗並優化性能。
-            該插件被設計為模組化且靈活的，使用戶能夠根據特定需求調整 Zoraxy 環境。
+            該插件被設計為模組化且靈活的，使用戶能夠根據特定需求調整 Dunree 環境。
         </p>
         <p>
-            Zoraxy 插件以二進制文件的形式分發，開發者可以選擇是否開源
+            Dunree 插件以二進制文件的形式分發，開發者可以選擇是否開源
             <span class="ts-text is-heavy">因為插件庫和接口是基於 LGPL 授權的開源項目</span>。
             <br><br>
             插件主要分為兩種類型：路由器和工具。路由器類型的插件與 HTTP 代理規則的連接有關，
-            而工具插件則為各種獨立於 Zoraxy 核心運行的網絡功能提供用戶界面。
+            而工具插件則為各種獨立於 Dunree 核心運行的網絡功能提供用戶界面。
         </p>
 
         <div class="ts-divider"></div>
         <h2>插件如何分發與安裝</h2>
         <p>
-            Zoraxy 插件以平台相關的二進制文件形式分發，這使得它們針對特定的操作系統和 CPU 架構進行了優化。
+            Dunree 插件以平台相關的二進制文件形式分發，這使得它們針對特定的操作系統和 CPU 架構進行了優化。
             這些二進制文件的命名遵循一個約定，包括操作系統、CPU 架構和插件名稱，例如 <span class="ts-text is-code">linux_amd64_foobar</span>、<span class="ts-text is-code">windows_amd64_foobar.exe</span> 或 <span class="ts-text is-code">linux_arm64_foobar</span>。
             <br><br>
-            要手動安裝插件進行測試，只需將二進制文件放置在 Zoraxy 安裝目錄中的 <span class="ts-text is-code">/plugins/{plugin_name}/</span> 文件夾內。
+            要手動安裝插件進行測試，只需將二進制文件放置在 Dunree 安裝目錄中的 <span class="ts-text is-code">/plugins/{plugin_name}/</span> 文件夾內。
         </p>
 
         <div class="ts-box is-warning is-start-indicated">
@@ -228,12 +228,12 @@
         <div class="ts-divider"></div>
         <h2>插件與開 Pull Request 的區別</h2>
         <p>
-            Zoraxy 插件的引入是為了解決特定的使用案例，從而增強其功能。
-            它作為 Zoraxy 核心系統的擴展，提供了額外的功能和能力，同時保持核心系統的完整性。
+            Dunree 插件的引入是為了解決特定的使用案例，從而增強其功能。
+            它作為 Dunree 核心系統的擴展，提供了額外的功能和能力，同時保持核心系統的完整性。
         </p>
         <ul>
             <li>
-                它旨在處理難以直接集成到 Zoraxy 核心中的功能。
+                它旨在處理難以直接集成到 Dunree 核心中的功能。
             </li>
             <li>
                 它適用於某些功能僅在有限情況下適用的場景，避免了對其他用戶造成不必要的資源消耗。
@@ -245,11 +245,11 @@
 
         <h3>何時應該新增核心 PR 或插件？</h3>
         <p>
-        在某些情況下，將功能實作為插件比直接整合到 Zoraxy 核心更為合理：
+        在某些情況下，將功能實作為插件比直接整合到 Dunree 核心更為合理：
         </p>
         <ul>
         <li>
-            <strong>核心 PR：</strong> 如果功能對大多數用戶都有相關性，並且能提升 Zoraxy 的核心功能，則應考慮提交核心的 Pull Request (PR)。
+            <strong>核心 PR：</strong> 如果功能對大多數用戶都有相關性，並且能提升 Dunree 的核心功能，則應考慮提交核心的 Pull Request (PR)。
         </li>
         <li>
             <strong>插件：</strong> 如果功能僅針對少數用戶群體，或需要額外的依賴項而非所有用戶都需要，則應開發為插件。
@@ -270,9 +270,9 @@
         </div>
         
         <div class="ts-container has-top-padded-large">
-            <h3>插件會導致整個 Zoraxy 崩潰嗎？</h3>
+            <h3>插件會導致整個 Dunree 崩潰嗎？</h3>
             <p>
-            不會。插件在與 Zoraxy 分離的進程中運行。如果插件崩潰，Zoraxy 會終止並禁用該插件，而不會影響核心操作。這是為了確保穩定性而設計的。
+            不會。插件在與 Dunree 分離的進程中運行。如果插件崩潰，Dunree 會終止並禁用該插件，而不會影響核心操作。這是為了確保穩定性而設計的。
             </p>
         </div>
 
@@ -310,27 +310,27 @@
             <img src="img/banner.png" width="100%">
         </div>
         <h1>Einführung</h1>
-        <h2>Was ist das Zoraxy Plugin?</h2>
+        <h2>Was ist das Dunree Plugin?</h2>
         <p>
-            Das Zoraxy Plugin ist eine leistungsstarke Erweiterungsfunktion, die entwickelt wurde, um die Funktionalität des Zoraxy-Systems zu verbessern.
+            Das Dunree Plugin ist eine leistungsstarke Erweiterungsfunktion, die entwickelt wurde, um die Funktionalität des Dunree-Systems zu verbessern.
             Es bietet zusätzliche Funktionen und Fähigkeiten, die nicht Teil des Kernsystems sind, und ermöglicht es den Benutzern, ihre Erfahrung anzupassen und die Leistung zu optimieren.
-            Das Plugin ist modular und flexibel aufgebaut, sodass Benutzer ihre Zoraxy-Umgebung an spezifische Anforderungen anpassen können.
+            Das Plugin ist modular und flexibel aufgebaut, sodass Benutzer ihre Dunree-Umgebung an spezifische Anforderungen anpassen können.
         </p>
         <p>
-            Zoraxy-Plugins werden als Binärdateien verteilt, und Entwickler können wählen, ob sie diese als Open Source veröffentlichen möchten oder nicht,
+            Dunree-Plugins werden als Binärdateien verteilt, und Entwickler können wählen, ob sie diese als Open Source veröffentlichen möchten oder nicht,
             <span class="ts-text is-heavy">da die Plugin-Bibliothek und die Schnittstelle unter der LGPL-Lizenz Open Source sind</span>.
             <br><br>
             Es gibt zwei Haupttypen von Plugins: Router und Utilities. Router-Plugins sind an Verbindungen von HTTP-Proxy-Regeln beteiligt,
-            während Utility-Plugins Benutzeroberflächen für verschiedene Netzwerkfunktionen bereitstellen, die unabhängig vom Zoraxy-Kern arbeiten.
+            während Utility-Plugins Benutzeroberflächen für verschiedene Netzwerkfunktionen bereitstellen, die unabhängig vom Dunree-Kern arbeiten.
         </p>
 
         <div class="ts-divider"></div>
         <h2>Wie Plugins verteilt und installiert werden</h2>
         <p>
-            Zoraxy-Plugins werden als plattformabhängige Binärdateien verteilt, die speziell für bestimmte Betriebssysteme und CPU-Architekturen optimiert sind.
+            Dunree-Plugins werden als plattformabhängige Binärdateien verteilt, die speziell für bestimmte Betriebssysteme und CPU-Architekturen optimiert sind.
             Diese Binärdateien werden nach einem Konventionsschema benannt, das das Betriebssystem, die CPU-Architektur und den Plugin-Namen umfasst, wie z. B. <span class="ts-text is-code">linux_amd64_foobar</span>, <span class="ts-text is-code">windows_amd64_foobar.exe</span> oder <span class="ts-text is-code">linux_arm64_foobar</span>.
             <br><br>
-            Um ein Plugin manuell zu installieren und zu testen, legen Sie die Binärdatei einfach im Ordner <span class="ts-text is-code">/plugins/{plugin_name}/</span> im Zoraxy-Installationsverzeichnis ab.
+            Um ein Plugin manuell zu installieren und zu testen, legen Sie die Binärdatei einfach im Ordner <span class="ts-text is-code">/plugins/{plugin_name}/</span> im Dunree-Installationsverzeichnis ab.
         </p>
 
         <div class="ts-box is-warning is-start-indicated">
@@ -353,12 +353,12 @@
         <div class="ts-divider"></div>
         <h2>Plugin vs Pull Request</h2>
         <p>
-            Das Zoraxy-Plugin wurde eingeführt, um spezifische Anwendungsfälle zu adressieren, die seine Funktionalität erweitern.
-            Es dient als Erweiterung des Zoraxy-Kernsystems und bietet zusätzliche Funktionen und Fähigkeiten, während die Integrität des Kernsystems erhalten bleibt.
+            Das Dunree-Plugin wurde eingeführt, um spezifische Anwendungsfälle zu adressieren, die seine Funktionalität erweitern.
+            Es dient als Erweiterung des Dunree-Kernsystems und bietet zusätzliche Funktionen und Fähigkeiten, während die Integrität des Kernsystems erhalten bleibt.
         </p>
         <ul>
             <li>
-                Es ist darauf ausgelegt, Funktionen zu behandeln, die schwer direkt in den Zoraxy-Kern zu integrieren sind.
+                Es ist darauf ausgelegt, Funktionen zu behandeln, die schwer direkt in den Dunree-Kern zu integrieren sind.
             </li>
             <li>
                 Es richtet sich an Szenarien, in denen bestimmte Funktionen nur in begrenzten Situationen anwendbar sind, um unnötigen Ressourcenverbrauch für andere Benutzer zu vermeiden.
@@ -370,11 +370,11 @@
         
         <h3>Wann sollte ein Core-PR oder ein Plugin hinzugefügt werden?</h3>
         <p>
-        In bestimmten Situationen ist es sinnvoller, eine Funktion als Plugin zu implementieren, anstatt sie direkt in den Zoraxy-Kern zu integrieren:
+        In bestimmten Situationen ist es sinnvoller, eine Funktion als Plugin zu implementieren, anstatt sie direkt in den Dunree-Kern zu integrieren:
         </p>
         <ul>
             <li>
-                <strong>Core-PR:</strong> Wenn die Funktion für die meisten Benutzer relevant ist und die Kernfunktionalität von Zoraxy verbessert, sollten Sie einen Core-Pull-Request (PR) in Betracht ziehen.
+                <strong>Core-PR:</strong> Wenn die Funktion für die meisten Benutzer relevant ist und die Kernfunktionalität von Dunree verbessert, sollten Sie einen Core-Pull-Request (PR) in Betracht ziehen.
             </li>
             <li>
                 <strong>Plugin:</strong> Wenn die Funktion auf eine kleinere Benutzerbasis abzielt oder zusätzliche Abhängigkeiten erfordert, die nicht alle Benutzer benötigen, sollte sie als Plugin entwickelt werden.
@@ -396,9 +396,9 @@
         </div>
         
         <div class="ts-container has-top-padded-large">
-            <h3>Wird ein Plugin das gesamte Zoraxy zum Absturz bringen?</h3>
+            <h3>Wird ein Plugin das gesamte Dunree zum Absturz bringen?</h3>
             <p>
-            Nein. Plugins laufen in einem separaten Prozess von Zoraxy. Wenn ein Plugin abstürzt, beendet und deaktiviert Zoraxy dieses Plugin, ohne die Kernoperationen zu beeinträchtigen. Dies ist so konzipiert, um Stabilität zu gewährleisten.
+            Nein. Plugins laufen in einem separaten Prozess von Dunree. Wenn ein Plugin abstürzt, beendet und deaktiviert Dunree dieses Plugin, ohne die Kernoperationen zu beeinträchtigen. Dies ist so konzipiert, um Stabilität zu gewährleisten.
             </p>
         </div>
 

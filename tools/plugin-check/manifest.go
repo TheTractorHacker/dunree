@@ -12,9 +12,9 @@ import (
 	The manifest a plugin prints for -introspect, and the checks on it.
 
 	The field list and the rules are those of docs/plugins/contract.md section 2
-	and of the loader of Zoraxy (src/mod/plugins: validatePluginSpec,
+	and of the loader of Dunree (src/mod/plugins: validatePluginSpec,
 	sanitizeHookSpec, sanitizeSupervisionSpec, sanitizeContractSpec). The kit is a
-	program of its own and does not import Zoraxy.
+	program of its own and does not import Dunree.
 */
 
 const (
@@ -73,13 +73,14 @@ type manifest struct {
 	HealthPath   string        `json:"health_path"`
 	ConfigureVia string        `json:"configure_via"`
 	APIVersion   int           `json:"api_version"`
+	SDKFlavor    string        `json:"sdk_flavor"` //"dunree": built with the Dunree SDK, gets the dunree_* configure fields as well
 }
 
 func (m *manifest) version() string {
 	return fmt.Sprintf("%d.%d.%d", m.VersionMajor, m.VersionMinor, m.VersionPatch)
 }
 
-// hookTimeoutMs is the per call timeout Zoraxy uses for this plugin (default and cap applied)
+// hookTimeoutMs is the per call timeout Dunree uses for this plugin (default and cap applied)
 func (m *manifest) hookTimeoutMs() int {
 	ms := defaultHookTimeout
 	if m.Hooks != nil && m.Hooks.TimeoutMs > 0 {
@@ -128,7 +129,7 @@ func normalizeEndpoint(s string) string {
 	return strings.TrimSuffix(s, "/")
 }
 
-// cleanEndpointPath is the rule of Zoraxy for a filter path ("" = unusable)
+// cleanEndpointPath is the rule of Dunree for a filter path ("" = unusable)
 func cleanEndpointPath(p string) string {
 	p = strings.TrimSpace(p)
 	if p == "" {
@@ -165,7 +166,7 @@ var knownEvents = map[string]bool{
 	"proxyRuleAdded": true, "proxyRuleEdited": true, "proxyRuleRemoved": true, //SDK 1.2.0
 }
 
-// decodeManifest reads the output of -introspect as Zoraxy does. An api_version of
+// decodeManifest reads the output of -introspect as Dunree does. An api_version of
 // another type than a whole number is dropped (the plugin is then a legacy
 // plugin) and reported as a note; every other type error refuses the manifest.
 func decodeManifest(out []byte) (*manifest, []string, error) {
@@ -192,16 +193,16 @@ func decodeManifest(out []byte) (*manifest, []string, error) {
 	if err := json.Unmarshal(rest, &m); err != nil {
 		return nil, nil, err
 	}
-	return &m, []string{"api_version is not a whole number: Zoraxy drops it and treats the plugin as a legacy plugin"}, nil
+	return &m, []string{"api_version is not a whole number: Dunree drops it and treats the plugin as a legacy plugin"}, nil
 }
 
-// checkManifest returns what Zoraxy refuses (fails) and what it drops, ignores or
+// checkManifest returns what Dunree refuses (fails) and what it drops, ignores or
 // what an administrator should know (warns). It also normalises the manifest the
-// way Zoraxy does, so the later checks call what Zoraxy would call.
+// way Dunree does, so the later checks call what Dunree would call.
 func checkManifest(m *manifest) (fails []string, warns []string) {
 	for name, v := range map[string]string{"id": m.ID, "name": m.Name, "author": m.Author, "description": m.Description, "ui_path": m.UIPath} {
 		if v == "" {
-			fails = append(fails, name+" is empty: Zoraxy does not load the plugin")
+			fails = append(fails, name+" is empty: Dunree does not load the plugin")
 		}
 	}
 	if len(m.ID) > 128 || strings.ContainsAny(m.ID, "/\\ \t\r\n<>\"'") || strings.Contains(m.ID, "..") {
@@ -228,7 +229,7 @@ func checkManifest(m *manifest) (fails []string, warns []string) {
 		}
 	}
 	if (m.DynamicCaptureSniff == "") != (m.DynamicCaptureIngress == "") {
-		warns = append(warns, "dynamic capture needs both dynamic_capture_sniff and dynamic_capture_ingress: Zoraxy ignores one without the other")
+		warns = append(warns, "dynamic capture needs both dynamic_capture_sniff and dynamic_capture_ingress: Dunree ignores one without the other")
 	}
 	if len(m.SubscriptionsEvents) > 0 && m.SubscriptionPath == "" {
 		fails = append(fails, "subscriptions_events without subscription_path: no event can be delivered")
@@ -254,7 +255,7 @@ func checkManifest(m *manifest) (fails []string, warns []string) {
 			h.Version = 1
 		}
 		if h.Version > hookAPIVersion {
-			warns = append(warns, fmt.Sprintf("hooks version %d is newer than %d: Zoraxy ignores the hooks", h.Version, hookAPIVersion))
+			warns = append(warns, fmt.Sprintf("hooks version %d is newer than %d: Dunree ignores the hooks", h.Version, hookAPIVersion))
 			m.Hooks = nil
 		} else {
 			stages, seen := []string{}, map[string]bool{}
@@ -266,25 +267,25 @@ func checkManifest(m *manifest) (fails []string, warns []string) {
 						stages = append(stages, s)
 					}
 				default:
-					warns = append(warns, fmt.Sprintf("unknown hook stage %q: ignored by Zoraxy", s))
+					warns = append(warns, fmt.Sprintf("unknown hook stage %q: ignored by Dunree", s))
 				}
 			}
 			h.Stages = stages
 			h.FilterRequestPath, h.FilterResponsePath = cleanEndpointPath(h.FilterRequestPath), cleanEndpointPath(h.FilterResponsePath)
 			if len(stages) > 0 && h.FilterRequestPath == "" {
-				fails = append(fails, "hooks declared without a valid filter_request_path: Zoraxy ignores the hooks")
+				fails = append(fails, "hooks declared without a valid filter_request_path: Dunree ignores the hooks")
 				h.Stages = nil
 			}
 			switch h.FailurePolicy {
 			case "", "fail_open", "fail_closed":
 			default:
-				warns = append(warns, fmt.Sprintf("unknown failure policy %q: Zoraxy uses fail_open", h.FailurePolicy))
+				warns = append(warns, fmt.Sprintf("unknown failure policy %q: Dunree uses fail_open", h.FailurePolicy))
 			}
 			if h.TimeoutMs < 0 || h.TimeoutMs > maxHookTimeoutMs {
-				warns = append(warns, fmt.Sprintf("hooks timeout_ms %d is outside 0 to %d: Zoraxy clamps it", h.TimeoutMs, maxHookTimeoutMs))
+				warns = append(warns, fmt.Sprintf("hooks timeout_ms %d is outside 0 to %d: Dunree clamps it", h.TimeoutMs, maxHookTimeoutMs))
 			}
 			if h.BodyPreviewBytes < 0 || h.BodyPreviewBytes > maxBodyPreviewBytes {
-				warns = append(warns, fmt.Sprintf("hooks body_preview_bytes %d is outside 0 to %d: Zoraxy clamps it", h.BodyPreviewBytes, maxBodyPreviewBytes))
+				warns = append(warns, fmt.Sprintf("hooks body_preview_bytes %d is outside 0 to %d: Dunree clamps it", h.BodyPreviewBytes, maxBodyPreviewBytes))
 				if h.BodyPreviewBytes < 0 {
 					h.BodyPreviewBytes = 0
 				} else {
@@ -294,21 +295,21 @@ func checkManifest(m *manifest) (fails []string, warns []string) {
 		}
 	}
 	if m.HealthPath != "" && !validHealthPath(m.HealthPath) {
-		warns = append(warns, "health_path is not a plain absolute path: Zoraxy drops it and uses a TCP connect")
+		warns = append(warns, "health_path is not a plain absolute path: Dunree drops it and uses a TCP connect")
 		m.HealthPath = ""
 	}
 	switch m.ConfigureVia {
 	case "", "stdin":
 	default:
-		warns = append(warns, fmt.Sprintf("configure_via %q is unknown: Zoraxy passes the configuration on the command line", m.ConfigureVia))
+		warns = append(warns, fmt.Sprintf("configure_via %q is unknown: Dunree passes the configuration on the command line", m.ConfigureVia))
 		m.ConfigureVia = ""
 	}
 	switch {
 	case m.APIVersion < 0 || m.APIVersion > 1000000:
-		warns = append(warns, fmt.Sprintf("api_version %d is not a version: Zoraxy drops it and treats the plugin as a legacy plugin", m.APIVersion))
+		warns = append(warns, fmt.Sprintf("api_version %d is not a version: Dunree drops it and treats the plugin as a legacy plugin", m.APIVersion))
 		m.APIVersion = 0
 	case m.APIVersion > contractMax:
-		warns = append(warns, fmt.Sprintf("api_version %d is newer than the contract version %d this kit checks against: Zoraxy warns about it, and refuses the plugin when the administrator asked for that", m.APIVersion, contractMax))
+		warns = append(warns, fmt.Sprintf("api_version %d is newer than the contract version %d this kit checks against: Dunree warns about it, and refuses the plugin when the administrator asked for that", m.APIVersion, contractMax))
 	}
 	return fails, warns
 }

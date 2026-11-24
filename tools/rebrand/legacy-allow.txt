@@ -1,0 +1,81 @@
+# Dunree rebrand - legacy-compat allowlist.
+#
+# Every line names a string that still spells the old product name ON PURPOSE, because something outside
+# this source tree depends on it: an existing install's cookies or browser storage, a third-party plugin
+# built with the Zoraxy SDK, a cluster peer on an older build, a monitor, a dashboard, a signed file.
+# tools/rebrand/rename.py never rewrites a span matched here, in any file.  The work packages named in the
+# last column add the Dunree name next to it and keep the old one working (docs/rebrand/plan.md has the
+# row).  Delete a line only when the work package has replaced it with real compat code AND a test.
+#
+# Format:  id <2+ spaces or tab> python regex <2+ spaces or tab> plan row / work package: why
+# (a regex therefore cannot contain two spaces in a row; use \s or [ ]{2})
+
+# --- headers -------------------------------------------------------------------------------------------
+plugin-headers        X-Zoraxy-(?:Plugin-Token|Request[Ii][Dd]|Capture|UR[Ii]|Uri|U[Ii]-Isolated|Event-Type|C[Ss][Rr][Ff])  rows 14-15 / WP5: old-SDK plugins read and send only these names
+cluster-headers       X-Zoraxy-(?:Snapshot-Version|Fleet-Hash)  row 18 / WP3: mixed-version clusters during a rolling upgrade
+public-headers        X-Zoraxy-(?:Ref|Captcha-Reason|Error-Page|Event|Signature|Timestamp|WAF)\b  rows 11, 17 / WP3: visitors, monitors and webhook receivers match these
+headers-lowercase     \bx-zoraxy-(?:ref|captcha-reason|error-page|event|signature|timestamp|waf|plugin-token|requestid|capture|uri|ui-isolated|event-type|csrf|snapshot-version|fleet-hash)\b  rows 11-18: same headers written in lower case (JS fetch, tests, docs)
+headers-wildcard      X-Zoraxy-\*  rows 11-18: prose and filters that mean "all the legacy headers"
+
+# --- plugin contract -----------------------------------------------------------------------------------
+plugin-fields         \bzoraxy_(?:port|version|uuid)\b  row 23 / WP5: configure payload fields the old SDK decodes
+csrf-meta             zoraxy\.csrf\.[Tt]oken  row 16 / WP4, WP5: meta tag name third-party plugin UIs read
+store-index-url       (?:https:)?//raw\.githubusercontent\.com/aroz-online/zoraxy-official-plugins[^\s"'<)]*  row 26 / WP5: becomes the migrated value of plugin_store_urls on existing installs
+store-repo            aroz-online/zoraxy-official-plugins  row 26 / WP5: upstream's store repository (third party, named as such)
+
+# --- public paths, cookies, browser storage ------------------------------------------------------------
+well-known-paths      /\.zoraxy/  row 20 / WP3: health checks and custom captcha templates call the old prefix
+well-known-prefix     "/\.zoraxy"|'/\.zoraxy'|`/\.zoraxy`  row 20 / WP3: the same prefix without a trailing slash (route prefix checks)
+cookies               \bzoraxy_(?:csrf|captcha_session|rule_challenge|waf_challenge)\b  row 21 / WP2: cookies already in visitors' and admins' browsers
+admin-cookie          SYSTEM_NAME\s*=\s*"Zoraxy"  rows 5-6 / WP2: SYSTEM_NAME is also the admin session cookie name; renaming it logs every admin out
+localstorage          \bzoraxy[._](?:menu_groups|recent_tabs|pinned_tabs|trafficflow_[a-z]+|status_diagram|sso_tab|site_editor_mode|palette_recent|utm\.range|topbar\.update|stats\.refwhy|lang)\b  row 31 / WP4: keys already stored in admins' browsers; zxStore migrates them
+
+# --- values other systems compare --------------------------------------------------------------------
+metrics               \bzoraxy_(?:http_|upstream_|waf_|tls_|cluster_|build_info|uptime_|ratelimit_|access_blocked|captcha_)[a-z0-9_]*  row 27 / WP3: Prometheus series names in dashboards and alerts
+metrics-realm         zoraxy-metrics  row 27 / WP3: Basic-auth realm of the metrics endpoint
+env-hook-vars         \bZORAXY_(?:EVENT|SOURCE|SUBJECT|DOMAINS|CA|ERROR|TIME|EXPIRY|DAYS_LEFT|EVENT_JSON)\b  row 28 / WP3: environment of user-written hook commands
+env-input-vars        \bZORAXY_(?:METRICS_TOKEN|RELEASE_KEY|RELEASE_PUB|PLUGIN_INDEX_KEY)\b  rows 29-30 / WP3, WP7: variables set in users' unit files and release machines
+release-key-dirs      \.zoraxy-(?:release-key|plugin-index-key)  row 30 / WP7: where the signing keys live on the release machine
+user-agents           \b[Zz]oraxy-(?:HealthCheck|Webhook|Notify|Sablier|HTTPTest|blocklist-import|updater|cluster/|fleet/|wsproxy/|aiassist/|crowdsec-bouncer/)  row 13 / WP3: upstream allow-lists match these User-Agent tokens
+identity-values       "zoraxy-"\s*\+\s*h\.Parent\.Option\.HostUUID|"[Zz]oraxy/"\s*\+\s*rrr\.Version|\bzoraxy_sso\b  rows 12, 48 / WP3: X-Forwarded-Server, x-proxy-by, UA rewrite, X-Auth-Method values
+crowdsec-scenario     \bzoraxy/manual-ban\b  row 45 / WP3: decisions already in the LAPI carry this scenario
+zrok-share-prefix     "zoraxy-"  row 46 / WP3: prefix by which existing zrok shares and similar generated names are recognised
+mdns                  MDNS_(?:HOSTNAME_PREFIX|IDENTIFY_DOMAIN|IDENTIFY_VENDOR)\s*=\s*"[^"]*"  row 41 / WP3: .local names already bookmarked; vendor/domain reworded by hand
+
+# --- release, updater, install -------------------------------------------------------------------------
+release-assets        \bzoraxy_(?:\$\(os\)|\$\{?[A-Za-z_]+\}?|linux|windows|darwin|freebsd|openbsd|netbsd|"\s*\+\s*\w+)[A-Za-z0-9_.{}$()-]*  row 34 / WP7: asset names the installed updaters download
+release-checksum      \bzoraxy_file_checksum\b  row 34 / WP7: checksum file name in published releases
+updater-backups       \bzoraxy-pre-update-  row 33 / WP7: backups already on disk must stay listable and restorable
+updater-previous      \.zoraxy-previous\b|\bzoraxy\.prev\b  row 33 / WP7: previous-binary copies an installed updater left behind
+update-repo           TheTractorHacker/zoraxy  row 35 / WP7: release source until the Dunree repository has releases
+confpack-field        \bzoraxyVersion\b  row 6 / WP2: field in exported configuration packs
+docker-upstream       zoraxydocker(?:/zoraxy)?  row 40 / WP8: upstream's image namespace; must be replaced by a variable, not by a guess
+docker-label          com\.imuslab\.zoraxy\.container-identifier  row 40 / WP8: label by which dockerux finds the running container
+install-paths         /(?:opt|var/log|var/lib|etc|usr/local/bin|usr/bin|usr/local/etc|path/to|home/[a-z]+)/zoraxy\b(?:/zoraxy\b)?  row 39 / WP8: paths of existing installs and container volumes
+systemd-unit          \bzoraxy\.service\b  row 38 / WP8: unit name on existing installs; checks must accept both
+binary-name           (?<![\w.-])zoraxy(?=\s+-[a-z]|\s+--?[a-z])|\./zoraxy\b|\bzoraxy\.exe\b|"zoraxy"|'zoraxy'|\bpgrep[^\n|]*zoraxy|\bpkill[^\n|]*zoraxy  row 37 / WP8: an install updated in place keeps the file name zoraxy
+
+# --- upstream-owned places (class C / K) -------------------------------------------------------------
+upstream-site         (?:https?:)?//zoraxy\.aroz\.org[^\s"'<)]*|(?<![\w.])zoraxy\.aroz\.org\b  rows 42, 43, 50 / WP4, WP9: upstream's site; each link becomes a setting or is removed by hand
+upstream-repo         (?:https://)?github\.com/tobychui/zoraxy[^\s"'<)]*  row 42 / WP9: upstream's repository; help links are re-pointed by hand, history links stay
+upstream-short        \btobychui/zoraxy\b  row 42: short form of the upstream repository
+
+# --- found while writing the mechanical pass (not in the plan's table) ------------------------------
+headers-any           \b[Xx]-Zoraxy-(?!Internal-Ref)  rows 11-18: any other legacy header name; nothing with this prefix is renamed blindly
+frozen-crypto-more    \bzoraxy-(?:aiassist-apikey|crowdsec-machine|crowdsec-apikey)-v1\b|\bzoraxy-waf-challenge\|  row 47 (missed by the plan): key-derivation labels for the sealed AI-assist and CrowdSec secrets and the WAF challenge token
+frozen-crypto-any     \bzoraxy-[a-z0-9-]+-v[0-9]+\b  row 47: anything shaped like a versioned derivation label stays until someone proves it is not one
+plugin-ids            \b(?:org\.aroz|fork|fr\.madyanne|com\.braedach)\.zoraxy\.[A-Za-z0-9_.-]+  row 22: plugin IDs are persisted (enabled state, tags, permissions, data folders)
+plugin-scope-units    \bzoraxy-plugin-(?!check\b|index\b)  row 37 / WP8: systemd scope names of running plugins, matched by pattern at stop and on the next start
+ui-events             \bzoraxy:(?:i18n|theme)\b|\bzoraxyI18n\b  row 16 / WP4: DOM event names and the postMessage field that plugin pages in iframes can listen to
+mdns-hostname         \bzoraxy_\{node-uuid\}  row 41 / WP3: documented .local host name
+release-asset-globs   \bzoraxy_\*(?:_\*)?|"zoraxy_"|"zoraxy-"|"zoraxy\."  rows 34, 37 / WP7, WP8: asset name patterns and the executable-name prefixes IsProductName must keep matching
+localstorage-more     \bzoraxy_site_editor_layout\b  row 31 / WP4: browser storage key missing from the plan's list
+third-party-names     \bZoraxy Cloudflare WAF\b|\bZoraxy (?:Wiki|Git[Hh]ub|Github README|Project)\b  rows 22, 42: names of other people's things (a third-party plugin, upstream's wiki and repository)
+sdk-fixture-paths     sdk-1\.[0-9]\.[0-9]/zoraxy_plugin|example\.com/zoraxy/sdkplugin  row 22 / WP5: frozen old-SDK fixtures and the fixture plugin built against them
+docker-label-value    container-identifier"?\]?\s*={1,3}\s*"Zoraxy"  row 40 / WP8: the label VALUE dockerux compares; containers created from older images carry "Zoraxy"
+third-party-article   Installing Zoraxy Reverse Proxy  row 42: title of someone else's article about Zoraxy
+format-ids            \bzoraxy-(?:cluster-snapshot|config-export|history-diff)\b  rows 18, 6 (missed by the plan): format identifiers inside cluster snapshots, exported configuration packs and history diffs; old files and older peers carry them
+config-export-names   "zoraxy-config-(?:shareable-)?"  row 33 (missed by the plan): file name prefix of configuration backups already on disk
+historic-release      \bZoraxy[ -]v?\.?[0-3]\.[0-9]+(?:\.[0-9x]+)?  row 50 (review): names an upstream Zoraxy release (v3.3.5, 3.2.x ...), which Dunree never had; "Dunree v3.3.5" would misstate history and credit
+historic-contributor  Added\sin\sZoraxy\b[^\n]*\bby\b  row 10 (review): "Added in Zoraxy vX by <contributor>" credits an upstream contributor, not only tobychui
+credit-supporters     [Ss]upporters?\sof\sZoraxy\b  row 10 (brand work): the list under Utilities > Credits names people who donated to Zoraxy; "supporters of Dunree" would misattribute them. These strings are left untranslated in the locale files: a translated value would not match this line and the pass would rename it

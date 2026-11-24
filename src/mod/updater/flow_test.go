@@ -66,7 +66,7 @@ func TestBackupContents(t *testing.T) {
 	f := newFixture(t)
 	p, err := CreateBackup(f.conf, filepath.Join(f.root, "sys.db"), filepath.Join(f.root, "sys.uuid"), time.Date(2026, 5, 6, 7, 8, 9, 0, time.UTC))
 	must(t, err)
-	if filepath.Base(p) != "zoraxy-pre-update-20260506-070809.zip" || filepath.Dir(p) != filepath.Join(f.root, "backups") {
+	if filepath.Base(p) != "dunree-pre-update-20260506-070809.zip" || filepath.Dir(p) != filepath.Join(f.root, "backups") {
 		t.Fatalf("unexpected backup path %s", p)
 	}
 	zr, err := zip.OpenReader(p)
@@ -168,7 +168,7 @@ func TestUpdateHappyPath(t *testing.T) {
 	if f.leftoverTemp() != nil {
 		t.Errorf("temp files left: %v", f.leftoverTemp())
 	}
-	if zips, _ := filepath.Glob(filepath.Join(f.root, "backups", "zoraxy-pre-update-*.zip")); len(zips) != 1 {
+	if zips, _ := filepath.Glob(filepath.Join(f.root, "backups", "dunree-pre-update-*.zip")); len(zips) != 1 {
 		t.Errorf("expected one backup, got %v", zips)
 	}
 	p := f.m.st.pending()
@@ -351,7 +351,7 @@ func TestSmokeFailureAborts(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "smoke test") {
 		t.Fatalf("got %v", err)
 	}
-	f.smoke = func(context.Context, string) (string, error) { return "Zoraxy - Version 9.9.9", nil }
+	f.smoke = func(context.Context, string) (string, error) { return "Dunree - Version 9.9.9", nil }
 	if err := f.m.RunApp(context.Background(), RunOptions{}); err == nil || !strings.Contains(err.Error(), "unexpected version") {
 		t.Fatalf("version mismatch must fail, got %v", err)
 	}

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/netutils"
 	"golang.org/x/net/webdav"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/netutils"
 )
 
 /*
@@ -55,7 +55,7 @@ func (wd *WebDAVServer) basicAuthMiddleware(next http.Handler) http.Handler {
 		if wd.options.UseCustomCredentials {
 			// Use custom credentials from database
 			if !ok || !wd.validateCustomCredentials(username, password) {
-				w.Header().Set("WWW-Authenticate", `Basic realm="Zoraxy WebDAV"`)
+				w.Header().Set("WWW-Authenticate", `Basic realm="Dunree WebDAV"`)
 				w.Header().Set("Dav", "1, 2")
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
@@ -63,7 +63,7 @@ func (wd *WebDAVServer) basicAuthMiddleware(next http.Handler) http.Handler {
 		} else {
 			// Use global admin credentials
 			if !ok || !wd.authAgent.ValidateUsernameAndPassword(username, password) {
-				w.Header().Set("WWW-Authenticate", `Basic realm="Zoraxy WebDAV"`)
+				w.Header().Set("WWW-Authenticate", `Basic realm="Dunree WebDAV"`)
 				w.Header().Set("Dav", "1, 2")
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return

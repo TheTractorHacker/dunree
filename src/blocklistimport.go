@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access/blocklistimport"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/access/blocklistimport"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

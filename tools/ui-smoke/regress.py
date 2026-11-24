@@ -18,7 +18,7 @@ from urllib.parse import parse_qs, urlparse
 from playwright.sync_api import sync_playwright
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--url", default=os.environ.get("ZORAXY_URL", "http://127.0.0.1:28784"))
+ap.add_argument("--url", default=os.environ.get("DUNREE_URL", "http://127.0.0.1:28784"))
 args = ap.parse_args()
 failures = []
 

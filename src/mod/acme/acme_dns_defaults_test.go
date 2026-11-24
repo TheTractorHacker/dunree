@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 // The certificate UI sends every field of the selected DNS provider, empty ones as "". An empty value

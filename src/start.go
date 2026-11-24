@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
 	"log"
 	"net"
 	"net/http"
@@ -14,40 +14,40 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth/sso/oauth2"
-	"imuslab.com/zoraxy/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
+	"github.com/foleyit/dunree/mod/eventsystem"
 
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/auth/sso/forward"
+	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/dockerux"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/forwardproxy"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/info/hardwareinfo"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logviewer"
+	"github.com/foleyit/dunree/mod/info/shellexec"
+	"github.com/foleyit/dunree/mod/info/usageinfo"
+	"github.com/foleyit/dunree/mod/mdns"
+	"github.com/foleyit/dunree/mod/netstat"
+	"github.com/foleyit/dunree/mod/pathrule"
+	"github.com/foleyit/dunree/mod/plugins"
+	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/foleyit/dunree/mod/sshprox"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/statistic/analytic"
+	"github.com/foleyit/dunree/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/foleyit/dunree/mod/webserv"
+	"github.com/foleyit/dunree/mod/wirecompat"
 	"github.com/gorilla/csrf"
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/auth/sso/forward"
-	"imuslab.com/zoraxy/mod/auth/sso/zorxauth"
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/dockerux"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/forwardproxy"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/info/hardwareinfo"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/info/logviewer"
-	"imuslab.com/zoraxy/mod/info/shellexec"
-	"imuslab.com/zoraxy/mod/info/usageinfo"
-	"imuslab.com/zoraxy/mod/mdns"
-	"imuslab.com/zoraxy/mod/netstat"
-	"imuslab.com/zoraxy/mod/pathrule"
-	"imuslab.com/zoraxy/mod/plugins"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/secaudit"
-	"imuslab.com/zoraxy/mod/sshprox"
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/statistic/analytic"
-	"imuslab.com/zoraxy/mod/streamproxy"
-	"imuslab.com/zoraxy/mod/tlscert"
-	"imuslab.com/zoraxy/mod/webserv"
 )
 
 /*
@@ -131,6 +131,7 @@ func startupSequence() {
 	initAdminExposure() //destination guard and admin allow-list (both off until configured), see adminexposure.go
 	//Cluster follower with "sync settings": bring the primary's database-stored settings in before modules read them (cluster_settings.go)
 	clusterImportSettings()
+	initWireCompat() //"Also send legacy X-Zoraxy-* headers" (on unless switched off), see wirecompatapi.go
 
 	//Create tmp folder and conf folder
 	os.MkdirAll(TMP_FOLDER, 0775)
@@ -141,11 +142,12 @@ func startupSequence() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	authAgent = auth.NewAuthenticationAgent(SYSTEM_NAME, []byte(sessionKey), sysdb, true, SystemWideLogger, func(w http.ResponseWriter, r *http.Request) {
+	authAgent = auth.NewAuthenticationAgent(ADMIN_SESSION_COOKIE, []byte(sessionKey), sysdb, true, SystemWideLogger, func(w http.ResponseWriter, r *http.Request) {
 		//Not logged in. Redirecting to login page
 		http.Redirect(w, r, "/login.html", http.StatusTemporaryRedirect)
 	})
 
+	authAgent.LegacySessionNames = []string{LEGACY_ADMIN_SESSION_COOKIE} //dunreecompat.go
 	authAgent.SetAuditFile(CONF_FOLDER + "/" + authAuditFile)
 	authAgent.LoginGuard = abuseLoginGuard
 	authAgent.OnLoginFailure = abuseLoginFailed
@@ -312,13 +314,7 @@ func startupSequence() {
 			portInt = 8000
 		}
 
-		hostName := *mdnsName
-		if hostName == "" {
-			hostName = MDNS_HOSTNAME_PREFIX + nodeUUID
-		} else {
-			//Trim off the suffix
-			hostName = strings.TrimSuffix(hostName, ".local")
-		}
+		hostName, mdnsAliases := mdnsInstanceNames(*mdnsName, nodeUUID, wirecompat.EmitLegacy())
 
 		mdnsScanner, err = mdns.NewMDNS(mdns.NetworkHost{
 			HostName:     hostName,
@@ -332,6 +328,11 @@ func startupSequence() {
 		if err != nil {
 			SystemWideLogger.Println("Unable to startup mDNS service. Disabling mDNS services")
 		} else {
+			for _, alias := range mdnsAliases {
+				if err := mdnsScanner.RegisterAlias(alias); err != nil {
+					SystemWideLogger.Println("mDNS: could not also announce " + alias + ": " + err.Error())
+				}
+			}
 			//Start initial scanning
 			go func() {
 				hosts := mdnsScanner.Scan(MDNS_SCAN_TIMEOUT, "")
@@ -422,26 +423,26 @@ func startupSequence() {
 	pluginFolder := *path_plugin
 	pluginFolder = strings.TrimSuffix(pluginFolder, "/")
 
-	ZoraxyPort := 8000
-	ZoraxyAddrPort, err := netip.ParseAddrPort(*webUIPort)
+	DunreePort := 8000
+	DunreeAddrPort, err := netip.ParseAddrPort(*webUIPort)
 
 	if err != nil {
 		// check for ":<port>" parameter
 		webUIPortNoPrefix, hadPrefix := strings.CutPrefix(*webUIPort, ":")
 		if hadPrefix {
-			ZoraxyAddrPort, err = netip.ParseAddrPort("0.0.0.0:" + webUIPortNoPrefix)
+			DunreeAddrPort, err = netip.ParseAddrPort("0.0.0.0:" + webUIPortNoPrefix)
 		}
 	}
 
-	if err == nil && ZoraxyAddrPort.IsValid() && ZoraxyAddrPort.Port() > 0 {
-		ZoraxyPort = int(ZoraxyAddrPort.Port())
+	if err == nil && DunreeAddrPort.IsValid() && DunreeAddrPort.Port() > 0 {
+		DunreePort = int(DunreeAddrPort.Port())
 	} else {
-		SystemWideLogger.PrintAndLog("plugin-manager", fmt.Sprintf("Could not set port for plugin communication (webUI/-port); fallback to default port '%d'", ZoraxyPort), err)
+		SystemWideLogger.PrintAndLog("plugin-manager", fmt.Sprintf("Could not set port for plugin communication (webUI/-port); fallback to default port '%d'", DunreePort), err)
 	}
 
 	if webUILoopbackListener != nil {
 		//Web UI is HTTPS: plugins call back over the plain HTTP loopback-only listener
-		ZoraxyPort = webUILoopbackListener.Addr().(*net.TCPAddr).Port
+		DunreePort = webUILoopbackListener.Addr().(*net.TCPAddr).Port
 	}
 
 	pluginManager = plugins.NewPluginManager(&plugins.ManagerOptions{
@@ -466,20 +467,16 @@ func startupSequence() {
 			//secAudit is read when the event happens; Record of a nil logger does nothing
 			secAudit.Record(secaudit.Event{Actor: "plugin manager", Event: event, Target: target, Detail: detail})
 		},
-		ZoraxyPort: ZoraxyPort,
+		DunreePort: DunreePort,
 		CSRFTokenGen: func(r *http.Request) string {
 			return csrf.Token(r)
 		},
-		SystemConst: &zoraxy_plugin.RuntimeConstantValue{
-			ZoraxyVersion:    SYSTEM_VERSION,
-			ZoraxyUUID:       nodeUUID,
-			DevelopmentBuild: *development_build,
-		},
-		/* Plugin Store URLs */
-		PluginStoreURLs: []string{
-			"https://raw.githubusercontent.com/aroz-online/zoraxy-official-plugins/refs/heads/main/directories/index2.json",
-			//TO BE ADDED
-		},
+		SystemConst: pluginRuntimeConst(), //dunree_* and the legacy zoraxy_* fields, see wirecompatapi.go
+		/* Add-on store: no built-in source. The administrator chooses one under System > App Store
+		   (mod/plugins/store_sources.go). An installation that existed before this start keeps the
+		   source it synced from, written into its settings once. */
+		PluginStoreURLs: nil,
+		ExistingInstall: pluginStoreExistingInstall(),
 		/* Developer Options */
 		EnableHotReload:   *development_build, //Default to true if development build
 		HotReloadInterval: 5,                  //seconds
@@ -494,6 +491,10 @@ func startupSequence() {
 	go func() {
 		if offline.Enabled() {
 			SystemWideLogger.PrintAndLog("plugin-manager", "Offline mode: plugin store sync skipped", nil)
+			return
+		}
+		if !pluginManager.StoreConfigured() {
+			SystemWideLogger.PrintAndLog("plugin-manager", "No add-on store configured: nothing is fetched. Choose one under System > App Store", nil)
 			return
 		}
 		err = pluginManager.UpdateDownloadablePluginList()
@@ -537,7 +538,7 @@ func finalSequence() {
 
 /* Shutdown Sequence */
 
-// ShutdownSeq stops Zoraxy in order: stop accepting and drain in-flight proxy requests (bounded by
+// ShutdownSeq stops Dunree in order: stop accepting and drain in-flight proxy requests (bounded by
 // -shutdown_drain), then flush and close every module. Every step is bounded, see shutdown.go.
 // Safe to call more than once (signal plus Fleet restart): later callers wait for the first run.
 func ShutdownSeq() { runShutdownSeq(signalDrain(), shutdownStepBudget) }

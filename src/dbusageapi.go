@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/instance"
 )
 
 /*
@@ -52,6 +54,11 @@ func cachedDatabaseUsage() (*dbinc.Usage, error) {
 	return c.u, c.err
 }
 
+// dbUsageServiceName is the unit named in the compaction commands (asked once: systemctl can be slow)
+var dbUsageServiceName = sync.OnceValue(func() string {
+	return instance.ChooseUnit(instance.Describe(os.Getpid()).Unit, instance.QueryUnit)
+})
+
 // RegisterDatabaseUsageAPIs registers the admin only database usage endpoint
 func RegisterDatabaseUsageAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/system/dbusage", HandleDatabaseUsage)
@@ -62,6 +69,8 @@ type dbUsageResponse struct {
 	Backend    string       `json:"backend"`
 	Path       string       `json:"path"`       //absolute path of the database file
 	LargeBytes int64        `json:"largeBytes"` //size above which compaction is suggested
+	Service    string       `json:"service"`    //systemd unit to stop and start: dunree, or zoraxy on an install upgraded in place
+	Command    string       `json:"command"`    //this program, run from its folder: ./dunree (or ./zoraxy, the kept file name)
 	Usage      *dbinc.Usage `json:"usage,omitempty"`
 	Error      string       `json:"error,omitempty"`
 }
@@ -77,7 +86,8 @@ func HandleDatabaseUsage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "403 - Admin only", http.StatusForbidden)
 		return
 	}
-	resp := dbUsageResponse{Backend: "unknown", LargeBytes: dbUsageLargeBytes}
+	resp := dbUsageResponse{Backend: "unknown", LargeBytes: dbUsageLargeBytes, Command: instance.SelfCommand}
+	resp.Service = dbUsageServiceName()
 	if p, err := filepath.Abs(*path_database); err == nil {
 		resp.Path = p
 	} else {

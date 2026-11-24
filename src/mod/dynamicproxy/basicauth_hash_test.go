@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
+	"github.com/foleyit/dunree/mod/auth"
 )
 
 func basicAuthEndpoint(hash string, persisted *atomic.Int32) *ProxyEndpoint {

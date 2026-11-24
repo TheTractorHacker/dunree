@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/pquerna/otp/totp"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 //go:embed user.html
@@ -176,7 +176,7 @@ func (gs *GatewayServer) handleSetupTOTP(w http.ResponseWriter, r *http.Request,
 	}
 
 	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      "Zoraxy Auth",
+		Issuer:      "Dunree Auth",
 		AccountName: username,
 	})
 	if err != nil {

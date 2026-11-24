@@ -15,22 +15,22 @@ import (
 	"syscall"
 	"time"
 
-	plugin "example.com/zoraxy/fork-ref-events/mod/zoraxy_plugin"
+	plugin "example.com/dunree/fork-ref-events/mod/dunree_plugin"
 )
 
 /*
 	Fork reference plugin: events
 
-	The smallest plugin that subscribes to Zoraxy events the way the fork recommends.
+	The smallest plugin that subscribes to Dunree events the way the fork recommends.
 	It is a reference and a test fixture (the conformance kit tools/plugin-check and
 	the event back-pressure tests run against it), not a feature. It counts the
 	events it gets and shows the last few.
 
 	What it shows
 	- the event path requires the invoke token: another local process cannot fake events
-	- every event is acknowledged at once and worked on later. Zoraxy delivers events
+	- every event is acknowledged at once and worked on later. Dunree delivers events
 	  to a plugin one at a time and keeps at most 1000 waiting, so a plugin that
-	  works before it answers makes Zoraxy drop events
+	  works before it answers makes Dunree drop events
 	- the waiting list of the plugin itself is bounded (256). When it is full the
 	  OLDEST event is dropped and counted, so memory stays flat under an event storm
 	- one log line per minute at most about dropped events, none per event
@@ -137,9 +137,9 @@ func main() {
 	cfg, err := plugin.ServeAndRecvSpec(&plugin.IntroSpect{
 		ID:                  "fork.zoraxy.ref.events",
 		Name:                "Fork Reference Events",
-		Author:              "Zoraxy fork",
+		Author:              "Dunree fork",
 		AuthorContact:       "see the repository of the fork",
-		Description:         "Reference event subscriber and test fixture: counts the events Zoraxy sends, with a bounded waiting list. Not a feature.",
+		Description:         "Reference event subscriber and test fixture: counts the events Dunree sends, with a bounded waiting list. Not a feature.",
 		Type:                plugin.PluginType_Utilities,
 		VersionMajor:        1,
 		UIPath:              uiPath,
@@ -242,7 +242,7 @@ func main() {
 const page = `<!doctype html><meta charset="utf-8"><title>Fork Reference Events</title>
 <body style="font-family:sans-serif;max-width:44em;margin:2em">
 <h3>Fork Reference Events</h3>
-<p>Reference plugin and test fixture. It counts the events Zoraxy sends and keeps the last 20.</p>
+<p>Reference plugin and test fixture. It counts the events Dunree sends and keeps the last 20.</p>
 <p id="counts">Loading</p>
 <table id="last" style="border-collapse:collapse"></table>
 <script>

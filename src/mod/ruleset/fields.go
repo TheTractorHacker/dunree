@@ -69,7 +69,7 @@ var fieldDefs = []*FieldDef{
 	{Name: "http.raw_path", Type: TString, id: fRawPath, Doc: "Path exactly as received (still percent-encoded, not normalised).", Example: `http.raw_path contains "%2e"`},
 	{Name: "http.query", Type: TString, id: fQuery, Doc: "Raw query string without the leading ?.", Example: `http.query contains "debug=1"`},
 	{Name: "http.method", Type: TString, id: fMethod, Doc: "Request method, as received (upper case for every real client).", Example: `http.method in ["POST", "PUT", "DELETE"]`},
-	{Name: "http.scheme", Type: TString, id: fScheme, Doc: `"https" when the connection to Zoraxy used TLS, else "http". Forwarded-proto headers are never trusted.`, Example: `http.scheme == "http"`},
+	{Name: "http.scheme", Type: TString, id: fScheme, Doc: `"https" when the connection to Dunree used TLS, else "http". Forwarded-proto headers are never trusted.`, Example: `http.scheme == "http"`},
 	{Name: "http.version", Type: TString, id: fVersion, Doc: `Protocol of the client connection: "HTTP/1.0", "HTTP/1.1", "HTTP/2.0" or "HTTP/3.0".`, Example: `http.version == "HTTP/1.0"`},
 	{Name: "http.user_agent", Type: TString, id: fUserAgent, Doc: "User-Agent header (several headers are joined with \", \").", Example: `lower(http.user_agent) contains "sqlmap"`},
 	{Name: "http.referer", Type: TString, id: fReferer, Doc: "Referer header.", Example: `http.referer not starts_with "https://example.com/"`},

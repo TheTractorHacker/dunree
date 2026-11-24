@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/foleyit/dunree/mod/adminallow"
 	"github.com/gorilla/websocket"
-	"imuslab.com/zoraxy/mod/adminallow"
 )
 
 type memKV struct{}

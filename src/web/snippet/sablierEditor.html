@@ -16,13 +16,13 @@
         <br>
         <div class="ui container">
             <h3 class="ui header zx-sideview-title">Sablier (scale to zero)</h3>
-            <p>Off until enabled. Before proxying to the upstream, Zoraxy asks a <a href="https://sablierapp.dev" target="_blank" rel="noopener">Sablier</a> server to make sure the container / service is running.
+            <p>Off until enabled. Before proxying to the upstream, Dunree asks a <a href="https://sablierapp.dev" target="_blank" rel="noopener">Sablier</a> server to make sure the container / service is running.
             While it is starting visitors see Sablier's waiting page (<b>dynamic</b>) or the request is held until the workload is ready (<b>blocking</b>).</p>
 
             <div class="ui form">
                 <div class="field"><div class="ui toggle checkbox"><input type="checkbox" id="sbEnabled"><label>Enable the Sablier gate for this rule</label></div></div>
                 <div class="field"><label>Sablier server URL</label><input type="text" id="sbUrl" placeholder="http://sablier:10000">
-                    <small>Zoraxy calls <code>/api/strategies/dynamic</code> or <code>/blocking</code> on this server. Link-local / cloud metadata addresses are refused unless allowed below.</small></div>
+                    <small>Dunree calls <code>/api/strategies/dynamic</code> or <code>/blocking</code> on this server. Link-local / cloud metadata addresses are refused unless allowed below.</small></div>
                 <div class="three fields">
                     <div class="field"><label>Strategy</label>
                         <select id="sbStrategy"><option value="dynamic">dynamic (waiting page)</option><option value="blocking">blocking (hold until ready)</option></select></div>
@@ -44,7 +44,7 @@
                     <div class="field"><label>Request timeout to Sablier (seconds, 0 = automatic)</label><input type="number" id="sbReqTimeout" min="0" max="600"></div>
                 </div>
                 <div class="field"><label>Paths that skip the gate (one prefix per line)</label><textarea id="sbBypass" rows="2" placeholder="/healthz"></textarea>
-                    <small>Health checks and other public paths. Static responses marked public and <code>/.zoraxy/health</code> are answered before this gate anyway. WebSocket upgrades and non-browser clients get a plain <code>503</code> + <code>Retry-After</code> while the workload starts.</small></div>
+                    <small>Health checks and other public paths. Static responses marked public and <code>/.dunree/health</code> are answered before this gate anyway. WebSocket upgrades and non-browser clients get a plain <code>503</code> + <code>Retry-After</code> while the workload starts.</small></div>
                 <div class="field"><div class="ui checkbox"><input type="checkbox" id="sbFailOpen"><label>Fail open: proxy the request when Sablier is unreachable (default: answer 503)</label></div></div>
                 <div class="field"><div class="ui checkbox"><input type="checkbox" id="sbMeta"><label>Allow a Sablier URL on link-local / cloud metadata addresses (169.254.0.0/16, fe80::/10 ...)</label></div></div>
                 <button class="ui primary button" onclick="saveSablier();"><i class="save icon"></i> Save</button>

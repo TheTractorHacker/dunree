@@ -33,7 +33,7 @@ const (
 	OutNoCaptcha   Outcome = "captcha-unavailable" // captcha decision on a site without CAPTCHA: served, only logged
 	OutSkipped     Outcome = "challenge-skipped"   // captcha decision, the site's CAPTCHA does not cover this path or visitor: served
 	OutLogOnly     Outcome = "log-only"            // matched, not enforced (mode, site or policy): served
-	OutAllowlisted Outcome = "allowlisted"         // the address is on Zoraxy's CrowdSec allowlist: served
+	OutAllowlisted Outcome = "allowlisted"         // the address is on Dunree's CrowdSec allowlist: served
 	OutExempt      Outcome = "exempt-site"         // the site is exempt: served
 	OutFailClosed  Outcome = "fail-closed"         // LAPI unreachable and fail-closed: refused
 )
@@ -612,7 +612,7 @@ func (m *Manager) Today() Counts {
 }
 
 // countingSince is when today's counters started, when that is later than the local midnight of the server (CrowdSec
-// switched on or Zoraxy started during the day); the zero time when they cover the whole day so far.
+// switched on or Dunree started during the day); the zero time when they cover the whole day so far.
 func (m *Manager) countingSince() time.Time {
 	now := m.now()
 	y, mo, d := now.Date()
@@ -708,7 +708,7 @@ type LiveDecision struct {
 type LiveAnswer struct {
 	Error     string         `json:"error,omitempty"`
 	Decisions []LiveDecision `json:"decisions"`
-	Differs   bool           `json:"differs"` // the server knows a ban or captcha decision Zoraxy has not loaded, or the other way round
+	Differs   bool           `json:"differs"` // the server knows a ban or captcha decision Dunree has not loaded, or the other way round
 }
 
 // Explanation answers "what would happen to this address, and why"

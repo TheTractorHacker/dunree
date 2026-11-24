@@ -322,7 +322,7 @@ func TestCommandLine(t *testing.T) {
 	if err := json.Unmarshal(raw, &fromFile); err != nil || fromFile.SHA256 != rep.SHA256 {
 		t.Fatalf("the report file: %v", err)
 	}
-	if rep.Result != statusPass || rep.Tool != "zoraxy-plugin-check" || rep.Plugin.ID != "fork.zoraxy.ref.filter" || len(rep.Checks) != len(checkOrder) || rep.Checks[0].ID != "introspect" || rep.Checks[0].Title == "" {
+	if rep.Result != statusPass || rep.Tool != "dunree-plugin-check" || rep.Plugin.ID != "fork.zoraxy.ref.filter" || len(rep.Checks) != len(checkOrder) || rep.Checks[0].ID != "introspect" || rep.Checks[0].Title == "" {
 		t.Fatalf("JSON report: %+v", rep)
 	}
 	for _, c := range rep.Checks {

@@ -1,4 +1,4 @@
-// Package deployrole holds the deployment role of this Zoraxy instance
+// Package deployrole holds the deployment role of this Dunree instance
 // (standalone, external or internal proxy of a two proxy chain) and the settings
 // that depend on it. See docs/enterprise-dual-proxy-plan.md.
 //

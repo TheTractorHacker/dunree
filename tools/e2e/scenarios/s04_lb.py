@@ -40,7 +40,7 @@ def hit(z, n, headers=None, src=None, path="/"):
 def lb_algorithms():
     """round_robin, weighted_round_robin, ip_hash, header_hash, least_connections, consistent behaviour."""
     ev = {}
-    with Zoraxy() as z, Backend(name="A") as a, Backend(name="B") as b, Backend(name="C") as c:
+    with Dunree() as z, Backend(name="A") as a, Backend(name="B") as b, Backend(name="C") as c:
         bs = [a, b, c]
         setup(z, bs, "round_robin")
         ev["round_robin"] = dict(hit(z, 30))
@@ -98,7 +98,7 @@ def lb_algorithms():
 @scenario("lb_health_active", ["80"])
 def lb_health_active():
     """Active health check ejects a killed backend and re-admits it after it returns."""
-    with Zoraxy() as z, Backend(name="A") as a:
+    with Dunree() as z, Backend(name="A") as a:
         b = Backend(name="B")
         bport = b.port
         setup(z, [a, b], "round_robin", ActiveHealthCheck=dict(Enabled=True, Path="/", IntervalSeconds=1, TimeoutSeconds=1, Rise=2, Fall=2))
@@ -142,7 +142,7 @@ def lb_health_active():
 def lb_passive_retry_drain():
     """Passive ejection of a 503-ing backend, retry hides it from clients, draining stops new traffic."""
     bad = Backend(handler=lambda h, rec, b: send(h, 503, "bad"), name="BAD")
-    with Zoraxy() as z, Backend(name="GOOD") as good, bad:
+    with Dunree() as z, Backend(name="GOOD") as good, bad:
         setup(z, [good, bad], "round_robin",
               Retry=dict(Enabled=True, MaxRetries=1, RetryStatuses=[503]),
               PassiveHealthCheck=dict(Enabled=True, FailThreshold=2, CooldownSeconds=60))
@@ -167,7 +167,7 @@ def lb_passive_retry_drain():
 @scenario("sticky_sessions", ["80"])
 def sticky_sessions():
     """Sticky session cookie pins a client to one backend; clients without cookie are balanced."""
-    with Zoraxy() as z, Backend(name="A") as a, Backend(name="B") as b, Backend(name="C") as c:
+    with Dunree() as z, Backend(name="A") as a, Backend(name="B") as b, Backend(name="C") as c:
         z.add_rule("lb.test", a.addr, stickysess=True)
         for x in (b, c):
             z.api("/api/proxy/upstream/add", ep="lb.test", origin=x.addr, active=True)

@@ -6,6 +6,12 @@
 <div class="standardContainer" id="utilsPage">
     <style>
         #utilsPage .ut-credit { margin: var(--zx-space-4) 0 0; }
+        /* About: the lockup with one wall thickness of clear space (brand/README.md), light or dark file by theme */
+        #utilsPage .ut-about { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-3) var(--zx-space-5); padding: 12px 0 var(--zx-space-5); }
+        #utilsPage .ut-about__logo { height: 48px; width: auto; display: block; }
+        #utilsPage .ut-about__logo--dark, body.darkTheme #utilsPage .ut-about__logo--light { display: none; }
+        body.darkTheme #utilsPage .ut-about__logo--dark { display: block; }
+        #utilsPage .ut-about__tagline { margin: 0; color: var(--zx-text-muted); font-size: var(--zx-fs-lg, 1.05rem); }
         #utilsPage #geodbUpdateMsg[hidden] { display: none; }
         #utilsPage .ut-geo-country { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: var(--zx-space-4) 0 var(--zx-space-3); }
         #utilsPage .ut-geo-country b { font-size: var(--zx-fs-xl); }
@@ -24,7 +30,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Utilities</h2>
-            <p class="zx-page-header__sub">Look after this Zoraxy: your password, Geo-IP data, updates, backups, logs and a few handy tools.</p>
+            <p class="zx-page-header__sub">Look after this Dunree: your password, Geo-IP data, updates, backups, logs and a few handy tools.</p>
         </div>
     </header>
     <aside class="zx-related" aria-label="Related pages">
@@ -44,14 +50,14 @@
     <div class="zx-sectioned">
         <nav class="zx-sectionnav" id="utNav" aria-label="Utilities sections">
             <div class="zx-sectionnav__group">
-                <button type="button" class="zx-sectionnav__item active" data-zx-section="overview"><i class="tachometer alternate icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Overview</span><span class="zx-sectionnav__desc" hidden>Version, sign-in, Geo-IP data and backups of this Zoraxy at a glance.</span></button>
+                <button type="button" class="zx-sectionnav__item active" data-zx-section="overview"><i class="tachometer alternate icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Overview</span><span class="zx-sectionnav__desc" hidden>Version, sign-in, Geo-IP data and backups of this Dunree at a glance.</span></button>
             </div>
             <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpSystem">
                 <div class="zx-sectionnav__label" id="utGrpSystem">Maintain</div>
                 <button type="button" class="zx-sectionnav__item" data-zx-section="security"><i class="lock icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Security</span><span class="zx-sectionnav__desc" hidden>Your password, how long a sign-in lasts and the tokens that scripts use.</span></button>
                 <button type="button" class="zx-sectionnav__item" data-zx-section="updates"><i class="download icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Updates</span><span class="zx-sectionnav__desc" hidden>Which version is running and how new releases are found. Nothing is installed by itself.</span></button>
                 <button type="button" class="zx-sectionnav__item" data-zx-section="backup"><i class="database icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Backup &amp; restore</span><span class="zx-sectionnav__desc" hidden>Download the configuration to protect or move it, restore it from a backup, or step back through saved versions.</span></button>
-                <button type="button" class="zx-sectionnav__item" data-zx-section="logs"><i class="file alternate outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Logs</span><span class="zx-sectionnav__desc" hidden>Read what Zoraxy wrote down and keep the log file from growing without limit. Rotation is off until you switch it on.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="logs"><i class="file alternate outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Logs</span><span class="zx-sectionnav__desc" hidden>Read what Dunree wrote down and keep the log file from growing without limit. Rotation is off until you switch it on.</span></button>
             </div>
             <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpTools">
                 <div class="zx-sectionnav__label" id="utGrpTools">Network tools</div>
@@ -60,8 +66,8 @@
             </div>
             <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpAbout">
                 <div class="zx-sectionnav__label" id="utGrpAbout">About</div>
-                <button type="button" class="zx-sectionnav__item" data-zx-section="info"><i class="server icon" aria-hidden="true"></i><span class="zx-sectionnav__text">System information</span><span class="zx-sectionnav__desc" hidden>Identity, version and uptime of this Zoraxy host.</span></button>
-                <button type="button" class="zx-sectionnav__item" data-zx-section="contributors"><i class="heart outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Contributors</span><span class="zx-sectionnav__desc" hidden>Zoraxy is free and open source thanks to the people who support it.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="info"><i class="server icon" aria-hidden="true"></i><span class="zx-sectionnav__text">About Dunree</span><span class="zx-sectionnav__desc" hidden>Version, publisher, licence and source code, and the identity of this host.</span></button>
+                <button type="button" class="zx-sectionnav__item" data-zx-section="contributors"><i class="heart outline icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Credits</span><span class="zx-sectionnav__desc" hidden>Dunree is based on Zoraxy. The people who supported that project.</span></button>
             </div>
             <div class="zx-sectionnav__group" role="group" aria-labelledby="utGrpAdvanced">
                 <div class="zx-sectionnav__label" id="utGrpAdvanced">Advanced</div>
@@ -77,7 +83,7 @@
                 <div class="zx-callout zx-callout--info ut-attn" id="utOvAttn" role="status" hidden>
                     <span class="zx-callout__icon" aria-hidden="true"><i class="download icon"></i></span>
                     <div class="zx-callout__body">
-                        <span class="ut-attn__text"><b id="utOvAttnTitle"></b><span id="utOvAttnText">A newer Zoraxy release is ready. Nothing is installed until you confirm it on the Update page.</span></span>
+                        <span class="ut-attn__text"><b id="utOvAttnTitle"></b><span id="utOvAttnText">A newer Dunree release is ready. Nothing is installed until you confirm it on the Update page.</span></span>
                         <a class="zx-btn zx-btn--primary" href="#updater" data-nav-open="updater"><i class="download icon" aria-hidden="true"></i> Open Update</a>
                     </div>
                 </div>
@@ -166,7 +172,7 @@
                         <ul class="sy-rows">
                             <li class="sy-row extAuthOnly" style="display:none;">
                                 <span class="sy-row__icon" aria-hidden="true"><i class="user circle outline icon"></i></span>
-                                <div class="sy-row__main"><span class="sy-row__title">Sign-in</span><span class="sy-row__sub">Zoraxy was started without its own login (the -noauth start parameter), for example behind another authentication service. There is no password to change here.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">Sign-in</span><span class="sy-row__sub">Dunree was started without its own login (the -noauth start parameter), for example behind another authentication service. There is no password to change here.</span></div>
                                 <div class="sy-row__end"><span class="zx-badge zx-badge--dot zx-badge--warn">Off</span></div>
                             </li>
                             <li class="sy-row">
@@ -181,7 +187,7 @@
                             </li>
                             <li class="sy-row">
                                 <span class="sy-row__icon" aria-hidden="true"><i class="terminal icon"></i></span>
-                                <div class="sy-row__main"><span class="sy-row__title">SSH loopback</span><span class="sy-row__sub">Lets the web SSH tool connect to this server itself. Set with a start parameter; off unless Zoraxy was started with it.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">SSH loopback</span><span class="sy-row__sub">Lets the web SSH tool connect to this server itself. Set with a start parameter; off unless Dunree was started with it.</span></div>
                                 <div class="sy-row__end"><span class="zx-badge zx-badge--dot" id="utSshBadge">-</span></div>
                             </li>
                         </ul>
@@ -194,7 +200,7 @@
                 <section class="zx-card">
                     <div class="zx-card__head">
                         <h3 class="zx-card__title">Database <span id="geodbSource"></span></h3>
-                        <p class="zx-card__desc">Zoraxy ships with a database and can download a newer one. Updating keeps country lookups accurate; nothing else changes.</p>
+                        <p class="zx-card__desc">Dunree ships with a database and can download a newer one. Updating keeps country lookups accurate; nothing else changes.</p>
                     </div>
                     <div class="zx-card__body">
                         <dl class="sy-facts">
@@ -205,7 +211,7 @@
                         </dl>
                         <div id="geodbUpdateMsg" class="zx-callout" role="status" style="display:none; margin-top: var(--zx-space-3);"></div>
                         <label class="zx-toggle-row" style="margin-top: var(--zx-space-4);">
-                            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Update automatically</span><span class="zx-toggle-row__desc">Off by default. When on, the database is refreshed once a week, counting from when Zoraxy started, plus a random delay of up to 30 minutes so installations do not all contact the update server at the same moment. Saved as soon as you switch it.</span></span>
+                            <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Update automatically</span><span class="zx-toggle-row__desc">Off by default. When on, the database is refreshed once a week, counting from when Dunree started, plus a random delay of up to 30 minutes so installations do not all contact the update server at the same moment. Saved as soon as you switch it.</span></span>
                             <input type="checkbox" class="zx-switch" role="switch" id="geodbAutoUpdateEnabled">
                         </label>
                     </div>
@@ -253,14 +259,14 @@
                 <div class="zx-callout zx-callout--info ut-attn" id="utUpAttn" role="status" hidden>
                     <span class="zx-callout__icon" aria-hidden="true"><i class="download icon"></i></span>
                     <div class="zx-callout__body">
-                        <span class="ut-attn__text"><b id="utUpAttnTitle"></b><span>Read what is new and install it on the Update page. Zoraxy restarts for a few seconds when you do.</span></span>
+                        <span class="ut-attn__text"><b id="utUpAttnTitle"></b><span>Read what is new and install it on the Update page. Dunree restarts for a few seconds when you do.</span></span>
                         <a class="zx-btn zx-btn--primary" href="#updater" data-nav-open="updater"><i class="download icon" aria-hidden="true"></i> Open Update</a>
                     </div>
                 </div>
                 <section class="zx-card">
                     <div class="zx-card__head">
                         <h3 class="zx-card__title">This installation</h3>
-                        <p class="zx-card__desc">Zoraxy never contacts the release server by itself unless the daily check is on, and it never installs anything without your confirmation.</p>
+                        <p class="zx-card__desc">Dunree never contacts the release server by itself unless the daily check is on, and it never installs anything without your confirmation.</p>
                     </div>
                     <div class="zx-card__body">
                         <dl class="sy-facts">
@@ -294,7 +300,7 @@
                             </li>
                             <li class="sy-row">
                                 <span class="sy-row__icon" aria-hidden="true"><i class="upload icon"></i></span>
-                                <div class="sy-row__main"><span class="sy-row__title">Restore from a backup</span><span class="sy-row__sub">Check a backup file first (dry run), then restore it. Restoring replaces the current configuration and stops Zoraxy so it starts with the restored one.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">Restore from a backup</span><span class="sy-row__sub">Check a backup file first (dry run), then restore it. Restoring replaces the current configuration and stops Dunree so it starts with the restored one.</span></div>
                                 <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--secondary" id="utRestoreBtn" data-ut-conf="restore"><i class="upload icon" aria-hidden="true"></i> Restore…</button></div>
                             </li>
                         </ul>
@@ -332,7 +338,7 @@
                         <ul class="sy-rows">
                             <li class="sy-row">
                                 <span class="sy-row__icon" aria-hidden="true"><i class="file alternate outline icon"></i></span>
-                                <div class="sy-row__main"><span class="sy-row__title">System log</span><span class="sy-row__sub">What Zoraxy itself reports: start-up, errors, certificate renewals. View or download it.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">System log</span><span class="sy-row__sub">What Dunree itself reports: start-up, errors, certificate renewals. View or download it.</span></div>
                                 <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="snippet/logview.html" target="_blank"><i class="external alternate icon" aria-hidden="true"></i> Open log viewer</a></div>
                             </li>
                             <li class="sy-row">
@@ -342,7 +348,7 @@
                             </li>
                             <li class="sy-row">
                                 <span class="sy-row__icon" aria-hidden="true"><i class="bell outline icon"></i></span>
-                                <div class="sy-row__main"><span class="sy-row__title">Notifications</span><span class="sy-row__sub">Alerts Zoraxy sent or tried to send, and where they go.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">Notifications</span><span class="sy-row__sub">Alerts Dunree sent or tried to send, and where they go.</span></div>
                                 <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="snippet/notifications.html" target="_blank"><i class="external alternate icon" aria-hidden="true"></i> Notifications</a></div>
                             </li>
                         </ul>
@@ -351,7 +357,7 @@
                 <section class="zx-card">
                     <div class="zx-card__head">
                         <h3 class="zx-card__title">Log rotation <span class="zx-badge zx-badge--dot" id="utLogBadge" hidden></span></h3>
-                        <p class="zx-card__desc">Without rotation the Zoraxy log keeps growing. With it, a full log is moved to a numbered backup file and a new one is started.</p>
+                        <p class="zx-card__desc">Without rotation the Dunree log keeps growing. With it, a full log is moved to a numbered backup file and a new one is started.</p>
                     </div>
                     <form id="log-settings-form">
                         <div class="zx-card__body">
@@ -437,15 +443,15 @@
                     <div class="zx-card__body">
                         <ul class="sy-rows">
                             <li class="sy-row">
-                                <div class="sy-row__main"><span class="sy-row__title">Reset all statistics</span><span class="sy-row__sub">Deletes every traffic statistic Zoraxy has collected, for all sites and all days. Proxy rules and settings are not touched. You type a word to confirm.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">Reset all statistics</span><span class="sy-row__sub">Deletes every traffic statistic Dunree has collected, for all sites and all days. Proxy rules and settings are not touched. You type a word to confirm.</span></div>
                                 <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--danger-outline" onclick="handleResetAllStats();"><i class="trash alternate outline icon" aria-hidden="true"></i> Reset all statistics</button></div>
                             </li>
                             <li class="sy-row">
-                                <div class="sy-row__main"><span class="sy-row__title">Replace the configuration with a backup</span><span class="sy-row__sub">Restoring overwrites the current proxy rules, certificates and settings with those in the backup file, then stops Zoraxy. Download a backup of the current state first.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">Replace the configuration with a backup</span><span class="sy-row__sub">Restoring overwrites the current proxy rules, certificates and settings with those in the backup file, then stops Dunree. Download a backup of the current state first.</span></div>
                                 <div class="sy-row__end"><button type="button" class="zx-btn zx-btn--secondary" data-ut-go="backup">Go to Backup &amp; restore</button></div>
                             </li>
                             <li class="sy-row">
-                                <div class="sy-row__main"><span class="sy-row__title">Roll back to the previous version</span><span class="sy-row__sub">Puts the previous Zoraxy program back and restarts. The configuration is not reverted. Only available after an update installed from the Update page.</span></div>
+                                <div class="sy-row__main"><span class="sy-row__title">Roll back to the previous version</span><span class="sy-row__sub">Puts the previous Dunree program back and restarts. The configuration is not reverted. Only available after an update installed from the Update page.</span></div>
                                 <div class="sy-row__end"><a class="zx-btn zx-btn--secondary" href="#updater" data-nav-open="updater">Open Update</a></div>
                             </li>
                         </ul>
@@ -453,28 +459,52 @@
                 </section>
             </div>
 
-            <!-- ================= System information ================= -->
+            <!-- ================= About Dunree + this host =================
+                 Name, version, publisher and base come from /api/info/x (mod/brand); the texts below are what shows before the answer.
+                 The credit to Zoraxy, tobychui and imuslab must stay (NOTICE). -->
             <div class="sy-pane" data-pane="info" hidden>
-                <section class="zx-card" id="zoraxyinfo">
+                <section class="zx-card" id="dunreeabout">
+                    <div class="zx-card__body">
+                        <div class="ut-about">
+                            <img class="ut-about__logo ut-about__logo--light" src="img/public/brand/dunree-lockup.svg" alt="Dunree" height="48">
+                            <img class="ut-about__logo ut-about__logo--dark" src="img/public/brand/dunree-lockup-dark.svg" alt="Dunree" height="48">
+                            <p class="ut-about__tagline" id="abTagline">Reverse proxy and web gateway</p>
+                        </div>
+                        <dl class="sy-facts">
+                            <dt>Version</dt><dd id="abVersion" data-i18n-skip>-</dd>
+                            <dt>Publisher</dt><dd id="abPublisher">Published by Foley IT</dd>
+                            <dt>Based on</dt><dd id="abBasedOn">Based on Zoraxy v3.3.6 by tobychui and imuslab, AGPL-3.0</dd>
+                            <dt>Licence</dt><dd>GNU Affero General Public License, version 3 (AGPL-3.0). Dunree is free software and comes without warranty.<br>
+                                <a href="legal/LICENSE.txt" target="_blank" rel="noopener" id="abLicense" data-i18n-skip>LICENSE</a> <span aria-hidden="true">·</span>
+                                <a href="legal/NOTICE.txt" target="_blank" rel="noopener" id="abNotice" data-i18n-skip>NOTICE</a> <span aria-hidden="true">·</span>
+                                <a href="legal/THIRD_PARTY_NOTICES.txt" target="_blank" rel="noopener" id="abThirdParty">Third-party notices</a></dd>
+                            <dt>Source code</dt><dd id="abSource">You are entitled to the complete source code of this version under AGPL-3.0. This build does not name a source address: ask whoever provided it to you.</dd>
+                        </dl>
+                        <p class="zx-help ut-credit">Dunree is a modified, independent derivative of Zoraxy. It is not affiliated with or endorsed by tobychui, imuslab or the Zoraxy contributors. Please do not report Dunree problems to the Zoraxy project.</p>
+                    </div>
+                </section>
+                <section class="zx-card" id="dunreeinfo">
+                    <div class="zx-card__head">
+                        <h3 class="zx-card__title">This host</h3>
+                    </div>
                     <div class="zx-card__body">
                         <dl class="sy-facts">
                             <dt>Host ID</dt><dd class="uuid sy-mono"></dd>
-                            <dt>Version</dt><dd class="version"></dd>
+                            <dt>Version</dt><dd class="version" data-i18n-skip></dd>
                             <dt>Build</dt><dd class="development"></dd>
                             <dt>Running since</dt><dd class="boottime"></dd>
                             <dt>SSH loopback</dt><dd class="sshlb"></dd>
                         </dl>
-                        <p class="zx-help ut-credit">Zoraxy is developed by tobychui for <a href="//imuslab.com" target="_blank" rel="noopener">imuslab</a> and open source under <a href="https://www.gnu.org/licenses/agpl-3.0.txt" target="_blank" rel="noopener">AGPL</a>.</p>
                     </div>
                 </section>
             </div>
 
-            <!-- ================= Contributors ================= -->
+            <!-- ================= Credits: the supporters list (script/supporters.txt) ================= -->
             <div class="sy-pane" data-pane="contributors" hidden>
                 <section class="zx-card">
                     <div class="zx-card__head">
-                        <h3 class="zx-card__title">Financial supporters</h3>
-                        <p class="zx-card__desc">Zoraxy is made possible by the generosity of its supporters. Thank you to everyone who has donated to keep this project free and open source.</p>
+                        <h3 class="zx-card__title">Supporters of Zoraxy</h3>
+                        <p class="zx-card__desc">Dunree is based on Zoraxy by tobychui and imuslab. The people below donated to the Zoraxy project and helped to keep it free and open source. They are listed as a credit to that work; they did not donate to Dunree and are not associated with it.</p>
                     </div>
                     <div class="zx-card__body">
                         <div id="supportersList">
@@ -484,7 +514,7 @@
                 </section>
                 <div class="zx-callout zx-callout--info" role="note">
                     <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
-                    <div class="zx-callout__body"><strong>Privacy:</strong> If you would prefer not to have your name shown here, ask on the <a href="https://github.com/tobychui/zoraxy" target="_blank" rel="noopener">Zoraxy GitHub repository</a>. You can use a pseudonym or any text you like, and requests are handled promptly.</div>
+                    <div class="zx-callout__body"><strong>Privacy:</strong> This list was taken from Zoraxy v3.3.6. If you would prefer not to have your name shown in Dunree, ask Foley IT, the publisher of Dunree, to remove it.</div>
                 </div>
             </div>
         </div>
@@ -571,7 +601,7 @@
     // or, with the daily check on, the release the server cached (GET /api/updater/badge, no request to GitHub).
     function utKnownRelease(){
         var u = null;
-        try { u = JSON.parse(zxStore.get("zoraxy.topbar.update") || "null"); } catch (e) { u = null; }
+        try { u = JSON.parse(zxStore.get("dunree.topbar.update") || "null"); } catch (e) { u = null; }
         if (u && Date.now() - (u.at || 0) > 14 * 24 * 3600 * 1000){ u = null; }
         if (utBadge && utBadge.auto_check && utBadge.update_available){ return {available: true, latest: utBadge.latest || ""}; }
         if (u && u.available && utVersion && u.latest && u.latest.replace(/^v/, "") === utVersion){ return {available: false, latest: u.latest, checked: true}; }
@@ -661,6 +691,29 @@
         showSideWrapper("snippet/configTools.html?step=" + encodeURIComponent(step));
     });
 
+    //About card and page footer. Everything is text (never HTML) except the one source link, whose address the server
+    //only reports when it is a plain http(s) URL (brand.SafeURL); it is checked here again.
+    function utAbout(data, shown){
+        var product = data.Product || "Dunree", publisher = data.Publisher || "Foley IT";
+        var base = data.BasedOn || "Zoraxy", baseVer = data.BasedOnVersion || "", authors = data.BasedOnAuthors || "tobychui and imuslab", lic = data.License || "AGPL-3.0";
+        var basedOn = tf("Based on {0} by {1}, {2}", base + (baseVer ? " v" + baseVer : ""), authors, lic);
+        var publishedBy = tf("Published by {0}", publisher);
+        $("#abVersion").text(shown ? product + " v" + shown : "-");
+        $("#abPublisher, #zxBrandFooter .zx-brand-publisher").text(publishedBy);
+        $("#abBasedOn, #zxBrandFooter .zx-brand-basedon").text(basedOn);
+        $("#zxBrandFooter .zx-brand-name").text(product);
+        if (data.Tagline){ $("#abTagline").text(t(data.Tagline)); }
+        var src = String(data.SourceURL || "");
+        var lower = src.toLowerCase();
+        var plain = (lower.indexOf("https://") === 0 || lower.indexOf("http://") === 0) && src.length > 8 && src.length <= 512 && !/\s/.test(src)
+            && !['"', "'", "<", ">", "`", "\\"].some(function(c){ return src.indexOf(c) >= 0; });
+        if (plain){
+            var a = $('<a target="_blank" rel="noopener noreferrer" data-i18n-skip></a>').attr("href", src).text(src);
+            $("#abSource").empty().append(document.createTextNode(t("The complete source code of this version, under AGPL-3.0:") + " ")).append(a);
+        }
+    }
+    $(document).on("click", "#zxBrandFooter .zx-brand-about", function(e){ e.preventDefault(); ZxUtils.go("info"); });
+
     $.get("/api/info/x", function(data){
         //One format for a moment and one for a duration, on the Overview and under System information
         function utMoment(unix){ return new Date(unix * 1000).toLocaleString([], {dateStyle: "medium", timeStyle: "short"}); }
@@ -669,19 +722,23 @@
             return d > 0 ? tf("{0} d {1} h", d, h) : (h > 0 ? tf("{0} h {1} min", h, m) : tf("{0} min", Math.max(1, m)));
         }
 
-        $("#zoraxyinfo .uuid").text(data.NodeUUID);
-        $("#zoraxyinfo .development").text(data.Development ? t("Development build") : t("Release build"));
-        $("#zoraxyinfo .version").text(data.Version);
-        $(".zrversion").text("v." + data.Version); //index footer
+        $("#dunreeinfo .uuid").text(data.NodeUUID);
+        $("#dunreeinfo .development").text(data.Development ? t("Development build") : t("Release build"));
+        //Name, version, publisher and base of this build (mod/brand). ProductVersion is the Dunree version;
+        //data.Version is the version of the base (BasedOnVersion), which the updater and the config migrations still compare.
+        var utShown = data.ProductVersion || data.Version || "";
+        $("#dunreeinfo .version").text(utShown ? "v" + utShown : "-");
+        $(".zrversion").text(utShown ? "v" + utShown : ""); //index footer
+        utAbout(data, utShown);
         //BootTime 0 = not disclosed to this session: never print 1 Jan 1970
-        $("#zoraxyinfo .boottime").text(data.BootTime > 0 ? tf("{0} ({1} ago)", utMoment(data.BootTime), utDuration(parseInt(Date.now()/1000) - data.BootTime)) : t("Not available"));
-        $("#zoraxyinfo .sshlb").html(data.EnableSshLoopback?`<span class="zx-badge zx-badge--dot zx-badge--warn">${t("Enabled")}</span>`:`<span class="zx-badge zx-badge--dot">${t("Disabled")}</span>`);
+        $("#dunreeinfo .boottime").text(data.BootTime > 0 ? tf("{0} ({1} ago)", utMoment(data.BootTime), utDuration(parseInt(Date.now()/1000) - data.BootTime)) : t("Not available"));
+        $("#dunreeinfo .sshlb").html(data.EnableSshLoopback?`<span class="zx-badge zx-badge--dot zx-badge--warn">${t("Enabled")}</span>`:`<span class="zx-badge zx-badge--dot">${t("Disabled")}</span>`);
         $("#utSshBadge").attr("class", "zx-badge zx-badge--dot" + (data.EnableSshLoopback ? " zx-badge--warn" : "")).text(data.EnableSshLoopback ? t("Enabled") : t("Disabled"));
         //Overview tiles
         utVersion = data.Version || "";
-        $("#utOvVersion").text(data.Version ? "v" + data.Version : "-");
+        $("#utOvVersion").text(utShown ? "v" + utShown : "-");
         $("#utOvBuild").text(data.Development ? t("Development build") : t("Release build"));
-        $("#utUpVersion").text(data.Version ? "v" + data.Version + " (" + (data.Development ? t("Development build") : t("Release build")) + ")" : "-");
+        $("#utUpVersion").text(utShown ? "v" + utShown + " (" + (data.Development ? t("Development build") : t("Release build")) + ")" : "-");
         if (data.BootTime > 0){
             $("#utOvUptime").text(utDuration(parseInt(Date.now()/1000) - data.BootTime));
             $("#utOvSince").text(tf("Since {0}", utMoment(data.BootTime)));
@@ -782,8 +839,8 @@
             $("#utOvGeo").text(data.usingExternalDB ? t("Downloaded") : t("Bundled"));
             $("#utOvGeoHint").text(data.autoUpdateEnabled ? t("Updates weekly") : t("Automatic update off"));
             utNav.state("network", data.autoUpdateEnabled ? "on" : "off", data.autoUpdateEnabled ? t("Auto") : t("Manual"));
-            $("#utOvNetwork").text((data.usingExternalDB ? tf("Downloaded database from {0}.", geodbUnixToString(data.databaseTime)) : t("Using the database that came with Zoraxy.")) + " " + (data.autoUpdateEnabled ? t("Updates itself once a week.") : t("Automatic update is off.")));
-            $("#geodbDate").text(data.usingExternalDB ? geodbUnixToString(data.databaseTime) : t("Same as Zoraxy build date"));
+            $("#utOvNetwork").text((data.usingExternalDB ? tf("Downloaded database from {0}.", geodbUnixToString(data.databaseTime)) : t("Using the database that came with Dunree.")) + " " + (data.autoUpdateEnabled ? t("Updates itself once a week.") : t("Automatic update is off.")));
+            $("#geodbDate").text(data.usingExternalDB ? geodbUnixToString(data.databaseTime) : t("Same as Dunree build date"));
             $("#geodbEntries").text(tf("{0} IPv4 and {1} IPv6 ranges", data.ipv4EntryCount.toLocaleString(), data.ipv6EntryCount.toLocaleString()));
             $("#geodbLastUpdate").text(geodbUnixToString(data.lastUpdateTime));
             $("#geodbAutoUpdateEnabled").prop("checked", data.autoUpdateEnabled);
@@ -1165,7 +1222,7 @@
             });
             html += '</div>';
             html += '<p class="zx-help" style="margin-top: var(--zx-space-4);">'
-                + (names.length !== 1 ? tf("{0} generous supporters and counting. Thank you!", names.length) : tf("{0} generous supporter and counting. Thank you!", names.length))
+                + (names.length !== 1 ? tf("{0} supporters of Zoraxy.", names.length) : tf("{0} supporter of Zoraxy.", names.length))
                 + '</p>';
             container.html(html);
         }).fail(function() {
@@ -1174,3 +1231,5 @@
     }
 
     loadSupporters();
+
+</script>

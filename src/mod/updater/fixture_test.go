@@ -255,7 +255,7 @@ func (f *fixture) build(mut func(*Config)) {
 				if f.smoke != nil {
 					return f.smoke(ctx, bin)
 				}
-				return "Zoraxy - Version " + f.gh.latestBase(), nil
+				return "Dunree - Version " + f.gh.latestBase(), nil
 			},
 			Restart: func(exe string, args []string) error {
 				f.mu.Lock()
@@ -299,7 +299,7 @@ func (f *fixture) leftoverTemp() []string {
 	var out []string
 	ents, _ := os.ReadDir(filepath.Dir(f.exe))
 	for _, e := range ents {
-		if strings.HasPrefix(e.Name(), ".zoraxy-update-") {
+		if strings.HasPrefix(e.Name(), ".dunree-update-") {
 			out = append(out, e.Name())
 		}
 	}

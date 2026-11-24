@@ -96,7 +96,7 @@
               </div>
               <small><i class="ui red info circle icon"></i> Domain in red are expired</small><br>
               <div class="ui yellow message">
-                Certificate Renew only works on the certification authority (CA) supported by Zoraxy. Check Zoraxy wiki for more information on supported list of CAs.
+                Certificate Renew only works on the certification authority (CA) supported by Dunree.
               </div>
               <button class="ui basic right floated button" onclick="saveAutoRenewPolicy();"><i class="blue save icon"></i> Save Changes</button>
               <button id="renewSelectedButton" onclick="renewNow();" class="ui basic right floated disabled button"><i class="yellow refresh icon"></i> Renew Selected</button>
@@ -120,7 +120,7 @@
     <div class="field multiDomainOnly" style="display:none;">
       <label>Matching Rule</label>
       <input id="filenameInput" type="text" placeholder="Enter filename (no file extension)">
-      <small>Matching rule to let Zoraxy pick which certificate to use (Also be used as filename). Usually is the longest common suffix of the entered addresses. (e.g. dev.example.com)</small>
+      <small>Matching rule to let Dunree pick which certificate to use (Also be used as filename). Usually is the longest common suffix of the entered addresses. (e.g. dev.example.com)</small>
     </div>
     <div class="field multiDomainOnly" style="display:none;">
       <button class="ui basic fluid button" onclick="autoDetectMatchingRules();">Auto Detect Matching Rule</button>
@@ -376,7 +376,7 @@
       });
     }
 
-    //Render the domains table that exists in this zoraxy host
+    //Render the domains table that exists in this host
     function renderDomainTable(domainFileList) {
       // Get the table body element
       var tableBody = $('#domainTableBody');
@@ -647,7 +647,7 @@
       var domains = $("#domainsInput").val();
       var filename = $("#filenameInput").val();
       if (filename.trim() == "" && !domains.includes(",")){
-        //Zoraxy filename are the matching name for domains.
+        //Dunree filename are the matching name for domains.
         //Use the same as domains
         filename = domains;
       }else if (filename != "" && !domains.includes(",")){

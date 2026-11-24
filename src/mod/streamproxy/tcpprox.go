@@ -3,7 +3,7 @@ package streamproxy
 import (
 	"errors"
 	"fmt"
-	"imuslab.com/zoraxy/mod/adminallow"
+	"github.com/foleyit/dunree/mod/adminallow"
 	"io"
 	"log"
 	"net"

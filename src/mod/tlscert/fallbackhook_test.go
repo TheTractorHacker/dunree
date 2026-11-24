@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // OnFallbackServed is diagnostics: it fires for names that got the localhost or configured fallback certificate

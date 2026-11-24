@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/wirecompat"
 	"io"
 	"net"
 	"net/http"
@@ -303,7 +304,7 @@ func (p *prober) probe(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "Zoraxy-HealthCheck")
+	req.Header.Set("User-Agent", wirecompat.UserAgent("Dunree-HealthCheck", "Zoraxy-HealthCheck"))
 	resp, err := p.client.Do(req)
 	if err != nil {
 		return err

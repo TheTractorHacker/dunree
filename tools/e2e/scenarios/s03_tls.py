@@ -15,14 +15,14 @@ def _certs(names, d):
 
 @scenario("h2c_grpc_upstream", ["201"])
 def h2c_grpc_upstream():
-    """HTTP/2 client -> Zoraxy (TLS) -> cleartext HTTP/2 upstream: unary + trailers + full-duplex stream."""
+    """HTTP/2 client -> Dunree (TLS) -> cleartext HTTP/2 upstream: unary + trailers + full-duplex stream."""
     d = tempfile.mkdtemp(prefix="zx-h2c-")
     port = free_port()
     try:
         ca, certs = _certs(["g.test"], d)
         with Proc([helper(), "h2c-server", "-addr", "127.0.0.1:%d" % port]):
             wait_for(lambda: socket.create_connection(("127.0.0.1", port), 0.5), msg="h2c server")
-            with Zoraxy(tls=True, certs=certs) as z:
+            with Dunree(tls=True, certs=certs) as z:
                 z.add_rule("g.test", "127.0.0.1:%d" % port)
                 z.api("/api/proxy/upstream/update", ep="g.test", origin="127.0.0.1:%d" % port,
                       payload=json.dumps({"H2C": True}), active=True)
@@ -48,7 +48,7 @@ def ech_handshake():
     d = tempfile.mkdtemp(prefix="zx-ech-")
     try:
         ca, certs = _certs(["public.test", "secret.test"], d)
-        with Zoraxy(tls=True, certs=certs) as z, Backend(name="inner") as b:
+        with Dunree(tls=True, certs=certs) as z, Backend(name="inner") as b:
             z.add_rule("secret.test", b.addr)
             z.api("/api/ech/settings", enabled=True, publicname="public.test")
             st = z.get("/api/ech/status")
@@ -91,7 +91,7 @@ def mtls_client_certs():
         os.makedirs(os.path.join(d, "other"))
         oca = make_ca(os.path.join(d, "other"), "Other CA")
         bad = make_leaf(os.path.join(d, "other"), "mallory", oca, client=True, san="DNS:mallory")
-        with Zoraxy(tls=True, certs=certs) as z, Backend(name="m") as b, Backend(name="o") as ob:
+        with Dunree(tls=True, certs=certs) as z, Backend(name="m") as b, Backend(name="o") as ob:
             z.add_rule("m.test", b.addr)
             z.add_rule("o.test", ob.addr)
             z.api("/api/proxy/networking/clientcert", ep="m.test", config=json.dumps(
@@ -146,7 +146,7 @@ def secondary_port_tls():
     d = tempfile.mkdtemp(prefix="zx-sec-")
     try:
         ca, certs = _certs(["sp.test"], d)
-        with Zoraxy(tls=True, certs=certs) as z, Backend(name="sp") as b:
+        with Dunree(tls=True, certs=certs) as z, Backend(name="sp") as b:
             z.add_rule("sp.test", b.addr)
             sec = free_port()
             z.api("/api/proxy/listeningPorts/set", domain="sp.test", ports=json.dumps([":%d" % sec]))
@@ -181,7 +181,7 @@ def tls_sni_certificate_selection():
         multi = make_leaf(d, "m1.test", ca, san="DNS:m1.test,DNS:m2.test", name="multi")
         wild = make_leaf(d, "*.wild.test", ca, san="DNS:*.wild.test,DNS:wild.test", name="wild")
         pref = make_leaf(d, "preferred.test", ca, name="pref")
-        with Zoraxy(tls=True, certs=[("a.test", a[0], a[1]), ("multi", multi[0], multi[1]), ("wild", wild[0], wild[1]), ("pref", pref[0], pref[1])]) as z, Backend(name="app") as b:
+        with Dunree(tls=True, certs=[("a.test", a[0], a[1]), ("multi", multi[0], multi[1]), ("wild", wild[0], wild[1]), ("pref", pref[0], pref[1])]) as z, Backend(name="app") as b:
             for h in ("a.test", "m2.test", "x.wild.test", "unknown.test", "pinned.test"):
                 z.add_rule(h, b.addr)
             cn = lambda sni: helper_json("tls-client", "-addr", "127.0.0.1:%d" % z.proxy, "-sni", sni).get("peer_cn")

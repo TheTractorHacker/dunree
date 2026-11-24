@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
 	"github.com/gorilla/sessions"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
 )
 
 // scriptedServe returns a ServeFunc whose behavior is chosen per upstream origin

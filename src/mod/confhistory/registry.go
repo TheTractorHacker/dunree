@@ -1,4 +1,4 @@
-// Package confhistory keeps a restorable history of the Zoraxy configuration.
+// Package confhistory keeps a restorable history of the Dunree configuration.
 //
 // Every successful change made through the admin API (or the REST API v1)
 // creates a version: a content addressed, AES-256-GCM sealed copy of the
@@ -255,7 +255,7 @@ func (r *Registry) matchFile(p string) (Root, bool) {
 	return Root{}, false
 }
 
-// DefaultRegistry builds the registry of Zoraxy itself.
+// DefaultRegistry builds the registry of Dunree itself.
 //
 // Captured (conf folder): proxy rules, redirects, access rules, stream proxy,
 // path rules, trusted proxies, ACME settings, central WAF, bot rules, basic

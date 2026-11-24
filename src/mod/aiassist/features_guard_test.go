@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 func evWithRules(path string, ids ...int) *waf.Event {

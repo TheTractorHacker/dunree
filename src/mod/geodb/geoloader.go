@@ -7,7 +7,7 @@ import (
 	"net"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 func (s *Store) search(ip string) string {

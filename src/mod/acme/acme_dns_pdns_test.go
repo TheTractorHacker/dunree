@@ -3,7 +3,7 @@ package acme_test
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 // Upstream #766 / #917: PowerDNS "Host" is a *url.URL in lego and used to fail

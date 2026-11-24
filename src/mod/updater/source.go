@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"imuslab.com/zoraxy/mod/offline"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/wirecompat"
 	"io"
 	"net/http"
 	"net/url"
@@ -99,7 +100,7 @@ func (s *source) do(ctx context.Context, rawurl string, hdr map[string]string) (
 		return nil, false, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "zoraxy-updater")
+	req.Header.Set("User-Agent", wirecompat.UserAgent("dunree-updater", "zoraxy-updater"))
 	for k, v := range hdr {
 		req.Header.Set(k, v)
 	}

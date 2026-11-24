@@ -1,14 +1,14 @@
 //go:build unix
 
-// plugin-check is the conformance kit for Zoraxy plugins: it starts one plugin
-// binary the way Zoraxy does, without Zoraxy, and reports whether the plugin
+// plugin-check is the conformance kit for Dunree plugins: it starts one plugin
+// binary the way Dunree does, without Dunree, and reports whether the plugin
 // keeps the plugin contract (docs/plugins/contract.md).
 //
 //	plugin-check [options] <plugin binary>
 //
 // The plugin is copied to a scratch folder and run there, on loopback ports, as
 // the user who runs the kit. It is never run in its own folder and never talks to
-// a real Zoraxy: a plugin that asks for Zoraxy API endpoints gets the port of a
+// a real Dunree: a plugin that asks for Dunree API endpoints gets the port of a
 // stand-in that records what is called. The method, every check and its limits
 // are in docs/plugins/conformance.md.
 //
@@ -49,7 +49,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.BoolVar(&o.NoEgress, "no-egress", false, "point the HTTP proxy variables of the plugin at a dead address, so a plugin that honours them cannot call out")
 	fs.BoolVar(&o.Keep, "keep", false, "keep the scratch folder")
 	fs.Var((*envList)(&o.Env), "env", "environment for the plugin, as `NAME=VALUE`, or NAME to pass on the value the kit has (may be given more than once). Without it the plugin gets PATH, a HOME and TMPDIR in the scratch folder, LANG, LC_ALL, LC_CTYPE and TZ, and nothing else of the environment of the kit")
-	fs.DurationVar(&o.IntrospectTimeout, "introspect-timeout", o.IntrospectTimeout, "time limit of the introspect call (Zoraxy: 10s)")
+	fs.DurationVar(&o.IntrospectTimeout, "introspect-timeout", o.IntrospectTimeout, "time limit of the introspect call (Dunree: 10s)")
 	fs.DurationVar(&o.ReadyTimeout, "ready-timeout", o.ReadyTimeout, "time the plugin has to open its port")
 	fs.DurationVar(&o.MinRun, "min-run", o.MinRun, "the plugin has to stay up at least this long")
 	fs.IntVar(&o.Calls, "calls", o.Calls, "calls made before the memory is compared")
@@ -62,7 +62,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.IntVar(&o.MemGrowthMB, "mem-growth-mb", o.MemGrowthMB, "the memory check fails when the plugin grew by more than this over the calls (MiB)")
 	fs.Usage = func() {
 		fmt.Fprintln(stderr, "usage: plugin-check [options] <plugin binary>")
-		fmt.Fprintln(stderr, "Runs one Zoraxy plugin through the conformance checks. See docs/plugins/conformance.md.")
+		fmt.Fprintln(stderr, "Runs one Dunree plugin through the conformance checks. See docs/plugins/conformance.md.")
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(args); err != nil {

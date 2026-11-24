@@ -21,10 +21,10 @@ import (
 
 	ManagerOptions.RunAsUser / RunAsGroup (flags -plugin_user / -plugin_group) are names or numeric ids.
 	When RunAsUser is set the plugin process is started with that uid / gid (syscall.SysProcAttr.Credential,
-	supplementary groups of the Zoraxy process are NOT inherited, only the group given or the user's
+	supplementary groups of the Dunree process are NOT inherited, only the group given or the user's
 	primary group), and HOME / USER / LOGNAME of the environment are set to the user's.
 
-	Only root can switch users, so a non-root Zoraxy gets a clear error instead of silently running the plugin
+	Only root can switch users, so a non-root Dunree gets a clear error instead of silently running the plugin
 	with its own privileges (fail closed).
 
 	File ownership is not touched. The user needs to be able to execute the plugin binary and to enter its
@@ -73,7 +73,7 @@ func runAsCredential(userSpec, groupSpec string) (*syscall.Credential, *user.Use
 	if uid == 0 || gid == 0 {
 		return nil, nil, errors.New("plugin user / group resolve to root, which defeats the purpose; choose an unprivileged account")
 	}
-	//Groups left empty: setgroups(0) drops the supplementary groups of the Zoraxy process
+	//Groups left empty: setgroups(0) drops the supplementary groups of the Dunree process
 	return &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}, u, nil
 }
 
@@ -140,7 +140,7 @@ func (m *Manager) applyRunAs(cmd *exec.Cmd, binary string) error {
 		return nil
 	}
 	if geteuid() != 0 {
-		return errors.New("plugins are configured to run as user " + m.Options.RunAsUser + " (-plugin_user) but Zoraxy is not running as root, so it cannot switch users; start Zoraxy as root or remove the setting")
+		return errors.New("plugins are configured to run as user " + m.Options.RunAsUser + " (-plugin_user) but Dunree is not running as root, so it cannot switch users; start Dunree as root or remove the setting")
 	}
 	cred, u, err := runAsCredential(strings.TrimSpace(m.Options.RunAsUser), m.Options.RunAsGroup)
 	if err != nil {

@@ -2,9 +2,9 @@
 
 Answers upstream #1095 (custom 521 page) and #1102 (Transmission web UI returns 521). Verified on a throw-away instance.
 
-## What 521 means in Zoraxy
+## What 521 means in Dunree
 
-Zoraxy sends **521** when it could not talk to the upstream at all (connection refused, timeout, TLS handshake
+Dunree sends **521** when it could not talk to the upstream at all (connection refused, timeout, TLS handshake
 failure, endpoint disabled); **404 "host error"** when the upstream name does not resolve; **503** when every
 upstream is at its concurrency limit. If the upstream itself answers with an error (500, 502...) that status is
 passed through.
@@ -25,8 +25,8 @@ Most common causes (#1102 is one of the first two):
 | Log says | Fix |
 |---|---|
 | `TLS handshake timeout`, `first record does not look like a TLS handshake` | the rule has **Require TLS** ticked but the upstream speaks plain HTTP (Transmission on :9091 does). Untick it, or use `http://` |
-| `connection refused` / `no route to host` / `i/o timeout` | wrong IP or port, the service listens only on 127.0.0.1 of another machine, a firewall between *Zoraxy's* address and the upstream (test with `curl -v http://upstream:9091/` **from the Zoraxy host**, not from your PC) |
-| `lookup name ...: no such host` (gives 404, not 521) | the DNS name works on your PC but not on the Zoraxy host/container; use the IP or fix its resolver |
+| `connection refused` / `no route to host` / `i/o timeout` | wrong IP or port, the service listens only on 127.0.0.1 of another machine, a firewall between *Dunree's* address and the upstream (test with `curl -v http://upstream:9091/` **from the Dunree host**, not from your PC) |
+| `lookup name ...: no such host` (gives 404, not 521) | the DNS name works on your PC but not on the Dunree host/container; use the IP or fix its resolver |
 | `x509: certificate signed by unknown authority` / `doesn't contain any IP SANs` | upstream TLS with a self-signed or IP-only certificate: tick **Skip Verification** for that upstream |
 
 Transmission also has an RPC host whitelist: if requests reach it but are refused you see 4xx from Transmission, not 521.
@@ -42,8 +42,8 @@ Two mechanisms, use whichever fits:
    `{{.StatusText}}` `{{.RequestID}}` `{{.Host}}` `{{.Path}}` `{{.RuleName}}` (escaped; 64 KiB max), *Preview*, save.
    This also replaces upstream error responses, but never event streams, gRPC or WebSocket upgrades. Verified:
    template `<h1>{{.Status}} for {{.Host}}</h1>` served for a 521 shows the requested host (a bug where the host was
-   empty for Zoraxy generated errors is fixed in this version).
-2. **Template files** (apply to *Zoraxy generated* errors only, all rules): put files in the `templates` folder under the
+   empty for Dunree generated errors is fixed in this version).
+2. **Template files** (apply to *Dunree generated* errors only, all rules): put files in the `templates` folder under the
    web root (`-webroot`, default `./www`, so `./www/templates/`):
    * `rperror.html` -> 521 (upstream unreachable) *(a file called `521.html` is not read)*
    * `hosterror.html` -> 404 DNS / unknown upstream host

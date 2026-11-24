@@ -3,7 +3,7 @@ package zorxauth
 /*
 	customization.go
 
-	This file handles the branding customization of the Zoraxy Auth login page.
+	This file handles the branding customization of the Dunree Auth login page.
 
 	Administrators can replace the four visual resources of the login page
 	(brand mark, brand text, watermark icon / text and the panel art wallpaper)
@@ -31,7 +31,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 //go:embed brand_mark.svg
@@ -116,7 +116,7 @@ type BrandingConfig struct {
 
 func getDefaultBranding() *BrandingConfig {
 	return &BrandingConfig{
-		BrandText:     "Zoraxy Auth",
+		BrandText:     "Dunree Auth",
 		WatermarkText: "Authentication Gateway",
 	}
 }

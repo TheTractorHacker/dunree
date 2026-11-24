@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/botrules"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/ruleset"
+	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/ruleset"
 )
 
 /*
@@ -290,7 +290,7 @@ func buildRulesetMigration(e *ruleset.Engine) migrationResult {
 			}
 			for id, cc := range cfg.Categories {
 				if cc.Enabled {
-					skip("bot_rule", "Bot rules, category "+id, "Managed category lists hold hundreds of patterns, more than one expression can carry, and are updated with Zoraxy. Keep the Bot rules page for categories.")
+					skip("bot_rule", "Bot rules, category "+id, "Managed category lists hold hundreds of patterns, more than one expression can carry, and are updated with Dunree. Keep the Bot rules page for categories.")
 				}
 			}
 			if cfg.BlockEmptyUA != "" {

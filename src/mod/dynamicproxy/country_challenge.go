@@ -1,13 +1,13 @@
 package dynamicproxy
 
 import (
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/pathmatch"
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/metrics"
 )
 
 /*
@@ -46,11 +46,11 @@ func (router *Router) captchaChallengeFor(w http.ResponseWriter, r *http.Request
 	}
 	clientIP := router.GetClientIPForEndpoint(r, sep)
 
-	if r.URL.Path == captcha.AltchaChallengePath && sep.EffectiveCaptchaConfig().Provider == captcha.ProviderAltcha {
+	if captcha.IsAltchaChallengePath(r.URL.Path) && sep.EffectiveCaptchaConfig().Provider == captcha.ProviderAltcha {
 		captcha.HandleAltchaChallenge(w, r, sep.EffectiveCaptchaConfig())
 		return true
 	}
-	if r.URL.Path == captcha.VerifyPath {
+	if captcha.IsVerifyPath(r.URL.Path) {
 		captcha.HandleVerification(w, r, sep.EffectiveCaptchaConfig(), router.captchaSessionStore, clientIP)
 		router.recordCaptchaVerification(w, sep)
 		if !captchaVerifiedOK(w) {

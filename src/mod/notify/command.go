@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // CommandConfig describes the command hook. It only ever runs when the process was started with
@@ -82,33 +84,35 @@ func (l *limitedBuffer) Write(p []byte) (int, error) {
 	return len(p), nil // pretend everything was written so the child never blocks
 }
 
-// EventEnv renders the event as environment variables for the hook.
+// EventEnv renders the event as environment variables for the hook:
+// DUNREE_<NAME> always; the same values as ZORAXY_<NAME> while the legacy names are on (hooks
+// written for Zoraxy read those, plan row 28). // legacy-compat
 func EventEnv(ev Event) []string {
-	env := []string{
-		"ZORAXY_EVENT=" + ev.Event,
-		"ZORAXY_SOURCE=" + ev.Source,
-		"ZORAXY_SUBJECT=" + ev.Subject,
-		"ZORAXY_DOMAINS=" + strings.Join(ev.Domains, ","),
-		"ZORAXY_CA=" + ev.CA,
-		"ZORAXY_ERROR=" + ev.Error,
-		"ZORAXY_TIME=" + ev.Time.UTC().Format(time.RFC3339),
+	pairs := [][2]string{
+		{"EVENT", ev.Event},
+		{"SOURCE", ev.Source},
+		{"SUBJECT", ev.Subject},
+		{"DOMAINS", strings.Join(ev.Domains, ",")},
+		{"CA", ev.CA},
+		{"ERROR", ev.Error},
+		{"TIME", ev.Time.UTC().Format(time.RFC3339)},
 	}
 	if ev.Expiry != nil {
-		env = append(env, "ZORAXY_EXPIRY="+ev.Expiry.UTC().Format(time.RFC3339))
+		pairs = append(pairs, [2]string{"EXPIRY", ev.Expiry.UTC().Format(time.RFC3339)})
 	} else {
-		env = append(env, "ZORAXY_EXPIRY=")
+		pairs = append(pairs, [2]string{"EXPIRY", ""})
 	}
 	if ev.DaysLeft != nil {
-		env = append(env, fmt.Sprintf("ZORAXY_DAYS_LEFT=%d", *ev.DaysLeft))
+		pairs = append(pairs, [2]string{"DAYS_LEFT", fmt.Sprintf("%d", *ev.DaysLeft)})
 	}
 	js, _ := json.Marshal(ev)
-	return append(env, "ZORAXY_EVENT_JSON="+string(js))
+	return wirecompat.Env(append(pairs, [2]string{"EVENT_JSON", string(js)}))
 }
 
 // Run executes the command for one event and returns its (truncated) combined output.
 func (s *CommandSink) Run(ctx context.Context, ev Event) (string, error) {
 	if !s.Allowed {
-		return "", errors.New("command hooks are disabled: start Zoraxy with -allow_hook_commands")
+		return "", errors.New("command hooks are disabled: start Dunree with -allow_hook_commands")
 	}
 	if err := ValidateCommandPath(s.Cfg.Path); err != nil {
 		return "", err

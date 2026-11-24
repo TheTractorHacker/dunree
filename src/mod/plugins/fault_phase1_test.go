@@ -17,12 +17,12 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/info/logger"
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/info/logger"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*
@@ -564,7 +564,7 @@ func TestFaultPluginUIErrorsArePagesWithAStatus(t *testing.T) {
 	if rec.Code != http.StatusNotFound || strings.Contains(rec.Body.String(), "<script>") {
 		t.Fatalf("UI of an unknown plugin: status %d body %q", rec.Code, rec.Body.String())
 	}
-	//Running but the port is dead: 502 page (the process is frozen so Zoraxy has not noticed an exit)
+	//Running but the port is dead: 502 page (the process is frozen so Dunree has not noticed an exit)
 	mustStart(t, m, p)
 	waitHealth(t, p, HealthOK)
 	p.mu.Lock()
@@ -986,7 +986,7 @@ func TestFaultMemoryLimitEndsABalloon(t *testing.T) {
 	if !strings.Contains(st.ExitReason, "killed") || !strings.Contains(st.LastError, "memory limit of 96 MB") {
 		t.Fatalf("a plugin ended at its memory limit must say so: %+v", st)
 	}
-	//Zoraxy (this test process) is unaffected and the plugin can be started again
+	//Dunree (this test process) is unaffected and the plugin can be started again
 	mustStart(t, m, p)
 	if !m.PluginIsRunning(p.Spec.ID) {
 		t.Fatal("the plugin could not be started again")
@@ -1321,7 +1321,7 @@ func TestFaultBootWithTheRealDatabase(t *testing.T) {
 			PluginDir:          filepath.Join(dir, "plugins"),
 			PluginGroups:       map[string][]string{},
 			PluginGroupsConfig: filepath.Join(dir, "plugin_groups.json"),
-			SystemConst:        &zp.RuntimeConstantValue{ZoraxyVersion: "test"},
+			SystemConst:        &zp.RuntimeConstantValue{DunreeVersion: "test"},
 			Logger:             lg,
 			Database:           db,
 			APIKeyManager:      auth.NewAPIKeyManager(),
@@ -1351,7 +1351,7 @@ func TestFaultBootWithTheRealDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 	if pol := p.policy(); pol.Restart != RestartAlways || pol.LogRateLimit != 7 {
-		t.Fatalf("the policy did not survive a restart of Zoraxy: %+v", pol)
+		t.Fatalf("the policy did not survive a restart of Dunree: %+v", pol)
 	}
 	if p.Status().State != StateStopped {
 		t.Fatalf("a restart policy must not start a plugin the administrator had stopped: %+v", p.Status())

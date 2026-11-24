@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
+	"github.com/foleyit/dunree/mod/auth"
 )
 
 func fastHash(p string) string {

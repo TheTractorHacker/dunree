@@ -1,8 +1,48 @@
-# Unreleased
+# Dunree change log
+
+Dunree is a reverse proxy and web gateway published by Foley IT under AGPL-3.0. It is based on Zoraxy v3.3.6 by tobychui and imuslab and is an independent project, not endorsed by them (see `NOTICE`).
+
+This file has two parts. The first part is the Dunree version line, which starts at v1.0.0-beta.1. The second part is the change log of Zoraxy as its authors wrote it, kept unchanged as the history of the code Dunree is built on.
+
+# Dunree v1.0.0-beta.1 (unreleased)
+
+Based on Zoraxy v3.3.6. First version under the name Dunree.
+
+**Name and identity**
+
++ The product is called Dunree: admin interface, login and setup pages, default error pages, CAPTCHA pages, e-mails and notifications, documentation.
++ New logo and icons (`brand/`), in a light and a dark variant that follow the theme of the admin interface.
++ About page (*System > Utilities > About Dunree*): version, publisher, what Dunree is based on, links to `LICENSE` and `NOTICE`, and where the source code can be obtained.
++ `NOTICE` added. `LICENSE`, `THIRD_PARTY_NOTICES.md` and the copyright headers of the original authors are unchanged.
+
+**For installs that ran Zoraxy before** (details: `docs/migrating-from-zoraxy.md`)
+
++ Replace the program file; nothing is converted. The first Dunree start copies the configuration folder and the database aside, once.
++ Administrators stay logged in: the old session and CSRF cookies are accepted and replaced.
++ Names other programs see have a Dunree form, and the Zoraxy form keeps working: `X-Dunree-*` and `X-Zoraxy-*` headers, `/.dunree/` and `/.zoraxy/` paths, `dunree_*` and `zoraxy_*` metrics, `DUNREE_*` and `ZORAXY_*` environment variables. One setting (*Listeners > Compatibility*, on by default) decides whether the old names are still sent.
++ Plugins built for Zoraxy run without being rebuilt. New plugins use the Dunree SDK (`dunree_plugin` 2.0.0).
+
+**Behaviour that changed**
+
++ No add-on store is built in. A new install contacts no store until an administrator adds one. An install that used the Zoraxy community store keeps it as a removable source.
++ The default footer of the CAPTCHA pages reads "Performance & security by Dunree" and no longer links to the website of the Zoraxy project. A footer text, label or link saved by an administrator is kept.
++ The admin interface no longer links to the website, wiki or repository of the Zoraxy project for help.
++ The supporters shown under *Utilities > Credits* are named as what they are: supporters of the Zoraxy project.
+
+**Changes made since Zoraxy v3.3.6 before the rename**
+
+The work of the fork that became Dunree (web application firewall, rules builder, CAPTCHA pages, sign-in providers, high availability and Fleet, signed updater, new admin interface and more) is described in `docs/ux/changes.md` and `docs/roadmap-history.md`. Changes of behaviour that need attention:
 
 + Security (behaviour change): the first admin account can only be created from the server itself, or from another machine with the one-time setup token printed to the console / log at startup (`docker logs` in Docker). Start with `-open_setup` to restore the old "anyone, first come" registration.
 + Security (behaviour change): the forward proxy only serves clients on this machine or on a private network (RFC 1918, CGNAT / Tailscale, link-local, IPv6 ULA) by default; public source addresses get 403. POST `allow=true` to `/api/tools/fwdproxy/publicclients` restores the old behaviour. An optional Proxy-Authorization login can be set through `/api/tools/fwdproxy/credentials`. Forward proxy settings can no longer be changed with a GET request.
 + Security (behaviour change, Docker): the shipped `docker-compose.yml` and the `docker run` example no longer mount `/var/run/docker.sock` into the Zoraxy container (socket access is root-equivalent on the host). The "Docker containers" picker needs the opt-in read-only socket proxy (`docker compose -f docker-compose.yml -f docker-compose.socket-proxy.yml up -d`) or the legacy mount added back by hand; see `docker/README.md`. Existing deployments keep whatever compose file they already use. The runtime image also no longer installs `sudo` or `openssh`.
+
+Known limits of this version are listed per area in `docs/ux/changes.md`, section "Dunree rebrand".
+
+
+# History: Zoraxy
+
+Everything below this line is the change log of **Zoraxy** by tobychui, imuslab and the Zoraxy contributors, as it stood in the source Dunree is based on. It is their text and their work, kept as it was. Issue and pull request numbers refer to the Zoraxy repository.
 
 
 # v3.3.4 22 Aug 2026

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // Convert a request path (e.g. /index.html) into physical path on disk

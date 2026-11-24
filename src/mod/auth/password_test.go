@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	db "github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 	"github.com/gorilla/sessions"
-	db "imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
 )
 
 // fast profile so unit tests stay quick

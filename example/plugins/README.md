@@ -4,8 +4,8 @@ This directory contains example plugins that demonstrate how to create and use p
 
 ## Some Note-Worthy Examples
 
-- **api-call-example**: Demonstrates how plugins can make API calls to zoraxy
-- **event-subscriber-example**: Shows how to subscribe to and handle events from zoraxy within the application
+- **api-call-example**: Demonstrates how plugins can make API calls to Dunree
+- **event-subscriber-example**: Shows how to subscribe to and handle events from Dunree within the application
 - **plugin2plugin-comms-peer1**: Illustrates communication between two plugins via the event system, where this plugin acts as the first peer
 - **plugin2plugin-comms-peer2**: Similar to the above, but this plugin acts as the second peer in the communication
 
@@ -30,11 +30,11 @@ purpose and are not features you need to run. Each one passes the conformance ki
 
 All three read their start configuration from standard input, check the invoke token, end on the terminate request
 and on SIGTERM, and write no log line per request. Build them for a release with `tools/build_ref_plugins.sh`
-(or `tools/build_release.sh -p`); they are not part of the signed Zoraxy release.
+(or `tools/build_release.sh -p`); they are not part of the signed Dunree release.
 
-## SDK copy (`mod/zoraxy_plugin`)
+## SDK copy (`mod/dunree_plugin`)
 
-Every example carries a copy of the plugin SDK from `src/mod/plugins/zoraxy_plugin` (`build_all.sh` refreshes the
+Every example carries a copy of the plugin SDK from `src/mod/plugins/dunree_plugin` (`build_all.sh` refreshes the
 copies). The copies here are SDK 1.2.0, plugin contract version 1; see `CHANGELOG.md` inside the folder and
 `docs/plugins/contract.md`. A plugin built with it declares `"api_version": 1` without any code change.
 

@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 const (
@@ -180,7 +182,7 @@ func (f *Fetcher) Fetch(ctx context.Context, raw string) (io.ReadCloser, error) 
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Zoraxy-blocklist-import")
+	req.Header.Set("User-Agent", wirecompat.UserAgent("Dunree-blocklist-import", "Zoraxy-blocklist-import"))
 	req.Header.Set("Accept", "text/plain, text/csv, */*;q=0.1")
 	cl := f.client()
 	resp, err := cl.Do(req)

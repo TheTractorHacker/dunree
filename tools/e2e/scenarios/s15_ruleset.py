@@ -26,7 +26,7 @@ def err(z, path, body):
 @scenario("ruleset_engine", ["ux-phase5-rules"])
 def ruleset_engine():
     """See the module docstring."""
-    with Zoraxy() as z, Backend(name="rs") as b:
+    with Dunree() as z, Backend(name="rs") as b:
         z.add_rule("rs.test", b.addr)
         z.add_rule("other.test", b.addr)
 

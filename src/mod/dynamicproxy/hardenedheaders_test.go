@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 )
 
 func hhValue(list [][]string, key string) (string, bool) {
@@ -116,9 +116,9 @@ func TestHardenedHeadersValidationRejects(t *testing.T) {
 func TestHardenedHeadersAdminHeadersWin(t *testing.T) {
 	hr := &HeaderRewriteRules{
 		UserDefinedHeaders: []*rewrite.UserDefinedHeader{
-			{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "x-frame-options", Value: "ALLOWALL"},
-			{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "Referrer-Policy", IsRemove: true},
-			{Direction: rewrite.HeaderDirection_ZoraxyToUpstream, Key: "X-Content-Type-Options", Value: "irrelevant"}, //upstream direction: does not count
+			{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "x-frame-options", Value: "ALLOWALL"},
+			{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "Referrer-Policy", IsRemove: true},
+			{Direction: rewrite.HeaderDirection_DunreeToUpstream, Key: "X-Content-Type-Options", Value: "irrelevant"}, //upstream direction: does not count
 		},
 		HSTSMaxAge:                   63072000,
 		EnablePermissionPolicyHeader: true,
@@ -229,7 +229,7 @@ func TestHardenedHeadersEndToEnd(t *testing.T) {
 	}
 
 	// admin header rule beats both upstream and override
-	admin := []*rewrite.UserDefinedHeader{{Direction: rewrite.HeaderDirection_ZoraxyToDownstream, Key: "X-Frame-Options", Value: "SAMEORIGIN"}}
+	admin := []*rewrite.UserDefinedHeader{{Direction: rewrite.HeaderDirection_DunreeToDownstream, Key: "X-Frame-Options", Value: "SAMEORIGIN"}}
 	hh = DefaultHardenedHeaders()
 	hh.FrameProtection, hh.OverrideExisting = "deny", true
 	h = fetch(hh, admin)

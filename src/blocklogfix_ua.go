@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/botrules"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
 )
 
 /*

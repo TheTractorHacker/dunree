@@ -32,7 +32,7 @@ def nested(n):
 def api_protection_log_and_block():
     """Through the real proxy path: limits, allow-list and OpenAPI in log mode (events only) and block mode
     (400/405/413 + WAF block accounting), allowed bodies reach the upstream byte for byte (also chunked)."""
-    with Zoraxy() as z, Backend(name="app") as b:
+    with Dunree() as z, Backend(name="app") as b:
         z.add_rule("api.test", b.addr)
         deep, ok = nested(40), json.dumps({"name": "x", "pad": "y" * 5000}).encode()
 

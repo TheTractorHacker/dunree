@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/netutils"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/netutils"
 )
 
 //go:embed geoipv4.csv
@@ -174,7 +174,7 @@ func (s *Store) loadDataSet() (*geoDataSet, error) {
 
 // ReloadGeoDB reload the geoip dataset from the external geodb folder and hot
 // swap it into the store. This is called after a database update so the new
-// dataset can be used without restarting Zoraxy
+// dataset can be used without restarting Dunree
 func (s *Store) ReloadGeoDB() error {
 	newDataSet, err := s.loadDataSet()
 	if err != nil {

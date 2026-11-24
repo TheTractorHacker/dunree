@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/adminallow"
-	"imuslab.com/zoraxy/mod/dynamicproxy/domainsniff"
-	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/foleyit/dunree/mod/dynamicproxy/domainsniff"
+	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // Tunnel settings for generic HTTP protocol upgrades, see upgrade.go
@@ -79,7 +79,7 @@ type ReverseProxy struct {
 
 	proxyProtocol bool //send the client address to the PROXY protocol dialer through the request context
 
-	//Appended by Zoraxy project
+	//Appended by Dunree project
 
 }
 
@@ -113,7 +113,7 @@ type ResponseRewriteRuleSet struct {
 
 	/* System Information Payload */
 	DevelopmentMode bool   //Inject dev mode information to requests
-	Version         string //Version number of Zoraxy, use for X-Proxy-By
+	Version         string //Version number of Dunree, use for X-Proxy-By
 
 	/* HTTP/3 (QUIC) */
 	AltSvc string //Alt-Svc header value to advertise HTTP/3 support; empty = no header
@@ -487,7 +487,7 @@ func (p *ReverseProxy) ProxyHTTP(rw http.ResponseWriter, req *http.Request, rrr 
 	injectUserDefinedHeaders(outreq.Header, rrr.UpstreamHeaders)
 
 	// Rewrite outbound UA top upstream, must be after user headers
-	rewriteUserAgent(outreq.Header, "Zoraxy/"+rrr.Version)
+	rewriteUserAgent(outreq.Header, IdentityUserAgent(rrr.Version))
 
 	//Fix proxmox transfer encoding bug if detected Proxmox Cookie
 	if rrr.DisableChunkedTransferEncoding || domainsniff.IsProxmox(req) {
@@ -603,7 +603,7 @@ func (p *ReverseProxy) ProxyHTTP(rw http.ResponseWriter, req *http.Request, rrr 
 
 	//Add debug X-Proxy-By tracker
 	if rrr.DevelopmentMode {
-		res.Header.Set("x-proxy-by", "zoraxy/"+rrr.Version)
+		res.Header.Set("x-proxy-by", IdentityProxyBy())
 	}
 
 	// Response inspection (outbound leak detection), see respguard.go

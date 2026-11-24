@@ -10,13 +10,13 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// NewInfoServer / ArOZInfo tests – platform-independent
+// NewInfoServer / HostInfo tests – platform-independent
 // ---------------------------------------------------------------------------
 
 // TestNewInfoServer verifies that NewInfoServer returns a non-nil Server
-// with the ArOZInfo values preserved.
+// with the HostInfo values preserved.
 func TestNewInfoServer(t *testing.T) {
-	info := ArOZInfo{
+	info := HostInfo{
 		BuildVersion: "1.0",
 		DeviceVendor: "TestVendor",
 		DeviceModel:  "TestModel",
@@ -42,21 +42,21 @@ func TestNewInfoServer(t *testing.T) {
 	}
 }
 
-// TestNewInfoServerEmpty verifies that NewInfoServer works with a zero-value ArOZInfo.
+// TestNewInfoServerEmpty verifies that NewInfoServer works with a zero-value HostInfo.
 func TestNewInfoServerEmpty(t *testing.T) {
-	s := NewInfoServer(ArOZInfo{})
+	s := NewInfoServer(HostInfo{})
 	if s == nil {
-		t.Fatal("NewInfoServer(ArOZInfo{}) returned nil")
+		t.Fatal("NewInfoServer(HostInfo{}) returned nil")
 	}
 }
 
 // ---------------------------------------------------------------------------
-// GetArOZInfo HTTP handler tests
+// GetHostInfo HTTP handler tests
 // ---------------------------------------------------------------------------
 
-// TestGetArOZInfoHandler verifies the handler returns valid JSON.
-func TestGetArOZInfoHandler(t *testing.T) {
-	info := ArOZInfo{
+// TestGetHostInfoHandler verifies the handler returns valid JSON.
+func TestGetHostInfoHandler(t *testing.T) {
+	info := HostInfo{
 		BuildVersion: "2.0",
 		DeviceVendor: "Acme",
 		DeviceModel:  "Widget",
@@ -68,16 +68,16 @@ func TestGetArOZInfoHandler(t *testing.T) {
 	}
 	s := NewInfoServer(info)
 
-	req := httptest.NewRequest(http.MethodGet, "/aroz/info", nil)
+	req := httptest.NewRequest(http.MethodGet, "/info", nil)
 	w := httptest.NewRecorder()
-	s.GetArOZInfo(w, req)
+	s.GetHostInfo(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusOK {
-		t.Errorf("GetArOZInfo status = %d, expected 200", resp.StatusCode)
+		t.Errorf("GetHostInfo status = %d, expected 200", resp.StatusCode)
 	}
 
-	var got ArOZInfo
+	var got HostInfo
 	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -91,21 +91,21 @@ func TestGetArOZInfoHandler(t *testing.T) {
 	}
 }
 
-// TestGetArOZInfoHandlerWithIcon verifies the handler includes the VendorIcon
+// TestGetHostInfoHandlerWithIcon verifies the handler includes the VendorIcon
 // when the query parameter icon=true is provided.
-func TestGetArOZInfoHandlerWithIcon(t *testing.T) {
+func TestGetHostInfoHandlerWithIcon(t *testing.T) {
 	icon := "data:image/png;base64,iVBORw0KGgo="
-	info := ArOZInfo{
+	info := HostInfo{
 		BuildVersion: "3.0",
 		VendorIcon:   icon,
 	}
 	s := NewInfoServer(info)
 
-	req := httptest.NewRequest(http.MethodGet, "/aroz/info?icon=true", nil)
+	req := httptest.NewRequest(http.MethodGet, "/info?icon=true", nil)
 	w := httptest.NewRecorder()
-	s.GetArOZInfo(w, req)
+	s.GetHostInfo(w, req)
 
-	var got ArOZInfo
+	var got HostInfo
 	if err := json.NewDecoder(w.Result().Body).Decode(&got); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}

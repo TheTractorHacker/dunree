@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database/dbleveldb"
+	"github.com/foleyit/dunree/mod/database/dbleveldb"
 )
 
 func TestNewDB(t *testing.T) {

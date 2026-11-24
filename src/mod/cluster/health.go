@@ -7,10 +7,17 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // HealthPath is served by the proxy listeners before host routing.
-const HealthPath = "/.zoraxy/health"
+// LegacyHealthPath is the path Zoraxy used: it is answered the same way, because load // legacy-compat
+// balancers and keepalived scripts of existing installs probe it.
+const (
+	HealthPath       = wirecompat.PathPrefix + "/health"       // "/.dunree/health"
+	LegacyHealthPath = wirecompat.LegacyPathPrefix + "/health" // "/.zoraxy/health"
+)
 
 // HealthEndpoint answers load balancer / keepalived probes. It exposes no
 // secrets: version, uptime, whether the proxy router is running and how many
@@ -95,7 +102,7 @@ func (h *HealthEndpoint) allowed(remoteAddr string) bool {
 
 // IsHealthRequest reports whether the request targets the health path.
 func IsHealthRequest(r *http.Request) bool {
-	return r.URL != nil && r.URL.Path == HealthPath
+	return r.URL != nil && wirecompat.IsPath(r.URL.Path, HealthPath)
 }
 
 // Serve writes the health response. running and endpoints come from the

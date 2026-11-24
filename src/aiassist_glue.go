@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/aiassist"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/posture"
+	"github.com/foleyit/dunree/mod/aiassist"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/posture"
 )
 
 /*

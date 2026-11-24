@@ -400,7 +400,7 @@ func (s *statusWriter) Flush() {
 func deny(w http.ResponseWriter, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	if code == http.StatusUnauthorized {
-		w.Header().Set("WWW-Authenticate", `Bearer realm="zoraxy"`)
+		w.Header().Set("WWW-Authenticate", `Bearer realm="dunree"`)
 	}
 	if code == http.StatusTooManyRequests {
 		w.Header().Set("Retry-After", "1")

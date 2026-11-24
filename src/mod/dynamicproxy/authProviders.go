@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"regexp"
 
-	"imuslab.com/zoraxy/mod/auth/sso/oauth2"
-	"imuslab.com/zoraxy/mod/netutils"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
+	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 /*

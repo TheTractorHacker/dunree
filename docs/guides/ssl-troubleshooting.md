@@ -6,18 +6,18 @@ Answers upstream #386, #513, #543, #665, #681 and #750. Checks marked *verified*
 
 The HTTP-01 challenge makes the CA fetch `http://<your name>/.well-known/acme-challenge/<token>` on **port 80**
 from the internet. Error `403 :: unauthorized ... Invalid response from http://name/.well-known/...: 404` means
-*something answered with 404* instead of Zoraxy's challenge responder.
+*something answered with 404* instead of Dunree's challenge responder.
 
 Checklist:
 
-1. **Port 80 must reach Zoraxy.** Docker: `-p 80:80`. Router: forward external 80 (and 443) to the Zoraxy host.
+1. **Port 80 must reach Dunree.** Docker: `-p 80:80`. Router: forward external 80 (and 443) to the Dunree host.
    ISP/CGNAT or a second router in front (double NAT) breaks this; use the DNS challenge (section 2).
 2. **The name must point at your public address** (`dig +short A name`, and `AAAA`, see section 5).
-3. Zoraxy opens the port 80 listener temporarily for an HTTP-01 request even when "Enable HTTP server on port 80" is off.
-   If another program already uses port 80, Zoraxy cannot; Ingress settings shows "Port 80 is occupied".
+3. Dunree opens the port 80 listener temporarily for an HTTP-01 request even when "Enable HTTP server on port 80" is off.
+   If another program already uses port 80, Dunree cannot; Ingress settings shows "Port 80 is occupied".
 4. **Ask the port yourself** from outside your network (phone on mobile data):
    `curl -i http://name/.well-known/acme-challenge/test`.
-   *Verified:* when Zoraxy answers, the body is `No ACME challenge in progress` (HTTP 404, outside an issuance).
+   *Verified:* when Dunree answers, the body is `No ACME challenge in progress` (HTTP 404, outside an issuance).
    Any other 404 page (nginx, router UI, another container) is the thing that is stealing port 80.
 5. A rule with an **access rule / whitelist** does not block the challenge: the `/.well-known/acme-challenge/` path is
    answered before access rules (`UseSystemAccessControl: false`), but your firewall/CDN still can.
@@ -66,24 +66,24 @@ Work out which of these three it is:
 
 | What the browser shows | Cause | Fix |
 |---|---|---|
-| Certificate issued by *Zoraxy Self-host* (the built-in self-signed one) | Zoraxy found no certificate for the name the browser sent (SNI), or the browser sent no name (you typed an IP) | issue/upload a certificate that contains that name; Certificates page shows "Domain" (SAN) per file |
+| Certificate issued by *Dunree Self-host* (the built-in self-signed one) | Dunree found no certificate for the name the browser sent (SNI), or the browser sent no name (you typed an IP) | issue/upload a certificate that contains that name; Certificates page shows "Domain" (SAN) per file |
 | A real CA certificate, but for a different name | wrong certificate selected, or a wildcard that does not cover the name | wildcard `*.a.example.com` does not match `a.example.com` or `x.y.a.example.com`; request the needed names |
-| Zoraxy cert is fine but the **upstream** HTTPS is broken | you ticked "Require TLS" and the upstream has a self-signed cert; you get a 502/521, not a browser warning | tick *Skip Verification* for that upstream (or install its CA) |
+| Dunree cert is fine but the **upstream** HTTPS is broken | you ticked "Require TLS" and the upstream has a self-signed cert; you get a 502/521, not a browser warning | tick *Skip Verification* for that upstream (or install its CA) |
 
-How Zoraxy picks the certificate for a TLS connection (code: `mod/tlscert/tlscert.go`): a per-host preferred
+How Dunree picks the certificate for a TLS connection (code: `mod/tlscert/tlscert.go`): a per-host preferred
 certificate (if "disable SNI" is set), a file named exactly `<hostname>.pem/.key`, otherwise the **first stored certificate whose
 names match** (wildcards work), otherwise the **fallback certificate**, otherwise the built-in self-signed one.
 Test any name from a shell, with the same SNI the browser uses:
 
 ```
-openssl s_client -connect zoraxy-host:443 -servername dsm.example.com </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -ext subjectAltName
+openssl s_client -connect dunree-host:443 -servername dsm.example.com </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -ext subjectAltName
 ```
 
-*Verified:* without `-servername` and for an unknown name the answer is the built-in `Zoraxy Self-host` certificate.
+*Verified:* without `-servername` and for an unknown name the answer is the built-in `Dunree Self-host` certificate.
 
 For #543 specifically (macvlan Docker, DSM on `:5001`, DuckDNS wildcard): the proxied name matched, so check with
-the command above that the answer for `dsm.<name>.duckdns.org` is the wildcard and not `Zoraxy Self-host`, and that
-the browser really uses that name (not the IP of the NAS) and a DNS record pointing to Zoraxy's macvlan address.
+the command above that the answer for `dsm.<name>.duckdns.org` is the wildcard and not `Dunree Self-host`, and that
+the browser really uses that name (not the IP of the NAS) and a DNS record pointing to Dunree's macvlan address.
 I could not reproduce the setup, so this is a diagnosis recipe, not a confirmed cause.
 
 ### Default site / unknown names / opening the IP (#665)
@@ -101,11 +101,11 @@ name typed in the address bar is inside that certificate. So:
 
 ## 5. Force the ACME validation over IPv4? (#513)
 
-Not possible from Zoraxy, so there is no such setting: the *CA* does the validation from its own servers and
+Not possible from Dunree, so there is no such setting: the *CA* does the validation from its own servers and
 picks the address itself; Let's Encrypt looks up `A` and `AAAA` for the name and prefers the `AAAA` (IPv6) one when it
-exists. Zoraxy's own outbound connection to the CA does not influence this. If your `AAAA` points at a different
+exists. Dunree's own outbound connection to the CA does not influence this. If your `AAAA` points at a different
 machine (a backend with its own IPv6), the challenge lands there (403/404). Choose one:
 
-1. Remove the `AAAA` record for that name (or point it at Zoraxy and forward IPv6 80/443 to Zoraxy).
+1. Remove the `AAAA` record for that name (or point it at Dunree and forward IPv6 80/443 to Dunree).
 2. Use the **DNS challenge** (section 2): validation is a TXT lookup, address family irrelevant.
-3. Make the backend answer `/.well-known/acme-challenge/` by forwarding to Zoraxy's port 80.
+3. Make the backend answer `/.well-known/acme-challenge/` by forwarding to Dunree's port 80.

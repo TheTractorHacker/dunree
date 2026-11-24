@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-      RESTful Example | Zoraxy Documentation
+      RESTful Example | Dunree Documentation
     </title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -69,7 +69,7 @@
           <a href="#!" class="is-active item">
             Documents
           </a>
-          <a href="https://github.com/tobychui/zoraxy/tree/main/example/plugins" target="_blank" class="item">
+          <a href="../../../../example/plugins/" class="item">
             Examples
             <span class="ts-icon is-arrow-up-right-from-square-icon"></span>
           </a>
@@ -88,8 +88,8 @@
                   <span class="ts-icon is-caret-down-icon"></span>
                 </a>
                 <div class="ts-menu is-dense is-small is-horizontally-padded">
-                  <a class="item" href="/plugins/html/1. Introduction/1. What is Zoraxy Plugin.html">
-                    What is Zoraxy Plugin
+                  <a class="item" href="/plugins/html/1. Introduction/1. What is Dunree Plugin.html">
+                    What is Dunree Plugin
                   </a>
                   <a class="item" href="/plugins/html/1. Introduction/2. Getting Started.html">
                     Getting Started
@@ -149,8 +149,8 @@
                 <a class="item" href="/plugins/html/index.html">
                   index
                 </a>
-                <a class="item" href="/plugins/html/zoraxy_plugin API.html">
-                  zoraxy_plugin API
+                <a class="item" href="/plugins/html/dunree_plugin API.html">
+                  dunree_plugin API
                 </a>
               </div>
             </div>
@@ -266,7 +266,7 @@ embedWebRouter.HandleFunc(&quot;/api/echo&quot;, func(w http.ResponseWriter, r *
                     <span class="ts-text is-code">
                       http.Mux
                     </span>
-                    , where if you have multiple web server listening interface, you can fill in different Mux based on your implementation. On of the examples is that, when you are developing a static web server plugin, where you need a dedicated HTTP listening endpoint that is not the one Zoraxy assigned to your plugin, you need to create two http.Mux and assign one of them for Zoraxy plugin UI purpose.
+                    , where if you have multiple web server listening interface, you can fill in different Mux based on your implementation. On of the examples is that, when you are developing a static web server plugin, where you need a dedicated HTTP listening endpoint that is not the one Dunree assigned to your plugin, you need to create two http.Mux and assign one of them for Dunree plugin UI purpose.
                   </p>
                 </p>
                 <div class="ts-divider has-top-spaced-large"></div>
@@ -288,11 +288,11 @@ embedWebRouter.HandleFunc(&quot;/api/echo&quot;, func(w http.ResponseWriter, r *
                     <span class="ts-text is-code">
                       /
                     </span>
-                    is only use for accessing Zoraxy resouces. For example, when you access
+                    is only use for accessing Dunree resouces. For example, when you access
                     <span class="ts-text is-code">
                       /img/logo.svg
                     </span>
-                    , Zoraxy webmin HTTP router will return the logo of Zoraxy for you instead of
+                    , Dunree webmin HTTP router will return the logo of Dunree for you instead of
                     <span class="ts-text is-code">
                       /plugins/your_plugin_name/{your_web_root}/img/logo.svg
                     </span>
@@ -341,7 +341,7 @@ embedWebRouter.HandleFunc(&quot;/api/echo&quot;, func(w http.ResponseWriter, r *
                     And here is the front-end code in your HTML file
                   </p>
                 </p>
-                <pre><code class="language-html">&lt;!-- The example below show how HTTP GET is used with Zoraxy plugin --&gt;
+                <pre><code class="language-html">&lt;!-- The example below show how HTTP GET is used with Dunree plugin --&gt;
 &lt;h3&gt;Echo Test (HTTP GET)&lt;/h3&gt;
 &lt;div class=&quot;ui form&quot;&gt;
     &lt;div class=&quot;field&quot;&gt;
@@ -392,7 +392,7 @@ embedWebRouter.HandleFunc(&quot;/api/echo&quot;, func(w http.ResponseWriter, r *
                 </p>
                 <p>
                   <p class="ts-text">
-                    Since the CSRF validation is done by Zoraxy, your plugin backend code can be implemented just like an ordinary handler. Here is an example POST handling function that receive a FORM POST and print it in an HTML response.
+                    Since the CSRF validation is done by Dunree, your plugin backend code can be implemented just like an ordinary handler. Here is an example POST handling function that receive a FORM POST and print it in an HTML response.
                   </p>
                 </p>
                 <pre><code class="language-go">embedWebRouter.HandleFunc(&quot;/api/post&quot;, func(w http.ResponseWriter, r *http.Request) {
@@ -422,7 +422,7 @@ embedWebRouter.HandleFunc(&quot;/api/echo&quot;, func(w http.ResponseWriter, r *
                     <span class="ts-text is-code">
                       $.cjax
                     </span>
-                    function implemented in Zoraxy
+                    function implemented in Dunree
                     <span class="ts-text is-code">
                       utils.js
                     </span>
@@ -494,7 +494,7 @@ $.cjax({
                 </h3>
                 <p>
                   <p class="ts-text">
-                    It is possible to make POST request with Vanilla JS. Note that you will need to populate the csrf-token field yourself to make the request pass through the plugin UI request router in Zoraxy. Here is a basic example on how it could be done.
+                    It is possible to make POST request with Vanilla JS. Note that you will need to populate the csrf-token field yourself to make the request pass through the plugin UI request router in Dunree. Here is a basic example on how it could be done.
                   </p>
                 </p>
                 <pre><code class="language-javascript">fetch('./api/post', {
@@ -551,7 +551,7 @@ $.cjax({
     &lt;div class=&quot;standardContainer&quot;&gt;
         &lt;div class=&quot;ui container&quot;&gt;
             &lt;h1&gt;RESTFul API Example&lt;/h1&gt;
-            &lt;!-- The example below show how HTTP GET is used with Zoraxy plugin --&gt;
+            &lt;!-- The example below show how HTTP GET is used with Dunree plugin --&gt;
             &lt;h3&gt;Echo Test (HTTP GET)&lt;/h3&gt;
             &lt;div class=&quot;ui form&quot;&gt;
                 &lt;div class=&quot;field&quot;&gt;
@@ -670,7 +670,7 @@ import (
 	&quot;net/http&quot;
 	&quot;strconv&quot;
 
-	plugin &quot;example.com/zoraxy/restful-example/mod/zoraxy_plugin&quot;
+	plugin &quot;example.com/dunree/restful-example/mod/dunree_plugin&quot;
 )
 
 const (
@@ -708,7 +708,7 @@ func main() {
 
 	// Create a new PluginEmbedUIRouter that will serve the UI from web folder
 	// The router will also help to handle the termination of the plugin when
-	// a user wants to stop the plugin via Zoraxy Web UI
+	// a user wants to stop the plugin via Dunree Web UI
 	embedWebRouter := plugin.NewPluginEmbedUIRouter(PLUGIN_ID, &amp;content, WEB_ROOT, UI_PATH)
 	embedWebRouter.RegisterTerminateHandler(func() {
 		// Do cleanup here if needed
@@ -787,7 +787,7 @@ func main() {
       <div class="ts-divider"></div>
       <div class="ts-content">
         <div class="ts-text">
-          Zoraxy © tobychui
+          Dunree plugin documentation, based on the Zoraxy documentation © tobychui
           <span class="thisyear">
             2025
           </span>

@@ -3,9 +3,9 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/botrules"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/foleyit/dunree/mod/metrics"
 )
 
 /*

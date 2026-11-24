@@ -1,3 +1,3 @@
-module example.com/zoraxy/fork-ref-filter
+module example.com/dunree/fork-ref-filter
 
 go 1.23.6

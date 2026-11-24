@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"imuslab.com/zoraxy/mod/botrules"
+	"github.com/foleyit/dunree/mod/botrules"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"

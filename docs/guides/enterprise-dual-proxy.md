@@ -1,10 +1,10 @@
-# Two Zoraxy proxies in a segmented network: modes, trust, failure and recovery
+# Two Dunree proxies in a segmented network: modes, trust, failure and recovery
 
 Applies to the fork line `v3.3.6-fork.19` and later (deployment role, peer gate, CrowdSec, audit log, hardened
 headers). Background and the design decisions are in [../enterprise-dual-proxy-plan.md](../enterprise-dual-proxy-plan.md).
 
-**Status of this guide.** The Zoraxy side was exercised end to end on one machine with the harness
-`tools/e2e/dual_proxy/run.sh enterprise` (an external and an internal Zoraxy, a backend app, a private CA, optional
+**Status of this guide.** The Dunree side was exercised end to end on one machine with the harness
+`tools/e2e/dual_proxy/run.sh enterprise` (an external and an internal Dunree, a backend app, a private CA, optional
 mutual TLS, a **fake** CrowdSec LAPI, client addresses on loopback; about 2.5 min). Last run: **23 PASS, 0 FAIL, 0 NOT RUN**
 (the run found a defect, SNI to IP-addressed upstreams for websockets and active probes, now fixed in this release; section 3.2).
 Statements marked **(verified)** were observed in that run. **Not verified, and marked (untested)**: a real CrowdSec, a
@@ -12,7 +12,7 @@ real two-VLAN network, Cloudflare, a UDM Pro, a Proxmox host, high availability,
 addresses, mutual TLS combined with the spoofing check, passive ejection, expired certificates, the updater's binary rollback, websockets combined with an upstream client certificate, and several upstreams. Full list:
 [../enterprise-assessment.md](../enterprise-assessment.md).
 
-**Zoraxy applies nothing outside itself.** It does not configure UniFi, Proxmox, Cloudflare or CrowdSec. The firewall
+**Dunree applies nothing outside itself.** It does not configure UniFi, Proxmox, Cloudflare or CrowdSec. The firewall
 sections only recommend rules for you to create.
 
 ## 0. Architecture
@@ -25,12 +25,12 @@ sections only recommend rules for you to create.
    [UDM Pro firewall]
         |
  +-------------------- Public DMZ --------------------+
- |  EXTERNAL Zoraxy   role=external, hardened headers  |   CrowdSec bouncer, rate limit, WAF, TLS termination
+ |  EXTERNAL Dunree   role=external, hardened headers  |   CrowdSec bouncer, rate limit, WAF, TLS termination
  |  admin port bound to the management address only    |
  +-----------------------------+-----------------------+
                                | TLS (private CA or pin, optional client cert), host overwrite = public name
  +-------------------- Servers VLAN -------------------+
- |  INTERNAL Zoraxy   role=internal, peer gate, trusts |   per-route body limit and timeout, same LAPI
+ |  INTERNAL Dunree   role=internal, peer gate, trusts |   per-route body limit and timeout, same LAPI
  |  only the external proxy as a Trusted Proxy         |
  +-----------------------------+-----------------------+
                                | only the allowed IP:port pairs
@@ -59,7 +59,7 @@ the right and the first hop that is not itself trusted is the visitor.
 
 ### 1.1 Standalone
 
-One Zoraxy, nothing in front (or a CDN in front).
+One Dunree, nothing in front (or a CDN in front).
 
 1. **Network > Trusted Proxies**: leave the Cloudflare list only if you are really behind Cloudflare, otherwise remove
    it. Details: [real-client-ip-cloudflare.md](real-client-ip-cloudflare.md).
@@ -74,7 +74,7 @@ One Zoraxy, nothing in front (or a CDN in front).
 
 ### 1.2 External proxy (DMZ)
 
-1. Start Zoraxy with the admin panel on the management address only, for example `-port=10.0.0.5:8000` (the flag takes
+1. Start Dunree with the admin panel on the management address only, for example `-port=10.0.0.5:8000` (the flag takes
    `host:port`). Do not publish the admin port. **(untested on your layout)**
 2. **Network > Listeners**: ports 80 and 443 (or yours).
 3. **Security Center > Deployment**: role *External*. Read the warnings it shows.
@@ -120,7 +120,7 @@ One Zoraxy, nothing in front (or a CDN in front).
    TCP connection (after PROXY protocol processing if you use it), never a header.
 2. **What a trusted peer may say**: the visitor address in `X-Forwarded-For` (right-most entry that is not itself
    trusted wins; everything to its left is dropped), else the CDN headers, else `X-Real-IP`. Malformed values are removed.
-   An untrusted peer's headers are removed, and Zoraxy writes a fresh `Forwarded: for=<peer>`.
+   An untrusted peer's headers are removed, and Dunree writes a fresh `Forwarded: for=<peer>`.
 3. **Where the visitor address is used**: access rules, rate limits, CrowdSec, auto-ban, WAF, CAPTCHA, GeoIP, logs. All
    of them take it from the same function, and only from rules with **Trusted Proxy Gating** on. Without the gating
    they use the connecting proxy's address (this is the safe direction, but one bucket for everyone).
@@ -140,7 +140,7 @@ One Zoraxy, nothing in front (or a CDN in front).
 
 ## 3. Failure modes
 
-| What fails | What visitors see | What Zoraxy does | What you do |
+| What fails | What visitors see | What Dunree does | What you do |
 |---|---|---|---|
 | **External proxy down** | public sites unreachable (connection refused or timeout from the internet or CDN) | internal proxy keeps serving whoever may reach it directly: with the peer gate on, only the *Networks that may connect directly* | restart or fail over the external proxy; internal users on the direct networks keep working. Nothing needs changing on the internal one. |
 | **Internal proxy down** | external proxy answers with its upstream error page for every internal site (see [error-pages-and-521.md](error-pages-and-521.md); the exact status depends on the failure) | external marks the upstream unhealthy: active probes if the uptime monitor / health check is on, passive ejection (3 failures, 30 s; **off by default** in the load-balancer config and not tested end to end); with a second upstream configured, traffic goes there | restart the internal proxy; check *Status* and *Uptime Monitor* on the external one. A second internal proxy as a second upstream is the failover (untested here). |
@@ -182,7 +182,7 @@ and, with the gate on, that same address must be reachable as a *peer*.
 ### 4.1 Admin allow-list locked you out
 
 Security Center > Network exposure > *Admin panel allow-list* refuses a list that does not contain the address you save
-from, but an import or a history restore can install one that locks you out. Stop Zoraxy, start it once with
+from, but an import or a history restore can install one that locks you out. Stop Dunree, start it once with
 `-reset_admin_allowlist`, sign in, correct the list, then remove the flag. The flag only clears that list. (The list refuses entries that exclude the caller, and the admin port refuses a rule that
 targets it, both verified; the flag itself is read from the code and was not run in the harness.)
 
@@ -217,7 +217,7 @@ reverted** by it. Manual updates: put back the old binary and the backed-up `con
 The import validates first: *Check file (dry run)* (`/api/conf/importcheck`) and the real import both refuse an archive
 whose entry or manifest checksum does not match (HTTP 400, nothing applied) **(verified)**. A successful import keeps the
 previous config as `conf.old_<time>` next to `conf/`; a failed restore puts it back. To undo a good import by hand: stop
-Zoraxy, move `conf` aside, rename `conf.old_<time>` to `conf`, start. Restoring a *shareable* archive keeps the secrets
+Dunree, move `conf` aside, rename `conf.old_<time>` to `conf`, start. Restoring a *shareable* archive keeps the secrets
 already on the machine. If the imported config locks you out of the admin panel, see 4.1.
 
 ## 5. Safe order of changes
@@ -247,7 +247,7 @@ A new installation starts with a short list of safe settings already on: the for
 
 ## 7. UniFi UDM Pro zone-based firewall and Proxmox recommendations
 
-**Zoraxy applies none of this.** It is a draft from the plan (section 8) for you to review. **Untested**: not applied to
+**Dunree applies none of this.** It is a draft from the plan (section 8) for you to review. **Untested**: not applied to
 a UDM Pro, UniFi Network, or Proxmox host here; menu names differ between versions, so check them against yours.
 
 Example layout: zones/VLANs *Public DMZ* (external proxy), *Servers* (internal proxy and applications), *Management*
@@ -277,13 +277,13 @@ Enable the firewall at Datacenter, node and VM/CT level (**Datacenter > Firewall
 * external proxy guest: allow IN TCP 80/443 from anywhere (or the Cloudflare IPSet), allow IN admin port from the
   Management IPSet, allow OUT only to the internal proxy IP:443, the LAPI, DNS and (if used) ACME;
 * internal proxy guest: allow IN TCP 443 from the external proxy IP and from the direct-access networks you listed in
-  Zoraxy, allow IN admin port from Management, allow OUT only to the application IP:ports and the LAPI.
+  Dunree, allow IN admin port from Management, allow OUT only to the application IP:ports and the LAPI.
 
 Use IPSets and a *Security Group* per role so the rule text stays short. **(untested)**
 
-### 7.3 Keep Zoraxy's settings and the firewall in step
+### 7.3 Keep Dunree's settings and the firewall in step
 
-| Zoraxy setting | Firewall rule that should say the same |
+| Dunree setting | Firewall rule that should say the same |
 |---|---|
 | Internal proxy: Trusted Proxies = external proxy address | row 2 (only that address reaches the internal proxy's port 443) |
 | Peer gate + direct networks | the networks allowed to the internal proxy |
@@ -291,7 +291,7 @@ Use IPSets and a *Security Group* per role so the rule text stays short. **(unte
 | Admin panel allow-list | row 4 |
 | CrowdSec LAPI address | row 7 |
 
-Zoraxy's own checks are a second layer, not a replacement: the peer gate answers 403 only after a TCP connection was
+Dunree's own checks are a second layer, not a replacement: the peer gate answers 403 only after a TCP connection was
 accepted, and the allow-lists compare addresses that a compromised host in the same zone could still use.
 
 ## 8. Equivalent API and configuration values
@@ -330,7 +330,7 @@ Command-line flags that matter here: `-port=<host:port>` (admin bind), `-reset_a
 | Any single change | System > History: diff, dry run, restore the scope **(verified: restore re-executed the process, the chain answered 200, the restore was confirmed in about 20 s)** | the restore does not repeat the lock-out check; history keeps 100 versions / 30 days / 200 MiB |
 | Config import | `conf.old_<time>` folder (4.6) | pre-import backup, kept automatically |
 | Binary | System > Update > Rollback, or replace the binary with the old one | configuration is **not** reverted; run the backed-up `conf/` and `sys.db` back in if the new version migrated them |
-| Everything | stop Zoraxy, restore the `conf/` folder and `sys.db` backups taken before the change, start | take them before every phase |
+| Everything | stop Dunree, restore the `conf/` folder and `sys.db` backups taken before the change, start | take them before every phase |
 
 ## 10. UniFi and Proxmox: recommendations only
 
@@ -355,9 +355,9 @@ a Proxmox host.** Review menu names and policy order against your firmware.
 
 ## Automated end-to-end test
 
-Harness: `tools/e2e/dual_proxy/run.sh`. It builds Zoraxy from the checkout, starts an external and an internal instance
+Harness: `tools/e2e/dual_proxy/run.sh`. It builds Dunree from the checkout, starts an external and an internal instance
 and a backend app in temporary directories on high ports (loopback only, a private CA, a fake CrowdSec LAPI), and
-removes everything on exit. It never touches an installed Zoraxy. Builds and runs go through `~/capped.sh` under the
+removes everything on exit. It never touches an installed Dunree. Builds and runs go through `~/capped.sh` under the
 shared heavy lock.
 
 ```
@@ -393,4 +393,4 @@ spoofing check or with websockets.
 ## Exporting, importing and stopping safely
 - **Utilities > Config Tools** offers a *Full backup* (contains TLS private keys, the cluster secret, Fleet keys, notification secrets, basic-auth hashes: store it like a password) and a *Shareable (redacted)* export (no keys or credentials; safe to hand to someone else, review it first). The shareable export always carries `manifest.json` with checksums (the full backup only when you tick the box, because the restore code of `v3.3.6-fork.18` refuses any archive entry outside `conf/` and `sys.db`, so it would refuse an archive with `manifest.json`; read from that tag's `confbackup.go`, not run); checksums prove the file is undamaged, not who made it, and a shareable archive can never set credentials: real values in credential fields are ignored and the live ones kept. *Check file (dry run)* shows what a restore would add, replace and remove before you commit; archives from older versions import but are shown as *unverified*. The previous config is kept as `conf.old_<time>` and a failed restore puts it back. Restoring a shareable archive keeps the secrets already on that machine.
 - Fleet: the *Certificates* scope, capturing certificates and the legacy "Sync certificates" send private keys to other machines and ask for confirmation. The Fleet node table shows *drifted: proxy, access* when a node's non-secret configuration differs from what the hub would send it.
-- Stopping Zoraxy (SIGTERM, restart from Fleet, update) now lets running requests finish for up to 8 s (`-shutdown_drain`, capped at 15, 0 = old immediate stop) after saving logs, visitors and statistics; a second SIGTERM / Ctrl-C forces the exit. Keep your service manager's stop timeout at 30 s or more. Scripts that enable certificate sync must send `ackCerts=true` (Fleet hub) or `ackSyncCerts=true`.
+- Stopping Dunree (SIGTERM, restart from Fleet, update) now lets running requests finish for up to 8 s (`-shutdown_drain`, capped at 15, 0 = old immediate stop) after saving logs, visitors and statistics; a second SIGTERM / Ctrl-C forces the exit. Keep your service manager's stop timeout at 30 s or more. Scripts that enable certificate sync must send `ackCerts=true` (Fleet hub) or `ackSyncCerts=true`.

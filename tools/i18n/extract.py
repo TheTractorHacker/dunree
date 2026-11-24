@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zoraxy i18n catalogue extractor / checker.
+"""Dunree i18n catalogue extractor / checker.
 
 Scans src/web/**/*.html and src/web/script/*.js for user-visible English text and
 writes src/web/locales/en.json (the source catalogue).  Translations live in

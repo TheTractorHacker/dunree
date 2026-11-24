@@ -8,13 +8,13 @@ import (
 	"regexp"
 	"strconv"
 
-	plugin "example.com/zoraxy/filter-example/mod/zoraxy_plugin"
+	plugin "example.com/dunree/filter-example/mod/dunree_plugin"
 )
 
 /*
 	Filter Example
 
-	Demonstrates the Zoraxy request / response hooks:
+	Demonstrates the Dunree request / response hooks:
 
 	- pre_auth stage:  blocks requests whose User-Agent matches a regular expression
 	                   (a tiny bot filter) and tags every other request with a header.
@@ -40,7 +40,7 @@ func main() {
 		Name:          "Filter Example",
 		Author:        "aroz.org",
 		AuthorContact: "https://aroz.org",
-		Description:   "Example pre-auth User-Agent filter and response header adder using the Zoraxy hook API.",
+		Description:   "Example pre-auth User-Agent filter and response header adder using the Dunree hook API.",
 		URL:           "https://zoraxy.aroz.org",
 		Type:          plugin.PluginType_Router,
 		VersionMajor:  1,
@@ -53,7 +53,7 @@ func main() {
 		// not on the command line where "ps" shows it to every local user
 		ConfigureVia: plugin.ConfigureViaStdin,
 
-		// Health address for the optional health check of Zoraxy (see below)
+		// Health address for the optional health check of Dunree (see below)
 		HealthPath: HEALTH_PATH,
 
 		Hooks: &plugin.HookSettings{
@@ -78,8 +78,8 @@ func main() {
 		panic(err)
 	}
 
-	// Filter endpoint: called by Zoraxy at the registered stages.
-	// NewFilterHandler verifies the token Zoraxy passes in runtimeCfg.InvokeToken,
+	// Filter endpoint: called by Dunree at the registered stages.
+	// NewFilterHandler verifies the token Dunree passes in runtimeCfg.InvokeToken,
 	// so other local processes cannot call this endpoint.
 	http.Handle(FILTER_PATH, plugin.NewFilterHandler(runtimeCfg.InvokeToken, func(fr *plugin.FilterRequest) *plugin.FilterVerdict {
 		switch fr.Stage {

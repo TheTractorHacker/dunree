@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/secaudit"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/secaudit"
 )
 
 const csAPIKey = "api-test-KEY-98765432100"

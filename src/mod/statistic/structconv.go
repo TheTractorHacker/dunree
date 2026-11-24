@@ -9,7 +9,7 @@ type DailySummaryExport struct {
 	TotalRequest   int64 //Total request of the day
 	ErrorRequest   int64 //Invalid request of the day, including error or not found
 	ValidRequest   int64 //Valid request of the day
-	BlockedRequest int64 `json:",omitempty"` //Requests rejected by Zoraxy itself
+	BlockedRequest int64 `json:",omitempty"` //Requests rejected by Dunree itself
 
 	ForwardTypes    map[string]int
 	RequestOrigin   map[string]int

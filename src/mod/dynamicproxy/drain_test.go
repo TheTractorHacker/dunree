@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func drainRouter(t *testing.T, h http.Handler) (*Router, string) {

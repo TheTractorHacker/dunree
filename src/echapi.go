@@ -31,11 +31,11 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/ech"
-	"imuslab.com/zoraxy/mod/tlscert"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/ech"
+	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 var echMgr *ech.Manager
@@ -163,7 +163,7 @@ func HandleEchStatus(w http.ResponseWriter, r *http.Request) {
 	utils.SendJSONResponse(w, string(js))
 }
 
-// echPublicNameCheck says whether Zoraxy really has a usable certificate for the public name.
+// echPublicNameCheck says whether Dunree really has a usable certificate for the public name.
 // tlsCertManager.GetCertificateByHostname never fails (it falls back to the self-signed localhost certificate),
 // so the answer comes from inspecting the certificate itself.
 func echPublicNameCheck(name string) tlscert.HostCertCheck {
@@ -237,7 +237,7 @@ func HandleEchFallbacks(w http.ResponseWriter, r *http.Request) {
 	utils.SendJSONResponse(w, string(js))
 }
 
-// HandleEchDomains compares the HTTPS records the system resolver and a public resolver return for every proxied host with Zoraxy's keys
+// HandleEchDomains compares the HTTPS records the system resolver and a public resolver return for every proxied host with Dunree's keys
 func HandleEchDomains(w http.ResponseWriter, r *http.Request) {
 	if !echReady(w) {
 		return

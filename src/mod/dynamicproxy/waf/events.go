@@ -10,7 +10,7 @@ import (
 /*
 	events.go
 
-	WAF audit events: structured JSON lines written to the Zoraxy log folder
+	WAF audit events: structured JSON lines written to the Dunree log folder
 	(via an AuditSink, normally a logger.Logger so rotation matches the rest of
 	the system), a ring buffer of recent events for the UI, and per rule /
 	per endpoint counters.

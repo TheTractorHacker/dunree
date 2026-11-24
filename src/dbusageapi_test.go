@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth"
-	db "imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/auth"
+	db "github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // seeded BoltDB with a big and a small table behind the real managed router: an admin gets the sorted
@@ -88,6 +88,10 @@ func TestDatabaseUsageEndpoint(t *testing.T) {
 	if !resp.Supported || resp.Backend != "BoltDB" || resp.Usage == nil || resp.Usage.FileBytes <= 0 || resp.LargeBytes != 200<<20 {
 		t.Fatalf("unexpected response %+v", resp)
 	}
+	// the compaction commands name the real service and program (dunree, or zoraxy on an upgraded install)
+	if (resp.Service != "dunree" && resp.Service != "zoraxy") || !strings.HasPrefix(resp.Command, "./") {
+		t.Fatalf("service %q / command %q", resp.Service, resp.Command)
+	}
 	if !filepath.IsAbs(resp.Path) {
 		t.Fatalf("path should be absolute: %s", resp.Path)
 	}
@@ -151,8 +155,8 @@ func TestRunCompactDatabase(t *testing.T) {
 	if !strings.Contains(errOut.String(), "sudo lsof "+file) || !strings.Contains(errOut.String(), "was not changed") {
 		t.Fatalf("stderr: %s", errOut.String())
 	}
-	if strings.Contains(errOut.String(), "start Zoraxy again") || !strings.Contains(errOut.String(), "run this compact command again") {
-		t.Fatalf("compact must not advise starting Zoraxy: %s", errOut.String())
+	if strings.Contains(errOut.String(), "start Dunree again") || !strings.Contains(errOut.String(), "run this compact command again") {
+		t.Fatalf("compact must not advise starting Dunree: %s", errOut.String())
 	}
 	d.Close()
 

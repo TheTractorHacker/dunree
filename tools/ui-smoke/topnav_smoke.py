@@ -77,7 +77,7 @@ def topnav_ui(pg, ctx):
         for w in TN_WIDTHS:
             current["page"] = f"topnav/{theme}/{w}"
             mock_all(pg)
-            goto(w, 800, theme, storage={"zoraxy.topbar.update": json.dumps({"available": True, "latest": "v9.9.9", "host": "", "at": int(__import__("time").time() * 1000)})})
+            goto(w, 800, theme, storage={"dunree.topbar.update": json.dumps({"available": True, "latest": "v9.9.9", "host": "", "at": int(__import__("time").time() * 1000)})})
             m = ev(TN_MEASURE)
             if abs(m["barH"] - 52) > 1:
                 fail("topnav", f"{w}px {theme}: bar height {m['barH']} (expected 52)")
@@ -116,7 +116,7 @@ def topnav_ui(pg, ctx):
     # ---- pills link to real pages ----
     current["page"] = "topnav/pills"
     mock_all(pg)
-    goto(1366, 800, "light", storage={"zoraxy.topbar.update": json.dumps({"available": True, "latest": "v9.9.9", "host": "", "at": int(__import__("time").time() * 1000)})})
+    goto(1366, 800, "light", storage={"dunree.topbar.update": json.dumps({"available": True, "latest": "v9.9.9", "host": "", "at": int(__import__("time").time() * 1000)})})
     pills = ev("""() => [...document.querySelectorAll('#zxTopStatus a.zx-pill')].map(a => ({pill: a.getAttribute('data-pill'), tag: a.getAttribute('data-tag'), href: a.getAttribute('href'),
         title: a.title, label: a.getAttribute('aria-label'), real: !!(window.getTabButtonById && getTabButtonById(a.getAttribute('data-tag')))}))""")
     ids = [p["pill"] for p in pills]
@@ -186,7 +186,7 @@ def topnav_ui(pg, ctx):
         bp = ctx.new_page()
         bp.route("**/api/updater/badge*", lambda rt, _rq=None, b=body: rt.fulfill(status=200, content_type="application/json", body=json.dumps(b)))
         bp.goto(base + "#status", wait_until="domcontentloaded", timeout=60000)
-        bp.evaluate("localStorage.removeItem('zoraxy.topbar.update')")
+        bp.evaluate("localStorage.removeItem('dunree.topbar.update')")
         bp.reload(wait_until="domcontentloaded", timeout=60000)
         bp.wait_for_function("document.querySelector('#zxTopStatus a') !== null", timeout=15000)
         bp.wait_for_timeout(1200)
@@ -198,7 +198,7 @@ def topnav_ui(pg, ctx):
     # ---- language: mouse ----
     current["page"] = "topnav/language"
     goto(1366, 800, "light")
-    pg.evaluate("localStorage.removeItem('zoraxy.lang'); i18n.setLanguage('en', {persist: false})")
+    pg.evaluate("localStorage.removeItem('dunree.lang'); i18n.setLanguage('en', {persist: false})")
     open_menu("#zxLangBtn")
     langs = ev("[...document.querySelectorAll('.zx-menu [data-lang]')].map(b => b.getAttribute('data-lang'))")
     if len(langs) < 9 or "en" not in langs or "de" not in langs:
@@ -210,7 +210,7 @@ def topnav_ui(pg, ctx):
     pg.wait_for_timeout(1200)
     if ev("document.documentElement.lang") != "de" or "DE" not in ev("document.getElementById('zxLangBtn').innerText"):
         fail("topnav", f"language did not switch to German (lang {ev('document.documentElement.lang')}, button {ev('document.getElementById(\"zxLangBtn\").innerText')!r})")
-    if ev("localStorage.getItem('zoraxy.lang')") != "de":
+    if ev("localStorage.getItem('dunree.lang')") != "de":
         fail("topnav", "the language choice is not stored")
     if ev("document.getElementById('zxMoreBtn').getAttribute('aria-label')") == "Status and account menu":
         pass  # hidden on this width; checked below on the phone
@@ -226,7 +226,7 @@ def topnav_ui(pg, ctx):
     # ---- keyboard: tab order, Enter/arrows/Esc ----
     current["page"] = "topnav/keyboard"
     mock_all(pg)
-    goto(1366, 800, "light", storage={"zoraxy.topbar.update": json.dumps({"available": True, "latest": "v9.9.9", "host": "", "at": int(__import__("time").time() * 1000)})})
+    goto(1366, 800, "light", storage={"dunree.topbar.update": json.dumps({"available": True, "latest": "v9.9.9", "host": "", "at": int(__import__("time").time() * 1000)})})
     pg.focus(".zx-top-logo")
     order = []
     for _ in range(14):
@@ -368,7 +368,7 @@ def topnav_ui(pg, ctx):
         pg.wait_for_timeout(700)
         if not pg.is_visible("#" + tag):
             fail("topnav", f"deep link #{tag} no longer opens its page")
-    pg.evaluate("localStorage.setItem('theme','light'); localStorage.removeItem('zoraxy.topbar.update')")
+    pg.evaluate("localStorage.setItem('theme','light'); localStorage.removeItem('dunree.topbar.update')")
 
 
 def topnav_auth_ui(br, url):

@@ -245,7 +245,7 @@ func Describe(ev Event) (title string, lines []string) {
 			lines = append(lines, "Site: "+cleanText(x("host"), 120))
 		}
 	case EventUpdateAvail:
-		title = "Zoraxy update available: " + subj
+		title = "Dunree update available: " + subj
 		if x("current") != "" {
 			lines = append(lines, "Running: "+x("current"))
 		}
@@ -264,14 +264,14 @@ func Describe(ev Event) (title string, lines []string) {
 			lines = append(lines, x("detail"))
 		}
 	case EventDigest:
-		title = "Zoraxy digest: " + x("count") + " event(s)"
+		title = "Dunree digest: " + x("count") + " event(s)"
 		for _, l := range strings.Split(ev.Extra["lines"], "\n") {
 			if l != "" {
 				lines = append(lines, cleanText(l, 200))
 			}
 		}
 	case EventTest:
-		title = "Zoraxy test notification"
+		title = "Dunree test notification"
 		lines = append(lines, "If you can read this, the channel works.")
 	default:
 		title = cleanText(ev.Event, 80)

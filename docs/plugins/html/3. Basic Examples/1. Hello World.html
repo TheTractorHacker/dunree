@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-      Hello World | Zoraxy Documentation
+      Hello World | Dunree Documentation
     </title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -69,7 +69,7 @@
           <a href="#!" class="is-active item">
             Documents
           </a>
-          <a href="https://github.com/tobychui/zoraxy/tree/main/example/plugins" target="_blank" class="item">
+          <a href="../../../../example/plugins/" class="item">
             Examples
             <span class="ts-icon is-arrow-up-right-from-square-icon"></span>
           </a>
@@ -88,8 +88,8 @@
                   <span class="ts-icon is-caret-down-icon"></span>
                 </a>
                 <div class="ts-menu is-dense is-small is-horizontally-padded">
-                  <a class="item" href="/plugins/html/1. Introduction/1. What is Zoraxy Plugin.html">
-                    What is Zoraxy Plugin
+                  <a class="item" href="/plugins/html/1. Introduction/1. What is Dunree Plugin.html">
+                    What is Dunree Plugin
                   </a>
                   <a class="item" href="/plugins/html/1. Introduction/2. Getting Started.html">
                     Getting Started
@@ -149,8 +149,8 @@
                 <a class="item" href="/plugins/html/index.html">
                   index
                 </a>
-                <a class="item" href="/plugins/html/zoraxy_plugin API.html">
-                  zoraxy_plugin API
+                <a class="item" href="/plugins/html/dunree_plugin API.html">
+                  dunree_plugin API
                 </a>
               </div>
             </div>
@@ -190,20 +190,20 @@
                   2. Create the plugin folder
                 </h2>
                 <p>
-                  If your zoraxy root folder do not contains a folder named &ldquo;plugins&rdquo;, it might implies that your Zoraxy is freshly clone from Github.
+                  If your Dunree root folder do not contains a folder named &ldquo;plugins&rdquo;, it might implies that your Dunree is freshly clone from Github.
                   <span class="ts-text is-heavy">
                     You will need to build and run it once to start working on your plugin
                   </span>
-                  , so if you have a newly cloned source code of Zoraxy, do the followings.
+                  , so if you have a newly cloned source code of Dunree, do the followings.
                 </p>
-                <pre><code class="language-bash">git clone https://github.com/tobychui/zoraxy
-cd src
+                <pre><code class="language-bash">git clone &lt;the Dunree repository&gt; dunree
+cd dunree/src
 go mod tidy
 go build
-sudo ./zoraxy
+sudo ./dunree
 </code></pre>
                 <p>
-                  Afterward, create a plugin folder under your Zoraxy development environment that is exactly matching your plugin name. In the above example, the folder name should be &ldquo;helloworld&rdquo;.
+                  Afterward, create a plugin folder under your Dunree development environment that is exactly matching your plugin name. In the above example, the folder name should be &ldquo;helloworld&rdquo;.
                 </p>
                 <pre><code class="language-bash"># Assume you are already inside the src/ folder
 mkdir helloworld
@@ -227,24 +227,24 @@ cd ./helloworld
                   </p>
                 </p>
                 <pre><code class="language-bash">touch main.go
-go mod init example.com/zoraxy/helloworld
+go mod init example.com/dunree/helloworld
 ls
 # After you are done, you should see the followings
 # go.mod  main.go
 </code></pre>
                 <div class="ts-divider has-top-spaced-large"></div>
-                <h2 id="4-copy-the-zoraxy-plugin-lib-from-zoraxy-source-code">
-                  4. Copy the Zoraxy plugin lib from Zoraxy source code
+                <h2 id="4-copy-the-dunree-plugin-lib-from-dunree-source-code">
+                  4. Copy the Dunree plugin lib from Dunree source code
                 </h2>
                 <p>
                   <p class="ts-text">
-                    Locate the Zoraxy plugin library from the Zoraxy source code. You can find the
+                    Locate the Dunree plugin library from the Dunree source code. You can find the
                     <span class="ts-text is-code">
-                      zoraxy_plugin
+                      dunree_plugin
                     </span>
                     Go module under
                     <span class="ts-text is-code">
-                      src/mod/plugins/zoraxy_plugin
+                      src/mod/plugins/dunree_plugin
                     </span>
                   </p>
                 </p>
@@ -252,23 +252,23 @@ ls
                   <p class="ts-text">
                     Copy the
                     <span class="ts-text is-code">
-                      zoraxy_plugin
+                      dunree_plugin
                     </span>
-                    folder from the Zoraxy source code mod folder into the your plugin’s mod folder. Let assume you use the same mod folder name  as Zoraxy as
+                    folder from the Dunree source code mod folder into the your plugin’s mod folder. Let assume you use the same mod folder name  as Dunree as
                     <span class="ts-text is-code">
                       mod
                     </span>
                     , then your copied library path should be
                     <span class="ts-text is-code">
-                      plugins/helloworld/mod/zoraxy_plugin
+                      plugins/helloworld/mod/dunree_plugin
                     </span>
                   </p>
                 </p>
                 <pre><code class="language-bash">mkdir ./mod
-cp -r &quot;mod/plugins/zoraxy_plugin&quot; ./mod/
-ls ./mod/zoraxy_plugin/
+cp -r &quot;mod/plugins/dunree_plugin&quot; ./mod/
+ls ./mod/dunree_plugin/
 # You should see something like this (might be different in future versions)
-# dev_webserver.go  dynamic_router.go  embed_webserver.go  README.txt  static_router.go  zoraxy_plugin.go
+# dev_webserver.go  dynamic_router.go  embed_webserver.go  README.txt  static_router.go  dunree_plugin.go
 </code></pre>
                 <div class="ts-divider has-top-spaced-large"></div>
                 <h2 id="5-create-a-web-resources-folder">
@@ -294,7 +294,7 @@ touch index.html
                     <span class="ts-text is-code">
                       index.html
                     </span>
-                    file that uses the Zoraxy internal resources like css and dark theme toggle mechanism. That csrf token template is not straightly needed in this example as helloworld plugin do not make any POST request to Zoraxy webmin interface, but it might come in handy later.
+                    file that uses the Dunree internal resources like css and dark theme toggle mechanism. That csrf token template is not straightly needed in this example as helloworld plugin do not make any POST request to Dunree webmin interface, but it might come in handy later.
                   </p>
                 </p>
                 <pre><code class="language-html">&lt;!DOCTYPE html&gt;
@@ -328,7 +328,7 @@ touch index.html
     &lt;script src=&quot;/script/darktheme.js&quot;&gt;&lt;/script&gt;
     &lt;div style=&quot;text-align: center;&quot;&gt;
         &lt;h1&gt;Hello World&lt;/h1&gt;
-        &lt;p&gt;Welcome to your first Zoraxy plugin&lt;/p&gt;
+        &lt;p&gt;Welcome to your first Dunree plugin&lt;/p&gt;
     &lt;/div&gt;
 &lt;/body&gt;
 &lt;/html&gt;
@@ -373,7 +373,7 @@ touch index.html
                     <span class="ts-text is-code">
                       plugin.ServeAndRecvSpec
                     </span>
-                    function to handle the handshake between Zoraxy and your plugin.
+                    function to handle the handshake between Dunree and your plugin.
                   </p>
                 </p>
                 <pre><code class="language-go">const (
@@ -421,7 +421,7 @@ func main(){
                     </span>
                     . See
                     <span class="ts-text is-code">
-                      zoraxy_plugin.go
+                      dunree_plugin.go
                     </span>
                     for more information.
                   </span>
@@ -432,23 +432,23 @@ func main(){
                 </h2>
                 <p>
                   <p class="ts-text">
-                    After that, we need to create a web server to serve our plugin UI to Zoraxy via HTTP. This can be done via the
+                    After that, we need to create a web server to serve our plugin UI to Dunree via HTTP. This can be done via the
                     <span class="ts-text is-code">
                       http.FileServer
                     </span>
-                    but for simplicity and ease of upgrade, the Zoraxy plugin library provided an easy to use embedded web FS server API for plugin developers.
+                    but for simplicity and ease of upgrade, the Dunree plugin library provided an easy to use embedded web FS server API for plugin developers.
                   </p>
                 </p>
                 <p>
                   <p class="ts-text">
-                    To use the Zoraxy plugin embedded web server, you first need to embed your web fs into Zoraxy as such.
+                    To use the Dunree plugin embedded web server, you first need to embed your web fs into Dunree as such.
                   </p>
                 </p>
                 <pre><code class="language-go">import (
 	_ &quot;embed&quot;
 	&quot;fmt&quot;
 
-	plugin &quot;example.com/zoraxy/helloworld/mod/zoraxy_plugin&quot;
+	plugin &quot;example.com/dunree/helloworld/mod/dunree_plugin&quot;
 )
 
 //go:embed www/*
@@ -465,12 +465,12 @@ var content embed.FS
                 </p>
                 <pre><code class="language-go">// Create a new PluginEmbedUIRouter that will serve the UI from web folder
 // The router will also help to handle the termination of the plugin when
-// a user wants to stop the plugin via Zoraxy Web UI
+// a user wants to stop the plugin via Dunree Web UI
 embedWebRouter := plugin.NewPluginEmbedUIRouter(PLUGIN_ID, &amp;content, WEB_ROOT, UI_PATH)
 </code></pre>
                 <p>
                   <p class="ts-text">
-                    Here is the tricky part. since not all platform support cross process signaling, Zoraxy plugin uses HTTP request to request a plugin to shutdown. The
+                    Here is the tricky part. since not all platform support cross process signaling, Dunree plugin uses HTTP request to request a plugin to shutdown. The
                     <span class="ts-text is-code">
                       embedWebRouter
                     </span>
@@ -488,7 +488,7 @@ embedWebRouter := plugin.NewPluginEmbedUIRouter(PLUGIN_ID, &amp;content, WEB_ROO
 </code></pre>
                 <p>
                   <span class="ts-text is-heavy">
-                    Notes: This is a blocking function. That is why Zoraxy has a build-in timeout context where if the terminate request takes more than 3 seconds, the plugin process will be treated as &ldquo;freezed&rdquo; and forcefully terminated. So please make sure the terminate handler complete its shutdown procedures within 3 seconds.
+                    Notes: This is a blocking function. That is why Dunree has a build-in timeout context where if the terminate request takes more than 3 seconds, the plugin process will be treated as &ldquo;freezed&rdquo; and forcefully terminated. So please make sure the terminate handler complete its shutdown procedures within 3 seconds.
                   </span>
                 </p>
                 <div class="ts-divider has-top-spaced-large"></div>
@@ -540,7 +540,7 @@ if err != nil {
                 </p>
                 <p>
                   <p class="ts-text">
-                    After you are done, restart Zoraxy and enable your plugin in the Plugin List. Now you can test and debug  your plugin with your HTTP Proxy Rules. All the STDOUT and STDERR of your plugin will be forwarded to the STDOUT of Zoraxy as well as the log file.
+                    After you are done, restart Dunree and enable your plugin in the Plugin List. Now you can test and debug  your plugin with your HTTP Proxy Rules. All the STDOUT and STDERR of your plugin will be forwarded to the STDOUT of Dunree as well as the log file.
                   </p>
                 </p>
                 <p>
@@ -557,7 +557,7 @@ if err != nil {
                 </p>
                 <p>
                   <p class="ts-text">
-                    You can also enable the Developer Option - Plugin Auto Reload function if you are too lazy to restart Zoraxy everytime the plugin binary changed.
+                    You can also enable the Developer Option - Plugin Auto Reload function if you are too lazy to restart Dunree everytime the plugin binary changed.
                   </p>
                 </p>
                 <p>
@@ -583,7 +583,7 @@ import (
 	&quot;net/http&quot;
 	&quot;strconv&quot;
 
-	plugin &quot;example.com/zoraxy/helloworld/mod/zoraxy_plugin&quot;
+	plugin &quot;example.com/dunree/helloworld/mod/dunree_plugin&quot;
 )
 
 const (
@@ -621,7 +621,7 @@ func main() {
 
 	// Create a new PluginEmbedUIRouter that will serve the UI from web folder
 	// The router will also help to handle the termination of the plugin when
-	// a user wants to stop the plugin via Zoraxy Web UI
+	// a user wants to stop the plugin via Dunree Web UI
 	embedWebRouter := plugin.NewPluginEmbedUIRouter(PLUGIN_ID, &amp;content, WEB_ROOT, UI_PATH)
 	embedWebRouter.RegisterTerminateHandler(func() {
 		// Do cleanup here if needed
@@ -651,7 +651,7 @@ func main() {
       <div class="ts-divider"></div>
       <div class="ts-content">
         <div class="ts-text">
-          Zoraxy © tobychui
+          Dunree plugin documentation, based on the Zoraxy documentation © tobychui
           <span class="thisyear">
             2025
           </span>

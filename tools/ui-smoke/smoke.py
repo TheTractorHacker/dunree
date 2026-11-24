@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zoraxy admin UI smoke test (Playwright, headless Chromium).
+"""Dunree admin UI smoke test (Playwright, headless Chromium).
 
 Opens every menu page of the admin UI (light and dark theme), fails on
 JavaScript errors, console errors, failed or 4xx/5xx requests and pages whose
@@ -20,7 +20,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--url", default=os.environ.get("ZORAXY_URL", "http://127.0.0.1:8000"))
+ap.add_argument("--url", default=os.environ.get("DUNREE_URL", "http://127.0.0.1:8000"))
 ap.add_argument("--out", default=os.environ.get("SMOKE_OUT", os.path.expanduser("~/ui-smoke-shots")))
 ap.add_argument("--no-page-sweep", action="store_true", help="skip the per-tab screenshot sweep (faster; for focused runs on a busy machine)")
 ap.add_argument("--i18n-only", action="store_true", help="run only the multi-language scenario")
@@ -41,6 +41,7 @@ ap.add_argument("--visitors-drawer-only", action="store_true", help="run only th
 ap.add_argument("--editor-layout-only", action="store_true", help="run only the Edit site window layout scenario (editor_layout_smoke.py)")
 ap.add_argument("--blocked-only", action="store_true", help="run only the Statistics > Blocked scenario (Reference ID search, row drawer, fix + Undo, palette, Status tile)")
 ap.add_argument("--topnav-only", action="store_true", help="run only the top bar scenario (topnav_smoke.py: sizes, overflow, pills, language / theme / account menus, keyboard, phone More menu)")
+ap.add_argument("--brand-only", action="store_true", help="run only the brand scenario (brand_smoke.py: Dunree logo in the top bar and on the login page in light and dark, icons, page title, attribution footer, About, source offer, Credits; reads only, any instance works, see brand_run.sh)")
 ap.add_argument("--topnav-auth-url", default="", help="with --topnav-only: URL of a second throw-away instance WITH authentication; adds the account menu / Log out checks (see topnav_run.sh)")
 ap.add_argument("--ech-fallback-only", action="store_true", help="run only the fallback-certificate diagnostics scenario (ech_fallback_smoke.py; real handshakes, needs a fresh instance)")
 ap.add_argument("--live-map-only", action="store_true", help="run only the Status page Traffic map Live mode scenario (live_map_smoke.py; proxy port must be UI port + 1, ports + 2 and + 3 free)")
@@ -241,7 +242,7 @@ def proxy_ux(pg, ctx):
     pg.wait_for_timeout(450)
     if pg.is_visible("#group-network"):
         fail("nav", "clicking a group header did not collapse the group")
-    if pg.evaluate("JSON.parse(localStorage.getItem('zoraxy_menu_groups')).network") is not False:
+    if pg.evaluate("JSON.parse(localStorage.getItem('dunree_menu_groups')).network") is not False:
         fail("nav", "collapsed state not saved")
     if pg.get_attribute("#mainmenu .menugroup-header[data-group=network]", "aria-expanded") != "false":
         fail("a11y", "aria-expanded not updated after collapsing")
@@ -264,7 +265,7 @@ def proxy_ux(pg, ctx):
     pg.keyboard.press("Enter")
     pg.wait_for_timeout(450)
     # opening a page expands its group and closes the other page groups (accordion); Recent keeps its own state
-    pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({_v: 3, overview: true, sites: true, system: false}))")
+    pg.evaluate("localStorage.setItem('dunree_menu_groups', JSON.stringify({_v: 3, overview: true, sites: true, system: false}))")
     pg.reload(wait_until="networkidle")
     pg.wait_for_timeout(900)
     pg.evaluate("openTabById('cert')")
@@ -275,18 +276,18 @@ def proxy_ux(pg, ctx):
     pg.wait_for_timeout(450)
     if not pg.is_visible("#group-system") or pg.is_visible("#group-certs"):
         fail("nav", "opening a group by its header must close the group that was open")
-    if pg.evaluate("JSON.parse(localStorage.getItem('zoraxy_menu_groups')).certs") is not False:
+    if pg.evaluate("JSON.parse(localStorage.getItem('dunree_menu_groups')).certs") is not False:
         fail("nav", "the accordion must save the closed state of the other groups")
     # state saved by the previous menus (old group ids) is carried over to the groups that replaced them
-    pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({_v: 2, proxy: false, tools: false, observe: true, system: false, security: true}))")
+    pg.evaluate("localStorage.setItem('dunree_menu_groups', JSON.stringify({_v: 2, proxy: false, tools: false, observe: true, system: false, security: true}))")
     st = pg.evaluate("getMenuGroupStates()")
     if st.get("sites") is not False or st.get("network") is not False or st.get("traffic") is not True or st.get("system") is not False or st.get("_v") != 3 or "proxy" in st or "tools" in st:
         fail("nav", f"menu state migration v2 -> v3 wrong: {st}")
-    pg.evaluate("localStorage.setItem('zoraxy_menu_groups', JSON.stringify({reverseproxy:false, others:false, security:true, accessconn:true}))")
+    pg.evaluate("localStorage.setItem('dunree_menu_groups', JSON.stringify({reverseproxy:false, others:false, security:true, accessconn:true}))")
     st = pg.evaluate("getMenuGroupStates()")
     if st.get("sites") is not False or st.get("system") is not False or st.get("_v") != 3 or "reverseproxy" in st:
         fail("nav", f"menu state migration v1 -> v3 wrong: {st}")
-    pg.evaluate("localStorage.removeItem('zoraxy_menu_groups'); location.hash = '#status'")
+    pg.evaluate("localStorage.removeItem('dunree_menu_groups'); location.hash = '#status'")
     pg.reload(wait_until="networkidle")
     pg.wait_for_timeout(900)
     if not pg.is_visible("#group-overview"):
@@ -698,7 +699,7 @@ def nav_palette(pg, ctx):
     api = lambda path, data: pg.evaluate(API, [path, data, "POST"])
     host = "palette-host.smoke.invalid"
     evil = "x<img src=x onerror=window.__xss=1>.smoke.invalid"
-    pg.evaluate("localStorage.removeItem('zoraxy_palette_recent')")
+    pg.evaluate("localStorage.removeItem('dunree_palette_recent')")
     pg.reload(wait_until="networkidle")
     pg.wait_for_timeout(800)
     api("/api/proxy/add", {"type": "host", "rootname": host, "ep": "127.0.0.1:9", "tls": "false", "tlsval": "false", "bypassGlobalTLS": "false"})
@@ -966,7 +967,7 @@ def nav_palette(pg, ctx):
     pg.evaluate("i18n.setLanguage('en')")
     pg.wait_for_function("i18n.lang === 'en'", timeout=5000)
     pg.evaluate("$.cjax({url: '/api/i18n/language', method: 'POST', data: {language: ''}})")
-    pg.evaluate("localStorage.removeItem('zoraxy.lang')")
+    pg.evaluate("localStorage.removeItem('dunree.lang')")
     pg.wait_for_timeout(300)
     pg.click("#defaultErrorPagesBtn")
     pg.wait_for_timeout(900)
@@ -984,7 +985,7 @@ def i18n_checks(pg, ctx):
         success: r => res(r), error: e => res({error: 'http ' + e.status})}))""", [path, data])
     hosts = [f"i18n{i:02d}.smoke.invalid" for i in range(36)]
     try:
-        pg.evaluate("localStorage.removeItem('zoraxy.lang')")
+        pg.evaluate("localStorage.removeItem('dunree.lang')")
         pg.goto(args.url + "/", wait_until="networkidle")
         pg.wait_for_selector("#mainmenu .item", state="attached")
         for h in hosts:
@@ -1023,7 +1024,7 @@ def i18n_checks(pg, ctx):
         saved = pg.evaluate("fetch('/api/i18n/language').then(r => r.json())")
         if saved.get("language") != "zh-CN":
             fail("i18n", f"language choice was not saved on the server: {saved}")
-        if pg.evaluate("localStorage.getItem('zoraxy.lang')") != "zh-CN":
+        if pg.evaluate("localStorage.getItem('dunree.lang')") != "zh-CN":
             fail("i18n", "language choice not stored in localStorage")
         pg.screenshot(path=os.path.join(args.out, "i18n-zh-CN-httprp.png"))
 
@@ -1094,7 +1095,7 @@ def i18n_checks(pg, ctx):
             api("/api/i18n/language", {"language": ""})
             for h in hosts:
                 api("/api/proxy/del", {"ep": h})
-            pg.evaluate("localStorage.removeItem('zoraxy.lang')")
+            pg.evaluate("localStorage.removeItem('dunree.lang')")
         except Exception:
             pass
 
@@ -2072,7 +2073,7 @@ def site_editor_ui(pg, ctx):
     posts = []
     pg.on("request", lambda r: posts.append((r.method, r.url, r.post_data or "")) if r.method == "POST" else None)
     pg.set_viewport_size({"width": 1366, "height": 900})
-    pg.evaluate("localStorage.removeItem('zoraxy_site_editor_mode')")
+    pg.evaluate("localStorage.removeItem('dunree_site_editor_mode')")
     pg.reload(wait_until="networkidle")
     pg.wait_for_timeout(600)
     for h in (host, evil):
@@ -2180,7 +2181,7 @@ def site_editor_ui(pg, ctx):
 
         # ---------------------------------------------------------------- 3. Easy / Advanced and the non default note
         current["page"] = "site-editor/modes"
-        pg.evaluate("localStorage.removeItem('zoraxy_site_editor_mode')")
+        pg.evaluate("localStorage.removeItem('dunree_site_editor_mode')")
         pg.reload(wait_until="networkidle")
         editor_open(host)
         if pg.evaluate("document.querySelector('#httprpEditModal').dataset.mode") != "easy":
@@ -2199,7 +2200,7 @@ def site_editor_ui(pg, ctx):
         shot("site-editor-easy-light.png")
         modal_overflow("easy")
         pg.click("#hrpShowAdv")
-        if pg.evaluate("document.querySelector('#httprpEditModal').dataset.mode") != "advanced" or pg.evaluate("localStorage.getItem('zoraxy_site_editor_mode')") != "advanced":
+        if pg.evaluate("document.querySelector('#httprpEditModal').dataset.mode") != "advanced" or pg.evaluate("localStorage.getItem('dunree_site_editor_mode')") != "advanced":
             fail("site-editor", "'Show advanced settings' must switch to Advanced and remember it")
         pg.reload(wait_until="networkidle")
         editor_open(host)
@@ -2475,7 +2476,7 @@ def site_editor_ui(pg, ctx):
     finally:
         for h in (host, evil, "se-new.smoke.invalid"):
             api("/api/proxy/del", {"ep": h})
-        pg.evaluate("localStorage.removeItem('zoraxy_site_editor_mode')")
+        pg.evaluate("localStorage.removeItem('dunree_site_editor_mode')")
         try:
             pg.evaluate("window.resetEditorDirty && window.resetEditorDirty()")
             pg.evaluate("$('#confirmBox').hide()")
@@ -2872,12 +2873,12 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
         fail("utils", "Utilities must open on its Overview with the running version")
     pg.dispatch_event("#utNav [data-zx-section=info]", "click")
     pg.wait_for_timeout(600)
-    boot = pg.inner_text("#zoraxyinfo .boottime")
+    boot = pg.inner_text("#dunreeinfo .boottime")
     if "1970" in boot or boot.strip() == "":
         fail("utils", f"Running Since shows epoch zero: {boot!r}")
-    if pg.inner_text("#zoraxyinfo .uuid").strip() == "Unauthorized":
+    if pg.inner_text("#dunreeinfo .uuid").strip() == "Unauthorized":
         fail("utils", "Host UUID says Unauthorized under -noauth")
-    pg.locator("#zoraxyinfo").scroll_into_view_if_needed()
+    pg.locator("#dunreeinfo").scroll_into_view_if_needed()
     shot("utilities-system-running-since-1-Jan-1970")
     pg.dispatch_event("#utNav [data-zx-section=calc]", "click")
     pg.wait_for_timeout(400)
@@ -2981,7 +2982,7 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     col = pg.evaluate("getComputedStyle(document.getElementById('upBtnReasons')).color")
     if col == "rgb(170, 51, 51)":
         fail("updater", "the reasons under the buttons are shown in error red")
-    md = pg.evaluate("window.upRenderMarkdown('# Zoraxy fork\\n**bold** and *Listeners*\\n- one\\n- <img src=x onerror=alert(1)>')")
+    md = pg.evaluate("window.upRenderMarkdown('# Dunree fork\\n**bold** and *Listeners*\\n- one\\n- <img src=x onerror=alert(1)>')")
     if "<strong>bold</strong>" not in md or "<li>one</li>" not in md or "<img" in md or "<em>Listeners</em>" not in md:
         fail("updater", f"release notes Markdown is not rendered safely: {md!r}")
     lk = pg.evaluate("window.upRenderMarkdown('[fork.16](https://github.com/o/r/releases/tag/v1) and [bad](javascript:alert(1)) and [quote](https://x.test/a\"onmouseover=alert(1))')")
@@ -3052,6 +3053,104 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     # ================= App Store and Plugins =================
     current["page"] = "netsys/appstore"
     go("appstore", 1500)
+    # ---- Dunree ships without a store. This throw-away instance counts as an existing installation (run.sh), so it
+    # carries the migrated third-party source: shown as such, removable, and with it gone the page says so and offers
+    # the three ways to add a store (docs/plugins/addon-store.md).
+    def store_setup():
+        return api("GET", "/api/plugins/store/setup")["body"]
+    def store_sources():
+        return api("GET", "/api/plugins/store/sources")["body"]
+    legacy = [x for x in store_sources() if x.get("kind") == "zoraxy-community"]
+    if legacy:
+        if legacy[0].get("official") or "third party" not in legacy[0].get("label", ""):
+            fail("appstore", f"the migrated store of an existing installation must be a removable third-party source: {legacy[0]}")
+        pg.evaluate("asOpenSettings()")
+        pg.wait_for_selector("#asSettingsModal.visible", timeout=6000)
+        if "Zoraxy community store (third party)" not in pg.inner_text("#asSourceTable"):  # rebrand:keep
+            fail("appstore", "the Sources dialog must name the migrated source as third party: " + pg.inner_text("#asSourceTable")[:200])
+        shot("appstore-sources-migrated-third-party")
+        pg.evaluate("$('#asSettingsModal').modal('hide')")
+        pg.wait_for_timeout(500)
+    for x in store_sources():
+        if not x.get("official"):
+            api("POST", "/api/plugins/store/sources/remove", {"url": x["url"]})
+    setup = store_setup()
+    if setup.get("configured") or setup.get("sources") != 0:
+        fail("appstore", f"with every source removed no store is configured: {setup}")
+    pg.evaluate("asLoadData()")
+    try:
+        pg.wait_for_selector("#asNoStore", state="visible", timeout=8000)
+    except Exception:
+        fail("appstore", "without a source the page must show the 'No add-on store configured' state")
+    text = pg.inner_text("#asNoStore")
+    for must in ("No add-on store configured", "Dunree add-on store", "Custom index URL", "Local folder"):
+        if must not in text:
+            fail("appstore", f"the no-store state lacks {must!r}: {text[:300]!r}")
+    if pg.is_visible("#asSearchInput") or pg.is_visible("#asAppGrid"):
+        fail("appstore", "the app list and its toolbar must be hidden while no store is configured")
+    if not setup.get("dunreeStore", {}).get("ready"):
+        # this build only carries the placeholder address: the one-click choice says so and is not clickable
+        if not pg.is_disabled("#asDunreeStoreBtn") or "not open yet" not in pg.inner_text("#asDunreeStoreText"):
+            fail("appstore", "the Dunree add-on store of a placeholder build must be shown as not available yet")
+        r = api("POST", "/api/plugins/store/sources/add", {"kind": "dunree"})
+        if not isinstance(r["body"], dict) or "not open yet" not in str(r["body"].get("error")):
+            fail("appstore", f"choosing the placeholder store must be refused in words: {r}")
+    shot("appstore-no-store-configured")
+    pg.set_viewport_size({"width": 390, "height": 844})
+    pg.wait_for_timeout(300)
+    if pg.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"):
+        fail("appstore", "the no-store state scrolls sideways at 390px")
+    shot("appstore-no-store-configured-390")
+    pg.set_viewport_size({"width": 1366, "height": 1000})
+    # "Local folder": a folder with an index.json in the Dunree add-on index format, added through the dialog
+    import hashlib, json as _json, tempfile
+    folder = tempfile.mkdtemp(prefix="dunree-smoke-store-")
+    blob = b"not a real program, the smoke test never installs it"
+    with open(os.path.join(folder, "demo_linux_amd64"), "wb") as fh:
+        fh.write(blob)
+    with open(os.path.join(folder, "index.json"), "w") as fh:
+        _json.dump({"format": "dunree-addon-index", "version": 1, "serial": 1, "addons": [{
+            "id": "ie.example.smoke-demo", "name": "Smoke <b>demo</b>", "publisher": "Example <i>Ltd</i>", "description": "Shown by the UI smoke test. <img src=x onerror=window.__xss=1>",
+            "licence": "AGPL-3.0-only", "version": "1.2.3", "api_version": 1, "min_host_version": "99.0.0", "type": "utility", "categories": ["Testing"], "featured": True,
+            "changelog": [{"version": "1.2.3", "date": "2026-11-24", "notes": "First <u>release</u>"}],
+            "artifacts": {"linux_amd64": {"url": "demo_linux_amd64", "sha256": hashlib.sha256(blob).hexdigest(), "size": len(blob)}}}]}, fh)
+    pg.click("#asNoStore button:has-text('Choose a folder')")
+    pg.wait_for_selector("#asSettingsModal.visible", timeout=6000)
+    pg.fill("#asNewSourceFolder", folder)
+    shot("appstore-sources-dialog-three-kinds")
+    pg.click("#asSettingsModal button:has-text('Add folder')")
+    try:
+        pg.wait_for_function("f => [...document.querySelectorAll('#asSourceTable tr')].some(r => r.innerText.includes(f))", arg=folder, timeout=15000)
+    except Exception:
+        fail("appstore", "the local folder did not appear in the Sources dialog: " + toast_text())
+    if "Local folder" not in pg.inner_text("#asSourceTable"):
+        fail("appstore", "the folder source must be labelled 'Local folder'")
+    pg.evaluate("$('#asSettingsModal').modal('hide')")
+    pg.wait_for_timeout(600)
+    if pg.is_visible("#asNoStore") or not pg.is_visible("#asSearchInput"):
+        fail("appstore", "with a source configured the app list must replace the no-store state")
+    card = pg.locator("#asAppGrid .as-app-card[data-appid='ie.example.smoke-demo']")
+    if card.count() != 1:
+        fail("appstore", "the add-on of the local index is not listed")
+    else:
+        if "Smoke <b>demo</b>" not in card.inner_text() or card.locator("b, i, img[src='x']").count():
+            fail("appstore", "text of an add-on index must be shown as text: " + card.inner_text()[:200])
+        if "Needs a newer Dunree" not in card.inner_text() or card.locator("[data-as-install]").count():
+            fail("appstore", "an add-on that needs a newer Dunree must not offer Install: " + card.inner_text()[:200])
+        card.locator("[data-as-details]").click()
+        pg.wait_for_selector("#asAppDetailModal.visible", timeout=6000)
+        details = pg.inner_text("#asAppDetailTable")
+        for must in ("Publisher", "Example <i>Ltd</i>", "AGPL-3.0-only", "99.0.0 or newer", "First <u>release</u>", "Cannot be installed"):
+            if must not in details:
+                fail("appstore", f"the details of an add-on lack {must!r}: {details[:400]!r}")
+        shot("appstore-addon-details")
+        pg.evaluate("$('#asAppDetailModal').modal('hide')")
+        pg.wait_for_timeout(500)
+    if pg.evaluate("window.__xss === 1"):
+        fail("appstore", "markup of an add-on index was executed")
+    r = api("POST", "/api/plugins/store/install", {"pluginID": "ie.example.smoke-demo"})
+    if not isinstance(r["body"], dict) or "needs Dunree 99.0.0 or newer" not in str(r["body"].get("error")):
+        fail("appstore", f"the install of an add-on for a newer Dunree must be refused by the server: {r}")
     featured_before = pg.is_visible("#asFeaturedBanner")
     pg.fill("#asSearchInput", "zzzznotfound")
     pg.wait_for_timeout(500)
@@ -3070,6 +3169,12 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     if "HTTP 200" in toast_text():
         fail("appstore", "the add source failure still says 'Request failed (HTTP 200)': " + toast_text())
     shot("appstore-add-unreachable-source-says-Request-failed-HTTP-200")
+    # leave the instance as Dunree ships: no store source
+    for x in store_sources():
+        if not x.get("official"):
+            api("POST", "/api/plugins/store/sources/remove", {"url": x["url"]})
+    import shutil
+    shutil.rmtree(folder, ignore_errors=True)
     current["page"] = "netsys/plugins"
     go("plugins", 1200)
     if pg.locator("#plugins i.green.check, #pluginMenu i.green").count():
@@ -3098,6 +3203,7 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "tpl_
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "renew_notice_smoke.py")).read(), "renew_notice_smoke.py", "exec"))  # defines renew_notice_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ca_profiles_smoke.py")).read(), "ca_profiles_smoke.py", "exec"))  # defines ca_profiles_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "topnav_smoke.py")).read(), "topnav_smoke.py", "exec"))  # defines topnav_ui, topnav_auth_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "brand_smoke.py")).read(), "brand_smoke.py", "exec"))  # defines brand_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ech_fallback_smoke.py")).read(), "ech_fallback_smoke.py", "exec"))  # defines ech_fallback_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "live_map_smoke.py")).read(), "live_map_smoke.py", "exec"))  # defines live_map_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "live_sites_smoke.py")).read(), "live_sites_smoke.py", "exec"))  # defines live_sites_ui
@@ -3155,6 +3261,7 @@ def main():
             return
         if args.storage_only:
             storage_ui(pg, ctx)
+            __import__("storage_migration_smoke").run(ctx.browser, args.url, fail)  # storage keys of the earlier product name are copied once
             b.close()
             return
         if args.plugins_only:
@@ -3163,6 +3270,10 @@ def main():
             return
         if args.errorpages_only:
             errorpages_ui(pg, ctx)
+            b.close()
+            return
+        if args.brand_only:
+            brand_ui(pg, ctx)
             b.close()
             return
         if args.topnav_only:
@@ -3282,6 +3393,9 @@ def main():
         plugins_ui(pg, ctx)  # mocked plugin API (works without plugins); the part with real plugins runs in plugins_run.sh
         errorpages_ui(pg, ctx)  # Sites > Error pages: saves a customisation and resets it at the end
         storage_ui(pg, ctx)  # blocked localStorage / sessionStorage in fresh contexts, then the dark theme keeps kit colours; reads only
+        current["page"] = "storage-migration"
+        __import__("storage_migration_smoke").run(ctx.browser, args.url, fail)  # storage keys of the earlier product name are copied once (safestorage.js); own browser contexts
+        brand_ui(pg, ctx)  # Dunree logo, icons, attribution footer, About and login page; reads only
         tabs = pg.eval_on_selector_all("#mainmenu .item[tag]", "els => els.map(e => e.getAttribute('tag'))")
         tabs = list(dict.fromkeys(tabs))
         if args.no_page_sweep:

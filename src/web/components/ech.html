@@ -119,8 +119,8 @@
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="echStateTitle">Current state</h3>
             <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="echWhat" aria-label="What is ECH?">?</button>
-            <p class="zx-card__desc">ECH wraps the real host name a visitor asks for (the SNI) in an encrypted envelope, so only Zoraxy can read it.</p>
-            <div class="zx-popover" id="echWhat" role="note" hidden>The browser addresses the handshake to a generic <b>public name</b> and hides the real name inside. The name shown to the network is called the <b>outer SNI</b>, and the hidden one travels inside the encrypted <b>ClientHello</b> (the first message of the connection). It needs a TLS 1.3 HTTPS listener, an <b>HTTPS (type 65) DNS record</b> carrying Zoraxy's key on every host you protect, and a valid certificate for the public name.</div>
+            <p class="zx-card__desc">ECH wraps the real host name a visitor asks for (the SNI) in an encrypted envelope, so only Dunree can read it.</p>
+            <div class="zx-popover" id="echWhat" role="note" hidden>The browser addresses the handshake to a generic <b>public name</b> and hides the real name inside. The name shown to the network is called the <b>outer SNI</b>, and the hidden one travels inside the encrypted <b>ClientHello</b> (the first message of the connection). It needs a TLS 1.3 HTTPS listener, an <b>HTTPS (type 65) DNS record</b> carrying Dunree's key on every host you protect, and a valid certificate for the public name.</div>
         </div>
         <div class="zx-card__body">
             <div class="echFacts" id="echFacts"></div>
@@ -146,7 +146,7 @@
                 <div class="field">
                     <label for="echPublicName">Public name (outer SNI)</label>
                     <input type="text" id="echPublicName" placeholder="ech.example.com" autocomplete="off">
-                    <small>A generic name that is not one of the protected hosts. Zoraxy must serve a <b>valid certificate for exactly this name</b> (a wildcard certificate that covers it is fine).</small>
+                    <small>A generic name that is not one of the protected hosts. Dunree must serve a <b>valid certificate for exactly this name</b> (a wildcard certificate that covers it is fine).</small>
                 </div>
                 <div class="field">
                     <label for="echMaxName">Maximum name length</label>
@@ -196,7 +196,7 @@
             <div class="zx-disclosure__body">
             <div class="ui form"><div class="field"><textarea id="echList" class="mono" rows="3" readonly aria-label="ECHConfigList in base64"></textarea></div></div>
             <div class="echBtns" style="margin-top:0"><button type="button" class="zx-btn zx-btn--secondary" id="echCopyList"><i class="copy icon" aria-hidden="true"></i> Copy ECHConfigList</button></div>
-            <p class="echMuted" style="margin-top:var(--zx-space-3)">The record carries <code>alpn</code> so browsers pick HTTP/2 or HTTP/3; with HTTP/3 enabled Zoraxy adds <code>h3</code>.</p>
+            <p class="echMuted" style="margin-top:var(--zx-space-3)">The record carries <code>alpn</code> so browsers pick HTTP/2 or HTTP/3; with HTTP/3 enabled Dunree adds <code>h3</code>.</p>
             </div>
         </details>
         </div>
@@ -206,14 +206,14 @@
     <section class="zx-card" aria-labelledby="echS3Title">
         <div class="zx-card__head">
             <h3 class="zx-card__title" id="echS3Title"><span class="echStep">3</span> Verify</h3>
-            <p class="zx-card__desc">Check that Zoraxy decrypts ECH and what DNS returns for your hosts.</p>
+            <p class="zx-card__desc">Check that Dunree decrypts ECH and what DNS returns for your hosts.</p>
         </div>
         <div class="zx-card__body">
         <p class="echNote">These checks prove the <b>server side</b> and show what DNS <b>this server</b> sees. They cannot prove that a browser accepts ECH: browsers may use their own DNS-over-HTTPS resolver and cache HTTPS records. Also test with a browser at <a href="https://tls-ech.dev" target="_blank" rel="noopener">tls-ech.dev</a>.</p>
 
         <div class="echSub">
         <h4 class="echSubTitle">A. Local handshake</h4>
-        <div class="echMuted">Opens a real TLS 1.3 connection to this Zoraxy's HTTPS listener and reports whether the inner ClientHello was decrypted.</div>
+        <div class="echMuted">Opens a real TLS 1.3 connection to this Dunree's HTTPS listener and reports whether the inner ClientHello was decrypted.</div>
         <div class="ui form" style="margin-top:var(--zx-space-3)"><div class="field" style="max-width:26em"><label for="echSelfHost">Host name to put inside the encrypted envelope</label>
             <select id="echSelfHost" aria-label="Host name for the local handshake"></select></div></div>
         <div class="echBtns"><button type="button" class="zx-btn zx-btn--secondary echPrimary" id="echSelfRun"><i class="play icon" aria-hidden="true"></i> Run local ECH handshake</button></div>
@@ -222,7 +222,7 @@
 
         <div class="echSub">
         <h4 class="echSubTitle">B. DNS: what resolvers advertise for each host</h4>
-        <div class="echMuted">For every proxied host, looks up the HTTPS record at this server's resolver and at a public resolver (1.1.1.1) and compares the ECH config with Zoraxy's keys. A record that still advertises another provider's key or an old Zoraxy key is the usual cause of browser errors.</div>
+        <div class="echMuted">For every proxied host, looks up the HTTPS record at this server's resolver and at a public resolver (1.1.1.1) and compares the ECH config with Dunree's keys. A record that still advertises another provider's key or an old Dunree key is the usual cause of browser errors.</div>
         <div class="echBtns"><button type="button" class="zx-btn zx-btn--secondary echPrimary" id="echDomainsRun"><i class="search icon" aria-hidden="true"></i> Check DNS for all hosts</button></div>
         <div id="echDomainsResult" class="echInline" style="display:none"></div>
         <div id="echForeignHelp" class="echBanner bad" style="display:none" role="alert"><i class="exclamation triangle icon"></i><div class="t" id="echForeignHelpText"></div></div>
@@ -241,12 +241,12 @@
 
         <details id="echLan" class="zx-disclosure" style="margin-bottom:0"><summary>LAN / split-horizon DNS: why ECH fails there, and how to fix it</summary>
           <div class="zx-disclosure__body">
-            <p>With split DNS your local resolver answers the host name with Zoraxy's LAN address, but a browser may still fetch the <b>HTTPS (type 65)</b> record from a <i>public</i> resolver (built-in "secure DNS" / DNS-over-HTTPS) or from a resolver that forwards it upstream.
-                If that record carries another provider's ECH config (for example Cloudflare's <code>cloudflare-ech.com</code>) or an old Zoraxy key, Zoraxy cannot decrypt it. The browser then falls back to the outer name and rejects the certificate with <code>ERR_ECH_FALLBACK_CERTIFICATE_INVALID</code>.</p>
+            <p>With split DNS your local resolver answers the host name with Dunree's LAN address, but a browser may still fetch the <b>HTTPS (type 65)</b> record from a <i>public</i> resolver (built-in "secure DNS" / DNS-over-HTTPS) or from a resolver that forwards it upstream.
+                If that record carries another provider's ECH config (for example Cloudflare's <code>cloudflare-ech.com</code>) or an old Dunree key, Dunree cannot decrypt it. The browser then falls back to the outer name and rejects the certificate with <code>ERR_ECH_FALLBACK_CERTIFICATE_INVALID</code>.</p>
             <p><b>Fix one of these:</b></p>
             <ul class="echHelp">
-                <li><b>At the DNS provider of the zone:</b> turn ECH off there (Cloudflare: SSL/TLS &gt; Edge Certificates &gt; Encrypted Client Hello), or publish Zoraxy's record from step 2 instead.</li>
-                <li><b>In the LAN resolver:</b> make it answer the HTTPS record itself with Zoraxy's record from step 2, or answer it empty so the browser stops using the public one. The resolver must be the one the browser really asks (see the DoH note below).</li>
+                <li><b>At the DNS provider of the zone:</b> turn ECH off there (Cloudflare: SSL/TLS &gt; Edge Certificates &gt; Encrypted Client Hello), or publish Dunree's record from step 2 instead.</li>
+                <li><b>In the LAN resolver:</b> make it answer the HTTPS record itself with Dunree's record from step 2, or answer it empty so the browser stops using the public one. The resolver must be the one the browser really asks (see the DoH note below).</li>
                 <li><b>In the browser:</b> if "Use secure DNS" / DNS-over-HTTPS is on, the browser ignores your LAN resolver. Turn it off, or point it at a DoH server you control.</li>
                 <li>Browsers cache HTTPS records. After changing DNS, restart the browser (or clear its DNS cache) before testing again.</li>
             </ul>
@@ -332,8 +332,8 @@
         if (r && typeof r === "object" && r.error != undefined) { return cap(String(r.error)); }
         if (xhr && xhr.status === 401) { return "Your session has expired. Sign in again."; }
         if (xhr && xhr.status === 403) { return "You are not allowed to do this."; }
-        if (xhr && xhr.status >= 500) { return "Zoraxy returned a server error. Check the system log."; }
-        return "Zoraxy could not be reached. Check your connection and try again.";
+        if (xhr && xhr.status >= 500) { return "Dunree returned a server error. Check the system log."; }
+        return "Dunree could not be reached. Check your connection and try again.";
     }
     function age(iso){
         var s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -414,7 +414,7 @@
             bn.append(banner(cert.State == "selfsigned" ? "warn" : "bad", "times circle",
                 "Browsers that fall back will show ERR_ECH_FALLBACK_CERTIFICATE_INVALID",
                 cert.Reason + " When a browser's ECH is rejected (stale or foreign DNS config) it validates the certificate served for the public name " + s.PublicName + ". " +
-                "Fix: obtain or upload a valid certificate for " + s.PublicName + " in the certificate manager, or change the public name to a host Zoraxy has a valid certificate for."));
+                "Fix: obtain or upload a valid certificate for " + s.PublicName + " in the certificate manager, or change the public name to a host Dunree has a valid certificate for."));
         }
         if (s.Enabled && d.OuterBadCert) {
             bn.append(banner("bad", "exclamation triangle", "Clients are already hitting the broken fallback",
@@ -488,7 +488,7 @@
     // ---- names answered with the fallback certificate (diagnostics) ----
     var FB = {
         "foreign-ech": {t: "ECH outer name of another provider", c: "bad", s: "Browsers use an ECH config from DNS that this proxy did not publish and cannot decrypt, so no certificate can be valid. Fix the DNS: run \"Check DNS for all hosts\" in step 3, then override or block the HTTPS record in your local resolver, or turn ECH off at the DNS provider."},
-        "own-ech": {t: "Zoraxy's own ECH public name", c: "warn", s: "Clients whose ECH was rejected (or a direct visit) land here. Make sure the public name has a valid certificate (see above)."},
+        "own-ech": {t: "Dunree's own ECH public name", c: "warn", s: "Clients whose ECH was rejected (or a direct visit) land here. Make sure the public name has a valid certificate (see above)."},
         "no-sni": {t: "No SNI", c: "unk", s: "The client sent no server name: access by IP address or a very old client. Use the host name instead of the IP address."},
         "unknown": {t: "Unknown host / scanner / IP access", c: "unk", s: "No proxy rule uses this name. Add a rule if it is yours, otherwise ignore it."}
     };
@@ -578,7 +578,7 @@
             var c = d && d.PublicNameCheck;
             if (c && !c.Valid) {
                 pendingApply = data;
-                $id("echApplyWarnText").text(" " + c.Reason + " Browsers that fall back will show ERR_ECH_FALLBACK_CERTIFICATE_INVALID. Obtain or upload a valid certificate for " + data.publicname + " first, or choose a public name Zoraxy has a valid certificate for.");
+                $id("echApplyWarnText").text(" " + c.Reason + " Browsers that fall back will show ERR_ECH_FALLBACK_CERTIFICATE_INVALID. Obtain or upload a valid certificate for " + data.publicname + " first, or choose a public name Dunree has a valid certificate for.");
                 $id("echApplyWarn").show();
             } else { applyNow(data); }
         }).fail(function(x){ notice(errText(null, x), "bad"); });
@@ -637,7 +637,7 @@
                 var bad = [d.System, d.Public].filter(function(v){ return v.Status == "foreign" || v.Status == "ours-purged" || v.Status == "ours-retired"; });
                 var advice;
                 if (bad.length) { problems++; advice = bad[0].Advice; bad.forEach(function(v){ (v.Configs || []).forEach(function(cf){ if (v.Status == "foreign") { foreignNames[cf.PublicName] = true; } }); }); }
-                else if (d.System.Status != "ours-active" && d.Public.Status != "ours-active") { advice = "Publish Zoraxy's record from step 2 for this host."; }
+                else if (d.System.Status != "ours-active" && d.Public.Status != "ours-active") { advice = "Publish Dunree's record from step 2 for this host."; }
                 else if (d.System.Status != d.Public.Status) { advice = "The two resolvers disagree. Browsers use whichever resolver they are configured for (system DNS or their own DNS-over-HTTPS)."; problems++; }
                 else { advice = "Looks right. Browsers may still cache older answers."; }
                 tr.append($("<td data-label='What to do'>").text(advice)); t.find("tbody").append(tr);
@@ -647,18 +647,18 @@
             if (problems) {
                 var names = Object.keys(foreignNames);
                 var h = $id("echForeignHelpText").empty();
-                h.append($("<b>").text(names.length ? "A DNS record advertises another provider's ECH config" + " (" + names.join(", ") + ")" : "A DNS record advertises an ECH config Zoraxy cannot use"));
+                h.append($("<b>").text(names.length ? "A DNS record advertises another provider's ECH config" + " (" + names.join(", ") + ")" : "A DNS record advertises an ECH config Dunree cannot use"));
                 if (names.length) {
-                    h.append(document.createTextNode("If a host listed above resolves to this proxy, this is the likely cause of ERR_ECH_FALLBACK_CERTIFICATE_INVALID: the browser uses an ECH config Zoraxy did not publish and cannot decrypt, so it reaches Zoraxy under the other provider's outer name, where no certificate you choose here can apply. Pick one:"));
+                    h.append(document.createTextNode("If a host listed above resolves to this proxy, this is the likely cause of ERR_ECH_FALLBACK_CERTIFICATE_INVALID: the browser uses an ECH config Dunree did not publish and cannot decrypt, so it reaches Dunree under the other provider's outer name, where no certificate you choose here can apply. Pick one:"));
                     var ul = $("<ul class='echHelp'>");
                     ul.append($("<li>").append($("<b>").text("Local DNS: ")).append(document.createTextNode("override or block the HTTPS (type 65) record for that name in your local resolver (Pi-hole / dnsmasq, AdGuard Home, Unbound: see the hints under \"LAN / split-horizon DNS\" below).")));
                     ul.append($("<li>").append($("<b>").text("DNS provider: ")).append(document.createTextNode("turn ECH off there (Cloudflare: SSL/TLS > Edge Certificates > Encrypted Client Hello).")));
-                    ul.append($("<li>").append($("<b>").text("DNS-only hosts: ")).append(document.createTextNode("publish Zoraxy's own ECH record from step 2 instead.")));
+                    ul.append($("<li>").append($("<b>").text("DNS-only hosts: ")).append(document.createTextNode("publish Dunree's own ECH record from step 2 instead.")));
                     ul.append($("<li>").append($("<b>").text("Quick browser test: ")).append(document.createTextNode("set chrome://flags/#encrypted-client-hello to Disabled, restart Chrome and retry. If the error goes away, the DNS record is the cause.")));
                     h.append(ul);
                     h.append($("<div class='echMuted'>").text("Browsers cache HTTPS records, so restart the browser after changing DNS."));
                 } else {
-                    h.append(document.createTextNode("Browsers that use it get their ECH rejected. Publish Zoraxy's current record (step 2) for the host and restart the browser."));
+                    h.append(document.createTextNode("Browsers that use it get their ECH rejected. Publish Dunree's current record (step 2) for the host and restart the browser."));
                 }
                 $id("echForeignHelp").show();
                 $id("echLan").attr("open", "open");

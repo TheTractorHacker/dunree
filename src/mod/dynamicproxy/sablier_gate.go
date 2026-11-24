@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/sablier"
+	"github.com/foleyit/dunree/mod/sablier"
 )
 
 /*

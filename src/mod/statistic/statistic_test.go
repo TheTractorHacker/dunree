@@ -9,10 +9,10 @@ import (
 
 	"math/rand"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/database/dbinc"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 const test_db_path = "test_db"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	plugin "aroz.org/zoraxy/api-call-example/mod/zoraxy_plugin"
+	plugin "example.com/dunree/api-call-example/mod/dunree_plugin"
 )
 
 const (
@@ -29,13 +29,13 @@ func main() {
 
 		UIPath: UI_PATH,
 
-		// This plugin gets an API key. Ask Zoraxy to hand the start configuration
+		// This plugin gets an API key. Ask Dunree to hand the start configuration
 		// (which holds that key) over on standard input instead of the command line,
 		// where every local user could read it with "ps". ServeAndRecvSpec reads both
-		// ways, so the plugin still works with a Zoraxy that does not know this field.
+		// ways, so the plugin still works with a Dunree that does not know this field.
 		ConfigureVia: plugin.ConfigureViaStdin,
 
-		// Address Zoraxy asks when the administrator turned the health check of this
+		// Address Dunree asks when the administrator turned the health check of this
 		// plugin on (served below with plugin.HealthHandler)
 		HealthPath: HEALTH_PATH,
 

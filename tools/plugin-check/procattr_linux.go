@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-// childAttr: a process group of its own, as Zoraxy starts a plugin, and the kernel
+// childAttr: a process group of its own, as Dunree starts a plugin, and the kernel
 // ends the child when the kit dies without cleaning up (SIGKILL, a crash). This
 // covers the started process only, not what it starts itself.
 func childAttr() *syscall.SysProcAttr {

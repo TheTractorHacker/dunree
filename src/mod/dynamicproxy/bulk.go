@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/tlscert"
+	"github.com/foleyit/dunree/mod/tlscert"
 )
 
 /*

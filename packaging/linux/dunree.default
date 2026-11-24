@@ -1,0 +1,7 @@
+# Flags for the Dunree service (packaging/linux/dunree-package.service).
+# One line, shell-style quoting is NOT applied by systemd: do not put spaces inside a value.
+# See "dunree -h" for all flags. After a change: sudo systemctl restart dunree
+#
+# The admin interface listens on every address at port 8000 by default. To keep it on this
+# machine only, use -port=127.0.0.1:8000 and reach it through an SSH tunnel or a proxy rule.
+DUNREE_ARGS="-port=:8000"

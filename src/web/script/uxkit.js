@@ -1,5 +1,5 @@
 /*
-    Zoraxy admin UI - UX kit
+    Dunree admin UI - UX kit
 
     Small, self-contained progressive enhancements for the management UI.
     Loaded at the end of index.html. Everything here is optional: if this file

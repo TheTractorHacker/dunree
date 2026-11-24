@@ -4,7 +4,7 @@
 //
 // The package only knows the bookkeeping (what was changed, what the previous value was, whether an
 // item still holds the value the baseline wrote). What each item is and how it is read or written
-// is supplied by the caller as Item values, so nothing in here touches Zoraxy settings by itself.
+// is supplied by the caller as Item values, so nothing in here touches Dunree settings by itself.
 //
 // Rules the design keeps:
 //   - an item is only ever changed by an explicit Apply, never by reading the status;

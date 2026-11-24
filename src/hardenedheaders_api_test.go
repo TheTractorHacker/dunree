@@ -10,8 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
 )
 
 func hhSetup(t *testing.T) {

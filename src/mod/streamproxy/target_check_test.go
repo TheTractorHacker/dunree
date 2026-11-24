@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/streamproxy"
 )
 
 func post(h http.HandlerFunc, form url.Values) string {

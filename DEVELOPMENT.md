@@ -1,6 +1,6 @@
 # Development notes (fork)
 
-This file collects fork-specific developer documentation. Zoraxy is licensed under
+This file collects fork-specific developer documentation. Dunree is licensed under
 the AGPL-3.0 (see `LICENSE`); all source headers and notices stay intact.
 
 ## Updating / releasing
@@ -33,7 +33,7 @@ Attach exactly these files to a GitHub release (all produced by `tools/build_rel
 
 | file | content |
 | --- | --- |
-| `zoraxy_linux_amd64`, `zoraxy_linux_arm64`, `zoraxy_linux_arm` (GOARM=6), `zoraxy_linux_386`, `zoraxy_linux_riscv64`, `zoraxy_linux_mipsle` | static binaries, `CGO_ENABLED=0 go build -trimpath -ldflags "-s -w"` |
+| `dunree_linux_amd64`, `dunree_linux_arm64`, `dunree_linux_arm` (GOARM=6), `dunree_linux_386`, `dunree_linux_riscv64`, `dunree_linux_mipsle`, each also as a byte-identical `zoraxy_<os>_<arch>` for the updaters of existing installs | static binaries, `CGO_ENABLED=0 go build -trimpath -ldflags "-s -w"` |
 | `SHA256SUMS` | `sha256sum` format list of the binaries, preceded by the signed header line `# zoraxy-release tag=<tag> build=<n> upstream=<ver>` (ignored by `sha256sum -c`) |
 | `SHA256SUMS.sig` | raw 64-byte ed25519 signature over the exact bytes of `SHA256SUMS` |
 
@@ -73,7 +73,7 @@ build number increasing: `tools/build_release.sh -t v3.3.6-topic.1 [-b N]` (defa
 
 # 2. cross-compile (Linux amd64, arm64, arm v6, 386, riscv64, mipsle), sign, and self-verify
 tools/build_release.sh -t <tag>               # key: $ZORAXY_RELEASE_KEY or ~/.zoraxy-release-key/private.pem
-tools/build_release.sh -t <tag> -k /path/to/private.pem -o /tmp/zoraxy-dist   # explicit key / output dir
+tools/build_release.sh -t <tag> -k /path/to/private.pem -o /tmp/dunree-dist   # explicit key / output dir
 
 # 3. create a GitHub release (tag like v3.3.5-rc5-grpcfix.1, tick "pre-release" for the beta channel)
 #    and attach every file in dist/:  gh release create <tag> dist/* --title ... --notes ...
@@ -88,22 +88,22 @@ tests that its verifier accepts the tool's output (`go test ./mod/updater`).
 ### What happens during an update
 
 1. Preflight: binary directory and `conf/` writable, running binary path, restart method, free disk space.
-2. Optional (default on) backup: `conf/`, `sys.db` and `sys.uuid` are zipped to `<conf>/../backups/zoraxy-pre-update-<ts>.zip`
-   (last 10 kept). If the backup fails the update is aborted. The database is copied while Zoraxy is running, so for
-   a guaranteed consistent copy of an embedded database stop Zoraxy and copy `sys.db` yourself.
+2. Optional (default on) backup: `conf/`, `sys.db` and `sys.uuid` are zipped to `<conf>/../backups/dunree-pre-update-<ts>.zip` (backups an earlier build wrote as `zoraxy-pre-update-<ts>.zip` are listed and pruned with them)
+   (last 10 kept). If the backup fails the update is aborted. The database is copied while Dunree is running, so for
+   a guaranteed consistent copy of an embedded database stop Dunree and copy `sys.db` yourself.
 3. Download `SHA256SUMS`, `SHA256SUMS.sig`, then the binary into a temp file next to the executable; verify; `chmod +x`;
    smoke test with `<new> -version`.
-4. The old binary is kept as `zoraxy.prev` (older ones as `.prev.1`, `.prev.2`; last 3 are kept) and the new binary is
+4. The old binary is kept as `<binary>.prev` (`dunree.prev`; `zoraxy.prev` on an install that kept its old file name) (older ones as `.prev.1`, `.prev.2`; last 3 are kept) and the new binary is
    atomically renamed over the old one.
 5. A *pending update* marker (`conf/updater/pending.json`) is written and an out-of-process rollback watchdog is started.
-6. **Restart:** Zoraxy runs its normal shutdown sequence and re-executes the new binary *in place* with `execve` (same PID,
+6. **Restart:** Dunree runs its normal shutdown sequence and re-executes the new binary *in place* with `execve` (same PID,
    same arguments and environment). Because the PID does not change this works under systemd regardless of the unit's
    `Restart=` setting. If `execve` fails the process exits with status 75 so that a supervisor with
    `Restart=on-failure` or `always` starts the new binary. For reliable failure handling prefer `Restart=always`
    in the unit.
 7. **Health + rollback:** once the admin HTTP listener is bound and the proxy router is initialised, the new process deletes the
    marker ("healthy"). If that does not happen within 90 s, or the new binary has been started more than 3 times without
-   becoming healthy (crash loop), `zoraxy.prev` is restored and started. Two independent mechanisms do this: an
+   becoming healthy (crash loop), `<binary>.prev` is restored and started. Two independent mechanisms do this: an
    in-process guard (armed at the very start of `main`, also covers crash loops via the start counter in the marker) and
    the watchdog child (the old binary run as `-updater_watchdog <marker>`; it can recover a process that hangs or dies
    before the guard runs). Under systemd the watchdog child lives in the unit's cgroup, so it survives the in-place
@@ -143,12 +143,12 @@ The management web UI is plain HTTP by default (`-webui_tls=off`, unchanged beha
 Details:
 
 - HTTPS is served on the same `-port`. Plain HTTP requests to that port get a `308` redirect to `https://`.
-- Plugins keep using plain HTTP: when TLS is on, Zoraxy opens an extra loopback-only (`127.0.0.1`, random port) HTTP listener and passes that port as `ZoraxyPort` to plugins. That listener serves **only** `/plugin/` (everything else is 404), so the admin UI/API is never reachable over plain HTTP.
+- Plugins keep using plain HTTP: when TLS is on, Dunree opens an extra loopback-only (`127.0.0.1`, random port) HTTP listener and passes that port as `DunreePort` to plugins. That listener serves **only** `/plugin/` (everything else is 404), so the admin UI/API is never reachable over plain HTTP.
 - Session and CSRF cookies get the `Secure` flag when TLS is on.
 - `-webui_hsts` additionally sends `Strict-Transport-Security` (off by default; avoid with self-signed certificates).
 - The HTTPS URL and certificate SHA-256 fingerprint are printed at startup; compare it with what your browser shows when trusting the certificate.
 
-Example: `./zoraxy -port=:8000 -webui_tls=auto`
+Example: `./dunree -port=:8000 -webui_tls=auto`
 
 Implementation: `src/mod/webuitls`.
 
@@ -285,7 +285,7 @@ of policy, profiles and endpoint WAF settings.
 `GET /api/waf/summary?hours` (top rules / IPs / endpoints), `GET /api/waf/stats` (now with `per_hour`, 7 days max),
 `GET /api/waf/rules`, `POST /api/waf/exclude` (`ruleid`, `scope=global|endpoint|path`, `rootname`, `path`, `exact`; without
 `scope` the old rootname/path semantics apply; the exclusion lands in `WAFExtra` or, for custom rules, in `WAF`).
-`POST /api/waf/set` still exists and means *custom*. Metrics: `zoraxy_waf_policy_enabled`, `zoraxy_waf_endpoints{mode}`
+`POST /api/waf/set` still exists and means *custom*. Metrics: `dunree_waf_policy_enabled`, `dunree_waf_endpoints{mode}`
 (three label values) next to the existing event counters.
 
 **Built-in profiles:** `WordPress`, `API-only`, `Strict`, `Learning` (detection only, PL2). Clone them to edit.
@@ -322,8 +322,8 @@ replayed by the existing `replayBody`, nothing is read twice. Only `Mode: block`
 
 **Challenge mechanism** (`dynamicproxy/waf_challenge.go`). The endpoint's own `CaptchaConfig` is used (providers, branding, custom
 templates, siteverify), the "Require CAPTCHA" switch does not have to be on. The page is the usual CAPTCHA page, **HTTP 403** (the CAPTCHA convention:
-`captcha.RenderChallenge`). The verification endpoint (`/.zoraxy/captcha/verify`, Altcha challenge path) is answered by the WAF layer before inspection
-when the band is on, so solving it cannot itself land in the band, and a successful answer adds a second cookie, `zoraxy_waf_challenge`:
+`captcha.RenderChallenge`). The verification endpoint (`/.dunree/captcha/verify`, Altcha challenge path) is answered by the WAF layer before inspection
+when the band is on, so solving it cannot itself land in the band, and a successful answer adds a second cookie, `dunree_waf_challenge`:
 `base64(w1|expiry|endpoint|client IP|sha256(User-Agent)[:12]) . base64(HMAC-SHA256)`, HttpOnly, SameSite=Lax, Secure on TLS, `MaxAge` = the TTL. The HMAC key is a random
 32 byte per-install key in `<conf>/waf_challenge.key` (created 0600 on first use; part of the config backup; deleting it invalidates all
 challenge cookies). Verification recomputes the binding and compares with `hmac.Equal`; another IP, another User-Agent, another endpoint,
@@ -336,7 +336,7 @@ auto-ban like any block) when
   POST/PUT/..., HEAD and `*/*` clients get the block-band logic.
 
 **Events and side effects.** New `Action` values `challenged` and `challenge_passed` (filterable in the Events tab and `GET /api/waf/events?action=`, own badges, counted in
-`Stats.Challenged` / `Stats.Passed`, `HourStat`, `Summary`, Prometheus `zoraxy_waf_challenged_total`, `zoraxy_waf_challenge_passed_total`). A challenged request is logged in the access log as
+`Stats.Challenged` / `Stats.Passed`, `HourStat`, `Summary`, Prometheus `dunree_waf_challenged_total`, `dunree_waf_challenge_passed_total`). A challenged request is logged in the access log as
 `waf-challenged` (not a block: not in the blocked-requests log or block counters), tells the abuse hook "nothing to report" (`abuseNoteKind(r, "")`, otherwise the 403 status would be read as a
 forbidden event), and does not reach `BlockObserver`, so neither the auto-ban nor the notification spike detector see it; `waf-blocked` still feeds both. Failed verifications still count as
 `captcha_fail`.
@@ -581,7 +581,7 @@ Event details name the parameter or JSON pointer and the schema reason, never th
 
 **Events.** Same store and audit JSON as the WAF: `kind: "api"`, `violation: "<code>"`, one pseudo rule per violation in the
 `8000xx` range (`waf.APIViolations()` lists them), `action` `blocked` or `detected`. `GET /api/waf/events?kind=api|waf`, stats
-carry `api`, `api_blocked`, `per_violation`; Prometheus has `zoraxy_waf_api_events_total` and `zoraxy_waf_api_blocked_total`.
+carry `api`, `api_blocked`, `per_violation`; Prometheus has `dunree_waf_api_events_total` and `dunree_waf_api_blocked_total`.
 
 **Not covered:** GraphQL (query depth / cost, introspection), gRPC and WebSocket traffic, response bodies and response schemas,
 XML schema validation, `application/x-ndjson` line structure, non-JSON bodies in OpenAPI validation, authentication in OpenAPI
@@ -810,7 +810,7 @@ matches "(?i)curl|wget"`:
 | this package (`mod/ruleset`, same harness) | 5.03 MB (**+1.20 MB**) | 5.70 MB (**+1.38 MB**) | 25-90 us (parse + link + warnings, machine under load) | ~0.5 us per rule (20 rule set: ~10-12 us per request) |
 
 The harness only links `net/http` and `regexp`, so every row also pays for `encoding/json`, `crypto/tls`, unicode tables
-and so on that the real Zoraxy binary already contains. Measured in the real binary (`go build -trimpath -ldflags "-s -w"`,
+and so on that the real Dunree binary already contains. Measured in the real binary (`go build -trimpath -ldflags "-s -w"`,
 linux/amd64, `dev` vs this branch, API, hook, migration and tests' helpers included) the whole feature adds
 **+0.40 MB (126,386,336 -> 126,787,744 bytes, +0.32 %)**. The expr and CEL rows would shrink in the real binary as well
 (they share `reflect`, `regexp`, `fmt`), but they were not measured there.
@@ -852,7 +852,7 @@ and configs saved by older versions load unchanged. Implementation: `src/mod/dyn
 
 The exploit / crawler action **CAPTCHA challenge** now works: a flagged request gets the endpoint's challenge; a
 visitor who already holds a valid CAPTCHA session is let through; an endpoint without CAPTCHA falls back to the blocked page.
-The verify path (`/.zoraxy/captcha/verify`) is always reachable for a challenged client.
+The verify path (`/.dunree/captcha/verify`) is always reachable for a challenged client.
 
 ### Config fields (`CaptchaConfig`, all optional)
 
@@ -864,7 +864,7 @@ The verify path (`/.zoraxy/captcha/verify`) is always reachable for a challenged
 | `Branding.LogoURL` | none | `https://` URL or `data:image/(png\|jpeg\|gif\|webp);base64,...`, max 256 KiB decoded, content sniffed, SVG refused |
 | `Branding.AccentColor` / `BackgroundColor` | `#2c7cb0` / theme | hex colours only |
 | `Branding.Theme` | `auto` | `auto` (browser), `light`, `dark` |
-| `Branding.HideFooter` | `false` | hide "Performance & security by Zoraxy" |
+| `Branding.HideFooter` | `false` | hide "Performance & security by Dunree" |
 | `Branding.CustomTemplate` | none | full custom challenge page, max 64 KiB, see below |
 | `Turnstile.Mode` | `managed` | `managed`, `non-interactive`, `invisible`. Must match the widget type of the site key (it is chosen in the Cloudflare dashboard); the page uses it to decide whether to show a spinner. |
 | `Turnstile.Appearance` | `always` | `always`, `execute`, `interaction-only` |
@@ -903,7 +903,7 @@ Variables (`{{.Name}}`):
 
 | Variable | Value |
 |----------|-------|
-| `Domain`, `SiteKey`, `VerifyPath` | host being protected, public site key, `/.zoraxy/captcha/verify` |
+| `Domain`, `SiteKey`, `VerifyPath` | host being protected, public site key, `/.dunree/captcha/verify` |
 | `Nonce` | CSP nonce for inline script/style |
 | `Provider` | `turnstile`, `recaptcha_v2`, `recaptcha_v3` |
 | `Page` | `challenge` |
@@ -980,7 +980,7 @@ standalone node is byte-identical to before. Existing sessions are invalidated o
 
 ### Setting it up
 
-1. Generate a secret on one node (Cluster / HA page, or `zoraxy -cluster_gen_secret`) and give the same value to every
+1. Generate a secret on one node (Cluster / HA page, or `dunree -cluster_gen_secret`) and give the same value to every
    node (page, `-cluster_secret`, or `conf/cluster.json`). Restart every node once so session keys switch.
 2. Pick the primary: role **Primary**. On each other node: role **Follower**, primary admin URL
    (`https://primary:8000`), and optionally the primary's admin certificate SHA-256 fingerprint (pinning, for the
@@ -995,8 +995,8 @@ Flags: `-cluster_secret`, `-cluster_gen_secret`, `-cluster_allow_local_edits`, `
 
 ### Health endpoint
 
-`GET /.zoraxy/health` on the proxy listeners (HTTP, HTTPS, HTTP/3, secondary ports), answered before host routing,
-so any `Host` header works. Only that exact path is intercepted (`/.zoraxy/captcha/verify` and ACME paths are
+`GET /.dunree/health` (also answered as `/.zoraxy/health`, the path existing monitors probe) on the proxy listeners (HTTP, HTTPS, HTTP/3, secondary ports), answered before host routing,
+so any `Host` header works. Only that exact path is intercepted (`/.dunree/captcha/verify` and ACME paths are
 untouched). Returns `200 {"status":"ok","version","uptimeSeconds","proxyRunning":true,"activeEndpoints":N}` or `503`
 with `proxyRunning:false` when the router is stopped. No secrets. Optional allow-list of IPs/CIDRs on the Cluster page
 (matched against the TCP peer, never `X-Forwarded-For`; default allow all). `-health_port=:8081` serves the same path
@@ -1019,7 +1019,7 @@ on a separate tiny listener, reachable even when the proxy is stopped (then it a
   rebuilt primary).
 - **Apply.** The follower verifies, validates (JSON plus the real schemas: `validateClusterPayload`), stages into
   `conf/.cluster/staging-*`, swaps each root with renames keeping the old one in `conf/.cluster/backup-*` (last 3 kept),
-  then restarts itself (`syscall.Exec`, same binary and arguments) because Zoraxy has no in-place reload of every
+  then restarts itself (`syscall.Exec`, same binary and arguments) because Dunree has no in-place reload of every
   module. It only restarts when content actually changed. A failed apply or reload is rolled back. If the restarted
   process dies before it has been up for 20 s and is started again (systemd / container restart policy), the boot guard
   restores the backup and remembers the snapshot as rejected until the primary changes it. Run followers under a
@@ -1146,15 +1146,15 @@ global_defs {
     script_user keepalived_script
 }
 
-vrrp_script chk_zoraxy {
-    script "/usr/bin/curl -fsS --max-time 2 http://127.0.0.1/.zoraxy/health -H 'Host: health.local' -o /dev/null"
+vrrp_script chk_dunree {
+    script "/usr/bin/curl -fsS --max-time 2 http://127.0.0.1/.dunree/health -H 'Host: health.local' -o /dev/null"
     interval 2
     timeout 3
     fall 2
     rise 2
 }
 
-vrrp_instance VI_ZORAXY {
+vrrp_instance VI_DUNREE {
     state MASTER
     interface eth0
     virtual_router_id 51
@@ -1172,14 +1172,14 @@ vrrp_instance VI_ZORAXY {
         192.0.2.10/24
     }
     track_script {
-        chk_zoraxy
+        chk_dunree
     }
 }
 ```
 
-Use `https://127.0.0.1/.zoraxy/health` with `-k` if the node only listens with TLS (the health path answers before
+Use `https://127.0.0.1/.dunree/health` with `-k` if the node only listens with TLS (the health path answers before
 certificate/host selection; with `-k` the default certificate is fine). If port 80 is disabled use `-health_port`.
-Zoraxy listens on all addresses, so it needs no special binding for the VIP. Create the `keepalived_script` user
+Dunree listens on all addresses, so it needs no special binding for the VIP. Create the `keepalived_script` user
 (`useradd -r -s /sbin/nologin keepalived_script`) or drop the `script_user` lines.
 
 With a shared cluster secret a visitor's CAPTCHA session and sticky cookie survive the failover. Without config sync
@@ -1192,38 +1192,38 @@ the standby must hold an identical configuration (sync, or keep it by hand).
 frontend fe_https
     bind :443
     mode tcp
-    default_backend be_zoraxy
-backend be_zoraxy
+    default_backend be_dunree
+backend be_dunree
     mode tcp
     balance roundrobin
-    option httpchk GET /.zoraxy/health
+    option httpchk GET /.dunree/health
     http-check expect status 200
     server zx1 192.0.2.11:443 check port 443 check-ssl verify none inter 2s fall 2 rise 2 send-proxy-v2
     server zx2 192.0.2.12:443 check port 443 check-ssl verify none inter 2s fall 2 rise 2 send-proxy-v2
 ```
 
 ```
-# nginx (stream module, TCP pass-through; TLS terminates on the Zoraxy nodes)
+# nginx (stream module, TCP pass-through; TLS terminates on the Dunree nodes)
 stream {
-    upstream zoraxy { server 192.0.2.11:443 max_fails=2 fail_timeout=5s; server 192.0.2.12:443 max_fails=2 fail_timeout=5s; }
-    server { listen 443; proxy_pass zoraxy; proxy_protocol on; }
+    upstream dunree { server 192.0.2.11:443 max_fails=2 fail_timeout=5s; server 192.0.2.12:443 max_fails=2 fail_timeout=5s; }
+    server { listen 443; proxy_pass dunree; proxy_protocol on; }
 }
 ```
 
-`send-proxy-v2` / `proxy_protocol on` need Zoraxy's "PROXY protocol" setting enabled so the real client IP survives; drop
+`send-proxy-v2` / `proxy_protocol on` need Dunree's "PROXY protocol" setting enabled so the real client IP survives; drop
 both if you do not need it. Active health checks in nginx open source are passive only (`max_fails`); use HAProxy or
-nginx Plus for `/.zoraxy/health` probing. Because CAPTCHA and sticky cookies are keyed from the cluster secret, any node
+nginx Plus for `/.dunree/health` probing. Because CAPTCHA and sticky cookies are keyed from the cluster secret, any node
 accepts them, so no stickiness is required at this layer.
 
 ### Failover test checklist
 
-1. `curl -i http://<node>/.zoraxy/health` returns 200 on both nodes and the JSON has `proxyRunning:true`.
+1. `curl -i http://<node>/.dunree/health` returns 200 on both nodes and the JSON has `proxyRunning:true`.
 2. Same cluster secret fingerprint on both Cluster pages; both show no pending restart.
 3. Change a proxy rule on the primary; within one interval the follower shows the new snapshot version, restarts
    once, and the primary's node list shows it as current.
 4. Solve a CAPTCHA (or get a sticky cookie) through node A, then send the same cookie to node B directly: accepted
    without a new challenge.
-5. Stop Zoraxy on the VIP owner (`systemctl stop zoraxy`): the VIP moves within `fall * interval` seconds and traffic
+5. Stop Dunree on the VIP owner (`systemctl stop dunree`): the VIP moves within `fall * interval` seconds and traffic
    resumes; `curl` the VIP in a loop to measure the gap.
 6. Start it again: the VIP returns only if the node has higher priority (use `nopreempt` to avoid flapping).
 7. Break the follower's network to the primary: sync status shows an error, the follower keeps serving its last
@@ -1237,7 +1237,7 @@ accepts them, so no stickiness is required at this layer.
 Plugins can act as middleware / WAF style filters. User-facing documentation is in
 `docs/plugins/docs/2. Architecture/7. Request and Response Hooks.md`; this section is the developer map.
 
-- **SDK / wire format**: `src/mod/plugins/zoraxy_plugin/hooks.go` (`HookSettings`, `FilterRequest`, `FilterVerdict`, helpers,
+- **SDK / wire format**: `src/mod/plugins/dunree_plugin/hooks.go` (`HookSettings`, `FilterRequest`, `FilterVerdict`, helpers,
   `HookAPIVersion`). The SDK is copied into every example by `example/plugins/build_all.sh`; run it and commit the copies.
   A new example directory needs an empty `mod/` directory created first, otherwise `cp -r` creates `mod` as the SDK itself.
 - **Runtime**: `src/mod/plugins/hooks_pipeline.go` (stage execution, concurrency, merge, body preview, response writer wrapper),
@@ -1267,12 +1267,12 @@ request hooks in `src/mod/dynamicproxy/metrics_hook.go`.
 * **Cardinality:** `endpoint` is the configured rule name (`_default` for the default site), capped at 512 distinct values
   (overflow folds into `__other__`), event vectors capped at 1024 series, WAF rules limited to the top 200. Paths, hosts from headers
   and client IPs are never labels.
-* **Series:** `zoraxy_http_requests_total{endpoint,status_class,method}`, `zoraxy_http_request_duration_seconds` (histogram),
-  `zoraxy_http_requests_in_flight`, `zoraxy_http_request_bytes_total`, `zoraxy_http_response_bytes_total`,
-  `zoraxy_upstream_{up,in_flight,ewma_seconds,ejections_total}{endpoint,upstream}`, `zoraxy_waf_{events_total,rule_hits_total,blocked_total}`,
-  `zoraxy_captcha_{challenges,verified,failed}_total`, `zoraxy_ratelimit_rejected_total`, `zoraxy_access_blocked_total`,
-  `zoraxy_tls_certificate_expiry_days{certificate,cn}`, `zoraxy_build_info`, `zoraxy_uptime_seconds`, `zoraxy_cluster_role`,
-  `zoraxy_cluster_snapshot_version`.
+* **Series** (each family is exported a second time as `zoraxy_*` while the legacy names are on): `dunree_http_requests_total{endpoint,status_class,method}`, `dunree_http_request_duration_seconds` (histogram),
+  `dunree_http_requests_in_flight`, `dunree_http_request_bytes_total`, `dunree_http_response_bytes_total`,
+  `dunree_upstream_{up,in_flight,ewma_seconds,ejections_total}{endpoint,upstream}`, `dunree_waf_{events_total,rule_hits_total,blocked_total}`,
+  `dunree_captcha_{challenges,verified,failed}_total`, `dunree_ratelimit_rejected_total`, `dunree_access_blocked_total`,
+  `dunree_tls_certificate_expiry_days{certificate,cn}`, `dunree_build_info`, `dunree_uptime_seconds`, `dunree_cluster_role`,
+  `dunree_cluster_snapshot_version`.
 * **Tests:** `go test -race ./mod/metrics ./mod/dynamicproxy -run Metrics`.
 
 ## Bulk IP blocklist import
@@ -1371,7 +1371,7 @@ Report: `docs/triage/sweep-1.md|json`. Developer notes for the fixes on `fix/bug
 
 ## Central management (Fleet)
 
-Fleet turns one Zoraxy into a management hub for several others. It extends `src/mod/cluster` (files `fleet_*.go`, page
+Fleet turns one Dunree into a management hub for several others. It extends `src/mod/cluster` (files `fleet_*.go`, page
 `web/components/fleet.html`, glue `src/fleet.go`); the legacy shared-secret primary/follower mode above is unchanged, still works with
 its `conf/cluster.json` and flags, and is labelled "Legacy shared-secret mode" on the Cluster / HA page. A node uses one mode:
 `standalone`, legacy `primary`/`follower`, or Fleet `hub`/`node`. Everything is inert until the hub role is enabled.
@@ -1461,7 +1461,7 @@ versions a group still uses are never pruned), then starts a rollout for a group
 - **manual**: nothing changes until "Approve".
 - **canary**: one node (chosen or the first online) is pointed at the new version, the rest stay on the stable one. The hub watches the
   canary's heartbeats. It must report the new bundle hash applied and `health: ok` (router running, from the same logic as
-  `/.zoraxy/health`) for "healthy for N s" (heartbeats late by more than 90 s restart the period). It then promotes, or with "hold
+  `/.dunree/health`) for "healthy for N s" (heartbeats late by more than 90 s restart the period). It then promotes, or with "hold
   for approval" waits for you. Failure halts the rollout and points the canary back at the stable version: reported apply error for
   that bundle, unhealthy longer than the grace period (30 s default), did not apply within the timeout (300 s default), offline
   more than 5 min after applying, or the canary was revoked/removed. The first ever publish to a group has no earlier version to go
@@ -1469,7 +1469,7 @@ versions a group still uses are never pruned), then starts a rollout for a group
 - Rollback is "publish an older version" (Groups tab: roll back to the version before, Versions tab: any kept version) with the same
   strategies. The diff view lists added/removed/changed objects per scope with contents of small non-certificate files.
 
-Nodes apply with the legacy follower machinery (`finishApply`): stage, backup, rename, reload (Zoraxy restarts itself), pending marker
+Nodes apply with the legacy follower machinery (`finishApply`): stage, backup, rename, reload (Dunree restarts itself), pending marker
 and boot guard that restores the backup when the new files stop the node from starting; a failed reload or scope `Commit` rolls back
 immediately. `Tick` is driven by a 5 s timer and by every heartbeat; the state machine is a pure function of heartbeats and an
 injectable clock (`TestCanary*`).
@@ -1505,7 +1505,7 @@ self-reported by the node.
 
 ### Setup walkthrough (hub VM + N proxy VMs, systemd)
 
-1. Same Zoraxy build on all VMs, each with its own `conf` / `sys.db` (no copying `conf` between VMs: `sys.uuid` is the node id).
+1. Same Dunree build on all VMs, each with its own `conf` / `sys.db` (no copying `conf` between VMs: `sys.uuid` is the node id).
 2. NTP on every VM (`timedatectl status` shows "System clock synchronized: yes"); skew over 60 s breaks authentication.
 3. Firewall: nodes need outbound TCP to the hub admin port (default 8000); the hub's admin port must accept the nodes' addresses only.
    Nodes outside the hub's network: start the hub with `-fleet_port :8010` (HTTPS with the same certificate and fingerprint as the admin UI when `-webui_tls` is auto/custom, plain HTTP otherwise; plain requests to it are redirected to https). That listener serves only `/api/fleet/join`, `/api/fleet/config`
@@ -1514,7 +1514,7 @@ self-reported by the node.
    `https://fleet.example.com` as the hub URL on the nodes. Rate limits are per client address, so behind a proxy they are shared.
    Nodes need no inbound port for Fleet (they poll). Start the hub with `-webui_tls auto` (self-signed) or provide a CA certificate.
 4. Hub: Fleet, "Enable hub role". Create a group (e.g. `edge-eu`) with its managed scopes (start with `proxy`), optional tags and
-   variables. Build the proxy rules on the hub like on any Zoraxy.
+   variables. Build the proxy rules on the hub like on any Dunree.
 5. Join nodes: hub, Join nodes, create a token (name and group preselected). Node: Fleet, hub URL `https://<hub>:8000`, token, "Check
    hub certificate", compare the fingerprint with the hub tab, Join. The node appears on the hub within a heartbeat.
 6. Per node variables (drawer), then Groups and rollout, Publish: try canary with the group's smallest node first.
@@ -1556,7 +1556,7 @@ makes the rule answer **503 to every request** (fail closed) instead of dropping
   handshakes: valid, expired, wrong CA, intermediate chain, blocked serial, SNI/Host mismatch, allow list, header spoofing).
 * **Upstream mTLS + PROXY protocol (per upstream)** `Upstream.ClientCertName` = a pair `name.pem`/`name.key` in the certificate store, loaded on every handshake
   (`loadbalance.UpstreamClientCertLoader`, set by `initUpstreamClientCertLoader`); only for `RequireTLS` upstreams; also used by the active health probe.
-  `Upstream.ProxyProtocol` 1/2 (`dpcore/proxyproto.go`): header on every upstream connection announcing `r.RemoteAddr` (the TCP peer as Zoraxy sees it; behind a CDN
+  `Upstream.ProxyProtocol` 1/2 (`dpcore/proxyproto.go`): header on every upstream connection announcing `r.RemoteAddr` (the TCP peer as Dunree sees it; behind a CDN
   that is the CDN). Because the header belongs to a connection, those upstreams get **no connection reuse, no h2/h2c, no environment proxy**; health probes send a LOCAL/UNKNOWN
   header. Not applied to WebSocket upgrades and CONNECT (they use their own dialers), nor to the TCP/UDP stream proxy. Edit in the upstream panel
   (`/api/proxy/upstream/update` payload fields, `proxyproto` / `clientcert` on `/add`).
@@ -1598,7 +1598,7 @@ makes the rule answer **503 to every request** (fail closed) instead of dropping
   `access.Controller`, `loadbalance.RouteManager`, `dynamicproxy.RouterOption` now tagged `json:"-"`) which broke the
   Status/Ingress pages; null `Tags`/`MatchingDomainAlias`/certificate lists crashing the HTTP proxy page; a 404 script in the
   certificate page.
-* Collapsible nav groups with remembered state already existed (`zoraxy_menu_groups` in localStorage).
+* Collapsible nav groups with remembered state already existed (`dunree_menu_groups` in localStorage).
 
 ### UI smoke test (`tools/ui-smoke/`)
 
@@ -1625,7 +1625,7 @@ Exit status is non-zero on any failure; `--allow REGEX` tolerates a known messag
 
 ## Certificates and ACME (feat/certs-acme-2)
 
-Everything below is opt-in; with no new flag and no saved profile Zoraxy behaves as before (RSA2048, Let's Encrypt,
+Everything below is opt-in; with no new flag and no saved profile Dunree behaves as before (RSA2048, Let's Encrypt,
 per certificate DNS credentials).
 
 ### ACME options
@@ -1673,7 +1673,8 @@ certificate, window `expiryWarnDays`, default 14). Sources call `notifyManager.E
 `notify.Sink`. A later notifications batch (uptime, WAF) only needs new event names and `Emit` calls. The plugin
 `eventsystem` package was not reused because its event type is plugin-API specific.
 * **Webhooks**: https only, JSON body (`event, time, source, subject, domains, expiry, days_left, ca, error`), headers
-  `X-Zoraxy-Event`, `X-Zoraxy-Timestamp` and, with a secret, `X-Zoraxy-Signature: sha256=hex(HMAC(secret, timestamp + "." + body))`.
+  `X-Dunree-Event`, `X-Dunree-Timestamp` and, with a secret, `X-Dunree-Signature: sha256=hex(HMAC(secret, timestamp + "." + body))`,
+  each sent again as `X-Zoraxy-*` with the same value while the legacy names are on.
   10 s request timeout, 4 attempts with 1 s, 4 s, 16 s backoff for network errors / 429 / 5xx (other 4xx are final), redirects are not followed,
   environment proxies are ignored. **SSRF guard**: the dialer refuses loopback, RFC1918/ULA, link-local (incl. 169.254.169.254), CGNAT,
   multicast and unspecified addresses *after DNS resolution*, so rebinding and internal hostnames are caught. The admin toggle
@@ -1692,10 +1693,11 @@ certificate, window `expiryWarnDays`, default 14). Sources call `notifyManager.E
   `ca` is the requested or stored CA name as in `certificate.issued` / `renewal_failed`; with an assigned CA profile
   (`obtainCertLocked` switches to "custom" plus the profile URL) it can differ from the CA contacted. `setOptions` checks warn days
   and lead time together and saves once, a refused value changes nothing. Not exercised against a real CA or a real router.
-* **Command hook**: only available when Zoraxy is started with `-allow_hook_commands`; without it the config cannot be saved and nothing
-  ever runs. **This lets an administrator execute programs as the Zoraxy user.** The program must be an absolute path, is started
-  without a shell (arguments are literal), with a minimal environment (`PATH` plus `ZORAXY_EVENT, ZORAXY_SOURCE, ZORAXY_SUBJECT,
-  ZORAXY_DOMAINS, ZORAXY_CA, ZORAXY_ERROR, ZORAXY_TIME, ZORAXY_EXPIRY, ZORAXY_DAYS_LEFT, ZORAXY_EVENT_JSON`; the parent environment is
+* **Command hook**: only available when Dunree is started with `-allow_hook_commands`; without it the config cannot be saved and nothing
+  ever runs. **This lets an administrator execute programs as the Dunree user.** The program must be an absolute path, is started
+  without a shell (arguments are literal), with a minimal environment (`PATH` plus `DUNREE_EVENT, DUNREE_SOURCE, DUNREE_SUBJECT,
+  DUNREE_DOMAINS, DUNREE_CA, DUNREE_ERROR, DUNREE_TIME, DUNREE_EXPIRY, DUNREE_DAYS_LEFT, DUNREE_EVENT_JSON`, and the same values as
+  `ZORAXY_*` while the legacy names are on; the parent environment is
   not inherited), 30 s default timeout (max 10 min) and the first 4 KB of output are logged.
 
 ### Offline mode (`-offline`)
@@ -1770,7 +1772,7 @@ per rule, cooldown 15 min. `updater.available` is only emitted when an administr
 renewal sources live on other branches and call `notify.Emit` (types `notify.EventAutoBan`, `notify.EventCertRenewFailed`).
 
 ### Plugin sniff payload
-`DynamicSniffForwardRequest.rule = {name, uuid, tags}` (additive, omitted by older Zoraxy). Rules have no stored UUID, so `uuid` is a stable 16 hex digit hash of the rule key.
+`DynamicSniffForwardRequest.rule = {name, uuid, tags}` (additive, omitted by older Dunree). Rules have no stored UUID, so `uuid` is a stable 16 hex digit hash of the rule key.
 
 ## Security and access features (feat/security-access-2)
 
@@ -1811,7 +1813,7 @@ path rules -> **header rules** -> **bot rules** -> plugin pre_auth -> WAF -> exp
 * Remote API for external tools (#898), outside CSRF and session: `POST /api/abuse/remote/ban|unban`, `GET|POST /api/abuse/remote/list`
   with `Authorization: Bearer <token>`. The token is generated in the UI (shown once, only its SHA-256 is stored, compared in constant
   time); no token = the API answers 401. Admin APIs: `/api/abuse/{list,config,setConfig,ban,unban,token}`.
-* Metrics: bans and rejections use the existing `zoraxy_access_blocked_total{reason="auto-ban"|"auto-ban-created"}` counter.
+* Metrics: bans and rejections use the existing `dunree_access_blocked_total{reason="auto-ban"|"auto-ban-created"}` counter.
 * Not covered: SSO / ZorxAuth failures that answer with a redirect (302) are not counted; basic auth failures (401) are.
 
 ### Dropping connections (`dropConnection`)
@@ -1870,7 +1872,7 @@ headers, basic auth without users). `autotag` replaces `auth:*` tags (other tags
   (exact domain; `email_verified: false` is refused), AND-combined with the group list; a broken rule set denies. **Multiple providers per proxy
   rule are not implemented**: `OAuth2Router` still holds a single configuration (sessions, JWKS cache and callback path are per router), so
   that needs a router-per-provider refactor. The legacy single provider is untouched.
-* Altcha: `GET /.zoraxy/captcha/altcha` issues an HMAC signed SHA-256 challenge (secret = `SecretKey`, `SiteKey` unused, work factor
+* Altcha: `GET /.dunree/captcha/altcha` issues an HMAC signed SHA-256 challenge (secret = `SecretKey`, `SiteKey` unused, work factor
   `AltchaMaxNumber` clamped to 1k..2M); the page solves it with WebCrypto (needs HTTPS or localhost) and POSTs the widget compatible payload as
   field `altcha`. The server checks signature, hash, expiry (5 min) and single use (bounded replay cache). FriendlyCaptcha is not implemented.
 
@@ -1921,10 +1923,10 @@ All of it is opt-in; configs written by older versions load unchanged (`ProxyEnd
   RequestID, Host, Path, RuleName`; validated and test-rendered on save, max 64 KiB, HTML escaped). Interception happens in
   `WriteHeader`; the original body is discarded, nothing is buffered. It only becomes active once the request is being proxied
   (`armOps`), so auth challenges, CAPTCHA pages and access-list blocks are never replaced. Never replaced: `text/event-stream`,
-  `application/grpc` (request or response), `Grpc-Status`, `Trailer`, any request with `Upgrade` (WebSocket), CONNECT. Zoraxy's own
+  `application/grpc` (request or response), `Grpc-Status`, `Trailer`, any request with `Upgrade` (WebSocket), CONNECT. Dunree's own
   errors (521 unreachable, 404 DNS failure, 503 busy) are replaced too when listed. Rule mode: `inherit` (global default,
   `/api/proxy/ops/globalerrors`, stored in `settings/globalErrorPages`), `off`, `on`.
-  Pages for the answers Zoraxy gives by itself BEFORE or INSTEAD of proxying (403 blocks, 429, 521, unknown host ...) are a separate,
+  Pages for the answers Dunree gives by itself BEFORE or INSTEAD of proxying (403 blocks, 429, 521, unknown host ...) are a separate,
   newer feature: Sites > Error pages, `mod/errorpages`, `/api/errorpages/*`, see `docs/errorpages.md`. Off by default.
 - **Static responses:** exact or segment-prefix path, methods (default GET+HEAD), status, content type, body, `Location`, extra headers.
   `Public` ones are answered right after the access list (before client cert, path rules, WAF, rate limit, auth); the others after auth.
@@ -1975,7 +1977,7 @@ rules, CAPTCHA settings, a WAF policy and WAF events produced by attack-looking 
 
 ```bash
 # throw-away instance (never your real one): own conf, db, admin port and proxy port
-./zoraxy -noauth -dev -port :28783 -default_inbound_port 28443 -conf ./conf -dbpath ./sys.db &
+./dunree -noauth -dev -port :28783 -default_inbound_port 28443 -conf ./conf -dbpath ./sys.db &
 PY=./venv/bin/python           # a python with playwright + chromium, see "UI smoke test"
 $PY tools/ui-audit/seed.py --url http://127.0.0.1:28783 --proxy-port 28443
 $PY tools/ui-audit/audit.py --url http://127.0.0.1:28783 --out ~/audit-out    # audit-report.md / .json + shots/
@@ -2021,7 +2023,7 @@ re-read the stored policy before writing so a stale tab cannot overwrite them. N
 * Forward auth behind a TLS-terminating tunnel (Cloudflare Tunnel): add the tunnel source address to Trusted Proxies; the auth subrequest then carries the tunnel's `X-Forwarded-Proto` and `CF-Connecting-IP` (`forward.AuthRouterOptions.IsTrustedProxy`).
 * Host names are compared in punycode (`utils.NormalizeHostname`): use it for any new place that compares or stores a domain.
 * Upstreams with "Skip Verification" use `utils.InsecureUpstreamTLSConfig` (legacy TLS versions and RSA suites allowed) for IPMI-class devices.
-* Soak the forward-auth module for leaks: `ZORAXY_LEAK_SECONDS=300 go test ./mod/auth/sso/forward -run Leak -v`.
+* Soak the forward-auth module for leaks: `DUNREE_LEAK_SECONDS=300 go test ./mod/auth/sso/forward -run Leak -v`.
 
 ## Support closure batch (`docs/support-closure`)
 
@@ -2095,7 +2097,7 @@ network requests per 10 s, JS heap growth, DOM nodes, click-to-second-paint late
 dragging the traffic map. `--profile N --only PAGE` prints a CPU profile, `--prep JS` runs JavaScript first (to test a suspect).
 ```bash
 PY=$HOME/ui-test-tools/py.sh
-$PY tools/ui-perf/perf.py --spawn ./zoraxy --web src/web --port 28781 --json perf.json
+$PY tools/ui-perf/perf.py --spawn ./dunree --web src/web --port 28781 --json perf.json
 $PY tools/ui-perf/perf.py --url http://127.0.0.1:28781 --no-seed --only status --profile 10
 ```
 Findings and fixes: `rules.html` re-initialised its accordion every 300 ms forever (`$._data` got a jQuery object, so the check never
@@ -2124,7 +2126,7 @@ idle for 45 s, the grid is a viewport sized background). `uxkit.js` scans only t
 `<a class="item" tag="TABID" tab_group="GROUPID"><i class="simplistic ICON icon"></i> Label</a>` (and a `<div id="TABID" class="functiontab"
 target="x.html">`). Tab ids and `tab_group` attributes drive `openTabById`, the Recent list, group auto-expand and the UI smoke test, so
 never rename them. Every item needs an icon that exists in Semantic UI 2.4.2 (the smoke test checks the computed `::before`). Collapse
-state is `localStorage.zoraxy_menu_groups` (`{groupId: expanded, _v: 2}`); state saved under the version 1 ids (`reverseproxy`, `services`,
+state is `localStorage.dunree_menu_groups` (`{groupId: expanded, _v: 2}`); state saved under the version 1 ids (`reverseproxy`, `services`,
 `others`) is migrated by `getMenuGroupStates()`.
 Old to new: Reverse Proxy (HTTP Proxy, Virtual Directory, Create Proxy Rule, Stream Proxy) and the top level Default Site and Ingress became
 **Proxy** (HTTP Proxy, Default Site, Redirection, Virtual Directories, Stream Proxy, Ingress, Advanced Rule Form); Access & Connections
@@ -2184,7 +2186,7 @@ Code: `src/mod/ech` (keys, config serialisation, DNS check), `src/echapi.go` (AP
   Optional automatic rotation every N hours (checked every 10 minutes).
 - Rejections: a client with the wrong/unknown key is answered with the outer certificate for the public name plus the retry
   configs (`tls.ECHRejectionError.RetryConfigList` on the client); with ECH disabled the server ignores the extension.
-  The public name needs a certificate Zoraxy can serve (an existing wildcard works); the page warns when none matches.
+  The public name needs a certificate Dunree can serve (an existing wildcard works); the page warns when none matches.
 - DNS: the page shows the base64 list, a copy-ready `HTTPS 1 . alpn=... ech=...` record and a lookup helper
   (`/api/ech/dnscheck`, HTTPS RR through miekg/dns against the system or a given resolver IP) that compares the published `ech=`
   with the active list. Automatic publishing through a DNS provider is *not* implemented (needs a record API beyond lego's
@@ -2253,7 +2255,7 @@ Code: `src/mod/sablier` (config validation, HTTP client, gate with ready cache),
 - `X-Sablier-Session-Status: ready` -> the request is proxied. Any other value -> Sablier's body, status and Content-Type are served with
   `Cache-Control: no-store`. A response without that header (wrong URL, an auth portal in between, a 500) is an *error*, not a waiting page.
 - Position in the chain: after authentication and the Lua stage, right before plugin routing / the upstream. A Lua *handler* replaces the upstream, so
-  it never wakes the workload; public static responses and `/.zoraxy/health` are answered earlier; `BypassPaths` skips the gate per prefix.
+  it never wakes the workload; public static responses and `/.dunree/health` are answered earlier; `BypassPaths` skips the gate per prefix.
 - Cache: a `ready` answer is trusted for 3 s (0-60 s configurable, -1 = ask every time); "not ready" is never cached; concurrent callers share one call
   to Sablier (no thundering herd) and the shared call has its own deadline (5 s, blocking: timeout + 5 s) so one impatient client cannot cancel it.
 - Fail mode: Sablier unreachable / erroring -> `503` + `Retry-After` (fail closed, default) or proxy anyway (`FailOpen`).
@@ -2283,7 +2285,7 @@ Results appear under Security > Code scanning. To bump a pin: `gh api repos/gith
   fallback certificate and cert export zip (`-tmp`, `tlscert.NewManagerWithTmp`) and the web SSH helper use the configured folders.
   The updater page no longer blocks "Update database" for a custom `-conf`. At start-up a warning is logged when a relative default
   folder (`./conf`, `./tmp`, `./log`, `./plugins`, `./www`) still exists while a different folder is configured (stray data from the old
-  behaviour: check it and remove it by hand; Zoraxy never deletes it).
+  behaviour: check it and remove it by hand; Dunree never deletes it).
 * **Updater: cache, ETag, rate limit.** The release list is cached for 10 minutes in `conf/updater/releases-cache.json` (with its ETag);
   *Check for updates* sends `If-None-Match`, so an unchanged list is a 304 that does not count against the GitHub quota. A rate-limit
   answer (HTTP 403/429 with `x-ratelimit-remaining: 0` or `Retry-After`) becomes HTTP 429 from `/api/updater/check` with
@@ -2306,7 +2308,7 @@ Fork #66 (upstream #236) and #64 (upstream #166). There is no build step and the
 translation is a **runtime layer**; how-to for contributors is in `docs/translating.md`, agreed terms in `src/web/locales/GLOSSARY.md`.
 
 * **Engine** `src/web/script/i18n.js` (included directly by `index.html`, `login.html`, three snippets; every other document gets it through a
-  `document.write` injection at the top of `script/utils.js`). Language: `localStorage["zoraxy.lang"]` (explicit choice) > server setting
+  `document.write` injection at the top of `script/utils.js`). Language: `localStorage["dunree.lang"]` (explicit choice; `zoraxy.lang` from before the rename is migrated once) > server setting
   `settings/uiLanguage` (`GET/POST /api/i18n/language`, so the choice follows the instance) > `navigator.languages` > English. Dictionary
   `locales/<code>.json` (`/locales/` is served without authentication, the login page needs it) maps the normalised English text to the translation; keys with
   `{0}` placeholders double as patterns, plus optional `rules` (regex, `$1`). Text nodes and `placeholder / title / aria-label / alt / label / data-content /
@@ -2329,23 +2331,23 @@ translation is a **runtime layer**; how-to for contributors is in `docs/translat
 
 ## End-to-end verification (`tools/e2e`, data plane)
 
-Real end-to-end checks of the proxy features. Every scenario starts a throw-away Zoraxy (own conf/db/tmp dir, `-noauth -dev`, admin and proxy listener on ports 28810-28999, plain HTTP mode unless TLS is needed), local backends (echo, slow/aborting raw sockets, WebSocket echo, unix socket, h2c/gRPC-style Go helper, fake OIDC IdP with RS256 tokens, fake Authelia/outpost, fake Sablier, fake Turnstile/reCAPTCHA/Friendly siteverify, the example filter plugin), configures through the same HTTP API calls the admin UI makes (the New rule dialog is driven with Playwright in one scenario) and sends real requests to the proxy listener. Results: `docs/verification/e2e-dataplane.{json,md}` (built by `tools/e2e/matrix.py` from the last run plus `tools/e2e/matrix_meta.json`).
+Real end-to-end checks of the proxy features. Every scenario starts a throw-away Dunree (own conf/db/tmp dir, `-noauth -dev`, admin and proxy listener on ports 28810-28999, plain HTTP mode unless TLS is needed), local backends (echo, slow/aborting raw sockets, WebSocket echo, unix socket, h2c/gRPC-style Go helper, fake OIDC IdP with RS256 tokens, fake Authelia/outpost, fake Sablier, fake Turnstile/reCAPTCHA/Friendly siteverify, the example filter plugin), configures through the same HTTP API calls the admin UI makes (the New rule dialog is driven with Playwright in one scenario) and sends real requests to the proxy listener. Results: `docs/verification/e2e-dataplane.{json,md}` (built by `tools/e2e/matrix.py` from the last run plus `tools/e2e/matrix_meta.json`).
 
 ```bash
 tools/e2e/run.sh --list                        # scenarios and fork issue numbers
 tools/e2e/run.sh --only waf,captcha_altcha     # name or prefix, comma separated
 PY=$HOME/ui-test-tools/py.sh tools/e2e/run.sh  # whole suite, a few minutes; playwright is only needed for ui_*
-tools/e2e/run.sh --no-build --only core        # reuse the binary in $TMPDIR/zoraxy-e2e-bin (or ZORAXY_BIN=...)
+tools/e2e/run.sh --no-build --only core        # reuse the binary in $TMPDIR/dunree-e2e-bin (or DUNREE_BIN=...)
 python3 tools/e2e/matrix.py                    # refresh docs/verification after a full run
 ```
 
-Needs `go`, `python3` (3.10+), `openssl`. A scenario prints PASS, FAIL with the reason, or NOT-TESTABLE; exit code 1 on any FAIL. Writers: `lib.py` (`Zoraxy`, `Backend`, `FakeHTTPS`, `http_req`, `scenario`), `ws.py` (RFC 6455), `fakes.py` (OIDC IdP), `helpers/` (Go: h2c server/client, ECH and TLS client; built on demand from the module cache). Third-party HTTPS APIs are faked by starting Zoraxy with `HTTPS_PROXY` pointing at a local CONNECT proxy and `SSL_CERT_FILE` at the fake CA, so the real binary talks to what it believes is `challenges.cloudflare.com`. Source addresses `127.0.0.x` give distinct clients (Linux). The harness waits for "Dynamic Reverse Proxy service started" before API calls that restart the listener.
+Needs `go`, `python3` (3.10+), `openssl`. A scenario prints PASS, FAIL with the reason, or NOT-TESTABLE; exit code 1 on any FAIL. Writers: `lib.py` (`Dunree`, `Backend`, `FakeHTTPS`, `http_req`, `scenario`), `ws.py` (RFC 6455), `fakes.py` (OIDC IdP), `helpers/` (Go: h2c server/client, ECH and TLS client; built on demand from the module cache). Third-party HTTPS APIs are faked by starting Dunree with `HTTPS_PROXY` pointing at a local CONNECT proxy and `SSL_CERT_FILE` at the fake CA, so the real binary talks to what it believes is `challenges.cloudflare.com`. Source addresses `127.0.0.x` give distinct clients (Linux). The harness waits for "Dynamic Reverse Proxy service started" before API calls that restart the listener.
 
 Bugs found while writing it (each has a Go regression test): `TE: trailers` stripped towards gRPC upstreams, CAPTCHA protected prefixes skipped by `;param` paths, PROXY protocol headers believed from any peer, Network Tools JS error when mDNS is disabled.
 
 ## Admin end-to-end verification (`tools/e2e-admin/`, branch `test/e2e-admin`)
 
-Real end-to-end checks of the admin and operations features: every scenario starts throw-away Zoraxy processes
+Real end-to-end checks of the admin and operations features: every scenario starts throw-away Dunree processes
 (own temp dir, `-conf`, `-dbpath`, ports 28830-28849) plus local fake backends / receivers, drives the real HTTP API
 (cookie session + CSRF, or `-noauth`) or the real UI with headless Chromium, and asserts the observable result
 (proxied traffic, files on disk, restarts, delivery logs). Nothing touches a real install and no real key or
@@ -2384,7 +2386,7 @@ Bugs found by the suite are fixed with a Go regression test where the code is Go
 
 ## Blocked requests log and Statistics page (`feat/stats-blocked`)
 
-The Status page's "Blocked today" was only a counter. `src/mod/blocklog` now keeps a bounded log of what Zoraxy rejected and why.
+The Status page's "Blocked today" was only a counter. `src/mod/blocklog` now keeps a bounded log of what Dunree rejected and why.
 
 * **Classification** `blocklog.Classify(forwardType)` maps the router's `forwardType` string to a stable reason key
   (`blacklist whitelist auto-ban ratelimit waf exploit bot header-rule captcha country-challenge path-rule client-cert peer auth plugin`)
@@ -2418,9 +2420,9 @@ The Status page's "Blocked today" was only a counter. `src/mod/blocklog` now kee
 Page: Security > Security Overview (`web/components/securityoverview.html`). APIs (admin session + CSRF):
 `GET /api/security/posture` (read only, `?refresh=1` skips a 10 s cache), `POST .../preview`, `POST .../apply`,
 `POST .../undo`, `POST .../settings` (notify toggle). Token users get `GET /api/v1/security/posture` only.
-The score reflects Zoraxy's configuration; it is not a penetration test.
+The score reflects Dunree's configuration; it is not a penetration test.
 
-**Layout.** `mod/posture` never reads Zoraxy state itself. `src/posture_glue.go` builds a `Facts` snapshot (a nil section
+**Layout.** `mod/posture` never reads Dunree state itself. `src/posture_glue.go` builds a `Facts` snapshot (a nil section
 means "could not be read" and the checks report `unknown`) and implements `Backend`, which calls the same internal
 functions as the admin APIs (`mutateWAFCentral`, `HandleUpdateHttpsRedirect`, `ReverseProxyHandleEditEndpoint`,
 `HandleHSTSState`, the abuse manager). Tests use fakes, no listeners.
@@ -2537,7 +2539,7 @@ restore, the pre-restore and target versions of a restore that is waiting for it
    (`validateClusterPayload` for proxy rules, WAF, trusted proxies; access rule schema);
 5. files are staged in `.history/staging-*`, verified byte for byte, `pending.json` (`applying`) is written, then each file is swapped with
    renames (old file moved to `.history/backup-*`), then the table writes; any error undoes every rename and table write;
-6. `pending.json` becomes `applied`, a version "Restored version N" is recorded and Zoraxy restarts itself (`restartSelf`, same as the
+6. `pending.json` becomes `applied`, a version "Restored version N" is recorded and Dunree restarts itself (`restartSelf`, same as the
    cluster apply, after a 3 s delay so the HTTP response is delivered);
 7. `BootGuard` (called right after sys.db opens, before modules read their files) counts the first start; `MarkHealthy` 20 s after a stable
    start (`cluster.HealthyAfter` style) removes the marker and the backup. If a second start finds the marker the old files and tables are
@@ -2576,7 +2578,7 @@ An optional helper that makes the proxy smarter without ever being in control of
 * Files live in `<conf>/aiassist/`: `settings.json` (no secret), `ai.key` (random 32 byte per-install key, 0600), `apikey.sealed` (AES-256-GCM, 0600, AAD bound), `usage.json`. The two secret files are skipped by the configuration backup zip (`aiassist.IsSecretFile`) and are outside the Fleet/cluster snapshot allow-list (`baseRoots`), so they are in no export. Restoring a backup therefore needs the key to be entered again; a sealed file that does not authenticate is reported as such (`ErrTampered`) and is never used.
 * The API key is write-only: set it with `api_key` in `POST /api/ai/settings/save`; every response contains only `key_set` and `key_last4` (not even that for keys of 8 characters or fewer). It is decrypted per call, never logged, and removed from any error text before it is returned.
 * **Zero cost when off**: `New` starts no goroutine, timer or connection; the month rollover of the counter is computed lazily on a call; every feature checks `enabled` before it builds anything. The test `TestDisabledMakesNoConnectionsAndNoGoroutines` listens on the configured endpoint and asserts zero connections.
-* Providers: Anthropic Messages API (`POST {endpoint}/v1/messages`, `x-api-key`, `anthropic-version: 2023-06-01`; structured output through one tool whose `input_schema` is the result schema, read from the `tool_use` block; `tool_choice` is `auto` plus an explicit instruction because the newest models reject forced tool use; no thinking, no sampling parameters) and OpenAI-compatible chat completions (`json_schema` response format, falls back to `json_object` on HTTP 400/422, JSON is extracted defensively from prose or code fences and then validated as strictly as the Anthropic one). Reply limit 1 MiB, timeout 90 s, no redirects, TLS verification on, `User-Agent: zoraxy-aiassist/1`, no user identifiers, environment proxies ignored.
+* Providers: Anthropic Messages API (`POST {endpoint}/v1/messages`, `x-api-key`, `anthropic-version: 2023-06-01`; structured output through one tool whose `input_schema` is the result schema, read from the `tool_use` block; `tool_choice` is `auto` plus an explicit instruction because the newest models reject forced tool use; no thinking, no sampling parameters) and OpenAI-compatible chat completions (`json_schema` response format, falls back to `json_object` on HTTP 400/422, JSON is extracted defensively from prose or code fences and then validated as strictly as the Anthropic one). Reply limit 1 MiB, timeout 90 s, no redirects, TLS verification on, `User-Agent: dunree-aiassist/1` (with ` (zoraxy-aiassist/1)` appended while the legacy names are on), no user identifiers, environment proxies ignored.
 * Default model for the Anthropic provider is `claude-sonnet-5-5` (free text, change it in the settings).
 
 ### Features (`/api/ai/*`, admin session + CSRF like every admin API, audit-log entries `ai.<feature>` with token counts and result, never prompt content)

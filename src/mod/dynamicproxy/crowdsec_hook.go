@@ -5,11 +5,11 @@ import (
 	"net/netip"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/metrics"
-	"imuslab.com/zoraxy/mod/netutils"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 // forwardedCandidates lists the resolved client address and every address the forwarding headers carry (at most 24)
@@ -131,7 +131,7 @@ func (router *Router) crowdsecBegin(w http.ResponseWriter, r *http.Request, sep 
 			}
 			detail += " (no CAPTCHA on this site, treated as a ban)"
 		} else {
-			flow := r.URL != nil && (r.URL.Path == captcha.VerifyPath || r.URL.Path == captcha.AltchaChallengePath)
+			flow := r.URL != nil && (captcha.IsVerifyPath(r.URL.Path) || captcha.IsAltchaChallengePath(r.URL.Path))
 			if router.captchaChallengeFor(w, r, sep, "crowdsec", detail, "crowdsec") {
 				if !flow { //the verification and the proof-of-work request belong to a challenge already counted
 					cs.Report(v, crowdsec.OutChallenged, router.crowdsecEvent(r, v))

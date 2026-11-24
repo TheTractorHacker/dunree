@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 const sqliQuery = "?id=1%27%20OR%20%271%27%3D%271"

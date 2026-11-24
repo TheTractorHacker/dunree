@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
 )
 
 // If the upstream connection breaks after the response headers were sent, the

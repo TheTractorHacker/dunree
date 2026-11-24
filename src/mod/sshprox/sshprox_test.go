@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/destguard"
+	"github.com/foleyit/dunree/mod/destguard"
 )
 
 func TestInstance_Destroy(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"imuslab.com/zoraxy/mod/webuitls"
+	"github.com/foleyit/dunree/mod/webuitls"
 	"net"
 	"net/http"
 	"os"
@@ -12,17 +12,17 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 /*
 	cluster.go
 
-	Glue between Zoraxy and mod/cluster (high availability, issue #81).
+	Glue between Dunree and mod/cluster (high availability, issue #81).
 	All of it is inert unless a cluster secret / role is configured.
 */
 
@@ -74,7 +74,7 @@ func initCluster() {
 }
 
 // validateClusterPayload checks a snapshot against the real config schemas so
-// a file that is valid JSON but would stop Zoraxy from starting is rejected
+// a file that is valid JSON but would stop Dunree from starting is rejected
 // before anything is written.
 func validateClusterPayload(p *cluster.Payload) error {
 	for _, f := range p.Files {
@@ -133,13 +133,15 @@ func startCluster() {
 	if *healthPort != "" {
 		go func() {
 			mux := http.NewServeMux()
-			mux.HandleFunc(cluster.HealthPath, func(w http.ResponseWriter, r *http.Request) {
+			serveHealth := func(w http.ResponseWriter, r *http.Request) {
 				if dynamicProxyRouter == nil || !dynamicProxyRouter.ServeHealth(w, r) {
 					if !clusterMgr.Health().Serve(w, r, false, 0) {
 						http.NotFound(w, r)
 					}
 				}
-			})
+			}
+			mux.HandleFunc(cluster.HealthPath, serveHealth)
+			mux.HandleFunc(cluster.LegacyHealthPath, serveHealth) // legacy-compat: probes of existing installs
 			ln, err := net.Listen("tcp", *healthPort)
 			if err != nil {
 				SystemWideLogger.PrintAndLog("cluster", "Unable to start health listener on "+*healthPort, err)
@@ -152,7 +154,7 @@ func startCluster() {
 	}
 }
 
-// clusterReload makes the process pick up synced configuration. Zoraxy has no
+// clusterReload makes the process pick up synced configuration. Dunree has no
 // in-place reload of every module, so it restarts itself (same binary, same
 // arguments). The delay lets the sync request finish and report first.
 func clusterReload() error {

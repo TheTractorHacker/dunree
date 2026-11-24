@@ -37,7 +37,7 @@
     #rulesPage .zxs-opts summary .zxs-sumhint { margin-left: var(--zx-space-2); color: var(--zx-text-muted); font-weight: 400; font-size: var(--zx-fs-sm); }
     #rulesPage .zxs-fielderr { display: none; margin-top: var(--zx-space-1); color: var(--zx-danger-text); font-size: var(--zx-fs-sm); font-weight: 700; }
     #rulesPage .field.error .zxs-fielderr { display: block; }
-    /* live summary: visitor -> Zoraxy -> upstream */
+    /* live summary: visitor -> Dunree -> upstream */
     #rulesPage .zxs-flow { list-style: none; margin: 0; padding: 0; }
     #rulesPage .zxs-flow li { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 var(--zx-space-3); padding-bottom: var(--zx-space-4); }
     #rulesPage .zxs-flow li:last-child { padding-bottom: 0; }
@@ -128,7 +128,7 @@
                     <div class="field" tourstep="requireTLS">
                         <div class="ui checkbox">
                             <input type="checkbox" id="reqTls">
-                            <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://. Zoraxy checks the target when you leave the field and ticks it for you.</small></label>
+                            <label>The target needs a TLS connection<br><small>Tick this if the target address starts with https://. Dunree checks the target when you leave the field and ticks it for you.</small></label>
                         </div>
                     </div>
 
@@ -249,7 +249,7 @@
                 <div class="disabled item" data-value="4">CAPTCHA challenge</div> <!-- Work in progress -->
             </div>
         </div>
-        <small>How Zoraxy answers when an exploit or a crawler is detected.</small>
+        <small>How Dunree answers when an exploit or a crawler is detected.</small>
     </div>
 
                             </div>
@@ -360,7 +360,7 @@
             <div class="zx-card__body" aria-live="polite">
                 <ol class="zxs-flow">
                     <li><span class="zxs-flow__ic" aria-hidden="true"><i class="user icon"></i></span><div><span class="zxs-flow__k">Visitors open</span><span class="zxs-flow__v is-empty" id="rsHost" data-i18n-skip></span><span class="zxs-flow__s" id="rsAlias"></span></div></li>
-                    <li><span class="zxs-flow__ic" aria-hidden="true"><i class="shield alternate icon"></i></span><div><span class="zxs-flow__k">Zoraxy checks</span><span class="zxs-flow__s" id="rsChecks"></span></div></li>
+                    <li><span class="zxs-flow__ic" aria-hidden="true"><i class="shield alternate icon"></i></span><div><span class="zxs-flow__k">Dunree checks</span><span class="zxs-flow__s" id="rsChecks"></span></div></li>
                     <li><span class="zxs-flow__ic" aria-hidden="true"><i class="server icon"></i></span><div><span class="zxs-flow__k">And forwards to</span><span class="zxs-flow__v is-empty" id="rsTarget" data-i18n-skip></span><span class="zxs-flow__s" id="rsTargetHow"></span></div></li>
                 </ol>
                 <div class="zxs-chosen">
@@ -384,19 +384,19 @@
                     <div class="zx-disclosure__body">
                 <dl class="zxs-examples">
                     <dt>Domain</dt>
-                    <dd><code>aroz.org</code> sends every request for aroz.org to the target address.</dd>
+                    <dd><code>example.com</code> sends every request for example.com to the target address.</dd>
                     <dt>Subdomain</dt>
-                    <dd><code>s1.aroz.org</code> sends requests for s1.aroz.org to the target address.</dd>
+                    <dd><code>s1.example.com</code> sends requests for s1.example.com to the target address.</dd>
                     <dt>Wildcard</dt>
-                    <dd><code>*.aroz.org</code> sends every host name that matches to the target, such as <code>www.aroz.org</code> or <code>foo.bar.aroz.org</code>.</dd>
+                    <dd><code>*.example.com</code> sends every host name that matches to the target, such as <code>www.example.com</code> or <code>foo.bar.example.com</code>.</dd>
                 </dl>
                     </div>
                 </details>
                 <details class="zx-disclosure">
                     <summary>What does "needs a TLS connection" mean?</summary>
                     <div class="zx-disclosure__body">
-                        <p>It describes the <b>upstream server</b> you proxy to: it only accepts secure (HTTPS) connections. It does not change whether visitors use HTTP or HTTPS to reach Zoraxy.</p>
-                        <p>Example: domain <code>mydomain.com</code> with target <code>example.com:443</code> (TLS on). Visitors open mydomain.com, and Zoraxy talks to example.com:443 over HTTPS.</p>
+                        <p>It describes the <b>upstream server</b> you proxy to: it only accepts secure (HTTPS) connections. It does not change whether visitors use HTTP or HTTPS to reach Dunree.</p>
+                        <p>Example: domain <code>mydomain.com</code> with target <code>example.com:443</code> (TLS on). Visitors open mydomain.com, and Dunree talks to example.com:443 over HTTPS.</p>
                         <p>If the upstream uses a self-signed certificate, also tick "Ignore TLS/SSL certificate errors" in the advanced settings.</p>
                     </div>
                 </details>

@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/errorpages"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/errorpages"
 )
 
 /*
 	errorpages_hook.go
 
-	Customisable error pages (mod/errorpages) for the answers Zoraxy gives a visitor by itself.
+	Customisable error pages (mod/errorpages) for the answers Dunree gives a visitor by itself.
 
 	Off unless the owner saved and enabled a customisation: serveCustomErrorPage then returns false
 	before it touches the response, and every caller goes on to write exactly what it always wrote.
@@ -24,13 +24,13 @@ import (
 	  serve404PageWithTemplate ClassNoHost (Default Site "not found" page)
 	  rate limits (site, path rule, security rule)  ClassRateLimit
 	  every upstream at its connection limit        ClassMaintenance (503)
-	  route timeouts answered by Zoraxy (504)       ClassServerError
+	  route timeouts answered by Dunree (504)       ClassServerError
 	  "Block common exploits" / "Block AI crawlers" (exploitErrorPage): action 403 -> ClassForbidden,
 	  action 404 -> ClassNotFound
 
 	Not covered: an error status the upstream itself answers (that is the per site "error pages" option
 	of ops_config.go), the CAPTCHA pages, plain text refusals of misconfigured rules, the 400 and
-	"drop the connection" actions of the exploit detector, the 502 answers of Zoraxy itself (WebSocket
+	"drop the connection" actions of the exploit detector, the 502 answers of Dunree itself (WebSocket
 	upgrade, virtual directory target: plain http.Error).
 */
 
@@ -97,7 +97,7 @@ func (router *Router) serveCustomErrorPage(w http.ResponseWriter, r *http.Reques
 		return false
 	}
 	if ref != "" {
-		w.Header().Set(RefHeader, ref)
+		setRefHeader(w.Header(), ref)
 	}
 	errorpages.SetHeaders(w.Header(), len(body))
 	w.WriteHeader(status)
@@ -119,7 +119,7 @@ func (router *Router) exploitErrorPage(w http.ResponseWriter, r *http.Request, s
 	return false
 }
 
-// serveGatewayStatus answers a status Zoraxy decided on for a proxied request (route limits: 413, 504 ...).
+// serveGatewayStatus answers a status Dunree decided on for a proxied request (route limits: 413, 504 ...).
 // 5xx statuses can have a customised page; everything else, and the default, is the plain text it always was.
 func (router *Router) serveGatewayStatus(w http.ResponseWriter, r *http.Request, status int) {
 	if status >= 500 && router.serveCustomErrorPage(w, r, status, errorpages.ClassServerError) {

@@ -8,7 +8,7 @@ import (
 )
 
 // applyTrustedForwarding overrides the scheme and client address of the auth subrequest with the values
-// reported by a trusted TLS-terminating proxy (Cloudflare Tunnel, HAProxy, ...) in front of Zoraxy.
+// reported by a trusted TLS-terminating proxy (Cloudflare Tunnel, HAProxy, ...) in front of Dunree.
 // Requests from peers that are not trusted are left exactly as computed from the TCP connection.
 func (ar *AuthRouter) applyTrustedForwarding(r, req *http.Request) {
 	if ar.options.IsTrustedProxy == nil {

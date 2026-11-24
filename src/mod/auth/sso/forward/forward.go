@@ -10,9 +10,9 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 type AuthRouterOptions struct {
@@ -69,7 +69,7 @@ type AuthRouterOptions struct {
 	// IsTrustedProxy reports whether an address (the TCP peer) is a trusted reverse proxy / CDN /
 	// tunnel (e.g. Cloudflare). When it returns true, the auth subrequest carries the scheme from
 	// the peer's X-Forwarded-Proto and the client address from its client-IP headers instead of
-	// the plain-HTTP hop to Zoraxy. nil means "never trust", which keeps the old behaviour.
+	// the plain-HTTP hop to Dunree. nil means "never trust", which keeps the old behaviour.
 	// Without this an auth server behind a TLS terminator (Cloudflare Tunnel) builds http:// redirect URLs
 	// and sees the tunnel address as the client (upstream #698, #1032).
 	IsTrustedProxy func(ip string) bool
@@ -316,7 +316,7 @@ func (ar *AuthRouter) HandleAuthProviderRouting(w http.ResponseWriter, r *http.R
 		return ar.handle500Error(w, err, "Unable to create request")
 	}
 
-	// Scrub all client supplied forwarding headers, then set the ones computed by Zoraxy.
+	// Scrub all client supplied forwarding headers, then set the ones computed by Dunree.
 	headerCopyIncluded(r.Header, req.Header, ar.options.RequestHeaders, true)
 	headerCookieRedact(r, ar.options.RequestIncludedCookies, false)
 	scrubForwardingHeaders(req)
@@ -325,7 +325,7 @@ func (ar *AuthRouter) HandleAuthProviderRouting(w http.ResponseWriter, r *http.R
 	}
 
 	// TODO: Add support for headers from upstream proxies. This will likely involve implementing some form of
-	//       proxy specific trust system within Zoraxy.
+	//       proxy specific trust system within Dunree.
 	if ar.options.UseXOriginalHeaders {
 		rSetXOriginalHeaders(r, req)
 		// Set the X-Forwarded-* variants as well. Some outpost modes (traefik/caddy) read those and

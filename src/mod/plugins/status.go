@@ -17,15 +17,15 @@ import (
 	"syscall"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
 	Plugin status (read-only)
 
-	What Zoraxy knows about the process of a plugin: is it running, did it stop by
+	What Dunree knows about the process of a plugin: is it running, did it stop by
 	itself, with which exit code, when, and what was the last problem. Nothing here
 	changes how requests are handled: it only records and reports.
 
@@ -36,7 +36,7 @@ import (
 
 // State of the process of a plugin
 const (
-	StateStopped       = "stopped"         //never started, or stopped by the administrator / Zoraxy
+	StateStopped       = "stopped"         //never started, or stopped by the administrator / Dunree
 	StateRunning       = "running"         //process is alive
 	StateCrashed       = "crashed"         //process ended by itself with a non-zero exit code or a signal
 	StateExited        = "exited"          //process ended by itself with exit code 0
@@ -45,12 +45,12 @@ const (
 	StateCrashLoop     = "crash_loop"      //ended too often in a short time, the supervisor gave up (only with a restart policy)
 )
 
-// Health of a running plugin, from what Zoraxy can observe without calling it
+// Health of a running plugin, from what Dunree can observe without calling it
 const (
 	HealthOK            = "ok"
 	HealthStarting      = "starting"       //just started, port not open yet (only with the port probe: the status view of the Plugin Manager, or everywhere with ManagerOptions.ProbePluginPorts)
 	HealthNotListening  = "not_listening"  //process alive, port closed (only with the port probe)
-	HealthNotResponding = "not_responding" //process alive, calls from Zoraxy keep failing
+	HealthNotResponding = "not_responding" //process alive, calls from Dunree keep failing
 	HealthUnhealthy     = "unhealthy"      //process alive, the health check keeps failing (only with a health check)
 )
 
@@ -72,13 +72,13 @@ type PluginStatus struct {
 	PID          int    //only while running
 	StartedAt    int64  //last successful start
 	ExitedAt     int64  //last time the process ended
-	LastSeen     int64  //last sign of life: output, or an answered call from Zoraxy
+	LastSeen     int64  //last sign of life: output, or an answered call from Dunree
 	HasExited    bool   //ExitCode / ExitReason are from a real process exit
 	ExitCode     int    //exit code of the last exit, -1 when it was ended by a signal
 	ExitReason   string //e.g. "exit status 3", "signal: killed"
-	LastError    string //last problem Zoraxy saw, worded by Zoraxy: no plugin output, no text from a plugin answer, no text of a network error
+	LastError    string //last problem Dunree saw, worded by Dunree: no plugin output, no text from a plugin answer, no text of a network error
 	LastErrorAt  int64
-	StartCount   int //successful starts since Zoraxy started
+	StartCount   int //successful starts since Dunree started
 	RestartCount int //starts after the first one (manual, update, hot reload, and automatic restarts)
 
 	//Phase 1 (supervision), all additive
@@ -89,18 +89,18 @@ type PluginStatus struct {
 	Attached         bool           //only while running: the plugin takes part in the request path
 	ReadyAfterMs     int64          //time the plugin needed to open its port, -1 = not measured (only measured with the readiness gate or a health check)
 	LimitsNote       string         //limits applied to the running process, in words
-	Policy           PluginPolicy   //what the administrator allows Zoraxy to do about this plugin
-	Counters         PluginCounters //since Zoraxy started
+	Policy           PluginPolicy   //what the administrator allows Dunree to do about this plugin
+	Counters         PluginCounters //since Dunree started
 
 	//Phase 2 (contract and permissions), additive
-	Contract    PluginContract    //contract version of the plugin and whether this Zoraxy supports it
+	Contract    PluginContract    //contract version of the plugin and whether this Dunree supports it
 	Permissions PermissionSummary //API permissions: asked for, not approved, not granted
 
 	//Phase 2 (signed index, safe update): where the plugin came from and whether a previous version is kept
 	Install PluginInstallInfo
 }
 
-// PluginCounters counts what happened with a plugin since Zoraxy started
+// PluginCounters counts what happened with a plugin since Dunree started
 type PluginCounters struct {
 	Calls            int64 //filter and sniff calls made
 	CallFailures     int64 //of which failed (any reason)
@@ -149,7 +149,7 @@ type pluginProc struct {
 	pid           int
 	done          chan struct{} //closed when the process has been reaped
 	readersDone   chan struct{} //closed when stdout and stderr are drained
-	stopRequested atomic.Bool   //Zoraxy asked for the stop: the exit is not a crash
+	stopRequested atomic.Bool   //Dunree asked for the stop: the exit is not a crash
 
 	startedAt    time.Time
 	ctx          context.Context        //cancelled when the process is gone: ends calls that only make sense for this process
@@ -174,7 +174,7 @@ func (pp *pluginProc) exited() bool {
 // pluginObserved holds the values that change on every call (no lock)
 type pluginObserved struct {
 	lastSeen     atomic.Int64 //unix nano
-	failStreak   atomic.Int32 //consecutive failed calls from Zoraxy
+	failStreak   atomic.Int32 //consecutive failed calls from Dunree
 	probeAt      atomic.Int64 //unix nano of the last port probe
 	probeOK      atomic.Bool
 	captureFails atomic.Int64
@@ -191,7 +191,7 @@ type pluginObserved struct {
 	eventsDropped    atomic.Int64
 	logLines         atomic.Int64
 	logDropped       atomic.Int64
-	mainLogLines     atomic.Int64 //output lines written to the main Zoraxy log
+	mainLogLines     atomic.Int64 //output lines written to the main Dunree log
 	passedWhileDown  atomic.Int64
 	blockedWhileDown atomic.Int64
 	healthFails      atomic.Int32 //consecutive failed health checks
@@ -215,7 +215,7 @@ func unixOrZero(t time.Time) int64 {
 /* Guarded accessors */
 
 // spec returns the manifest of the plugin (a store update replaces it)
-func (p *Plugin) spec() *zoraxyPlugin.IntroSpect {
+func (p *Plugin) spec() *dunreePlugin.IntroSpect {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.Spec
@@ -264,7 +264,7 @@ func (p *Plugin) noteAlive() {
 	p.obs.lastSeen.Store(time.Now().UnixNano())
 }
 
-// noteError records the last problem Zoraxy saw with this plugin. msg must not contain plugin output.
+// noteError records the last problem Dunree saw with this plugin. msg must not contain plugin output.
 func (p *Plugin) noteError(msg string) {
 	p.mu.Lock()
 	p.status.lastError = msg
@@ -272,7 +272,7 @@ func (p *Plugin) noteError(msg string) {
 	p.mu.Unlock()
 }
 
-// noteCall records the result of a call from Zoraxy to the plugin (filter / sniff)
+// noteCall records the result of a call from Dunree to the plugin (filter / sniff)
 func (p *Plugin) noteCall(err error) {
 	if err == nil {
 		p.obs.failStreak.Store(0)
@@ -283,7 +283,7 @@ func (p *Plugin) noteCall(err error) {
 	p.noteError("A call to the plugin failed: " + publicCallError(err))
 }
 
-// rejectedAnswerError is a call that failed because Zoraxy rejected the answer of
+// rejectedAnswerError is a call that failed because Dunree rejected the answer of
 // the plugin. detail can quote text the plugin chose (a header name, a piece of
 // its JSON), so it goes to the log only; the status shows kind alone.
 type rejectedAnswerError struct {
@@ -308,7 +308,7 @@ func publicCallError(err error) string {
 	if errors.As(err, &ue) || errors.As(err, &ne) {
 		return publicTransportError(err)
 	}
-	return err.Error() //worded by Zoraxy itself (hooks_runtime.go, supervisor.go)
+	return err.Error() //worded by Dunree itself (hooks_runtime.go, supervisor.go)
 }
 
 // publicTransportError words a failed HTTP exchange with a plugin without using
@@ -521,7 +521,7 @@ func (p *Plugin) counters() PluginCounters {
 // historical shape of the Plugin struct, HookAdmin and Status are additions.
 type pluginView struct {
 	RootDir           string
-	Spec              *zoraxyPlugin.IntroSpect
+	Spec              *dunreePlugin.IntroSpect
 	Enabled           bool
 	AssignedPort      int
 	SupportHotRebuild bool

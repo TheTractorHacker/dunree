@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/destguard"
+	"github.com/foleyit/dunree/mod/destguard"
 )
 
 // Rewrite url based on proxy root (default site)

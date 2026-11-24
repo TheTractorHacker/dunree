@@ -1,4 +1,4 @@
-module imuslab.com/zoraxy/docs
+module github.com/foleyit/dunree/docs
 
 go 1.24.1
 

@@ -28,7 +28,7 @@ import (
 	  - every write is limited (a few per minute), validated (no loopback, no server or trusted proxy address, no huge
 	    ranges, bounded duration) and recorded by the security audit log with the actor.
 
-	CrowdSec stays the single source of truth: Zoraxy keeps no copy of the bans it creates; the bouncer pull picks
+	CrowdSec stays the single source of truth: Dunree keeps no copy of the bans it creates; the bouncer pull picks
 	them up like any other decision.
 */
 
@@ -39,8 +39,10 @@ const (
 	MinBanDuration = time.Minute
 	maxReason      = 200
 	writesPerMin   = 20
-	// ManualScenario marks the decisions created from this panel
-	ManualScenario = "zoraxy/manual-ban"
+	// ManualScenario marks the decisions created from this panel. Decisions made before the rename
+	// carry LegacyManualScenario; they are listed and lifted like any other (nothing matches on it).
+	ManualScenario       = "dunree/manual-ban"
+	LegacyManualScenario = "zoraxy/manual-ban" // legacy-compat
 )
 
 // ErrNoMachine is returned when no machine login is stored
@@ -186,7 +188,7 @@ func (c *Client) rawJSON(ctx context.Context, method, path string, q url.Values,
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("User-Agent", UserAgent())
 	req.Header.Set("Accept", "application/json")
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -515,7 +517,7 @@ func (m *Manager) Ban(ctx context.Context, target string, dur time.Duration, rea
 	}
 	reason = cleanText(reason, maxReason)
 	if reason == "" {
-		reason = "manual ban from Zoraxy"
+		reason = "manual ban from Dunree"
 	}
 	msg := reason + " (by " + cleanText(actor, 64) + ")"
 	now := m.now().UTC().Format(time.RFC3339)

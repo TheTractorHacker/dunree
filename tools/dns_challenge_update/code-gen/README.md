@@ -14,7 +14,7 @@ The updated files will be written into the `acmedns`  folder. Then, you can copy
 
 ### Build for Windows 7 (NT6.1)
 
-If you want to build Zoraxy with NT6.1, the lego version must be kept on or below 4.15.0. To build acmedns module for win7, add -- "win7" as go run paramter as follows.
+If you want to build Dunree with NT6.1, the lego version must be kept on or below 4.15.0. To build acmedns module for win7, add -- "win7" as go run paramter as follows.
 
 ```bash
 go run ./extract.go -- "win7"

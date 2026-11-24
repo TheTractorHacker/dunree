@@ -1,0 +1,55 @@
+# systemd unit for a Dunree install from the release tarball (everything in /opt/dunree).
+# packaging/linux/install.sh copies it to /etc/systemd/system/dunree.service.
+# By hand: adjust the lines marked CHANGE, then
+#   sudo systemctl daemon-reload && sudo systemctl enable --now dunree
+# docs/deploy/README.md explains what each line is for and how to switch an existing unit.
+#
+# An existing zoraxy.service keeps working and is not touched by this file. To rename an
+# existing install see tools/install/migrate-from-zoraxy.sh. Do not run both units at once:
+# they would fight for the same ports and database.
+
+[Unit]
+Description=Dunree reverse proxy and web gateway
+# The network must be up before Dunree binds addresses and talks to ACME / upstreams.
+After=network-online.target
+Wants=network-online.target
+# Do not give up restarting after a few quick failures (a held port or database often clears on its own).
+StartLimitIntervalSec=0
+
+[Service]
+# Dunree tells systemd when it is really listening (admin port and proxy ports bound).
+Type=notify
+NotifyAccess=main
+
+# CHANGE: the folder that holds the dunree binary, ./conf, ./sys.db, ./plugins ...
+WorkingDirectory=/opt/dunree
+# CHANGE: the binary and your flags (see ./dunree -h).
+ExecStart=/opt/dunree/dunree -port=:8000
+
+# A start that has not reported READY within 2 minutes is killed and shown as "failed".
+TimeoutStartSec=120
+# Time Dunree gets to shut down cleanly after SIGTERM (worst case 28 s) before SIGKILL.
+TimeoutStopSec=30
+
+# Restart after a crash or a failed start, but not after a deliberate "systemctl stop".
+Restart=on-failure
+RestartSec=5
+
+# Stop the whole control group: Dunree AND every plugin process it started.
+KillMode=control-group
+
+# A proxy holds one file descriptor per connection (plus certificates, logs, plugins).
+LimitNOFILE=1048576
+
+# Hardening. Deliberately conservative: nothing here blocks plugins, ACME, ports 80/443 or
+# running as root (needed for ports below 1024 and for -plugin_user).
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

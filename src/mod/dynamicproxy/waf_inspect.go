@@ -2,8 +2,8 @@ package dynamicproxy
 
 import (
 	"fmt"
+	"github.com/foleyit/dunree/mod/pathmatch"
 	"html"
-	"imuslab.com/zoraxy/mod/pathmatch"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 /*

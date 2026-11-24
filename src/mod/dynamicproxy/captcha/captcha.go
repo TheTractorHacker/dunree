@@ -14,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -25,9 +26,11 @@ import (
 */
 
 const (
-	CookieName             = "zoraxy_captcha_session"
-	VerifyPath             = "/.zoraxy/captcha/verify"
-	DefaultSessionDuration = 3600 // 1 hour in seconds
+	CookieName             = "dunree_captcha_session"
+	LegacyCookieName       = "zoraxy_captcha_session"                        // legacy-compat: still honoured until it expires, never set again
+	VerifyPath             = wirecompat.PathPrefix + "/captcha/verify"       // "/.dunree/captcha/verify": what the challenge pages post to
+	LegacyVerifyPath       = wirecompat.LegacyPathPrefix + "/captcha/verify" // "/.zoraxy/captcha/verify": still answered, saved custom templates post to it
+	DefaultSessionDuration = 3600                                            // 1 hour in seconds
 	CloudflareTurnstileAPI = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 	GoogleRecaptchaAPIv2v3 = "https://www.google.com/recaptcha/api/siteverify"
 )
@@ -106,7 +109,7 @@ type ExceptionRule struct {
 //
 // Sessions are stateless: the cookie value is a signed token carrying the
 // expiry time and the host it was issued for, so nothing is kept in memory.
-// A session therefore survives a Zoraxy restart, and every node that shares
+// A session therefore survives a Dunree restart, and every node that shares
 // the same secret accepts it (needed for high availability). The trade-off is
 // that a single session cannot be revoked early; rotate the secret to
 // invalidate all of them.
@@ -487,7 +490,7 @@ func CheckSession(r *http.Request, sessionStore *SessionStore) bool {
 
 // CheckSessionReason is CheckSession plus the reason for the decision.
 func CheckSessionReason(r *http.Request, sessionStore *SessionStore) (bool, string) {
-	cookie, err := r.Cookie(CookieName)
+	cookie, err := wirecompat.Cookie(r, CookieName, LegacyCookieName)
 	if err != nil {
 		return false, ReasonMissing
 	}
@@ -513,3 +516,7 @@ func wantsHTML(r *http.Request) bool {
 	accept := r.Header.Get("Accept")
 	return strings.Contains(accept, "text/html") && !strings.Contains(accept, "application/json")
 }
+
+// IsVerifyPath reports whether a request path is the captcha verification path, under its
+// Dunree name or the name it had in Zoraxy (LegacyVerifyPath). // legacy-compat
+func IsVerifyPath(path string) bool { return wirecompat.IsPath(path, VerifyPath) }

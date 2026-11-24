@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newAdvTable(t *testing.T, advanced bool) *RuleTable {

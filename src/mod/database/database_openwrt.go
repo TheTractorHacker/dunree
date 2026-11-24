@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database/dbinc"
+	"github.com/foleyit/dunree/mod/database/dbinc"
 )
 
 /*

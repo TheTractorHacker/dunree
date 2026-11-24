@@ -23,7 +23,7 @@ var (
 	resolvedPath string
 )
 
-// SetDockerMode tells the resolver Zoraxy is running inside a container,
+// SetDockerMode tells the resolver Dunree is running inside a container,
 // where bash is usually missing, so sh is tried first.
 // Must be called before the first call to Command.
 func SetDockerMode(enabled bool) {

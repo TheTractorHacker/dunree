@@ -90,7 +90,7 @@ func TestNotifyAddr(t *testing.T) {
 
 func TestNotifyAbstractSocketIsIgnored(t *testing.T) {
 	// abstract sockets are never used (a kernel hazard, see notifyAddr): no send, no error, readiness reported as off
-	withSocket(t, "@zoraxy-test-abstract")
+	withSocket(t, "@dunree-test-abstract")
 	if NotifyEnabled() {
 		t.Fatal("an abstract NOTIFY_SOCKET must not count as enabled")
 	}

@@ -11,14 +11,14 @@ import (
 
 // HolderLine is one plain sentence about the process holding a lock, with the next step, for example:
 //
-//	held by PID 3479504 (zoraxy, started 2h 5m ago), state: FROZEN (stopped, probably Ctrl+Z or SIGSTOP). Resume it: kill -CONT 3479504, or stop it: kill -9 3479504
+//	held by PID 3479504 (dunree, started 2h 5m ago), state: FROZEN (stopped, probably Ctrl+Z or SIGSTOP). Resume it: kill -CONT 3479504, or stop it: kill -9 3479504
 //
 // It is pure text from a ProcInfo, so it is unit tested without /proc. unit is the service name
-// administrators use (normally "zoraxy").
+// administrators use ("" = ProductUnit).
 func HolderLine(p ProcInfo, unit string) string {
 	unit = strings.TrimSuffix(unit, ".service")
 	if unit == "" {
-		unit = "zoraxy"
+		unit = ProductUnit
 	}
 	pid := strconv.Itoa(p.Pid)
 	if !p.Visible {
@@ -26,7 +26,7 @@ func HolderLine(p ProcInfo, unit string) string {
 		if n == "" {
 			n = "details not readable"
 		}
-		return fmt.Sprintf("held by PID %d (%s). Run 'sudo ./zoraxy -doctor' to see more.", p.Pid, n)
+		return fmt.Sprintf("held by PID %d (%s). Run 'sudo %s -doctor' to see more.", p.Pid, n, SelfCommand)
 	}
 	started := ""
 	if p.Age > 0 {
@@ -58,7 +58,7 @@ func LockHolderSummary(path string) string {
 		if pid <= 0 || pid == os.Getpid() {
 			continue
 		}
-		s := HolderLine(Describe(pid), "zoraxy")
+		s := HolderLine(Describe(pid), ChooseUnit("", QueryUnit))
 		if m.Approximate {
 			s += " (matched by inode only: likely, not certain)"
 		}

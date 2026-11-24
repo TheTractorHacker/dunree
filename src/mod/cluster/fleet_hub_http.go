@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // FleetHandler serves the token authenticated hub endpoints. Mount it on
@@ -90,7 +92,7 @@ func (h *Hub) handleConfig(w http.ResponseWriter, r *http.Request) {
 		meta.Rotate = cur.NextKey
 	}
 	if have := r.URL.Query().Get("have"); have == meta.Hash && meta.Rotate == "" {
-		w.Header().Set("X-Zoraxy-Fleet-Hash", meta.Hash)
+		wirecompat.SetHeaderAlways(w.Header(), "Fleet-Hash", meta.Hash)
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
@@ -102,7 +104,7 @@ func (h *Hub) handleConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("X-Zoraxy-Fleet-Hash", meta.Hash)
+	wirecompat.SetHeaderAlways(w.Header(), "Fleet-Hash", meta.Hash)
 	w.Write(raw)
 }
 
@@ -427,7 +429,7 @@ func (h *Hub) Overview() map[string]any {
 }
 
 // ---------------------------------------------------------------------
-// admin API (admin session + CSRF protected by the Zoraxy auth layer)
+// admin API (admin session + CSRF protected by the Dunree auth layer)
 
 // FleetAPIPrefix is the admin API prefix; register it as a subtree.
 const FleetAPIPrefix = "/api/fleet/hub/"

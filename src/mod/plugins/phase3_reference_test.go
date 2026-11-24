@@ -18,17 +18,17 @@ import (
 	"testing"
 	"time"
 
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*
 	Phase 3: the reference plugins of the fork (example/plugins/fork-ref-*) through
 	the real plugin manager, and the verdict rules of the conformance kit
-	(tools/plugin-check) against the rules of Zoraxy.
+	(tools/plugin-check) against the rules of Dunree.
 
 	The reference plugins are built offline from their source in example/plugins,
-	with the SDK of this source tree. The conformance kit runs them without Zoraxy
+	with the SDK of this source tree. The conformance kit runs them without Dunree
 	(tools/plugin-check/check_test.go); here they run with it.
 */
 
@@ -75,7 +75,7 @@ func referencePluginBinary(t testing.TB, name string) string {
 			return fail(err)
 		}
 	}
-	if err := copyTree("zoraxy_plugin", filepath.Join(work, "mod", "zoraxy_plugin")); err != nil {
+	if err := copyTree("dunree_plugin", filepath.Join(work, "mod", "dunree_plugin")); err != nil {
 		return fail(err)
 	}
 	bin := filepath.Join(chaosBuild.dir, "ref-"+name+".bin")
@@ -128,17 +128,17 @@ func pluginGet(t testing.TB, p *Plugin, path string, into any) int {
 // The reference plugins in example/plugins carry the SDK of this source tree, file for file
 func TestReferencePluginsCarryTheCurrentSDK(t *testing.T) {
 	for _, name := range []string{"fork-ref-filter", "fork-ref-events", "fork-ref-ui-api"} {
-		err := filepath.Walk("zoraxy_plugin", func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk("dunree_plugin", func(path string, info os.FileInfo, err error) error {
 			if err != nil || info.IsDir() {
 				return err
 			}
-			rel, _ := filepath.Rel("zoraxy_plugin", path)
+			rel, _ := filepath.Rel("dunree_plugin", path)
 			want, _ := os.ReadFile(path)
-			got, err := os.ReadFile(filepath.Join(refSourceDir(name), "mod", "zoraxy_plugin", rel))
+			got, err := os.ReadFile(filepath.Join(refSourceDir(name), "mod", "dunree_plugin", rel))
 			if err != nil {
-				t.Errorf("%s: the SDK copy lacks %s (run example/plugins/build_all.sh or copy src/mod/plugins/zoraxy_plugin)", name, rel)
+				t.Errorf("%s: the SDK copy lacks %s (run example/plugins/build_all.sh or copy src/mod/plugins/dunree_plugin)", name, rel)
 			} else if !bytes.Equal(got, want) {
-				t.Errorf("%s: the SDK copy of %s differs from src/mod/plugins/zoraxy_plugin", name, rel)
+				t.Errorf("%s: the SDK copy of %s differs from src/mod/plugins/dunree_plugin", name, rel)
 			}
 			return nil
 		})
@@ -222,7 +222,7 @@ func TestFaultReferenceFilter(t *testing.T) {
 }
 
 // fork-ref-events under an event storm with a slow worker: every event is
-// acknowledged at once (Zoraxy drops none), the waiting list of the plugin stays
+// acknowledged at once (Dunree drops none), the waiting list of the plugin stays
 // bounded and it counts what it dropped. Events without the invoke token are refused.
 func TestFaultReferenceEventsBackPressure(t *testing.T) {
 	t.Setenv("FORK_REF_EVENTS_WORK_MS", "25") //one event takes the worker 25 ms
@@ -242,13 +242,13 @@ func TestFaultReferenceEventsBackPressure(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	//600 events at 25 ms each would take the worker 15 s. Zoraxy must be rid of them long before.
+	//600 events at 25 ms each would take the worker 15 s. Dunree must be rid of them long before.
 	eventually(t, 8*time.Second, "all events to be acknowledged", func() bool { return p.obs.eventsSent.Load() == storm })
 	if took := time.Since(begin); took > 8*time.Second {
 		t.Fatalf("delivering %d events took %s: the plugin works before it acknowledges", storm, took)
 	}
 	if c := p.Status().Counters; c.EventsDropped != 0 || c.EventsFailed != 0 {
-		t.Fatalf("Zoraxy dropped or failed events for a plugin that acknowledges at once: %+v", c)
+		t.Fatalf("Dunree dropped or failed events for a plugin that acknowledges at once: %+v", c)
 	}
 	var stats struct {
 		Received  int64 `json:"received"`
@@ -316,7 +316,7 @@ func TestFaultReferenceUIAPIPermissions(t *testing.T) {
 	var mu sync.Mutex
 	var added []string
 	var lastKey string
-	zoraxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if _, err := m.Options.APIKeyManager.ValidateAPIKeyForEndpoint(r.URL.Path, r.Method, key); err != nil {
 			http.Error(w, "403 - Forbidden", http.StatusForbidden)
@@ -336,9 +336,9 @@ func TestFaultReferenceUIAPIPermissions(t *testing.T) {
 			io.WriteString(w, `"OK"`)
 		}
 	}))
-	defer zoraxy.Close()
-	u, _ := url.Parse(zoraxy.URL)
-	m.Options.ZoraxyPort, _ = strconv.Atoi(u.Port())
+	defer host.Close()
+	u, _ := url.Parse(host.URL)
+	m.Options.DunreePort, _ = strconv.Atoi(u.Port())
 
 	p := loadReferencePlugin(t, m, "fork-ref-ui-api")
 	if eps := p.Spec.PermittedAPIEndpoints; len(eps) != 2 || eps[0].Method != http.MethodGet || eps[0].Endpoint != epList || eps[1].Method != http.MethodPost || eps[1].Endpoint != epAdd || eps[0].Reason == "" || eps[1].Reason == "" {
@@ -378,7 +378,7 @@ func TestFaultReferenceUIAPIPermissions(t *testing.T) {
 		rec, _ := uiOnce(m, p)
 		page := rec.Body.String()
 		found := nonceRE.FindStringSubmatch(page)
-		if rec.Code != http.StatusOK || found == nil || !strings.Contains(page, `name="zoraxy-csrf" content="test-csrf"`) {
+		if rec.Code != http.StatusOK || found == nil || !strings.Contains(page, `name="dunree-csrf" content="test-csrf"`) {
 			t.Fatalf("the page of the plugin: %d %q", rec.Code, page)
 		}
 		mu.Lock()
@@ -511,9 +511,9 @@ func TestFaultReferenceUIAPIPermissions(t *testing.T) {
 }
 
 // The conformance kit carries a copy of the verdict rules (it does not import
-// Zoraxy). Every entry of its fixture list must get the same answer from the rules
-// of Zoraxy; the kit checks the same list against its copy (TestVerdictFixtures).
-func TestConformanceKitVerdictRulesMatchZoraxy(t *testing.T) {
+// Dunree). Every entry of its fixture list must get the same answer from the rules
+// of Dunree; the kit checks the same list against its copy (TestVerdictFixtures).
+func TestConformanceKitVerdictRulesMatchDunree(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "tools", "plugin-check", "testdata", "verdicts.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -534,7 +534,7 @@ func TestConformanceKitVerdictRulesMatchZoraxy(t *testing.T) {
 			_, err = sanitizeVerdict(f.Stage, &v)
 		}
 		if (err == nil) != f.Valid {
-			t.Errorf("%s (%s): Zoraxy says valid=%v, the fixture list of the kit says %v (%v)", f.Name, f.Stage, err == nil, f.Valid, err)
+			t.Errorf("%s (%s): Dunree says valid=%v, the fixture list of the kit says %v (%v)", f.Name, f.Stage, err == nil, f.Valid, err)
 		}
 	}
 }

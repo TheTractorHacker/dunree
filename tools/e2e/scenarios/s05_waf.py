@@ -19,7 +19,7 @@ def codes(z, host):
 def waf_block_and_detect():
     """Custom per-rule WAF: block mode returns 403 for SQLi/XSS/traversal and passes clean traffic;
     detection mode passes everything but records events; events are visible via the API."""
-    with Zoraxy() as z, Backend(name="app") as b:
+    with Dunree() as z, Backend(name="app") as b:
         z.add_rule("w.test", b.addr)
         check(all(c == 200 for c in codes(z, "w.test").values()), "WAF off should pass everything")
         z.api("/api/waf/set", rootname="w.test", config=json.dumps({"Mode": "block", "ParanoiaLevel": 1, "InboundThreshold": 5}))
@@ -54,7 +54,7 @@ def waf_block_and_detect():
 @scenario("waf_central_policy", ["82"])
 def waf_central_policy():
     """Central policy inheritance, per-rule overrides, built-in profile, rule exclusion, trusted IP bypass."""
-    with Zoraxy() as z, Backend(name="app") as b:
+    with Dunree() as z, Backend(name="app") as b:
         z.add_rule("inh.test", b.addr)
         z.add_rule("off.test", b.addr)
         z.add_rule("prof.test", b.addr)

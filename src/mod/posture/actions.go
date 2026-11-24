@@ -182,7 +182,7 @@ func describe(changes []Change) string {
 
 // ---- built-in actions ----
 
-// DefaultActions is the action registry used by Zoraxy
+// DefaultActions is the action registry used by Dunree
 var DefaultActions = NewActionRegistry()
 
 func init() {

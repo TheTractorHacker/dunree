@@ -140,7 +140,7 @@ def overview_ui(pg, ctx):
     try:
         pg.wait_for_function("(() => { const f = document.getElementById('trafficFlowDiagram'); try { return f && f.contentDocument.querySelectorAll('.proxy-node').length >= 8; } catch (e) { return false; } })()", timeout=20000)
     except Exception:
-        print("map debug", pg.evaluate("""() => { const f = document.getElementById('trafficFlowDiagram'); const d = f.contentDocument; return {src: f.getAttribute('src'), vis: f.offsetParent !== null, nodes: d && d.querySelectorAll('.proxy-node').length, ls: localStorage.getItem('zoraxy_status_diagram'), body: d && d.body.innerText.slice(0, 100)} }"""))
+        print("map debug", pg.evaluate("""() => { const f = document.getElementById('trafficFlowDiagram'); const d = f.contentDocument; return {src: f.getAttribute('src'), vis: f.offsetParent !== null, nodes: d && d.querySelectorAll('.proxy-node').length, ls: localStorage.getItem('dunree_status_diagram'), body: d && d.body.innerText.slice(0, 100)} }"""))
         raise
     pg.wait_for_timeout(600)
     bad = pg.evaluate("""() => {

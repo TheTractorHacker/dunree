@@ -12,16 +12,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/foleyit/dunree/mod/database"
 	"github.com/jellydator/ttlcache/v3"
-	"imuslab.com/zoraxy/mod/database"
 )
 
 /*
 	session.go
 
 	Server side login sessions and in-flight login attempts. The browser only ever holds an opaque,
-	HMAC signed random identifier; tokens never leave Zoraxy. The signing key is derived from the
-	node UUID, so cookies minted by one Zoraxy node are not valid on another.
+	HMAC signed random identifier; tokens never leave Dunree. The signing key is derived from the
+	node UUID, so cookies minted by one Dunree node are not valid on another.
 */
 
 const (

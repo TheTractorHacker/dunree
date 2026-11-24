@@ -10,9 +10,9 @@ import (
 )
 
 // Disclaimer is stated at the top and the bottom of every export and on the Network plan tab.
-const Disclaimer = "Zoraxy has NOT applied, changed or checked any firewall rule. Nothing in this document is active anywhere. " +
-	"It is a set of recommendations generated from the network plan written in Zoraxy. Review every line, adapt it to your " +
-	"network and apply it yourself in the UniFi and Proxmox consoles. Zoraxy cannot see your firewalls and does not know whether " +
+const Disclaimer = "Dunree has NOT applied, changed or checked any firewall rule. Nothing in this document is active anywhere. " +
+	"It is a set of recommendations generated from the network plan written in Dunree. Review every line, adapt it to your " +
+	"network and apply it yourself in the UniFi and Proxmox consoles. Dunree cannot see your firewalls and does not know whether " +
 	"these rules exist."
 
 // Backend is one backend destination currently used by a proxy rule: address and port only, never a path,
@@ -66,7 +66,7 @@ func ipsetName(label string) string {
 	if n == "" {
 		n = "zone"
 	}
-	return "zoraxy-" + n
+	return "dunree-" + n
 }
 
 func portList(ports []string) string {
@@ -108,11 +108,11 @@ func Recommendations(s Settings, c Context) string {
 	var b strings.Builder
 	w := func(f string, a ...interface{}) { fmt.Fprintf(&b, f+"\n", a...) }
 
-	w("# Firewall recommendations from the Zoraxy network plan")
+	w("# Firewall recommendations from the Dunree network plan")
 	w("")
 	w("> **NOT APPLIED. %s**", Disclaimer)
 	w("")
-	w("Generated %s for a Zoraxy instance with the deployment role **%s**.", now.UTC().Format("2006-01-02 15:04 UTC"), role)
+	w("Generated %s for a Dunree instance with the deployment role **%s**.", now.UTC().Format("2006-01-02 15:04 UTC"), role)
 	w("")
 	var missing []string
 	if len(s.ProxyVLAN.CIDRs) == 0 {
@@ -186,7 +186,7 @@ func Recommendations(s Settings, c Context) string {
 
 	w("## 3. UniFi (UDM Pro, zone-based firewall)")
 	w("")
-	w("Created by you in Network > Settings > Security > Policy Table (the menu names differ between UniFi Network versions). **Untested here: Zoraxy has no access to a UniFi console.**")
+	w("Created by you in Network > Settings > Security > Policy Table (the menu names differ between UniFi Network versions). **Untested here: Dunree has no access to a UniFi console.**")
 	w("")
 	w("1. Zones: put the %s networks in one zone (for example `%s`), the %s networks in another and the %s networks in a third. The zone assignment of a network is a UniFi setting, not a rule.", proxyZ, proxyZ, mgmtZ, appZ)
 	w("2. Allow policies, in this order (rows of table 2):")
@@ -195,12 +195,12 @@ func Recommendations(s Settings, c Context) string {
 	}
 	w("3. Block policies (rows D1 to D%d): create one per row, action Block, **Logging on**, and put them after the allow policies.", d-1)
 	w("4. Check the policy order and the \"Return traffic\" / connection tracking default of your UniFi version. Do not rely on a default allow between zones.")
-	w("5. After applying: test an allowed path, test each denied path from a test host, and look at the block log. Zoraxy does not verify any of this.")
+	w("5. After applying: test an allowed path, test each denied path from a test host, and look at the block log. Dunree does not verify any of this.")
 	w("")
 
 	w("## 4. Proxmox VE firewall")
 	w("")
-	w("For the VM or container that runs Zoraxy (file `/etc/pve/firewall/<vmid>.fw`, or the Firewall tab of the guest). Enable the datacenter and the guest firewall yourself. **Untested here: check the syntax against your Proxmox version.**")
+	w("For the VM or container that runs Dunree (file `/etc/pve/firewall/<vmid>.fw`, or the Firewall tab of the guest). Enable the datacenter and the guest firewall yourself. **Untested here: check the syntax against your Proxmox version.**")
 	w("")
 	w("```")
 	w("[OPTIONS]")
@@ -224,7 +224,7 @@ func Recommendations(s Settings, c Context) string {
 		w("")
 	}
 	if len(s.TrustedProxies) > 0 {
-		w("[IPSET zoraxy-upstream-proxies]")
+		w("[IPSET dunree-upstream-proxies]")
 		for _, p := range s.TrustedProxies {
 			w("%s", p)
 		}
@@ -234,7 +234,7 @@ func Recommendations(s Settings, c Context) string {
 	w("IN ACCEPT -source +%s -p tcp -dport %s # admin panel from the management network", ipsetName(mgmtZ), adminPortOr(adminPort))
 	switch role {
 	case "internal":
-		src := "+zoraxy-upstream-proxies"
+		src := "+dunree-upstream-proxies"
 		if len(s.TrustedProxies) == 0 {
 			src = "+" + ipsetName(proxyZ)
 		}
@@ -253,7 +253,7 @@ func Recommendations(s Settings, c Context) string {
 	w("OUT ACCEPT -dest +%s -p tcp -dport %s # backends", ipsetName(appZ), portListRule(s.AppPorts))
 	w("```")
 	w("")
-	w("Add the DNS, NTP and ACME destinations Zoraxy needs to the output rules, and keep `policy_in: DROP` so everything not listed is refused.")
+	w("Add the DNS, NTP and ACME destinations Dunree needs to the output rules, and keep `policy_in: DROP` so everything not listed is refused.")
 	w("")
 
 	if len(c.Backends) > 0 {
@@ -285,9 +285,9 @@ func Recommendations(s Settings, c Context) string {
 		w("")
 	}
 
-	w("## 6. Zoraxy settings that match this plan (set them yourself)")
+	w("## 6. Dunree settings that match this plan (set them yourself)")
 	w("")
-	w("These are Zoraxy's own optional settings. Zoraxy has not changed them.")
+	w("These are Dunree's own optional settings. Dunree has not changed them.")
 	w("")
 	w("- Security Center > Network exposure > Admin panel allow-list: %s", orUnset(append(append([]string{}, s.ManagementVLAN.CIDRs...), s.AdminAccess...)))
 	w("- Security Center > Network exposure > Allowed backend destinations: %s", orUnset(append(append([]string{}, s.ApplicationVLAN.CIDRs...), s.AllowedBackends...)))
@@ -379,7 +379,7 @@ func udmAllows(s Settings, c Context, role, proxyZ, mgmtZ, appZ string, proxyPor
 func inPlan(be Backend, app []netip.Prefix, dests []Dest, ports []PortRange) string {
 	a, err := netip.ParseAddr(strings.Trim(be.Host, "[]"))
 	if err != nil {
-		return "unknown (host name, not resolved by Zoraxy)"
+		return "unknown (host name, not resolved by Dunree)"
 	}
 	a = a.Unmap()
 	ok := false

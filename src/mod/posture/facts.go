@@ -184,7 +184,7 @@ type UpdaterFacts struct {
 	Channel         string
 }
 
-// BackupFacts: backups Zoraxy knows about (pre-update backups)
+// BackupFacts: backups Dunree knows about (pre-update backups)
 type BackupFacts struct {
 	Count  int
 	Latest time.Time

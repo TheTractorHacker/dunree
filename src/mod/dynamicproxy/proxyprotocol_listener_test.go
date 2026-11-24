@@ -11,7 +11,7 @@ import (
 	proxyproto "github.com/c0va23/go-proxyprotocol"
 )
 
-// Upstream #934: Zoraxy behind HAProxy (send-proxy / send-proxy-v2). The listener wrapper used for the TLS
+// Upstream #934: Dunree behind HAProxy (send-proxy / send-proxy-v2). The listener wrapper used for the TLS
 // listener (see StartProxyService) must expose the address from the PROXY header as the client address.
 func TestProxyProtocolListenerExposesRealClientAddress(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")

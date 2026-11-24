@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // Upstream #1193: deleting a certificate must also drop its ACME metadata file and

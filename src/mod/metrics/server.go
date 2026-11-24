@@ -50,7 +50,7 @@ func RequireBearer(token string, next http.Handler) http.Handler {
 			next.ServeHTTP(w, req)
 			return
 		}
-		w.Header().Set("WWW-Authenticate", `Bearer realm="zoraxy-metrics"`)
+		w.Header().Set("WWW-Authenticate", `Bearer realm="dunree-metrics"`)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	})
 }

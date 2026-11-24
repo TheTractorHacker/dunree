@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // Windows build not support docker

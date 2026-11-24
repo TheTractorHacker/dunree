@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os"
 
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // ListPluginGroups returns a map of plugin groups
@@ -28,7 +28,7 @@ func (m *Manager) AddPluginToGroup(tag, pluginID string) error {
 	}
 
 	//Check if the plugin is a router type plugin
-	if plugin.Spec.Type != zoraxy_plugin.PluginType_Router {
+	if plugin.Spec.Type != dunree_plugin.PluginType_Router {
 		return errors.New("plugin is not a router type plugin")
 	}
 

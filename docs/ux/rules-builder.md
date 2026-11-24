@@ -23,7 +23,7 @@ Phase 5 of the redesign in [audit-2026-11.md](audit-2026-11.md). Menu: **Securit
 
 ### Lock-out warning
 
-Shown in the editor and again in the enforce dialog for rules that block, challenge, redirect or rate limit. Client side: the rule set belongs to the host you use for the admin UI, a condition names that host, a pattern that matches every path, or only negative conditions on country / client address ("blocks everybody who is not on the list"). Server side (three calls to the tester with the draft): does it match a request to the admin address from a public client, an unrelated host, a private (LAN) client. Honest limit: Zoraxy's admin listener is not served through the proxy rules, so this only matters when a proxy rule fronts the admin UI; the checks are heuristics, not a proof.
+Shown in the editor and again in the enforce dialog for rules that block, challenge, redirect or rate limit. Client side: the rule set belongs to the host you use for the admin UI, a condition names that host, a pattern that matches every path, or only negative conditions on country / client address ("blocks everybody who is not on the list"). Server side (three calls to the tester with the draft): does it match a request to the admin address from a public client, an unrelated host, a private (LAN) client. Honest limit: Dunree's admin listener is not served through the proxy rules, so this only matters when a proxy rule fronts the admin UI; the checks are heuristics, not a proof.
 
 ## AI proposals
 

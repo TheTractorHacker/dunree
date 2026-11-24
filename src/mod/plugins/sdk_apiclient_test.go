@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/auth"
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/auth"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 /*
@@ -56,7 +56,7 @@ func TestSDKAPIClientHelpersSetTheBearerHeader(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg := &zp.ConfigureSpec{APIKey: key.APIKey, ZoraxyPort: port}
+	cfg := &zp.ConfigureSpec{APIKey: key.APIKey, DunreePort: port}
 	read := func(resp *http.Response, err error) (int, string) {
 		t.Helper()
 		if err != nil {
@@ -72,7 +72,7 @@ func TestSDKAPIClientHelpersSetTheBearerHeader(t *testing.T) {
 		t.Fatalf("granted GET: %d %q", code, body)
 	}
 	if sawAuth != "Bearer "+key.APIKey || sawQuery != "x=1" {
-		t.Fatalf("Zoraxy saw Authorization %q and query %q", sawAuth, sawQuery)
+		t.Fatalf("Dunree saw Authorization %q and query %q", sawAuth, sawQuery)
 	}
 
 	//A body, through NewAPIRequest and a client of the plugin's own
@@ -91,7 +91,7 @@ func TestSDKAPIClientHelpersSetTheBearerHeader(t *testing.T) {
 	//SetAPIAuth on a request the plugin built itself
 	own, _ := http.NewRequest(http.MethodGet, cfg.APIURL("/plugin/api/access/list"), nil)
 	if code, _ := read(http.DefaultClient.Do(own)); code != http.StatusUnauthorized {
-		t.Fatalf("without the header Zoraxy must refuse: %d", code)
+		t.Fatalf("without the header Dunree must refuse: %d", code)
 	}
 	cfg.SetAPIAuth(own)
 	if code, _ := read(http.DefaultClient.Do(own)); code != http.StatusOK {
@@ -105,7 +105,7 @@ func TestSDKAPIClientHelpersSetTheBearerHeader(t *testing.T) {
 	if code, _ := read(cfg.DoAPIRequest(http.MethodPost, "/plugin/api/access/list", nil)); code != http.StatusUnauthorized {
 		t.Fatalf("method that is not granted: %d", code)
 	}
-	stranger := &zp.ConfigureSpec{APIKey: strings.Repeat("0", 64), ZoraxyPort: port}
+	stranger := &zp.ConfigureSpec{APIKey: strings.Repeat("0", 64), DunreePort: port}
 	if code, _ := read(stranger.DoAPIRequest(http.MethodGet, "/plugin/api/access/list", nil)); code != http.StatusUnauthorized {
 		t.Fatalf("unknown key: %d", code)
 	}
@@ -117,7 +117,7 @@ func TestSDKAPIClientHelpersSetTheBearerHeader(t *testing.T) {
 	}
 
 	//No key, no port, or something that is not a path: an error and no request
-	for _, bad := range []*zp.ConfigureSpec{nil, {ZoraxyPort: port}, {APIKey: key.APIKey}} {
+	for _, bad := range []*zp.ConfigureSpec{nil, {DunreePort: port}, {APIKey: key.APIKey}} {
 		if _, err := bad.NewAPIRequest(http.MethodGet, "/plugin/api/access/list", nil); !errors.Is(err, zp.ErrNoAPIKey) {
 			t.Fatalf("configuration %+v: %v", bad, err)
 		}
@@ -139,7 +139,7 @@ func TestSDKAPIClientHelpersSetTheBearerHeader(t *testing.T) {
 		}
 	}
 	if u, err := url.Parse(cfg.APIURL("/plugin/api/access/list?x=@example.invalid")); err != nil || u.Host != "127.0.0.1:"+strconv.Itoa(port) || u.User != nil {
-		t.Fatalf("APIURL of a path must stay on Zoraxy: %v %v", u, err)
+		t.Fatalf("APIURL of a path must stay on Dunree: %v %v", u, err)
 	}
 	var none *zp.ConfigureSpec
 	if got := none.APIURL("/plugin/api/access/list"); got != "" {

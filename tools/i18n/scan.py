@@ -20,7 +20,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 ap = argparse.ArgumentParser()
-ap.add_argument("--url", default=os.environ.get("ZORAXY_URL", "http://127.0.0.1:8000"))
+ap.add_argument("--url", default=os.environ.get("DUNREE_URL", "http://127.0.0.1:8000"))
 ap.add_argument("--lang", required=True)
 ap.add_argument("--snippets", action="store_true", help="also open every snippet page standalone")
 ap.add_argument("--json")
@@ -30,7 +30,7 @@ args = ap.parse_args()
 
 EN = set(json.load(open(os.path.join(ROOT, "src/web/locales/en.json"), encoding="utf-8"))["strings"])
 SCRIPT = {"zh-CN": r"[一-鿿]", "zh-TW": r"[一-鿿]", "ja": r"[぀-ヿ一-鿿]", "ru": r"[Ѐ-ӿ]"}
-IGNORE = re.compile(r"^(Zoraxy|ACME|TLS|HTTPS?|OIDC|OAuth2?|WAF|CAPTCHA|TCP|UDP|DNS|IP|CIDR|SSO|API|JSON|YAML|Lua|Docker|"
+IGNORE = re.compile(r"^(Dunree|ACME|TLS|HTTPS?|OIDC|OAuth2?|WAF|CAPTCHA|TCP|UDP|DNS|IP|CIDR|SSO|API|JSON|YAML|Lua|Docker|"
                     r"Cloudflare|Turnstile|reCAPTCHA|Altcha|Friendly Captcha|GeoIP|zrok|Sablier|ECH|mTLS|Prometheus|"
                     r"Let's Encrypt|Authentik|SSO / OAuth2|OAuth 2\.0|IP / CIDR|reCAPTCHA v[23]|User Agent|[A-Za-z0-9_.:/\-]+)$")
 
@@ -89,7 +89,7 @@ def settle(pg, ms=900):
 with sync_playwright() as p:
     b = p.chromium.launch()
     ctx = b.new_context(viewport={"width": 1366, "height": 900})
-    ctx.add_init_script("try{localStorage.setItem('zoraxy.lang',%s)}catch(e){}" % json.dumps(args.lang))
+    ctx.add_init_script("try{localStorage.setItem('dunree.lang',%s)}catch(e){}" % json.dumps(args.lang))
     pg = ctx.new_page()
     pg.goto(args.url + "/", wait_until="networkidle")
     pg.wait_for_selector("#mainmenu .item")

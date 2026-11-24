@@ -168,7 +168,7 @@ func (m *Manager) runApp(ctx context.Context, opts RunOptions, reserved bool) (e
 	m.logf(a, "Signed release header: tag %s build %d", hdr.Tag, hdr.Build)
 
 	m.stage(a, "Downloading "+r.asset.Name)
-	tmp, err := os.CreateTemp(exeDir, ".zoraxy-update-*")
+	tmp, err := os.CreateTemp(exeDir, ".dunree-update-*")
 	if err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func (m *Manager) runRollback(ctx context.Context, opts RunOptions, reserved boo
 	}
 	if rerr := m.cfg.Hooks.Restart(exe, m.cfg.Args); rerr != nil {
 		restarting = false
-		return fmt.Errorf("binary restored but restart failed: %w (restart Zoraxy manually)", rerr)
+		return fmt.Errorf("binary restored but restart failed: %w (restart Dunree manually)", rerr)
 	}
 	return nil
 }

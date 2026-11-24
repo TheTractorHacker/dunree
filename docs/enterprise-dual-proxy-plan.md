@@ -9,13 +9,13 @@ survey by search and spot reading; items marked *to verify* were confirmed in la
 Fork rules apply to every item: new behaviour is **off or log-only by default**, no silent default changes, no changes
 to existing installs, signed releases, a test and a "known limits" note per feature.
 
-## 1. Target and what Zoraxy does and does not do
+## 1. Target and what Dunree does and does not do
 
 ```
-Internet -> Cloudflare -> UDM Pro -> [Public DMZ] External Zoraxy -> [Servers/DMZ] Internal Zoraxy -> App servers
+Internet -> Cloudflare -> UDM Pro -> [Public DMZ] External Dunree -> [Servers/DMZ] Internal Dunree -> App servers
                                    Admin path: Management VLAN only (separate listener, not via the proxies)
 ```
-UDM Pro, Nexus and Proxmox firewalls are the enforcement layer. Zoraxy adds identity, filtering and visibility on
+UDM Pro, Nexus and Proxmox firewalls are the enforcement layer. Dunree adds identity, filtering and visibility on
 top. It will **never claim** to configure them; it validates what the admin documents and exports recommendations.
 Two proxies in series are **not** redundancy (the external proxy is a single point of failure, so is the internal one).
 
@@ -92,7 +92,7 @@ startup + delta stream, and `GET /v1/decisions?ip=` for single lookups; TLS with
 - Not run against a real CrowdSec here: tested against a fake LAPI. Real-world confirmation is on your side.
 
 **Network segmentation**: admin documents VLAN names/CIDRs, trusted upstream proxies, allowed backend CIDRs and
-ports. Zoraxy checks routes against them and warns; it generates a **text/markdown policy recommendation** for UDM
+ports. Dunree checks routes against them and warns; it generates a **text/markdown policy recommendation** for UDM
 Pro zone rules and Proxmox firewall (section 8) and states clearly nothing was applied.
 
 **Dangerous-configuration warnings** (reuse posture engine): admin UI reachable from a proxied host or public
@@ -162,7 +162,7 @@ Acceptance: you approve scope and answer section 7. Rollback: delete this file.
 4. **Admin listener:** OK to add an optional separate admin bind address/CIDR allow-list (Management VLAN only)?
 5. **Release:** one release per phase (fork.19+) or hold everything for one release?
 
-## 8. UniFi and Proxmox recommendations (draft, to be refined in Phase 5, not applied by Zoraxy)
+## 8. UniFi and Proxmox recommendations (draft, to be refined in Phase 5, not applied by Dunree)
 - Internet -> Public DMZ: allow TCP 80/443 to the external proxy only. Everything else dropped.
 - Public DMZ (external proxy) -> Servers VLAN: allow only to the internal proxy IP:443 (or the chosen port). No access
   to other VLANs, no DMZ-to-Management.
@@ -172,7 +172,7 @@ Acceptance: you approve scope and answer section 7. Rollback: delete this file.
 - Public DMZ -> anything private other than the above: deny, and log drops. Proxmox VM firewall: same rules as a
   second layer, default drop inbound, allow admin from Management and traffic from the peer proxy only.
 - Cloudflare: restrict origin 443 on the UDM to Cloudflare ranges, enable Authenticated Origin Pulls if you want
-  Cloudflare to present a client certificate (Zoraxy's per-route mTLS can verify it).
+  Cloudflare to present a client certificate (Dunree's per-route mTLS can verify it).
 
 ## 9. Verified findings (read-only deep check, 7 independent readers, static reading only)
 

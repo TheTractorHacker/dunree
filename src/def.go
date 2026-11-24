@@ -14,35 +14,35 @@ import (
 	"net/http"
 	"time"
 
-	"imuslab.com/zoraxy/mod/auth/sso/oauth2"
+	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/auth/sso/forward"
-	"imuslab.com/zoraxy/mod/auth/sso/zorxauth"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dockerux"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/forwardproxy"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/info/logviewer"
-	"imuslab.com/zoraxy/mod/mdns"
-	"imuslab.com/zoraxy/mod/netstat"
-	"imuslab.com/zoraxy/mod/pathrule"
-	"imuslab.com/zoraxy/mod/plugins"
-	"imuslab.com/zoraxy/mod/sshprox"
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/statistic/analytic"
-	"imuslab.com/zoraxy/mod/streamproxy"
-	"imuslab.com/zoraxy/mod/tlscert"
-	"imuslab.com/zoraxy/mod/updater"
-	"imuslab.com/zoraxy/mod/uptime"
-	"imuslab.com/zoraxy/mod/visitors"
-	"imuslab.com/zoraxy/mod/webserv"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/auth/sso/forward"
+	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dockerux"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/forwardproxy"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logviewer"
+	"github.com/foleyit/dunree/mod/mdns"
+	"github.com/foleyit/dunree/mod/netstat"
+	"github.com/foleyit/dunree/mod/pathrule"
+	"github.com/foleyit/dunree/mod/plugins"
+	"github.com/foleyit/dunree/mod/sshprox"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/statistic/analytic"
+	"github.com/foleyit/dunree/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/foleyit/dunree/mod/updater"
+	"github.com/foleyit/dunree/mod/uptime"
+	"github.com/foleyit/dunree/mod/visitors"
+	"github.com/foleyit/dunree/mod/webserv"
 )
 
 const (
@@ -52,14 +52,15 @@ const (
 
 	/* System Constants */
 	WEBSERV_DEFAULT_PORT         = 5487
-	MDNS_HOSTNAME_PREFIX         = "zoraxy_" /* Follow by node UUID */
+	MDNS_HOSTNAME_PREFIX         = "dunree_" /* Follow by node UUID */
+	MDNS_LEGACY_HOSTNAME_PREFIX  = "zoraxy_" /* also announced while the legacy names are on, see mdnsnames.go */ // legacy-compat
 	MDNS_IDENTIFY_DEVICE_TYPE    = "Network Gateway"
-	MDNS_IDENTIFY_DOMAIN         = "zoraxy.aroz.org"
-	MDNS_IDENTIFY_VENDOR         = "imuslab.com"
+	MDNS_IDENTIFY_DOMAIN         = "dunree.local"
+	MDNS_IDENTIFY_VENDOR         = "Foley IT"
 	MDNS_SCAN_TIMEOUT            = 30 /* Seconds */
 	MDNS_SCAN_UPDATE_INTERVAL    = 15 /* Minutes */
 	GEODB_CACHE_CLEAR_INTERVAL   = 15 /* Minutes */
-	CSRF_COOKIENAME              = "zoraxy_csrf"
+	CSRF_COOKIENAME              = "dunree_csrf"
 	LOG_PREFIX                   = "zr"
 	LOG_EXTENSION                = ".log"
 	STATISTIC_AUTO_SAVE_INTERVAL = 600 /* Seconds */
@@ -77,8 +78,8 @@ var (
 	allowSshLoopback           = flag.Bool("sshlb", false, "Allow loopback web ssh connection (DANGER)")
 	resetAdminAllowList        = flag.Bool("reset_admin_allowlist", false, "Recovery: clear the admin listener allow-list (Security Center > Network exposure) before the admin port starts serving, then continue. Use when an allow-list locked you out; remove the flag afterwards")
 	allowMdnsScanning          = flag.Bool("mdns", true, "Enable mDNS scanner and transponder")
-	mdnsName                   = flag.String("mdnsname", "", "mDNS name, leave empty to use default (zoraxy_{node-uuid}.local)")
-	runningInDocker            = flag.Bool("docker", false, "Run Zoraxy in docker compatibility mode")
+	mdnsName                   = flag.String("mdnsname", "", "mDNS name, leave empty to use default (dunree_{node-uuid}.local; zoraxy_{node-uuid} is announced as well while the legacy names are on)")
+	runningInDocker            = flag.Bool("docker", false, "Run Dunree in docker compatibility mode")
 	enableHighSpeedGeoIPLookup = flag.Bool("fastgeoip", true, "Enable high speed geoip lookup, disable this if you are using a very small memory footprint device")
 	enableAutoUpdate           = flag.Bool("cfgupgrade", true, "Enable auto config upgrade if breaking change is detected")
 
@@ -105,7 +106,7 @@ var (
 	proxyIdleTimeout       = flag.Int("idletimeout", 300, "Proxy server idle keep-alive connection timeout in seconds (0 = disabled)")
 
 	/* Graceful stop */
-	shutdownDrain = flag.Int("shutdown_drain", 8, "Seconds to let in-flight proxy requests finish when Zoraxy stops (SIGTERM, restart, update) before they are cut (capped at 15 on SIGTERM, 10 for the updater). Fits the 10 s grace of docker stop. 0 = stop at once without draining")
+	shutdownDrain = flag.Int("shutdown_drain", 8, "Seconds to let in-flight proxy requests finish when Dunree stops (SIGTERM, restart, update) before they are cut (capped at 15 on SIGTERM, 10 for the updater). Fits the 10 s grace of docker stop. 0 = stop at once without draining")
 
 	/* HTTP/2 Configuration Flags */
 	proxyDisableHttp2       = flag.Bool("disablehttp2", false, "Disable HTTP/2 on the TLS listener and serve HTTP/1.1 only")
@@ -124,7 +125,7 @@ var (
 	path_logFile      = flag.String("log", "./log", "Log folder path")
 	path_webserver    = flag.String("webroot", "./www", "Static web server root folder. Only allow change in start paramters")
 	path_plugin       = flag.String("plugin", "./plugins", "Plugin folder path")
-	plugin_user       = flag.String("plugin_user", "", "Run plugin processes as this OS user (name or uid, Unix only, Zoraxy must run as root). Default: same user as Zoraxy")
+	plugin_user       = flag.String("plugin_user", "", "Run plugin processes as this OS user (name or uid, Unix only, Dunree must run as root). Default: same user as Dunree")
 	plugin_group      = flag.String("plugin_group", "", "Group for plugin processes started with -plugin_user (name or gid). Default: the user's primary group")
 	plugin_port_probe = flag.Bool("plugin_port_probe", false, "Plugin status: open a TCP connection to the port of each running plugin whenever plugins are listed (at most once per 2 s per plugin) to show Starting / Not listening in every listing (API, side menu). Default: off, only the Plugin Manager page makes that connection, while it is shown")
 	plugin_index_key  = flag.String("plugin_index_pubkey", "", "File with the ed25519 public key (PEM) of the signed plugin index. Default: the key of the plugin safety settings in the Plugin Manager, if any. Never the release key")
@@ -135,7 +136,7 @@ var (
 	updateRepo        = flag.String("update_repo", updater.DefaultRepo, "GitHub repository (owner/name) the Update page fetches releases from")
 	updaterWatchdog   = flag.String("updater_watchdog", "", "Internal: run the post-update rollback watchdog for the given pending-update marker and exit")
 	reset_account     = flag.Bool("reset_ac", false, "Reset admin account username and password to default and exit")
-	compactDatabase   = flag.Bool("compact-db", false, "Compact the BoltDB database file given by -dbpath offline (stop Zoraxy first), keep a timestamped backup next to it and exit")
+	compactDatabase   = flag.Bool("compact-db", false, "Compact the BoltDB database file given by -dbpath offline (stop Dunree first), keep a timestamped backup next to it and exit")
 )
 
 /* Global Variables and Handlers */
@@ -190,7 +191,7 @@ var (
 	netstatBuffers     *netstat.NetStatBuffers   //Realtime graph buffers
 	statisticCollector *statistic.Collector      //Collecting statistic from visitors
 	visitorTracker     *visitors.Tracker         //Per client IP visitor list (who visited, when, via which CDN)
-	blockLog           *blocklog.Log             //Bounded log of the requests Zoraxy rejected, and why
+	blockLog           *blocklog.Log             //Bounded log of the requests Dunree rejected, and why
 	uptimeMonitor      *uptime.Monitor           //Uptime monitor service worker
 	mdnsScanner        *mdns.MDNSHost            //mDNS discovery services
 	webSshManager      *sshprox.Manager          //Web SSH connection service
@@ -211,8 +212,8 @@ var (
 	zorxAuthRouter    *zorxauth.AuthRouter //ZorxAuth router for ZorxAuth SSO authentication
 
 	//Helper modules
-	AnalyticLoader    *analytic.DataLoader  //Data loader for Zoraxy Analytic
+	AnalyticLoader    *analytic.DataLoader  //Data loader for Dunree Analytic
 	DockerUXOptimizer *dockerux.UXOptimizer //Docker user experience optimizer, community contribution only
-	SystemWideLogger  *logger.Logger        //Logger for Zoraxy
+	SystemWideLogger  *logger.Logger        //Logger for Dunree
 	LogViewer         *logviewer.Viewer     //Log viewer HTTP handlers
 )

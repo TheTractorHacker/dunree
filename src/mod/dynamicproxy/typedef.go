@@ -10,7 +10,7 @@ package dynamicproxy
 import (
 	"crypto/tls"
 	_ "embed"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/metrics"
 	"net"
 	"net/http"
 	"net/netip"
@@ -20,32 +20,32 @@ import (
 
 	"github.com/quic-go/quic-go/http3"
 
-	"imuslab.com/zoraxy/mod/auth/sso/oauth2"
-	"imuslab.com/zoraxy/mod/auth/sso/zorxauth"
-	"imuslab.com/zoraxy/mod/cluster"
+	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
+	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
+	"github.com/foleyit/dunree/mod/cluster"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/auth/sso/forward"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/botrules"
-	"imuslab.com/zoraxy/mod/crowdsec"
-	"imuslab.com/zoraxy/mod/deployrole"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/dynamicproxy/exploits"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/plugins"
-	"imuslab.com/zoraxy/mod/ruleset"
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/tlscert"
-	"imuslab.com/zoraxy/mod/visitors"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/auth/sso/forward"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/foleyit/dunree/mod/crowdsec"
+	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/exploits"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/plugins"
+	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/foleyit/dunree/mod/visitors"
 )
 
 type ProxyType int
@@ -83,10 +83,10 @@ func (p TlsCipherProfile) IsValid() bool {
 /* Router Object Options */
 type RouterOption struct {
 	/* Basic Settings */
-	HostUUID           string                                                            //The UUID of Zoraxy, use for heading mod
-	HostVersion        string                                                            //The version of Zoraxy, use for heading mod
+	HostUUID           string                                                            //The UUID of Dunree, use for heading mod
+	HostVersion        string                                                            //The version of Dunree, use for heading mod
 	SessionSecret      string                                                            `json:"-"` //Key input for the CAPTCHA session signing (never serialised: /api/proxy/status marshals RouterOption). Empty = HostUUID (cluster deployments pass a key derived from the cluster secret)
-	Health             *cluster.HealthEndpoint                                           //Optional /.zoraxy/health endpoint, served on the proxy listeners before host routing
+	Health             *cluster.HealthEndpoint                                           //Optional /.dunree/health endpoint (also answered as /.zoraxy/health), served on the proxy listeners before host routing
 	Port               int                                                               //Incoming port
 	UseTls             bool                                                              //Use TLS to serve incoming requsts
 	MinTLSVersion      uint16                                                            //Minimum TLS version
@@ -112,7 +112,7 @@ type RouterOption struct {
 	AccessController     *access.Controller         //Blacklist / whitelist controller
 	StatisticCollector   *statistic.Collector       //Statistic collector for storing stats on incoming visitors
 	VisitorTracker       *visitors.Tracker          `json:"-"` //Optional: per client IP visitor list (who visited, when, via which CDN)
-	BlockLog             *blocklog.Log              `json:"-"` //Optional: bounded log of the requests Zoraxy rejected, and why
+	BlockLog             *blocklog.Log              `json:"-"` //Optional: bounded log of the requests Dunree rejected, and why
 	WebDirectory         string                     //The static web server directory containing the templates folder
 	LoadBalancer         *loadbalance.RouteManager  //Load balancer that handle load balancing of proxy target
 	PersistProxyEndpoint func(*ProxyEndpoint) error `json:"-"` //Optional, called to save an endpoint config after a basic auth hash upgrade

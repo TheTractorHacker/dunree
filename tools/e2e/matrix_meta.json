@@ -66,7 +66,7 @@
         934
       ],
       "evidence": "Real CF-Connecting-IP / Cloudflare IP ranges / Turnstile widget need Cloudflare in front of the proxy. The header handling itself is covered by client_ip_trust_and_spoofing.",
-      "needs": "A Cloudflare proxied hostname pointing at a Zoraxy with the Cloudflare ranges as trusted proxies; request through it and check the client IP in the access log."
+      "needs": "A Cloudflare proxied hostname pointing at a Dunree with the Cloudflare ranges as trusted proxies; request through it and check the client IP in the access log."
     },
     {
       "scenario": "captcha_widget_in_browser",
@@ -106,7 +106,7 @@
         120
       ],
       "evidence": "Only a fake following Sablier's documented HTTP contract; no Docker/Swarm/Kubernetes provider involved.",
-      "needs": "A Sablier instance with a sleeping container, wake it through Zoraxy and compare the waiting page and timing."
+      "needs": "A Sablier instance with a sleeping container, wake it through Dunree and compare the waiting page and timing."
     },
     {
       "scenario": "http3_quic_listener",

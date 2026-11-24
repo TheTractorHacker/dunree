@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
 )
 
 /*
@@ -27,7 +27,7 @@ import (
 	values the upstream sent, but never an admin header and never an existing Content-Security-Policy (frame-ancestors
 	is added as a further policy header only when the upstream policy has none).
 
-	Not covered: responses Zoraxy generates itself (block pages, error pages) and WebSocket upgrade responses.
+	Not covered: responses Dunree generates itself (block pages, error pages) and WebSocket upgrade responses.
 */
 
 const (
@@ -132,7 +132,7 @@ func adminDownstreamKeys(hr *HeaderRewriteRules) map[string]string {
 		return m
 	}
 	for _, h := range hr.UserDefinedHeaders {
-		if h != nil && h.Direction == rewrite.HeaderDirection_ZoraxyToDownstream {
+		if h != nil && h.Direction == rewrite.HeaderDirection_DunreeToDownstream {
 			m[strings.ToLower(h.Key)] = "a custom header rule sets it"
 		}
 	}

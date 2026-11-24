@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newRouterOn(t *testing.T, db *database.Database, uuid string, shared bool, idp *fakeIdP) *OAuth2Router {

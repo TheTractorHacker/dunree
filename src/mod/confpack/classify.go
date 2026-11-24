@@ -6,7 +6,7 @@ import (
 )
 
 // shareableRoots are the only conf locations a shareable export may take files from (an allow-list:
-// a file Zoraxy adds later stays out until it is listed here on purpose). Each still goes through
+// a file Dunree adds later stays out until it is listed here on purpose). Each still goes through
 // the never-export list and the redaction.
 var shareableRoots = []string{
 	"proxy", "redirect", "access", "streamproxy", "rules", "ruleset", "abuse", "trusted_proxies.json", "acme_conf.json",

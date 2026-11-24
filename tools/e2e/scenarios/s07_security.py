@@ -15,7 +15,7 @@ def burst(z, host, n, path="/", src=None, headers=None):
 @scenario("rate_limit", ["87", "726"])
 def rate_limit():
     """Per-rule rate limit with burst, per-client buckets, and per-path rate_limit path rules."""
-    with Zoraxy() as z, Backend(name="rl") as b:
+    with Dunree() as z, Backend(name="rl") as b:
         z.add_rule("rl.test", b.addr, rate=True, ratenum=5, rateburst=0)
         c = burst(z, "rl.test", 40)
         n429 = c.count(429)
@@ -54,7 +54,7 @@ def path_rules_bypass():
         p = posixpath.normpath("/" + p)
         return p == "/admin" or p.startswith("/admin/")
 
-    with Zoraxy() as z, Backend(name="pr") as b:
+    with Dunree() as z, Backend(name="pr") as b:
         z.add_rule("pr.test", b.addr)
         z.api("/api/proxy/networking/pathrules", ep="pr.test", rules=json.dumps(
             [{"Name": "no-admin", "MatchMode": "prefix", "Pattern": "/admin", "Action": "deny"}]))
@@ -78,7 +78,7 @@ def path_rules_bypass():
 @scenario("allowed_peers", ["761"])
 def allowed_peers():
     """Only listed direct peers may connect; forwarded headers do not influence the decision."""
-    with Zoraxy() as z, Backend(name="ap") as b:
+    with Dunree() as z, Backend(name="ap") as b:
         z.add_rule("ap.test", b.addr)
         z.api("/api/proxy/networking/peers", ep="ap.test", cidrs=json.dumps(["127.0.0.2/32"]))
         bad = z.req("ap.test", src="127.0.0.1", headers={"X-Forwarded-For": "127.0.0.2", "X-Real-Ip": "127.0.0.2"})
@@ -91,7 +91,7 @@ def allowed_peers():
 @scenario("header_rules_access", ["1356"])
 def header_rules_access():
     """Header rules gate access on a secret header (equals / regex / present), values masked in the API."""
-    with Zoraxy() as z, Backend(name="hr") as b:
+    with Dunree() as z, Backend(name="hr") as b:
         z.add_rule("hr.test", b.addr)
         z.api("/api/headerrules/set", ep="hr.test", rules=json.dumps(
             [{"Name": "X-Edge-Secret", "Match": "equals", "Values": ["s3cr3t-token"], "Action": "deny"}]))
@@ -112,7 +112,7 @@ def header_rules_access():
 @scenario("bot_rules", ["615"])
 def bot_rules():
     """Bot rules by User-Agent: category (AI crawler, scanner), custom substring, empty UA; per-rule opt-out."""
-    with Zoraxy() as z, Backend(name="bot") as b:
+    with Dunree() as z, Backend(name="bot") as b:
         z.add_rule("bot.test", b.addr)
         z.add_rule("nobot.test", b.addr)
         cfg = {"Enabled": True, "Categories": {"ai_crawler": {"Enabled": True, "Action": "block"}, "scanner": {"Enabled": True, "Action": "block"}},
@@ -135,7 +135,7 @@ def auto_ban():
     def h404(h, rec, b):
         send(h, 404 if rec["path"].startswith("/missing") else 200, "x")
 
-    with Zoraxy() as z, Backend(h404, name="ab") as b:
+    with Dunree() as z, Backend(h404, name="ab") as b:
         z.add_rule("ab.test", b.addr)
         cfg = z.get("/api/abuse/config")
         cfg.pop("RemoteTokenSet", None)

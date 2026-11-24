@@ -53,7 +53,7 @@ func TestTestUpstream(t *testing.T) {
 	if res.OK || res.Error == "" {
 		t.Fatalf("closed port must fail: %+v", res)
 	}
-	if res = testUpstream("unix:/nonexistent/zoraxy-test.sock"); res.OK {
+	if res = testUpstream("unix:/nonexistent/dunree-test.sock"); res.OK {
 		t.Fatalf("missing socket must fail: %+v", res)
 	}
 }

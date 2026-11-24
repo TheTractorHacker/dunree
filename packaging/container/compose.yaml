@@ -1,0 +1,41 @@
+# Dunree with Docker Compose.
+#
+#   docker compose -f packaging/container/compose.yaml up -d --build
+#
+# The image name is a variable because the project's registry is not decided:
+#   DUNREE_IMAGE=registry.example/dunree:1.0.0 docker compose -f packaging/container/compose.yaml up -d
+# Without DUNREE_IMAGE the image is built from this repository and called dunree:local.
+#
+# Coming from a container of the image this one replaces: stop it, keep its two folders and
+# mount them here unchanged.
+# The first Dunree start keeps a copy of the configuration next to it before anything is written.
+services:
+  dunree:
+    image: ${DUNREE_IMAGE:-dunree:local}
+    build:
+      context: ../..
+      dockerfile: packaging/container/Dockerfile
+      args:
+        # false = smaller and much faster to build; set to "true" if you use ZEROTIER=true below.
+        WITH_ZEROTIER: ${DUNREE_WITH_ZEROTIER:-false}
+    container_name: dunree
+    restart: unless-stopped
+    # Dunree needs up to 28 s for a clean stop (docker's default is 10 s).
+    stop_grace_period: 30s
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3 (QUIC) - only needed if QUIC is enabled in Global Settings
+      # Admin interface. Published on this machine only; put a proxy rule or an SSH tunnel in
+      # front of it, or change to "8000:8000" to reach it from the network.
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ${DUNREE_CONFIG_DIR:-./dunree/config}:/opt/dunree/config/
+      - ${DUNREE_PLUGIN_DIR:-./dunree/plugin}:/opt/dunree/plugin/
+      # The Docker socket is NOT mounted by default: read-write access to it is equivalent to
+      # root on the host. For the container picker use the read-only socket proxy instead:
+      #   docker compose -f compose.yaml -f compose.socket-proxy.yaml up -d
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      FASTGEOIP: "true"

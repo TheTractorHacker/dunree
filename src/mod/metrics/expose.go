@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // Emitter collects metric families for one scrape and writes them in the
@@ -130,6 +132,11 @@ func formatLabels(labels []string, extraName, extraValue string) string {
 	return b.String()
 }
 
+// LegacyNames reports whether every dunree_* family is written a second time as zoraxy_*
+// (the names of the Zoraxy releases Dunree is based on). It follows the one switch for the // legacy-compat
+// inherited names, wirecompat.EmitLegacy, which is on by default.
+func (r *Registry) LegacyNames() bool { return wirecompat.EmitLegacy() }
+
 // Write renders everything: built in request metrics, then collectors
 func (r *Registry) Write(w io.Writer) error {
 	e := newEmitter()
@@ -138,13 +145,36 @@ func (r *Registry) Write(w io.Writer) error {
 	bw := bufio.NewWriter(w)
 	names := append([]string(nil), e.order...)
 	sort.Strings(names)
-	for _, n := range names {
-		f := e.fams[n]
-		bw.WriteString("# HELP " + f.name + " " + strings.NewReplacer(`\`, `\\`, "\n", `\n`).Replace(f.help) + "\n")
-		bw.WriteString("# TYPE " + f.name + " " + f.typ + "\n")
+	helpEscaper := strings.NewReplacer(`\`, `\\`, "\n", `\n`)
+	writeFam := func(f *family, name string) {
+		bw.WriteString("# HELP " + name + " " + helpEscaper.Replace(f.help) + "\n")
+		bw.WriteString("# TYPE " + name + " " + f.typ + "\n")
 		for _, l := range f.lines {
+			if name != f.name {
+				//A sample line starts with the family name (plus _bucket, _sum or _count for a histogram)
+				l = name + l[len(f.name):]
+			}
 			bw.WriteString(l)
 			bw.WriteByte('\n')
+		}
+	}
+	for _, n := range names {
+		writeFam(e.fams[n], n)
+	}
+	if r.LegacyNames() {
+		// The same families under the names Zoraxy gave them, after the Dunree ones, so // legacy-compat
+		// dashboards and alert rules written for zoraxy_* keep their data. Same samples,
+		// same values, taken in the same scrape. A family a collector already added under
+		// the legacy name is not written twice.
+		for _, n := range names {
+			if !strings.HasPrefix(n, wirecompat.MetricPrefix) {
+				continue
+			}
+			legacy := wirecompat.LegacyMetricPrefix + n[len(wirecompat.MetricPrefix):]
+			if _, taken := e.fams[legacy]; taken {
+				continue
+			}
+			writeFam(e.fams[n], legacy)
 		}
 	}
 	return bw.Flush()
@@ -156,11 +186,11 @@ func (r *Registry) gather(e *Emitter) {
 	}
 	// Make the families exist even before the first request so scrapes of an
 	// idle server still carry HELP/TYPE lines
-	e.fam("zoraxy_http_requests_total", "Total HTTP requests by endpoint (proxy rule), status class and method.", "counter")
-	e.fam("zoraxy_http_requests_in_flight", "Requests currently being served, by endpoint.", "gauge")
-	e.fam("zoraxy_http_request_duration_seconds", "Request duration (headers received to response done) by endpoint.", "histogram")
-	e.fam("zoraxy_http_request_bytes_total", "Request body bytes received from clients, by endpoint.", "counter")
-	e.fam("zoraxy_http_response_bytes_total", "Response body bytes sent to clients, by endpoint.", "counter")
+	e.fam("dunree_http_requests_total", "Total HTTP requests by endpoint (proxy rule), status class and method.", "counter")
+	e.fam("dunree_http_requests_in_flight", "Requests currently being served, by endpoint.", "gauge")
+	e.fam("dunree_http_request_duration_seconds", "Request duration (headers received to response done) by endpoint.", "histogram")
+	e.fam("dunree_http_request_bytes_total", "Request body bytes received from clients, by endpoint.", "counter")
+	e.fam("dunree_http_response_bytes_total", "Response body bytes sent to clients, by endpoint.", "counter")
 
 	r.mu.RLock()
 	names := make([]string, 0, len(r.endpoints))
@@ -181,27 +211,27 @@ func (r *Registry) gather(e *Emitter) {
 		for ci, cn := range classNames {
 			for mi, mn := range methodNames {
 				if v := s.requests[ci][mi].Load(); v > 0 {
-					e.Counter("zoraxy_http_requests_total", "", float64(v), "endpoint", n, "status_class", cn, "method", mn)
+					e.Counter("dunree_http_requests_total", "", float64(v), "endpoint", n, "status_class", cn, "method", mn)
 				}
 			}
 		}
-		e.Gauge("zoraxy_http_requests_in_flight", "", float64(s.inflight.Load()), "endpoint", n)
-		e.Counter("zoraxy_http_request_bytes_total", "", float64(s.bytesIn.Load()), "endpoint", n)
-		e.Counter("zoraxy_http_response_bytes_total", "", float64(s.bytesOut.Load()), "endpoint", n)
+		e.Gauge("dunree_http_requests_in_flight", "", float64(s.inflight.Load()), "endpoint", n)
+		e.Counter("dunree_http_request_bytes_total", "", float64(s.bytesIn.Load()), "endpoint", n)
+		e.Counter("dunree_http_response_bytes_total", "", float64(s.bytesOut.Load()), "endpoint", n)
 		counts := make([]uint64, len(bounds)+1)
 		for i := range counts {
 			counts[i] = s.buckets[i].Load()
 		}
 		// cumulative count is derived from the buckets so _count == +Inf bucket
-		e.histogram("zoraxy_http_request_duration_seconds", "", bounds, counts, float64(s.durSumNs.Load())/1e9, []string{"endpoint", n})
+		e.histogram("dunree_http_request_duration_seconds", "", bounds, counts, float64(s.durSumNs.Load())/1e9, []string{"endpoint", n})
 	}
 
 	evNames := [numEvents]struct{ name, help, label string }{
-		EventRateLimited:      {"zoraxy_ratelimit_rejected_total", "Requests rejected by the endpoint rate limiter.", "reason"},
-		EventAccessBlocked:    {"zoraxy_access_blocked_total", "Requests blocked by an access rule (blacklist / whitelist).", "reason"},
-		EventCaptchaChallenge: {"zoraxy_captcha_challenges_total", "CAPTCHA challenges served.", "reason"},
-		EventCaptchaVerified:  {"zoraxy_captcha_verified_total", "CAPTCHA verifications that succeeded.", "reason"},
-		EventCaptchaFailed:    {"zoraxy_captcha_failed_total", "CAPTCHA verifications that failed.", "reason"},
+		EventRateLimited:      {"dunree_ratelimit_rejected_total", "Requests rejected by the endpoint rate limiter.", "reason"},
+		EventAccessBlocked:    {"dunree_access_blocked_total", "Requests blocked by an access rule (blacklist / whitelist).", "reason"},
+		EventCaptchaChallenge: {"dunree_captcha_challenges_total", "CAPTCHA challenges served.", "reason"},
+		EventCaptchaVerified:  {"dunree_captcha_verified_total", "CAPTCHA verifications that succeeded.", "reason"},
+		EventCaptchaFailed:    {"dunree_captcha_failed_total", "CAPTCHA verifications that failed.", "reason"},
 	}
 	for k := EventKind(0); k < numEvents; k++ {
 		v := &r.events[k]
@@ -223,7 +253,7 @@ func (r *Registry) gather(e *Emitter) {
 		v.mu.RUnlock()
 	}
 
-	e.Gauge("zoraxy_uptime_seconds", "Seconds since the metrics registry was created (process start).", r.Uptime().Seconds())
+	e.Gauge("dunree_uptime_seconds", "Seconds since the metrics registry was created (process start).", r.Uptime().Seconds())
 
 	r.collMu.RLock()
 	cs := append([]Collector(nil), r.collectors...)

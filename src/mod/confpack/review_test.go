@@ -16,7 +16,7 @@ import (
 // integrity, not who made the file
 func forgedShareable(t *testing.T, files map[string]string) []byte {
 	t.Helper()
-	m := Manifest{Format: ManifestFmt, SchemaVersion: 1, ConfigSchema: 1, Mode: ModeShareable, ZoraxyVersion: "t"}
+	m := Manifest{Format: ManifestFmt, SchemaVersion: 1, ConfigSchema: 1, Mode: ModeShareable, DunreeVersion: "t"}
 	out := map[string]string{}
 	for n, c := range files {
 		out[n] = c
@@ -334,7 +334,7 @@ func TestFullExportCanOmitTheManifestAndKeepsTheHistoricLayout(t *testing.T) {
 	_ = buf
 	raw := func(omit bool) []byte {
 		var b bytesBuffer
-		if _, err := WriteExport(&b, ExportOptions{ConfDir: conf, Mode: ModeFull, ZoraxyVersion: "t", OmitManifest: omit}); err != nil {
+		if _, err := WriteExport(&b, ExportOptions{ConfDir: conf, Mode: ModeFull, DunreeVersion: "t", OmitManifest: omit}); err != nil {
 			t.Fatal(err)
 		}
 		return b.Bytes()
@@ -342,7 +342,7 @@ func TestFullExportCanOmitTheManifestAndKeepsTheHistoricLayout(t *testing.T) {
 	plain := raw(true)
 	for _, n := range entryNames(openZip(t, plain)) {
 		if !strings.HasPrefix(n, "conf/") && n != DBEntry {
-			t.Errorf("entry %q would be rejected by a Zoraxy that predates the manifest", n)
+			t.Errorf("entry %q would be rejected by a Dunree that predates the manifest", n)
 		}
 		if strings.HasSuffix(n, ".tmp") {
 			t.Errorf("half written stamp exported: %s", n)

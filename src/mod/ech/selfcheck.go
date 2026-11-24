@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// SelfCheckResult is the outcome of a local ECH handshake against Zoraxy's own listener.
+// SelfCheckResult is the outcome of a local ECH handshake against Dunree's own listener.
 // It proves that the server decrypts the advertised config. It does NOT prove that any browser or resolver
 // will use ECH: that depends on the published DNS record and on the client.
 type SelfCheckResult struct {

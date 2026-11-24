@@ -3,8 +3,8 @@ package domainsniff
 /*
 	Domainsniff
 
-	This package contain codes that perform project / domain specific behavior in Zoraxy
-	If you want Zoraxy to handle a particular domain or open source project in a special way,
+	This package contain codes that perform project / domain specific behavior in Dunree
+	If you want Dunree to handle a particular domain or open source project in a special way,
 	you can add the checking logic here.
 
 */
@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // Check if the domain is reachable and return err if not reachable

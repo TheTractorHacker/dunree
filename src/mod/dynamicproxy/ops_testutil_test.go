@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
 )
 
 // newOpsTestRouter returns a router whose ProxyHandler serves host app.example.com through the

@@ -1,7 +1,7 @@
 # Keycloak and groups (OIDC)
 
 Answers upstream #775 ("how do I restrict an app to a Keycloak group, like oauth2-proxy `--allowed-group`").
-Zoraxy side: verified with the project's fake OIDC provider tests (`mod/auth/sso/oauth2/*_test.go`:
+Dunree side: verified with the project's fake OIDC provider tests (`mod/auth/sso/oauth2/*_test.go`:
 group allow-list, nested claim paths, header mapping). **Not tested against a real Keycloak**; the Keycloak
 screens below follow Keycloak's documentation and may differ slightly between versions.
 
@@ -20,7 +20,7 @@ screens below follow Keycloak's documentation and may differ slightly between ve
    * Add to ID token **ON**, Add to userinfo **ON**, Add to access token as you like
 4. Put users into groups (Groups menu), or assign realm roles if you prefer roles (below).
 
-## Zoraxy
+## Dunree
 
 SSO > **OAuth 2.0** (global settings; the provider is then chosen per proxy rule as *Authentication Provider: OAuth2*):
 
@@ -40,10 +40,10 @@ group claim at all the user is denied as well. Group membership is re-evaluated 
 
 ### Roles instead of groups
 
-Keycloak puts realm roles into `realm_access.roles`. Zoraxy supports dotted claim paths:
+Keycloak puts realm roles into `realm_access.roles`. Dunree supports dotted claim paths:
 *Allowed claim values* `realm_access.roles=app-admin,app-user` (any of the values; several rules separated by `;`
 must all match). Keycloak only adds that claim to the **access** token by default; add a *User Realm Role* mapper to the client
-with Token Claim Name `realm_access.roles`, *Add to ID token* **on** (and userinfo), otherwise Zoraxy does not see it.
+with Token Claim Name `realm_access.roles`, *Add to ID token* **on** (and userinfo), otherwise Dunree does not see it.
 Not verified against a real Keycloak.
 
 ## Limitation: one group list for all hosts
@@ -52,11 +52,11 @@ Not verified against a real Keycloak.
 same allow-list. Per-route group policies are on the roadmap (ROADMAP.md, section 4, "group-based policies per route").
 Until then, for different groups per application use one of:
 
-* **oauth2-proxy as Forward Auth** (one instance per group set, `--allowed-group`), Zoraxy Forward Auth address
+* **oauth2-proxy as Forward Auth** (one instance per group set, `--allowed-group`), Dunree Forward Auth address
   `http://oauth2-proxy:4180/oauth2/auth` and Response Headers `X-Auth-Request-User,X-Auth-Request-Email`. This is the
-  structure of the guide you linked; it works with Zoraxy's generic Forward Auth, but I did not test it here. Only
-  one Forward Auth server can be configured in Zoraxy at a time, so the multi-instance variant needs separate
-  Zoraxy nodes or a front proxy; treat it as a workaround, not a recommendation.
+  structure of the guide you linked; it works with Dunree's generic Forward Auth, but I did not test it here. Only
+  one Forward Auth server can be configured in Dunree at a time, so the multi-instance variant needs separate
+  Dunree nodes or a front proxy; treat it as a workaround, not a recommendation.
 * Keycloak itself: the *Authorization* policy of a client, or separate Keycloak clients/realms per audience, with
-  a second Zoraxy node, are heavier alternatives.
-* Zoraxy's own access rules (IP/country) combined with a single group for "may sign in at all".
+  a second Dunree node, are heavier alternatives.
+* Dunree's own access rules (IP/country) combined with a single group for "may sign in at all".

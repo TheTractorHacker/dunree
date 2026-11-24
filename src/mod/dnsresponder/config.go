@@ -1,5 +1,5 @@
 // Package dnsresponder is an opt-in, deliberately small authoritative DNS
-// responder for the hostnames Zoraxy proxies (a split-horizon helper: LAN clients
+// responder for the hostnames Dunree proxies (a split-horizon helper: LAN clients
 // resolve the proxied names straight to the proxy). It is NOT a general DNS server.
 //
 // Safety properties: off by default; binds only to an explicitly configured

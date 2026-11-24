@@ -1,24 +1,35 @@
 package plugins
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
+	"github.com/foleyit/dunree/mod/database"
 )
 
+// The list format of the Zoraxy plugin store, served by a local test server (no // legacy-compat
+// connection to any real store is made by the tests)
+const listFormatIndex = `[{"IconPath":"","PluginIntroSpect":{"id":"com.example.demo","name":"Demo","author":"test","version_major":1},"DownloadURLs":{"linux_amd64":"https://downloads.invalid/demo_linux_amd64"}}]`
+
+func listFormatServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(listFormatIndex)) }))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
 func TestUpdateDownloadablePluginList(t *testing.T) {
+	srv := listFormatServer(t)
 	mockManager := &Manager{
 		Options: &ManagerOptions{
 			DownloadablePluginCache: []*DownloadablePlugin{},
-			PluginStoreURLs:         []string{},
+			PluginStoreURLs:         []string{srv.URL + "/index2.json"},
 			Database: &database.Database{
 				Backend: &fakeBackend{},
 			},
 		},
 	}
-
-	// Inject a mock URL for testing
-	mockManager.Options.PluginStoreURLs = []string{"https://raw.githubusercontent.com/aroz-online/zoraxy-official-plugins/refs/heads/main/directories/index2.json"}
 
 	err := mockManager.UpdateDownloadablePluginList()
 	if err != nil {
@@ -35,6 +46,7 @@ func TestUpdateDownloadablePluginList(t *testing.T) {
 }
 
 func TestGetPluginListFromURL(t *testing.T) {
+	srv := listFormatServer(t)
 	mockManager := &Manager{
 		Options: &ManagerOptions{
 			DownloadablePluginCache: []*DownloadablePlugin{},
@@ -42,17 +54,13 @@ func TestGetPluginListFromURL(t *testing.T) {
 		},
 	}
 
-	pluginList, err := mockManager.getPluginListFromURL("https://raw.githubusercontent.com/aroz-online/zoraxy-official-plugins/refs/heads/main/directories/index2.json")
+	pluginList, err := mockManager.getPluginListFromURL(srv.URL + "/index2.json")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if len(pluginList) == 0 {
-		t.Fatalf("expected plugin list to be populated, but it was empty")
-	}
-
-	for _, plugin := range pluginList {
-		t.Logf("Plugin: %+v", plugin)
+	if len(pluginList) != 1 || pluginList[0].PluginIntroSpect.ID != "com.example.demo" || pluginList[0].Signature != SigUnsigned {
+		t.Fatalf("expected the plugin of the list, got %+v", pluginList)
 	}
 }
 

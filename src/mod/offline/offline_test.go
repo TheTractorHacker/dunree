@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/geodb"
-	"imuslab.com/zoraxy/mod/offline"
-	"imuslab.com/zoraxy/mod/offline/offlinetest"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/geodb"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/offline/offlinetest"
 )
 
 func TestCheck(t *testing.T) {

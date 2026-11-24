@@ -24,7 +24,7 @@ type Options struct {
 	MaxWait time.Duration
 	Now     func() time.Time
 	Logf    func(format string, a ...any)
-	// Reload makes the process pick up restored files (Zoraxy restarts itself).
+	// Reload makes the process pick up restored files (Dunree restarts itself).
 	Reload func() error
 	// Validate runs the loaders' own validators on a file that is about to be
 	// restored. Optional.

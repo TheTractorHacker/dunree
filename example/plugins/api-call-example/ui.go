@@ -7,12 +7,12 @@ import (
 	"net/http/httputil"
 	"strconv"
 
-	plugin "aroz.org/zoraxy/api-call-example/mod/zoraxy_plugin"
+	plugin "example.com/dunree/api-call-example/mod/dunree_plugin"
 )
 
-// callWithKey makes a GET call to Zoraxy with the API key of this plugin.
+// callWithKey makes a GET call to Dunree with the API key of this plugin.
 //
-// cfg.DoAPIRequest (SDK 1.2.0) builds the address from the port Zoraxy handed over
+// cfg.DoAPIRequest (SDK 1.2.0) builds the address from the port Dunree handed over
 // and sets the "Authorization: Bearer <api key>" header, so the key is not
 // handled here at all. It does not follow redirects and gives up after 30 seconds.
 func callWithKey(cfg *plugin.ConfigureSpec, endpoint string) (string, int, error) {
@@ -47,7 +47,7 @@ func allowedEndpoint(cfg *plugin.ConfigureSpec) (string, error) {
 func allowedEndpointInvalidKey(cfg *plugin.ConfigureSpec) (string, error) {
 	// Make an API call to the permitted endpoint with an invalid key.
 	// cfg.NewAPIRequest builds the same request as above without sending it; the
-	// header it set is then replaced by hand to show what Zoraxy answers.
+	// header it set is then replaced by hand to show what Dunree answers.
 	req, err := cfg.NewAPIRequest(http.MethodGet, "/plugin/api/access/list", nil)
 	if err != nil {
 		return "", fmt.Errorf("error creating request: %v", err)

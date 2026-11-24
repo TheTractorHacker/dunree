@@ -1,3 +1,3 @@
-module example.com/zoraxy/fork-ref-events
+module example.com/dunree/fork-ref-events
 
 go 1.23.6

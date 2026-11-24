@@ -12,18 +12,18 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
-	"imuslab.com/zoraxy/mod/errorpages"
-	"imuslab.com/zoraxy/mod/i18n"
-	"imuslab.com/zoraxy/mod/netutils"
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/utils"
-	"imuslab.com/zoraxy/mod/visitors"
-	"imuslab.com/zoraxy/mod/websocketproxy"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/foleyit/dunree/mod/i18n"
+	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/visitors"
+	"github.com/foleyit/dunree/mod/websocketproxy"
 )
 
 // Check if the request URI matches any of the proxy endpoint
@@ -174,7 +174,7 @@ func (h *ProxyHandler) hostRequest(w http.ResponseWriter, r *http.Request, targe
 		return
 	}
 	r.Header.Set("X-Forwarded-Host", r.Host)
-	r.Header.Set("X-Forwarded-Server", "zoraxy-"+h.Parent.Option.HostUUID)
+	r.Header.Set("X-Forwarded-Server", dpcore.ForwardedServer(h.Parent.Option.HostUUID))
 	reqHostname := r.Host
 
 	/* Load balancing */
@@ -355,7 +355,7 @@ func (h *ProxyHandler) vdirRequest(w http.ResponseWriter, r *http.Request, targe
 	rewriteURL := h.Parent.rewriteURL(target.MatchingPath, r.RequestURI)
 	r.URL, _ = url.Parse(rewriteURL)
 	r.Header.Set("X-Forwarded-Host", r.Host)
-	r.Header.Set("X-Forwarded-Server", "zoraxy-"+h.Parent.Option.HostUUID)
+	r.Header.Set("X-Forwarded-Server", dpcore.ForwardedServer(h.Parent.Option.HostUUID))
 
 	if isWebSocketRequest(r) {
 		if target.parent.DisableWebSocket {
@@ -600,7 +600,7 @@ func serveProxyRequestError(w http.ResponseWriter, r *http.Request, statusCode i
 	ref := ""
 	if templateType == ErrorTemplateForbidden {
 		if ref = router.requestRef(r); ref != "" {
-			w.Header().Set(RefHeader, blocklog.FormatRef(ref))
+			setRefHeader(w.Header(), blocklog.FormatRef(ref))
 		}
 	}
 	w.WriteHeader(statusCode)
@@ -635,7 +635,7 @@ func localizedPage(r *http.Request, page []byte) []byte {
 	return i18n.TranslatePage(page, lang)
 }
 
-// recordBlocked adds a request that Zoraxy rejected to the blocked-request log (with the reason).
+// recordBlocked adds a request that Dunree rejected to the blocked-request log (with the reason).
 // Same privacy rules as the visitor list: nothing is kept for rules that opted out of statistics,
 // the statistics exclusion list applies, and the query string only when the visitor list keeps it.
 func (router *Router) recordBlocked(r *http.Request, statusCode int, forwardType, upstreamHostname string, endpoint *ProxyEndpoint, clientIP, detail, ruleID string) {

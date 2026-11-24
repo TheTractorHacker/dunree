@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/offline"
-	"imuslab.com/zoraxy/mod/offline/offlinetest"
+	"github.com/foleyit/dunree/mod/offline"
+	"github.com/foleyit/dunree/mod/offline/offlinetest"
 )
 
 func TestUpdateCheckDoesNotDialOffline(t *testing.T) {

@@ -32,8 +32,8 @@ func (m *Manager) GenerateSelfSignedCertificate(cn string, sans []string, certFi
 		SerialNumber: big.NewInt(time.Now().UnixNano()),
 		Subject: pkix.Name{
 			CommonName:         cn,                   // Common Name for the certificate
-			Organization:       []string{"aroz.org"}, // Organization name
-			OrganizationalUnit: []string{"Zoraxy"},   // Organizational Unit
+			Organization:       []string{"Foley IT"}, // Organization name
+			OrganizationalUnit: []string{"Dunree"},   // Organizational Unit
 			Country:            []string{"US"},       // Country code
 		},
 		NotBefore:             time.Now(),

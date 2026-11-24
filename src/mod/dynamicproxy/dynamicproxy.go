@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/metrics"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,13 +20,14 @@ import (
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
-	Zoraxy Dynamic Proxy
+	Dunree Dynamic Proxy
 */
 
 // configureHTTP2 applies the HTTP/2 options to the TLS listener.
@@ -476,11 +477,11 @@ func (router *Router) handleCaptchaGating(w http.ResponseWriter, r *http.Request
 	// cannot satisfy a CIDR exception or be reported to the CAPTCHA provider
 	clientIP := router.GetClientIPForEndpoint(r, sep)
 
-	if r.URL.Path == captcha.AltchaChallengePath && cc.Provider == captcha.ProviderAltcha {
+	if captcha.IsAltchaChallengePath(r.URL.Path) && cc.Provider == captcha.ProviderAltcha {
 		captcha.HandleAltchaChallenge(w, r, cc)
 		return true, false
 	}
-	if r.URL.Path == captcha.VerifyPath {
+	if captcha.IsVerifyPath(r.URL.Path) {
 		captcha.HandleVerification(w, r, cc, router.captchaSessionStore, clientIP)
 		router.recordCaptchaVerification(w, sep)
 		if !captchaVerifiedOK(w) {
@@ -501,7 +502,7 @@ func (router *Router) handleCaptchaGating(w http.ResponseWriter, r *http.Request
 		return false, false
 	}
 	// Tell the client why it is being challenged again (helps debug re-challenges)
-	w.Header().Set("X-Zoraxy-Captcha-Reason", sessionReason)
+	wirecompat.SetHeader(w.Header(), "Captcha-Reason", sessionReason)
 
 	domain := r.Host
 	if domain == "" {
@@ -685,7 +686,7 @@ func (router *Router) UpdateSecondaryListeners() {
 }
 
 // ErrProxyStopping is returned by StartProxyService and Restart once the process stop has begun.
-var ErrProxyStopping = errors.New("zoraxy is shutting down, the proxy service cannot be started")
+var ErrProxyStopping = errors.New("Dunree is shutting down, the proxy service cannot be started")
 
 // StopProxyServiceWithin stops the proxy like StopProxyService but drains in-flight requests
 // for at most `drain` on every listener (main, HTTP/3, port 80 redirector, secondary ports) and
@@ -1028,7 +1029,7 @@ func (router *Router) handlePort80Request(w http.ResponseWriter, r *http.Request
 }
 
 // proxyProtocolSourceChecker decides whether the peer of a new connection may announce a client address with a
-// PROXY header: trusted proxies, and loopback / private / link-local peers (a load balancer next to Zoraxy).
+// PROXY header: trusted proxies, and loopback / private / link-local peers (a load balancer next to Dunree).
 // Headers from any other peer are consumed but ignored, so an internet client cannot choose its own address.
 func proxyProtocolSourceChecker(isTrusted func(ip string) bool) proxyproto.SourceChecker {
 	return func(a net.Addr) (bool, error) {

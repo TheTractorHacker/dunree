@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -20,7 +20,7 @@ import (
 
 */
 
-// systemWideLogger is the optional Zoraxy system-wide logger. When not set,
+// systemWideLogger is the optional Dunree system-wide logger. When not set,
 // messages fall back to stdout via the standard log package.
 var systemWideLogger *logger.Logger
 
@@ -55,7 +55,7 @@ type LogicalDisk struct {
 	FreeSpace   string
 }
 
-type ArOZInfo struct {
+type HostInfo struct {
 	BuildVersion string
 	DeviceVendor string
 	DeviceModel  string
@@ -67,10 +67,10 @@ type ArOZInfo struct {
 }
 
 type Server struct {
-	hostInfo ArOZInfo
+	hostInfo HostInfo
 }
 
-func NewInfoServer(a ArOZInfo) *Server {
+func NewInfoServer(a HostInfo) *Server {
 	return &Server{
 		hostInfo: a,
 	}
@@ -90,7 +90,7 @@ func PrintSystemHardwareDebugMessage() {
 	}
 }
 
-func (s *Server) GetArOZInfo(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetHostInfo(w http.ResponseWriter, r *http.Request) {
 	var jsonData []byte
 	jsonData, err := json.Marshal(s.hostInfo)
 	if err != nil {
@@ -100,7 +100,7 @@ func (s *Server) GetArOZInfo(w http.ResponseWriter, r *http.Request) {
 
 	loadImage, _ := utils.GetBool(r, "icon")
 	if !loadImage {
-		t := ArOZInfo{}
+		t := HostInfo{}
 		json.Unmarshal(jsonData, &t)
 		t.VendorIcon = ""
 		jsonData, _ = json.Marshal(t)

@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // PluginAPIKey represents an API key for a plugin
 type PluginAPIKey struct {
 	PluginID           string
 	APIKey             string
-	PermittedEndpoints []zoraxy_plugin.PermittedAPIEndpoint // List of permitted API endpoints
+	PermittedEndpoints []dunree_plugin.PermittedAPIEndpoint // List of permitted API endpoints
 	CreatedAt          time.Time
 }
 
@@ -34,7 +34,7 @@ func NewAPIKeyManager() *APIKeyManager {
 }
 
 // GenerateAPIKey generates a new API key for a plugin
-func (m *APIKeyManager) GenerateAPIKey(pluginID string, permittedEndpoints []zoraxy_plugin.PermittedAPIEndpoint) (*PluginAPIKey, error) {
+func (m *APIKeyManager) GenerateAPIKey(pluginID string, permittedEndpoints []dunree_plugin.PermittedAPIEndpoint) (*PluginAPIKey, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -95,7 +95,7 @@ func (m *APIKeyManager) ValidateAPIKeyForEndpoint(endpoint string, method string
 // SetPermittedEndpointsForPlugin replaces the endpoints every live API key of a
 // plugin may call, and returns how many keys were changed. Used when an
 // administrator approves or withdraws a permission while the plugin is running.
-func (m *APIKeyManager) SetPermittedEndpointsForPlugin(pluginID string, permittedEndpoints []zoraxy_plugin.PermittedAPIEndpoint) int {
+func (m *APIKeyManager) SetPermittedEndpointsForPlugin(pluginID string, permittedEndpoints []dunree_plugin.PermittedAPIEndpoint) int {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -107,7 +107,7 @@ func (m *APIKeyManager) SetPermittedEndpointsForPlugin(pluginID string, permitte
 		// A new record, never a write into the old one: a request that is being
 		// checked right now reads the old record without the lock
 		next := *pluginAPIKey
-		next.PermittedEndpoints = append([]zoraxy_plugin.PermittedAPIEndpoint(nil), permittedEndpoints...)
+		next.PermittedEndpoints = append([]dunree_plugin.PermittedAPIEndpoint(nil), permittedEndpoints...)
 		m.keys[apiKey] = &next
 		changed++
 	}

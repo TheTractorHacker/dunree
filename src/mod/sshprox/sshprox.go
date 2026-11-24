@@ -13,17 +13,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/reverseproxy"
+	"github.com/foleyit/dunree/mod/sshprox/wintty"
+	"github.com/foleyit/dunree/mod/utils"
+	"github.com/foleyit/dunree/mod/websocketproxy"
 	"github.com/google/uuid"
-	"imuslab.com/zoraxy/mod/reverseproxy"
-	"imuslab.com/zoraxy/mod/sshprox/wintty"
-	"imuslab.com/zoraxy/mod/utils"
-	"imuslab.com/zoraxy/mod/websocketproxy"
 )
 
 /*
 	SSH Proxy
 
-	This is a tool to bind gotty into Zoraxy
+	This is a tool to bind gotty into Dunree
 	so that you can do something similar to
 	online ssh terminal.
 

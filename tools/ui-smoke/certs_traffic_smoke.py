@@ -405,7 +405,7 @@ def certs_traffic_ui(pg, ctx):
                         expanded: document.getElementById('sRefPickBtn').getAttribute('aria-expanded'), focus: (document.activeElement || {}).id || (document.activeElement || {}).tagName,
                         focusInPop: document.getElementById('sRefPick').contains(document.activeElement),
                         hidden: vis(document.getElementById('sRefHidden')) ? document.getElementById('sRefHidden').innerText.replace(/\\s+/g, ' ').trim() : '',
-                        share: document.getElementById('sRefWhyShare').innerText, stored: (() => { try { return localStorage.getItem('zoraxy.stats.refwhy'); } catch (e) { return 'n/a'; } })()}; }""")
+                        share: document.getElementById('sRefWhyShare').innerText, stored: (() => { try { return localStorage.getItem('dunree.stats.refwhy'); } catch (e) { return 'n/a'; } })()}; }""")
 
         def open_stats_again():
             pg.reload()

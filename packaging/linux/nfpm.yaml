@@ -1,0 +1,68 @@
+# nfpm configuration for the Dunree .deb and .rpm packages (https://nfpm.goreleaser.com).
+# packaging/build_packages.sh fills in the four ${DUNREE_...} placeholders itself and gives nfpm
+# the result, so nothing here depends on which fields nfpm expands:
+#   DUNREE_VERSION   package version, e.g. 1.0.0-beta.1
+#   DUNREE_ARCH      nfpm architecture: amd64, arm64, arm6, 386, riscv64, mipsle
+#   DUNREE_BINARY    path of the dunree binary built for that architecture
+#   DUNREE_ROOT      path of the repository
+name: dunree
+arch: ${DUNREE_ARCH}
+platform: linux
+version: ${DUNREE_VERSION}
+version_schema: semver
+section: net
+priority: optional
+maintainer: Foley IT
+vendor: Foley IT
+license: AGPL-3.0-only
+description: |-
+  Reverse proxy and web gateway
+  Dunree is a reverse proxy and web gateway with a web admin interface:
+  HTTP and stream proxying, TLS certificates (ACME), access control,
+  a web application firewall and plugins. Based on Zoraxy.
+
+contents:
+  - src: ${DUNREE_BINARY}
+    dst: /usr/bin/dunree
+    file_info:
+      mode: 0755
+  - src: ${DUNREE_ROOT}/packaging/linux/dunree-package.service
+    dst: /usr/lib/systemd/system/dunree.service
+    file_info:
+      mode: 0644
+  - src: ${DUNREE_ROOT}/packaging/linux/dunree.default
+    dst: /etc/default/dunree
+    type: config|noreplace
+    file_info:
+      mode: 0644
+  # Data folder: database, private keys and tokens. Root only.
+  - dst: /var/lib/dunree
+    type: dir
+    file_info:
+      mode: 0750
+  - src: ${DUNREE_ROOT}/LICENSE
+    dst: /usr/share/doc/dunree/LICENSE
+    file_info:
+      mode: 0644
+  - src: ${DUNREE_ROOT}/NOTICE
+    dst: /usr/share/doc/dunree/NOTICE
+    file_info:
+      mode: 0644
+  - src: ${DUNREE_ROOT}/THIRD_PARTY_NOTICES.md
+    dst: /usr/share/doc/dunree/THIRD_PARTY_NOTICES.md
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: ${DUNREE_ROOT}/packaging/linux/scripts/postinstall.sh
+  preremove: ${DUNREE_ROOT}/packaging/linux/scripts/preremove.sh
+  postremove: ${DUNREE_ROOT}/packaging/linux/scripts/postremove.sh
+
+# Recommended, not required: the binary also runs in a container without systemd.
+recommends:
+  - systemd
+  - ca-certificates
+
+rpm:
+  group: System Environment/Daemons
+  summary: Reverse proxy and web gateway

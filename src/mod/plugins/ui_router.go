@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // HandlePluginUI handles the request to the plugin UI
@@ -21,7 +22,7 @@ func (m *Manager) HandlePluginUI(pluginID string, w http.ResponseWriter, r *http
 	if m.Settings().IsolatePluginUI {
 		// Plugin pages are isolated (plugin safety settings): under the admin origin a
 		// plugin page would run with the session of the administrator
-		writePluginUIError(w, http.StatusForbidden, "Plugin pages are isolated", "Plugin pages are served from an address of their own. Open the plugin from the side menu of the Zoraxy admin page.")
+		writePluginUIError(w, http.StatusForbidden, "Plugin pages are isolated", "Plugin pages are served from an address of their own. Open the plugin from the side menu of the Dunree admin page.")
 		return
 	}
 	m.servePluginUI(plugin, w, r, "/plugin.ui/"+plugin.Spec.ID, false)
@@ -45,18 +46,18 @@ func (m *Manager) servePluginUI(plugin *Plugin, w http.ResponseWriter, r *http.R
 	}
 	if !plugin.beginCapture() {
 		w.Header().Set("Retry-After", "30")
-		writePluginUIError(w, http.StatusServiceUnavailable, "The plugin is not answering", "Several requests to the plugin failed in a row. Zoraxy tries it again in a moment.")
+		writePluginUIError(w, http.StatusServiceUnavailable, "The plugin is not answering", "Several requests to the plugin failed in a row. Dunree tries it again in a moment.")
 		return
 	}
 
 	upstreamOrigin := "127.0.0.1:" + strconv.Itoa(port)
-	upstreamHeaders := [][]string{{"X-Zoraxy-Csrf", m.Options.CSRFTokenGen(r)}}
+	upstreamHeaders := hostHeaders("Csrf", m.Options.CSRFTokenGen(r))
 	if isolated {
 		// Nothing of the admin session: no cookie, no credentials, no CSRF token
-		for _, h := range []string{"Cookie", "Authorization", "Proxy-Authorization", "X-Csrf-Token", "X-Zoraxy-Csrf"} {
+		for _, h := range []string{"Cookie", "Authorization", "Proxy-Authorization", "X-Csrf-Token", wirecompat.Header("Csrf"), wirecompat.LegacyHeader("Csrf")} {
 			r.Header.Del(h)
 		}
-		upstreamHeaders = [][]string{{"X-Zoraxy-Ui-Isolated", "true"}}
+		upstreamHeaders = hostHeaders("Ui-Isolated", "true")
 	}
 
 	//Rewrite the request path to the plugin UI path
@@ -76,7 +77,7 @@ func (m *Manager) servePluginUI(plugin *Plugin, w http.ResponseWriter, r *http.R
 		ProxyDomain:     upstreamOrigin,
 		PathPrefix:      matchingPath,
 		AllowUpgrade:    true,
-		Version:         m.Options.SystemConst.ZoraxyVersion,
+		Version:         m.Options.SystemConst.DunreeVersion,
 		UpstreamHeaders: upstreamHeaders,
 	}
 	if isolated {
@@ -101,6 +102,6 @@ func (m *Manager) servePluginUI(plugin *Plugin, w http.ResponseWriter, r *http.R
 		writePluginUIError(w, status, "The plugin did not answer in time", "The plugin is running but its page did not answer within the capture timeout set for it.")
 		return
 	}
-	writePluginUIError(w, http.StatusBadGateway, "The page of the plugin could not be loaded", "Zoraxy could not reach the plugin. It may have stopped or it may not be listening yet.")
+	writePluginUIError(w, http.StatusBadGateway, "The page of the plugin could not be loaded", "Dunree could not reach the plugin. It may have stopped or it may not be listening yet.")
 
 }

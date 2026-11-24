@@ -957,7 +957,7 @@
                 $("#serverstatus").addClass("green");
                 $("#statusTitle").text("Online");
                 $("#rpStatusIcon").attr("class", "white circle check icon");
-                $("#statusText").text("Zoraxy is listening on port " + data.Option.Port);
+                $("#statusText").text("Dunree is listening on port " + data.Option.Port);
             }else{
                 $("#startbtn").removeClass("disabled");
                 $("#stopbtn").addClass("disabled");
@@ -1940,12 +1940,12 @@
     var frame = document.getElementById("trafficFlowDiagram");
     function lsGet(k){ try { return zxStore.get(k); } catch (e) { return null; } }
     function lsSet(k, v){ try { zxStore.set(k, v); } catch (e) {} }
-    function tell(msg){ try { frame.contentWindow.postMessage(Object.assign({type: "zoraxy-diagram"}, msg), window.location.origin); } catch (e) {} }
+    function tell(msg){ try { frame.contentWindow.postMessage(Object.assign({type: "dunree-diagram"}, msg), window.location.origin); } catch (e) {} }
     function syncDiagramButtons(){
-        var animOn = lsGet("zoraxy_trafficflow_anim") !== "off";
+        var animOn = lsGet("dunree_trafficflow_anim") !== "off";
         $("#diagramAnimBtn i").attr("class", (animOn ? "pause" : "play") + " icon");
         $("#diagramAnimBtn span").text(animOn ? "Pause animation" : "Resume animation");
-        var hidden = lsGet("zoraxy_status_diagram") === "hidden";
+        var hidden = lsGet("dunree_status_diagram") === "hidden";
         $("#diagramHideBtn i").attr("class", (hidden ? "eye" : "eye slash") + " icon");
         $("#diagramHideBtn span").text(hidden ? "Show" : "Hide");
         $("#trafficFlowDiagramWrapper").toggle(!hidden);
@@ -1955,17 +1955,17 @@
         else if (!frame.getAttribute("src")) frame.setAttribute("src", frame.getAttribute("data-src"));
     }
     $("#diagramAnimBtn").on("click", function(){
-        var on = lsGet("zoraxy_trafficflow_anim") === "off";
-        lsSet("zoraxy_trafficflow_anim", on ? "on" : "off");
+        var on = lsGet("dunree_trafficflow_anim") === "off";
+        lsSet("dunree_trafficflow_anim", on ? "on" : "off");
         tell({anim: on});
         syncDiagramButtons();
     });
-    $("#diagramHideBtn").on("click", function(){ lsSet("zoraxy_status_diagram", lsGet("zoraxy_status_diagram") === "hidden" ? "shown" : "hidden"); syncDiagramButtons(); syncTune(); });
-    $("#diagramShowLink").on("click", function(e){ e.preventDefault(); lsSet("zoraxy_status_diagram", "shown"); syncDiagramButtons(); syncTune(); });
-    window.addEventListener("storage", function(e){ if (e.key === "zoraxy_trafficflow_anim") syncDiagramButtons(); });
+    $("#diagramHideBtn").on("click", function(){ lsSet("dunree_status_diagram", lsGet("dunree_status_diagram") === "hidden" ? "shown" : "hidden"); syncDiagramButtons(); syncTune(); });
+    $("#diagramShowLink").on("click", function(e){ e.preventDefault(); lsSet("dunree_status_diagram", "shown"); syncDiagramButtons(); syncTune(); });
+    window.addEventListener("storage", function(e){ if (e.key === "dunree_trafficflow_anim") syncDiagramButtons(); });
 
     /* ---- Tune panel: avg / peak per rule and the busiest client against the rate limit (GET /api/stats/livetune) ---- */
-    var tuneOpen = lsGet("zoraxy_trafficflow_tune") === "open", tuneWin = lsGet("zoraxy_trafficflow_tunewin") || "1m", tuneTimer = null, tuneBusy = false, tuneLast = null;
+    var tuneOpen = lsGet("dunree_trafficflow_tune") === "open", tuneWin = lsGet("dunree_trafficflow_tunewin") || "1m", tuneTimer = null, tuneBusy = false, tuneLast = null;
     var TUNE_WINDOWS = [["10s", t("10 s"), 10], ["1m", t("1 min"), 60], ["5m", t("5 min"), 300], ["1h", t("1 h"), 3600]];
     function tf(s){ var a = Array.prototype.slice.call(arguments, 1); return typeof window.tf === "function" ? window.tf.apply(null, [s].concat(a)) : s.replace(/\{(\d+)\}/g, function(m, n){ return a[+n] !== undefined ? a[+n] : m; }); }
     if (!TUNE_WINDOWS.some(function(w){ return w[0] === tuneWin; })) tuneWin = "1m";
@@ -2059,7 +2059,7 @@
         var sw = el("span", "tuneWin"); sw.setAttribute("role", "group"); sw.setAttribute("aria-label", t("Window"));
         TUNE_WINDOWS.forEach(function(w){
             var b = el("button", "", w[1]); b.type = "button"; b.setAttribute("aria-pressed", w[0] === tuneWin ? "true" : "false");
-            b.addEventListener("click", function(){ tuneWin = w[0]; lsSet("zoraxy_trafficflow_tunewin", tuneWin); tuneTick(true); });
+            b.addEventListener("click", function(){ tuneWin = w[0]; lsSet("dunree_trafficflow_tunewin", tuneWin); tuneTick(true); });
             sw.appendChild(b);
         });
         bar.appendChild(sw);
@@ -2088,7 +2088,7 @@
         if (anyNoLimit) P.appendChild(el("div", "tuneMuted tuneFoot", t("Per-client rates are only measured while a rate limit is enabled on the rule.")));
         P.appendChild(el("div", "tuneMuted tuneFoot", t("Peaks are the busiest 5 second stretch. Suggestions are hints only and are never applied.")));
     }
-    function tuneActive(){ return tuneOpen && onScreen() && lsGet("zoraxy_status_diagram") !== "hidden"; }
+    function tuneActive(){ return tuneOpen && onScreen() && lsGet("dunree_status_diagram") !== "hidden"; }
     function tuneTick(force){
         if (tuneBusy || (!force && !tuneActive())) return;
         tuneBusy = true;
@@ -2101,14 +2101,14 @@
         });
     }
     function syncTune(){
-        var hidden = lsGet("zoraxy_status_diagram") === "hidden";
+        var hidden = lsGet("dunree_status_diagram") === "hidden";
         var P = document.getElementById("tunePanel");
         P.hidden = !tuneOpen || hidden;
         $("#diagramTuneBtn").attr("aria-expanded", tuneOpen && !hidden ? "true" : "false").toggle(!hidden);
         if (tuneTimer) { clearInterval(tuneTimer); tuneTimer = null; }
         if (tuneOpen && !hidden) { tuneTick(true); tuneTimer = setInterval(function(){ tuneTick(false); }, 5000); }
     }
-    $("#diagramTuneBtn").on("click", function(){ tuneOpen = !tuneOpen; lsSet("zoraxy_trafficflow_tune", tuneOpen ? "open" : "closed"); syncTune(); });
+    $("#diagramTuneBtn").on("click", function(){ tuneOpen = !tuneOpen; lsSet("dunree_trafficflow_tune", tuneOpen ? "open" : "closed"); syncTune(); });
 
     // The dashes freeze after 45 s without mouse / keyboard activity (a dashboard left open on a
     // second monitor should not burn CPU) and move again as soon as someone touches the page.

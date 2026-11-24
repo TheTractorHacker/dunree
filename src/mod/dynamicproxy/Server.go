@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/errorpages"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/ruleset"
+	"github.com/foleyit/dunree/mod/errorpages"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/ruleset"
 )
 
 /*
@@ -35,7 +35,7 @@ import (
 */
 
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	stripInternalHeaders(r) //nothing a client sends may pose as a value Zoraxy keeps on the request
+	stripInternalHeaders(r) //nothing a client sends may pose as a value Dunree keeps on the request
 	h.Parent.echObserve(r)
 	if h.Parent.Option.Metrics.Enabled() {
 		var done func()
@@ -330,7 +330,7 @@ func (h *ProxyHandler) runEndpointChain(w http.ResponseWriter, r *http.Request, 
 	}
 
 	/* Plugin pre_auth stage: bot filters etc, before WAF / captcha / auth */
-	if h.Parent.routePluginStage(w, r, sep, zoraxyPlugin.HookStagePreAuth) {
+	if h.Parent.routePluginStage(w, r, sep, dunreePlugin.HookStagePreAuth) {
 		return true
 	}
 
@@ -403,5 +403,5 @@ func (router *Router) routePlugin(w http.ResponseWriter, r *http.Request, sep *P
 		//Test seam, a real plugin.Manager needs running plugin processes
 		return router.pluginRouteHook(w, r, sep)
 	}
-	return router.routePluginStage(w, r, sep, zoraxyPlugin.HookStagePostAuth)
+	return router.routePluginStage(w, r, sep, dunreePlugin.HookStagePostAuth)
 }

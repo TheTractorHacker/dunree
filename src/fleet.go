@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"imuslab.com/zoraxy/mod/cluster"
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
 )
 
 /*

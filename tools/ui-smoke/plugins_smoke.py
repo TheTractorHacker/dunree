@@ -448,25 +448,25 @@ def plugins_mock_part(pg, ok, shot, no_injection, row_text, badge, open_details,
 
         # ---- phase 2: permissions and contract in the list, the Details row and the safety settings
         health = pg.evaluate(PLUGINS_HEALTH, hid)
-        if "1 API permission waits for your approval (not granted)" not in health or "Built for a newer Zoraxy: may not work" not in health:
+        if "1 API permission waits for your approval (not granted)" not in health or "Built for a newer Dunree: may not work" not in health:
             fail("permissions", f"the Health column must say that a permission waits for approval and that the plugin is of a newer contract: {health!r}")
-        if "API permission" in pg.evaluate(PLUGINS_HEALTH, cid) or "newer Zoraxy" in pg.evaluate(PLUGINS_HEALTH, cid):
+        if "API permission" in pg.evaluate(PLUGINS_HEALTH, cid) or "newer Dunree" in pg.evaluate(PLUGINS_HEALTH, cid):
             fail("permissions", "the Health column of a plugin without permissions and without a contract version says something about them")
         alert = pg.evaluate("() => { const a = document.querySelector('#pluginAlerts [data-alert=permissions]'); return a ? a.innerText : ''; }")
-        if "1 plugin asks for Zoraxy API permissions you have not approved" not in alert or "Hostile <img src=x onerror=window.__xss=1>" not in alert or "not granted until you approve" not in alert:
+        if "1 plugin asks for Dunree API permissions you have not approved" not in alert or "Hostile <img src=x onerror=window.__xss=1>" not in alert or "not granted until you approve" not in alert:
             fail("permissions", f"the notice about permissions nobody approved is missing or wrong: {alert!r}")
         else:
             ok("Health column and notice: a permission waits for approval, plugin of a newer contract")
         # A refused contract version: "not started" only when a start was refused
         refused_lines = pg.evaluate("""() => ["running", "failed_to_start", "stopped"].map(state =>
             pluginHealthInfo({Status: {State: state, Policy: {}, Counters: {}, Contract: {State: "unsupported", Refused: true, APIVersion: 7}}})
-              .lines.map(l => l.text).filter(x => x.indexOf("newer Zoraxy") >= 0).join("|"))""")
-        if refused_lines != ["Built for a newer Zoraxy: still running, will not be started again", "Built for a newer Zoraxy: not started", "Built for a newer Zoraxy: will not be started"]:
+              .lines.map(l => l.text).filter(x => x.indexOf("newer Dunree") >= 0).join("|"))""")
+        if refused_lines != ["Built for a newer Dunree: still running, will not be started again", "Built for a newer Dunree: not started", "Built for a newer Dunree: will not be started"]:
             fail("contract", f"Health column of a plugin of a refused contract version (running, failed to start, stopped): {refused_lines!r}")
         else:
             ok("Health column: a running plugin of a refused contract version is not called 'not started'")
         d = detail_text(hid)
-        if "Plugin contract" not in d or "Version 7. This Zoraxy supports 0 to 1" not in d:
+        if "Plugin contract" not in d or "Version 7. This Dunree supports 0 to 1" not in d:
             fail("contract", f"the Details row does not explain the contract version: {d[:300]!r}")
         p = plugins_perms(pg, hid, lambda x: len(x["rows"]) == 2)
         if not p or len(p["rows"]) != 2:
@@ -478,7 +478,7 @@ def plugins_mock_part(pg, ok, shot, no_injection, row_text, badge, open_details,
             if (r0["endpoint"], r0["badge"], r0["button"]) != ("/plugin/api/access/list", "Approved", "Withdraw") or \
                (r1["method"], r1["endpoint"], r1["badge"], r1["button"]) != ("POST", PLUGINS_HOSTILE_ENDPOINT, "Waiting for approval, not granted", "Approve"):
                 fail("permissions", f"rows of the permissions block: {p['rows']!r}")
-            for literal in ("Zoraxy API permissions", "POST " + PLUGINS_HOSTILE_ENDPOINT, "List rules <img src=x onerror=window.__xss=22>", "\"quoted\" </code><script>window.__xss=23</script>",
+            for literal in ("Dunree API permissions", "POST " + PLUGINS_HOSTILE_ENDPOINT, "List rules <img src=x onerror=window.__xss=22>", "\"quoted\" </code><script>window.__xss=23</script>",
                             "Your approval is required", "installed before permissions were tracked", "Approve the 1 permission shown as not approved"):
                 if literal not in p["text"]:
                     fail("permissions", f"{literal!r} is not shown (as text) in the permissions block: {p['text'][:500]!r}")
@@ -506,7 +506,7 @@ def plugins_mock_part(pg, ok, shot, no_injection, row_text, badge, open_details,
                 ok("permissions block: endpoints and reasons as text, Approve / Approve all / Withdraw post exactly what is shown")
             pg.wait_for_timeout(500)
         p = plugins_perms(pg, cid, lambda x: "does not ask" in x["text"])
-        if not p or "This plugin does not ask for access to the Zoraxy API." not in p["text"] or p["rows"]:
+        if not p or "This plugin does not ask for access to the Dunree API." not in p["text"] or p["rows"]:
             fail("permissions", f"a plugin without permissions must say so: {p!r}")
         no_injection("permissions block")
         shot("plugins-mock-permissions.png")
@@ -564,7 +564,7 @@ def plugins_mock_part(pg, ok, shot, no_injection, row_text, badge, open_details,
         no_injection("install block")
         shot("plugins-mock-install.png")
 
-        # ---- phase 2 (2.7): the admin page opens a plugin page where Zoraxy says it is
+        # ---- phase 2 (2.7): the admin page opens a plugin page where Dunree says it is
         frame_state = "() => { const f = document.getElementById('pluginContextLoader'); let dark = 'ok'; try { f.contentWindow.setDarkTheme && f.contentWindow.setDarkTheme(true); } catch (e) { dark = 'threw'; } return {src: f.getAttribute('src'), sandbox: f.getAttribute('sandbox'), isolated: f.dataset.isolated, srcdoc: f.getAttribute('srcdoc') || '', dark}; }"
         seen["ticket"] = {"isolated": True, "url": "/favicon.png?mock-ticket", "sandbox": "allow-scripts allow-forms"}
         pg.evaluate("pid => initPluginUIView(pid)", hid)

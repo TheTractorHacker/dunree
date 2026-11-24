@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
 	Plugin policy (phase 1 of docs/plugins/reliability-plan.md)
 
-	What the administrator allows Zoraxy to do about one plugin: restart it, check
+	What the administrator allows Dunree to do about one plugin: restart it, check
 	its health, block traffic while it is down, limit what it may use. The zero
 	value is exactly the behaviour from before these options existed: no restart,
 	no probe, fail-open, no limit, output into the main log.
@@ -28,14 +28,14 @@ const (
 
 // Health check modes
 const (
-	HealthCheckOff     = "off"     //default: Zoraxy never connects to the plugin only to look at it
+	HealthCheckOff     = "off"     //default: Dunree never connects to the plugin only to look at it
 	HealthCheckReport  = "report"  //probe and show the result
 	HealthCheckRestart = "restart" //probe, and end a plugin that fails the probe so the restart policy starts it again
 )
 
 // Where the output of the plugin goes
 const (
-	LogTargetMain = "main" //default: every line into the main Zoraxy log
+	LogTargetMain = "main" //default: every line into the main Dunree log
 	LogTargetFile = "file" //own size-limited file per plugin
 )
 
@@ -113,7 +113,7 @@ func (pp PluginPolicy) validate(p *Plugin) error {
 		return errors.New("log target must be main or file")
 	}
 	if pp.BlockWhenDown {
-		declared := p.Spec != nil && p.Spec.Hooks != nil && p.Spec.Hooks.FailurePolicy == zoraxyPlugin.FailureClosed
+		declared := p.Spec != nil && p.Spec.Hooks != nil && p.Spec.Hooks.FailurePolicy == dunreePlugin.FailureClosed
 		if !declared {
 			return errors.New("plugin does not declare fail_closed in its manifest")
 		}
@@ -159,7 +159,7 @@ func (m *Manager) loadPluginPolicy(p *Plugin) {
 	rec = rec.normalized()
 	// A stored policy that is no longer valid (edited database, manifest changed by an
 	// update) must never make the plugin stricter than its manifest allows
-	if rec.BlockWhenDown && (p.Spec.Hooks == nil || p.Spec.Hooks.FailurePolicy != zoraxyPlugin.FailureClosed) {
+	if rec.BlockWhenDown && (p.Spec.Hooks == nil || p.Spec.Hooks.FailurePolicy != dunreePlugin.FailureClosed) {
 		rec.BlockWhenDown = false
 	}
 	switch rec.Restart {

@@ -3,7 +3,7 @@ package rewrite
 import (
 	"encoding/json"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
 )
 
 /*
@@ -17,8 +17,8 @@ import (
 type HeaderDirection int
 
 const (
-	HeaderDirection_ZoraxyToUpstream   HeaderDirection = 0 //Inject (or remove) header to request out-going from Zoraxy to backend server
-	HeaderDirection_ZoraxyToDownstream HeaderDirection = 1 //Inject (or remove) header to request out-going from Zoraxy to client (e.g. browser)
+	HeaderDirection_DunreeToUpstream   HeaderDirection = 0 //Inject (or remove) header to request out-going from Dunree to backend server
+	HeaderDirection_DunreeToDownstream HeaderDirection = 1 //Inject (or remove) header to request out-going from Dunree to client (e.g. browser)
 )
 
 // User defined headers to add into a proxy endpoint

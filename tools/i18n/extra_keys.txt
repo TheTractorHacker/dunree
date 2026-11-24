@@ -98,7 +98,7 @@ A starting point, review it before use. This preset does not turn on authenticat
 Dismiss
 Enter a host name
 Enter a URL
-Turn this Zoraxy into a Fleet hub?
+Turn this Dunree into a Fleet hub?
 Make admin
 Make viewer
 Internal role without the peer gate: any host that can reach this proxy directly skips the external proxy. Enable the gate once the external proxy is listed under Trusted Proxies, and keep the firewall rule too.
@@ -171,7 +171,7 @@ This archive CONTAINS SECRETS: everything in the configuration backup (TLS priva
 Safe to share: no private keys, cluster secret, Fleet keys, notification secrets, WAF challenge key, CrowdSec / AI keys, API tokens or database. Credential-like fields inside rule files are replaced by [REDACTED]; manifest.json names every file that was left out. Restoring it keeps the secrets of the installation it is restored on.
 Verified:
 Unverified:
-this archive has no manifest (created by an older Zoraxy), so its integrity could not be checked. It passed the structure and JSON checks.
+this archive has no manifest (created by an older Dunree), so its integrity could not be checked. It passed the structure and JSON checks.
 Refused: {0}
 Added
 Replaced
@@ -303,7 +303,7 @@ Copied. Remember: nothing has been applied to any firewall.
 Press Ctrl+C to copy the selected text.
 The previous configuration was kept in {0}
 {0} have none here and are left out.
-The system database would be replaced and Zoraxy would exit.
+The system database would be replaced and Dunree would exit.
 Clean up forwarded client-address headers
 Safe security headers for sites created later
 Security audit log
@@ -312,13 +312,13 @@ A visitor can write X-Forwarded-For, X-Real-Ip and similar headers themselves. W
 New sites start with X-Content-Type-Options: nosniff, Referrer-Policy: strict-origin-when-cross-origin and, on HTTPS only, Strict-Transport-Security for 30 days (no includeSubDomains, no preload). Headers the website itself sends are never overwritten.
 Every security-relevant change made through the admin interface or the REST API is written to a tamper-evident log (who, from where, what).
 Blocks addresses that the CrowdSec community and your own CrowdSec engine have decided on. It starts in log-only mode, so the first thing you see is what it would block.
-Does not block anything. If this Zoraxy sits behind a proxy or CDN that is not listed under Trusted Proxies, the client address (and X-Forwarded-Proto/Host) that proxy sends is ignored and sites see the proxy's address instead. List the proxy first. On an existing install the button only applies it when the trusted proxy list is not empty.
+Does not block anything. If this Dunree sits behind a proxy or CDN that is not listed under Trusted Proxies, the client address (and X-Forwarded-Proto/Host) that proxy sends is ignored and sites see the proxy's address instead. List the proxy first. On an existing install the button only applies it when the trusted proxy list is not empty.
 Only the default for sites you create afterwards. No existing site is touched. Frame blocking and Permissions-Policy are not included, because they break embedding and camera, microphone or map features. Each site can still turn the preset off or change it.
 Always on, there is no switch. Shown here so you can see that it is working.
 The baseline cannot turn it on: it needs the address of your CrowdSec local API and an API key. Configure it once and the log-only-first behaviour applies by itself.
 deployment settings not loaded
 the deployment role manages this itself
-no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, list it under Trusted Proxies first, otherwise its client addresses would be ignored
+no trusted proxy is listed. If a proxy or CDN is in front of this Dunree, list it under Trusted Proxies first, otherwise its client addresses would be ignored
 the current default could not be read
 you already chose your own default for new sites
 shown only
@@ -340,7 +340,7 @@ Configure
 {0} setting(s) not applied, see the reasons above.
 this item no longer exists
 could not restore
-The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Zoraxy, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.
+The forwarded-header clean-up is on and no trusted proxy is listed. If a proxy or CDN is in front of this Dunree, add it under Trusted Proxies now, otherwise every visitor appears with the proxy's address and X-Forwarded-Proto/Host are ignored.
 Copied. Read the command before you run it.
 All passed
 App update
@@ -355,7 +355,7 @@ Failed
 GitHub is limiting requests from this address. Try again later, or add a GitHub token under Settings to raise the limit.
 Install
 Installed
-Keep this page open. The admin page may be unavailable for a few seconds while Zoraxy restarts.
+Keep this page open. The admin page may be unavailable for a few seconds while Dunree restarts.
 Last checked {0}.
 Migrate
 Migration failed
@@ -366,7 +366,7 @@ Prepare
 Press Check for updates to look for a new release.
 Release notes for {0}
 Restart
-Restarting Zoraxy...
+Restarting Dunree...
 Roll back
 Rollback
 Rollback failed
@@ -374,20 +374,20 @@ Rolled back
 Rolling back
 Running migrations
 Success
-The update is installed and Zoraxy is waiting for it to confirm it is healthy. If it does not within 90 seconds, the previous version is restored automatically.
+The update is installed and Dunree is waiting for it to confirm it is healthy. If it does not within 90 seconds, the previous version is restored automatically.
 Update App
 Update available: {0}
 Update failed
 Update not available
 Update to {0}
-Updating Zoraxy
+Updating Dunree
 Updating to {0}
 Verify signature
 What is new in {0}
 You are running {0}.
 You are up to date
-Zoraxy could not get the release list from GitHub. Check that this server can reach github.com, then try again.
-Zoraxy is still running {0}. Open Technical details and the technical log to see what happened.
+Dunree could not get the release list from GitHub. Check that this server can reach github.com, then try again.
+Dunree is still running {0}. Open Technical details and the technical log to see what happened.
 done
 failed
 in progress
@@ -405,13 +405,17 @@ Remove ban
 No alerts.
 Connected to CrowdSec
 Enter an address or range.
-Banned. It can take up to the pull interval before Zoraxy enforces it.
+Banned. It can take up to the pull interval before Dunree enforces it.
 Ban removed
 Remove the login?
-Zoraxy forgets the machine login. Bans stay as they are. To revoke the machine on the CrowdSec host too, run cscli machines delete.
+Dunree forgets the machine login. Bans stay as they are. To revoke the machine on the CrowdSec host too, run cscli machines delete.
 Remove
 Ban this address?
-CrowdSec will refuse {0} everywhere it is enforced (Zoraxy in enforce mode, firewall bouncers, other proxies) until the ban ends or is removed.
+CrowdSec will refuse {0} everywhere it is enforced (Dunree in enforce mode, firewall bouncers, other proxies) until the ban ends or is removed.
 Ban
 Remove this ban?
 The ban on {0} is lifted in CrowdSec.
+{0} supporters of Zoraxy.
+{0} supporter of Zoraxy.
+No supporters listed yet.
+Unable to load the supporters list.

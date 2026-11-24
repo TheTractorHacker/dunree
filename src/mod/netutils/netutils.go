@@ -11,8 +11,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/likexian/whois"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 /*

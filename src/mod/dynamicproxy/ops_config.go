@@ -74,7 +74,7 @@ main{background:#fff;padding:2rem 2.5rem;border-radius:8px;box-shadow:0 2px 12px
 h1{margin:0 0 .5rem;font-size:3rem}p{color:#555}small{color:#888}</style></head>
 <body><main><h1>{{.Status}}</h1><p>{{.StatusText}}</p><small>{{.Host}} &middot; request {{.RequestID}}</small></main></body></html>`
 
-// StaticResponse is a fixed response for a path, answered by Zoraxy itself
+// StaticResponse is a fixed response for a path, answered by Dunree itself
 type StaticResponse struct {
 	Name        string
 	Path        string   //Request path, must start with /

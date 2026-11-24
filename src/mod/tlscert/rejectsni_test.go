@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 // Real handshakes against a listener that uses Manager.GetCert the way the proxy does (no static certificates).

@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/foleyit/dunree/mod/brand"
 )
 
 func render(t *testing.T, cfg *Config, kind PageKind) *httptest.ResponseRecorder {
@@ -34,7 +36,7 @@ func TestDefaultChallengeMatchesStockWording(t *testing.T) {
 		cfg  *Config
 		want []string
 	}{
-		{"turnstile", &Config{Provider: ProviderCloudflare, SiteKey: "SK"}, []string{"<title>Just a moment...</title>", ">app.example.com</h1>", "Verify you are human by completing the action below.", "app.example.com needs to review the security of your connection before proceeding.", "Performance &amp; security by", "challenges.cloudflare.com/turnstile/v0/api.js", `"siteKey":"SK"`, `"verifyPath":"/.zoraxy/captcha/verify"`, "cf-turnstile-response"}},
+		{"turnstile", &Config{Provider: ProviderCloudflare, SiteKey: "SK"}, []string{"<title>Just a moment...</title>", ">app.example.com</h1>", "Verify you are human by completing the action below.", "app.example.com needs to review the security of your connection before proceeding.", "Performance &amp; security by", "challenges.cloudflare.com/turnstile/v0/api.js", `"siteKey":"SK"`, `"verifyPath":"/.dunree/captcha/verify"`, "cf-turnstile-response"}},
 		{"v2", &Config{Provider: ProviderGoogle, SiteKey: "SK"}, []string{"Verify you are human", "google.com/recaptcha/api.js", "g-recaptcha-response"}},
 		{"v3", &Config{Provider: ProviderGoogle, RecaptchaVersion: "v3", SiteKey: "SK"}, []string{"Verifying your connection...", `"action":"access"`, "render=' + encodeURIComponent"}},
 	}
@@ -271,7 +273,9 @@ func TestLegacyWebrootOverrideStillWorks(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "templates", "captcha_cloudflare.html"), []byte(`LEGACY {{.Domain}} {{.SiteKey}} {{.VerifyPath}}`), 0o644)
 	w := httptest.NewRecorder()
 	RenderChallenge(w, httptest.NewRequest("GET", "/", nil), &Config{Provider: ProviderCloudflare, SiteKey: "SK"}, "h.example", dir)
-	if w.Body.String() != "LEGACY h.example SK /.zoraxy/captcha/verify" {
+	// A template in the web root from before the rebrand renders the Dunree path through {{.VerifyPath}};
+	// one that has the old path written out posts to LegacyVerifyPath, which is still answered (IsVerifyPath)
+	if w.Body.String() != "LEGACY h.example SK /.dunree/captcha/verify" || !IsVerifyPath("/.zoraxy/captcha/verify") || !IsVerifyPath(VerifyPath) || IsVerifyPath("/.zoraxy/captcha/verify/") { // legacy-compat
 		t.Errorf("legacy override output: %q", w.Body.String())
 	}
 	if !strings.Contains(w.Header().Get("Content-Security-Policy"), "script-src 'unsafe-inline'") {
@@ -490,12 +494,28 @@ func TestCustomFooter(t *testing.T) {
 	if strings.Contains(body, "zoraxy.aroz.org") {
 		t.Error("default link must be replaced")
 	}
-	// default footer unchanged
+	// default footer: the Dunree name, as plain text while no product website is set,
+	// and never a link to the site of the project Dunree is based on
 	def := render(t, &Config{Provider: ProviderCloudflare, SiteKey: "SK"}, PageChallenge).Body.String()
-	if !strings.Contains(def, "https://zoraxy.aroz.org") || !strings.Contains(def, ">Zoraxy</a>") {
-		t.Error("default footer changed")
+	if !strings.Contains(def, `Performance &amp; security by <span class="footer-name">Dunree</span>`) || strings.Contains(def, "aroz.org") || strings.Contains(def, "Zoraxy") { // legacy-compat: the test names the old name
+		t.Error("default footer is not the Dunree footer without a link")
 	}
-	// hide removes the built-in Zoraxy credit but keeps a footer the admin wrote
+	if strings.Contains(def[strings.Index(def, "<footer"):], "<a ") {
+		t.Error("default footer has a link although no product website is set")
+	}
+	// with a product website the name links to it
+	brand.ProductURL = "https://dunree.example/"
+	linked := render(t, &Config{Provider: ProviderCloudflare, SiteKey: "SK"}, PageChallenge).Body.String()
+	brand.ProductURL = ""
+	if !strings.Contains(linked, `<a href="https://dunree.example/" target="_blank" rel="noopener noreferrer">Dunree</a>`) {
+		t.Error("product website not linked in the default footer")
+	}
+	// a label the administrator saved without an address used to link to the old default: now plain text
+	labelOnly := render(t, &Config{Provider: ProviderCloudflare, SiteKey: "SK", Branding: &Branding{FooterLinkText: "Acme IT"}}, PageChallenge).Body.String()
+	if !strings.Contains(labelOnly, `<span class="footer-name">Acme IT</span>`) || strings.Contains(labelOnly, "aroz.org") {
+		t.Error("saved footer label without address is not shown as plain text")
+	}
+	// hide removes the built-in Dunree credit but keeps a footer the admin wrote
 	cfg.Branding.HideFooter = true
 	if !strings.Contains(render(t, cfg, PageChallenge).Body.String(), "Acme IT") {
 		t.Error("custom footer must still show when the default footer is hidden")

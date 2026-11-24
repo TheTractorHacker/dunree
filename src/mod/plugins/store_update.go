@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -117,7 +117,7 @@ func (m *Manager) GetPluginUpdateInfos() []*PluginUpdateInfo {
 	return updateInfos
 }
 
-func storeVersionIsNewerThanSpec(storeCopy *DownloadablePlugin, spec *zoraxyPlugin.IntroSpect) bool {
+func storeVersionIsNewerThanSpec(storeCopy *DownloadablePlugin, spec *dunreePlugin.IntroSpect) bool {
 	storeVer := [3]int{storeCopy.PluginIntroSpect.VersionMajor, storeCopy.PluginIntroSpect.VersionMinor, storeCopy.PluginIntroSpect.VersionPatch}
 	installedVer := [3]int{spec.VersionMajor, spec.VersionMinor, spec.VersionPatch}
 	for i := 0; i < 3; i++ {
@@ -289,7 +289,7 @@ func (m *Manager) UpdatePlugin(pluginID string) error {
 }
 
 // publicUpdateProblem words a failed start or health check for the status of the
-// plugin. Text of a contract refusal is Zoraxy's own; anything else may quote the
+// plugin. Text of a contract refusal is Dunree's own; anything else may quote the
 // operating system, which is fine for the administrator who reads it.
 func publicUpdateProblem(err error) string {
 	return clipText(strings.TrimRight(err.Error(), ". "), 300)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zoraxy admin UI audit bot (Playwright, headless Chromium).
+"""Dunree admin UI audit bot (Playwright, headless Chromium).
 
 Opens every menu page and every sub tab of the admin UI in light and dark theme at a desktop and a phone width and
 reports, per page / tab / selector:
@@ -36,7 +36,7 @@ from collections import OrderedDict, defaultdict
 from playwright.sync_api import sync_playwright
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--url", default=os.environ.get("ZORAXY_URL", "http://127.0.0.1:8000"))
+ap.add_argument("--url", default=os.environ.get("DUNREE_URL", "http://127.0.0.1:8000"))
 ap.add_argument("--out", required=True, help="output directory (outside the repository)")
 ap.add_argument("--themes", default="light,dark")
 ap.add_argument("--viewports", default="desktop,mobile")
@@ -368,7 +368,7 @@ def _run():
             for theme in args.themes.split(","):
                 ctx = b.new_context(viewport=VIEWPORTS[vpname])
                 if args.lang:
-                    ctx.add_init_script("try{localStorage.setItem('zoraxy.lang',%s)}catch(e){}" % json.dumps(args.lang))
+                    ctx.add_init_script("try{localStorage.setItem('dunree.lang',%s)}catch(e){}" % json.dumps(args.lang))
                 pg = ctx.new_page()
                 ctx_label.update(viewport=vpname, theme=theme, page="init", tab="")
 
@@ -446,7 +446,7 @@ def write_reports(secs):
     by_type = defaultdict(lambda: defaultdict(int))
     for r in rows:
         by_type[r["type"]][r["severity"]] += 1
-    lines = ["# Zoraxy UI audit", "", f"Instance: `{args.url}`, {len(rows)} findings, {round(secs)} s.", "",
+    lines = ["# Dunree UI audit", "", f"Instance: `{args.url}`, {len(rows)} findings, {round(secs)} s.", "",
              "| type | critical | major | minor | total |", "|---|---|---|---|---|"]
     for typ in sorted(by_type):
         d = by_type[typ]

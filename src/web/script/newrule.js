@@ -171,7 +171,7 @@
             var def = st.defaultTpl || "";
             var cur = st.useDefault ? def : ($m.find("input[name=nrTpl]:checked").val() || "");
             var defBadge = '<span class="nrAuto nrDefTpl">' + esc(t("default")) + '</span>';
-            var h = '<label class="nrTpl"><input type="radio" name="nrTpl" value=""' + (cur === "" ? " checked" : "") + '><b>Basic</b><small>Plain proxy with Zoraxy defaults.</small></label>';
+            var h = '<label class="nrTpl"><input type="radio" name="nrTpl" value=""' + (cur === "" ? " checked" : "") + '><b>Basic</b><small>Plain proxy with Dunree defaults.</small></label>';
             var ph = "";
             (list || []).forEach(function (t) {
                 var one = '<label class="nrTpl"><input type="radio" name="nrTpl" value="' + esc(t.Name) + '"' + (cur === t.Name ? " checked" : "") + '><b>' + esc(t.Name) + (def !== "" && t.Name === def ? defBadge : "") + '</b><small>' + esc(t.Description || "") + '</small></label>';
@@ -238,7 +238,7 @@
         });
     }
 
-    // The certificates Zoraxy has: the same list the TLS tab uses (/api/cert/list), with expiry, plus the names each covers
+    // The certificates Dunree has: the same list the TLS tab uses (/api/cert/list), with expiry, plus the names each covers
     function loadCerts() {
         var list = null, names = null, pending = 2;
         function done() {
@@ -313,7 +313,7 @@
             $h.append($d);
             return;
         }
-        if (!c) { $h.append(certLine("", "", t("Zoraxy serves the certificate that matches the hostname."))); return; }
+        if (!c) { $h.append(certLine("", "", t("Dunree serves the certificate that matches the hostname."))); return; }
         $h.append(certLine("", "", tf("Certificate: {0}", c.name)));
         var shown = c.names.slice(0, 6).join(", ");
         if (c.names.length > 6) { shown = tf("{0} and {1} more", shown, c.names.length - 6); }
@@ -321,7 +321,7 @@
         var bad = hosts.filter(function (x) { return !nameCovers(c.names, x); });
         if (bad.length) { $h.append(certLine("warn", "exclamation triangle", tf("This certificate does not cover {0}. Visitors will see a certificate warning. You can still create the rule.", shortList(bad)))); }
         if (c.days < 0) { $h.append(certLine("warn", "exclamation triangle", t("This certificate has expired."))); }
-        $h.append(certLine("", "", t("Zoraxy will serve it for every hostname of this rule and turn off automatic certificate matching (SNI) for this rule only.")));
+        $h.append(certLine("", "", t("Dunree will serve it for every hostname of this rule and turn off automatic certificate matching (SNI) for this rule only.")));
     }
     function openCertsPage() {
         var d = $f("nrDomain").val(), u = $f("nrUpstream").val();

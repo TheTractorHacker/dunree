@@ -35,7 +35,7 @@ P4_MATCH = "p4-match.demo.test"  # backend 10.20.30.5:8080, inside the plan (nev
 P4_RULES = (P4_OK, P4_DOWN, P4_MATCH)
 P4_CERT = "p4-cert.demo.test"
 P4_GROUP = "p4group"
-P4_DISCLAIMER = "Zoraxy has NOT applied"
+P4_DISCLAIMER = "Dunree has NOT applied"
 
 
 def phase4_ui(pg, ctx):
@@ -433,7 +433,7 @@ def phase4_ui(pg, ctx):
             pg.click("#npDl")
         path = dl.value.path()
         text = open(path, encoding="utf-8").read()
-        if dl.value.suggested_filename != "zoraxy-firewall-recommendations.md":
+        if dl.value.suggested_filename != "dunree-firewall-recommendations.md":
             fail("phase4-netplan", f"unexpected download name {dl.value.suggested_filename!r}")
         if P4_DISCLAIMER not in text or text.count("NOT APPLIED") < 2:
             fail("phase4-netplan", "the downloaded markdown must open and close with the NOT APPLIED disclaimer")

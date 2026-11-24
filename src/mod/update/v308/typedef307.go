@@ -74,8 +74,8 @@ type v307BasicAuthExceptionRule struct {
 type v307HeaderDirection int
 
 const (
-	HeaderDirection_ZoraxyToUpstream   v307HeaderDirection = 0 //Inject (or remove) header to request out-going from Zoraxy to backend server
-	HeaderDirection_ZoraxyToDownstream v307HeaderDirection = 1 //Inject (or remove) header to request out-going from Zoraxy to client (e.g. browser)
+	HeaderDirection_DunreeToUpstream   v307HeaderDirection = 0 //Inject (or remove) header to request out-going from Dunree to backend server
+	HeaderDirection_DunreeToDownstream v307HeaderDirection = 1 //Inject (or remove) header to request out-going from Dunree to client (e.g. browser)
 )
 
 // User defined headers to add into a proxy endpoint

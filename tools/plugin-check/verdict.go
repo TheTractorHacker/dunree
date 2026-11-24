@@ -13,12 +13,12 @@ import (
 /*
 	Verdict rules
 
-	A copy of the rules Zoraxy applies to the answer of a filter call
+	A copy of the rules Dunree applies to the answer of a filter call
 	(src/mod/plugins/hooks_validate.go, sanitizeVerdict). The kit does not import
-	Zoraxy, so the two could drift apart; testdata/verdicts.json is a list of
+	Dunree, so the two could drift apart; testdata/verdicts.json is a list of
 	verdicts with the expected outcome that is checked against this copy
-	(TestVerdictFixtures) and against Zoraxy itself
-	(TestConformanceKitVerdictRulesMatchZoraxy in src/mod/plugins).
+	(TestVerdictFixtures) and against Dunree itself
+	(TestConformanceKitVerdictRulesMatchDunree in src/mod/plugins).
 */
 
 const (
@@ -110,7 +110,7 @@ func checkHeaderOp(response bool, op, rawName string) error {
 		if identityRequestHeaders[name] {
 			return fmt.Errorf("request header %s cannot be modified by plugins", name)
 		}
-		if strings.HasPrefix(name, "X-Zoraxy-") {
+		if strings.HasPrefix(name, "X-Dunree-") || strings.HasPrefix(name, "X-Zoraxy-") { // legacy-compat: both prefixes stay reserved
 			return fmt.Errorf("request header %s is reserved", name)
 		}
 		return nil
@@ -192,7 +192,7 @@ func validateRewriteQuery(q string) error {
 	return nil
 }
 
-// validateVerdictBody checks the body of a filter answer for a stage the way Zoraxy
+// validateVerdictBody checks the body of a filter answer for a stage the way Dunree
 // does: size, JSON, then the verdict rules. It returns the action on success.
 func validateVerdictBody(stage string, body []byte) (string, error) {
 	if len(body) > maxVerdictBytes {
@@ -246,7 +246,7 @@ func validateVerdict(stage string, v *filterVerdict) error {
 			if !denyHeaderAllowList[name] && !strings.HasPrefix(name, "X-") {
 				return fmt.Errorf("deny header %s is not allowed", name)
 			}
-			if strings.HasPrefix(name, "X-Zoraxy-") {
+			if strings.HasPrefix(name, "X-Dunree-") || strings.HasPrefix(name, "X-Zoraxy-") { // legacy-compat: both prefixes stay reserved
 				return fmt.Errorf("deny header %s is reserved", name)
 			}
 			if err := validHeaderValue(val); err != nil {

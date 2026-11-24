@@ -11,10 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/microcosm-cc/bluemonday"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/eventsystem"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

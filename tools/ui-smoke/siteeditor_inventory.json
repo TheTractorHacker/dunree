@@ -759,7 +759,7 @@
   "selector": "input[data-cp=\"captchaFooterLinkText\"]",
   "tag": "input",
   "oldTab": "security",
-  "label": "Zoraxy",
+  "label": "Dunree",
   "count": 1,
   "section": "security",
   "card": "captcha"
@@ -768,7 +768,7 @@
   "selector": "input[data-cp=\"captchaFooterLinkURL\"]",
   "tag": "input",
   "oldTab": "security",
-  "label": "https://zoraxy.aroz.org",
+  "label": "Footer link URL",
   "count": 1,
   "section": "security",
   "card": "captcha"

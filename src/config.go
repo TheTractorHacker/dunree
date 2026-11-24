@@ -9,13 +9,13 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy"
-	"imuslab.com/zoraxy/mod/dynamicproxy/loadbalance"
-	"imuslab.com/zoraxy/mod/eventsystem"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
-	"imuslab.com/zoraxy/mod/tlscert"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -224,7 +224,7 @@ func GetDefaultRootConfig() (*dynamicproxy.ProxyEndpoint, error) {
 }
 
 /*
-	Importer and Exporter of Zoraxy proxy config
+	Importer and Exporter of Dunree proxy config
 */
 
 func handleLoggerConfig(w http.ResponseWriter, r *http.Request) {

@@ -1,15 +1,15 @@
 services:
-  test-zoraxy:
-    image: test-zoraxy
-    container_name: test-zoraxy
+  test-dunree:
+    image: test-dunree
+    container_name: test-dunree
     restart: 'no'
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
     volumes:
-      - ./test/config/:/opt/zoraxy/config/:rw
-      - ./test/plugin/:/opt/zoraxy/plugin/:rw
+      - ./test/config/:/opt/dunree/config/:rw
+      - ./test/plugin/:/opt/dunree/plugin/:rw
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       TZ: "America/New_York"

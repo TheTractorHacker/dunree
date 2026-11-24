@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/deployrole"
+	"github.com/foleyit/dunree/mod/deployrole"
 )
 
 /*

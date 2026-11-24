@@ -3,12 +3,12 @@ package uptime
 import (
 	"sync"
 
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 const (
-	LOG_MODULE_NAME           = "uptime-monitor"
-	UPTIME_MONITOR_USER_AGENT = "zoraxy-uptime/1.4"
+	LOG_MODULE_NAME = "uptime-monitor"
 )
 
 type Record struct {
@@ -77,3 +77,7 @@ var exampleTarget = Target{
 func defaultNotify(upstreamIP string, isOnline bool) {
 	// Do nothing
 }
+
+// uptimeUserAgent is the User-Agent of uptime probes: "dunree-uptime/1.4", with the inherited token
+// appended while the legacy names are on (plan row 13)
+func uptimeUserAgent() string { return wirecompat.UserAgent("dunree-uptime/1.4", "zoraxy-uptime/1.4") }

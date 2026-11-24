@@ -257,7 +257,7 @@ func TestArgumentInjectionIsRefused(t *testing.T) {
 
 func TestEnableTokenHandling(t *testing.T) {
 	f := newFixture(t, true)
-	t.Setenv("ZORAXY_TEST_SECRET", "must-not-leak")
+	t.Setenv("DUNREE_TEST_SECRET", "must-not-leak")
 	f.enable(t)
 	if !f.m.Settings().EnabledEnv {
 		t.Fatal("environment not marked enabled")
@@ -291,7 +291,7 @@ func TestEnableTokenHandling(t *testing.T) {
 	}
 	//Child environment: isolated HOME, nothing of ours
 	env, _ := os.ReadFile(filepath.Join(f.dir, "env.log"))
-	if strings.Contains(string(env), "must-not-leak") || strings.Contains(string(env), "ZORAXY_TEST_SECRET") {
+	if strings.Contains(string(env), "must-not-leak") || strings.Contains(string(env), "DUNREE_TEST_SECRET") {
 		t.Fatal("parent environment leaked into the zrok process")
 	}
 	if !strings.Contains(string(env), "HOME="+filepath.Join(filepath.Dir(f.dir), "conf", "home")) {

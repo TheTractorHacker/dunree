@@ -1,4 +1,4 @@
-<!-- Fleet (tag fleet). A status header says what this Zoraxy is (on its own, the hub, a node) with the numbers that matter;
+<!-- Fleet (tag fleet). A status header says what this Dunree is (on its own, the hub, a node) with the numbers that matter;
      below it the view of that role: the two ways to start, the node's sync state, or the hub's sections (a sectioned navigation, #flTabs:
      Nodes first, as rows that open the view of one node; Audit log and Settings under Advanced).
      Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
@@ -76,7 +76,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Fleet</h2>
-            <p class="zx-page-header__sub">Manage several Zoraxy nodes from one hub: one place for their configuration, health and rollouts.
+            <p class="zx-page-header__sub">Manage several Dunree nodes from one hub: one place for their configuration, health and rollouts.
                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="flWhat" aria-label="How does Fleet work?">?</button></p>
             <div class="zx-popover" id="flWhat" role="note" hidden>The hub publishes versioned configuration for the scopes you choose. Nodes pull it with their own credentials and keep everything else local. The hub can only publish configuration and ask a node to sync: it can never run commands on a node.</div>
         </div>
@@ -89,7 +89,7 @@
         <a href="#cluster" data-nav-open="cluster">Cluster / HA</a>
     </nav>
 
-    <!-- status: the role of this Zoraxy and its numbers -->
+    <!-- status: the role of this Dunree and its numbers -->
     <section class="zx-card cx-status" id="flStatus" aria-labelledby="flStatusTitle">
         <div class="cx-status__top">
             <span class="cx-status__icon" aria-hidden="true"><i class="cubes icon" id="flStatusIcon"></i></span>
@@ -114,7 +114,7 @@
         <div class="flChoice">
             <section class="zx-card">
                 <div class="zx-card__head"><h3 class="zx-card__title">Run this node as the hub</h3></div>
-                <p class="zx-card__desc">This Zoraxy becomes the management console for your other nodes.</p>
+                <p class="zx-card__desc">This Dunree becomes the management console for your other nodes.</p>
                 <div class="zx-card__body">
                     <ul class="flSteps">
                         <li>Publishes versioned configuration for the scopes you choose.</li>
@@ -160,7 +160,7 @@
         <nav class="zx-sectionnav" id="flTabs" aria-label="Fleet sections">
             <div class="zx-sectionnav__group">
                 <button type="button" class="zx-sectionnav__item item active" data-tab="nodes"><i class="server icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Nodes</span><span class="zx-sectionnav__desc" hidden>Every node that joined this hub: is it reachable, does it run what the hub published, is it healthy.</span></button>
-                <button type="button" class="zx-sectionnav__item item" data-tab="tokens"><i class="plus icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Join nodes</span><span class="zx-sectionnav__desc" hidden>Add a Zoraxy to this fleet with a join token that works once and for a short time.</span></button>
+                <button type="button" class="zx-sectionnav__item item" data-tab="tokens"><i class="plus icon" aria-hidden="true"></i><span class="zx-sectionnav__text">Join nodes</span><span class="zx-sectionnav__desc" hidden>Add a Dunree to this fleet with a join token that works once and for a short time.</span></button>
             </div>
             <div class="zx-sectionnav__group" role="group" aria-labelledby="flGrpConfig">
                 <div class="zx-sectionnav__label" id="flGrpConfig">Configuration</div>
@@ -389,7 +389,7 @@
             </section>
             <section class="zx-card zx-card--danger">
                 <div class="zx-card__head"><h4 class="zx-card__title">Turn the hub role off</h4></div>
-                <p class="zx-card__desc">This Zoraxy runs on its own again. Nodes keep their current configuration but stop receiving updates.</p>
+                <p class="zx-card__desc">This Dunree runs on its own again. Nodes keep their current configuration but stop receiving updates.</p>
                 <div class="zx-card__foot"><button class="zx-btn zx-btn--danger-outline" id="flBecomeStandalone">Turn the hub role off</button></div>
             </section>
         </div>
@@ -430,7 +430,7 @@
         return s ? s.label : plain(name);
     }
     function scopeList(list){ return (list || []).map(scopeWord).join(", "); }
-    /* The status header: what this Zoraxy is. The icon tile shows the role (role = true: neutral blue, never a state colour);
+    /* The status header: what this Dunree is. The icon tile shows the role (role = true: neutral blue, never a state colour);
        the state is the dot badge next to the title: kind ok / warn / danger / "" plus the words. */
     function setStatus(role, icon, title, badgeKind, badge, desc, facts){
         $("#flStatus").attr("data-state", role ? "role" : null);
@@ -477,7 +477,7 @@
     function renderInfo(i){
         info = i;
         $("#flStandalone, #flNode, #flHub, #flNodeActions").hide();
-        if (i.role == "hub") { $("#flHub").show(); if (!ov) setStatus(true, "sitemap", t("This Zoraxy is the hub"), "", "", t("It publishes configuration to the nodes that joined it and watches their health."), ""); loadHub(); return; }
+        if (i.role == "hub") { $("#flHub").show(); if (!ov) setStatus(true, "sitemap", t("This Dunree is the hub"), "", "", t("It publishes configuration to the nodes that joined it and watches their health."), ""); loadHub(); return; }
         if (i.role == "node") {
             let f = i.fleet || {}, res = resultWord(f.lastResult);
             $("#flNode, #flNodeActions").show();
@@ -485,7 +485,7 @@
             let kind = f.lastError ? "danger" : !f.lastResult ? "" : f.insecureTransport ? "warn" : "ok";
             let word = f.lastError ? t("Last sync failed") : !f.lastResult ? t("Not synced yet") : f.insecureTransport ? t("In sync, but over plain http") : t("In sync with the hub");
             setStatus(true, "cube", tf("Managed by the hub {0}", f.hubHost || ""), kind, word,
-                t("This Zoraxy pulls the configuration of its group from the hub and keeps everything else local. The hub can never run commands here."),
+                t("This Dunree pulls the configuration of its group from the hub and keeps everything else local. The hub can never run commands here."),
                 fact("Group", f.group || "-") +
                 fact("Applied version", f.appliedVersion ? "v" + f.appliedVersion : t("None yet")) +
                 fact("Last sync", f.lastResult ? res.word : t("Never"), f.lastError ? "danger" : "", f.lastSuccessAt ? tf("last success {0}", ago(f.lastSuccessAt)) : "") +
@@ -500,7 +500,7 @@
             return;
         }
         ov = null;
-        setStatus(false, "cube", t("This Zoraxy runs on its own"), "", t("Fleet is off"), t("Fleet is off, which is the default. Make this node the hub that manages the others, or join a hub that already exists."), "");
+        setStatus(false, "cube", t("This Dunree runs on its own"), "", t("Fleet is off"), t("Fleet is off, which is the default. Make this node the hub that manages the others, or join a hub that already exists."), "");
         $("#flStandalone").show();
         $("#flLegacyNote").toggle(!!i.legacy);
         $("#flBecomeHub, #flProbeBtn").prop("disabled", !!i.legacy);
@@ -509,7 +509,7 @@
     function loadInfo(){ $.ajax({url: "./api/fleet/node/info", method: "GET", success: renderInfo, error: fail}); }
 
     $("#flBecomeHub").on("click", function(){
-        ask(t("Turn this Zoraxy into a Fleet hub?"), t("This node becomes the management console. Its configuration is published to the nodes you add."), t("Enable hub role")).then(function(ok){
+        ask(t("Turn this Dunree into a Fleet hub?"), t("This node becomes the management console. Its configuration is published to the nodes you add."), t("Enable hub role")).then(function(ok){
             if (ok) post("./api/cluster/config", {role: "hub"}, function(){ loadInfo(); });
         });
     });
@@ -604,7 +604,7 @@
         let kind = !total ? "" : down ? "danger" : drifting ? "warn" : "ok";
         let word = !total ? t("No nodes yet") : down ? (down == 1 ? t("1 node is not reachable") : tf("{0} nodes are not reachable", down))
             : drifting ? (drifting == 1 ? t("1 node differs from what was published") : tf("{0} nodes differ from what was published", drifting)) : t("All nodes online and in sync");
-        setStatus(true, "sitemap", t("This Zoraxy is the hub"), kind, word,
+        setStatus(true, "sitemap", t("This Dunree is the hub"), kind, word,
             total ? tf("It publishes configuration to {0} nodes in {1} groups and watches their health. It can never run commands on a node.", total, ov.groups.length)
                   : t("No node has joined yet. Create a join token under Join nodes and enter it on the node you want to add."),
             fact("Nodes online", tf("{0} of {1}", on, total), total ? (on == total ? "ok" : "danger") : "muted", total && on < total ? tf("{0} not reachable", total - on) : "") +
@@ -732,7 +732,7 @@
             kv(t("Last seen"), esc(ago(x.lastSeen)) + (x.lastSeen ? " <span class='zx-sub'>" + esc(ts(x.lastSeen)) + "</span>" : "")) +
             kv(t("Configuration"), x.paused ? esc(t("Sync is off: the hub sends it nothing")) : esc(tf("Runs v{0}", x.appliedVersion || 0)) + (x.desiredVersion && x.desiredVersion != x.appliedVersion ? " " + esc(tf("of v{0}", x.desiredVersion)) : "") + (res ? " " + dot(res.kind, res.word) : ""), x.paused ? "muted" : "") +
             kv(t("Health"), x.health == "ok" ? dot("ok", t("Healthy")) : x.health ? dot("danger", t("Unhealthy")) + " " + esc(cap(x.health)) : esc(t("No report yet")), x.health ? "" : "muted") +
-            kv(t("Software"), esc([x.version ? "Zoraxy v" + x.version : "", x.uptime ? tf("up {0}", dur(x.uptime)) : "", x.wafMode ? tf("WAF {0}", x.wafMode) : ""].filter(Boolean).join(" · ") || "-")) +
+            kv(t("Software"), esc([x.version ? "Dunree v" + x.version : "", x.uptime ? tf("up {0}", dur(x.uptime)) : "", x.wafMode ? tf("WAF {0}", x.wafMode) : ""].filter(Boolean).join(" · ") || "-")) +
             kv(t("Certificates"), x.certExpiry ? dot(cdays < 14 ? "danger" : cdays <= 30 ? "warn" : "ok", cdays <= 0 ? t("Expired") : cdays == 1 ? t("1 day left") : tf("{0} days left", cdays)) + " <span class='zx-sub'>" + esc(t("the one that expires first")) + "</span>" : esc(t("No report yet")), x.certExpiry ? "" : "muted") +
             kv(t("Traffic"), esc([tf("{0} req/min", Math.round(x.reqPerMin || 0)), tf("{0} errors/min", Math.round(x.errPerMin || 0)), tf("{0} active rules", x.endpoints == null ? 0 : x.endpoints)].join(" · "))));
         $("#flNodeActs").attr("data-id", x.id).find("[data-act=nodeRotate], [data-act=nodeRevoke], [data-act=nodeGroup]").prop("disabled", x.status == "revoked");

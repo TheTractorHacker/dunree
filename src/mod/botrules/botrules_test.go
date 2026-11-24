@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/exploits"
+	"github.com/foleyit/dunree/mod/dynamicproxy/exploits"
 )
 
 func engineWith(t *testing.T, mod func(*Config)) *Engine {

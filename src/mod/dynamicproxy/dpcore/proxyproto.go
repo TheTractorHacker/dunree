@@ -24,8 +24,8 @@ import (
 	the connection level (HAProxy / nginx with accept-proxy, Traefik, ...). For TLS upstreams the header is sent
 	in clear before the TLS handshake, as the specification requires.
 
-	The announced source is the TCP peer address of the request as seen by Zoraxy (r.RemoteAddr). When
-	Zoraxy itself is behind a CDN or load balancer this is that device, not the visitor; use X-Forwarded-For
+	The announced source is the TCP peer address of the request as seen by Dunree (r.RemoteAddr). When
+	Dunree itself is behind a CDN or load balancer this is that device, not the visitor; use X-Forwarded-For
 	for the visitor address in that setup. The stream (TCP / UDP) proxy is not affected.
 */
 

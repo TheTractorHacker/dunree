@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/errorpages"
-	"imuslab.com/zoraxy/mod/metrics"
-	"imuslab.com/zoraxy/mod/pathmatch"
+	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/foleyit/dunree/mod/pathmatch"
 )
 
 /*

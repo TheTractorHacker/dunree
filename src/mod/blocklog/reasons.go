@@ -33,7 +33,7 @@ const (
 )
 
 // Classify turns a router forwardType into a reason key and a detail. ok is false when the
-// request was not rejected by Zoraxy itself.
+// request was not rejected by Dunree itself.
 func Classify(forwardType string) (reason, detail string, ok bool) {
 	ft := forwardType
 	dropped := false
@@ -132,7 +132,7 @@ func ChallengeDetail(name string, unavailable bool) string {
 	return name + " (" + d + ")"
 }
 
-// IsBlocked reports whether the forwardType is a rejection by Zoraxy
+// IsBlocked reports whether the forwardType is a rejection by Dunree
 func IsBlocked(forwardType string) bool {
 	_, _, ok := Classify(forwardType)
 	return ok

@@ -9,7 +9,7 @@ package rewrite
 import (
 	"strconv"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/permissionpolicy"
+	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
 )
 
 // SplitInboundOutboundHeaders split user defined headers into upstream and downstream headers
@@ -39,10 +39,10 @@ func SplitUpDownStreamHeaders(rewriteOptions *HeaderRewriteOptions) ([][]string,
 		}
 
 		//Assign to slice
-		if customHeader.Direction == HeaderDirection_ZoraxyToUpstream {
+		if customHeader.Direction == HeaderDirection_DunreeToUpstream {
 			upstreamHeaders[upstreamHeaderCounter] = thisHeaderSet
 			upstreamHeaderCounter++
-		} else if customHeader.Direction == HeaderDirection_ZoraxyToDownstream {
+		} else if customHeader.Direction == HeaderDirection_DunreeToDownstream {
 			downstreamHeaders[downstreamHeaderCounter] = thisHeaderSet
 			downstreamHeaderCounter++
 		}

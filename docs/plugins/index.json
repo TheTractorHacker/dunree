@@ -9,8 +9,8 @@
       "type": "folder",
       "files": [
         {
-          "filename": "1. Introduction/1. What is Zoraxy Plugin.md",
-          "title": "What is Zoraxy Plugin",
+          "filename": "1. Introduction/1. What is Dunree Plugin.md",
+          "title": "What is Dunree Plugin",
           "type": "file"
         },
         {
@@ -115,8 +115,8 @@
       "type": "file"
     },
     {
-      "filename": "zoraxy_plugin API.md",
-      "title": "zoraxy_plugin API",
+      "filename": "dunree_plugin API.md",
+      "title": "dunree_plugin API",
       "type": "file"
     }
   ]

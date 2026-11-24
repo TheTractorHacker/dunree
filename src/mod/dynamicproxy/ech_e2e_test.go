@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/ech"
-	"imuslab.com/zoraxy/mod/tlscert"
+	"github.com/foleyit/dunree/mod/ech"
+	"github.com/foleyit/dunree/mod/tlscert"
 )
 
 // End to end: a real TLS listener of the router with ECH keys installed, an endpoint that requires a client certificate

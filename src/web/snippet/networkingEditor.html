@@ -78,7 +78,7 @@
                     <button class="ui primary button" onclick="savePeers();"><i class="save icon"></i> Save allowed peers</button>
                 </div>
                 <div class="ui basic message">
-                    Only connections whose <b>TCP peer address</b> is in this list reach the proxy rule; everybody else gets 403 before any other check. Forwarded headers (<code>X-Forwarded-For</code>, <code>CF-Connecting-IP</code>...) are never used for this decision, so they cannot be spoofed to get in. Use it to make sure only your CDN or load balancer can talk to a rule. It applies to HTTPS, plain HTTP on port 80 and secondary ports. If Zoraxy's own listener uses PROXY protocol, the peer is the address announced in the PROXY header.
+                    Only connections whose <b>TCP peer address</b> is in this list reach the proxy rule; everybody else gets 403 before any other check. Forwarded headers (<code>X-Forwarded-For</code>, <code>CF-Connecting-IP</code>...) are never used for this decision, so they cannot be spoofed to get in. Use it to make sure only your CDN or load balancer can talk to a rule. It applies to HTTPS, plain HTTP on port 80 and secondary ports. If Dunree's own listener uses PROXY protocol, the peer is the address announced in the PROXY header.
                 </div>
             </div>
 

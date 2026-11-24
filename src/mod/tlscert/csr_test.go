@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/info/logger"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/info/logger"
 )
 
 func newTestManager(t *testing.T) *Manager {

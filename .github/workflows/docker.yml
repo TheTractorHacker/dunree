@@ -1,20 +1,29 @@
-name: Build and push Docker image
+name: Build and push the container image
 
 on:
   release:
     types: [released, prereleased]
 
+# The image name is a repository variable, because the registry of the project is not decided:
+#   DOCKER_IMAGE      full image name without tag, e.g. registry.example/foleyit/dunree (required:
+#                     the job is skipped while it is not set, and there is no default namespace)
+#   DOCKER_REGISTRY   registry to log in to (empty = Docker Hub)
+#   DOCKER_PLATFORMS  default linux/amd64,linux/arm64
+#   DOCKER_WITH_ZEROTIER  default true (the image has always carried zerotier-one)
+#   DUNREE_SOURCE_URL where the source of the release can be obtained (shown in About, image label)
+# Secrets: DOCKER_USERNAME, DOCKER_PASSWORD.
 env:
-  DOCKER_ACCOUNT: ${{ vars.DOCKER_ACCOUNT || 'zoraxydocker' }}
-  DOCKER_REPO: ${{ vars.DOCKER_REPO || 'zoraxy' }}
-  DOCKER_REPO_TAG_CACHE_NAME: ${{ vars.DOCKER_REPO_TAG_CACHE_NAME || 'buildcache' }}
+  DOCKER_IMAGE: ${{ vars.DOCKER_IMAGE }}
   DOCKER_PLATFORMS: ${{ vars.DOCKER_PLATFORMS || 'linux/amd64,linux/arm64' }}
+  RELEASE_TAG: ${{ github.event.release.tag_name }}
+  RELEASE_IS_PRERELEASE: ${{ github.event.release.prerelease }}
 
 permissions:
   contents: read
 
 jobs:
   setup-build-push:
+    if: vars.DOCKER_IMAGE != ''
     runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Checkout code
@@ -28,35 +37,36 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
 
-      - name: Login to Docker Hub
+      - name: Login to the registry
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6  # v4.7.0
         with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Setup building file structure
-        run: |
-          cp -lr $GITHUB_WORKSPACE/src/ $GITHUB_WORKSPACE/docker/src/
-
-        # Modify the pushed tag depending on the release type. Prereleases and RC's should not be tagged as latest
-      - name: Create tag list for docker image
+        # Prereleases and RC's are not tagged as latest. The values come from the environment,
+        # never from text pasted into the script.
+      - name: Create tag list for the image
         id: tags
         run: |
-          if [ "${{ github.event.release.prerelease }}" = true ]; then
-            echo "docker=${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.release.tag_name }}" == *"-rc"* ]]; then
-            echo "docker=${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          if [ "$RELEASE_IS_PRERELEASE" = true ] || [[ "$RELEASE_TAG" == *"-rc"* ]]; then
+            echo "docker=${DOCKER_IMAGE}:${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           else
-            echo "docker=${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:latest, ${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            echo "docker=${DOCKER_IMAGE}:latest,${DOCKER_IMAGE}:${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build and push Docker image
+      - name: Build and push the image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
         with:
-          context: ./docker
+          context: .
+          file: packaging/container/Dockerfile
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           tags: ${{ steps.tags.outputs.docker }}
-          cache-from: type=registry,ref=${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.DOCKER_REPO_TAG_CACHE_NAME }}
-          cache-to: type=registry,ref=${{ env.DOCKER_ACCOUNT }}/${{ env.DOCKER_REPO }}:${{ env.DOCKER_REPO_TAG_CACHE_NAME }},mode=max
-
+          build-args: |
+            WITH_ZEROTIER=${{ vars.DOCKER_WITH_ZEROTIER || 'true' }}
+            DUNREE_VERSION=${{ github.event.release.tag_name }}
+            DUNREE_REVISION=${{ github.sha }}
+            DUNREE_SOURCE_URL=${{ vars.DUNREE_SOURCE_URL }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max

@@ -1,0 +1,23 @@
+#!/bin/sh
+# Dunree .pkg: after the files are copied. Creates the data and log folders and starts the daemon.
+# Existing data is never touched.
+set -e
+
+mkdir -p /usr/local/var/dunree /usr/local/var/log/dunree
+# Database, private keys and tokens: root only. An existing folder keeps its mode.
+if [ ! -e /usr/local/var/dunree/.dunree-pkg ]; then
+  chmod 750 /usr/local/var/dunree
+  : >/usr/local/var/dunree/.dunree-pkg
+fi
+chown root:wheel /Library/LaunchDaemons/ie.foleyit.dunree.plist
+chmod 644 /Library/LaunchDaemons/ie.foleyit.dunree.plist
+
+# To install without starting: sudo touch /usr/local/var/dunree/.no-autostart before the install.
+if [ -e /usr/local/var/dunree/.no-autostart ]; then
+  echo "Dunree installed, not started (.no-autostart found)."
+  exit 0
+fi
+launchctl bootstrap system /Library/LaunchDaemons/ie.foleyit.dunree.plist || {
+  echo "Dunree is installed but could not be started. Try: sudo launchctl bootstrap system /Library/LaunchDaemons/ie.foleyit.dunree.plist"
+}
+exit 0

@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-      Introspect | Zoraxy Documentation
+      Introspect | Dunree Documentation
     </title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -69,7 +69,7 @@
           <a href="#!" class="is-active item">
             Documents
           </a>
-          <a href="https://github.com/tobychui/zoraxy/tree/main/example/plugins" target="_blank" class="item">
+          <a href="../../../../example/plugins/" class="item">
             Examples
             <span class="ts-icon is-arrow-up-right-from-square-icon"></span>
           </a>
@@ -88,8 +88,8 @@
                   <span class="ts-icon is-caret-down-icon"></span>
                 </a>
                 <div class="ts-menu is-dense is-small is-horizontally-padded">
-                  <a class="item" href="/plugins/html/1. Introduction/1. What is Zoraxy Plugin.html">
-                    What is Zoraxy Plugin
+                  <a class="item" href="/plugins/html/1. Introduction/1. What is Dunree Plugin.html">
+                    What is Dunree Plugin
                   </a>
                   <a class="item" href="/plugins/html/1. Introduction/2. Getting Started.html">
                     Getting Started
@@ -149,8 +149,8 @@
                 <a class="item" href="/plugins/html/index.html">
                   index
                 </a>
-                <a class="item" href="/plugins/html/zoraxy_plugin API.html">
-                  zoraxy_plugin API
+                <a class="item" href="/plugins/html/dunree_plugin API.html">
+                  dunree_plugin API
                 </a>
               </div>
             </div>
@@ -169,13 +169,13 @@
                 <div class="ts-divider has-top-spaced-large"></div>
                 <p>
                   <p class="ts-text">
-                    Introspect, similar to the one in dbus design, is used to get the information from plugin when Zoraxy starts (or manually triggered in development mode or force reload plugin list).
+                    Introspect, similar to the one in dbus design, is used to get the information from plugin when Dunree starts (or manually triggered in development mode or force reload plugin list).
                   </p>
                 </p>
                 <p>
                   <p class="ts-text">
                     <span class="ts-text is-heavy">
-                      This is a pre-defined structure where the plugin must provide to Zoraxy
+                      This is a pre-defined structure where the plugin must provide to Dunree
                     </span>
                     when the plugin is being started with the
                     <span class="ts-text is-code">
@@ -188,9 +188,9 @@
                   <p class="ts-text">
                     The introspect structure is defined under the
                     <span class="ts-text is-code">
-                      zoraxy_plugin
+                      dunree_plugin
                     </span>
-                    library, where both Zoraxy and plugin should use. As of writing, the structure of introspect is like this.
+                    library, where both Dunree and plugin should use. As of writing, the structure of introspect is like this.
                   </p>
                 </p>
                 <pre><code class="language-go">type IntroSpect struct {
@@ -218,7 +218,7 @@
 		Once plugin is enabled these rules always applies to the enabled HTTP Proxy rule
 		This is faster than dynamic capture, but less flexible
 	*/
-	StaticCapturePaths   []StaticCaptureRule `json:&quot;static_capture_paths&quot;`   //Static capture paths of your plugin, see Zoraxy documentation for more details
+	StaticCapturePaths   []StaticCaptureRule `json:&quot;static_capture_paths&quot;`   //Static capture paths of your plugin, see Dunree documentation for more details
 	StaticCaptureIngress string              `json:&quot;static_capture_ingress&quot;` //Static capture ingress path of your plugin (e.g. /s_handler)
 
 	/*
@@ -233,15 +233,15 @@
 	DynamicCaptureIngress string `json:&quot;dynamic_capture_ingress&quot;` //Dynamic capture ingress path of your plugin (e.g. /d_handler)
 
 	/* UI Path for your plugin */
-	UIPath string `json:&quot;ui_path&quot;` //UI path of your plugin (e.g. /ui), will proxy the whole subpath tree to Zoraxy Web UI as plugin UI
+	UIPath string `json:&quot;ui_path&quot;` //UI path of your plugin (e.g. /ui), will proxy the whole subpath tree to Dunree Web UI as plugin UI
 
 	/* Subscriptions Settings */
 	SubscriptionPath    string            `json:&quot;subscription_path&quot;`    //Subscription event path of your plugin (e.g. /notifyme), a POST request with SubscriptionEvent as body will be sent to this path when the event is triggered
-	SubscriptionsEvents map[string]string `json:&quot;subscriptions_events&quot;` //Subscriptions events of your plugin, see Zoraxy documentation for more details
+	SubscriptionsEvents map[string]string `json:&quot;subscriptions_events&quot;` //Subscriptions events of your plugin, see Dunree documentation for more details
 }
 </code></pre>
                 <p>
-                  The introspect provide Zoraxy the required information to start the plugin and how to interact with it.  For more details on what those capture settings are for, see &ldquo;Capture Mode&rdquo; section.
+                  The introspect provide Dunree the required information to start the plugin and how to interact with it.  For more details on what those capture settings are for, see &ldquo;Capture Mode&rdquo; section.
                 </p>
                 <div class="ts-divider has-top-spaced-large"></div>
                 <h2 id="introspect-manual-triggering">
@@ -253,7 +253,7 @@
                     <span class="ts-text is-code">
                       -introspect
                     </span>
-                    flag on any Zoraxy plugin. You should be able to see an output like so.
+                    flag on any Dunree plugin. You should be able to see an output like so.
                   </p>
                 </p>
                 <pre><code class="language-json">$ ./debugger -introspect
@@ -262,7 +262,7 @@
  &quot;name&quot;: &quot;Plugin Debugger&quot;,
  &quot;author&quot;: &quot;aroz.org&quot;,
  &quot;author_contact&quot;: &quot;https://aroz.org&quot;,
- &quot;description&quot;: &quot;A debugger for Zoraxy \u003c-\u003e plugin communication pipeline&quot;,
+ &quot;description&quot;: &quot;A debugger for Dunree \u003c-\u003e plugin communication pipeline&quot;,
  &quot;url&quot;: &quot;https://zoraxy.aroz.org&quot;,
  &quot;type&quot;: 0,
  &quot;version_major&quot;: 1,
@@ -296,7 +296,7 @@
       <div class="ts-divider"></div>
       <div class="ts-content">
         <div class="ts-text">
-          Zoraxy © tobychui
+          Dunree plugin documentation, based on the Zoraxy documentation © tobychui
           <span class="thisyear">
             2025
           </span>

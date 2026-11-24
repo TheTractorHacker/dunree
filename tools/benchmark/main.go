@@ -45,7 +45,7 @@ func main() {
 	SetupCloseHandler()
 	//Start the web server
 	fmt.Println("Starting web server on port", benchmarkWebserverListeningPort)
-	fmt.Println("In Zoraxy, point your test proxy rule to this server at the given port")
+	fmt.Println("In Dunree, point your test proxy rule to this server at the given port")
 	startWebServer()
 	select {}
 }

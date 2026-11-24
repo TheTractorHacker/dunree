@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/foleyit/dunree/mod/netutils"
 	"github.com/pquerna/otp/totp"
-	"imuslab.com/zoraxy/mod/netutils"
 )
 
 // validateTOTPCode is a thin wrapper so that gateway.go can validate

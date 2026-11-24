@@ -12,8 +12,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/foleyit/dunree/mod/adminallow"
 	"golang.org/x/net/http2"
-	"imuslab.com/zoraxy/mod/adminallow"
 )
 
 type H2CRoundTripper struct {

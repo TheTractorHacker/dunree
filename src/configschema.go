@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"imuslab.com/zoraxy/mod/confpack"
+	"github.com/foleyit/dunree/mod/confpack"
 )
 
 // runConfigSchemaMigration stamps the config folder with the schema version of this build and runs
@@ -16,7 +16,7 @@ func runConfigSchemaMigration() {
 	case err != nil:
 		log.Printf("WARNING: config schema migration: %v", err)
 	case res.Newer:
-		log.Printf("WARNING: %s was written by a newer Zoraxy (config schema %d, this build writes %d). It was not changed.", CONF_FOLDER, res.From, res.To)
+		log.Printf("WARNING: %s was written by a newer Dunree (config schema %d, this build writes %d). It was not changed.", CONF_FOLDER, res.From, res.To)
 	case len(res.Ran) > 0:
 		log.Printf("Config migrated from schema %d to %d (%v). A copy of the previous config is in %s", res.From, res.To, res.Ran, res.Backup)
 	}

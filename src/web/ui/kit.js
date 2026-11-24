@@ -111,7 +111,7 @@
   <div class="zx-page-header__main">
     <div class="zx-page-header__crumbs" data-zx-crumbs></div>
     <h2 class="zx-page-header__title">HTTP Proxy</h2>
-    <p class="zx-page-header__sub">Hosts Zoraxy forwards to an upstream.</p>
+    <p class="zx-page-header__sub">Hosts Dunree forwards to an upstream.</p>
   </div>
   <div class="zx-page-header__actions">
     <button type="button" class="zx-btn zx-btn--secondary">Import</button>
@@ -140,7 +140,7 @@
     <label class="zx-field__label" for="f-port">Listening port</label>
     <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="f-port-what" aria-label="What is this?">?</button>
   </div>
-  <div class="zx-popover" id="f-port-what" role="note" hidden>The TCP port Zoraxy accepts visitors on. HTTPS normally uses 443.</div>
+  <div class="zx-popover" id="f-port-what" role="note" hidden>The TCP port Dunree accepts visitors on. HTTPS normally uses 443.</div>
   <div class="zx-field__control"><input class="zx-input zx-input--short" id="f-port" value="443" inputmode="numeric"></div>
   <p class="zx-help">1 to 65535.</p>
   <p class="zx-error" id="f-port-err">Enter a port between 1 and 65535.</p>

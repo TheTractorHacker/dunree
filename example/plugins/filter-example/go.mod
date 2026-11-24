@@ -1,3 +1,3 @@
-module example.com/zoraxy/filter-example
+module example.com/dunree/filter-example
 
 go 1.23.6

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foleyit/dunree/mod/database/dbbolt"
+	"github.com/foleyit/dunree/mod/database/dbinc"
 	bolt "go.etcd.io/bbolt"
-	"imuslab.com/zoraxy/mod/database/dbbolt"
-	"imuslab.com/zoraxy/mod/database/dbinc"
 )
 
 // A second open of a locked file must come back with a LockedError after the (short, injected)
@@ -371,10 +371,10 @@ func TestCompactFollowsSymlink(t *testing.T) {
 	d.Close()
 }
 
-// The compact path must not tell the operator to "start Zoraxy again" as the next step.
+// The compact path must not tell the operator to "start Dunree again" as the next step.
 func TestLockedErrorDescribeHasNoStartAdvice(t *testing.T) {
 	e := &dbinc.LockedError{Path: "/x/sys.db", Backend: "BoltDB"}
-	if strings.Contains(e.Describe(), "start Zoraxy") || !strings.Contains(e.Error(), "start Zoraxy again") {
+	if strings.Contains(e.Describe(), "start Dunree") || !strings.Contains(e.Error(), "start Dunree again") {
 		t.Errorf("Describe=%q Error=%q", e.Describe(), e.Error())
 	}
 }

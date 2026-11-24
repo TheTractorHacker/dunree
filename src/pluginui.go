@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/updater"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/updater"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -71,7 +71,7 @@ func pluginUIStaticAssets() http.Handler {
 	})
 }
 
-// releasePublicKeyBytes is the public key Zoraxy releases are verified with. The
+// releasePublicKeyBytes is the public key Dunree releases are verified with. The
 // plugin manager refuses it as the plugin index key: the index has a key of its own.
 func releasePublicKeyBytes() []byte {
 	pk, err := updater.EmbeddedPublicKey()

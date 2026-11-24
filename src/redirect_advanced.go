@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/redirection"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

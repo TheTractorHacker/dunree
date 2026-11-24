@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/streamproxy"
 )
 
 // Upstream #1075: access rules (blacklist / whitelist) can be attached to a stream proxy instance.

@@ -10,7 +10,7 @@ from lib import *
 def lua_script_handler():
     """Lua handler answers without the upstream, hook mode adds headers and continues, sandbox escapes and infinite loops
     return an error quickly instead of executing or hanging."""
-    with Zoraxy() as z, Backend(name="app") as app:
+    with Dunree() as z, Backend(name="app") as app:
         z.add_rule("lua.test", app.addr)
         code = '''
 local q = request.args and request.args.name or "world"
@@ -20,8 +20,8 @@ response.body = "hello " .. q .. " from " .. request.method .. " " .. request.pa
 '''
         z.api("/api/proxy/script/set", ep="lua.test", config=json.dumps({"Enabled": True, "Mode": "handler", "Code": code}))
         n = len(app.log)
-        r = z.req("lua.test", "/greet?name=zoraxy", headers={"X-Probe": "p1"})
-        check(r.status == 201 and r.h("x-lua") == "yes" and r.text == "hello zoraxy from GET /greet h=p1", "handler: %d %r %s" % (r.status, r.text, r.headers))
+        r = z.req("lua.test", "/greet?name=dunree", headers={"X-Probe": "p1"})
+        check(r.status == 201 and r.h("x-lua") == "yes" and r.text == "hello dunree from GET /greet h=p1", "handler: %d %r %s" % (r.status, r.text, r.headers))
         check(len(app.log) == n, "handler mode contacted the upstream")
         # hook mode: set a request header, continue to the upstream
         hook = 'request_header_set("X-From-Lua", "hooked")'
@@ -75,7 +75,7 @@ def sablier_gate():
         else:
             send(h, 200, "<html><body>Starting your workload...</body></html>", {"X-Sablier-Session-Status": "not-ready"}, ctype="text/html")
 
-    with Zoraxy() as z, Backend(sablier, name="sablier") as sab, Backend(name="app") as app:
+    with Dunree() as z, Backend(sablier, name="sablier") as sab, Backend(name="app") as app:
         z.add_rule("sab.test", app.addr)
         cfg = {"Enabled": True, "URL": "http://" + sab.addr, "Strategy": "dynamic", "Names": ["web"], "SessionDuration": "5m",
                "ReadyCacheSeconds": -1, "BypassPaths": ["/healthz"]}
@@ -145,7 +145,7 @@ def dns_query(name, qtype=1, tcp=False, port=0, addr="127.0.0.1"):
 @scenario("dns_responder", ["769"])
 def dns_responder():
     """UDP and TCP A queries for proxy rule hostnames and aliases (wildcard); other names REFUSED."""
-    with Zoraxy() as z, Backend(name="app") as app:
+    with Dunree() as z, Backend(name="app") as app:
         z.add_rule("dns.test", app.addr)
         z.api("/api/proxy/setAlias", ep="dns.test", alias=json.dumps(["*.wild.test"]))
         port = free_port()
@@ -189,7 +189,7 @@ def stream_proxy():
     for s in (ts, us):
         threading.Thread(target=s.serve_forever, daemon=True).start()
     try:
-        with Zoraxy() as z:
+        with Dunree() as z:
             front = free_port()
             z.api("/api/streamprox/config/add", name="e2e-echo", listenAddr="127.0.0.1:%d" % front, proxyAddr="127.0.0.1:%d" % tcp_port,
                   timeout=5, useTCP=True, useUDP=False, proxyProtocolVersion=0, enableLogging=False, accessRuleUUID="default")

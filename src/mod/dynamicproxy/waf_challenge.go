@@ -14,10 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/abuse"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
-	"imuslab.com/zoraxy/mod/dynamicproxy/waf"
-	"imuslab.com/zoraxy/mod/metrics"
+	"github.com/foleyit/dunree/mod/abuse"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -27,7 +28,7 @@ import (
 
 	A request whose anomaly score is in the challenge band gets the endpoint's CAPTCHA page (the same providers,
 	branding and verification as "Require CAPTCHA", HTTP 403 like every CAPTCHA page). When the visitor solves it
-	the verification answer carries a second cookie, zoraxy_waf_challenge, that is
+	the verification answer carries a second cookie, dunree_waf_challenge, that is
 
 	  - signed (HMAC-SHA256) with a random per-install key kept in the conf folder (waf_challenge.key),
 	  - bound to the client IP, the User-Agent hash, the endpoint and an expiry (ChallengeTTLMinutes),
@@ -40,9 +41,10 @@ import (
 */
 
 const (
-	wafChallengeCookie  = "zoraxy_waf_challenge"
-	wafChallengeVersion = "w1"
-	wafChallengeKeyLen  = 32
+	wafChallengeCookie       = "dunree_waf_challenge"
+	legacyWafChallengeCookie = "zoraxy_waf_challenge" // legacy-compat: honoured until it expires, never set again
+	wafChallengeVersion      = "w1"
+	wafChallengeKeyLen       = 32
 )
 
 // wafChallengeSigner signs and verifies challenge cookies
@@ -159,7 +161,7 @@ func (s *wafChallengeSigner) Validate(value, endpoint, clientIP, ua string) bool
 
 // wafChallengeValid checks the request's challenge cookie
 func (router *Router) wafChallengeValid(r *http.Request, sep *ProxyEndpoint, clientIP string) bool {
-	c, err := r.Cookie(wafChallengeCookie)
+	c, err := wirecompat.Cookie(r, wafChallengeCookie, legacyWafChallengeCookie)
 	if err != nil {
 		return false
 	}
@@ -224,11 +226,11 @@ func (router *Router) wafChallengeVerify(w http.ResponseWriter, r *http.Request,
 	if !cfg.ChallengeEnabled() || !router.wafChallengeAvailable(sep) {
 		return false
 	}
-	if r.URL.Path == captcha.AltchaChallengePath && sep.EffectiveCaptchaConfig().Provider == captcha.ProviderAltcha {
+	if captcha.IsAltchaChallengePath(r.URL.Path) && sep.EffectiveCaptchaConfig().Provider == captcha.ProviderAltcha {
 		captcha.HandleAltchaChallenge(w, r, sep.EffectiveCaptchaConfig())
 		return true
 	}
-	if r.URL.Path != captcha.VerifyPath {
+	if !captcha.IsVerifyPath(r.URL.Path) {
 		return false
 	}
 	cw := &challengeCookieWriter{ResponseWriter: w, router: router, r: r, sep: sep, clientIP: clientIP, ttl: cfg.ChallengeTTL()}
@@ -245,7 +247,7 @@ func (router *Router) wafServeChallenge(w http.ResponseWriter, r *http.Request, 
 	// A challenge is not a block: it must not count towards the automatic ban (the status would otherwise be
 	// read as a plain 403). An empty kind is "noted, nothing to report".
 	abuseNoteKind(r, "")
-	w.Header().Set("X-Zoraxy-Captcha-Reason", "waf-challenge")
+	wirecompat.SetHeader(w.Header(), "Captcha-Reason", "waf-challenge")
 	domain := r.Host
 	if domain == "" {
 		domain = sep.RootOrMatchingDomain

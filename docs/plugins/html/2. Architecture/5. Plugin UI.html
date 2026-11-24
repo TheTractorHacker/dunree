@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-      Plugin UI | Zoraxy Documentation
+      Plugin UI | Dunree Documentation
     </title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -69,7 +69,7 @@
           <a href="#!" class="is-active item">
             Documents
           </a>
-          <a href="https://github.com/tobychui/zoraxy/tree/main/example/plugins" target="_blank" class="item">
+          <a href="../../../../example/plugins/" class="item">
             Examples
             <span class="ts-icon is-arrow-up-right-from-square-icon"></span>
           </a>
@@ -88,8 +88,8 @@
                   <span class="ts-icon is-caret-down-icon"></span>
                 </a>
                 <div class="ts-menu is-dense is-small is-horizontally-padded">
-                  <a class="item" href="/plugins/html/1. Introduction/1. What is Zoraxy Plugin.html">
-                    What is Zoraxy Plugin
+                  <a class="item" href="/plugins/html/1. Introduction/1. What is Dunree Plugin.html">
+                    What is Dunree Plugin
                   </a>
                   <a class="item" href="/plugins/html/1. Introduction/2. Getting Started.html">
                     Getting Started
@@ -149,8 +149,8 @@
                 <a class="item" href="/plugins/html/index.html">
                   index
                 </a>
-                <a class="item" href="/plugins/html/zoraxy_plugin API.html">
-                  zoraxy_plugin API
+                <a class="item" href="/plugins/html/dunree_plugin API.html">
+                  dunree_plugin API
                 </a>
               </div>
             </div>
@@ -175,7 +175,7 @@
                 <p>
                   <p class="ts-text">
                     <span class="ts-text is-heavy">
-                      A plugin must provide a UI, as it is part of the control mechanism of the plugin life cycle. (i.e. Zoraxy use the plugin UI HTTP server to communicate with the plugin for control signals)
+                      A plugin must provide a UI, as it is part of the control mechanism of the plugin life cycle. (i.e. Dunree use the plugin UI HTTP server to communicate with the plugin for control signals)
                     </span>
                     As plugin installed via plugin store provides limited ways for a user to configure the plugin, the plugin web UI will be the best way for user to setup your plugin.
                   </p>
@@ -185,7 +185,7 @@
                 </h2>
                 <p>
                   <p class="ts-text">
-                    If a plugin provide a Web UI endpoint for Zoraxy during the introspect process, a new item will be shown in the Plugins section on Zoraxy side menu. Below is an example of the Web UI of UPnP Port Forwarder plugin.
+                    If a plugin provide a Web UI endpoint for Dunree during the introspect process, a new item will be shown in the Plugins section on Dunree side menu. Below is an example of the Web UI of UPnP Port Forwarder plugin.
                   </p>
                 </p>
                 <p>
@@ -198,7 +198,7 @@
                 </h2>
                 <p>
                   <p class="ts-text">
-                    The Web UI is implemented as a reverse proxy and embed in an iframe. So you do not need to handle CORS issues with the web UI (as it will be proxy internally by Zoraxy as exposed as something like a virtual directory mounted website).
+                    The Web UI is implemented as a reverse proxy and embed in an iframe. So you do not need to handle CORS issues with the web UI (as it will be proxy internally by Dunree as exposed as something like a virtual directory mounted website).
                   </p>
                 </p>
                 <p>
@@ -215,7 +215,7 @@
                     <span class="ts-text is-heavy">
                       When developing the plugin web UI, do not use absolute path for any resources used in the HTML file
                     </span>
-                    , unless you are trying to re-use Zoraxy components like css or image elements stored in Zoraxy embedded web file system (e.g.
+                    , unless you are trying to re-use Dunree components like css or image elements stored in Dunree embedded web file system (e.g.
                     <span class="ts-text is-code">
                       /img/logo.svg
                     </span>
@@ -234,7 +234,7 @@
       <div class="ts-divider"></div>
       <div class="ts-content">
         <div class="ts-text">
-          Zoraxy © tobychui
+          Dunree plugin documentation, based on the Zoraxy documentation © tobychui
           <span class="thisyear">
             2025
           </span>

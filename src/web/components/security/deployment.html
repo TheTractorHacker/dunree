@@ -6,7 +6,7 @@
             <span class="sx-status__icon" aria-hidden="true"><i class="sitemap icon"></i></span>
             <div class="sx-status__text">
                 <h4 class="sx-status__title"><span class="sx-status__name">Proxy chain</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
-                <p class="sx-status__desc">Where Zoraxy sits in your network. The default, Standalone, changes nothing. Zoraxy never changes your firewall.</p>
+                <p class="sx-status__desc">Where Dunree sits in your network. The default, Standalone, changes nothing. Dunree never changes your firewall.</p>
             </div>
         </div>
         <dl class="sx-facts">
@@ -20,28 +20,28 @@
 
     <section class="zx-card">
         <div class="zx-card__head">
-            <h3 class="zx-card__title" id="drRoleLbl">Role of this Zoraxy</h3>
+            <h3 class="zx-card__title" id="drRoleLbl">Role of this Dunree</h3>
             <p class="zx-card__desc">Most installations are Standalone. The other two are for a chain of two proxies, where the outer one faces the internet and the inner one sits next to your servers.</p>
         </div>
         <div class="zx-card__body">
             <div class="dr-roles" id="drRoles" role="radiogroup" aria-labelledby="drRoleLbl">
                 <button type="button" class="dr-role" role="radio" data-role="standalone" aria-checked="true">
                     <span class="dr-role__name">Standalone <span class="zx-badge">Default</span></span>
-                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><b>Zoraxy</b><i>Servers</i></span>
+                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><b>Dunree</b><i>Servers</i></span>
                     <span class="dr-role__desc">One proxy between the internet (or your CDN) and your servers. Nothing is hardened unless you switch it on below.</span>
                 </button>
                 <button type="button" class="dr-role" role="radio" data-role="external" aria-checked="false">
                     <span class="dr-role__name">External proxy</span>
-                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><b>Zoraxy</b><i>Internal proxy</i><i>Servers</i></span>
+                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><b>Dunree</b><i>Internal proxy</i><i>Servers</i></span>
                     <span class="dr-role__desc">Faces the internet and forwards to an internal proxy. Passes on only client address headers it built itself.</span>
                 </button>
                 <button type="button" class="dr-role" role="radio" data-role="internal" aria-checked="false">
                     <span class="dr-role__name">Internal proxy</span>
-                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><i>External proxy</i><b>Zoraxy</b><i>Servers</i></span>
+                    <span class="dr-chain" aria-hidden="true"><i>Internet</i><i>External proxy</i><b>Dunree</b><i>Servers</i></span>
                     <span class="dr-role__desc">Receives traffic from the external proxy. Believes a client address only when it comes from that proxy, and can refuse everyone else.</span>
                 </button>
             </div>
-            <div class="zx-sr-only"><label for="drRole">Role of this Zoraxy</label>
+            <div class="zx-sr-only"><label for="drRole">Role of this Dunree</label>
                 <select id="drRole" tabindex="-1">
                     <option value="standalone">Standalone (default, no change)</option>
                     <option value="external">External proxy (faces the internet, forwards to an internal proxy)</option>
@@ -110,7 +110,7 @@
 (function () {
     var HELP = {
         standalone: N_("Today's behaviour. Nothing is hardened unless you switch the option below on."),
-        external: N_("Client address headers from anyone who is not a trusted proxy are removed, and the chain to the internal proxy carries only values Zoraxy built itself."),
+        external: N_("Client address headers from anyone who is not a trusted proxy are removed, and the chain to the internal proxy carries only values Dunree built itself."),
         internal: N_("Believes the client address only when the connection comes from a trusted proxy (the external proxy). The peer gate below can refuse everyone else.")
     };
     var ROLE = { standalone: N_("Standalone"), external: N_("External proxy"), internal: N_("Internal proxy") };
@@ -151,8 +151,8 @@
             ZxSec.fact("#drFTrusted", d.trustedProxies, "", hard && !d.trustedProxies ? "warn" : "");
             ZxSec.fact("#drFGate", role !== "internal" ? t("Not used") : (d.peerGateActive ? t("On") : t("Off")), d.peerGateActive ? t("{0} refused since start").replace("{0}", d.gateRejected) : (role !== "internal" ? t("internal proxy only") : ""));
             ZxSec.status("#drStatusCard", role === "standalone"
-                ? { state: hard ? "on" : "off", badge: t("Standalone"), title: t("This Zoraxy runs on its own"), desc: hard ? t("Client address headers are only believed from trusted proxies.") : t("The default: nothing about forwarded headers is changed. Zoraxy never changes your firewall.") }
-                : { state: (w ? "warn" : "on"), badge: t(ROLE[role]), title: role === "external" ? t("This Zoraxy is the external proxy of a chain") : t("This Zoraxy is the internal proxy of a chain"),
+                ? { state: hard ? "on" : "off", badge: t("Standalone"), title: t("This Dunree runs on its own"), desc: hard ? t("Client address headers are only believed from trusted proxies.") : t("The default: nothing about forwarded headers is changed. Dunree never changes your firewall.") }
+                : { state: (w ? "warn" : "on"), badge: t(ROLE[role]), title: role === "external" ? t("This Dunree is the external proxy of a chain") : t("This Dunree is the internal proxy of a chain"),
                     desc: role === "external" ? t("It faces the internet and passes on only client address headers it built itself.") : (d.peerGateActive ? t("It believes client addresses only from the external proxy, and refuses everyone else.") : t("It believes client addresses only from the external proxy. The peer gate is off, so others can still connect.")) });
         });
     }

@@ -1,4 +1,4 @@
-module imuslab.com/zoraxy
+module github.com/foleyit/dunree
 
 go 1.20
 

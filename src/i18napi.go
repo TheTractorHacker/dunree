@@ -16,8 +16,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"imuslab.com/zoraxy/mod/i18n"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/i18n"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 const uiLanguageKey = "uiLanguage"

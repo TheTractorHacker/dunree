@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/confpack"
+	"github.com/foleyit/dunree/mod/confpack"
 )
 
 /*

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 // checkSupportHotRebuild checks if a Makefile or main.go exists in the given directory
@@ -23,7 +23,7 @@ func checkSupportHotRebuild(dir string) bool {
 
 /*
 LoadPluginSpec loads a plugin specification from the plugin directory
-Zoraxy will start the plugin binary or the entry point script
+Dunree will start the plugin binary or the entry point script
 with -introspect flag to get the plugin specification
 */
 func (m *Manager) LoadPluginSpec(pluginPath string) (*Plugin, error) {
@@ -73,14 +73,14 @@ func (m *Manager) LoadPluginSpec(pluginPath string) (*Plugin, error) {
 }
 
 // GetPluginSpec runs the plugin with -introspect and returns its manifest
-func (m *Manager) GetPluginSpec(entryPoint string) (*zoraxyPlugin.IntroSpect, error) {
+func (m *Manager) GetPluginSpec(entryPoint string) (*dunreePlugin.IntroSpect, error) {
 	return m.getPluginSpec(entryPoint, false)
 }
 
 // getPluginSpec runs a plugin binary with -introspect. asPluginUser: as the
 // unprivileged plugin user when one is configured (-plugin_user). That is how a
 // binary that was just downloaded is run for the first time (staging folder).
-func (m *Manager) getPluginSpec(entryPoint string, asPluginUser bool) (*zoraxyPlugin.IntroSpect, error) {
+func (m *Manager) getPluginSpec(entryPoint string, asPluginUser bool) (*dunreePlugin.IntroSpect, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -115,8 +115,8 @@ func (m *Manager) getPluginSpec(entryPoint string, asPluginUser bool) (*zoraxyPl
 // legacy plugin: before api_version existed such a key was an unknown key and
 // ignored, so a manifest that carries one must still load. Every other field is
 // decoded as strictly as before.
-func decodeManifest(output []byte) (*zoraxyPlugin.IntroSpect, []string, error) {
-	spec := zoraxyPlugin.IntroSpect{}
+func decodeManifest(output []byte) (*dunreePlugin.IntroSpect, []string, error) {
+	spec := dunreePlugin.IntroSpect{}
 	err := json.Unmarshal(output, &spec)
 	if err == nil {
 		return &spec, nil, nil
@@ -138,7 +138,7 @@ func decodeManifest(output []byte) (*zoraxyPlugin.IntroSpect, []string, error) {
 	if mErr != nil {
 		return nil, nil, err
 	}
-	spec = zoraxyPlugin.IntroSpect{}
+	spec = dunreePlugin.IntroSpect{}
 	if err := json.Unmarshal(rest, &spec); err != nil {
 		return nil, nil, err
 	}
@@ -147,7 +147,7 @@ func decodeManifest(output []byte) (*zoraxyPlugin.IntroSpect, []string, error) {
 
 // sanitizeSupervisionSpec checks the optional supervision fields of a manifest
 // (health_path, configure_via). An invalid value is dropped, never guessed.
-func sanitizeSupervisionSpec(spec *zoraxyPlugin.IntroSpect) []string {
+func sanitizeSupervisionSpec(spec *dunreePlugin.IntroSpect) []string {
 	var warns []string
 	if hp := spec.HealthPath; hp != "" {
 		ok := len(hp) <= 256 && strings.HasPrefix(hp, "/") && !strings.Contains(hp, "//")
@@ -162,7 +162,7 @@ func sanitizeSupervisionSpec(spec *zoraxyPlugin.IntroSpect) []string {
 		}
 	}
 	switch spec.ConfigureVia {
-	case "", zoraxyPlugin.ConfigureViaStdin:
+	case "", dunreePlugin.ConfigureViaStdin:
 	default:
 		warns = append(warns, "configure_via in the manifest has an unknown value, the configuration is passed on the command line")
 		spec.ConfigureVia = ""

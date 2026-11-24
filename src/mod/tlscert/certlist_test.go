@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
+	"github.com/foleyit/dunree/mod/acme"
 )
 
 func TestCertListShowsIssuerKeyTypeAndManagedBy(t *testing.T) {

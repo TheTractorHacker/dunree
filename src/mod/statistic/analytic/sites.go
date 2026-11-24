@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sort"
 
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // siteView reduces a day summary to the numbers of one site, in the shape of a

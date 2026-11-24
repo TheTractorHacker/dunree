@@ -18,10 +18,10 @@ import (
 	"syscall"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	"imuslab.com/zoraxy/mod/eventsystem"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 // StartPlugin starts the process of a plugin and attaches its routes, hooks and events.
@@ -65,7 +65,7 @@ func (m *Manager) StartPlugin(pluginID string) error {
 func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 	pluginID := thisPlugin.Spec.ID
 
-	// Contract version: a plugin built for a contract this Zoraxy does not support is
+	// Contract version: a plugin built for a contract this Dunree does not support is
 	// started anyway (and logged) unless the administrator asked to refuse such plugins
 	if err := m.checkContractForStart(thisPlugin); err != nil {
 		return err
@@ -91,18 +91,22 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 	}
 
 	//Prepare plugin start configuration
-	pluginConfiguration := zoraxyPlugin.ConfigureSpec{
+	// The plugin that says it reads the Dunree names (sdk_flavor "dunree", every plugin built with the
+	// dunree_plugin package) gets them next to the legacy ones. Every other plugin was built for Zoraxy // legacy-compat
+	// and gets the payload it always got: zoraxy_port, zoraxy_version, zoraxy_uuid (wire.go).
+	speaksDunree := thisPlugin.Spec.SDKFlavor == dunreePlugin.SDKFlavorDunree
+	pluginConfiguration := dunreePlugin.ConfigureSpec{
 		Port:         getRandomPortNumber(),
-		RuntimeConst: *m.Options.SystemConst,
+		RuntimeConst: m.runtimeConstFor(speaksDunree),
 	}
 	if thisPlugin.Spec.APIVersion >= 1 {
-		// A plugin that declares a contract version is told which versions this Zoraxy
+		// A plugin that declares a contract version is told which versions this Dunree
 		// supports. A legacy plugin gets byte for byte the payload it always got.
 		pluginConfiguration.APIVersionMin = ContractVersionMin
 		pluginConfiguration.APIVersionMax = ContractVersionMax
 	}
 
-	//Secret that proves to the plugin that a call comes from Zoraxy (filter / sniff / capture)
+	//Secret that proves to the plugin that a call comes from Dunree (filter / sniff / capture)
 	invokeToken, err := thisPlugin.generateInvokeToken()
 	if err != nil {
 		return err
@@ -115,7 +119,7 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 	// Generate API key if the plugin has permitted endpoints
 	if len(thisPlugin.Spec.PermittedAPIEndpoints) > 0 {
 		if m.Options.APIKeyManager == nil {
-			return errors.New("plugin asks for Zoraxy API access but no API key manager is configured")
+			return errors.New("plugin asks for Dunree API access but no API key manager is configured")
 		}
 		// Default: every endpoint of the manifest, as always. With "require approval"
 		// (opt-in) only the endpoints the administrator approved; the plugin still gets
@@ -129,7 +133,10 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 			return err
 		}
 		pluginConfiguration.APIKey = apiKey.APIKey
-		pluginConfiguration.ZoraxyPort = m.Options.ZoraxyPort
+		pluginConfiguration.ZoraxyPort = m.Options.DunreePort // legacy-compat
+		if speaksDunree {
+			pluginConfiguration.DunreePort = m.Options.DunreePort
+		}
 		m.Log("Generated API key for plugin "+thisPlugin.Spec.Name, nil)
 	}
 
@@ -141,10 +148,10 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 	// The configuration holds secrets (API key, invoke token). A plugin whose manifest
 	// says configure_via = stdin reads it from its standard input, so it is not visible
 	// in the process list. Every other plugin gets it on the command line, as always.
-	viaStdin := thisPlugin.Spec.ConfigureVia == zoraxyPlugin.ConfigureViaStdin
+	viaStdin := thisPlugin.Spec.ConfigureVia == dunreePlugin.ConfigureViaStdin
 	cmd := exec.Command(absolutePath, "-configure="+string(js))
 	if viaStdin {
-		cmd = exec.Command(absolutePath, zoraxyPlugin.ConfigureStdinFlag)
+		cmd = exec.Command(absolutePath, dunreePlugin.ConfigureStdinFlag)
 	}
 	cmd.Dir = filepath.Dir(absolutePath)
 	if err := m.applyRunAs(cmd, absolutePath); err != nil { //optional -plugin_user, see runas_unix.go
@@ -170,7 +177,7 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 		}
 	}
 
-	// The output goes through pipes owned by Zoraxy (not cmd.StdoutPipe), so cmd.Wait
+	// The output goes through pipes owned by Dunree (not cmd.StdoutPipe), so cmd.Wait
 	// returns as soon as the plugin process itself ends, even when a child of the
 	// plugin keeps the pipe open, and never races with the readers.
 	stdoutR, stdoutW, err := os.Pipe()
@@ -330,7 +337,7 @@ func (m *Manager) startPluginProcess(thisPlugin *Plugin) error {
 
 // readPluginOutput reads the output of a plugin line by line. A line longer than
 // maxPluginLineBytes is cut and the rest of that line is dropped, so a plugin
-// that never prints a newline cannot grow Zoraxy's memory.
+// that never prints a newline cannot grow Dunree's memory.
 func readPluginOutput(r io.Reader, emit func(line string)) {
 	br := bufio.NewReaderSize(r, maxPluginLineBytes)
 	skipping := false
@@ -358,7 +365,7 @@ func readPluginOutput(r io.Reader, emit func(line string)) {
 }
 
 // onPluginExit runs once for every plugin process that ends, whatever the reason.
-// requested says whether Zoraxy had asked for the stop when the process ended.
+// requested says whether Dunree had asked for the stop when the process ended.
 func (m *Manager) onPluginExit(p *Plugin, proc *pluginProc, waitErr error, requested bool) {
 	//Give the readers a moment to drain the last lines the process wrote
 	select {
@@ -383,7 +390,7 @@ func (m *Manager) onPluginExit(p *Plugin, proc *pluginProc, waitErr error, reque
 		kind = StateStopped
 	case why != nil:
 		kind = "unhealthy"
-		problem = "Zoraxy ended the plugin because " + *why + " (" + reason + ")"
+		problem = "Dunree ended the plugin because " + *why + " (" + reason + ")"
 	case exitCode == 0:
 		kind = StateExited
 		problem = "The plugin stopped by itself (" + reason + ")"

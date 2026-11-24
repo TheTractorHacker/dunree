@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
 )
 
 const (
@@ -106,7 +106,7 @@ type Settings struct {
 	// except a site override "enforce", which the administrator sets per site.
 	OriginPolicy    map[string]string `json:"originPolicy"`    // origin class -> log | ignore
 	ScenarioLogOnly []string          `json:"scenarioLogOnly"` // a decision whose scenario contains one of these (case-insensitive) is never enforced
-	Allowlist       []string          `json:"allowlist"`       // addresses and ranges Zoraxy never acts on, whatever CrowdSec says
+	Allowlist       []string          `json:"allowlist"`       // addresses and ranges Dunree never acts on, whatever CrowdSec says
 	SiteOverrides   map[string]string `json:"siteOverrides"`   // proxy rule host name -> exempt | log | enforce
 	CaptchaFallback string            `json:"captchaFallback"` // "" = log: captcha decision on a site without CAPTCHA (captchaAction=challenge)
 }

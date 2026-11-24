@@ -12,12 +12,12 @@ import (
 	"github.com/miekg/dns"
 )
 
-// Classes of an ECH config found in DNS, relative to the keys Zoraxy holds
+// Classes of an ECH config found in DNS, relative to the keys Dunree holds
 const (
-	ClassOursActive  = "ours-active"  // Byte-identical to an active key's config: Zoraxy decrypts it
+	ClassOursActive  = "ours-active"  // Byte-identical to an active key's config: Dunree decrypts it
 	ClassOursRetired = "ours-retired" // A retired key: still decrypts until it is purged
 	ClassOursPurged  = "ours-purged"  // Our public name but no key matches (rotation purged it, or the key store was reset): ECH will be rejected
-	ClassForeign     = "foreign"      // Another party's config (for example a CDN's public_name): Zoraxy cannot decrypt it
+	ClassForeign     = "foreign"      // Another party's config (for example a CDN's public_name): Dunree cannot decrypt it
 	ClassNone        = "none"         // No HTTPS record, or no ech= parameter
 	ClassUnparsable  = "unparsable"
 )
@@ -185,13 +185,13 @@ func domainAdvice(v DomainView) string {
 	}
 	switch v.Status {
 	case ClassOursActive:
-		return "This resolver advertises Zoraxy's current ECH config."
+		return "This resolver advertises Dunree's current ECH config."
 	case ClassOursRetired:
-		return "This resolver advertises a retired Zoraxy key. It still decrypts until it is purged: publish the current record soon."
+		return "This resolver advertises a retired Dunree key. It still decrypts until it is purged: publish the current record soon."
 	case ClassOursPurged:
-		return "This resolver advertises an ECH config with Zoraxy's public name that no stored key matches. Browsers will have ECH rejected: publish the current record."
+		return "This resolver advertises an ECH config with Dunree's public name that no stored key matches. Browsers will have ECH rejected: publish the current record."
 	case ClassForeign:
-		return "This resolver advertises an ECH config from another party (public name " + name + "). Zoraxy cannot decrypt it, so a browser that uses it gets ECH rejected and, when this host resolves to this proxy, the certificate error ERR_ECH_FALLBACK_CERTIFICATE_INVALID."
+		return "This resolver advertises an ECH config from another party (public name " + name + "). Dunree cannot decrypt it, so a browser that uses it gets ECH rejected and, when this host resolves to this proxy, the certificate error ERR_ECH_FALLBACK_CERTIFICATE_INVALID."
 	case ClassUnparsable:
 		return "The ech= parameter could not be parsed."
 	}

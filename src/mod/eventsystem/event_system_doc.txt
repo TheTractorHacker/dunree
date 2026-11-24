@@ -1,4 +1,4 @@
-package eventsystem // import "imuslab.com/zoraxy/mod/eventsystem"
+package eventsystem // import "github.com/foleyit/dunree/mod/eventsystem"
 
 
 VARIABLES

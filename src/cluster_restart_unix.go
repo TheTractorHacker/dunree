@@ -10,6 +10,6 @@ import (
 // restartSelf replaces the process image with a fresh copy of itself.
 func restartSelf(exe string) {
 	if err := syscall.Exec(exe, os.Args, os.Environ()); err != nil {
-		SystemWideLogger.PrintAndLog("cluster", "Self restart failed; restart Zoraxy manually", err)
+		SystemWideLogger.PrintAndLog("cluster", "Self restart failed; restart Dunree manually", err)
 	}
 }

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/dynamicproxy/captcha"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
 )
 
 const centralTestSecret = "TOP-SECRET-central-value-123"

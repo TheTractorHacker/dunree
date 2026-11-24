@@ -327,7 +327,7 @@ func TestSignedIndexKeyFormats(t *testing.T) {
 	}
 }
 
-// The index is signed by the real tool; Zoraxy verifies it, installs from it with
+// The index is signed by the real tool; Dunree verifies it, installs from it with
 // signature checking set to enforce, and records where the plugin came from.
 func TestSignedIndexInstallUnderEnforce(t *testing.T) {
 	f := newStoreFix(t)
@@ -873,7 +873,7 @@ func TestSafeUpdateKeepsThePreviousVersion(t *testing.T) {
 	}
 	noStagingLeft(t, m)
 
-	// The staging folder is not a plugin: a restart of Zoraxy does not try to load it
+	// The staging folder is not a plugin: a restart of Dunree does not try to load it
 	os.MkdirAll(filepath.Join(m.Options.PluginDir, stagingDirName, "leftover"), 0o755)
 	m.StopPlugin(p1.id())
 	m2 := newFaultManager(t)
@@ -988,7 +988,7 @@ func TestFailedDownloadKeepsTheOldVersionRunning(t *testing.T) {
 // The staged binary is run for the first time as the plugin user
 func TestStagedBinaryIsIntrospectedAsThePluginUser(t *testing.T) {
 	if os.Geteuid() == 0 {
-		t.Skip("needs a Zoraxy that is not root: the refusal to switch users is what shows that the plugin user is applied")
+		t.Skip("needs a Dunree that is not root: the refusal to switch users is what shows that the plugin user is applied")
 	}
 	f := newStoreFix(t)
 	p1 := goodV1(t, "asuser")
@@ -1148,10 +1148,10 @@ func TestUpdateAndRollbackOfAStoppedPlugin(t *testing.T) {
 
 /* 2.7 Isolated plugin UI */
 
-// adminAPI stands for an admin API of Zoraxy: it needs the session cookie and the CSRF token of the administrator
+// adminAPI stands for an admin API of Dunree: it needs the session cookie and the CSRF token of the administrator
 func adminAPI(t *testing.T) *httptest.Server {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, err := r.Cookie("zoraxy-session")
+		c, err := r.Cookie("dunree-session")
 		if err != nil || c.Value != "admin" || r.Header.Get("X-CSRF-Token") != "test-csrf" {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
@@ -1192,7 +1192,7 @@ func asAdmin(t *testing.T, method string, target string, form url.Values) (*http
 	if form != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
-	req.AddCookie(&http.Cookie{Name: "zoraxy-session", Value: "admin"})
+	req.AddCookie(&http.Cookie{Name: "dunree-session", Value: "admin"})
 	req.Header.Set("Authorization", "Bearer admin-token")
 	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := client.Do(req)
@@ -1251,7 +1251,7 @@ func TestIsolatedPluginUICannotUseTheAdminSession(t *testing.T) {
 		t.Fatalf("default: the page is under the admin origin, got %s", page)
 	}
 	resp, body := asAdmin(t, http.MethodGet, admin.URL+page+"headers", nil)
-	if got := seen(body); !strings.Contains(got["cookie"], "zoraxy-session=admin") || got["csrf"] != "test-csrf" || got["isolated"] != "" {
+	if got := seen(body); !strings.Contains(got["cookie"], "dunree-session=admin") || got["csrf"] != "test-csrf" || got["isolated"] != "" {
 		t.Fatalf("default: the plugin sees the admin cookie and CSRF token, as before; got %+v", got)
 	}
 	if len(resp.Header.Values("Set-Cookie")) == 0 || resp.Header.Get("Content-Security-Policy") != "" {

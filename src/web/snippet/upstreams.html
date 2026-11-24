@@ -326,7 +326,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                             <p class="up-group__desc">Stop sending requests to an upstream that is down, and bring it back when it recovers. Both are off by default.</p>
                         </div>
                         <div class="up-feature">
-                            <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Active health checks</span><span class="zx-toggle-row__desc">Zoraxy probes every upstream in the background and stops sending traffic to failing ones.</span></span><input type="checkbox" class="zx-switch" role="switch" id="lbActiveEnabled" onchange="updateLbFieldVisibility();"></label>
+                            <label class="zx-toggle-row"><span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Active health checks</span><span class="zx-toggle-row__desc">Dunree probes every upstream in the background and stops sending traffic to failing ones.</span></span><input type="checkbox" class="zx-switch" role="switch" id="lbActiveEnabled" onchange="updateLbFieldVisibility();"></label>
                             <div id="lbActiveFields" class="up-sub" style="display:none;">
                                 <div class="up-grid">
                                     <div class="zx-field"><div class="zx-field__label-row"><label class="zx-field__label" for="lbAhcMode">Probe</label></div>
@@ -522,7 +522,7 @@ function zxEsc(s){ return String(s === undefined || s === null ? "" : s).replace
                     <section class="up-group">
                         <div class="up-group__head">
                             <h3 class="up-group__title">${esc(t("Where to send traffic"))}</h3>
-                            <p class="up-group__desc">${esc(t("The server that answers for this site. Zoraxy forwards the requests of visitors to this address."))}</p>
+                            <p class="up-group__desc">${esc(t("The server that answers for this site. Dunree forwards the requests of visitors to this address."))}</p>
                         </div>
                         <div class="zx-field upstreamOriginField">
                             <div class="zx-field__label-row"><label class="zx-field__label" for="${id("origin")}">${esc(t("Address"))}</label></div>

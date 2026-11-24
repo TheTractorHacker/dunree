@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/offline"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/offline"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*
@@ -21,18 +21,18 @@ import (
 	version it was built for with api_version in its manifest; a plugin that says
 	nothing is a legacy plugin (version 0) and runs exactly as before.
 
-	Defaults: a plugin built for a newer contract than this Zoraxy supports is
+	Defaults: a plugin built for a newer contract than this Dunree supports is
 	started anyway and the administrator is told (log line, status). Refusing such
 	a plugin, and requiring an approval for API permissions, are opt-in settings.
 */
 
-// Contract versions this Zoraxy supports (inclusive)
+// Contract versions this Dunree supports (inclusive)
 const (
 	ContractVersionMin = 0                       //legacy plugins: no api_version in the manifest
-	ContractVersionMax = zoraxyPlugin.APIVersion //the version of the SDK in this source tree
+	ContractVersionMax = dunreePlugin.APIVersion //the version of the SDK in this source tree
 )
 
-// What Zoraxy does with a plugin built for a contract version it does not support
+// What Dunree does with a plugin built for a contract version it does not support
 const (
 	ContractModeWarn   = "warn"   //default: start it, log it, show it
 	ContractModeRefuse = "refuse" //do not start it
@@ -42,7 +42,7 @@ const (
 const (
 	ContractLegacy      = "legacy"      //no api_version: the contract from before versions were counted
 	ContractOK          = "ok"          //inside the supported range
-	ContractUnsupported = "unsupported" //outside the supported range (built for a newer Zoraxy)
+	ContractUnsupported = "unsupported" //outside the supported range (built for a newer Dunree)
 )
 
 const (
@@ -53,15 +53,15 @@ const (
 // PluginContract is what the API says about the contract version of a plugin
 type PluginContract struct {
 	APIVersion   int    //api_version of the manifest, 0 = none
-	SupportedMin int    //what this Zoraxy supports
+	SupportedMin int    //what this Dunree supports
 	SupportedMax int    //
 	State        string //legacy | ok | unsupported
-	Refused      bool   //State is unsupported and the administrator asked Zoraxy not to start such plugins. From the setting as it is now: also true for a plugin that is still running and will be refused at its next start
+	Refused      bool   //State is unsupported and the administrator asked Dunree not to start such plugins. From the setting as it is now: also true for a plugin that is still running and will be refused at its next start
 	Note         string //one sentence for the administrator, empty when there is nothing to say
 }
 
 // contractStateOf classifies a manifest
-func contractStateOf(spec *zoraxyPlugin.IntroSpect) string {
+func contractStateOf(spec *dunreePlugin.IntroSpect) string {
 	switch {
 	case spec == nil || spec.APIVersion == 0:
 		return ContractLegacy
@@ -76,16 +76,16 @@ func contractRangeText() string {
 }
 
 // contractOf returns the contract view of a plugin under the given mode
-func contractOf(spec *zoraxyPlugin.IntroSpect, mode string) PluginContract {
+func contractOf(spec *dunreePlugin.IntroSpect, mode string) PluginContract {
 	pc := PluginContract{SupportedMin: ContractVersionMin, SupportedMax: ContractVersionMax, State: contractStateOf(spec)}
 	if spec != nil {
 		pc.APIVersion = spec.APIVersion
 	}
 	if pc.State == ContractUnsupported {
 		pc.Refused = mode == ContractModeRefuse
-		pc.Note = "This plugin was built for plugin contract version " + strconv.Itoa(pc.APIVersion) + ", this Zoraxy supports " + contractRangeText() + "."
+		pc.Note = "This plugin was built for plugin contract version " + strconv.Itoa(pc.APIVersion) + ", this Dunree supports " + contractRangeText() + "."
 		if pc.Refused {
-			pc.Note += " Zoraxy does not start it (plugin safety settings)."
+			pc.Note += " Dunree does not start it (plugin safety settings)."
 		} else {
 			pc.Note += " It is started anyway and may not work as expected."
 		}
@@ -95,7 +95,7 @@ func contractOf(spec *zoraxyPlugin.IntroSpect, mode string) PluginContract {
 
 // sanitizeContractSpec checks api_version of a manifest. A value that cannot be a
 // version is dropped, which makes the plugin a legacy plugin.
-func sanitizeContractSpec(spec *zoraxyPlugin.IntroSpect) []string {
+func sanitizeContractSpec(spec *dunreePlugin.IntroSpect) []string {
 	if spec.APIVersion < 0 || spec.APIVersion > 1000000 {
 		spec.APIVersion = 0
 		return []string{"api_version in the manifest is not a version number, the plugin is treated as a legacy plugin"}
@@ -127,9 +127,9 @@ func (m *Manager) checkContractForStart(p *Plugin) error {
 		return nil
 	}
 	if pc.Refused {
-		return &errContractRefused{note: "plugin was built for plugin contract version " + strconv.Itoa(pc.APIVersion) + ", this Zoraxy supports " + contractRangeText() + ", and plugins of an unsupported contract version are not started (plugin safety settings)"}
+		return &errContractRefused{note: "plugin was built for plugin contract version " + strconv.Itoa(pc.APIVersion) + ", this Dunree supports " + contractRangeText() + ", and plugins of an unsupported contract version are not started (plugin safety settings)"}
 	}
-	m.Log("plugin "+p.Spec.ID+" was built for plugin contract version "+strconv.Itoa(pc.APIVersion)+", this Zoraxy supports "+contractRangeText()+": it is started anyway and may not work as expected", nil)
+	m.Log("plugin "+p.Spec.ID+" was built for plugin contract version "+strconv.Itoa(pc.APIVersion)+", this Dunree supports "+contractRangeText()+": it is started anyway and may not work as expected", nil)
 	return nil
 }
 
@@ -386,7 +386,7 @@ func (m *Manager) HandlePluginSettings(w http.ResponseWriter, r *http.Request) {
 		UIIsolation     UIIsolationState
 	}{
 		ContractMode: s.ContractMode, RequirePermissionApproval: s.RequirePermissionApproval,
-		ContractVersionMin: ContractVersionMin, ContractVersionMax: ContractVersionMax, SDKVersion: zoraxyPlugin.SDKVersion,
+		ContractVersionMin: ContractVersionMin, ContractVersionMax: ContractVersionMax, SDKVersion: dunreePlugin.SDKVersion,
 		VerifyMode: s.VerifyMode, IndexPublicKey: s.IndexPublicKey, AutoRollback: s.AutoRollback,
 		MaxDownloadMB: s.MaxDownloadMB, DefaultMaxDownloadMB: defaultMaxDownloadMB,
 		IsolatePluginUI: s.IsolatePluginUI, PluginUIListen: s.PluginUIListen, PluginUIOrigin: s.PluginUIOrigin,

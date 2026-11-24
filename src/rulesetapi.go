@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/ruleset"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/ruleset"
 )
 
 /*
@@ -530,7 +530,7 @@ func HandleRulesetStats(w http.ResponseWriter, r *http.Request) {
 		"rules":       rows,
 		"recent":      e.RecentHits(),
 		"load_errors": e.LoadErrors,
-		"note":        "counters are kept in memory and start from zero when Zoraxy starts",
+		"note":        "counters are kept in memory and start from zero when Dunree starts",
 	})
 }
 

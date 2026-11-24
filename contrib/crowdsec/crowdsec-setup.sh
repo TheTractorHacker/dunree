@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# crowdsec-setup.sh - helper that installs CrowdSec (a separate program) for use with Zoraxy.
+# crowdsec-setup.sh - helper that installs CrowdSec (a separate program) for use with Dunree.
 #
-# Zoraxy itself never installs software. This script is shipped next to the Zoraxy
+# Dunree itself never installs software. This script is shipped next to the Dunree
 # release; YOU run it, as root, on the machine that should run CrowdSec. It does not
-# touch Zoraxy, its files or its settings.
+# touch Dunree, its files or its settings.
 #
 # Steps (each one asks first, unless --yes is given):
 #   1. add the CrowdSec package repository (the documented installer is DOWNLOADED to a
 #      temp file, its sha256 is shown, and it only runs after you confirm)
 #   2. apt install crowdsec
-#   3. optional (--log-dir DIR): let CrowdSec read Zoraxy's request logs
-#   4. create a bouncer key 'zoraxy-<hostname>' (only if that name is not registered yet)
+#   3. optional (--log-dir DIR): let CrowdSec read Dunree's request logs
+#   4. create a bouncer key 'dunree-<hostname>' (only if that name is not registered yet)
 #      and print the Local API address and the key ONCE on the terminal
 #
 # Commands used come from https://docs.crowdsec.net/u/getting_started/installation/linux
@@ -20,7 +20,11 @@ set -euo pipefail
 
 INSTALLER_URL="https://install.crowdsec.net"
 LAPI_DEFAULT="http://127.0.0.1:8080"
-ACQUIS_FILE="/etc/crowdsec/acquis.d/zoraxy.yaml"
+ACQUIS_DIR="${CROWDSEC_ACQUIS_DIR:-/etc/crowdsec/acquis.d}"   # override only for tests
+ACQUIS_FILE="$ACQUIS_DIR/dunree.yaml"
+# The file an earlier run (as the Zoraxy helper) wrote: when it exists it is used and left alone. # legacy-compat rebrand:keep
+LEGACY_ACQUIS_FILE="$ACQUIS_DIR/zoraxy.yaml"
+[ -e "$LEGACY_ACQUIS_FILE" ] && [ ! -e "$ACQUIS_FILE" ] && ACQUIS_FILE="$LEGACY_ACQUIS_FILE"
 
 DRY=0; YES=0; LOGDIR=""; BNAME=""
 
@@ -31,9 +35,9 @@ Usage: sudo bash crowdsec-setup.sh [--dry-run] [--yes] [--log-dir DIR] [--name N
   --dry-run      print what would be done; change nothing (does not need root)
   --yes          do not ask for confirmation (also runs the downloaded repo installer
                  without asking; its sha256 is still printed)
-  --log-dir DIR  full path of Zoraxy's log folder; creates $ACQUIS_FILE so CrowdSec
+  --log-dir DIR  full path of Dunree's log folder; creates $ACQUIS_FILE so CrowdSec
                  reads zr_*.log there (CrowdSec has no built-in parser for these lines)
-  --name NAME    bouncer name (default: zoraxy-<hostname>)
+  --name NAME    bouncer name (default: dunree-<hostname>)
   -h, --help     this text
 
 Supported: Debian and Ubuntu (apt). Anything else: use the Docker option, see
@@ -53,7 +57,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-[ -n "$BNAME" ] || BNAME="zoraxy-$(hostname)"
+[ -n "$BNAME" ] || BNAME="dunree-$(hostname)"
 case "$BNAME" in *[!A-Za-z0-9._-]*|"") echo "bouncer name may only contain letters, digits . _ -" >&2; exit 2 ;; esac
 if [ -n "$LOGDIR" ]; then
   case "$LOGDIR" in /*) ;; *) echo "--log-dir must be a full path starting with /" >&2; exit 2 ;; esac
@@ -131,15 +135,15 @@ if [ -n "$LOGDIR" ]; then
   content="filenames:
   - ${LOGDIR%/}/zr_*.log
 labels:
-  type: zoraxy"
+  type: dunree"
   if [ "$DRY" = 1 ]; then
     plan "write $ACQUIS_FILE (refuse to overwrite an existing file) with:"
     printf '%s\n' "$content" | sed 's/^/[dry-run]   /'
     plan "crowdsec -t && systemctl restart crowdsec"
   else
     say
-    say "Step 3: let CrowdSec read Zoraxy's logs from $LOGDIR"
-    say "Note: CrowdSec has no built-in parser for type 'zoraxy'; see the Zoraxy CrowdSec guide."
+    say "Step 3: let CrowdSec read Dunree's logs from $LOGDIR"
+    say "Note: CrowdSec has no built-in parser for type 'dunree'; see the Dunree CrowdSec guide."
     if [ -e "$ACQUIS_FILE" ]; then
       say "$ACQUIS_FILE already exists; leaving it alone."
     elif ask "Create $ACQUIS_FILE and restart CrowdSec?"; then
@@ -164,14 +168,14 @@ fi
 # ---- 4: bouncer key ----
 if [ "$DRY" = 1 ]; then
   plan "if you confirm: cscli bouncers add $BNAME   (CrowdSec prints the key once on the terminal; this script does not read or save it)"
-  plan "print the Local API address (default $LAPI_DEFAULT) for Zoraxy > Security Center > CrowdSec"
+  plan "print the Local API address (default $LAPI_DEFAULT) for Dunree > Security Center > CrowdSec"
   say "DRY RUN finished; nothing was changed."
   exit 0
 fi
 
 command -v cscli >/dev/null 2>&1 || { say "cscli not found; is crowdsec installed?"; exit 1; }
 say
-say "Step 4: create a bouncer key for Zoraxy."
+say "Step 4: create a bouncer key for Dunree."
 ask "Create bouncer '$BNAME' now (cscli bouncers add $BNAME)?" || { say "Skipped."; exit 0; }
 say "CrowdSec prints the key below ONCE. Copy it now; this script does not save it."
 cscli bouncers add "$BNAME" || {
@@ -181,9 +185,9 @@ cscli bouncers add "$BNAME" || {
 }
 say
 say "======================================================================"
-say " Paste into Zoraxy: Security Center > CrowdSec"
+say " Paste into Dunree: Security Center > CrowdSec"
 say "   Local API address: $LAPI_DEFAULT"
-say "   (use this machine's address instead if Zoraxy runs on another server;"
+say "   (use this machine's address instead if Dunree runs on another server;"
 say "    check where the Local API listens in /etc/crowdsec/config.yaml)"
 say "   Bouncer key:       the key printed by cscli above (shown only once)"
 say "======================================================================"

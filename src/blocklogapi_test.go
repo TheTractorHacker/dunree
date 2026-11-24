@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/blocklog"
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 func setupBlockAPI(t *testing.T) *blocklog.Log {

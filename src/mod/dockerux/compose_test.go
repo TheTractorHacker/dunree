@@ -58,7 +58,7 @@ func serviceBlock(t *testing.T, content string, service string) []string {
 	return out
 }
 
-// The default compose file must not hand the Docker socket to Zoraxy:
+// The default compose file must not hand the Docker socket to Dunree:
 // socket access is root-equivalent on the host.
 func TestDefaultComposeDoesNotMountDockerSocket(t *testing.T) {
 	for _, line := range activeLines(readDockerFile(t, "docker-compose.yml")) {
@@ -71,17 +71,17 @@ func TestDefaultComposeDoesNotMountDockerSocket(t *testing.T) {
 	}
 }
 
-// The opt-in override must keep the socket away from the Zoraxy container
+// The opt-in override must keep the socket away from the Dunree container
 // and only allow read (GET) access through the proxy.
 func TestSocketProxyOverrideIsReadOnly(t *testing.T) {
 	content := readDockerFile(t, "docker-compose.socket-proxy.yml")
 
-	zoraxy := strings.Join(serviceBlock(t, content, "zoraxy"), "\n")
-	if strings.Contains(zoraxy, "docker.sock") {
-		t.Error("override mounts the Docker socket into the zoraxy service")
+	svc := strings.Join(serviceBlock(t, content, "dunree"), "\n")
+	if strings.Contains(svc, "docker.sock") {
+		t.Error("override mounts the Docker socket into the dunree service")
 	}
-	if !strings.Contains(zoraxy, `DOCKER_HOST: "tcp://docker-socket-proxy:2375"`) {
-		t.Error("zoraxy service is not pointed at the socket proxy")
+	if !strings.Contains(svc, `DOCKER_HOST: "tcp://docker-socket-proxy:2375"`) {
+		t.Error("dunree service is not pointed at the socket proxy")
 	}
 
 	proxy := serviceBlock(t, content, "docker-socket-proxy")

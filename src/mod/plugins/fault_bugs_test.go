@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
-	zp "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*
@@ -91,7 +91,7 @@ func TestBugCrashCleansUp(t *testing.T) {
 		return code == http.StatusServiceUnavailable || strings.Contains(body, "Plugin does not have UI handler")
 	})
 
-	//The API key Zoraxy gave to the dead process must not stay valid
+	//The API key Dunree gave to the dead process must not stay valid
 	if apiKey == "" {
 		t.Fatal("the chaos plugin did not record an API key")
 	}
@@ -192,7 +192,7 @@ func storeFixture(t *testing.T) *httptest.Server {
 	return srv
 }
 
-// F24: a plugin installed from the store but never enabled used to start by itself at the next Zoraxy start.
+// F24: a plugin installed from the store but never enabled used to start by itself at the next Dunree start.
 func TestBugInstalledPluginDoesNotAutostartAtNextBoot(t *testing.T) {
 	m := newFaultManager(t)
 	if err := os.MkdirAll(m.Options.PluginDir, 0o755); err != nil {

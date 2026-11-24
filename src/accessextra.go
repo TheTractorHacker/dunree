@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/foleyit/dunree/mod/access"
+	"github.com/foleyit/dunree/mod/auth"
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/microcosm-cc/bluemonday"
-	"imuslab.com/zoraxy/mod/access"
-	"imuslab.com/zoraxy/mod/auth"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 /*

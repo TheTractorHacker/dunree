@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foleyit/dunree/mod/utils"
 	"github.com/go-webauthn/webauthn/protocol"
 	webauthnlib "github.com/go-webauthn/webauthn/webauthn"
-	"imuslab.com/zoraxy/mod/utils"
 )
 
 // toWebAuthnCredential converts a stored PasskeyCredential back to the webauthn.Credential type.
@@ -90,7 +90,7 @@ func newWebAuthnFromRequest(r *http.Request) (*webauthnlib.WebAuthn, error) {
 	origin := fmt.Sprintf("%s://%s", proto, host)
 
 	return webauthnlib.New(&webauthnlib.Config{
-		RPDisplayName: "Zoraxy Auth",
+		RPDisplayName: "Dunree Auth",
 		RPID:          rpID,
 		RPOrigins:     []string{origin},
 	})

@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/destguard"
+	"github.com/foleyit/dunree/mod/destguard"
 )
 
 // OpenedPort holds information about an open port and its service type

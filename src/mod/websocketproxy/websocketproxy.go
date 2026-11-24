@@ -13,11 +13,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/wirecompat"
 	"github.com/gorilla/websocket"
-	"imuslab.com/zoraxy/mod/adminallow"
-	"imuslab.com/zoraxy/mod/dynamicproxy/rewrite"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
-	"imuslab.com/zoraxy/mod/info/logger"
 )
 
 const defaultWebsocketTimeout = 300 * time.Second
@@ -239,7 +240,7 @@ func (w *WebsocketProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if userAgent := req.Header.Get("User-Agent"); userAgent != "" {
 		requestHeader.Set("User-Agent", userAgent)
 	} else {
-		requestHeader.Set("User-Agent", "zoraxy-wsproxy/1.1")
+		requestHeader.Set("User-Agent", wirecompat.UserAgent("dunree-wsproxy/1.1", "zoraxy-wsproxy/1.1"))
 	}
 
 	// Pass X-Forwarded-For headers too, code below is a part of

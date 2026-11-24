@@ -192,7 +192,7 @@ func TestNoCSRFNeededForTokenAndNoCookieFallback(t *testing.T) {
 	if do(h, "POST", tok, "") != 200 {
 		t.Fatal("token POST without CSRF must pass")
 	}
-	if do(h, "POST", "", "", "Cookie", "zoraxy=session; csrf=abc", "X-CSRF-Token", "abc") != 401 {
+	if do(h, "POST", "", "", "Cookie", "dunree=session; csrf=abc", "X-CSRF-Token", "abc") != 401 {
 		t.Fatal("cookie auth must not be accepted by the token middleware")
 	}
 }

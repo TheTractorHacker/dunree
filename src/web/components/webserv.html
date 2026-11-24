@@ -79,16 +79,16 @@
                 <div class="field zx-field">
                     <label class="zx-field__label" for="webserv_docRoot">Document root folder</label>
                     <input id="webserv_docRoot" type="text" readonly="true" class="zx-input zxs-readonly">
-                    <p class="zx-help">Fixed for security reasons. To use another folder, start Zoraxy with the <code>-webserv</code> flag.</p>
+                    <p class="zx-help">Fixed for security reasons. To use another folder, start Dunree with the <code>-webserv</code> flag.</p>
                 </div>
             </div>
             <details class="zx-disclosure webservhelp">
                 <summary>How to reach the static web server</summary>
                 <div class="zx-disclosure__body">
                     <ol class="zxs-steps">
-                        <li><b>Through Zoraxy (recommended)</b><span>Add a proxy rule for a host name that points to <code>http://127.0.0.1:<span class="webserv_port">8081</span></code></span></li>
+                        <li><b>Through Dunree (recommended)</b><span>Add a proxy rule for a host name that points to <code>http://127.0.0.1:<span class="webserv_port">8081</span></code></span></li>
                         <li><b>Behind another reverse proxy</b><span>Add <code>http://127.0.0.1:<span class="webserv_port">8081</span></code> to that proxy's configuration</span></li>
-                        <li><b>Directly (not recommended)</b><span>Open <code>http://{zoraxy_host_ip}:<span class="webserv_port">8081</span></code>. Needs "Listen on all interfaces".</span></li>
+                        <li><b>Directly (not recommended)</b><span>Open <code>http://{dunree_host_ip}:<span class="webserv_port">8081</span></code>. Needs "Listen on all interfaces".</span></li>
                     </ol>
                 </div>
             </details>
@@ -126,7 +126,7 @@
                     <label class="zx-toggle-row" for="webdav_useCustomCredentials">
                         <span class="zx-toggle-row__text">
                             <span class="zx-toggle-row__title">Use custom credentials</span>
-                            <span class="zx-toggle-row__desc">Sign in to WebDAV with its own user name and password instead of the Zoraxy admin account</span>
+                            <span class="zx-toggle-row__desc">Sign in to WebDAV with its own user name and password instead of the Dunree admin account</span>
                         </span>
                         <input id="webdav_useCustomCredentials" type="checkbox" class="zx-switch" role="switch">
                     </label>
@@ -158,14 +158,14 @@
                                         <li>Open File Explorer</li>
                                         <li>Right-click "This PC" and choose "Map network drive"</li>
                                         <li>Enter <code>\\webdav.example.com@SSL\</code> (or <code>http://webdav.example.com</code>)</li>
-                                        <li>Sign in with your Zoraxy admin user name and password</li>
+                                        <li>Sign in with your Dunree admin user name and password</li>
                                     </ol>
                                 </li>
                                 <li><b><i class="apple icon" aria-hidden="true"></i> macOS</b> Use <strong>Finder, Go, Connect to Server</strong>:
                                     <ol>
                                         <li>Press <kbd>Cmd</kbd>+<kbd>K</kbd></li>
                                         <li>Enter <code>https://webdav.example.com</code></li>
-                                        <li>Click "Connect" and enter your Zoraxy admin credentials</li>
+                                        <li>Click "Connect" and enter your Dunree admin credentials</li>
                                     </ol>
                                 </li>
                                 <li><b><i class="linux icon" aria-hidden="true"></i> Linux</b> Use the "Connect to Server" feature of your file manager, or mount it with <code>davfs2</code>:
@@ -176,8 +176,8 @@
                         <li><b>Good to know</b>
                             <ul class="zxs-notes">
                                 <li>Use HTTPS (SSL/TLS) for secure connections</li>
-                                <li>Sign in with your Zoraxy admin user name and password</li>
-                                <li>The WebDAV server serves the whole <code>www/</code> folder, including <code>html/</code> (static web files) and <code>templates/</code> (Zoraxy templates)</li>
+                                <li>Sign in with your Dunree admin user name and password</li>
+                                <li>The WebDAV server serves the whole <code>www/</code> folder, including <code>html/</code> (static web files) and <code>templates/</code> (Dunree templates)</li>
                             </ul>
                         </li>
                     </ol>
@@ -446,7 +446,7 @@
                                 if (enable) {
                                     msgbox("Custom credentials enabled. Please set username and password.");
                                 } else {
-                                    msgbox("Using Zoraxy admin credentials for WebDAV");
+                                    msgbox("Using Dunree admin credentials for WebDAV");
                                 }
                             }
                         }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/blocklog"
+	"github.com/foleyit/dunree/mod/blocklog"
 )
 
 // country challenge without a CAPTCHA: it is a region block, so the region sentence is right here

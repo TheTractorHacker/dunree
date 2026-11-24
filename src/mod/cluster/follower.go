@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // followerStatus is persisted to <conf>/.cluster/follower.json so the last
@@ -183,7 +185,7 @@ func (m *Manager) primaryRequest(ctx context.Context, cfg Config, method, p stri
 	}
 	// the token is bound to the path only (no query string)
 	req.Header.Set("Authorization", "Bearer "+MakeToken(m.secret(), method, p, m.opt.NodeID, m.opt.Now()))
-	req.Header.Set("User-Agent", "zoraxy-cluster/"+m.opt.Version)
+	req.Header.Set("User-Agent", wirecompat.UserAgent("dunree-cluster/"+m.opt.Version, "zoraxy-cluster/"+m.opt.Version))
 	return req, nil
 }
 

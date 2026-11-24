@@ -7,7 +7,7 @@
 #
 # OUT_DIR gets <plugin>_linux_<arch> for every plugin and architecture, and a
 # plain SHA256SUMS. Nothing is signed here and nothing is published: these files
-# are NOT part of the signed Zoraxy release (SHA256SUMS.sig of the release does
+# are NOT part of the signed Dunree release (SHA256SUMS.sig of the release does
 # not cover them). To offer them in a plugin index, list them in a draft index
 # and sign it with the PLUGIN key (tools/plugin-index/sign_plugin_index.go), never
 # with the release key.
@@ -36,8 +36,8 @@ export CGO_ENABLED=0 GOOS=linux GOPROXY=off GOWORK=off GOFLAGS="${GOFLAGS:+$GOFL
 
 for p in "${plugins[@]}"; do
   # the SDK copy of a reference plugin must be the SDK of this tree
-  if ! diff -rq "$root/src/mod/plugins/zoraxy_plugin" "$root/example/plugins/$p/mod/zoraxy_plugin" >/dev/null; then
-    echo "example/plugins/$p/mod/zoraxy_plugin differs from src/mod/plugins/zoraxy_plugin (run example/plugins/build_all.sh)" >&2
+  if ! diff -rq "$root/src/mod/plugins/dunree_plugin" "$root/example/plugins/$p/mod/dunree_plugin" >/dev/null; then
+    echo "example/plugins/$p/mod/dunree_plugin differs from src/mod/plugins/dunree_plugin (run example/plugins/build_all.sh)" >&2
     exit 1
   fi
   for a in $arches; do
@@ -60,7 +60,7 @@ if [ "$check" = 1 ]; then
   for p in "${plugins[@]}"; do
     bin="$out/${p}_linux_$host"
     [ -x "$bin" ] || continue
-    # the kit wants the entry point as Zoraxy sees it: <folder>/<folder name>
+    # the kit wants the entry point as Dunree sees it: <folder>/<folder name>
     stage="$(dirname "$kit")/$p"
     mkdir -p "$stage"
     cp "$bin" "$stage/$p"
@@ -77,5 +77,5 @@ if [ "$check" = 1 ]; then
 fi
 
 echo
-echo "Reference plugins in $out (not signed, not part of the Zoraxy release checksums):"
+echo "Reference plugins in $out (not signed, not part of the Dunree release checksums):"
 ls -l "$out"

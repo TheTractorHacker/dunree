@@ -1,4 +1,4 @@
-# Zoraxy fork: version 4.0 plan
+# Dunree fork: version 4.0 plan
 
 Status: **draft for discussion**. Nothing here is built unless it says so. Every item keeps the fork's rules:
 new behaviour is **off or log-only by default**, no silent default changes, signed releases, and every item
@@ -41,7 +41,7 @@ Statistics today are one JSON record per day, rewritten in full every 10 minutes
 `sys.db` grows and why long history and "average req/s per rule over a week" are hard.
 - **Step 1, embedded (no new dependency):** replace the per-day blob with small time-bucketed rollups (per minute, then per hour/day) that are appended, not rewritten, with retention built in. Config and security data stay in BoltDB.
 - **Step 2, a storage interface** for analytics only, so a backend can be chosen in settings.
-- **Step 3, optional external backend: PostgreSQL, with TimescaleDB as the recommended flavour** (hypertables, compression, `drop_chunks` retention, continuous aggregates). Off by default; Zoraxy stays a single binary that runs with no database server. MySQL/MariaDB would add maintenance for no gain over Postgres, so only one external backend is proposed.
+- **Step 3, optional external backend: PostgreSQL, with TimescaleDB as the recommended flavour** (hypertables, compression, `drop_chunks` retention, continuous aggregates). Off by default; Dunree stays a single binary that runs with no database server. MySQL/MariaDB would add maintenance for no gain over Postgres, so only one external backend is proposed.
 - Not proposed: moving config, certificates, users or the rules to an external database. They are small, must be readable at boot, and an unreachable database must never stop the proxy.
 
 ### 5. Security depth

@@ -71,13 +71,13 @@ func findLockHolders(root, path string) (LockMatch, error) {
 	if !ok {
 		return LockMatch{}, errors.New("stat not available")
 	}
-	//First ask each visible Zoraxy process's own fdinfo ("lock:" lines): it is exact and cheap, and it
+	//First ask each visible Dunree process's own fdinfo ("lock:" lines): it is exact and cheap, and it
 	//does not depend on /proc/locks, which can block for a long time on a host with a damaged kernel
 	//lock list (a read stuck in the kernel cannot be killed and would keep this process from exiting).
-	if m := holdersFromFdinfo(root, st, zoraxyPids(root)); len(m.Pids) > 0 {
+	if m := holdersFromFdinfo(root, st, dunreePids(root)); len(m.Pids) > 0 {
 		return m, nil
 	}
-	text, err := readProc(root, "locks") //covers other users' processes and non-Zoraxy names
+	text, err := readProc(root, "locks") //covers other users' processes and non-Dunree names
 	if err != nil {
 		return LockMatch{}, fmt.Errorf("cannot read /proc/locks: %w", err)
 	}
@@ -89,7 +89,7 @@ func findLockHolders(root, path string) (LockMatch, error) {
 	return m, nil
 }
 
-// holdersFromFdinfo finds lock holders without /proc/locks: for every Zoraxy-looking process whose
+// holdersFromFdinfo finds lock holders without /proc/locks: for every Dunree-looking process whose
 // readable file descriptors include the file, /proc/<pid>/fdinfo/<fd> carries "lock:" lines when that
 // descriptor holds a lock. Other users' processes are not readable without root.
 func holdersFromFdinfo(root string, want *syscall.Stat_t, pids []int) LockMatch {
@@ -124,8 +124,8 @@ func holdersFromFdinfo(root string, want *syscall.Stat_t, pids []int) LockMatch 
 	return m
 }
 
-func zoraxyPids(root string) []int {
-	procs, _ := listZoraxy(root, -1, time.Now())
+func dunreePids(root string) []int {
+	procs, _ := listDunree(root, -1, time.Now())
 	var out []int
 	for _, p := range procs {
 		out = append(out, p.Pid)
@@ -196,13 +196,13 @@ func describeAt(root string, pid int, now time.Time) ProcInfo {
 	return p
 }
 
-// ListZoraxyProcesses finds processes whose executable looks like Zoraxy, excluding exclude (normally self).
+// ListDunreeProcesses finds processes whose executable looks like Dunree, excluding exclude (normally self).
 // Unreadable processes are skipped; unreadable counts how many /proc entries could not be inspected.
-func ListZoraxyProcesses(exclude int) (found []ProcInfo, unreadable int) {
-	return listZoraxy(procRoot, exclude, time.Now())
+func ListDunreeProcesses(exclude int) (found []ProcInfo, unreadable int) {
+	return listDunree(procRoot, exclude, time.Now())
 }
 
-func listZoraxy(root string, exclude int, now time.Time) (found []ProcInfo, unreadable int) {
+func listDunree(root string, exclude int, now time.Time) (found []ProcInfo, unreadable int) {
 	ents, err := os.ReadDir(root)
 	if err != nil {
 		return nil, 0
@@ -219,11 +219,11 @@ func listZoraxy(root string, exclude int, now time.Time) (found []ProcInfo, unre
 			}
 			continue
 		}
-		if p.Exe == "" && len(p.Cmdline) == 0 && !IsZoraxyName(p.Comm) {
+		if p.Exe == "" && len(p.Cmdline) == 0 && !IsDunreeName(p.Comm) {
 			unreadable++ //another user's process: exe link is hidden, cmdline empty
 			continue
 		}
-		if IsZoraxyName(p.ExeBase()) {
+		if IsDunreeName(p.ExeBase()) {
 			found = append(found, p)
 		}
 	}

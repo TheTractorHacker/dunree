@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/streamproxy"
 )
 
 // Rejected clients are delayed 300 ms before the close. That delay must not block the accept

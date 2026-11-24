@@ -459,7 +459,7 @@
     /* Live / Today mode. Live (default) shows requests per second right now and the requests being
        served; Today shows the cumulative counters of the day. Remembered per browser. */
     let mode = "live";
-    try { if (zxStore.get("zoraxy_trafficflow_mode") === "today") mode = "today"; } catch (e) {}
+    try { if (zxStore.get("dunree_trafficflow_mode") === "today") mode = "today"; } catch (e) {}
     const LIVE_POLL_MS = 2000;
     const LIVE_STALE_MS = 6000;
     const MIN_LABEL_ZOOM = 0.6; // fit never goes below this (about 5 px labels); a bigger map is shown at this zoom from its top-left corner and the rest is a drag away
@@ -493,7 +493,7 @@
        "vertical" (Internet on top, upstreams at the bottom).
        Defaults to vertical to fit the status page's tall left column.
        Persisted in localStorage so the user's preference sticks. */
-    let orientation = zxStore.get("zoraxy_trafficflow_orientation") || "vertical";
+    let orientation = zxStore.get("dunree_trafficflow_orientation") || "vertical";
     let _lastData = null; // cache of the most recent API payload for re-render on rotate
 
     /* SVG namespace helper */
@@ -1051,7 +1051,7 @@
     function setMode(m) {
         if (m === mode) return;
         mode = m;
-        try { zxStore.set("zoraxy_trafficflow_mode", mode); } catch (e) {}
+        try { zxStore.set("dunree_trafficflow_mode", mode); } catch (e) {}
         syncModeUI();
         _lastJSON = "";
         syncLivePolling();
@@ -1107,7 +1107,7 @@
     /* Toggle between horizontal and vertical flow layouts */
     function toggleOrientation() {
         orientation = (orientation === "vertical") ? "horizontal" : "vertical";
-        zxStore.set("zoraxy_trafficflow_orientation", orientation);
+        zxStore.set("dunree_trafficflow_orientation", orientation);
         updateRotateButton();
         if (_lastData) {
             renderDiagram(viewData());
@@ -1273,7 +1273,7 @@
     /* Initialize: apply transform, load data, start 30-second auto-refresh */
     /* Animation control: user toggle (persisted), parent page message, off-screen and hidden tab */
     var _animOn = true; // var: livePolling() reads it from the first loadDiagram() below
-    try { _animOn = zxStore.get("zoraxy_trafficflow_anim") !== "off"; } catch (e) {}
+    try { _animOn = zxStore.get("dunree_trafficflow_anim") !== "off"; } catch (e) {}
     updateRotateButton();
     applyTransform();
     syncModeUI();
@@ -1363,11 +1363,11 @@
     document.getElementById("btn-anim").addEventListener("click", e => {
         e.stopPropagation();
         _animOn = !_animOn;
-        try { zxStore.set("zoraxy_trafficflow_anim", _animOn ? "on" : "off"); } catch (err) {}
+        try { zxStore.set("dunree_trafficflow_anim", _animOn ? "on" : "off"); } catch (err) {}
         applyAnim();
     });
     window.addEventListener("message", e => {
-        if (e.origin !== window.location.origin || !e.data || e.data.type !== "zoraxy-diagram") return;
+        if (e.origin !== window.location.origin || !e.data || e.data.type !== "dunree-diagram") return;
         if (typeof e.data.anim === "boolean") { _animOn = e.data.anim; applyAnim(); }
         if (typeof e.data.idle === "boolean") { _idle = e.data.idle; applyAnim(); }
     });

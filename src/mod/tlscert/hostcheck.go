@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 // Certificate check states reported by CheckHostCertificate
@@ -19,7 +19,7 @@ const (
 	CertMismatch   = "mismatch"   // The certificate that would be served does not cover the name
 )
 
-// HostCertCheck says whether the certificate Zoraxy serves for a host name is really valid for it.
+// HostCertCheck says whether the certificate Dunree serves for a host name is really valid for it.
 // GetCertificateByHostname never fails (it returns the built-in localhost certificate when nothing matches),
 // so "a certificate was found" proves nothing.
 type HostCertCheck struct {
@@ -48,7 +48,7 @@ func EvaluateCertificate(cert *tls.Certificate, host string, fallback bool, now 
 	res.Subject, res.Issuer, res.NotAfter = leaf.Subject.String(), leaf.Issuer.String(), leaf.NotAfter
 	if fallback {
 		res.State = CertFallback
-		res.Reason = "No certificate matches " + host + ", so Zoraxy would present its built-in self-signed localhost certificate."
+		res.Reason = "No certificate matches " + host + ", so Dunree would present its built-in self-signed localhost certificate."
 		return res
 	}
 	if err := leaf.VerifyHostname(host); err != nil {
@@ -74,7 +74,7 @@ func EvaluateCertificate(cert *tls.Certificate, host string, fallback bool, now 
 	return res
 }
 
-// CheckHostCertificate resolves the certificate Zoraxy would serve for host and evaluates it
+// CheckHostCertificate resolves the certificate Dunree would serve for host and evaluates it
 func (m *Manager) CheckHostCertificate(host string, now time.Time) HostCertCheck {
 	host = utils.NormalizeHostname(host)
 	pubKey, priKey, err := m.GetCertificateByHostname(host)

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/streamproxy"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/streamproxy"
 )
 
 // An edit request that only renames a rule must not switch off TCP / logging or reset the

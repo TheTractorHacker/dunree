@@ -1,5 +1,5 @@
 /*
-    Zoraxy admin UI - performance kit
+    Dunree admin UI - performance kit
 
     Every page (components/*.html) is loaded into the document at start up and keeps its own
     setInterval polling alive, whether or not the page is on screen. With ~30 pages this meant

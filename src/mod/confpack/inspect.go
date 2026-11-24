@@ -144,7 +144,7 @@ func Inspect(zr *zip.Reader, lim Limits) (*Archive, error) {
 		var m Manifest
 		dec := json.NewDecoder(bytes.NewReader(raw))
 		if err := dec.Decode(&m); err != nil || m.Format != ManifestFmt {
-			return nil, fmt.Errorf("%w: not a Zoraxy export manifest", ErrBadManifest)
+			return nil, fmt.Errorf("%w: not a Dunree export manifest", ErrBadManifest)
 		}
 		if m.SchemaVersion > SchemaVersion || m.ConfigSchema > CurrentConfigSchema {
 			return nil, ErrNewerSchema
@@ -224,7 +224,7 @@ func Inspect(zr *zip.Reader, lim Limits) (*Archive, error) {
 	if a.Manifest != nil {
 		a.Verified = true
 	} else {
-		a.Warnings = append(a.Warnings, "unverified: this archive has no manifest (created by an older Zoraxy), so its integrity cannot be checked")
+		a.Warnings = append(a.Warnings, "unverified: this archive has no manifest (created by an older version), so its integrity cannot be checked")
 	}
 	return a, nil
 }

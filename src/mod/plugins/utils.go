@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"imuslab.com/zoraxy/mod/netutils"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
+	"github.com/foleyit/dunree/mod/netutils"
+	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
 )
 
 const (
@@ -67,7 +67,7 @@ func getRandomPortNumber() int {
 	return portNo
 }
 
-func validatePluginSpec(pluginSpec *zoraxyPlugin.IntroSpect) error {
+func validatePluginSpec(pluginSpec *dunreePlugin.IntroSpect) error {
 	if pluginSpec.Name == "" {
 		return errors.New("plugin name is empty")
 	}

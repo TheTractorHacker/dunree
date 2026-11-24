@@ -15,8 +15,8 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 type CertCache struct {
@@ -410,7 +410,7 @@ func (m *Manager) GetCertificateByHostname(hostname string) (string, string, err
 			utils.FileExists(filepath.Join(m.CertStore, hostname+".key")) {
 			//Legacy filename matching, use the file names directly
 			//This is the legacy method of matching certificates, it will match the file names directly
-			//This is used for compatibility with Zoraxy v2 setups
+			//This is used for compatibility with Dunree v2 setups
 			pubKey = filepath.Join(m.CertStore, hostname+".pem")
 			priKey = filepath.Join(m.CertStore, hostname+".key")
 		} else if !tlsBehavior.DisableSNI &&

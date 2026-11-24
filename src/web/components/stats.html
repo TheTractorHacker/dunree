@@ -3,7 +3,7 @@
 <link href="./script/datepicker/dp-light.css" rel="stylesheet">
 <script defer src="./script/datepicker/datepicker.js"></script>
 <!--
-    Statistics: traffic summaries of a day or a date range (Overview) and what Zoraxy blocked and why (Blocked).
+    Statistics: traffic summaries of a day or a date range (Overview) and what Dunree blocked and why (Blocked).
     Data: /api/analytic/* (mod/statistic), /api/blocked/* (mod/blocklog).
     Nothing here polls while the page is hidden; the Blocked tab refreshes every 10 s only while it is on screen.
 -->
@@ -229,7 +229,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Statistics</h2>
-            <p class="zx-page-header__sub">How much traffic your sites get, who sends it, and what Zoraxy blocked and why.</p>
+            <p class="zx-page-header__sub">How much traffic your sites get, who sends it, and what Dunree blocked and why.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" id="sFilters"><i class="cog icon" aria-hidden="true"></i> Settings</button>
@@ -341,7 +341,7 @@
                             <ul class="sRank sRank--why" id="stats_RefererWhy" aria-label="Requests without a referrer, by reason"></ul>
                             <p class="sRefHidden" id="sRefHidden" hidden><span id="sRefHiddenText"></span> <button type="button" class="sLink" id="sRefHiddenShow">Show</button></p>
                         </div>
-                        <p class="sRefNote" id="sRefNote">Zoraxy shows the Referer header as the browser sent it, with markup removed and cut at 256 characters. It does not hide a referrer itself. Browsers leave it out for typed addresses, bookmarks and apps, when the linking site asks them to, and in private modes. Bots and scripts rarely send one.</p>
+                        <p class="sRefNote" id="sRefNote">Dunree shows the Referer header as the browser sent it, with markup removed and cut at 256 characters. It does not hide a referrer itself. Browsers leave it out for typed addresses, bookmarks and apps, when the linking site asks them to, and in private modes. Bots and scripts rarely send one.</p>
                     </div>
                 </section>
             </div>
@@ -498,7 +498,7 @@
                     <details class="zx-disclosure sWhat" id="sBlockedInfo">
                         <summary>What counts as blocked?</summary>
                         <div class="zx-disclosure__body">
-                            <p>A request is listed here when Zoraxy itself refused it before it reached your server:</p>
+                            <p>A request is listed here when Dunree itself refused it before it reached your server:</p>
                             <ul>
                                 <li>access rules (blacklist, allow list, country rules) and automatic bans,</li>
                                 <li>rate limits, the WAF, the exploit detector and bot rules,</li>
@@ -630,13 +630,13 @@
         ["~non-browser", t("Bots and scripts"), t("Crawlers, API calls, scripts, monitoring and apps. They do not follow links, so there is no referrer to send.")],
         ["~same-site", t("Same site"), t("Requests made by your own pages (forms, scripts) with the referrer left out.")],
         ["~unknown", t("Not sent (reason unknown)"), t("A client that presents itself as a browser sent no referrer and nothing that explains why: plain HTTP, an older browser, a privacy tool, or a bot that imitates a browser.")],
-        ["~invalid", t("Unreadable referrer"), t("A Referer header was sent, but it held only markup and no address. Zoraxy removes markup before it stores the value.")],
-        ["", t("Unknown (recorded before this version)"), t("Saved before Zoraxy recorded why a referrer is missing. Newer requests are sorted into the rows above.")]
+        ["~invalid", t("Unreadable referrer"), t("A Referer header was sent, but it held only markup and no address. Dunree removes markup before it stores the value.")],
+        ["", t("Unknown (recorded before this version)"), t("Saved before Dunree recorded why a referrer is missing. Newer requests are sorted into the rows above.")]
     ]; }
     /* What to list of the requests without a referrer. Everything is listed unless this browser was told otherwise
        (localStorage; the page works the same without it, the choice then lasts until the page is reloaded).
        Hiding never changes a number: the shares stay relative to all requests of the period, and the card says how many are not listed. */
-    var REF_PREF_KEY = "zoraxy.stats.refwhy", REF_GROUPS = {"~direct": "direct", "~hidden-policy": "policy", "~non-browser": "bots", "~same-site": "same"};
+    var REF_PREF_KEY = "dunree.stats.refwhy", REF_GROUPS = {"~direct": "direct", "~hidden-policy": "policy", "~non-browser": "bots", "~same-site": "same"};
     var refPref = {show: true, hide: {}}, refLast = null;
     (function(){
         try {
@@ -1136,7 +1136,7 @@
                 });
             }
         }
-        $("#sbStatsLine").text(num(s.kept) + " of " + num(cap) + " entries kept, " + num(s.recorded) + " recorded since Zoraxy started. Saved to disk every 5 minutes.");
+        $("#sbStatsLine").text(num(s.kept) + " of " + num(cap) + " entries kept, " + num(s.recorded) + " recorded since Dunree started. Saved to disk every 5 minutes.");
         $("#sbEnabled").prop("checked", !!s.enabled);
         $("#sbRecordingOff").toggle(!s.enabled);
     }
@@ -1167,7 +1167,7 @@
             html = '<i class="eye slash icon"></i><b>Blocked requests are excluded from statistics</b>The statistics filter "exclude blocked requests" is on, so nothing is recorded here. Change it under <button type="button" class="sLink" id="sbOpenFilters">Filters</button>.';
         } else {
             html = '<i class="check circle outline icon"></i><b>Nothing has been blocked yet</b>When an access rule, the WAF, a rate limit, a bot rule or another protection refuses a request, it shows up here with the reason. ' +
-                   'Counters on the Status page include every block since midnight; this list starts when Zoraxy started (or from the last saved list).';
+                   'Counters on the Status page include every block since midnight; this list starts when Dunree started (or from the last saved list).';
         }
         $("#sbEmpty").html(html).show();
         $("#sbMain").hide();

@@ -1,7 +1,7 @@
 // Package netplan holds the network plan the administrator writes down: the proxy, management and application
 // VLANs (names and CIDRs), the upstream proxies that are expected, the backend destinations and application
 // ports that are permitted, and who may administer this instance. It is a document. Nothing in it is applied
-// to a firewall, a switch, a hypervisor or Zoraxy's own listeners: the posture checks (mod/posture) compare the
+// to a firewall, a switch, a hypervisor or Dunree's own listeners: the posture checks (mod/posture) compare the
 // real configuration with it and report differences, and policy.go turns it into recommendations for the
 // administrator to review and apply by hand.
 //
@@ -17,7 +17,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/destguard"
+	"github.com/foleyit/dunree/mod/destguard"
 )
 
 const (

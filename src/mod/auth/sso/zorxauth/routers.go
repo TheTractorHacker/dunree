@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/foleyit/dunree/mod/wirecompat"
 	"net/http"
 	"strings"
 	"time"
@@ -182,9 +183,18 @@ func isAjaxRequest(r *http.Request) bool {
 	return false
 }
 
+// AuthMethodValue is the X-Auth-Method sent upstream. Upstreams compare it exactly, so it stays
+// "zoraxy_sso" while the legacy names are on and is "dunree_sso" once they are off (plan row 48).
+func AuthMethodValue() string {
+	if wirecompat.EmitLegacy() {
+		return "zoraxy_sso" // legacy-compat
+	}
+	return "dunree_sso"
+}
+
 // setAuthHeaders sets the authentication headers to be passed to the backend service after successful authentication
 func (ar *AuthRouter) setAuthHeaders(r *http.Request, user *User) {
-	r.Header.Set("X-Auth-Method", "zoraxy_sso")
+	r.Header.Set("X-Auth-Method", AuthMethodValue())
 	r.Header.Set("Remote-User", user.Username) //Authelia compatibility
 	r.Header.Set("Remote-Name", user.Username) //Authelia compatibility
 	r.Header.Del("Remote-Groups")

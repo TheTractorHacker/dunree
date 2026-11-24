@@ -1,3 +1,3 @@
-module example.com/zoraxy/restful-example
+module example.com/dunree/restful-example
 
 go 1.23.6

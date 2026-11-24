@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 // Paths served by a primary on the admin port, outside the admin session and
@@ -175,13 +177,13 @@ func (p *primaryState) handleSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if have, err := strconv.ParseInt(r.URL.Query().Get("have"), 10, 64); err == nil && have == version {
-		w.Header().Set("X-Zoraxy-Snapshot-Version", strconv.FormatInt(version, 10))
+		wirecompat.SetHeaderAlways(w.Header(), "Snapshot-Version", strconv.FormatInt(version, 10))
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("X-Zoraxy-Snapshot-Version", strconv.FormatInt(version, 10))
+	wirecompat.SetHeaderAlways(w.Header(), "Snapshot-Version", strconv.FormatInt(version, 10))
 	w.Write(raw)
 }
 

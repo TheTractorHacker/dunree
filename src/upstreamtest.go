@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/destguard"
-	"imuslab.com/zoraxy/mod/dynamicproxy/upstreamtls"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 type upstreamTestResult struct {

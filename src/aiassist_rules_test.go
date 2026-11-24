@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"imuslab.com/zoraxy/mod/aiassist"
+	"github.com/foleyit/dunree/mod/aiassist"
 )
 
 // The rules engine judges AI proposals: real expressions pass, invented ones are refused, and wiring the hook does

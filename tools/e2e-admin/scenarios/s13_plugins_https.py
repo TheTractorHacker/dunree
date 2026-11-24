@@ -15,9 +15,9 @@ def build_plugin(name):
     d = tempfile.mkdtemp(prefix="e2e-plug-")
     src = os.path.join(d, name)
     shutil.copytree(os.path.join(ROOT, "example", "plugins", name), src)
-    shutil.rmtree(os.path.join(src, "mod", "zoraxy_plugin"), ignore_errors=True)
+    shutil.rmtree(os.path.join(src, "mod", "dunree_plugin"), ignore_errors=True)
     os.makedirs(os.path.join(src, "mod"), exist_ok=True)
-    shutil.copytree(os.path.join(ROOT, "src", "mod", "plugins", "zoraxy_plugin"), os.path.join(src, "mod", "zoraxy_plugin"))
+    shutil.copytree(os.path.join(ROOT, "src", "mod", "plugins", "dunree_plugin"), os.path.join(src, "mod", "dunree_plugin"))
     env = dict(os.environ, GOTMPDIR=os.path.expanduser("~/.cache/go-tmp"), CGO_ENABLED="0", GOFLAGS="-mod=mod")
     r = subprocess.run(["go", "build", "-o", name, "."], cwd=src, env=env, capture_output=True, text=True)
     if r.returncode != 0:

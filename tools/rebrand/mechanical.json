@@ -1,0 +1,214 @@
+{
+  "$comment": "What tools/rebrand/rename.py does on top of the 'auto' rules of policy.json. policy.json stays the single source for names and variables (MODULE_ROOT lives only there). Anything here is mechanical and compile-checked; nothing here may touch a wire or data surface: those are listed in legacy-allow.txt and are claimed before any rule runs.",
+  "promote": [
+    {
+      "id": "sdk-package",
+      "why": "The Go package and its directory are renamed in this pass (git mv), so every import must follow in the same step or nothing compiles. The frozen fixtures (testdata/sdk-1.*) and the fixture plugin that is built against them keep the old directory name.",
+      "paths": [
+        "**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**"
+      ]
+    },
+    {
+      "id": "i18n-keys-and-values",
+      "why": "Locale keys are the English text. They are rewritten as JSON (keys and values, every locale) in the same run as the HTML/JS text, and key collisions are reported.",
+      "find": "Zoraxy"
+    }
+  ],
+  "extra_rules": [
+    {
+      "id": "module-path-other-files",
+      "before": "sdk-package",
+      "mode": "auto",
+      "find": "imuslab\\.com/zoraxy(?=[/\"'`\\s]|$)",
+      "replace": "${MODULE_ROOT}",
+      "paths": [
+        "**"
+      ],
+      "notes": "The module path in files the policy rule module-path does not list (.txt, .yml, .py, .html docs). Same replacement, same variable."
+    },
+    {
+      "id": "example-module-paths-aroz",
+      "before": "sdk-package",
+      "mode": "auto",
+      "find": "(?:plugins\\.zoraxy\\.)?aroz\\.org/zoraxy/",
+      "replace": "example.com/${PRODUCT_LOWER}/",
+      "paths": [
+        "example/**",
+        "docs/plugins/**"
+      ],
+      "notes": "Example plugins used upstream's domain as their Go module root. A module path is compile-time only."
+    },
+    {
+      "id": "env-test-vars-everywhere",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "\\bZORAXY_(BIN|URL|LEAK_SECONDS|TEST_SECRET|TEST_PARENT_SECRET)\\b",
+      "replace": "${PRODUCT_UPPER}_$1",
+      "paths": [
+        "**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**"
+      ],
+      "notes": "Same variables as policy rule env-test-vars, in the docs and non-test files that mention them."
+    },
+    {
+      "id": "identifiers-title-case",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "Zoraxy",
+      "replace": "${PRODUCT}",
+      "paths": [
+        "**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**"
+      ],
+      "notes": "Zoraxy inside identifiers and names (ZoraxyPort, IsZoraxyName, nginxToZoraxy, 'What%20is%20Zoraxy%20Plugin'), and the prose of the SDK package that the policy's text rule skips. Struct fields keep their json tags, so no wire name changes."
+    },
+    {
+      "id": "identifiers-camel-case",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "(?<![A-Za-z0-9_])zoraxy(?=[A-Z])",
+      "replace": "${PRODUCT_LOWER}",
+      "paths": [
+        "**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**"
+      ],
+      "notes": "Local names such as the zoraxyPlugin import alias. zoraxyVersion and zoraxyI18n are data fields and are in legacy-allow.txt."
+    },
+    {
+      "id": "identifiers-snake-case",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "\\b(start|chk|be)_zoraxy\\b",
+      "replace": "$1_${PRODUCT_LOWER}",
+      "paths": [
+        "**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**"
+      ],
+      "notes": "Shell and Python function names in tools/, docker/entrypoint.py and their docs."
+    },
+    {
+      "id": "identifiers-snake-case-prefix",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "\\bzoraxy_(proc|args|build|host_ip|trace|test_gauge)\\b",
+      "replace": "${PRODUCT_LOWER}_$1",
+      "paths": [
+        "**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**"
+      ],
+      "notes": "Local variables, the docker build stage name, the traceroute probe payload (plan row 46: R) and a test-only gauge."
+    },
+    {
+      "id": "identifiers-upper-suffix",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "\\b(PATH_TO|VI)_ZORAXY\\b",
+      "replace": "$1_${PRODUCT_UPPER}",
+      "paths": [
+        "**"
+      ],
+      "notes": "Placeholders in docs and tool help."
+    },
+    {
+      "id": "html-ids",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "\\bzoraxyinfo\\b",
+      "replace": "${PRODUCT_LOWER}info",
+      "paths": [
+        "src/web/**",
+        "tools/**"
+      ],
+      "notes": "Element id of the About block; the ui-smoke selector follows."
+    },
+    {
+      "id": "renamed-doc-files",
+      "before": "text-title-case",
+      "mode": "auto",
+      "find": "\\bnginx2zoraxy\\b",
+      "replace": "nginx2${PRODUCT_LOWER}",
+      "paths": [
+        "**"
+      ],
+      "notes": "Links to docs/nginx2zoraxy.html, which is renamed by this pass. Links to the copy on upstream's site are claimed by legacy-allow.txt and stay."
+    }
+  ],
+  "extra_exclude": [
+    "src/mod/plugins/${SDK_PACKAGE}/CHANGELOG.md",
+    "example/plugins/*/mod/*/CHANGELOG.md",
+    ".gitignore",
+    "README.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CODEOWNERS",
+    "ROADMAP.md",
+    "docs/README.md",
+    "docs/roadmap-history.md",
+    "src/web/legal/**",
+    "src/web/script/supporters.txt",
+    "src/mod/brand/**",
+    "src/brandweb_test.go",
+    "tools/ui-smoke/brand_smoke.py"
+  ],
+  "name_renames": [
+    {
+      "match": "zoraxy_plugin",
+      "to": "${SDK_PACKAGE}",
+      "kinds": [
+        "dir",
+        "file"
+      ],
+      "paths": [
+        "src/**",
+        "example/**",
+        "docs/plugins/**"
+      ],
+      "exclude": [
+        "src/mod/plugins/testdata/**",
+        "docs/plugins/conformance-reports/**"
+      ]
+    },
+    {
+      "match": "Zoraxy",
+      "to": "${PRODUCT}",
+      "kinds": [
+        "dir",
+        "file"
+      ],
+      "paths": [
+        "docs/plugins/**"
+      ],
+      "exclude": [
+        "docs/plugins/conformance-reports/**"
+      ]
+    },
+    {
+      "match": "nginx2zoraxy",
+      "to": "nginx2${PRODUCT_LOWER}",
+      "kinds": [
+        "file"
+      ],
+      "paths": [
+        "docs/*"
+      ]
+    }
+  ],
+  "name_renames_notes": "docs/deploy/zoraxy.service is NOT renamed here: the plan (row 38) keeps it as the legacy unit and WP8 adds dunree.service next to it.",
+  "json_key_value_files": [
+    "src/web/locales/*.json"
+  ],
+  "extra_exclude_notes": ".gitignore keeps the old build-output names next to the new ones (edited by hand). README, SECURITY, CONTRIBUTING, CODEOWNERS, ROADMAP, docs/README.md and docs/roadmap-history.md were written by hand for Dunree and name Zoraxy on purpose (what Dunree is based on, where not to report, history). src/web/legal/** are byte copies of LICENSE, NOTICE and THIRD_PARTY_NOTICES.md (TestLegalFilesShippedWithUI). supporters.txt lists the supporters of Zoraxy. src/mod/brand, src/brandweb_test.go and tools/ui-smoke/brand_smoke.py hold and test the attribution."
+}

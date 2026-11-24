@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/acme"
-	"imuslab.com/zoraxy/mod/notify"
+	"github.com/foleyit/dunree/mod/acme"
+	"github.com/foleyit/dunree/mod/notify"
 )
 
 // The bridge between the ACME handler and the notification centre (issue #178): a webhook that

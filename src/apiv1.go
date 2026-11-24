@@ -12,9 +12,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/foleyit/dunree/mod/auth"
 	"gopkg.in/yaml.v3"
-	"imuslab.com/zoraxy/mod/apitoken"
-	"imuslab.com/zoraxy/mod/auth"
 )
 
 /*

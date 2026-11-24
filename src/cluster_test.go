@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"imuslab.com/zoraxy/mod/cluster"
+	"github.com/foleyit/dunree/mod/cluster"
 )
 
 func payloadOf(files ...cluster.FileEntry) *cluster.Payload {

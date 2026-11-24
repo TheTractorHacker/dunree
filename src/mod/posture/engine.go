@@ -78,7 +78,7 @@ type Overview struct {
 }
 
 // Disclaimer is shown with every score
-const Disclaimer = "This score reflects Zoraxy's configuration. It is not a penetration test and does not look inside your applications."
+const Disclaimer = "This score reflects Dunree's configuration. It is not a penetration test and does not look inside your applications."
 
 // plan runs an action's plan against fresh facts and normalises it
 func (e *Engine) plan(a Action, f *Facts) Plan {

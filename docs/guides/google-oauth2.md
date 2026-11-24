@@ -1,6 +1,6 @@
 # Sign in with Google (OIDC)
 
-Answers upstream #959. Zoraxy side: verified with the project's fake OIDC provider (discovery, PKCE S256, e-mail and
+Answers upstream #959. Dunree side: verified with the project's fake OIDC provider (discovery, PKCE S256, e-mail and
 claim allow-lists). **Not tested against the real Google endpoints.**
 
 ## Google side
@@ -12,7 +12,7 @@ claim allow-lists). **Not tested against the real Google endpoints.**
      a real domain name; Google rejects bare IPs and `.local` names).
 3. Copy the **Client ID** and **Client secret**.
 
-## Zoraxy side
+## Dunree side
 
 SSO > **OAuth 2.0**:
 
@@ -47,8 +47,8 @@ If a list is set and the token has no `email`, access is denied.
 ## Troubleshooting
 
 * `redirect_uri_mismatch`: the URI in Google must be exactly `https://<host>/internal/oauth2` as the browser sees it
-  (if a TLS terminator sits in front of Zoraxy, Zoraxy may see `http`).
+  (if a TLS terminator sits in front of Dunree, Dunree may see `http`).
 * `Error 400: invalid_request / access blocked`: the consent screen is incomplete or the user is not a test user.
-* Logout: `https://app.example.com/internal/oauth2/logout` ends the Zoraxy session (Google has no end-session
+* Logout: `https://app.example.com/internal/oauth2/logout` ends the Dunree session (Google has no end-session
   endpoint, so you stay signed in at Google).
-* Sessions live in memory: a Zoraxy restart sends users through the (usually silent) sign-in again.
+* Sessions live in memory: a Dunree restart sends users through the (usually silent) sign-in again.

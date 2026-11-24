@@ -107,7 +107,7 @@ def audit(z, limit=300):
 
 
 def started_count(z):
-    return z.logtail(10 ** 7).count("Zoraxy started")
+    return z.logtail(10 ** 7).count("Dunree started")
 
 
 def restart_wait(z, started_before, timeout=45):
@@ -123,7 +123,7 @@ def restart_wait(z, started_before, timeout=45):
             return
         except Exception:
             time.sleep(0.4)
-    raise Fail("zoraxy did not come back after restart:\n" + z.logtail())
+    raise Fail("Dunree did not come back after restart:\n" + z.logtail())
 
 
 # ====================================================================== 1 spoofing
@@ -242,7 +242,7 @@ def c2_rate_limit_identity(t):
 def logged_since(z, mark, pattern):
     """lines appended to the instance's log after the byte offset mark that match the regex"""
     z.log.flush()
-    with open(os.path.join(z.dir, "zoraxy.log"), "rb") as f:
+    with open(os.path.join(z.dir, "dunree.log"), "rb") as f:
         f.seek(mark)
         txt = f.read().decode("utf8", "replace")
     return [l for l in txt.splitlines() if re.search(pattern, l, re.I)]
@@ -250,7 +250,7 @@ def logged_since(z, mark, pattern):
 
 def logmark(z):
     z.log.flush()
-    return os.path.getsize(os.path.join(z.dir, "zoraxy.log"))
+    return os.path.getsize(os.path.join(z.dir, "dunree.log"))
 
 
 def expect_closed(t, label, why_pattern=r"x509|certificate|tls|unknown authority|pin|handshake|bad certificate", status=(502, 521)):
@@ -640,12 +640,12 @@ def c9_admin_exposure(t):
         need(post.get("status") == "warn", "posture admin.rule_target status %r, wanted warn: %s" % (post.get("status"), json.dumps(post)[:300]))
         ev("posture admin.rule_target: %s" % json.dumps(post)[:260])
         # public proxy port never serves the admin API
-        for host in ("127.0.0.1:%d" % z.proxy, "localhost", "127.0.0.1", "%s" % PUBLIC_HOST, "zoraxy.local"):
+        for host in ("127.0.0.1:%d" % z.proxy, "localhost", "127.0.0.1", "%s" % PUBLIC_HOST, "dunree.local"):
             r = http_req("127.0.0.1", z.proxy, host, "/api/adminallow/get", "GET", None, None, 10, src=CLIENT_IP)
             need('"cidrs"' not in r.text and '"yourAddr"' not in r.text, "admin JSON served through the public port with Host %s: %s" % (host, desc(r)))
             r = http_req("127.0.0.1", z.proxy, host, "/index.html", "GET", None, None, 10, src=CLIENT_IP)
             need("zoraxy.csrf.Token" not in r.text, "the admin UI was served through the public port with Host %s" % host)
-        ev("public proxy port :%d with Host in (127.0.0.1:port, localhost, 127.0.0.1, %s, zoraxy.local): no admin API JSON and no admin UI page" % (z.proxy, PUBLIC_HOST))
+        ev("public proxy port :%d with Host in (127.0.0.1:port, localhost, 127.0.0.1, %s, dunree.local): no admin API JSON and no admin UI page" % (z.proxy, PUBLIC_HOST))
     finally:
         with contextlib.suppress(Exception):
             z.del_rule("admin.test")
@@ -977,7 +977,7 @@ def c11_history_rollback(t):
     need(code == 200 and plan.get("dryRun", plan.get("DryRun")) and plan.get("items", plan.get("Items")), "dry run answered HTTP %d %s" % (code, body[:300]))
     need(t.get("/h-still-bad").status != 200, "the dry run changed the live configuration")
     ev("dry run (scope proxy): %s; chain still broken" % [i.get("path") for i in plan.get("items", plan.get("Items", []))])
-    # the real restore: Zoraxy re-executes itself to load it
+    # the real restore: Dunree re-executes itself to load it
     pid = z.proc.pid
     n_started = started_count(z)
     code, body = z.api("/api/history/restore", raw=True, id=good, scope="proxy")
@@ -1062,7 +1062,7 @@ def main():
     ap.add_argument("--keep", action="store_true")
     a = ap.parse_args()
     if not os.path.exists(lib.BIN):
-        print("FAIL setup: zoraxy binary %s missing (use run.sh)" % lib.BIN)
+        print("FAIL setup: dunree binary %s missing (use run.sh)" % lib.BIN)
         return 2
     only = [x.strip() for x in a.only.split(",") if x.strip()]
 

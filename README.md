@@ -1,268 +1,238 @@
-![](./img/title.png)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/dunree-lockup-dark.svg">
+    <img src="brand/dunree-lockup.svg" alt="Dunree" width="300">
+  </picture>
+</p>
 
-# Zoraxy
+# Dunree
 
-A general purpose HTTP reverse proxy and forwarding tool. Now written in Go!
+**Reverse proxy and web gateway.** Published by Foley IT. Open source under [AGPL-3.0](LICENSE).
 
-### Features
+Dunree puts your web services behind one gateway: it routes host names to the right server, handles HTTPS certificates, checks who and what comes in, and shows you what happened. Everything is set up in a web interface. It is one program, written in Go, with no database server and no other service to install.
 
-- Simple to use interface with detail in-system instructions
-- Reverse Proxy (HTTP/2)
-  - Path routes (virtual directories)
-  - WebSocket Proxy (automatic, no set-up needed) 
-  - Basic Auth
-  - Alias Hostnames
-  - Custom Headers
-  - Load Balancing
-- Redirection Rules
-- TLS / SSL setup and deploy
-  - ACME features like auto-renew to serve your sites in http**s**
-  - SNI support (and SAN certs)
-  - DNS Challenge for Let's Encrypt and [these DNS providers](https://go-acme.github.io/lego/dns/)
-- Blacklist / Whitelist by country or IP address (single IP, CIDR or wildcard for beginners)
-- Stream Proxy (TCP & UDP)
-- Integrated Up-time Monitor
-- Web-SSH Terminal
-- Plugin System
-- Utilities
-  - CIDR IP converters
-  - mDNS Scanner
-  - Wake-On-Lan
-  - Debug Forward Proxy
-  - IP Scanner
-  - Port Scanner
-- Community Contributed Features
-  - Forward-Auth Support (e.g. Authelia, Authentik)
-  - Oauth2 Support 
-  - reCAPTCHA 
+Dunree is based on Zoraxy v3.3.6 by tobychui and imuslab. It is an independent project and is not endorsed by them; see [Licence and attribution](#licence-and-attribution). The Dunree version line starts at **v1.0.0-beta.1**.
 
-- Others
-  - Basic single-admin management mode
-  - External permission management system for easy system integration
-  - SMTP config for password reset
-  - Dark Theme Mode
+> [!NOTE]
+> Dunree is in beta. The project home (repository address, release downloads, container image, security contact) is not final yet. Where this page would name such an address, it says so instead of naming one.
 
-## Downloads
+## Contents
 
-[Windows](https://github.com/tobychui/zoraxy/releases/latest/download/zoraxy_windows_amd64.exe)
-/ [Linux (amd64)](https://github.com/tobychui/zoraxy/releases/latest/download/zoraxy_linux_amd64)
-/ [Linux (arm64)](https://github.com/tobychui/zoraxy/releases/latest/download/zoraxy_linux_arm64)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Install](#install)
+- [Migrating from Zoraxy](#migrating-from-zoraxy)
+- [Plugins and add-ons](#plugins-and-add-ons)
+- [Documentation](#documentation)
+- [Security policy](#security-policy)
+- [Contributing](#contributing)
+- [Licence and attribution](#licence-and-attribution)
 
-For other systems or architectures, please see [Releases](https://github.com/tobychui/zoraxy/releases/latest/) 
+## Features
 
-## Getting Started
+### Sites and routing
 
-[Installing Zoraxy Reverse Proxy: Your Gateway to Efficient Web Routing](https://geekscircuit.com/installing-zoraxy-reverse-proxy-your-gateway-to-efficient-web-routing/)
+- HTTP reverse proxy for any number of host names, with alias and wildcard host names, HTTP/2, HTTP/3 and automatic WebSocket and gRPC support
+- Path routes (send a path of a site to another server), redirection rules, a default site for unknown host names
+- Load balancing: round robin, weighted, least connections, least response time, IP hash, consistent hash, by client network or country; active and passive health checks, retries, draining
+- Upstreams over HTTP, HTTPS, h2c or a Unix socket; upstream client certificates and PROXY protocol
+- Custom headers, CORS, static responses, variables such as `{{host}}` and `{{client_ip}}`, rule templates, bulk edit
+- Stream proxy for TCP and UDP
+- Static web server with WebDAV
+- Customisable error pages (403, 404, 429, 502, 503, 521 and more), per site or for all sites
+- Optional per-site Lua scripts, start-on-demand with Sablier, tunnels with zrok
 
-Thank you for the well written and easy to follow tutorial by Reddit user [itsvmn](https://www.reddit.com/user/itsvmn/)! 
-If you have no background in setting up reverse proxy or web routing, you should check this out before you start setting up your Zoraxy. 
+### Certificates and TLS
 
-### Switching from Nginx / NPM? 
-Check out our new (experimental) nginx to Zoraxy config converter!
+- Certificates from Let's Encrypt and other ACME authorities, with automatic renewal, HTTP and DNS challenge and many DNS providers (through [lego](https://go-acme.github.io/lego/dns/))
+- Saved certificate authorities (ZeroSSL, Google, a private ACME server) and reusable DNS credentials
+- Upload, signing requests, certificates from a watched folder, SNI and fallback certificate
+- Client certificate authentication (mTLS) per site
+- Encrypted Client Hello
+- Webhooks and an optional command when a certificate is renewed or about to expire
 
-[Launch Config Converter](https://zoraxy.aroz.org/nginx2zoraxy.html)
+### Security
 
-## Build from Source
+- Web application firewall: [Coraza](https://github.com/corazawaf/coraza) with the OWASP Core Rule Set, central policy with profiles and exclusions, detection-only mode
+- Rules builder ("when ... then ..."): block, allow, redirect, challenge, rate limit or only log, by country, address, path, header and more
+- Access rules: allow and block lists by address, network or country, bulk import and scheduled block lists
+- CAPTCHA challenge pages (Cloudflare Turnstile, reCAPTCHA, Friendly Captcha, Altcha) with your own texts, colours and logo
+- Single sign-on: OAuth2 and OpenID Connect with several providers, forward auth (Authelia, Authentik), and a built-in login portal with 2FA and passkeys
+- CrowdSec bouncer, automatic bans, bot rules, rate limits, basic auth
+- Security overview with a score and one-click fixes; "why was this blocked" by reference ID
+- Admin interface: several accounts with roles, audit log, optional HTTPS, API tokens
 
-Requires Go 1.23 or higher
+### Traffic and monitoring
 
-```bash
-git clone https://github.com/tobychui/zoraxy
-cd ./zoraxy/src/
-go mod tidy
-go build
+- Status page with live traffic, upstream health and certificate expiry
+- Statistics per site, visitors list, blocked requests with the reason
+- Access log search with live view and export; log files per site
+- Uptime monitor
+- Notifications: e-mail, Discord, Slack, Telegram, ntfy, Gotify, Pushover and webhooks
+- Prometheus metrics
 
-sudo ./zoraxy -port=:8000
-```
+### Operations
 
-## Usage
+- Every change is saved as a version: compare, undo, go back
+- Backup and restore of the whole configuration, with a dry run
+- Signed releases; an updater that verifies the signature, keeps the previous program and can roll back
+- High availability: followers copy the configuration of a primary; central management of many nodes ("Fleet") with staged roll-out
+- REST API (`/api/v1`) with an OpenAPI description
+- Works offline (`-offline`); a `-doctor` check for a start that fails
+- Admin interface in English with machine-assisted translations (Chinese, German, Spanish, French, Japanese, Portuguese, Russian), light and dark theme
 
-Zoraxy provides basic authentication system for standalone mode. To use it in standalone mode, follow the instructions below for your desired deployment platform.
+### Extending
 
-### Standalone Mode
+- Plugins: separate programs that filter requests, serve pages or react to events, supervised by Dunree
+- Add-on store: none is built in; you add a signed index by address or from a local folder. See [Plugins and add-ons](#plugins-and-add-ons).
 
-Standalone mode is the default mode for Zoraxy. This allows a single account to manage your reverse proxy server just like a basic home router. This mode is suitable for new owners to homelabs or makers starting growing their web services into multiple servers. A full "Getting Started" guide can be found [here](https://github.com/tobychui/zoraxy/wiki/Getting-Started).
-
-#### Linux
-
-```bash
-sudo ./zoraxy -port=:8000
-```
-
-#### Windows
-
-Download the binary executable and double click the binary file to start it.
-
-#### Raspberry Pi
-
-The installation method is same as Linux. If you are using a Raspberry Pi 4 or newer models, pick the arm64 release. For older version of Pis, use the arm (armv6) version instead.
-
-#### Other ARM SBCs or Android phone with Termux
-
-The installation method is same as Linux. For other ARM SBCs, please refer to your SBC's CPU architecture and pick the one that is suitable for your device. 
-
-#### Docker
-
-See the [/docker](https://github.com/tobychui/zoraxy/tree/main/docker) folder for more details.
-
-### Start Parameters
-
-```
-Usage of zoraxy:
-  -acmetestmode
-        Run ACME in test/staging mode
-  -autorenew int
-        ACME auto TLS/SSL certificate renew check interval (seconds) (default 86400)
-  -cfgupgrade
-        Enable auto config upgrade if breaking change is detected (default true)
-  -conf string
-        Configuration folder path (default "./conf")
-  -db string
-        Database backend to use (leveldb, boltdb, auto) Note that fsdb will be used on unsupported platforms like RISCV (default "auto")
-  -dbpath string
-        Database path (default "./sys.db")
-  -default_inbound_enabled
-        If web server is enabled by default (default true)
-  -default_inbound_port int
-        Default web server listening port (default 443)
-  -dev
-        Use external web folder for UI development
-  -docker
-        Run Zoraxy in docker compatibility mode
-  -earlyrenew int
-        Number of days to early renew a soon expiring certificate (days) (default 30)
-  -enablelog
-        Enable system wide logging, set to false for writing log to STDOUT only (default true)
-  -experimental_proxy_protocol
-        Enable PROXY protocol v1/v2 support for TLS listener (experimental)
-  -fastgeoip
-        Enable high speed geoip lookup, require 1GB extra memory (Not recommend for low end devices)
-  -log string
-        Log folder path (default "./log")
-  -mdns
-        Enable mDNS scanner and transponder (default true)
-  -mdnsname string
-        mDNS name, leave empty to use default (zoraxy_{node-uuid}.local)
-  -noauth
-        Disable authentication for management interface
-  -plugin string
-        Plugin folder path (default "./plugins")
-  -port string
-        Management web interface listening port (default ":8000")
-  -reset_ac
-        Reset admin account username and password to default and exit
-  -webui_hsts
-        Send HSTS header on the management web interface when -webui_tls is enabled (off by default, not recommended with self-signed certificates)
-  -webui_tls string
-        HTTPS for the management web interface: off (default, plain HTTP), auto (self-signed certificate generated into <conf>/webui/), custom (use your own <conf>/webui/webui.crt and webui.key) (default "off")
-  -sshlb
-        Allow loopback web ssh connection (DANGER)
-  -tmp string
-        Temporary folder path (default "./tmp")
-  -update_geoip
-        Download the latest GeoIP data and exit
-  -uuid string
-        sys.uuid file path (default "./sys.uuid")
-  -version
-        Show version of this server
-  -webroot string
-        Static web server root folder. Only allow change in start paramters (default "./www")
-```
-
-### External Permission Management Mode
-
-If you already have an upstream reverse proxy server in place with permission management, you can use Zoraxy in noauth mode. To enable noauth mode, start Zoraxy with the following flag:
-
-```bash
-./zoraxy -noauth=true
-```
-
-> [!WARNING]
-> For security reasons, you should only enable no-auth if you are running Zoraxy in a trusted environment or with another authentication management proxy in front.*
+Network tools (IP and port scanner, mDNS, Wake-on-LAN, web SSH, DNS / TLS / HTTP tests) are part of the admin interface.
 
 ## Screenshots
 
-![](img/screenshots/1.png)
+<!-- screenshots:begin
+     This section is filled by the screenshot step. It writes PNG files to docs/img/screenshots/ and replaces
+     the list below with images. Expected files (light theme, 1366 px wide unless the name says otherwise):
+       docs/img/screenshots/status.png            Status page
+       docs/img/screenshots/sites.png             Sites > HTTP Proxy
+       docs/img/screenshots/site-editor.png       Edit site
+       docs/img/screenshots/security-overview.png Security > Security Overview
+       docs/img/screenshots/rules.png             Security > Rules
+       docs/img/screenshots/certificates.png      Certificates
+       docs/img/screenshots/statistics.png        Traffic > Statistics
+       docs/img/screenshots/status-dark.png       Status page, dark theme
+       docs/img/screenshots/status-phone.png      Status page, 390 px wide
+-->
 
-![](img/screenshots/2.png)
+Screenshots of Dunree are not in the repository yet. They will be placed in [`docs/img/screenshots/`](docs/img/screenshots/).
 
-More screenshots on the wikipage [Screenshots](https://github.com/tobychui/zoraxy/wiki/Screenshots)!
+<!-- screenshots:end -->
 
-## FAQ
+## Install
 
-There is a wikipage with [Frequently-Asked-Questions](https://github.com/tobychui/zoraxy/wiki/FAQ---Frequently-Asked-Questions)!
+Dunree is one program file. It keeps its data in the folder it is started from: `conf/` (configuration and certificates), `sys.db` (database), `log/`, `www/` and `plugins/`. Always start it from the same folder, or give the paths with `-conf`, `-dbpath` and so on.
 
-## Global Area Network Controller
+After the start, open `http://<address of the server>:8000` and create the administrator account. From another machine you need the one-time setup token that Dunree prints to the console and the log at its first start.
 
-Moved to official plugin repo, see [ztnc](https://github.com/aroz-online/zoraxy-official-plugins/tree/main/src/ztnc) plugin
+Ports: `8000` for the admin interface (change with `-port`), `80` and `443` for your sites. Do not make port 8000 reachable from the internet.
 
-## Web SSH
+### Releases
 
-Web SSH currently only supports Linux based OSes. The following platforms are supported:
+Official release files and a container image are not published yet (beta, the project home is not final). Until they are, build from source. Official releases will be signed; the updater in the admin interface only installs a release whose signature it can verify.
 
-- linux/amd64
-- linux/arm64
-- linux/armv6 (experimental)
-- linux/386 (experimental)
+### Build from source (all platforms)
 
-### Loopback Connection
-
-Loopback web SSH connections, by default, are disabled. This means that if you are trying to connect to an address like 127.0.0.1 or localhost, the system will reject your connection for security reasons. To enable loopback for testing or development purpose, use the following flags to override the loopback checking:
+You need [Go](https://go.dev/dl/) 1.26 or newer and the source code of Dunree.
 
 ```bash
-./zoraxy -sshlb=true
+cd dunree/src
+go build -o dunree .
+./dunree -version
 ```
 
-## Community Maintained Sections
+Cross-compile for another system with `GOOS` and `GOARCH`, for example `GOOS=linux GOARCH=arm64 go build -o dunree_linux_arm64 .`.
 
-Some section of Zoraxy are contributed by our amazing community and if you have any issues regarding those sections, it would be more efficient if you can tag them directly when creating an issue report.
+### Linux
 
-- Forward Auth [@james-d-elliott](https://github.com/james-d-elliott)
+```bash
+sudo mkdir -p /opt/dunree && sudo cp dunree /opt/dunree/
+cd /opt/dunree
+sudo ./dunree -port=:8000
+```
 
-  - (Legacy) Authelia Support added by [@7brend7](https://github.com/7brend7)
+To run it as a service, use the systemd unit `packaging/linux/dunree.service` (or `packaging/linux/install.sh`, see [`packaging/`](packaging/README.md)) and the notes in [`docs/deploy/`](docs/deploy/README.md). An install upgraded from Zoraxy keeps its `zoraxy.service` and `/opt/zoraxy`.
 
-  - (Legacy) Authentik Support added by [@JokerQyou](https://github.com/JokerQyou)
+Raspberry Pi and other ARM boards: build with `GOARCH=arm64` (64-bit systems) or `GOARCH=arm` (32-bit).
 
-- Oauth2 [@kjagosz](https://github.com/kjagosz)
+### Windows
 
-- ACME
+Build `dunree.exe` (`GOOS=windows GOARCH=amd64 go build -o dunree.exe .`), put it in its own folder and start it from a terminal in that folder:
 
-  - ACME integration (Looking for maintainer)
+```
+dunree.exe -port=:8000
+```
 
-  - DNS Challenge by [@zen8841](https://github.com/zen8841)
+Web SSH, limits for plugins and the in-app updater are for Linux only.
 
-- Docker Container List by [@eyerrock](https://github.com/eyerrock)
+### macOS and FreeBSD
 
-- Change Log [@Morethanevil](https://github.com/Morethanevil)
+Build from source as above and start it the same way as on Linux. These systems are built but are tested less than Linux.
 
-### Looking for Maintainer
+### Docker
 
-- ACME integration (Auto-renew & Zoraxy integration)
+There is no official Dunree image yet, so build it yourself from the repository root:
 
-- Zoraxy Auth (Build-in basic SSO feature) 
+```bash
+docker build -f packaging/container/Dockerfile -t dunree:local .
+```
 
-- Logging (including analysis & attack prevention) Module
+Keep the configuration in a volume, publish ports 80, 443 (TCP and UDP) and 8000, and read [`docker/README.md`](docker/README.md) for the options. The compose files take the image name from `DUNREE_IMAGE` (`packaging/container/compose.yaml` builds it for you).
 
-Thank you so much for your contributions!
+### Start options
 
-### Notes on Security Advisories
+`./dunree -help` lists every option. The ones used most:
 
-Due to recent automated / AI generated advisories, we will no longer accept security advisories directly open on Github.
+| Option | Meaning |
+|---|---|
+| `-port :8000` | address and port of the admin interface |
+| `-conf ./conf`, `-dbpath ./sys.db`, `-log ./log` | where configuration, database and logs are kept |
+| `-webui_tls auto` | HTTPS for the admin interface with a self-signed certificate (`custom` for your own) |
+| `-noauth` | no login for the admin interface. Only behind another gateway that does the login. |
+| `-reset_ac` | reset the administrator account and exit |
+| `-doctor` | check why a start fails (ports, files, database) and exit |
+| `-offline` | no outbound connections at start-up or in the background |
+| `-metrics` | Prometheus metrics |
+| `-version` | print the version and exit |
 
-If you spot a secuity issue and want to create a security advisories, please contact us via Discord and provide your Github username. Then we will assign you an advisory number for filling in your advisory title. For advisories that do not have a advisory number, we will close it immediately.
+## Migrating from Zoraxy
 
-**Updates 2026-06-26**
+An install that runs Zoraxy today (3.3.x from the Zoraxy project, or a `v3.3.6-fork.N` build) keeps working when its program file is replaced by Dunree. Nothing is converted.
 
-Due to recent floods of AI generated security advisory, Private vulnerability reporting feature of this repo is temporary closed. If you have a critical issue to report, you can reach our maintainer on Discord. 
+1. Take a backup of `conf/`, `sys.db` and `sys.uuid`.
+2. Stop the service, replace the program file with the Dunree build, start the service.
+3. At its first start Dunree copies the configuration folder and the database aside, once, and says so in the log.
 
-## Sponsor This Project
+Sites, certificates, accounts, API tokens and plugins are used as they are. Administrators stay logged in. Names that other programs know (`X-Zoraxy-*` headers, `/.zoraxy/` paths, `zoraxy_*` metrics, `ZORAXY_*` environment variables, the service and folder names) keep working; Dunree adds its own names next to them.
 
-If you like the project and want to support us, please consider a donation. You can use the links below
+The full description, including systemd, Docker and how to go back, is in [`docs/migrating-from-zoraxy.md`](docs/migrating-from-zoraxy.md). What changed and what did not is listed in [`docs/ux/changes.md`](docs/ux/changes.md), section "Dunree rebrand".
 
-- [tobychui (Primary author)](https://paypal.me/tobychui)
-- [PassiveLemon (Docker compatibility maintainer)](https://github.com/PassiveLemon)
+## Plugins and add-ons
 
-## License
+A plugin is a separate program that Dunree starts and supervises. It can filter requests, capture paths, serve its own pages in the admin interface and react to events. Plugins that were built for Zoraxy run without being rebuilt.
 
-This project is open-sourced under AGPL. I open-sourced this project so everyone can check for security issues and benefit all users. **This software is intended to be free of charge. If you have acquired this software from a third-party seller, the authors of this repository bears no responsibility for any technical difficulties assistance or support.**
+- Write a plugin: [`docs/plugins/contract.md`](docs/plugins/contract.md) (the contract between Dunree and a plugin), the SDK in `src/mod/plugins/dunree_plugin`, examples in [`example/plugins/`](example/plugins/).
+- Check a plugin: [`docs/plugins/conformance.md`](docs/plugins/conformance.md) and the tool in `tools/plugin-check`.
+- Add-on store: Dunree ships **without a store** and contacts none until an administrator adds one under *System > App Store*: an index by address, or a local folder. The index is signed. Format and behaviour: [`docs/plugins/addon-store.md`](docs/plugins/addon-store.md). Publishing your own: [`docs/plugins/publishing-addons.md`](docs/plugins/publishing-addons.md).
+- A Dunree add-on store run by Foley IT does not exist yet.
 
+A plugin runs with the rights of the Dunree process (or of the user set with `-plugin_user`). Install only plugins you trust.
+
+## Documentation
+
+The documentation is in [`docs/`](docs/README.md): guides for common tasks, deployment, plugins, and the notes on the design of the admin interface. Notes for developers are in [`DEVELOPMENT.md`](DEVELOPMENT.md).
+
+## Security policy
+
+Please report a vulnerability privately, not in a public issue. How to report and what to expect is in [`SECURITY.md`](SECURITY.md).
+
+Do not report Dunree vulnerabilities to the Zoraxy project. If you believe a problem is also in Zoraxy, say so in your report.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Changes are listed in [`CHANGELOG.md`](CHANGELOG.md), plans in [`ROADMAP.md`](ROADMAP.md).
+
+## Licence and attribution
+
+Dunree is free software under the **GNU Affero General Public License, version 3** ([`LICENSE`](LICENSE)). If you change Dunree and let other people use your version over a network, the licence requires you to offer them the source code of your version.
+
+**Dunree is based on [Zoraxy](https://github.com/tobychui/zoraxy) v3.3.6 by tobychui and imuslab**, which is published under the same licence.
+
+- Dunree is a modified, independent derivative of Zoraxy. It is not affiliated with or endorsed by tobychui, imuslab or the Zoraxy contributors.
+- The parts written for Dunree are the work of Foley IT and its contributors. They are not the work of the Zoraxy authors.
+- The copyright headers of the original authors, `LICENSE` and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) are kept. [`NOTICE`](NOTICE) says the same in full.
+- Parts of Zoraxy were contributed by its community, among them forward auth (`james-d-elliott`), OAuth2 (`kjagosz`), the DNS challenge (`zen8841`), the Docker container list (`eyerrock`), Docker support (`PassiveLemon`), the stream proxy (`jemmy1794`) and the plugin and event systems (`AnthonyMichaelTDM`). The history of each release of Zoraxy is kept in [`CHANGELOG.md`](CHANGELOG.md). These people are not involved in Dunree: please do not tag them in Dunree issues.
+- Third-party components and their licences: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+The name comes from Fort Dunree on Lough Swilly in County Donegal (Irish *dún*, a fort). The Dunree name and logo identify the releases of Foley IT; the licence covers the code, not the name or the logo. See [`brand/README.md`](brand/README.md).
+
+Dunree comes without warranty. If you got it from someone other than Foley IT, that party is responsible for what they gave you.

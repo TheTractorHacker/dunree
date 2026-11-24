@@ -458,13 +458,13 @@ func (m *Manager) Restore(req RestoreRequest) (res *RestoreResult, retErr error)
 			return res, fmt.Errorf("restart failed, the previous configuration was put back: %w", err)
 		}
 		res.Restarting = true
-		res.Message = fmt.Sprintf("Restored version %d. Zoraxy is restarting; if it does not come back healthy within %d seconds the previous configuration is put back automatically.", req.ID, int(m.opt.HealthyAfter.Seconds()))
+		res.Message = fmt.Sprintf("Restored version %d. Dunree is restarting; if it does not come back healthy within %d seconds the previous configuration is put back automatically.", req.ID, int(m.opt.HealthyAfter.Seconds()))
 	} else {
 		rec.Result = "confirmed"
 		m.recordRestoreLocked(rec)
 		os.Remove(m.dir(pendingFile))
 		os.RemoveAll(backup)
-		res.Message = fmt.Sprintf("Restored version %d. Restart Zoraxy to load it.", req.ID)
+		res.Message = fmt.Sprintf("Restored version %d. Restart Dunree to load it.", req.ID)
 	}
 	res.Applied = true
 	return res, nil
@@ -606,7 +606,7 @@ func (m *Manager) BootGuard() {
 		m.writePending(p)
 		return
 	default:
-		reason = "Zoraxy did not become healthy with the restored configuration"
+		reason = "Dunree did not become healthy with the restored configuration"
 	}
 	err := m.rollbackFiles(p)
 	if len(p.Tables) > 0 && m.opt.DB != nil {

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 type DataLoader struct {

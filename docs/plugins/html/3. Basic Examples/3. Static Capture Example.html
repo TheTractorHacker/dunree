@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-      Static Capture Example | Zoraxy Documentation
+      Static Capture Example | Dunree Documentation
     </title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -69,7 +69,7 @@
           <a href="#!" class="is-active item">
             Documents
           </a>
-          <a href="https://github.com/tobychui/zoraxy/tree/main/example/plugins" target="_blank" class="item">
+          <a href="../../../../example/plugins/" class="item">
             Examples
             <span class="ts-icon is-arrow-up-right-from-square-icon"></span>
           </a>
@@ -88,8 +88,8 @@
                   <span class="ts-icon is-caret-down-icon"></span>
                 </a>
                 <div class="ts-menu is-dense is-small is-horizontally-padded">
-                  <a class="item" href="/plugins/html/1. Introduction/1. What is Zoraxy Plugin.html">
-                    What is Zoraxy Plugin
+                  <a class="item" href="/plugins/html/1. Introduction/1. What is Dunree Plugin.html">
+                    What is Dunree Plugin
                   </a>
                   <a class="item" href="/plugins/html/1. Introduction/2. Getting Started.html">
                     Getting Started
@@ -149,8 +149,8 @@
                 <a class="item" href="/plugins/html/index.html">
                   index
                 </a>
-                <a class="item" href="/plugins/html/zoraxy_plugin API.html">
-                  zoraxy_plugin API
+                <a class="item" href="/plugins/html/dunree_plugin API.html">
+                  dunree_plugin API
                 </a>
               </div>
             </div>
@@ -169,7 +169,7 @@
                 <div class="ts-divider has-top-spaced-large"></div>
                 <p>
                   <p class="ts-text">
-                    This example demonstrates how to use static capture in Zoraxy plugins. Static capture allows you to define specific paths that will be intercepted by your plugin, enabling custom handling of requests to those paths.
+                    This example demonstrates how to use static capture in Dunree plugins. Static capture allows you to define specific paths that will be intercepted by your plugin, enabling custom handling of requests to those paths.
                   </p>
                 </p>
                 <p>
@@ -202,7 +202,7 @@
     Name:          &quot;Static Capture Example&quot;,  
     Author:        &quot;aroz.org&quot;,  
     AuthorContact: &quot;https://aroz.org&quot;,  
-    Description:   &quot;An example for showing how static capture works in Zoraxy.&quot;,  
+    Description:   &quot;An example for showing how static capture works in Dunree.&quot;,  
     URL:           &quot;https://zoraxy.aroz.org&quot;,  
     Type:          plugin.PluginType_Router,  
     VersionMajor:  1,  
@@ -226,7 +226,7 @@ if err != nil {
                     <span class="ts-text is-code">
                       StaticCapturePaths
                     </span>
-                    . These are the paths that you want to capture in your plugin. These paths will be registered to Zoraxy and when a user have request that matches these paths (including subpaths), the request will get forwarded to your plugin. In this example, we are intercepting the
+                    . These are the paths that you want to capture in your plugin. These paths will be registered to Dunree and when a user have request that matches these paths (including subpaths), the request will get forwarded to your plugin. In this example, we are intercepting the
                     <span class="ts-text is-code">
                       /test_a
                     </span>
@@ -242,7 +242,7 @@ if err != nil {
                   <span class="ts-text is-code">
                     StaticCaptureIngress
                   </span>
-                  . This is to tell Zoraxy that &ldquo;if you receive requests that matches the above Static capture paths, please forward the request to this endpoint&rdquo;. In this example, this plugin asked Zoraxy to forward th HTTP traffic to
+                  . This is to tell Dunree that &ldquo;if you receive requests that matches the above Static capture paths, please forward the request to this endpoint&rdquo;. In this example, this plugin asked Dunree to forward th HTTP traffic to
                   <span class="ts-text is-code">
                     /s_capture
                   </span>
@@ -288,7 +288,7 @@ pathRouter.RegisterStaticCaptureHandle(STATIC_CAPTURE_INGRESS, http.DefaultServe
                     <span class="ts-text is-code">
                       RegisterStaticCaptureHandle
                     </span>
-                    is used to register the static capture ingress endpoint, so Zoraxy knows where to forward the HTTP request when it thinks your plugin shall be the one handling the request. In this example,
+                    is used to register the static capture ingress endpoint, so Dunree knows where to forward the HTTP request when it thinks your plugin shall be the one handling the request. In this example,
                     <span class="ts-text is-code">
                       /s_capture
                     </span>
@@ -359,7 +359,7 @@ pathRouter.RegisterStaticCaptureHandle(STATIC_CAPTURE_INGRESS, http.DefaultServe
 </code></pre>
                 <p>
                   <p class="ts-text">
-                    This is technically not related to static capturing, but it is really helpful to have a UI to help with printing debug information. You can access the page rendered by this function in the Zoraxy plugin menu.  This should be replaced with the embedded web fs used in the Hello world example after the development is completed.
+                    This is technically not related to static capturing, but it is really helpful to have a UI to help with printing debug information. You can access the page rendered by this function in the Dunree plugin menu.  This should be replaced with the embedded web fs used in the Hello world example after the development is completed.
                   </p>
                 </p>
                 <p>
@@ -383,7 +383,7 @@ import (
     &quot;sort&quot;  
     &quot;strconv&quot;  
 
-    plugin &quot;example.com/zoraxy/static-capture-example/mod/zoraxy_plugin&quot;  
+    plugin &quot;example.com/dunree/static-capture-example/mod/dunree_plugin&quot;  
 )  
 
 const (  
@@ -398,7 +398,7 @@ func main() {
         Name:          &quot;Static Capture Example&quot;,  
         Author:        &quot;aroz.org&quot;,  
         AuthorContact: &quot;https://aroz.org&quot;,  
-        Description:   &quot;An example for showing how static capture works in Zoraxy.&quot;,  
+        Description:   &quot;An example for showing how static capture works in Dunree.&quot;,  
         URL:           &quot;https://zoraxy.aroz.org&quot;,  
         Type:          plugin.PluginType_Router,  
         VersionMajor:  1,  
@@ -521,7 +521,7 @@ Request URI: /test_b
                 <div class="ts-divider has-top-spaced-large"></div>
                 <p>
                   <p class="ts-text">
-                    Enjoy exploring static capture in Zoraxy!
+                    Enjoy exploring static capture in Dunree!
                   </p>
                 </p>
               </div>
@@ -536,7 +536,7 @@ Request URI: /test_b
       <div class="ts-divider"></div>
       <div class="ts-content">
         <div class="ts-text">
-          Zoraxy © tobychui
+          Dunree plugin documentation, based on the Zoraxy documentation © tobychui
           <span class="thisyear">
             2025
           </span>

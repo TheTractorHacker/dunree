@@ -156,7 +156,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Update</h2>
-            <p class="zx-page-header__sub">Install a signed Zoraxy release from GitHub. Nothing is installed until you confirm it.</p>
+            <p class="zx-page-header__sub">Install a signed Dunree release from GitHub. Nothing is installed until you confirm it.</p>
         </div>
     </header>
 
@@ -198,7 +198,7 @@
                 <dd><div class="up-fact__value" id="upLatest">Not checked yet</div><div class="up-fact__detail" id="upLatestDetail"></div></dd>
             </div>
         </dl>
-        <div class="up-trust"><i class="shield alternate icon" aria-hidden="true"></i><span>Every download is verified against an ed25519 signature and a SHA-256 checksum before it is installed. If the new version is not healthy within 90 seconds, Zoraxy rolls back by itself.</span></div>
+        <div class="up-trust"><i class="shield alternate icon" aria-hidden="true"></i><span>Every download is verified against an ed25519 signature and a SHA-256 checksum before it is installed. If the new version is not healthy within 90 seconds, Dunree rolls back by itself.</span></div>
     </section>
 
     <!-- Progress of a running operation -->
@@ -272,7 +272,7 @@
     <!-- Database / configuration migrations -->
     <section class="zx-card up-card" id="upDbCard">
         <div class="zx-card__head"><h3 class="zx-card__title">Database and configuration</h3></div>
-        <p class="zx-card__desc">Run the same migrations Zoraxy runs at start-up, for example after copying a configuration from an older version. Reports what changed. No restart.</p>
+        <p class="zx-card__desc">Run the same migrations Dunree runs at start-up, for example after copying a configuration from an older version. Reports what changed. No restart.</p>
         <div class="zx-card__body">
             <button type="button" class="zx-btn zx-btn--secondary" id="upDbBtn" onclick="window.upConfirm('db');"><i class="database icon" aria-hidden="true"></i> Update database</button>
             <span class="up-reason" id="upDbReason"></span>
@@ -282,7 +282,7 @@
     <!-- Checks -->
     <section class="zx-card up-card">
         <div class="zx-card__head"><h3 class="zx-card__title">Preflight checks <span id="upChecksBadge"></span></h3>
-            <p class="zx-card__desc">What Zoraxy verifies on this server before it lets an update start: the way it restarts, write access and free disk space.</p></div>
+            <p class="zx-card__desc">What Dunree verifies on this server before it lets an update start: the way it restarts, write access and free disk space.</p></div>
         <div class="zx-card__body">
             <details class="zx-disclosure up-more" id="upChecksDetails" style="margin-top:0;">
                 <summary>Show all checks</summary>
@@ -314,7 +314,7 @@
             <div class="up-danger">
                 <div class="up-danger__text">
                     <span class="up-danger__title">Roll back to the previous version</span>
-                    <span class="up-danger__desc">Puts the previous Zoraxy program back and restarts. The configuration is not reverted. Asks before it runs.</span>
+                    <span class="up-danger__desc">Puts the previous Dunree program back and restarts. The configuration is not reverted. Asks before it runs.</span>
                     <span class="up-reason" id="upRbReason"></span>
                 </div>
                 <button type="button" class="zx-btn zx-btn--danger-outline" id="upRollbackBtn" onclick="window.upConfirm('rollback');"><i class="undo icon" aria-hidden="true"></i> Roll back</button>
@@ -399,15 +399,15 @@
         $("#upAppBtnLabel").text(tag && canUpdate ? TF("Update to {0}", tag) : T("Update App"));
         if (running){
             let op = st && st.op || "app";
-            let title = st && st.state == "restarting" ? T("Restarting Zoraxy...") : op == "db" ? T("Running migrations") : op == "rollback" ? T("Rolling back") : (tag ? TF("Updating to {0}", tag) : T("Updating Zoraxy"));
-            setHero("info", "circle notch loading", title, T("Keep this page open. The admin page may be unavailable for a few seconds while Zoraxy restarts."));
+            let title = st && st.state == "restarting" ? T("Restarting Dunree...") : op == "db" ? T("Running migrations") : op == "rollback" ? T("Rolling back") : (tag ? TF("Updating to {0}", tag) : T("Updating Dunree"));
+            setHero("info", "circle notch loading", title, T("Keep this page open. The admin page may be unavailable for a few seconds while Dunree restarts."));
         }else if (st && st.state == "failed"){
             let op = st.op || "app";
             setHero("danger", "times circle", op == "db" ? T("Migration failed") : op == "rollback" ? T("Rollback failed") : T("Update failed"),
-                TF("Zoraxy is still running {0}. Open Technical details and the technical log to see what happened.", curLabel() || "its current version"));
+                TF("Dunree is still running {0}. Open Technical details and the technical log to see what happened.", curLabel() || "its current version"));
             setTech(st.error || "");
         }else if (p && p.pending_confirmation){
-            setHero("warn", "hourglass half", T("Checking the new version"), T("The update is installed and Zoraxy is waiting for it to confirm it is healthy. If it does not within 90 seconds, the previous version is restored automatically."));
+            setHero("warn", "hourglass half", T("Checking the new version"), T("The update is installed and Dunree is waiting for it to confirm it is healthy. If it does not within 90 seconds, the previous version is restored automatically."));
         }else if (state.checkErr){
             setHero(state.checkErr.code == 429 ? "warn" : "danger", "exclamation triangle", T("Could not check for updates"), state.checkErr.friendly);
             setTech(state.checkErr.tech);
@@ -613,7 +613,7 @@
             let rate = xhr.status == 429;
             state.checkErr = {code: xhr.status, tech: errText(xhr),
                 friendly: rate ? T("GitHub is limiting requests from this address. Try again later, or add a GitHub token under Settings to raise the limit.") :
-                    T("Zoraxy could not get the release list from GitHub. Check that this server can reach github.com, then try again.")};
+                    T("Dunree could not get the release list from GitHub. Check that this server can reach github.com, then try again.")};
             renderHero();
             msgbox(errText(xhr), false, 6000);
         }).always(function(){ state.checking = false; $("#upCheckBtn").removeClass("disabled").removeAttr("aria-busy").find("i.icon").attr("class", "refresh icon"); });
@@ -656,15 +656,15 @@
         let title, text;
         if (kind == "app"){
             let tag = state.check && state.check.latest ? state.check.latest.tag : "the latest release";
-            title = "Update Zoraxy to " + tag + "?";
-            text = "The new binary is downloaded, its signature and checksum are verified, and Zoraxy then restarts (about 5-20 seconds of downtime, the web admin and all proxy listeners are interrupted)." + bk +
+            title = "Update Dunree to " + tag + "?";
+            text = "The new binary is downloaded, its signature and checksum are verified, and Dunree then restarts (about 5-20 seconds of downtime, the web admin and all proxy listeners are interrupted)." + bk +
                 " If the new version is not healthy within 90 seconds it is rolled back automatically.";
         }else if (kind == "db"){
             title = "Run database / configuration migrations?";
-            text = "This runs the same migrations Zoraxy runs at startup and reports what changed. No restart." + bk;
+            text = "This runs the same migrations Dunree runs at startup and reports what changed. No restart." + bk;
         }else{
             title = "Roll back to the previous version?";
-            text = "The previous binary is restored and Zoraxy restarts. Configuration is not reverted.";
+            text = "The previous binary is restored and Dunree restarts. Configuration is not reverted.";
         }
         $("#upModalTitle").text(title);
         $("#upModalText").html(text);
@@ -696,7 +696,7 @@
             finish(st);
         }, error: function(){
             // server is restarting: keep trying
-            $("#upStage").text("- waiting for Zoraxy to restart...");
+            $("#upStage").text("- waiting for Dunree to restart...");
             if (state.status && (state.status.op || "app") == "app") renderSteps({op: "app", state: "restarting", stage: "Restarting"});
             state.pollTimer = setTimeout(poll, 1500);
         }});

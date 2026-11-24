@@ -78,7 +78,7 @@ type Policy struct {
 type Profile struct {
 	Name                   string
 	Description            string
-	BuiltIn                bool `json:",omitempty"` // Read-only, shipped with Zoraxy
+	BuiltIn                bool `json:",omitempty"` // Read-only, shipped with Dunree
 	Mode                   string
 	ParanoiaLevel          int // 0 = use the global policy value
 	InboundThreshold       int // 0 = use the global policy value

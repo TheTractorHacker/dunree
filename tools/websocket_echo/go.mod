@@ -1,4 +1,4 @@
-module aroz.org/zoraxy/websocket-echo
+module github.com/foleyit/dunree/tools/websocket-echo
 
 go 1.23.2
 

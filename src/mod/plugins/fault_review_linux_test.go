@@ -84,7 +84,7 @@ func TestLimitsScopeNeverCarriesTheCommandLineAsDescription(t *testing.T) {
 	}
 	// Without --description systemd uses the command line, secrets included, as the
 	// description of the scope and logs it
-	if desc != "Zoraxy plugin com.example_evil_id___reboot_" {
+	if desc != "Dunree plugin com.example_evil_id___reboot_" {
 		t.Fatalf("description of the scope: %q", desc)
 	}
 	if got := cmd.Args[sep+1:]; len(got) != 2 || got[0] != "/opt/plugins/x/x" || got[1] != secret {
@@ -135,7 +135,7 @@ func TestFaultLimitsScopeDescriptionOnThisHost(t *testing.T) {
 	if err != nil {
 		t.Skipf("systemctl show %s: %v %s", unit, err, out)
 	}
-	if got := strings.TrimSpace(string(out)); got != "Zoraxy plugin test.review.scope" {
+	if got := strings.TrimSpace(string(out)); got != "Dunree plugin test.review.scope" {
 		t.Fatalf("description of %s: %q", unit, got)
 	}
 	if !strings.HasPrefix(unit, "zoraxy-plugin-test.review.scope-") {
@@ -272,7 +272,7 @@ func TestProcessGroupIsEndedBeforeThePIDIsFree(t *testing.T) {
 	}
 }
 
-/* A plugin with limits must not outlive Zoraxy (its systemd scope is outside the cgroup of Zoraxy) */
+/* A plugin with limits must not outlive Dunree (its systemd scope is outside the cgroup of Dunree) */
 
 // fakeLeftoverKill replaces the systemctl call that kills leftover scopes and records the patterns
 func fakeLeftoverKill(t *testing.T) *[]string {
@@ -338,7 +338,7 @@ func TestScopePatternMatchesOnlyThePluginOfThisInstance(t *testing.T) {
 		"a plugin whose ID starts the same":    scopeUnitName(a.scopeInstanceTag(), "com.example.a-b"),
 		"a plugin whose ID continues with -":   scopeUnitName(a.scopeInstanceTag(), "com.example.a-"+a.scopeInstanceTag()),
 		"another plugin":                       scopeUnitName(a.scopeInstanceTag(), "com.example.b"),
-		"a unit that is not a scope of Zoraxy": "com.example.a.service",
+		"a unit that is not a scope of Dunree": "com.example.a.service",
 	} {
 		if match(pattern, unit) {
 			t.Errorf("%q matches %s (%s)", pattern, what, unit)
@@ -370,11 +370,11 @@ func TestLimitsStartKillsLeftoverScopesAndBindsOnlyWhenTheProbeAllowsIt(t *testi
 		t.Fatalf("leftover scopes killed before the start: %q", *patterns)
 	}
 	if !has(cmd.Args, "BindsTo=zoraxy.service") || !has(cmd.Args, "KillSignal=SIGCONT") || !has(cmd.Args, "TimeoutStopSec=40") {
-		t.Fatalf("the scope is not bound to the service of Zoraxy: %q", cmd.Args)
+		t.Fatalf("the scope is not bound to the service of Dunree: %q", cmd.Args)
 	}
 	for _, a := range cmd.Args {
 		if strings.HasPrefix(a, "After=") {
-			t.Fatalf("After= makes a stop of Zoraxy wait for the plugin: %q", cmd.Args)
+			t.Fatalf("After= makes a stop of Dunree wait for the plugin: %q", cmd.Args)
 		}
 	}
 	if _, note := m.limitsSupport(); !strings.Contains(note, "zoraxy.service") {
@@ -440,9 +440,9 @@ func isEnded(ended chan struct{}) bool {
 	}
 }
 
-// TestFaultLimitedPluginEndsWithTheServiceOfZoraxy uses a transient service as the
-// stand-in for Zoraxy: the scope of a plugin with limits is bound to it.
-func TestFaultLimitedPluginEndsWithTheServiceOfZoraxy(t *testing.T) {
+// TestFaultLimitedPluginEndsWithTheServiceOfDunree uses a transient service as the
+// stand-in for Dunree: the scope of a plugin with limits is bound to it.
+func TestFaultLimitedPluginEndsWithTheServiceOfDunree(t *testing.T) {
 	if _, err := exec.LookPath("systemctl"); err != nil {
 		t.Skip("systemctl was not found")
 	}
@@ -455,7 +455,7 @@ func TestFaultLimitedPluginEndsWithTheServiceOfZoraxy(t *testing.T) {
 
 	for i, how := range []string{"killed", "stopped"} {
 		t.Run("the service is "+how, func(t *testing.T) {
-			standIn := "zoraxy-test-standin-" + strconv.Itoa(os.Getpid()) + "-" + strconv.Itoa(i) + ".service"
+			standIn := "dunree-test-standin-" + strconv.Itoa(os.Getpid()) + "-" + strconv.Itoa(i) + ".service"
 			run := []string{"--quiet", "--collect", "--unit=" + standIn, "/bin/sleep", "300"}
 			if os.Geteuid() != 0 {
 				run = append([]string{"--user"}, run...)
@@ -470,7 +470,7 @@ func TestFaultLimitedPluginEndsWithTheServiceOfZoraxy(t *testing.T) {
 			oldUnit := ownSystemdUnit
 			ownSystemdUnit = func() string { return standIn }
 			t.Cleanup(func() { ownSystemdUnit = oldUnit })
-			fakeLimitsProbe(t, probeSystemdScope) //the real probe, with the stand-in as the unit of Zoraxy
+			fakeLimitsProbe(t, probeSystemdScope) //the real probe, with the stand-in as the unit of Dunree
 
 			m := newFaultManager(t)
 			if _, note := m.limitsSupport(); !strings.Contains(note, standIn) {
@@ -480,7 +480,7 @@ func TestFaultLimitedPluginEndsWithTheServiceOfZoraxy(t *testing.T) {
 
 			begin := time.Now()
 			if how == "killed" {
-				//What a crash, the OOM killer or kill -9 does to Zoraxy
+				//What a crash, the OOM killer or kill -9 does to Dunree
 				out, err := systemctlHere("show", "-p", "MainPID", "--value", standIn)
 				pid, convErr := strconv.Atoi(strings.TrimSpace(string(out)))
 				if err != nil || convErr != nil || pid <= 1 {
@@ -492,19 +492,19 @@ func TestFaultLimitedPluginEndsWithTheServiceOfZoraxy(t *testing.T) {
 			} else if out, err := systemctlHere("stop", standIn); err != nil {
 				t.Fatalf("systemctl stop: %v %s", err, out)
 			}
-			//Not at once: during a normal stop Zoraxy still needs its plugins while it drains
+			//Not at once: during a normal stop Dunree still needs its plugins while it drains
 			time.Sleep(time.Second)
 			if isEnded(ended) || !pidAlive(cmd.Process.Pid) {
 				t.Fatalf("the plugin was ended %s after the service was %s, before the grace time of %s", time.Since(begin), how, scopeOrphanGrace)
 			}
 			//But for certain once the grace time is over
-			eventually(t, scopeOrphanGrace+10*time.Second, "systemd to end the plugin of a Zoraxy that is gone", func() bool { return isEnded(ended) })
+			eventually(t, scopeOrphanGrace+10*time.Second, "systemd to end the plugin of a Dunree that is gone", func() bool { return isEnded(ended) })
 		})
 	}
 }
 
 // TestFaultLeftoverScopeIsKilledAtTheNextStart covers what the binding cannot:
-// Zoraxy not in a service, or the orphan still inside its grace time.
+// Dunree not in a service, or the orphan still inside its grace time.
 func TestFaultLeftoverScopeIsKilledAtTheNextStart(t *testing.T) {
 	if _, err := exec.LookPath("systemctl"); err != nil {
 		t.Skip("systemctl was not found")
@@ -517,22 +517,22 @@ func TestFaultLeftoverScopeIsKilledAtTheNextStart(t *testing.T) {
 	if support, note := dead.limitsSupport(); support != "systemd" {
 		t.Skip("needs systemd scopes on this host: " + note)
 	}
-	other := newFaultManager(t) //another Zoraxy install on the same host with the same plugin
+	other := newFaultManager(t) //another Dunree install on the same host with the same plugin
 	_, orphanEnded := startScoped(t, dead, "test.leftover")
 	_, longerIDEnded := startScoped(t, dead, "test.leftover-two")
 	_, otherEnded := startScoped(t, other, "test.leftover")
 
-	//The Zoraxy that started the orphan is gone; the next one runs from the same folder
+	//The Dunree that started the orphan is gone; the next one runs from the same folder
 	next := newFaultManager(t)
 	next.Options.PluginDir = filepath.Join(dead.Options.PluginDir, ".", "")
 	_, newEnded := startScoped(t, next, "test.leftover")
-	eventually(t, 5*time.Second, "the process a dead Zoraxy left behind to be killed", func() bool { return isEnded(orphanEnded) })
+	eventually(t, 5*time.Second, "the process a dead Dunree left behind to be killed", func() bool { return isEnded(orphanEnded) })
 	time.Sleep(300 * time.Millisecond)
 	if isEnded(newEnded) {
 		t.Fatal("the new process of the plugin was killed too")
 	}
 	if isEnded(otherEnded) {
-		t.Fatal("the plugin of another Zoraxy install was killed")
+		t.Fatal("the plugin of another Dunree install was killed")
 	}
 	if isEnded(longerIDEnded) {
 		t.Fatal("another plugin of the same install was killed")

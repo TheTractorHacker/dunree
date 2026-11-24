@@ -14,9 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/eventsystem"
-	zoraxyPlugin "imuslab.com/zoraxy/mod/plugins/zoraxy_plugin"
-	"imuslab.com/zoraxy/mod/plugins/zoraxy_plugin/events"
+	"github.com/foleyit/dunree/mod/eventsystem"
+	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*
@@ -25,7 +24,7 @@ import (
 	Events used to be sent with one goroutine, one new HTTP client and one 10 s
 	wait per event, without any limit: a plugin that answers slowly while events
 	arrive fast (one per blocked request) piled up goroutines and connections in
-	Zoraxy. Now every plugin has one queue of at most eventQueueMax events and one
+	Dunree. Now every plugin has one queue of at most eventQueueMax events and one
 	worker that sends them in order. When the queue is full the oldest waiting
 	event is dropped and counted. Problems are logged at most once per minute per
 	plugin, not once per event.
@@ -177,7 +176,7 @@ func (p *Plugin) eventProblem(msg string) {
 		return
 	}
 	c := p.counters()
-	text := fmt.Sprintf("events for plugin %s: %s (sent %d, failed %d, dropped %d since Zoraxy started; further problems are not logged for %s)",
+	text := fmt.Sprintf("events for plugin %s: %s (sent %d, failed %d, dropped %d since Dunree started; further problems are not logged for %s)",
 		p.Spec.ID, msg, c.EventsSent, c.EventsFailed, c.EventsDropped, eventLogEvery)
 	p.mu.RLock()
 	mgr := p.mgr
@@ -216,10 +215,10 @@ func (p *Plugin) sendEvent(event events.Event) error {
 		return fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Zoraxy-Event-Type", string(event.Name))
+	setHostHeader(req.Header, "Event-Type", string(event.Name))
 	if tok := p.invokeToken(); tok != "" {
-		//Lets the plugin tell an event from Zoraxy from one faked by another local process
-		req.Header.Set(zoraxyPlugin.InvokeTokenHeader, tok)
+		//Lets the plugin tell an event from Dunree from one faked by another local process
+		setHostHeader(req.Header, "Plugin-Token", tok)
 	}
 
 	resp, err := eventHTTPClient.Do(req)

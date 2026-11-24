@@ -33,7 +33,7 @@
             <span class="sx-status__icon" aria-hidden="true"><i class="road icon"></i></span>
             <div class="sx-status__text">
                 <h4 class="sx-status__title"><span class="sx-status__name">Network plan</span> <span class="sx-status__badge zx-badge zx-badge--dot" hidden></span></h4>
-                <p class="sx-status__desc" id="npDisclaimer">Write down which networks Zoraxy and your servers live in. This page compares that plan with Zoraxy's own settings and can write firewall recommendations for you to review. Zoraxy does not change your firewall, and nothing is compared until you save a plan.</p>
+                <p class="sx-status__desc" id="npDisclaimer">Write down which networks Dunree and your servers live in. This page compares that plan with Dunree's own settings and can write firewall recommendations for you to review. Dunree does not change your firewall, and nothing is compared until you save a plan.</p>
             </div>
             <div class="sx-status__action"><button type="button" class="zx-btn zx-btn--secondary" id="npRecheck"><i class="sync icon" aria-hidden="true"></i> Check again</button></div>
         </div>
@@ -45,12 +45,12 @@
         </dl>
     </section>
 
-    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h3 class="zx-card__title">Does the real configuration match?</h3><p class="zx-card__desc">What this Zoraxy is set up to do, checked against the plan below. Worst first.</p></div>
+    <section class="zx-card" id="npChecks"><div class="zx-card__head"><h3 class="zx-card__title">Does the real configuration match?</h3><p class="zx-card__desc">What this Dunree is set up to do, checked against the plan below. Worst first.</p></div>
         <div class="zx-card__body" id="npResult" aria-live="polite"><div class="zx-skeleton zx-skeleton--block" style="height:5rem"></div></div></section>
 
     <div class="ui form" id="npForm">
         <section class="zx-card"><div class="zx-card__head"><h3 class="zx-card__title">Your networks</h3><p class="zx-card__desc">Name the three network segments (VLANs) and say which address ranges belong to each. Leave a segment empty if you do not have it.</p></div><div class="zx-card__body">
-            <fieldset class="np-zone"><legend>Proxy segment<small>Where this Zoraxy and other proxies live.</small></legend>
+            <fieldset class="np-zone"><legend>Proxy segment<small>Where this Dunree and other proxies live.</small></legend>
                 <div class="field zx-field"><label for="npProxyName">Name</label><input type="text" id="npProxyName" maxlength="48" placeholder="Proxy DMZ" autocomplete="off"></div>
                 <div class="field zx-field"><label for="npProxyCidrs">Networks</label><textarea id="npProxyCidrs" rows="2" placeholder="10.0.1.0/24" spellcheck="false"></textarea></div>
             </fieldset>
@@ -58,7 +58,7 @@
                 <div class="field zx-field"><label for="npMgmtName">Name</label><input type="text" id="npMgmtName" maxlength="48" placeholder="Management" autocomplete="off"></div>
                 <div class="field zx-field"><label for="npMgmtCidrs">Networks</label><textarea id="npMgmtCidrs" rows="2" placeholder="10.0.9.0/24" spellcheck="false"></textarea></div>
             </fieldset>
-            <fieldset class="np-zone"><legend>Application segment<small>Where the servers behind Zoraxy live.</small></legend>
+            <fieldset class="np-zone"><legend>Application segment<small>Where the servers behind Dunree live.</small></legend>
                 <div class="field zx-field"><label for="npAppName">Name</label><input type="text" id="npAppName" maxlength="48" placeholder="Servers" autocomplete="off"></div>
                 <div class="field zx-field"><label for="npAppCidrs">Networks</label><textarea id="npAppCidrs" rows="2" placeholder="10.0.2.0/24" spellcheck="false"></textarea></div>
             </fieldset>
@@ -98,7 +98,7 @@
     function toast(m, ok) { if (window.ZxUI && ZxUI.toast) { ZxUI.toast(m, { type: ok ? "success" : "error" }); } else if (window.msgbox) { msgbox(m, ok); } }
     function lines(sel) { return $(sel).val().split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }
     function items(v) { return v.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean); }
-    var md = "", fname = "zoraxy-firewall-recommendations.md";
+    var md = "", fname = "dunree-firewall-recommendations.md";
 
     function fill(s) {
         function z(p, v) { $("#np" + p + "Name").val(v.name || ""); $("#np" + p + "Cidrs").val((v.cidrs || []).join("\n")); }

@@ -11,6 +11,8 @@ import (
 	"net/http/httptrace"
 	"strings"
 	"sync/atomic"
+
+	"github.com/foleyit/dunree/mod/wirecompat"
 )
 
 /*
@@ -28,7 +30,6 @@ import (
 
 const (
 	anthropicVersion = "2023-06-01"
-	userAgent        = "zoraxy-aiassist/1"
 	maxResponseBytes = 1 << 20
 )
 
@@ -82,7 +83,7 @@ func doJSON(ctx context.Context, hc *http.Client, url string, hdr map[string]str
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", wirecompat.UserAgent("dunree-aiassist/1", "zoraxy-aiassist/1"))
 	for k, v := range hdr {
 		req.Header.Set(k, v)
 	}

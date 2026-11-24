@@ -23,22 +23,22 @@ import (
 /*
 	Resource limits for plugin processes (Linux only, opt-in per plugin)
 
-	Memory, CPU and task limits need a cgroup. Zoraxy does not write to cgroupfs
+	Memory, CPU and task limits need a cgroup. Dunree does not write to cgroupfs
 	itself (the reference unit runs with ProtectControlGroups=yes): it starts the
 	plugin through "systemd-run --scope", which asks systemd to create a transient
 	scope with the limits and then becomes the plugin process (same PID, so stop,
 	signals and exit codes work as without it). As root that is a system scope, as
 	another user a scope of the user manager (needs a user session bus).
 
-	A scope is a cgroup of its own, outside the cgroup of Zoraxy, so KillMode=control-group
-	of the Zoraxy unit does not reach it. Two things keep such a plugin from outliving
-	Zoraxy (a crash, a SIGKILL, a shutdown step that was abandoned):
+	A scope is a cgroup of its own, outside the cgroup of Dunree, so KillMode=control-group
+	of the Dunree unit does not reach it. Two things keep such a plugin from outliving
+	Dunree (a crash, a SIGKILL, a shutdown step that was abandoned):
 
-	- When Zoraxy itself runs in a service of the same systemd manager, the scope is
+	- When Dunree itself runs in a service of the same systemd manager, the scope is
 	  bound to that service (BindsTo): when the service is gone, systemd ends the scope
 	  after scopeOrphanGrace. See scopeBindArgs for why it waits.
 	- Before a plugin with limits is started, every scope an earlier process of this
-	  plugin of this Zoraxy instance left behind is killed (killLeftoverScopes).
+	  plugin of this Dunree instance left behind is killed (killLeftoverScopes).
 
 	The open file limit is a plain rlimit set with prlimit(2) on the started process.
 	RLIMIT_AS is not used: it breaks Go programs, which reserve far more address
@@ -97,8 +97,8 @@ func systemdScopeBase() ([]string, string) {
 }
 
 // scopeOrphanGrace is how long systemd waits before it kills a bound scope whose
-// Zoraxy service is gone or is being stopped. It must be longer than the longest
-// stop of Zoraxy (28 s, see shutdown.go): during a normal stop Zoraxy ends its
+// Dunree service is gone or is being stopped. It must be longer than the longest
+// stop of Dunree (28 s, see shutdown.go): during a normal stop Dunree ends its
 // plugins itself, after the requests in flight are done.
 var scopeOrphanGrace = 40 * time.Second
 
@@ -169,19 +169,19 @@ func systemdUnitOfCgroup(procCgroup string, euid int) string {
 }
 
 // scopeBindArgs are the systemd-run options that tie a plugin scope to the service
-// of Zoraxy.
+// of Dunree.
 //
 // BindsTo: the scope is stopped when the service is stopped or suddenly gone.
 // There is deliberately no After=: with it systemd would stop the scope before the
-// service, and a stop of Zoraxy would wait for the plugin.
+// service, and a stop of Dunree would wait for the plugin.
 //
 // KillSignal=SIGCONT and TimeoutStopSec: "stopping" the scope must not end the
-// plugin at once. On "systemctl stop zoraxy" systemd stops the scope at the same
+// plugin at once. On "systemctl stop dunree" systemd stops the scope at the same
 // moment as the service, and a SIGTERM to the plugin then would take it out of the
-// request path (fail-open filters let requests pass) while Zoraxy still drains.
+// request path (fail-open filters let requests pass) while Dunree still drains.
 // So the stop signal is one that does nothing, and the SIGKILL comes after
-// scopeOrphanGrace. Zoraxy stops the plugin itself long before that; only a plugin
-// whose Zoraxy is gone lives until the timeout.
+// scopeOrphanGrace. Dunree stops the plugin itself long before that; only a plugin
+// whose Dunree is gone lives until the timeout.
 func scopeBindArgs(unit string) []string {
 	return []string{
 		"-p", "BindsTo=" + unit,
@@ -201,7 +201,7 @@ func scopeBoundUnit(base []string) string {
 }
 
 // probeSystemdScope tries "systemd-run --scope" with a harmless command: first
-// bound to the service of Zoraxy (when there is one), then without. The binding is
+// bound to the service of Dunree (when there is one), then without. The binding is
 // only used when the try with it worked, so it can never be the reason a plugin
 // does not start.
 func probeSystemdScope() ([]string, string) {
@@ -220,7 +220,7 @@ func probeSystemdScope() ([]string, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	try := func(ctx context.Context, base []string) (string, error) {
-		args := append(append([]string{}, base[1:]...), "--description=Zoraxy plugin limits check", "--", trueBin)
+		args := append(append([]string{}, base[1:]...), "--description=Dunree plugin limits check", "--", trueBin)
 		out, err := exec.CommandContext(ctx, base[0], args...).CombinedOutput()
 		return string(out), err
 	}
@@ -248,13 +248,13 @@ func probeSystemdScope() ([]string, string) {
 // that gets its configuration with -configure= that command line holds its API
 // key and invoke token.
 func scopeDescription(pluginID string) string {
-	return "Zoraxy plugin " + scopeSafeID(pluginID)
+	return "Dunree plugin " + scopeSafeID(pluginID)
 }
 
 // scopeUnitName is the name of the systemd scope of one plugin process, so that
 // it can be found ("systemctl status 'zoraxy-plugin-*'") instead of being an
 // anonymous run-p123-i456.scope: zoraxy-plugin-<id>-<instance>-<random>.scope.
-// The instance part (scopeInstanceTag) keeps two Zoraxy installs on one host
+// The instance part (scopeInstanceTag) keeps two Dunree installs on one host
 // apart. The random part keeps two starts of the same plugin apart: the scope of
 // the last process can still exist for a moment.
 func scopeUnitName(instance string, pluginID string) string {
@@ -276,7 +276,7 @@ func scopeUnitPattern(instance string, pluginID string) string {
 	return scopeUnitPrefix(instance, pluginID) + "????????.scope"
 }
 
-// scopeInstanceTag tells the scopes of this Zoraxy install from those of another
+// scopeInstanceTag tells the scopes of this Dunree install from those of another
 // one on the same host: 8 hex digits made from the absolute plugin directory.
 func (m *Manager) scopeInstanceTag() string {
 	dir := ""
@@ -293,7 +293,7 @@ func (m *Manager) scopeInstanceTag() string {
 // killLeftoverScopes kills (SIGKILL, all processes) the scopes that match the
 // pattern. It is called under the start / stop lock of the plugin right before a
 // new process of it is started, when no process of the plugin belongs to this
-// Zoraxy: whatever is still in such a scope was left behind by a Zoraxy that
+// Dunree: whatever is still in such a scope was left behind by a Dunree that
 // crashed, was killed or gave up on its shutdown. Replaced in tests.
 var killLeftoverScopes = func(pattern string) {
 	bin, err := exec.LookPath("systemctl")

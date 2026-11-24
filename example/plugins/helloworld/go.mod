@@ -1,3 +1,3 @@
-module example.com/zoraxy/helloworld
+module example.com/dunree/helloworld
 
 go 1.23.6

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"imuslab.com/zoraxy/mod/database"
-	"imuslab.com/zoraxy/mod/info/logger"
-	"imuslab.com/zoraxy/mod/notify"
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/database"
+	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/foleyit/dunree/mod/notify"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 func setupNotifyGlueTest(t *testing.T) (events func() []string) {

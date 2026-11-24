@@ -36,7 +36,7 @@ func probeFor(procs []ProcInfo, holders []int, socks []ListenSocket, unit UnitSt
 			}
 			return ProcInfo{Pid: pid, Note: "process no longer exists"}
 		},
-		ListZoraxy: func(int) ([]ProcInfo, int) { return procs, 0 },
+		ListDunree: func(int) ([]ProcInfo, int) { return procs, 0 },
 		Sockets:    func() ([]ListenSocket, int, error) { return socks, 0, nil },
 		Unit:       func(string) UnitStatus { return unit },
 		OpensFile:  func(int, string) (bool, bool) { return true, true }, //every listed process has the database open
@@ -101,7 +101,7 @@ func TestDoctorForeignPortOwner(t *testing.T) {
 	r := RunDoctor(opts, probeFor([]ProcInfo{}, nil, []ListenSocket{sock(443, 0, 511, 55)}, UnitStatus{}))
 	_ = nginx
 	// Describe for 55 returns "no longer exists" with the fixture; owner is not zoraxy either way
-	if r.ExitCode() != 1 || !strings.Contains(r.String(), "not by Zoraxy") {
+	if r.ExitCode() != 1 || !strings.Contains(r.String(), "not by Dunree") {
 		t.Fatalf("\n%s", r.String())
 	}
 }
@@ -118,7 +118,7 @@ func TestDoctorLockHeldNotByService(t *testing.T) {
 
 func TestDoctorHiddenThingsReported(t *testing.T) {
 	p := probeFor(nil, nil, nil, UnitStatus{})
-	p.ListZoraxy = func(int) ([]ProcInfo, int) { return nil, 3 }
+	p.ListDunree = func(int) ([]ProcInfo, int) { return nil, 3 }
 	p.Sockets = func() ([]ListenSocket, int, error) { return nil, 2, nil }
 	r := RunDoctor(opts, p)
 	if !strings.Contains(r.String(), "Could not see") || !strings.Contains(r.String(), "run with sudo") {
@@ -161,14 +161,14 @@ func TestDescribeAndListFromFixtureTree(t *testing.T) {
 	if g := describeAt(root, 300, now); g.Visible || g.Note != "unreadable stat" {
 		t.Fatalf("%+v", g)
 	}
-	found, _ := listZoraxy(root, 0, now)
+	found, _ := listDunree(root, 0, now)
 	if len(found) != 1 || found[0].Pid != 100 {
 		t.Fatalf("%+v", found)
 	}
-	if found, _ := listZoraxy(root, 100, now); len(found) != 0 {
+	if found, _ := listDunree(root, 100, now); len(found) != 0 {
 		t.Fatal("self must be excluded")
 	}
-	if found, n := listZoraxy(filepath.Join(root, "missing"), 0, now); found != nil || n != 0 {
+	if found, n := listDunree(filepath.Join(root, "missing"), 0, now); found != nil || n != 0 {
 		t.Fatal("missing /proc")
 	}
 }
@@ -299,10 +299,12 @@ func TestDoctorNotAccusingOtherDatabasesPluginsZombies(t *testing.T) {
 	}
 }
 
-func TestIsZoraxyName(t *testing.T) {
-	for n, want := range map[string]bool{"zoraxy": true, "Zoraxy": true, "zoraxy_linux_amd64": true, "zoraxy-fork": true, "zoraxy.exe": true,
-		"Zoraxy Cloudflare WAF plugin": false, "zoraxyfoo": false, "nginx": false} {
-		if IsZoraxyName(n) != want {
+func TestIsDunreeName(t *testing.T) {
+	for n, want := range map[string]bool{"dunree": true, "Dunree": true, "dunree_linux_amd64": true, "dunree-beta": true, "dunree.exe": true,
+		"Dunree Example plugin": false, "dunreefoo": false, "nginx": false,
+		"zoraxy": true, "Zoraxy": true, "zoraxy_linux_amd64": true, "zoraxy-fork": true, "zoraxy.exe": true, // legacy-compat: an install updated in place keeps its file name
+		"Zoraxy Cloudflare WAF plugin": false, "zoraxyfoo": false} { // legacy-compat
+		if IsDunreeName(n) != want {
 			t.Errorf("%q want %v", n, want)
 		}
 	}

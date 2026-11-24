@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/dynamicproxy/dpcore"
+	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
 )
 
 /*
@@ -262,7 +262,7 @@ func (p *Plugin) captureProblem(what string, err error) {
 	mgr := p.mgr
 	p.mu.RUnlock()
 	if mgr != nil && mgr.Options != nil && mgr.Options.Logger != nil {
-		mgr.Log("plugin "+p.Spec.ID+": a "+what+" request failed: "+strconv.Quote(text)+" ("+strconv.FormatInt(p.obs.captureFails.Load(), 10)+" failed since Zoraxy started; further failures are not logged for "+captureLogEvery.String()+")", nil)
+		mgr.Log("plugin "+p.Spec.ID+": a "+what+" request failed: "+strconv.Quote(text)+" ("+strconv.FormatInt(p.obs.captureFails.Load(), 10)+" failed since Dunree started; further failures are not logged for "+captureLogEvery.String()+")", nil)
 	}
 }
 

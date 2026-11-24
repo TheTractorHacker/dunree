@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"imuslab.com/zoraxy/mod/access"
+	"github.com/foleyit/dunree/mod/access"
 )
 
 const (

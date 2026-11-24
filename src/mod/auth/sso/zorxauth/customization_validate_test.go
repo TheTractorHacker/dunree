@@ -77,7 +77,7 @@ func TestValidateSVGContentAcceptsPlainArtwork(t *testing.T) {
 	}
 }
 
-// The resources shipped with Zoraxy must themselves pass the upload validator,
+// The resources shipped with Dunree must themselves pass the upload validator,
 // otherwise an administrator could not re-upload the stock artwork.
 func TestDefaultAssetsPassValidation(t *testing.T) {
 	for _, key := range []string{ASSET_BRAND_MARK, ASSET_WATERMARK, ASSET_WALLPAPER} {

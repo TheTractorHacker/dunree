@@ -52,7 +52,7 @@ func unsafeRune(r rune) bool {
 	return false
 }
 
-// ClockTicks is USER_HZ, 100 on every Linux Zoraxy targets.
+// ClockTicks is USER_HZ, 100 on every Linux Dunree targets.
 const ClockTicks = 100
 
 // ProcInfo is what we know about one process.
@@ -204,19 +204,22 @@ func (p ProcInfo) exeBase() string {
 	return p.Comm
 }
 
-// IsZoraxyName reports whether an executable name looks like Zoraxy ("zoraxy", "zoraxy_linux_amd64", ...).
+// IsDunreeName reports whether an executable name looks like this product: "dunree", "dunree_linux_amd64", ...
+// and the names of an install that was updated in place and kept its file name ("zoraxy", "zoraxy_linux_amd64").
 // Plugins ship names like "Zoraxy Cloudflare WAF plugin": a space means it is not the proxy itself.
-func IsZoraxyName(name string) bool {
+func IsDunreeName(name string) bool {
 	n := strings.ToLower(name)
 	if strings.ContainsAny(n, " \t") {
 		return false
 	}
-	if n == "zoraxy" {
-		return true
-	}
-	for _, sep := range []string{"zoraxy_", "zoraxy-", "zoraxy."} {
-		if strings.HasPrefix(n, sep) {
+	for _, base := range []string{"dunree", "zoraxy"} { // legacy-compat: the old binary name stays valid
+		if n == base {
 			return true
+		}
+		for _, sep := range []string{"_", "-", "."} {
+			if strings.HasPrefix(n, base+sep) {
+				return true
+			}
 		}
 	}
 	return false
@@ -256,7 +259,7 @@ func FormatAge(d time.Duration) string {
 }
 
 // Describe returns a one-line summary such as
-// "PID 123 (zoraxy), state: stopped (frozen, probably Ctrl+Z or SIGSTOP), running for 3m, owner: ...".
+// "PID 123 (dunree), state: stopped (frozen, probably Ctrl+Z or SIGSTOP), running for 3m, owner: ...".
 func (p ProcInfo) Describe() string {
 	if !p.Visible {
 		n := Sanitize(p.Note)
@@ -269,21 +272,21 @@ func (p ProcInfo) Describe() string {
 }
 
 // Explain gives a plain sentence plus the exact commands for the next step.
-// intendedUnit is the service name admins should use (normally "zoraxy").
+// intendedUnit is the service name admins should use ("" = ProductUnit, see ChooseUnit).
 func (p ProcInfo) Explain(intendedUnit string) (sentence string, commands []string) {
 	unit := strings.TrimSuffix(intendedUnit, ".service")
 	if unit == "" {
-		unit = "zoraxy"
+		unit = ProductUnit
 	}
 	pid := strconv.Itoa(p.Pid)
 	p.Unit, p.Scope = Sanitize(p.Unit), Sanitize(p.Scope)
 	if !p.Visible {
 		return fmt.Sprintf("PID %d holds the lock but its details cannot be read (it is gone, or owned by another user: run -doctor with sudo).", p.Pid),
-			[]string{"sudo ./zoraxy -doctor"}
+			[]string{"sudo " + SelfCommand + " -doctor"}
 	}
 	switch {
 	case p.Stopped():
-		s := fmt.Sprintf("PID %d (%s) is frozen (state %c), probably by Ctrl+Z or SIGSTOP. A frozen process keeps its ports open but never answers, so connections pile up and the lock it holds blocks every other Zoraxy.", p.Pid, p.ExeBase(), p.State)
+		s := fmt.Sprintf("PID %d (%s) is frozen (state %c), probably by Ctrl+Z or SIGSTOP. A frozen process keeps its ports open but never answers, so connections pile up and the lock it holds blocks every other Dunree.", p.Pid, p.ExeBase(), p.State)
 		return s, []string{
 			"sudo kill -CONT " + pid + "    # resume it (it carries on, queued connections are served)",
 			"sudo pkill -9 -P " + pid + " ; sudo kill -9 " + pid + "    # or kill it and its plugins (the database recovers cleanly)",

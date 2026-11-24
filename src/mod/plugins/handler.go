@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /* Plugin Groups */

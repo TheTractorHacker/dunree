@@ -30,7 +30,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">ACME Client</h2>
-            <p class="zx-page-header__sub">Free certificates from an authority such as Let's Encrypt, requested and renewed by Zoraxy.</p>
+            <p class="zx-page-header__sub">Free certificates from an authority such as Let's Encrypt, requested and renewed by Dunree.</p>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="ACME"><i class="history icon" aria-hidden="true"></i> History</button>
@@ -47,7 +47,7 @@
             <span class="cx-status__icon" aria-hidden="true"><i class="sync icon"></i></span>
             <div class="cx-status__text">
                 <div class="cx-status__title" role="heading" aria-level="3"><span id="acmeStatusTitle">Automatic renewal</span> <span class="zx-badge zx-badge--dot" id="acmeAutoRenewer"><span id="acmeAutoRenewerStatus">Off</span></span></div>
-                <p class="cx-status__desc" id="acmeStatusDesc">Off until you switch it on. Zoraxy then checks once a day and renews certificates that have 30 days or less left.</p>
+                <p class="cx-status__desc" id="acmeStatusDesc">Off until you switch it on. Dunree then checks once a day and renews certificates that have 30 days or less left.</p>
             </div>
             <div class="cx-status__action" id="acmeToggleRow">
                 <p id="acmeEnableToggleSucc" role="status" style="display:none;"><i class="check icon" aria-hidden="true"></i> Saved</p>
@@ -142,7 +142,7 @@
                     <tbody id="acmeDomainTableBody"></tbody>
                 </table>
             </div>
-            <p class="zx-help acmePolicyNote">Certificates from the certificate folder or a signing request are renewed by whoever issued them. Renewal works with authorities that speak ACME; see the Zoraxy wiki for the list.</p>
+            <p class="zx-help acmePolicyNote">Certificates from the certificate folder or a signing request are renewed by whoever issued them. Renewal works with authorities that speak ACME.</p>
         </div>
         <div class="zx-card__foot">
             <button type="button" class="zx-btn zx-btn--secondary" onclick="window.acmeSaveRenewPolicy();">Save renew policy</button>
@@ -270,7 +270,7 @@
 
     //"Next renewal" of one row, from the switch, the box of the row and the days left
     function nextRenewalText(info, checked, external){
-        if (external){ return {text: t("Managed outside Zoraxy"), muted: true}; }
+        if (external){ return {text: t("Managed outside Dunree"), muted: true}; }
         if (!checked){ return {text: t("Not renewed automatically"), muted: true}; }
         if (!renewOn){ return {text: t("Waiting: auto-renew is off"), muted: true}; }
         if (!info){ return {text: t("At the daily check, when 30 days or less are left"), muted: false}; }
@@ -385,8 +385,8 @@
             fact(t("Looks after"), all ? t("All certificates") : tf("{0} of {1}", covered.length, rows.length), "", all ? "" : t("certificates you picked")) +
             fact(t("Next renewal"), nextValue, nextCls, nextSmall));
         $("#acmeStatusCard").attr("data-state", renewOn ? "ok" : (emailSet ? "" : "warn"));
-        $("#acmeStatusDesc").text(renewOn ? t("On. Zoraxy checks once a day and renews the certificates it looks after when they have 30 days or less left.")
-            : t("Off until you switch it on. Zoraxy then checks once a day and renews certificates that have 30 days or less left."));
+        $("#acmeStatusDesc").text(renewOn ? t("On. Dunree checks once a day and renews the certificates it looks after when they have 30 days or less left.")
+            : t("Off until you switch it on. Dunree then checks once a day and renews certificates that have 30 days or less left."));
     }
 
     function initAutoRenewPolicy(){

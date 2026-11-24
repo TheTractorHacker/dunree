@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"imuslab.com/zoraxy/mod/statistic"
+	"github.com/foleyit/dunree/mod/statistic"
 )
 
 // Generate all the record keys from a given start and end dates

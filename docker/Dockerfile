@@ -1,16 +1,19 @@
-## Build Zoraxy
-FROM docker.io/golang:alpine AS build-zoraxy
-RUN mkdir -p /opt/zoraxy/source/ &&\
+# Single-architecture build from this folder (copy ../src here first). The multi-architecture image
+# that releases use is packaging/container/Dockerfile; both have the same layout.
+
+## Build Dunree
+FROM docker.io/golang:alpine AS build-dunree
+RUN mkdir -p /opt/dunree/source/ &&\
     mkdir -p /usr/local/bin/
 
 # If you build it yourself, you will need to add the src directory into the docker directory.
-COPY ./src/ /opt/zoraxy/source/
+COPY ./src/ /opt/dunree/source/
 
-WORKDIR /opt/zoraxy/source/
+WORKDIR /opt/dunree/source/
 
 RUN go mod tidy &&\
-    go build -o /usr/local/bin/zoraxy &&\
-    chmod 755 /usr/local/bin/zoraxy
+    go build -o /usr/local/bin/dunree &&\
+    chmod 755 /usr/local/bin/dunree
 
 
 ## Build ZeroTier
@@ -38,15 +41,18 @@ FROM docker.io/alpine:latest
 RUN apk add --update --no-cache tzdata python3 netcat-openbsd libressl-dev ca-certificates libc6-compat libstdc++ &&\
     rm -rf /sbin/apk /var/cache/apk/* /tmp/* # Simple cleanup
 
-COPY --chmod=700 ./entrypoint.py /opt/zoraxy/
+COPY --chmod=700 ./entrypoint.py /opt/dunree/
 
 COPY --from=build-zerotier /usr/local/bin/zerotier-one /usr/local/bin/zerotier-one
-COPY --from=build-zoraxy /usr/local/bin/zoraxy /usr/local/bin/zoraxy
+COPY --from=build-dunree /usr/local/bin/dunree /usr/local/bin/dunree
 
-RUN mkdir -p /opt/zoraxy/plugin/ &&\
+# Old names keep working: compose files and volumes of existing containers use /opt/zoraxy/... and "zoraxy".
+RUN mkdir -p /opt/dunree/config/ /opt/dunree/plugin/ &&\
+    ln -s /opt/dunree /opt/zoraxy &&\
+    ln -s dunree /usr/local/bin/zoraxy &&\
     echo "tun" | tee -a /etc/modules # For ZeroTier
 
-WORKDIR /opt/zoraxy/config/
+WORKDIR /opt/dunree/config/
 
 ENV TZ="Etc/UTC"
 ENV ZEROTIER="false"
@@ -61,18 +67,20 @@ ENV FASTGEOIP="false"
 ENV MDNS="true"
 ENV MDNSNAME="''"
 ENV NOAUTH="false"
-ENV PLUGIN="/opt/zoraxy/plugin/"
+ENV PLUGIN="/opt/dunree/plugin/"
 ENV PORT="8000"
 ENV SSHLB="false"
 ENV UPDATE_GEOIP="false"
 ENV VERSION="false"
 ENV WEBROOT="./www"
 
-VOLUME [ "/opt/zoraxy/config/" ]
+VOLUME [ "/opt/dunree/config/" ]
 
+LABEL ie.foleyit.dunree.container-identifier="Dunree"
+# Kept so that tools which look for the old identifier still find the container.
 LABEL com.imuslab.zoraxy.container-identifier="Zoraxy"
 
-ENTRYPOINT [ "python3", "-u", "/opt/zoraxy/entrypoint.py" ]
+ENTRYPOINT [ "python3", "-u", "/opt/dunree/entrypoint.py" ]
 
 HEALTHCHECK --start-period=5s --interval=15s --timeout=5s --retries=3 CMD nc -vz 127.0.0.1 $PORT || exit 1
 

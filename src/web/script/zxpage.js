@@ -1,5 +1,5 @@
 /*
-    Zoraxy admin UI - small delegated page helpers (consistency pass)
+    Dunree admin UI - small delegated page helpers (consistency pass)
 
     [data-zx-history="Object"]   a History shortcut button: opens System > History filtered to that object (read only).
     [data-nav-open="tag"]        handled by nav.js (links of the Related boxes).

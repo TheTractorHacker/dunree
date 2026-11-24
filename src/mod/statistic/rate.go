@@ -50,7 +50,7 @@ type Rates struct {
 	ErrorRate      float64 // errors / requests (0..1)
 	Series         []int64 // requests per minute, oldest first, last 30 minutes (the running minute included)
 	ErrorSeries    []int64 // error responses per minute, same window as Series
-	BlockedSeries  []int64 // requests rejected by Zoraxy per minute, same window as Series
+	BlockedSeries  []int64 // requests rejected by Dunree per minute, same window as Series
 }
 
 // RecentRates averages the last `window` complete minutes (1..30)

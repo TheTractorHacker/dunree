@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 /*

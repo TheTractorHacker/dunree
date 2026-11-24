@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
-    <title>UI kit | Zoraxy</title>
-    <link rel="icon" type="image/png" href="../favicon.png" />
+    <title>UI kit | Dunree</title>
+    <!-- Dunree icons (brand/README.md). The files are in img/public/brand, readable without a login. -->
+    <link rel="icon" type="image/svg+xml" href="../img/public/brand/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/public/brand/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/public/brand/favicon-16.png">
+    <link rel="shortcut icon" href="../img/public/brand/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="../img/public/brand/apple-touch-icon.png">
+    <link rel="manifest" href="../img/public/brand/manifest.json">
     <link rel="stylesheet" href="../script/semantic/semantic.min.css">
     <link rel="stylesheet" href="zxui.css">
     <link rel="stylesheet" href="nav.css">
@@ -51,7 +57,7 @@
     <script src="../script/darktheme.js"></script>
     <script src="../script/zxui.js"></script>
     <div class="kit-top">
-        <h1>Zoraxy UI kit <span class="zx-badge zx-badge--info">dev only</span></h1>
+        <h1>Dunree UI kit <span class="zx-badge zx-badge--info">dev only</span></h1>
         <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="kitTheme" aria-label="Switch the page between light and dark"><i class="adjust icon"></i> Page theme</button>
         <a class="zx-btn zx-btn--ghost zx-btn--sm" href="../index.html#settings">Back to admin UI</a>
     </div>
@@ -60,7 +66,7 @@
         <main class="kit-main" id="kitMain">
             <h2 id="intro">Overview</h2>
             <p class="kit-desc">Design tokens and components for the admin UI, built on CSS custom properties (<code>ui/zxui.css</code>) and a small helper (<code>script/zxui.js</code>, <code>window.ZxUI</code>). Every example is shown in the light and the dark scheme at the same time, with the exact markup to copy. Written documentation, rules and accessibility checklist: <code>docs/ux/components.md</code>.</p>
-            <div class="zx-callout zx-callout--info" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span><div class="zx-callout__body">This page is only served when Zoraxy runs with <code>-dev</code>. It is not part of the production menu.</div></div>
+            <div class="zx-callout zx-callout--info" role="note"><span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span><div class="zx-callout__body">This page is only served when Dunree runs with <code>-dev</code>. It is not part of the production menu.</div></div>
             <div id="kitSections"></div>
         </main>
     </div>

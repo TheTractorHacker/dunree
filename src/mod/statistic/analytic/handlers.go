@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"imuslab.com/zoraxy/mod/statistic"
-	"imuslab.com/zoraxy/mod/utils"
+	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/foleyit/dunree/mod/utils"
 )
 
 func (d *DataLoader) HandleSummaryList(w http.ResponseWriter, r *http.Request) {
