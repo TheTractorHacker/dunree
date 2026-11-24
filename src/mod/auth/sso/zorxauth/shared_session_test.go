@@ -57,17 +57,17 @@ func TestSharedSessions_DefaultStaysRandomAndPerNode(t *testing.T) {
 	if ok, _ := b.RequestIsAuthenticatedInSSO(nil, withCookie(b, "GET", "/", tok)); ok {
 		t.Fatal("without a key another node must not accept the session")
 	}
-	code := a.generateValidationCodeForSession("alice")
+	code := a.generateValidationCodeForSession("alice", "app.example.com")
 	if isSharedToken(code) {
 		t.Fatal("default validation code must stay a random id")
 	}
-	if _, ok := b.consumeValidationCode(code); ok {
+	if _, ok := b.consumeValidationCode(code, "app.example.com"); ok {
 		t.Fatal("without a key another node must not accept the validation code")
 	}
-	if u, ok := a.consumeValidationCode(code); !ok || u != "alice" {
+	if u, ok := a.consumeValidationCode(code, "app.example.com"); !ok || u != "alice" {
 		t.Fatal("issuing node must accept its validation code")
 	}
-	if _, ok := a.consumeValidationCode(code); ok {
+	if _, ok := a.consumeValidationCode(code, "app.example.com"); ok {
 		t.Fatal("validation code must be single use")
 	}
 }
@@ -102,7 +102,7 @@ func TestSharedSessions_LoginOnOneNodeIsValidOnTheOther(t *testing.T) {
 
 	// the session-set redirect lands on node A although node B issued the code
 	rec = httptest.NewRecorder()
-	a.handleSessionSetCallback(rec, httptest.NewRequest("GET", loc.RequestURI(), nil))
+	a.handleSessionSetCallback(rec, httptest.NewRequest("GET", loc.String(), nil))
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("node A refused the validation code of node B: %d", rec.Code)
 	}
@@ -110,7 +110,7 @@ func TestSharedSessions_LoginOnOneNodeIsValidOnTheOther(t *testing.T) {
 
 	// replaying the code is refused
 	rec = httptest.NewRecorder()
-	a.handleSessionSetCallback(rec, httptest.NewRequest("GET", loc.RequestURI(), nil))
+	a.handleSessionSetCallback(rec, httptest.NewRequest("GET", loc.String(), nil))
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("validation code accepted twice: %d", rec.Code)
 	}
@@ -151,7 +151,7 @@ func TestSharedSessions_RejectsForgedTokens(t *testing.T) {
 	if a.RequestIsAuthenticatedInHost(nil, withCookie(a, "GET", "/", portal)) {
 		t.Fatal("portal token accepted as per host session")
 	}
-	if _, ok := a.consumeValidationCode(site); ok {
+	if _, ok := a.consumeValidationCode(site, "app.example.com"); ok {
 		t.Fatal("session token accepted as validation code")
 	}
 	// tampering with the payload (other user) breaks the signature

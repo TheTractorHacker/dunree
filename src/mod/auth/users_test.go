@@ -367,3 +367,43 @@ func TestViewerDeniedExposureReadEndpoints(t *testing.T) {
 		t.Error("ordinary read endpoint no longer open to viewers")
 	}
 }
+
+// A viewer must not download a certificate archive: it holds the TLS private key (API-02)
+func TestViewerDeniedCertDownload(t *testing.T) {
+	for _, p := range []string{"/api/cert/download", "/api/cert/download/"} {
+		for _, m := range []string{"GET", "HEAD", "POST"} {
+			if ViewerAllowed(m, p) {
+				t.Errorf("viewer may %s %s", m, p)
+			}
+		}
+	}
+	//the certificate inventory stays readable
+	for _, p := range []string{"/api/cert/list", "/api/cert/listdomains", "/api/cert/checkDefault"} {
+		if !ViewerAllowed("GET", p) {
+			t.Errorf("viewer can no longer read %s", p)
+		}
+	}
+
+	//end to end through the managed router
+	fastPW(t)
+	a := newTestAgent(t)
+	a.CreateUserAccount("root", "password-1", "")
+	a.CreateUser("view", "password-2", RoleViewer)
+	mux := http.NewServeMux()
+	called := 0
+	rt := NewManagedHTTPRouter(RouterOption{AuthAgent: a, RequireAuth: true, TargetMux: mux})
+	if err := rt.HandleFunc("/api/cert/download", func(w http.ResponseWriter, r *http.Request) { called++ }); err != nil {
+		t.Fatal(err)
+	}
+	do := func(c *http.Cookie) int {
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, reqWith(c, "GET", "/api/cert/download?certname=example.com", nil))
+		return w.Code
+	}
+	if code := do(login(t, a, "view", "password-2")); code != 403 || called != 0 {
+		t.Fatalf("viewer download: code %d, handler calls %d", code, called)
+	}
+	if code := do(login(t, a, "root", "password-1")); code != 200 || called != 1 {
+		t.Fatalf("admin download: code %d, handler calls %d", code, called)
+	}
+}

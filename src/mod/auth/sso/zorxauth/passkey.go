@@ -465,6 +465,25 @@ func (gs *GatewayServer) handlePasskeyAuthComplete(w http.ResponseWriter, r *htt
 		targetProtocol = "http"
 	}
 
+	if !pending.IsDirectLogin {
+		// The one-time code only goes to a host this SSO protects, whatever the
+		// user's allowed-host list says (empty by default = every host)
+		target, targetErr := gs.router.resolveSessionTarget(redirectTarget)
+		if targetErr != nil {
+			if gs.router.Logger != nil {
+				gs.router.Logger.PrintAndLog("zorxauth", "Refused SSO passkey redirect to "+host+": "+targetErr.Error(), nil)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"success": false,
+				"error":   "Invalid redirect target",
+			})
+			return
+		}
+		host, port, targetProtocol = target.Hostname, target.Port, target.Scheme
+	}
+
 	if !gs.router.ValidateUserAccessToHost(foundUser.Username, host) && r.Host != host {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
@@ -511,11 +530,8 @@ func (gs *GatewayServer) handlePasskeyAuthComplete(w http.ResponseWriter, r *htt
 		return
 	}
 
-	sessionId := gs.router.generateValidationCodeForSession(foundUser.Username)
-	hostWithPort := host
-	if port != "" {
-		hostWithPort = host + ":" + port
-	}
+	sessionId := gs.router.generateValidationCodeForSession(foundUser.Username, host)
+	hostWithPort := (&sessionTarget{Hostname: host, Port: port}).HostWithPort()
 	sessionSetURL := fmt.Sprintf("%s://%s/%s", targetProtocol, hostWithPort, strings.TrimPrefix(gs.router.Options.SSOSessionSetURL, "/"))
 
 	w.Header().Set("Content-Type", "application/json")

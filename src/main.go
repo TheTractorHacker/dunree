@@ -287,7 +287,7 @@ func main() {
 		}
 		// Plugins talk to Zoraxy over plain HTTP on a loopback-only port
 		go func() {
-			if err := http.Serve(webUILoopbackListener, newPluginLoopbackHandler(pluginAPIMux)); err != nil {
+			if err := newAdminHTTPServer(newPluginLoopbackHandler(pluginAPIMux)).Serve(webUILoopbackListener); err != nil {
 				SystemWideLogger.PrintAndLog("webui", "Plugin loopback listener stopped", err)
 			}
 		}()
@@ -307,7 +307,7 @@ func main() {
 		updateManager.MarkHealthy()
 		SystemWideLogger.Println("Plain HTTP requests on this port are redirected to HTTPS. Plugins use loopback " + webUILoopbackListener.Addr().String())
 		announceReady(ln.Addr().String())
-		err = http.Serve(webuitls.NewSniffListener(ln, webuitls.ServerTLSConfig(webUICert)), adminHandler)
+		err = newAdminHTTPServer(adminHandler).Serve(webuitls.NewSniffListener(ln, webuitls.ServerTLSConfig(webUICert)))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -330,7 +330,7 @@ func main() {
 	updateManager.MarkHealthy()
 
 	announceReady(listener.Addr().String())
-	err = http.Serve(listener, adminHandler)
+	err = newAdminHTTPServer(adminHandler).Serve(listener)
 
 	if err != nil {
 		log.Fatal(err)

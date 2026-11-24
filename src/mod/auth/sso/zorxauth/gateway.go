@@ -206,6 +206,7 @@ func (gs *GatewayServer) handleAuthPage(w http.ResponseWriter, r *http.Request) 
 		if redirectURL == "" {
 			redirectURL = "/user" // default to user portal if redirect URL is missing
 			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+			return
 		}
 
 		host := ""
@@ -219,6 +220,19 @@ func (gs *GatewayServer) handleAuthPage(w http.ResponseWriter, r *http.Request) 
 		}
 
 		if gs.router.ValidateUserAccessToHost(username, host) {
+			// The one-time code only goes to a host this SSO protects, whatever the
+			// user's allowed-host list says (empty by default = every host)
+			target, targetErr := gs.router.resolveSessionTarget(redirectURL)
+			if targetErr != nil {
+				if gs.router.Logger != nil {
+					gs.router.Logger.PrintAndLog("zorxauth", "Refused SSO redirect to "+host+": "+targetErr.Error(), nil)
+				}
+				w.Header().Set("Content-Type", "text/html")
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write(invalidHTML)
+				return
+			}
+
 			// Renew the gateway session expiry time since the user is actively using it
 			rememberMe := false
 			cookie, cookieErr := r.Cookie(gs.router.Options.CookieName)
@@ -241,32 +255,19 @@ func (gs *GatewayServer) handleAuthPage(w http.ResponseWriter, r *http.Request) 
 				}
 			}
 
-			sessionId := gs.router.generateValidationCodeForSession(username)
-			// Parse the redirect target so we can build the session-set URL on the target host.
-			parsedTarget, parseErr := url.Parse(redirectURL)
-			if parseErr == nil && parsedTarget.Host != "" {
-				host := parsedTarget.Hostname()
-				port := parsedTarget.Port()
-				targetProtocol := parsedTarget.Scheme
-				if targetProtocol == "" {
-					targetProtocol = "http"
-				}
-				hostWithPort := host
-				if port != "" {
-					hostWithPort = host + ":" + port
-				}
-				sessionSetURL := fmt.Sprintf("%s://%s/%s?session_id=%s&redirect=%s",
-					targetProtocol, hostWithPort,
-					strings.TrimPrefix(gs.router.Options.SSOSessionSetURL, "/"),
-					sessionId, url.QueryEscape(redirectURL))
-				if rememberMe {
-					// Carry the "Remember Me" choice over so the target host issues
-					// its session cookie with the remember-me duration as well
-					sessionSetURL += "&remember_me=true"
-				}
-				http.Redirect(w, r, sessionSetURL, http.StatusSeeOther)
-				return
+			// Build the session-set URL on the (verified) target host; the code is bound to that host.
+			sessionId := gs.router.generateValidationCodeForSession(username, target.Hostname)
+			sessionSetURL := fmt.Sprintf("%s://%s/%s?session_id=%s&redirect=%s",
+				target.Scheme, target.HostWithPort(),
+				strings.TrimPrefix(gs.router.Options.SSOSessionSetURL, "/"),
+				sessionId, url.QueryEscape(redirectURL))
+			if rememberMe {
+				// Carry the "Remember Me" choice over so the target host issues
+				// its session cookie with the remember-me duration as well
+				sessionSetURL += "&remember_me=true"
 			}
+			http.Redirect(w, r, sessionSetURL, http.StatusSeeOther)
+			return
 		} else {
 			// User doesn't have access to this host — send them to the no-access page
 			// so they can choose to logout and switch to an account that has access.
@@ -374,6 +375,25 @@ func (gs *GatewayServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 		targetProtocol = "http"
 	}
 
+	if !isDirectLogin {
+		// The one-time code only goes to a host this SSO protects, whatever the
+		// user's allowed-host list says (empty by default = every host)
+		target, targetErr := gs.router.resolveSessionTarget(redirectTarget)
+		if targetErr != nil {
+			if gs.router.Logger != nil {
+				gs.router.Logger.PrintAndLog("zorxauth", "Refused SSO login redirect to "+host+": "+targetErr.Error(), nil)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"success": false,
+				"error":   "Invalid redirect target",
+			})
+			return
+		}
+		host, port, targetProtocol = target.Hostname, target.Port, target.Scheme
+	}
+
 	u, err := gs.router.getUserByUsernameOrEmail(username)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -478,11 +498,8 @@ func (gs *GatewayServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionId := gs.router.generateValidationCodeForSession(u.Username)
-	hostWithPort := host
-	if port != "" {
-		hostWithPort = host + ":" + port
-	}
+	sessionId := gs.router.generateValidationCodeForSession(u.Username, host)
+	hostWithPort := (&sessionTarget{Hostname: host, Port: port}).HostWithPort()
 	sessionSetURL := fmt.Sprintf("%s://%s/%s", targetProtocol, hostWithPort, strings.TrimPrefix(gs.router.Options.SSOSessionSetURL, "/"))
 
 	w.Header().Set("Content-Type", "application/json")
@@ -733,11 +750,9 @@ func (gs *GatewayServer) handleTOTPVerify(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	sessionId := gs.router.generateValidationCodeForSession(u.Username)
-	hostWithPort := pending.Host
-	if pending.Port != "" {
-		hostWithPort = pending.Host + ":" + pending.Port
-	}
+	// pending.Host passed resolveSessionTarget in handleLogin; the code is bound to it
+	sessionId := gs.router.generateValidationCodeForSession(u.Username, pending.Host)
+	hostWithPort := (&sessionTarget{Hostname: pending.Host, Port: pending.Port}).HostWithPort()
 	sessionSetURL := fmt.Sprintf("%s://%s/%s", pending.Protocol, hostWithPort,
 		strings.TrimPrefix(gs.router.Options.SSOSessionSetURL, "/"))
 

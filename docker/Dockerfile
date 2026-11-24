@@ -35,7 +35,7 @@ RUN curl -Lo ZeroTierOne.tar.gz https://codeload.github.com/zerotier/ZeroTierOne
 
 ## Main
 FROM docker.io/alpine:latest
-RUN apk add --update --no-cache tzdata python3 sudo netcat-openbsd libressl-dev openssh ca-certificates libc6-compat libstdc++ &&\
+RUN apk add --update --no-cache tzdata python3 netcat-openbsd libressl-dev ca-certificates libc6-compat libstdc++ &&\
     rm -rf /sbin/apk /var/cache/apk/* /tmp/* # Simple cleanup
 
 COPY --chmod=700 ./entrypoint.py /opt/zoraxy/

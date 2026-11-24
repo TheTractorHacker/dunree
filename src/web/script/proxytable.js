@@ -575,7 +575,7 @@
         r.Disabled = !enable;
         render();
         $.cjax({
-            url: "/api/proxy/toggle", data: { ep: name, enable: enable },
+            url: "/api/proxy/toggle", method: "POST", data: { ep: name, enable: enable },
             success: function (data) {
                 if (data && data.error !== undefined) {
                     r.Disabled = !was; render(); msgbox(data.error, false);

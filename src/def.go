@@ -72,6 +72,7 @@ var (
 	webUITLSMode               = flag.String("webui_tls", "off", "HTTPS for the management web interface: off (default, plain HTTP), auto (self-signed certificate generated into <conf>/webui/), custom (use your own <conf>/webui/webui.crt and webui.key)")
 	webUIHSTS                  = flag.Bool("webui_hsts", false, "Send HSTS header on the management web interface when -webui_tls is enabled (off by default, not recommended with self-signed certificates)")
 	noauth                     = flag.Bool("noauth", false, "Disable authentication for management interface")
+	openSetup                  = flag.Bool("open_setup", false, "Let any client create the first admin account without the setup token (old behaviour; by default only this machine or a client with the token printed at startup can)")
 	showver                    = flag.Bool("version", false, "Show version of this server")
 	allowSshLoopback           = flag.Bool("sshlb", false, "Allow loopback web ssh connection (DANGER)")
 	resetAdminAllowList        = flag.Bool("reset_admin_allowlist", false, "Recovery: clear the admin listener allow-list (Security Center > Network exposure) before the admin port starts serving, then continue. Use when an allow-list locked you out; remove the flag afterwards")

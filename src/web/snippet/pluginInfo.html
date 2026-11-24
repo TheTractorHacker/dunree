@@ -207,24 +207,49 @@
             }
 
 
+            //Everything in data.Spec is supplied by the plugin itself (its introspect
+            //output) and must be treated as untrusted in this admin-origin page:
+            //never interpolate it into .html(), and only link to http(s) / mailto URLs.
+            function safePluginHref(rawUrl){
+                try{
+                    let parsed = new URL(String(rawUrl).trim());
+                    if (["http:", "https:", "mailto:"].includes(parsed.protocol)){
+                        return parsed.href;
+                    }
+                }catch(e){}
+                return "";
+            }
+
+            //Render label as text inside target, linked only when rawUrl has an allowed scheme
+            function setPluginLink(target, rawUrl, label){
+                let href = safePluginHref(rawUrl);
+                label = (label == null) ? "" : String(label);
+                $(target).empty();
+                if (href == ""){
+                    $(target).text(label);
+                    return;
+                }
+                $(target).append($("<a></a>").attr({href: href, target: "_blank", rel: "noopener noreferrer"}).text(label));
+            }
+
             function getPluginInfo(pluginId){
-            $.get(`/api/plugins/info?plugin_id=${pluginId}`, function(data){
-                let authorContact = data.Spec.author_contact;
+            $.get(`/api/plugins/info?plugin_id=${encodeURIComponent(pluginId)}`, function(data){
+                let authorContact = String(data.Spec.author_contact || "");
                 if(!authorContact.startsWith('http')){
                 authorContact = `mailto:${authorContact}`;
                 }
                 let versionString = `v${data.Spec.version_major}.${data.Spec.version_minor}.${data.Spec.version_patch}`;
                 $(".plugin_name").text(data.Spec.name);
-                $("#plugin_image").attr("src", `/api/plugins/icon?plugin_id=${data.Spec.id}`);
+                $("#plugin_image").attr("src", `/api/plugins/icon?plugin_id=${encodeURIComponent(data.Spec.id)}`);
                 $("#plugin_version").text(versionString);
-                $("#plugin_author").html(`<a href="${authorContact}" target="_blank">${data.Spec.author}</a>`);
+                setPluginLink("#plugin_author", authorContact, data.Spec.author);
                 $("#plugin_enabled").html(data.Enabled?`<i class="ui green check icon"></i>`:`<i class="ui red times icon"></i>`);
                 $("#plugin_assigned_port").text(data.AssignedPort);
                 $("#plugin_root_dir").text(data.RootDir + "/");
                 $("#plugin_description").text(data.Spec.description);
                 $("#plugin_category").text(data.Spec.type == 0 ? "Router" : "Utilities");
-                $("#plugin_url").html(`<a href="${data.Spec.url}" target="_blank">${data.Spec.url}</a>`);
-                $("#plugin_contact").html(`<a href="${authorContact}" target="_blank">${data.Spec.author_contact}</a>`);
+                setPluginLink("#plugin_url", data.Spec.url, data.Spec.url);
+                setPluginLink("#plugin_contact", authorContact, data.Spec.author_contact);
                 $("#plugin_info_modal").modal('show');
 
                 //Update the developer insights
@@ -233,12 +258,11 @@
                 if (registeredStaticCapturePaths  == null || registeredStaticCapturePaths.length == 0) {
                     registeredStaticCapturePaths = [{capture_path: "No static capture paths registered"}];
                 }
-                let capturePathsList = '<div class="ui list">';
+                let capturePathsList = $('<div class="ui list"></div>');
                 registeredStaticCapturePaths.forEach(function(path) {
-                    capturePathsList += `<div class="item">${path.capture_path}</div>`;
+                    capturePathsList.append($('<div class="item"></div>').text(path.capture_path));
                 });
-                capturePathsList += '</ul>';
-                $("#registered_static_capture_paths").html(capturePathsList);
+                $("#registered_static_capture_paths").empty().append(capturePathsList);
 
 
                 let staticCaptureIngress = data.Spec.static_capture_ingress;
@@ -273,15 +297,14 @@
                 if (apiEndpoints == null || apiEndpoints.length == 0) {
                     $("#plugin_permitted_api_endpoints").html('<tr><td colspan="3">No API endpoints registered</td></tr>');
                 } else {
-                    let endpointRows = '';
+                    $("#plugin_permitted_api_endpoints").empty();
                     apiEndpoints.forEach(function(endpoint) {
-                        endpointRows += `<tr>
-                            <td>${endpoint.endpoint}</td>
-                            <td>${endpoint.method}</td>
-                            <td>${endpoint.reason}</td>
-                        </tr>`;
+                        $("#plugin_permitted_api_endpoints").append($("<tr></tr>").append(
+                            $("<td></td>").text(endpoint.endpoint),
+                            $("<td></td>").text(endpoint.method),
+                            $("<td></td>").text(endpoint.reason)
+                        ));
                     });
-                    $("#plugin_permitted_api_endpoints").html(endpointRows);
                 }
                 
                 //Update subscribed events if available
@@ -289,14 +312,13 @@
                 if (subscriptionsEvents == null || Object.keys(subscriptionsEvents).length == 0) {
                     $("#plugin_subscriptions_events").html('<tr><td colspan="2">No subscribed events</td></tr>');
                 } else {
-                let eventRows = '';
+                $("#plugin_subscriptions_events").empty();
                 Object.keys(subscriptionsEvents).forEach(function(eventType) {
-                    eventRows += `<tr>
-                        <td>${eventType}</td>
-                        <td>${subscriptionsEvents[eventType] || "No comment"}</td>
-                        </tr>`;
+                    $("#plugin_subscriptions_events").append($("<tr></tr>").append(
+                        $("<td></td>").text(eventType),
+                        $("<td></td>").text(subscriptionsEvents[eventType] || "No comment")
+                    ));
                     });
-                    $("#plugin_subscriptions_events").html(eventRows);
                 }
                 
                 });

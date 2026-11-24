@@ -1087,7 +1087,7 @@
         const rotateBtn = document.getElementById("rotateLogBtn");
         ZxUI.setLoading(rotateBtn, true);
 
-        $.get("/api/log/rotate/trigger", function(data) {
+        $.cjax({url: "/api/log/rotate/trigger", method: "POST"}).done(function(data) {
             if (data.error) {
                 showLogSettingsError(t("Failed to rotate log:") + " " + data.error);
             } else {

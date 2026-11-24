@@ -1,3 +1,10 @@
+# Unreleased
+
++ Security (behaviour change): the first admin account can only be created from the server itself, or from another machine with the one-time setup token printed to the console / log at startup (`docker logs` in Docker). Start with `-open_setup` to restore the old "anyone, first come" registration.
++ Security (behaviour change): the forward proxy only serves clients on this machine or on a private network (RFC 1918, CGNAT / Tailscale, link-local, IPv6 ULA) by default; public source addresses get 403. POST `allow=true` to `/api/tools/fwdproxy/publicclients` restores the old behaviour. An optional Proxy-Authorization login can be set through `/api/tools/fwdproxy/credentials`. Forward proxy settings can no longer be changed with a GET request.
++ Security (behaviour change, Docker): the shipped `docker-compose.yml` and the `docker run` example no longer mount `/var/run/docker.sock` into the Zoraxy container (socket access is root-equivalent on the host). The "Docker containers" picker needs the opt-in read-only socket proxy (`docker compose -f docker-compose.yml -f docker-compose.socket-proxy.yml up -d`) or the legacy mount added back by hand; see `docker/README.md`. Existing deployments keep whatever compose file they already use. The runtime image also no longer installs `sudo` or `openssh`.
+
+
 # v3.3.4 22 Aug 2026
 
 + Fix: statistic bounded maps by [ElmoViggiani](https://github.com/ElmoViggiani) in [#1191](https://github.com/tobychui/zoraxy/issues/1191)

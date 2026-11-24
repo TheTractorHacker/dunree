@@ -205,6 +205,12 @@
                         <input id="repeatMagic" type="password" name="passwordconfirm" placeholder="Confirm Password" autocomplete="new-password" aria-label="Confirm password">
                     </div>
                 </div>
+                <div class="field" id="setupTokenField" style="display:none;">
+                    <div class="ui left icon input">
+                        <i class="key icon"></i>
+                        <input id="setupToken" type="text" name="setuptoken" placeholder="Setup token (see server console / log)" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Setup token">
+                    </div>
+                </div>
                 <div class="field loginOnly" style="text-align: left;">
                     <div class="ui checkbox">
                         <input id="rmbme" type="checkbox" tabindex="0" class="hidden">
@@ -312,6 +318,12 @@
                     registerMode = true;
                     $(".loginOnly").hide();
                     $(".registerOnly").show();
+                    //Away from the server itself the first account needs the setup token from the console / log
+                    $.get("/api/auth/setupTokenRequired", function(required){
+                        if (required === true){
+                            $("#setupTokenField").show();
+                        }
+                    });
                 }
             });
             //Check if the user already logged in
@@ -392,10 +404,14 @@
                 },
                 data: {
                     username: username,
-                    password: magic
+                    password: magic,
+                    setup_token: $("#setupToken").val()
                 },
                 success: function(data) {
                     if (data.error != undefined){
+                        if (data.error.indexOf("Setup token") == 0){
+                            $("#setupTokenField").show();
+                        }
                         showError(data.error);
                     }else{
                         //Register success. Refresh page

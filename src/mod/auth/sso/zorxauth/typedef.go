@@ -110,8 +110,15 @@ type AuthRouter struct {
 	// (json:"-": the router is part of the proxy status that /api/proxy/status marshals)
 	UsersManagedElsewhere func() bool `json:"-"`
 
+	// SessionTargetPolicy reports whether host (lower case, no port) is served by a proxy rule
+	// that authenticates with this router, and whether that rule is only reachable over https.
+	// The portal sends a one-time validation code only to such a host (see session_target.go).
+	// The main program sets it; while it is nil every redirect target is refused.
+	SessionTargetPolicy func(host string) (protected bool, httpsOnly bool) `json:"-"`
+
 	/* Internal */
 	sessionIdStore      sync.Map //sessionId -> userID
+	sessionIdHosts      sync.Map //sessionId -> host the validation code may be used on
 	gatewaySessionStore sync.Map //sessionId -> *GatewaySession
 	cookieIdStore       sync.Map //browserSessionID (cookie value) -> *BrowserSession
 	gatewayServer       *GatewayServer

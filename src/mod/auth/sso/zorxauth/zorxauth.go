@@ -100,7 +100,9 @@ func NewAuthRouter(db *database.Database, log *logger.Logger) *AuthRouter {
 
 // GenerateValidationCodeForSession generates a one-time validation code for the given session ID and stores the mapping in sessionIdStore.
 // this is not the cookie session ID, for cookie session ID, see generateSessionToken() instead.
-func (ar *AuthRouter) generateValidationCodeForSession(sessionId string) string {
+// The code is bound to host (see resolveSessionTarget): consumeValidationCode refuses it anywhere else.
+func (ar *AuthRouter) generateValidationCodeForSession(sessionId string, host string) string {
+	host = normalizeTargetHost(host)
 	buf := make([]byte, 24)
 	if _, err := rand.Read(buf); err != nil {
 		// Fallback to time-derived code when entropy source fails
@@ -110,13 +112,15 @@ func (ar *AuthRouter) generateValidationCodeForSession(sessionId string) string 
 	validationCode := hex.EncodeToString(buf)
 	if ar.SharedSessionsEnabled() {
 		//signed, so the node that receives the session-set redirect accepts it even if another node issued it
-		validationCode = ar.mintToken(tokenKindCode, sessionId, time.Now().Add(validationCodeLifetime), false)
+		validationCode = ar.mintTokenClaims(tokenClaims{Kind: tokenKindCode, Username: sessionId, Expiry: time.Now().Add(validationCodeLifetime).Unix(), Host: host})
 	}
+	ar.sessionIdHosts.Store(validationCode, host)
 	ar.sessionIdStore.Store(validationCode, sessionId)
 
 	// Validation code is short-lived and one-time use.
 	time.AfterFunc(validationCodeLifetime, func() {
 		ar.sessionIdStore.Delete(validationCode)
+		ar.sessionIdHosts.Delete(validationCode)
 	})
 
 	return validationCode

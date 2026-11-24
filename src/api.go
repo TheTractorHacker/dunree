@@ -375,6 +375,8 @@ func RegisterNetworkUtilsAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/tools/wol", HandleWakeOnLan)
 	authRouter.HandleFunc("/api/tools/fwdproxy/enable", forwardProxy.HandleToogle)
 	authRouter.HandleFunc("/api/tools/fwdproxy/port", forwardProxy.HandlePort)
+	authRouter.HandleFunc("/api/tools/fwdproxy/publicclients", forwardProxy.HandlePublicClients)
+	authRouter.HandleFunc("/api/tools/fwdproxy/credentials", forwardProxy.HandleCredentials)
 }
 
 func RegisterPluginAPIs(authRouter *auth.RouterDef) {
@@ -446,14 +448,14 @@ func RegisterAuthAPIs(requireAuth bool, targetMux *http.ServeMux) {
 		js, _ := json.Marshal(authAgent.GetUserCounts())
 		utils.SendJSONResponse(w, string(js))
 	})
-	targetMux.HandleFunc("/api/auth/register", func(w http.ResponseWriter, r *http.Request) {
-		if authAgent.GetUserCounts() == 0 {
-			//Allow register root admin
-			authAgent.HandleRegisterWithoutEmail(w, r, func(username, reserved string) {})
-		} else {
-			//This function is disabled
-			utils.SendErrorResponse(w, "Root management account already exists")
-		}
+	//The first admin can only be created from this machine or with the setup token printed here
+	//(-open_setup restores the old "anyone, first come" behaviour)
+	firstAdmin := authAgent.NewFirstAdminGuard(*openSetup)
+	firstAdmin.Announce()
+	targetMux.HandleFunc("/api/auth/register", firstAdmin.HandleRegister)
+	targetMux.HandleFunc("/api/auth/setupTokenRequired", func(w http.ResponseWriter, r *http.Request) {
+		js, _ := json.Marshal(firstAdmin.TokenRequired(r))
+		utils.SendJSONResponse(w, string(js))
 	})
 	targetMux.HandleFunc("/api/auth/changePassword", authAgent.HandleChangeOwnPassword)
 	targetMux.HandleFunc("/api/auth/role", func(w http.ResponseWriter, r *http.Request) {

@@ -171,6 +171,11 @@ func (ar *OAuth2Router) handleSetOAuthSettingsGET(w http.ResponseWriter, r *http
 	if o.OAuth2ConfigurationCacheTime != nil {
 		ct = *o.OAuth2ConfigurationCacheTime
 	}
+	//The client secret is never sent: a stored secret is reported as secretMask (send it back on POST to keep it)
+	maskedSecret := ""
+	if o.OAuth2ClientSecret != "" {
+		maskedSecret = secretMask
+	}
 	//Return the current settings of the default provider
 	js, _ := json.Marshal(map[string]interface{}{
 		"oauth2WellKnownUrl":           o.OAuth2WellKnownUrl,
@@ -178,7 +183,7 @@ func (ar *OAuth2Router) handleSetOAuthSettingsGET(w http.ResponseWriter, r *http
 		"oauth2TokenUrl":               o.OAuth2TokenURL,
 		"oauth2UserInfoUrl":            o.OAuth2UserInfoUrl,
 		"oauth2Scopes":                 o.OAuth2Scopes,
-		"oauth2ClientSecret":           o.OAuth2ClientSecret,
+		"oauth2ClientSecret":           maskedSecret,
 		"oauth2ClientId":               o.OAuth2ClientId,
 		"oauth2CodeChallengeMethod":    o.OAuth2CodeChallengeMethod,
 		"oauth2ConfigurationCacheTime": ct.String(),
@@ -205,7 +210,9 @@ func jsonError(w http.ResponseWriter, msg string) {
 // The legacy single-provider endpoints operate on the provider "default".
 func (ar *OAuth2Router) handleSetOAuthSettingsPOST(w http.ResponseWriter, r *http.Request) {
 	prev := ar.recordOf(DefaultProviderID)
-	rec, err := parseRecord(r, DefaultProviderID, prev, true)
+	//A secret is required, except when the mask returned by GET is sent back: then the stored secret is kept
+	sec, _ := utils.PostPara(r, "oauth2ClientSecret")
+	rec, err := parseRecord(r, DefaultProviderID, prev, sec != secretMask)
 	if err != nil {
 		jsonError(w, err.Error())
 		return

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 type RouterOption struct {
@@ -53,6 +54,7 @@ var viewerDeniedPrefixes = []string{
 	"/api/security/overview", //dashboard: listener addresses, host names, client addresses, audit events
 	"/api/baseline/",         //enterprise baseline: preview, apply and undo change security settings
 	"/api/netplan/",          //network plan (VLAN networks, admin access) and the firewall recommendations
+	"/api/cert/download",     //certificate archive, includes the TLS private key
 	"/api/ech/export",        //ECH private key
 	"/api/ech/fallbacks",     //names probed by clients and scanners
 	"/api/zrok/logs",         //zrok tunnel output (share tokens, URLs)
@@ -61,12 +63,67 @@ var viewerDeniedPrefixes = []string{
 	"/plugin.ui/",            //plugin UIs can mutate
 }
 
+/*
+Outbound probing tools: each of these makes the proxy host open connections (TCP, TLS, HTTP,
+ICMP, DNS, whois) to a destination chosen by the caller and reports what answered, so they can
+be used to map the internal network or reach a cloud metadata service. Admin only, for every
+method. Matched exactly (not as a prefix) so that neighbours such as /api/tools/dnsresponder
+and /api/tools/netcalc stay readable.
+*/
+var viewerDeniedExact = map[string]bool{
+	"/api/proxy/testupstream":   true, //TCP dial + TLS handshake + HTTP GET to any host:port
+	"/api/tools/httptest":       true, //HTTP request to any URL (allowmetadata lifts the metadata guard)
+	"/api/tools/tlsinspect":     true, //TLS handshake to any host:port (allowmetadata as above)
+	"/api/tools/portscan":       true, //port scan of any address
+	"/api/tools/ipscan":         true, //host discovery over a range
+	"/api/tools/ping":           true,
+	"/api/tools/traceroute":     true,
+	"/api/tools/dns":            true, //lookup through any resolver
+	"/api/tools/whois":          true,
+	"/api/sso/OAuth2/discovery": true, //HTTP GET to any issuer / well-known URL taken from the query string
+}
+
+/*
+Endpoints that change state without reading any form field (or that read their input from
+the URL query string). GET / HEAD / OPTIONS / TRACE are refused for them: those methods are
+not covered by the CSRF token check and are open to viewer accounts. Handlers that take
+their input through utils.PostPara / PostBool / PostInt are protected by those helpers
+already and do not need to be listed here.
+*/
+var writeOnlyEndpoints = map[string]bool{
+	"/api/trustedproxy/reset":      true, //replace the trusted proxy list with the defaults
+	"/api/acme/autoRenew/renewNow": true, //run the certificate renewal now
+	"/api/acme/autoRenew/setEAB":   true, //store ACME external account binding credentials
+	"/api/cert/selfsign":           true, //generate (and overwrite) a self-signed certificate
+	"/api/webserv/start":           true, //static web server
+	"/api/webserv/stop":            true,
+	"/api/webserv/webdav/start":    true, //WebDAV server
+	"/api/webserv/webdav/stop":     true,
+	"/api/log/rotate/trigger":      true, //force a log rotation
+}
+
+// WriteMethodRequired reports whether the endpoint only accepts a state changing method
+func WriteMethodRequired(endpoint string) bool {
+	return writeOnlyEndpoints[endpoint]
+}
+
+func isStateChangingMethod(m string) bool {
+	switch m {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	}
+	return false
+}
+
 func isMutatingMethod(m string) bool {
 	return m != http.MethodGet && m != http.MethodHead && m != http.MethodOptions
 }
 
 // ViewerAllowed reports whether a viewer may perform a request
 func ViewerAllowed(method, path string) bool {
+	if viewerDeniedExact[path] || (len(path) > 1 && viewerDeniedExact[strings.TrimRight(path, "/")]) {
+		return false
+	}
 	for _, p := range viewerDeniedPrefixes {
 		if len(path) >= len(p) && path[:len(p)] == p || path+"/" == p {
 			return false
@@ -107,7 +164,15 @@ func (router *RouterDef) HandleFunc(endpoint string, handler func(http.ResponseW
 
 	authAgent := router.option.AuthAgent
 
+	writeOnly := WriteMethodRequired(endpoint)
+
 	wrapped := func(w http.ResponseWriter, r *http.Request) {
+		if writeOnly && !isStateChangingMethod(r.Method) {
+			//A state changing endpoint must not be reachable with a method that skips the CSRF check
+			w.Header().Set("Allow", "POST")
+			http.Error(w, "405 - Method not allowed, use POST", http.StatusMethodNotAllowed)
+			return
+		}
 		//Check authentication of the user
 		if router.option.RequireAuth {
 			authAgent.HandleCheckAuth(w, r, func(w http.ResponseWriter, r *http.Request) {

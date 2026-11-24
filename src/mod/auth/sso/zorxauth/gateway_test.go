@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +28,10 @@ func newTestGateway(t *testing.T) (*AuthRouter, *GatewayServer) {
 	ar := &AuthRouter{
 		Database: db,
 		Options:  options,
+		// what the main program wires to the proxy rules: *.example.com is protected by this SSO and https only
+		SessionTargetPolicy: func(host string) (bool, bool) {
+			return strings.HasSuffix(host, ".example.com"), host != "plain.example.com"
+		},
 	}
 	if err := db.Write(DB_USERS_TABLE, ar.userDbKey("alice"), &User{ID: "alice-id", Username: "alice"}); err != nil {
 		t.Fatalf("unable to write test user: %v", err)

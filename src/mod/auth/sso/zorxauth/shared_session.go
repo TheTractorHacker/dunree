@@ -55,6 +55,7 @@ type tokenClaims struct {
 	IssuedAt   int64  `json:"i"` //unix milliseconds
 	RememberMe bool   `json:"r,omitempty"`
 	Nonce      string `json:"n"`
+	Host       string `json:"h,omitempty"` //validation codes only: the host the code may be used on
 }
 
 // sharedSessions is the state of the signed token mode. The zero value means
@@ -119,10 +120,14 @@ func (ar *AuthRouter) issueSessionToken(kind, username string, expiry time.Time,
 }
 
 func (ar *AuthRouter) mintToken(kind, username string, expiry time.Time, rememberMe bool) string {
-	raw, _ := json.Marshal(tokenClaims{
-		Kind: kind, Username: username, Expiry: expiry.Unix(), IssuedAt: time.Now().UnixMilli(),
-		RememberMe: rememberMe, Nonce: randomNonce(),
-	})
+	return ar.mintTokenClaims(tokenClaims{Kind: kind, Username: username, Expiry: expiry.Unix(), RememberMe: rememberMe})
+}
+
+// mintTokenClaims signs c after stamping the issue time and a fresh nonce.
+func (ar *AuthRouter) mintTokenClaims(c tokenClaims) string {
+	c.IssuedAt = time.Now().UnixMilli()
+	c.Nonce = randomNonce()
+	raw, _ := json.Marshal(c)
 	body := sharedTokenPrefix + base64.RawURLEncoding.EncodeToString(raw)
 	return body + "." + ar.signToken(body)
 }
@@ -217,7 +222,11 @@ func (ar *AuthRouter) loadBrowserSession(token string) (*BrowserSession, bool) {
 
 // consumeValidationCode resolves a one-time validation code to its user name
 // and uses it up. A signed code issued by another node is accepted once per node.
-func (ar *AuthRouter) consumeValidationCode(code string) (string, bool) {
+// host is the host the code arrived on: a code minted for another host is used
+// up and refused, so a code that leaked to one host is worthless on the others.
+func (ar *AuthRouter) consumeValidationCode(code string, host string) (string, bool) {
+	host = normalizeTargetHost(host)
+	boundHost, _ := ar.sessionIdHosts.LoadAndDelete(code) //random ids; a signed code carries its host
 	if isSharedToken(code) {
 		c, ok := ar.verifyToken(code, tokenKindCode)
 		if !ok {
@@ -235,10 +244,16 @@ func (ar *AuthRouter) consumeValidationCode(code string) (string, bool) {
 				username = s
 			}
 		}
+		if host == "" || c.Host != host {
+			return "", false
+		}
 		return username, true
 	}
 	v, ok := ar.sessionIdStore.LoadAndDelete(code)
 	if !ok {
+		return "", false
+	}
+	if bound, _ := boundHost.(string); host == "" || bound != host {
 		return "", false
 	}
 	username, ok := v.(string)

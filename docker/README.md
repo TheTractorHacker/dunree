@@ -26,7 +26,6 @@ docker run -d \
   -p 8000:8000 \
   -v /path/to/zoraxy/config/:/opt/zoraxy/config/ \
   -v /path/to/zoraxy/plugin/:/opt/zoraxy/plugin/ \
-  -v /var/run/docker.sock:/var/run/docker.sock \
   -e FASTGEOIP="true" \
   -e TZ="America/New_York" \
   zoraxydocker/zoraxy:latest
@@ -48,7 +47,6 @@ services:
     volumes:
       - /path/to/zoraxy/config/:/opt/zoraxy/config/
       - /path/to/zoraxy/plugin/:/opt/zoraxy/plugin/
-      - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -71,7 +69,21 @@ services:
 |:-|:-|
 | `/opt/zoraxy/config/` | Zoraxy configuration. |
 | `/opt/zoraxy/plugin/` | Zoraxy plugins. |
-| `/var/run/docker.sock` | Docker socket. Used for additional functionality with Zoraxy. |
+
+### Docker socket
+
+The Docker socket is **not** mounted by default. Zoraxy only uses the Docker API to list containers and networks for the "Docker containers" picker when adding a proxy rule; everything else works without it.
+
+> [!WARNING]
+> Mounting `/var/run/docker.sock` into the Zoraxy container gives anything running in that container (Zoraxy itself, any installed plugin, or anyone who takes over the management interface) full control of the Docker daemon, which is equivalent to root on the host. `:ro` on the mount does not change this, it only protects the socket file, not the API behind it.
+
+Recommended (opt-in): run a read-only socket proxy next to Zoraxy with the shipped override file. It only forwards `GET` requests for containers and networks.
+
+```
+docker compose -f docker-compose.yml -f docker-compose.socket-proxy.yml up -d
+```
+
+Legacy (not recommended): to restore the previous behaviour, add the mount back yourself with `-v /var/run/docker.sock:/var/run/docker.sock` (Docker run) or `- /var/run/docker.sock:/var/run/docker.sock` under `volumes:` (Compose).
 
 ### Extra Hosts
 | Host | Details |

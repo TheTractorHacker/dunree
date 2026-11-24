@@ -43,6 +43,11 @@ type Config struct {
 	RemoteAddr string // Remote SSH server address
 	RemotePort int    // Remote SSH server port
 	Username   string // SSH username
+
+	// Path of the known_hosts file used to verify remote host keys.
+	// If empty, accepted host keys are not remembered and the user is
+	// asked to confirm the fingerprint on every connection.
+	KnownHostsFile string
 }
 
 // Server represents a wintty web SSH server
@@ -283,7 +288,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Connect to SSH server
 	debugLog("handleWebSocket: connecting SSH to %s@%s:%d", s.config.Username, s.config.RemoteAddr, s.config.RemotePort)
-	sshClient, err := s.connectSSH(password)
+	sshClient, err := s.connectSSH(password, confirmHostKeyOverWebSocket(conn))
 	if err != nil {
 		debugLog("handleWebSocket: SSH connection failed: %v", err)
 		s.sendError(conn, fmt.Sprintf("SSH connection failed: %v", err))
@@ -379,10 +384,10 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// connectSSH establishes an SSH connection with the configured server
-func (s *Server) connectSSH(password string) (*SSHClient, error) {
-	debugLog("connectSSH: dialling %s:%d as user %s", s.config.RemoteAddr, s.config.RemotePort, s.config.Username)
-	config := &ssh.ClientConfig{
+// sshClientConfig builds the SSH client config. The remote host key is verified
+// (see hostKeyCallback) before the password is offered to the server.
+func (s *Server) sshClientConfig(password string, confirm HostKeyConfirmFunc) *ssh.ClientConfig {
+	return &ssh.ClientConfig{
 		User: s.config.Username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
@@ -394,9 +399,15 @@ func (s *Server) connectSSH(password string) (*SSHClient, error) {
 				return answers, nil
 			}),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: s.hostKeyCallback(confirm),
 		Timeout:         10 * time.Second,
 	}
+}
+
+// connectSSH establishes an SSH connection with the configured server
+func (s *Server) connectSSH(password string, confirm HostKeyConfirmFunc) (*SSHClient, error) {
+	debugLog("connectSSH: dialling %s:%d as user %s", s.config.RemoteAddr, s.config.RemotePort, s.config.Username)
+	config := s.sshClientConfig(password, confirm)
 
 	addr := fmt.Sprintf("%s:%d", s.config.RemoteAddr, s.config.RemotePort)
 	client, err := ssh.Dial("tcp", addr, config)

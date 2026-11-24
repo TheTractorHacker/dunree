@@ -74,17 +74,37 @@
             }
         });
 
+        //Check if the given string is a bare IPv4 / IPv6 address and nothing else.
+        //The value can come from the ?ip= query parameter, so it must never be
+        //trusted as HTML or as extra query string parameters.
+        function isBareIP(value){
+            if (typeof value !== "string" || value.length == 0 || value.length > 45){
+                return false;
+            }
+            if (/^(\d{1,3}\.){3}\d{1,3}$/.test(value)){
+                return value.split(".").every(function(octet){
+                    return parseInt(octet, 10) <= 255;
+                });
+            }
+            //IPv6 (optionally with an embedded IPv4 tail), hex digits, colons and dots only
+            return value.indexOf(":") >= 0 && /^[0-9a-fA-F:.]+$/.test(value);
+        }
+
         function startScan(button=undefined){
             let ipToScan = $("#scanningIP").val();
             ipToScan = ipToScan.trim();
             let table = $("#resultTable");
             table.empty();
+            if (!isBareIP(ipToScan)){
+                table.append($("<tr></tr>").append($("<td colspan='3'></td>").text("Invalid IP address")));
+                return;
+            }
             table.append($("<tr><td colspan='3'><i class='ui loading spinner icon'></i> Scanning</td></tr>"));
 
             if (button != undefined){
                 button.addClass("loading");
             }
-            $.get("/api/tools/portscan?ip=" + ipToScan, function(data){
+            $.get("/api/tools/portscan?ip=" + encodeURIComponent(ipToScan), function(data){
                 if (button != undefined){
                     button.removeClass("loading");
                 }
@@ -101,7 +121,11 @@
                         let row = $("<tr></tr>");
                         row.append($("<td></td>").text(data[i].Port));
                         row.append($("<td><i class='ui green check icon'></i></td>"));
-                        row.append($("<td></td>").html(`<a href="//${ipToScan + ":" + data[i].Port}" target="_blank">${ipToScan + ":" + data[i].Port}</a>`));
+                        //IPv6 literals need brackets in the authority part of a URL
+                        let hostPart = ipToScan.indexOf(":") >= 0 ? "[" + ipToScan + "]" : ipToScan;
+                        let fullPath = hostPart + ":" + parseInt(data[i].Port, 10);
+                        let link = $("<a></a>").attr("href", "//" + fullPath).attr("target", "_blank").attr("rel", "noopener noreferrer").text(fullPath);
+                        row.append($("<td></td>").append(link));
                         table.append(row);
                     }
 

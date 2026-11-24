@@ -768,6 +768,22 @@ func TestSettingsAPIRoundTripAndValidation(t *testing.T) {
 	if got["oauth2Issuer"] != idp.issuer() || got["oauth2AllowedGroups"] != "admins" {
 		t.Fatalf("%v", got)
 	}
+	//API-03: the client secret is never returned; the mask is, and posting the mask back keeps the stored secret
+	if strings.Contains(w.Body.String(), testClientSecret) || got["oauth2ClientSecret"] != secretMask {
+		t.Fatalf("client secret not masked: %s", w.Body.String())
+	}
+	keep := url.Values{}
+	for k, x := range ok {
+		keep[k] = x
+	}
+	keep.Set("oauth2ClientSecret", secretMask)
+	keep.Set("oauth2AllowedGroups", "ops")
+	if w := postForm(ar.HandleSetOAuth2Settings, "POST", keep); strings.Contains(w.Body.String(), "error") {
+		t.Fatal(w.Body.String())
+	}
+	if o := ar.snapshot(); o.OAuth2ClientSecret != testClientSecret || o.OAuth2AllowedGroups != "ops" {
+		t.Fatalf("mask did not keep the stored secret: %q", o.OAuth2ClientSecret)
+	}
 	for name, mod := range map[string]func(v url.Values){
 		"bad mapping":   func(v url.Values) { v.Set("oauth2HeaderMappings", "Host=email") },
 		"bad pkce":      func(v url.Values) { v.Set("oauth2CodeChallengeMethod", "weird") },

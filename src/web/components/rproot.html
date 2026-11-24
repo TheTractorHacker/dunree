@@ -192,7 +192,7 @@
                 if (seq != defaultSiteNowSeq){ return; }
                 if (ws && ws.Running){ setDefaultSiteNowState("ok", t("Active"), hint); return; }
                 setDefaultSiteNowState("warn", t("Web server stopped"), t("The static web server is not running, so visitors with an unknown address get an error."), {label: t("Start the web server"), run: function(){
-                    $.get("/api/webserv/start", function(data){
+                    $.cjax({url: "/api/webserv/start", method: "POST"}).done(function(data){
                         if (data && data.error != undefined){
                             //the reason stays in the strip (a toast would be gone before it is read); the button stays for another try
                             $("#rootNowHint").text(t("The web server did not start: {0}").replace("{0}", data.error) + ". " + t("Change its port on the Static Web Server page.")).show();

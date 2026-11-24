@@ -71,8 +71,40 @@ func GetBool(r *http.Request, key string) (bool, error) {
 	return false, errors.New("invalid boolean given")
 }
 
+// isReadOnlyMethod reports the methods the CSRF middleware never validates and the
+// viewer role is allowed to use. A request with one of them must not change state.
+func isReadOnlyMethod(method string) bool {
+	switch method {
+	case "", http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
+		return true
+	}
+	return false
+}
+
+// ReadPara returns a parameter of a handler that only reads state: the URL query
+// string on any method, or the form body of a POST / PUT / PATCH request.
+// Never use it for a value that drives a change, use PostPara for those.
+func ReadPara(r *http.Request, key string) (string, error) {
+	if err := r.ParseForm(); err != nil {
+		return "", err
+	}
+	x := r.Form.Get(key)
+	if len(x) == 0 {
+		return "", errors.New("invalid " + key + " given")
+	}
+	return x, nil
+}
+
 // Get POST parameter
+//
+// The value is only accepted on a state changing method (POST, PUT, PATCH, DELETE).
+// On GET / HEAD / OPTIONS / TRACE the parameter is reported as missing, even when
+// it is in the URL query string: those requests skip the CSRF token check and are
+// open to read-only (viewer) accounts, so they must never drive a write.
 func PostPara(r *http.Request, key string) (string, error) {
+	if isReadOnlyMethod(r.Method) {
+		return "", errors.New("invalid " + key + " given")
+	}
 	// Try to parse the form
 	if err := r.ParseForm(); err != nil {
 		return "", err
@@ -87,6 +119,9 @@ func PostPara(r *http.Request, key string) (string, error) {
 
 // Get POST parameter as time.Duration
 func PostDuration(r *http.Request, key string) (*time.Duration, error) {
+	if isReadOnlyMethod(r.Method) {
+		return nil, errors.New("invalid " + key + " given")
+	}
 	// Try to parse the form
 	if err := r.ParseForm(); err != nil {
 		return nil, err

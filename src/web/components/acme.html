@@ -469,7 +469,7 @@
         if (btn.prop("disabled")){ return; }
         btn.prop("disabled", true).attr("aria-busy", "true");
         msgbox(t("Checking the certificates. Renewing can take a few minutes."));
-        $.get("/api/acme/autoRenew/renewNow", function(data){
+        $.cjax({url: "/api/acme/autoRenew/renewNow", method: "POST"}).done(function(data){
             if (data.error != undefined){
                 msgbox(data.error, false, 6000);
             } else {
@@ -611,14 +611,13 @@
         }
 
         if (eabDirectoryURL != "" && newEABKID != "" && newEABHMAC != ""){
-            $.ajax({
-                url: "/api/acme/autoRenew/setEAB",
-                method: "GET",
-                data: {
+            $.cjax({
+                url: "/api/acme/autoRenew/setEAB?" + $.param({
                 acmeDirectoryURL: eabDirectoryURL,
                 kid: newEABKID,
                 hmacEncoded: newEABHMAC,
-                },
+                }),
+                method: "POST",
                 success: function(data) {
                     if (data.error != undefined) {
                         msgbox("EAB update failed: " + data.error, false);

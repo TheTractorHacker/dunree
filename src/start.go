@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -238,6 +239,10 @@ func startupSequence() {
 	}
 	zorxAuthRouter = zorxauth.NewAuthRouter(sysdb, SystemWideLogger)
 	zorxAuthRouter.UsersManagedElsewhere = clusterMgr.SettingsReadOnly //follower with synced users: self-service changes would be overwritten
+	//The SSO portal sends its one-time session code only to hosts a proxy rule protects with ZorxAuth (nothing until the proxy router exists)
+	zorxAuthRouter.SessionTargetPolicy = func(host string) (bool, bool) {
+		return dynamicProxyRouter.ZorxAuthSessionTarget(host)
+	}
 
 	//Create a statistic collector
 	statisticCollector, err = statistic.NewStatisticCollector(statistic.CollectorOption{
@@ -355,6 +360,7 @@ func startupSequence() {
 
 	//Create WebSSH Manager
 	webSshManager = sshprox.NewSSHProxyManager()
+	webSshManager.KnownHostsFile = filepath.Join(CONF_FOLDER, "webssh_known_hosts")
 
 	//Create TCP Proxy Manager
 	streamProxyManager, err = streamproxy.NewStreamProxy(&streamproxy.Options{

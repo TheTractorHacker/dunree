@@ -64,6 +64,7 @@ func TestViewerCannotReachAnyMutatingRoute(t *testing.T) {
 	defer stopAbuseManager()
 	rt.HandleFunc("/api/users/list", authAgent.HandleUserList)
 	rt.HandleFunc("/api/users/action", authAgent.HandleUserAction)
+	rt.HandleFunc("/api/proxy/testupstream", HandleTestUpstream) //registered in initAPIs
 
 	eps := rt.Endpoints()
 	if len(eps) < 100 {
@@ -98,7 +99,12 @@ func TestViewerCannotReachAnyMutatingRoute(t *testing.T) {
 			}
 		}
 	}
-	for _, ep := range []string{"/api/users/list", "/api/abuse/config", "/api/system/dbusage", "/api/security/audit/list", "/api/security/audit/verify", "/api/security/overview", "/api/netplan/get", "/api/netplan/policy"} {
+	for _, ep := range []string{"/api/users/list", "/api/abuse/config", "/api/system/dbusage", "/api/security/audit/list", "/api/security/audit/verify", "/api/security/overview", "/api/netplan/get", "/api/netplan/policy",
+		//API-06: outbound probing tools are admin only
+		"/api/proxy/testupstream?url=127.0.0.1:1", "/api/tools/httptest?url=http://169.254.169.254/&allowmetadata=true",
+		"/api/tools/tlsinspect?host=127.0.0.1", "/api/tools/portscan?ip=127.0.0.1", "/api/tools/ipscan?cidr=127.0.0.1/32",
+		"/api/tools/ping?target=127.0.0.1", "/api/tools/traceroute?target=127.0.0.1", "/api/tools/dns?host=localhost", "/api/tools/whois?target=example.com",
+		"/api/sso/OAuth2/discovery?oauth2WellKnownUrl=http://169.254.169.254/"} {
 		r := httptest.NewRequest("GET", ep, nil)
 		r.AddCookie(vc)
 		w := httptest.NewRecorder()

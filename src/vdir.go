@@ -47,7 +47,7 @@ func parseVdirH2C(r *http.Request) (useH2C bool, given bool, err error) {
 
 // List the Virtual directory under given proxy rule
 func ReverseProxyListVdir(w http.ResponseWriter, r *http.Request) {
-	eptype, err := utils.PostPara(r, "type") //Support root and host
+	eptype, err := utils.ReadPara(r, "type") //Support root and host
 	if err != nil {
 		utils.SendErrorResponse(w, "type not defined")
 		return
@@ -55,7 +55,7 @@ func ReverseProxyListVdir(w http.ResponseWriter, r *http.Request) {
 
 	var targetEndpoint *dynamicproxy.ProxyEndpoint
 	if eptype == "host" {
-		endpoint, err := utils.PostPara(r, "ep")
+		endpoint, err := utils.ReadPara(r, "ep")
 		if err != nil {
 			utils.SendErrorResponse(w, "endpoint not defined")
 			return

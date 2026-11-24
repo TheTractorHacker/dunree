@@ -1883,9 +1883,9 @@
     function generateSelfSignedCertificate(uuid, domains, btn=undefined){
         let payload = JSON.stringify(domains);
         $.cjax({
-            url: "/api/cert/selfsign",
+            url: "/api/cert/selfsign?cn=" + encodeURIComponent(uuid),
+            method: "POST",
             data: {
-                "cn": uuid,
                 "domains": payload
             },
             success: function(data){

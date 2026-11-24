@@ -392,6 +392,7 @@
                 const baseURL = window.location.toString().replace("http://", "ws://").replace("https://", "wss://");
                 const wsUrl = `${baseURL}ws`;
                 let authenticated = false;
+                let connectTimer = null;
                 socket = new WebSocket(wsUrl);
 
                 socket.onopen = () => {
@@ -408,6 +409,18 @@
                             if (msg.type === 'auth_required') {
                                 // Server is requesting password, send it over the secure WebSocket channel
                                 socket.send(JSON.stringify({ type: 'auth', password: password }));
+                                return;
+                            }
+                            if (msg.type === 'hostkey_confirm') {
+                                // Unknown SSH host key: nothing is sent to the remote host until the user trusts it
+                                clearTimeout(connectTimer);
+                                const accept = window.confirm(
+                                    'The authenticity of host ' + msg.host + ' cannot be established.\n\n' +
+                                    msg.keyType + ' key fingerprint is:\n' + msg.fingerprint + '\n\n' +
+                                    'Trust this host and continue connecting? Your password will only be sent if you accept.'
+                                );
+                                socket.send(JSON.stringify({ type: 'hostkey_response', accept: accept }));
+                                connectTimer = setTimeout(onConnectTimeout, 30000);
                                 return;
                             }
                             if (msg.type === 'auth_success') {
@@ -449,12 +462,13 @@
                 };
 
                 // Timeout for connection + authentication
-                setTimeout(() => {
+                const onConnectTimeout = () => {
                     if (!authenticated) {
                         socket.close();
                         reject(new Error('Connection timeout'));
                     }
-                }, 30000);
+                };
+                connectTimer = setTimeout(onConnectTimeout, 30000);
             });
         }
 

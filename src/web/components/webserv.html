@@ -282,7 +282,7 @@
                     let enable = $(this)[0].checked;
                     $("#webservError").prop("hidden", true);
                     if (enable){
-                        $.get("/api/webserv/start", function(data){
+                        $.cjax({url: "/api/webserv/start", method: "POST"}).done(function(data){
                             if (data.error != undefined){
                                 showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", false, t("The web server did not start: {0}").replace("{0}", data.error));
                             }else{
@@ -291,7 +291,7 @@
                             }
                         }).fail(function(){ showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", false, t("The web server did not start: the request failed")); });
                     }else{
-                        $.get("/api/webserv/stop", function(data){
+                        $.cjax({url: "/api/webserv/stop", method: "POST"}).done(function(data){
                             if (data.error != undefined){
                                 showServiceError("#webservError", "#webserv_enable", ".webservStateBadge", ".webserv_status", true, t("The web server did not stop: {0}").replace("{0}", data.error));
                             }else{
@@ -306,7 +306,7 @@
                     let enable = $(this)[0].checked;
                     $("#webdavError").prop("hidden", true);
                     if (enable){
-                        $.get("/api/webserv/webdav/start", function(data){
+                        $.cjax({url: "/api/webserv/webdav/start", method: "POST"}).done(function(data){
                             if (data.error != undefined){
                                 showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", false, t("WebDAV did not start: {0}").replace("{0}", data.error));
                             }else{
@@ -315,7 +315,7 @@
                             }
                         }).fail(function(){ showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", false, t("WebDAV did not start: the request failed")); });
                     }else{
-                        $.get("/api/webserv/webdav/stop", function(data){
+                        $.cjax({url: "/api/webserv/webdav/stop", method: "POST"}).done(function(data){
                             if (data.error != undefined){
                                 showServiceError("#webdavError", "#webdav_enable", ".webdavStateBadge", ".webdav_status", true, t("WebDAV did not stop: {0}").replace("{0}", data.error));
                             }else{

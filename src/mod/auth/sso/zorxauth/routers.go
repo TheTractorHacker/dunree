@@ -104,13 +104,11 @@ func (ar *AuthRouter) handleSessionSetCallback(w http.ResponseWriter, r *http.Re
 		return errors.New("missing session_id in callback")
 	}
 
-	redirectURL := r.URL.Query().Get("redirect")
-	if redirectURL == "" {
-		redirectURL = "/" // default to home page if redirect URL is missing
-	}
+	// Only back to this host: the parameter is whatever the link said ("/" when missing or foreign)
+	redirectURL := sameHostRedirect(r.URL.Query().Get("redirect"), r.Host)
 
-	// One-time use validation code (looked up and used up in one step)
-	username, ok := ar.consumeValidationCode(sessionID)
+	// One-time use validation code (looked up and used up in one step), valid on the host it was minted for only
+	username, ok := ar.consumeValidationCode(sessionID, r.Host)
 	if !ok {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusUnauthorized)

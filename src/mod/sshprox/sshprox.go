@@ -34,6 +34,10 @@ import (
 type Manager struct {
 	StartingPort int
 	Instances    []*Instance
+
+	// Known hosts file used by the wintty (Windows) backend to verify
+	// remote SSH host keys. See wintty.Config.KnownHostsFile
+	KnownHostsFile string
 }
 
 type Instance struct {
@@ -219,6 +223,9 @@ func (i *Instance) createWinTTYConnection(listenPort int, username string, remot
 		RemoteAddr: remoteIpAddr,
 		RemotePort: remotePort,
 		Username:   username,
+	}
+	if i.Parent != nil {
+		config.KnownHostsFile = i.Parent.KnownHostsFile
 	}
 
 	// Create and start wintty server

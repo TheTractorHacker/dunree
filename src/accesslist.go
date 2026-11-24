@@ -355,7 +355,7 @@ func handleIpBlacklistRemove(w http.ResponseWriter, r *http.Request) {
 
 func handleBlacklistEnable(w http.ResponseWriter, r *http.Request) {
 	enable, _ := utils.PostPara(r, "enable")
-	ruleID, err := utils.PostPara(r, "id")
+	ruleID, err := utils.ReadPara(r, "id") //selects the rule, also for the GET that reads the state
 	if err != nil {
 		ruleID = "default"
 	}
@@ -542,7 +542,7 @@ func handleIpWhitelistRemove(w http.ResponseWriter, r *http.Request) {
 
 func handleWhitelistEnable(w http.ResponseWriter, r *http.Request) {
 	enable, _ := utils.PostPara(r, "enable")
-	ruleID, err := utils.PostPara(r, "id")
+	ruleID, err := utils.ReadPara(r, "id") //selects the rule, also for the GET that reads the state
 	if err != nil {
 		ruleID = "default"
 	}
@@ -572,7 +572,7 @@ func handleWhitelistEnable(w http.ResponseWriter, r *http.Request) {
 
 func handleWhitelistAllowLoopback(w http.ResponseWriter, r *http.Request) {
 	enable, _ := utils.PostPara(r, "enable")
-	ruleID, err := utils.PostPara(r, "id")
+	ruleID, err := utils.ReadPara(r, "id") //selects the rule, also for the GET that reads the state
 	if err != nil {
 		ruleID = "default"
 	}
@@ -603,7 +603,7 @@ func handleWhitelistAllowLoopback(w http.ResponseWriter, r *http.Request) {
 // Handle toggle for TrustProxyHeadersOnly setting
 func handleWhitelistTrustProxy(w http.ResponseWriter, r *http.Request) {
 	enable, _ := utils.PostPara(r, "enable")
-	ruleID, err := utils.PostPara(r, "id")
+	ruleID, err := utils.ReadPara(r, "id") //selects the rule, also for the GET that reads the state
 	if err != nil {
 		ruleID = "default"
 	}

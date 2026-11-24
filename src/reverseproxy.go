@@ -2160,14 +2160,14 @@ func ReverseProxyToggleRuleSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func ReverseProxyListDetail(w http.ResponseWriter, r *http.Request) {
-	eptype, err := utils.PostPara(r, "type") //Support root and host
+	eptype, err := utils.ReadPara(r, "type") //Support root and host
 	if err != nil {
 		utils.SendErrorResponse(w, "type not defined")
 		return
 	}
 
 	if eptype == "host" {
-		epname, err := utils.PostPara(r, "epname")
+		epname, err := utils.ReadPara(r, "epname")
 		if err != nil {
 			utils.SendErrorResponse(w, "epname not defined")
 			return
@@ -2178,16 +2178,44 @@ func ReverseProxyListDetail(w http.ResponseWriter, r *http.Request) {
 			utils.SendErrorResponse(w, "proxy rule not found")
 			return
 		}
-		targetEndpoint := dynamicproxy.CopyEndpoint(endpointRaw.(*dynamicproxy.ProxyEndpoint))
-		targetEndpoint.MaskHeaderRuleSecrets() //secrets are never sent back to the browser
-		js, _ := json.Marshal(targetEndpoint)
+		//secrets (basic auth password hashes, header rule values) are never sent back to the browser
+		js, _ := json.Marshal(sanitizedEndpointForAPI(endpointRaw.(*dynamicproxy.ProxyEndpoint)))
 		utils.SendJSONResponse(w, string(js))
 	} else if eptype == "root" {
-		js, _ := json.Marshal(dynamicProxyRouter.Root)
+		js, _ := json.Marshal(sanitizedEndpointForAPI(dynamicProxyRouter.Root))
 		utils.SendJSONResponse(w, string(js))
 	} else {
 		utils.SendErrorResponse(w, "Invalid type given")
 	}
+}
+
+// sanitizedEndpointForAPI returns a copy of the endpoint that is safe to serialise for the
+// management API (/api/proxy/list and /api/proxy/detail, which viewers and plugins can read):
+// the basic auth password hashes are blanked (the user names stay) and the header rule secrets
+// are masked. The live endpoint is not touched. A nil endpoint (no default site) stays nil.
+func sanitizedEndpointForAPI(ep *dynamicproxy.ProxyEndpoint) *dynamicproxy.ProxyEndpoint {
+	if ep == nil {
+		return nil
+	}
+	cp := dynamicproxy.CopyEndpoint(ep)
+	if cp == nil {
+		return nil
+	}
+	if cp.AuthenticationProvider != nil {
+		cleanedCredentials := []*dynamicproxy.BasicAuthCredentials{}
+		for _, user := range cp.AuthenticationProvider.BasicAuthCredentials {
+			if user == nil {
+				continue
+			}
+			cleanedCredentials = append(cleanedCredentials, &dynamicproxy.BasicAuthCredentials{
+				Username:     user.Username,
+				PasswordHash: "",
+			})
+		}
+		cp.AuthenticationProvider.BasicAuthCredentials = cleanedCredentials
+	}
+	cp.MaskHeaderRuleSecrets()
+	return cp
 }
 
 // List all tags used in the proxy rules
@@ -2208,7 +2236,7 @@ func ReverseProxyListTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func ReverseProxyList(w http.ResponseWriter, r *http.Request) {
-	eptype, err := utils.PostPara(r, "type") //Support root and host
+	eptype, err := utils.ReadPara(r, "type") //Support root and host
 	if err != nil {
 		utils.SendErrorResponse(w, "type not defined")
 		return
@@ -2217,18 +2245,10 @@ func ReverseProxyList(w http.ResponseWriter, r *http.Request) {
 	if eptype == "host" {
 		results := []*dynamicproxy.ProxyEndpoint{}
 		dynamicProxyRouter.ProxyEndpoints.Range(func(key, value interface{}) bool {
-			thisEndpoint := dynamicproxy.CopyEndpoint(value.(*dynamicproxy.ProxyEndpoint))
-			//Clear the auth passwords before showing to front-end
-			cleanedCredentials := []*dynamicproxy.BasicAuthCredentials{}
-			for _, user := range thisEndpoint.AuthenticationProvider.BasicAuthCredentials {
-				cleanedCredentials = append(cleanedCredentials, &dynamicproxy.BasicAuthCredentials{
-					Username:     user.Username,
-					PasswordHash: "",
-				})
+			//Clear the auth passwords and header rule secrets before showing to front-end
+			if thisEndpoint := sanitizedEndpointForAPI(value.(*dynamicproxy.ProxyEndpoint)); thisEndpoint != nil {
+				results = append(results, thisEndpoint)
 			}
-			thisEndpoint.AuthenticationProvider.BasicAuthCredentials = cleanedCredentials
-			thisEndpoint.MaskHeaderRuleSecrets()
-			results = append(results, thisEndpoint)
 			return true
 		})
 
@@ -2239,7 +2259,7 @@ func ReverseProxyList(w http.ResponseWriter, r *http.Request) {
 		js, _ := json.Marshal(results)
 		utils.SendJSONResponse(w, string(js))
 	} else if eptype == "root" {
-		js, _ := json.Marshal(dynamicProxyRouter.Root)
+		js, _ := json.Marshal(sanitizedEndpointForAPI(dynamicProxyRouter.Root))
 		utils.SendJSONResponse(w, string(js))
 	} else {
 		utils.SendErrorResponse(w, "Invalid type given")
@@ -2342,8 +2362,23 @@ func HandleManagementProxyCheck(w http.ResponseWriter, r *http.Request) {
 	utils.SendJSONResponse(w, string(js))
 }
 
+// isStateChangingRequest reports whether the request uses a method that is covered by the
+// CSRF token check and refused for viewer accounts. Settings must only change on these.
+func isStateChangingRequest(r *http.Request) bool {
+	switch r.Method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	}
+	return false
+}
+
 func HandleDevelopmentModeChange(w http.ResponseWriter, r *http.Request) {
 	enableDevelopmentMode, err := utils.GetBool(r, "enable")
+	if err == nil && !isStateChangingRequest(r) {
+		//A value in the query string of a GET must not change the setting (no CSRF token, viewer accounts)
+		http.Error(w, "405 - Method not allowed, use POST to change this setting", http.StatusMethodNotAllowed)
+		return
+	}
 	if err != nil {
 		//Load the current development mode toggle state
 		js, _ := json.Marshal(dynamicProxyRouter.Option.NoCache)
@@ -2363,6 +2398,11 @@ func HandleDevelopmentModeChange(w http.ResponseWriter, r *http.Request) {
 // HandleSanitiseClientIPChange reads or sets the global default of "Sanitise client IP headers"
 func HandleSanitiseClientIPChange(w http.ResponseWriter, r *http.Request) {
 	enable, err := utils.GetBool(r, "enable")
+	if err == nil && !isStateChangingRequest(r) {
+		//A value in the query string of a GET must not change the setting (no CSRF token, viewer accounts)
+		http.Error(w, "405 - Method not allowed, use POST to change this setting", http.StatusMethodNotAllowed)
+		return
+	}
 	if err != nil {
 		js, _ := json.Marshal(dynamicProxyRouter.Option.SanitiseClientIPHeaders)
 		utils.SendJSONResponse(w, string(js))
@@ -2377,6 +2417,11 @@ func HandleSanitiseClientIPChange(w http.ResponseWriter, r *http.Request) {
 // This requires a listener restart to take effect
 func HandleProxyProtocolChange(w http.ResponseWriter, r *http.Request) {
 	enableProxyProtocol, err := utils.GetBool(r, "enable")
+	if err == nil && !isStateChangingRequest(r) {
+		//A value in the query string of a GET must not change the setting (no CSRF token, viewer accounts)
+		http.Error(w, "405 - Method not allowed, use POST to change this setting", http.StatusMethodNotAllowed)
+		return
+	}
 	if err != nil {
 		//Load the current proxy protocol toggle state
 		js, _ := json.Marshal(dynamicProxyRouter.Option.UseProxyProtocol)

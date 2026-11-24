@@ -122,15 +122,15 @@ func RequireWebsocketHeaderCopy(r *http.Request) bool {
 //Check if site support TLS
 //Pass in ?selfsignchk=true to also check for self-signed certificate
 func HandleCheckSiteSupportTLS(w http.ResponseWriter, r *http.Request) {
-	targetURL, err := utils.PostPara(r, "url")
+	targetURL, err := utils.ReadPara(r, "url") //read-only probe, the admin UI calls it with GET
 	if err != nil {
 		utils.SendErrorResponse(w, "invalid url given")
 		return
 	}
 
 	//If the selfsign flag is set, also chec for self-signed certificate
-	_, err = utils.PostBool(r, "selfsignchk")
-	if err == nil {
+	selfSignChk, err := utils.ReadPara(r, "selfsignchk")
+	if err == nil && (strings.EqualFold(strings.TrimSpace(selfSignChk), "true") || strings.EqualFold(strings.TrimSpace(selfSignChk), "false")) {
 		//Return the https and selfsign status
 		type result struct {
 			Protocol string `json:"protocol"`
