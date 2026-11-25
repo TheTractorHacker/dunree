@@ -72,8 +72,8 @@ func TestInfoEndpointReportsBrand(t *testing.T) {
 	}
 	// The fields the interface had before are still there, with their meaning: Version is what the
 	// updater and the configuration migrations compare, not the Dunree version.
-	if got["Version"] != SYSTEM_VERSION {
-		t.Errorf("Version = %v, want %q (existing field, unchanged)", got["Version"], SYSTEM_VERSION)
+	if got["Version"] != PRODUCT_VERSION || got["CompatVersion"] != COMPAT_VERSION {
+		t.Errorf("Version = %v, CompatVersion = %v, want %q and %q", got["Version"], got["CompatVersion"], PRODUCT_VERSION, COMPAT_VERSION)
 	}
 	for _, k := range []string{"NodeUUID", "Development", "BootTime", "EnableSshLoopback", "ZerotierConnected"} {
 		if _, ok := got[k]; !ok {

@@ -1,5 +1,6 @@
-# Development builds (unsigned). Signed release files, named dunree_<os>_<arch> and zoraxy_<os>_<arch>
-# for the in-app updaters of existing installs, are made by tools/build_release.sh.
+# Development builds (unsigned), written to dist/dunree_<os>_<arch>. Signed release files of the same
+# names are made by tools/build_release.sh, which also checks the tag against the Dunree version
+# (PRODUCT_VERSION, mod/brand Version). "make version" prints the two version numbers of the tree.
 # PLATFORMS := darwin/amd64 darwin/arm64 freebsd/amd64 linux/386 linux/amd64 linux/arm linux/arm64 linux/mipsle windows/386 windows/amd64 windows/arm windows/arm64
 PLATFORMS := linux/amd64 linux/386 linux/arm linux/arm64 linux/mipsle linux/riscv64 windows/amd64 freebsd/amd64 darwin/amd64 darwin/arm64
 temp = $(subst /, ,$@)
@@ -12,6 +13,13 @@ all:  clear_old $(PLATFORMS) fixwindows
 binary: $(PLATFORMS)
 
 hash: dunree_file_checksum.sha1
+
+# The Dunree version (the release tag is "v" plus it) and the version of the base.
+version:
+	@sed -n 's/^[[:space:]]*Version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/PRODUCT_VERSION=\1/p' mod/brand/brand.go
+	@sed -n 's/^[[:space:]]*BasedOnVersion[[:space:]]*=[[:space:]]*"\([^"]*\)".*/COMPAT_VERSION=\1/p' mod/brand/brand.go
+
+.PHONY: all binary hash web clean version fixwindows clear_old $(PLATFORMS)
 
 web: web.tar.gz
 

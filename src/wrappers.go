@@ -446,6 +446,7 @@ func HandleDunreeInfo(w http.ResponseWriter, r *http.Request) {
 	type DunreeInfo struct {
 		brand.Info        //Product, ProductVersion, Publisher, BasedOn...: what the About page and the footer show (mod/brand)
 		Version           string
+		CompatVersion     string
 		NodeUUID          string
 		Development       bool
 		BootTime          int64
@@ -465,7 +466,8 @@ func HandleDunreeInfo(w http.ResponseWriter, r *http.Request) {
 
 	info := DunreeInfo{
 		Info:              brand.Get(),
-		Version:           SYSTEM_VERSION, //the version the updater and config migrations compare; the Dunree version is ProductVersion
+		Version:           PRODUCT_VERSION, //the Dunree version, the same as ProductVersion
+		CompatVersion:     COMPAT_VERSION,  //the base version the config migrations and earlier plugins are given
 		NodeUUID:          displayUUID,
 		Development:       *development_build,
 		BootTime:          displayBootTime,

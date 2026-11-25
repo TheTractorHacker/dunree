@@ -1,6 +1,6 @@
 # WebSockets, Odoo, CleanSlate (Hasura), Domoticz
 
-Answers upstream issues #314 (Odoo), #622 (CleanSlate) and #446 (Domoticz). Everything marked *verified* was
+Answers Zoraxy issues #314 (Odoo), #622 (CleanSlate) and #446 (Domoticz). Everything marked *verified* was <!-- rebrand:keep -->
 reproduced with a throw-away Dunree instance and a fake backend that logs the request line it receives.
 
 ## How Dunree handles WebSockets
@@ -18,6 +18,8 @@ reproduced with a throw-away Dunree instance and a fake backend that logs the re
 
 ## Virtual directories strip their prefix (and used to lose the path for WebSockets)
 
+In the admin interface virtual directories are called **Path routes** (*Sites > Path routes*, or the *Path routes* section of a site).
+
 A virtual directory (`/websocket` -> `host:8072`) removes its matching prefix before forwarding, like nginx
 `location /websocket/ { proxy_pass http://host:8072/; }`. If the upstream needs the path, **put the path in the
 target**:
@@ -28,7 +30,7 @@ target**:
 | `/websocket` | `10.0.0.5:8072/websocket` | `/websocket` | `/websocket` |
 | `/websocket` | `10.0.0.5:8072/websocket` | `/websocket/x?y=1` | `/websocket/x?y=1` |
 
-*Verified.* Before the fix in this fork the WebSocket upgrade through a virtual directory ignored the base path in
+*Verified.* Before the fix in Dunree the WebSocket upgrade through a virtual directory ignored the base path in
 the target and always arrived as `/`; that is exactly what broke Odoo (`/websocket` on port 8072) and CleanSlate
 (Hasura answers `only '/v1/graphql', '/v1alpha1/graphql' and '/v1beta1/relay' are supported on websockets`,
 `"path":"$"`, i.e. it received `/`). Plain HTTP requests already behaved like the table.

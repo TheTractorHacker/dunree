@@ -152,7 +152,7 @@
                 <!-- Web Server -->
                 <div id="webserv" class="functiontab" target="webserv.html"></div>
 
-                <!-- App Store -->
+                <!-- Add-ons (tag appstore; the page was called App Store) -->
                 <div id="appstore" class="functiontab" target="appstore.html"></div>
 
                 <!-- Plugins -->
@@ -854,9 +854,13 @@
             // the pin toggle is shown as active (filled) and which action it fires.
             function buildRecentItem(tab, pinned) {
                 var $item = $('<a class="recent-item"></a>');
+                // The label stored with the entry is the one the page had when it was visited or pinned; a page that was
+                // renamed since (App Store -> Add-ons) shows its current name from the navigation map (script/nav.js).
+                var navHit = window.ZxNav && ZxNav.find(tab.tag);
+                var label = (navHit && navHit.item && navHit.item.label) || tab.label;
                 $item.append($('<i style="margin-top: -8px;"></i>').addClass(tab.icon));
-                $item.append($('<span class="recent-item-label"></span>').text(tab.label));
-                $item.attr('title', tab.label);
+                $item.append($('<span class="recent-item-label"></span>').text(label));
+                $item.attr('title', label);
                 $item.on('click', function() { openTabById(tab.tag); });
 
                 var $pin = $('<i class="thumbtack icon recent-pin-toggle"></i>');

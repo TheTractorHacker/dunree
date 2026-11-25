@@ -1,11 +1,18 @@
-# The image name is a variable: there is no default registry (see packaging/README.md). Build one with
-#   docker build -t dunree:local -f packaging/container/Dockerfile .     (from the repository root)
+# Dunree with Docker Compose. See README.md in this folder.
+#
+# The image name is a variable: Dunree has no published image and no default registry. Build one,
+#   docker buildx build -f packaging/container/Dockerfile -t dunree:local .     (from the repository root)
 # and run:  DUNREE_IMAGE=dunree:local docker compose up -d
+#
+# Coming from a container of the Zoraxy image: keep your two folders and your mount paths       # rebrand:keep
+# (/opt/zoraxy/config/ and /opt/zoraxy/plugin/ still work, they are links); only the image changes.
 services:
   dunree:
     image: ${DUNREE_IMAGE:?set DUNREE_IMAGE to the Dunree image to run}
     container_name: dunree
     restart: unless-stopped
+    # Dunree needs up to 28 s for a clean stop (Docker's default is 10 s).
+    stop_grace_period: 30s
     ports:
       - 80:80
       - 443:443

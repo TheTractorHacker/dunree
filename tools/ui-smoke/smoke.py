@@ -92,7 +92,7 @@ OLD_TABS = {
     "ech": ("Network", "Encrypted Client Hello"), "iface": ("Network", "Network Interfaces"), "networktool": ("Network", "Network Tools"),
     "fleet": ("Fleet & HA", "Fleet"), "cluster": ("Fleet & HA", "Cluster / HA"),
     "updater": ("System", "Update"), "apitokens": ("System", "API Tokens"), "plugins": ("System", "Plugin Manager"),
-    "appstore": ("System", "App Store"), "utils": ("System", "Utilities"), "settings": ("System", "Settings"),
+    "appstore": ("System", "Add-ons"), "utils": ("System", "Utilities"), "settings": ("System", "Settings"),
 }
 
 
@@ -754,6 +754,15 @@ def nav_palette(pg, ctx):
     txt = pg.inner_text("#zxPalette")
     if "Access Rules" not in txt or "Auto-ban" not in txt:
         fail("palette", "'ban' should find Access Rules and Auto-ban")
+    # the page that was called "App Store" is "Add-ons": found by its new name and still by the old one, shown under the new one
+    for word in ("add-ons", "app store"):
+        pg.fill("#zxPalette input", word)
+        pg.wait_for_timeout(200)
+        first = pg.inner_text("#zxPalette [role=option] >> nth=0").replace("\n", " ")
+        if "Add-ons" not in first:
+            fail("palette", f"{word!r} should find the Add-ons page first, got {first!r}")
+        if "App Store" in pg.inner_text("#zxPalette"):
+            fail("palette", f"{word!r}: the palette still shows the old label 'App Store'")
     # a proxy host
     pg.fill("#zxPalette input", "palette-host")
     pg.wait_for_function("document.querySelector('#zxPalette .zx-palette__label') && document.querySelector('#zxPalette .zx-palette__label').textContent.includes('palette-host')", timeout=4000)
@@ -3050,9 +3059,18 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     pg.click(".zx-dialog [data-zx-ok]")
     pg.wait_for_selector("#flStandalone", state="visible", timeout=8000)
 
-    # ================= App Store and Plugins =================
+    # ================= Add-ons (tag appstore) and Plugins =================
     current["page"] = "netsys/appstore"
     go("appstore", 1500)
+    # ---- the page and its navigation entry are called "Add-ons" (docs/ux/terminology.md); nothing says "App Store"
+    if pg.inner_text("#appstore .zx-page-header__title").strip() != "Add-ons":
+        fail("appstore", "the page title must be 'Add-ons': " + pg.inner_text("#appstore .zx-page-header__title"))
+    navlabel = pg.evaluate("(() => { const b = getTabButtonById('appstore'); const el = b && b[0]; return el ? el.textContent.trim() : ''; })()")
+    if "Add-ons" not in navlabel:
+        fail("appstore", f"the navigation entry must be 'Add-ons', got {navlabel!r}")
+    old = pg.evaluate("[document.querySelector('#appstore'), document.querySelector('#plugins'), document.querySelector('#mainmenu'), document.querySelector('#asSettingsModal')].filter(Boolean).map(e => e.textContent).join(' ').includes('App Store')")
+    if old:
+        fail("appstore", "the old label 'App Store' is still in the Add-ons page, the Plugin Manager, the menu or the Sources dialog")
     # ---- Dunree ships without a store. This throw-away instance counts as an existing installation (run.sh), so it
     # carries the migrated third-party source: shown as such, removable, and with it gone the page says so and offers
     # the three ways to add a store (docs/plugins/addon-store.md).

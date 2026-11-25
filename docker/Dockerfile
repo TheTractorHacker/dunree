@@ -1,5 +1,10 @@
-# Single-architecture build from this folder (copy ../src here first). The multi-architecture image
-# that releases use is packaging/container/Dockerfile; both have the same layout.
+# Dunree container image, single architecture, built from this folder:
+#
+#   cp -r ../src ./src && docker build -t dunree:local . ; rm -rf ./src
+#
+# The multi-architecture image (linux/amd64, linux/arm64, ...; what a release would publish) is
+# packaging/container/Dockerfile, built from the repository root. Both have the same layout,
+# environment variables, ports, labels and health check. See README.md in this folder.
 
 ## Build Dunree
 FROM docker.io/golang:alpine AS build-dunree
@@ -45,6 +50,8 @@ COPY --chmod=700 ./entrypoint.py /opt/dunree/
 
 COPY --from=build-zerotier /usr/local/bin/zerotier-one /usr/local/bin/zerotier-one
 COPY --from=build-dunree /usr/local/bin/dunree /usr/local/bin/dunree
+# Licence, attribution and the notices of bundled components (the same files the About page serves).
+COPY --from=build-dunree /opt/dunree/source/web/legal/ /usr/share/doc/dunree/
 
 # Old names keep working: compose files and volumes of existing containers use /opt/zoraxy/... and "zoraxy".
 RUN mkdir -p /opt/dunree/config/ /opt/dunree/plugin/ &&\
@@ -76,11 +83,21 @@ ENV WEBROOT="./www"
 
 VOLUME [ "/opt/dunree/config/" ]
 
-LABEL ie.foleyit.dunree.container-identifier="Dunree"
-# Kept so that tools which look for the old identifier still find the container.
+LABEL org.opencontainers.image.title="Dunree" \
+      org.opencontainers.image.description="Reverse proxy and web gateway" \
+      org.opencontainers.image.vendor="Foley IT" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      ie.foleyit.dunree.container-identifier="Dunree" \
+      ie.foleyit.dunree.based-on="Zoraxy v3.3.6 by tobychui and imuslab (AGPL-3.0); independent derivative, not endorsed by them"
+# Kept, with its value: the container picker of the admin interface (and of older builds that look
+# at this container from outside) recognises the proxy's own container by this label.
 LABEL com.imuslab.zoraxy.container-identifier="Zoraxy"
+
+EXPOSE 80 443 443/udp 8000
 
 ENTRYPOINT [ "python3", "-u", "/opt/dunree/entrypoint.py" ]
 
+# Healthy = the admin port accepts a TCP connection. It is a TCP check on purpose: it works with and
+# without -webui_tls and needs no credentials. It does not prove that the proxy ports are bound.
 HEALTHCHECK --start-period=5s --interval=15s --timeout=5s --retries=3 CMD nc -vz 127.0.0.1 $PORT || exit 1
 

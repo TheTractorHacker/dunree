@@ -188,7 +188,7 @@ func TestServerTimeoutsAndLoginOverTheWire(t *testing.T) {
 			go func() { defer c.Close(); buf := make([]byte, 4); n, _ := c.Read(buf); c.Write(buf[:n]) }()
 		}
 	}()
-	probe, _ := net.Listen("tcp", "127.0.0.1:0")
+	probe, _ := net.Listen("tcp", ":0")
 	port := probe.Addr().(*net.TCPAddr).Port
 	probe.Close()
 

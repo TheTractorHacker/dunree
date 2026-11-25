@@ -276,7 +276,7 @@ func sliceHHTTP(t *testing.T) (http.Handler, *http.Cookie, *http.Cookie) {
 	RegisterSecurityOverviewAPIs(rt)
 	RegisterNetPlanAPIs(rt)
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(csrf.Token(r))) })
-	protected := csrf.Protect([]byte("0123456789abcdef0123456789abcdef"), csrf.Secure(false), csrf.Path("/"))(mux)
+	protected := plainHTTPAdmin(csrf.Protect([]byte("0123456789abcdef0123456789abcdef"), csrf.Secure(false), csrf.Path("/"))(mux)) //admincsrf_test.go
 	login := func(user, pw string) *http.Cookie {
 		r := httptest.NewRequest(http.MethodPost, "/api/auth/login", strings.NewReader("username="+user+"&password="+pw))
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")

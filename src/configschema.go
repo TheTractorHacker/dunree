@@ -11,7 +11,7 @@ import (
 // the registered migrations (mod/confpack/migrate.go) before any module reads the files. It is
 // idempotent: at the current version it does nothing. A folder stamped by a newer build is left alone.
 func runConfigSchemaMigration() {
-	res, err := confpack.Migrate(CONF_FOLDER, confpack.Migrations, SYSTEM_NAME+" "+SYSTEM_VERSION, time.Now())
+	res, err := confpack.Migrate(CONF_FOLDER, confpack.Migrations, SYSTEM_NAME+" "+PRODUCT_VERSION, time.Now())
 	switch {
 	case err != nil:
 		log.Printf("WARNING: config schema migration: %v", err)

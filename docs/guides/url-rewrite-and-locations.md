@@ -1,6 +1,8 @@
-# Virtual directories, locations and path rewriting
+# Path routes (virtual directories), locations and path rewriting
 
-Answers upstream #417 (extra "locations" for a domain, Home Assistant), #418 (static files 404 under a sub path)
+In the admin interface virtual directories are called **Path routes** (*Sites > Path routes*, or the *Path routes* section of a site). This guide uses both words for the same thing.
+
+Answers Zoraxy issues #417 (extra "locations" for a domain, Home Assistant), #418 (static files 404 under a sub path) <!-- rebrand:keep -->
 and part of #446. Verified with a throw-away instance and a fake backend that logs the request line it gets.
 
 ## There are no nginx `location` blocks
@@ -34,7 +36,7 @@ Rules) do support regex, and path rules (allow/deny/auth/rate-limit per path) ma
 
 * A virtual directory matches when the request path **starts with** its matching path (`/api` also matches
   `/apiary`; end the path with `/` if you want a directory boundary).
-* **The longest matching path wins** (this fork; upstream used the first one in the list, so a `/` entry
+* **The longest matching path wins** (Zoraxy used the first one in the list, so a `/` entry <!-- rebrand:keep -->
   shadowed everything added after it and the only way to reorder was edit+save). Order of creation no longer
   matters. *Verified by unit test* `TestVirtualDirectoryLongestPrefixWins`.
 * A request for `/dir` without trailing slash is redirected to `/dir/` when the directory is defined as `/dir/`.

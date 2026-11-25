@@ -1,6 +1,6 @@
 # CAPTCHA, phones and native apps
 
-Answers upstream #993 ("mobile reCAPTCHA": the immich / audiobookshelf iOS apps cannot log in behind a CAPTCHA rule).
+Answers Zoraxy issue #993 ("mobile reCAPTCHA": the immich / audiobookshelf iOS apps cannot log in behind a CAPTCHA rule). <!-- rebrand:keep -->
 
 ## Two separate things
 

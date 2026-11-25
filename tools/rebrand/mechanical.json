@@ -161,7 +161,10 @@
     "src/web/script/supporters.txt",
     "src/mod/brand/**",
     "src/brandweb_test.go",
-    "tools/ui-smoke/brand_smoke.py"
+    "tools/ui-smoke/brand_smoke.py",
+    "docs/legal/**",
+    "docs/index.html",
+    "tools/docs/**"
   ],
   "name_renames": [
     {
@@ -210,5 +213,5 @@
   "json_key_value_files": [
     "src/web/locales/*.json"
   ],
-  "extra_exclude_notes": ".gitignore keeps the old build-output names next to the new ones (edited by hand). README, SECURITY, CONTRIBUTING, CODEOWNERS, ROADMAP, docs/README.md and docs/roadmap-history.md were written by hand for Dunree and name Zoraxy on purpose (what Dunree is based on, where not to report, history). src/web/legal/** are byte copies of LICENSE, NOTICE and THIRD_PARTY_NOTICES.md (TestLegalFilesShippedWithUI). supporters.txt lists the supporters of Zoraxy. src/mod/brand, src/brandweb_test.go and tools/ui-smoke/brand_smoke.py hold and test the attribution."
+  "extra_exclude_notes": ".gitignore keeps the old build-output names next to the new ones (edited by hand). README, SECURITY, CONTRIBUTING, CODEOWNERS, ROADMAP, docs/README.md and docs/roadmap-history.md were written by hand for Dunree and name Zoraxy on purpose (what Dunree is based on, where not to report, history). src/web/legal/** are byte copies of LICENSE, NOTICE and THIRD_PARTY_NOTICES.md (TestLegalFilesShippedWithUI). supporters.txt lists the supporters of Zoraxy. src/mod/brand, src/brandweb_test.go and tools/ui-smoke/brand_smoke.py hold and test the attribution. docs/legal/** are byte copies of LICENSE, NOTICE and THIRD_PARTY_NOTICES.md for the documentation index; docs/index.html is written by tools/docs/build_index.py and names Zoraxy as what Dunree is based on; tools/docs/test_docs.py asserts that text, the kept container label and the old container paths."
 }

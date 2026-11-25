@@ -51,7 +51,7 @@ func initCluster() {
 		ConfDir:         CONF_FOLDER,
 		NodeID:          id,
 		NodeName:        name,
-		Version:         SYSTEM_VERSION,
+		Version:         PRODUCT_VERSION,
 		FlagSecret:      *clusterSecretFlag,
 		AllowLocalEdits: *clusterAllowLocalEdit,
 		Reload:          clusterReload,

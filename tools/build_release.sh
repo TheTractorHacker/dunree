@@ -2,24 +2,38 @@
 # Cross-compile the Dunree release binaries, sign them and verify the result.
 #
 #   tools/build_release.sh -t TAG [-b BUILD] [-k PRIVATE_KEY.pem] [-o DIST_DIR] [-p]
-#                          [--targets LIST] [--packages] [--no-legacy-names] [--dry-run]
+#                          [--targets LIST | --targets-subset LIST] [--packages] [--dry-run]
 #
-# TAG is the release tag (e.g. v3.3.6-topic.1); it is signed into SHA256SUMS so
+# TAG is the release tag: "v" plus the Dunree version of the source tree
+# (PRODUCT_VERSION, mod/brand Version), e.g. v1.0.0-beta.1. A tag for another
+# version is refused: the in-app updater runs the new program with -version and
+# requires exactly the version of the tag. The tag is signed into SHA256SUMS so
 # the updater can refuse a replayed older release. BUILD is a monotonically
 # increasing integer (default: current unix time) and must be larger than the
 # previous release's build.
 #
-# Targets. Without --targets every default target is built:
+# Targets. Without --targets every default target is built (the full release):
 #   linux/amd64 linux/arm64 linux/arm linux/386 linux/riscv64 linux/mipsle
 #   windows/amd64 windows/arm64 darwin/amd64 darwin/arm64
 # --targets takes a comma separated subset, e.g. --targets linux/amd64,windows/amd64.
 # freebsd/amd64 and freebsd/arm64 are known but only built when named there.
 # The files are called dunree_<os>_<arch>, with .exe for Windows.
 #
-# Legacy names. The updater of an existing install asks for zoraxy_linux_<arch>,
-# so every Linux binary is also written under that name (a byte-identical copy,
-# signed in the same SHA256SUMS). --no-legacy-names leaves the copies out; such
-# a release cannot be installed by the in-app updater of an existing install.
+# --targets-subset LIST is the test mode: it builds the named targets like
+# --targets, so that the whole path (build, sign, verify) can be tried in a
+# minute or two, and marks the result as not being a release: the output says
+# so and DIST_DIR gets a file NOT-A-COMPLETE-RELEASE.txt (it is not signed and
+# not in SHA256SUMS). Use --targets for a real release with fewer targets.
+#
+# The signed first line of SHA256SUMS is
+#   # dunree-release product=dunree tag=TAG build=BUILD upstream=COMPAT_VERSION
+# where COMPAT_VERSION is the version of the code base Dunree is derived from
+# (mod/brand BasedOnVersion). Only Dunree's own updater installs such a
+# release. The updater of the earlier fork does not: it asks for other file
+# names and another header, and its version numbers are higher. An install of
+# that fork is switched by replacing the program file, see the migration guide
+# in docs/. --no-legacy-names is still accepted and does nothing (copies under
+# the earlier file names are not made any more).
 #
 # --packages also builds the archives (.tar.gz, .zip) and, when nfpm is on the
 # PATH, the .deb and .rpm packages for the built targets with
@@ -54,7 +68,7 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 usage() {
-  echo "usage: $0 -t tag [-b build] [-k private.pem] [-o dist_dir] [-p] [--targets os/arch,...] [--packages] [--no-legacy-names] [--dry-run]" >&2
+  echo "usage: $0 -t tag [-b build] [-k private.pem] [-o dist_dir] [-p] [--targets os/arch,... | --targets-subset os/arch,...] [--packages] [--dry-run]" >&2
   exit 2
 }
 
@@ -75,7 +89,8 @@ refplugins=0
 subset=""
 dryrun=0
 packages=0
-legacy=1
+subset_mode=0
+subset_given=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -84,11 +99,13 @@ while [ $# -gt 0 ]; do
     -t) [ $# -ge 2 ] || usage; tag="$2"; shift 2 ;;
     -b) [ $# -ge 2 ] || usage; build="$2"; shift 2 ;;
     -p) refplugins=1; shift ;;
-    --targets) [ $# -ge 2 ] || usage; subset="$2"; shift 2 ;;
-    --targets=*) subset="${1#*=}"; shift ;;
+    --targets) [ $# -ge 2 ] || usage; subset="$2"; subset_given=$((subset_given + 1)); shift 2 ;;
+    --targets=*) subset="${1#*=}"; subset_given=$((subset_given + 1)); shift ;;
+    --targets-subset) [ $# -ge 2 ] || usage; subset="$2"; subset_mode=1; subset_given=$((subset_given + 1)); shift 2 ;;
+    --targets-subset=*) subset="${1#*=}"; subset_mode=1; subset_given=$((subset_given + 1)); shift ;;
     --dry-run) dryrun=1; shift ;;
     --packages) packages=1; shift ;;
-    --no-legacy-names) legacy=0; shift ;;
+    --no-legacy-names) shift ;; # accepted for older command lines; there are no such copies any more
     *) usage ;;
   esac
 done
@@ -102,6 +119,8 @@ if [ -z "$key" ]; then
 fi
 
 [ -n "$tag" ] || { echo "-t TAG is required (the release tag to sign)" >&2; exit 2; }
+[ "$subset_given" -le 1 ] || { echo "give --targets or --targets-subset once, not both" >&2; exit 2; }
+[ "$subset_given" = 0 ] || [ -n "$subset" ] || { echo "the target list is empty" >&2; exit 2; }
 case "$build" in ''|*[!0-9]*) echo "-b BUILD must be a positive integer" >&2; exit 2 ;; esac
 [ -n "$dist" ] && [ "$dist" != "/" ] || { echo "-o DIST_DIR must not be empty or /" >&2; exit 2; }
 
@@ -125,10 +144,17 @@ else
 fi
 [ "${#targets[@]}" -gt 0 ] || { echo "no targets" >&2; exit 2; }
 
-# The in-app updater smoke-tests the new binary and requires "Version X.Y.Z" in its output to match the tag.
-srcver=$(sed -n 's/.*SYSTEM_VERSION *= *"\([^"]*\)".*/\1/p' "$root/src/def.go" | head -1)
-tagver=$(printf '%s' "$tag" | sed -n 's/^v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
-[ "$srcver" = "$tagver" ] || { echo "tag $tag has base version '$tagver' but src/def.go SYSTEM_VERSION is '$srcver': the in-app updater would reject this build" >&2; exit 2; }
+# The two version numbers of the source tree (src/mod/brand/brand.go; src/def.go names them
+# PRODUCT_VERSION and COMPAT_VERSION).
+brandgo="$root/src/mod/brand/brand.go"
+product_version=$(sed -n 's/^[[:space:]]*Version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$brandgo" | head -1)
+compat_version=$(sed -n 's/^[[:space:]]*BasedOnVersion[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$brandgo" | head -1)
+[ -n "$product_version" ] && [ -n "$compat_version" ] || { echo "cannot read Version and BasedOnVersion from $brandgo" >&2; exit 1; }
+# The tag is "v" plus PRODUCT_VERSION, exactly: the in-app updater runs the new program with
+# -version and requires the version of the tag in its output, pre-release part included.
+semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?$'
+printf '%s' "$tag" | grep -Eq "$semver" || { echo "tag '$tag' is not a Dunree release tag (vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-PRERELEASE, e.g. v$product_version)" >&2; exit 2; }
+[ "$tag" = "v$product_version" ] || { echo "tag $tag is for version '${tag#v}' but the source tree is Dunree $product_version (mod/brand Version): the in-app updater would reject this build. Tag it v$product_version, or change the version first." >&2; exit 2; }
 
 read -r -a gocmd <<<"${GO:-go}"
 
@@ -148,18 +174,17 @@ asset_name() {
 }
 
 if [ "$dryrun" = 1 ]; then
-  echo "DRY RUN for tag $tag, build $build, output $dist"
+  echo "DRY RUN for tag $tag (Dunree $product_version, based on $compat_version), build $build, output $dist"
+  [ "$subset_mode" = 0 ] || echo "TEST MODE (--targets-subset): the result would not be a complete release"
   for t in "${targets[@]}"; do
     IFS=: read -r pair goarm <<<"$t"
     goos="${pair%/*}"; goarch="${pair#*/}"
     echo "would build $(asset_name "$goos" "$goarch") (GOOS=$goos GOARCH=$goarch${goarm:+ GOARM=$goarm} CGO_ENABLED=0)"
-    if [ "$legacy" = 1 ] && [ "$goos" = "linux" ]; then
-      echo "would copy  $(asset_name "$goos" "$goarch") to zoraxy_linux_$goarch (legacy asset name)"
-    fi
   done
   echo "would copy  crowdsec-setup.sh crowdsec-docker-compose.yml CROWDSEC-README.md"
   [ "$packages" = 0 ] || echo "would run   packaging/build_packages.sh (archives; .deb and .rpm when nfpm is installed)"
   echo "would sign  SHA256SUMS with the private key (path not shown) and verify it with $pub"
+  echo "would write the header: # dunree-release product=dunree tag=$tag build=$build upstream=$compat_version"
   [ "$refplugins" = 0 ] || echo "would build the reference plugins into $dist/plugins"
   echo "DRY RUN: nothing was built, signed or changed"
   exit 0
@@ -183,10 +208,6 @@ for t in "${targets[@]}"; do
     "${gocmd[@]}" build -trimpath -ldflags "$ldflags" -o "$out" .
   chmod 755 "$out"
   built+=("$goos/$goarch")
-  if [ "$legacy" = 1 ] && [ "$goos" = "linux" ]; then
-    cp -p "$out" "$dist/zoraxy_linux_$goarch"
-    cmp -s "$out" "$dist/zoraxy_linux_$goarch" || { echo "legacy copy of $out differs" >&2; exit 1; }
-  fi
 done
 cd "$root"
 
@@ -205,7 +226,7 @@ if [ "$packages" = 1 ]; then
 fi
 
 echo "signing"
-"${gocmd[@]}" run tools/sign_release.go -dist "$dist" -key "$key" -pub "$pub" -tag "$tag" -build "$build"
+"${gocmd[@]}" run tools/sign_release.go -dist "$dist" -key "$key" -pub "$pub" -tag "$tag" -build "$build" -upstream "$compat_version"
 
 echo "verifying with the public key"
 "${gocmd[@]}" run tools/sign_release.go -verify -dist "$dist" -pub "$pub"
@@ -219,4 +240,10 @@ fi
 echo
 echo "Release assets in $dist:"
 ls -l "$dist"
-echo "Attach all of them (dunree_* and zoraxy_* files, crowdsec-setup.sh, crowdsec-docker-compose.yml, CROWDSEC-README.md, SHA256SUMS, SHA256SUMS.sig) to the release."
+if [ "$subset_mode" = 1 ]; then
+  printf '%s\n' "This folder was built with --targets-subset (${subset}): a test build, not a complete Dunree release." \
+    "Do not publish it. A release is built without --targets-subset." >"$dist/NOT-A-COMPLETE-RELEASE.txt"
+  echo "TEST MODE (--targets-subset $subset): this is NOT a complete release. Do not publish it."
+else
+  echo "Attach all of them (dunree_* files, crowdsec-setup.sh, crowdsec-docker-compose.yml, CROWDSEC-README.md, SHA256SUMS, SHA256SUMS.sig) to the release."
+fi

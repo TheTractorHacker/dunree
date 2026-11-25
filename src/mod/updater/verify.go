@@ -87,40 +87,69 @@ func VerifyBinarySum(sums []byte, name string, got [sha256.Size]byte) error {
 }
 
 // SumsHeader is the signed release identity carried on the first line of
-// SHA256SUMS: "# zoraxy-release tag=<tag> build=<n> upstream=<ver>". Because
-// the line is inside the signed bytes, an old validly-signed SHA256SUMS cannot
-// be replayed as a newer release (the tag must match the fetched release and
-// the build number must increase).
+// SHA256SUMS:
+//
+//	# dunree-release product=dunree tag=<tag> build=<n> upstream=<ver>
+//
+// Because the line is inside the signed bytes, an old validly-signed SHA256SUMS
+// cannot be replayed as a newer release (the tag must match the fetched release
+// and the build number must increase), and a file signed for another product
+// with the same key cannot be passed off as a Dunree release (the first word
+// and product= must both say Dunree).
 type SumsHeader struct {
+	Product  string // "dunree"
 	Tag      string
 	Build    int
-	Upstream string
+	Upstream string // version of the code base the release is derived from (COMPAT_VERSION), informational
 }
 
-const sumsHeaderPrefix = "# zoraxy-release "
+const sumsHeaderPrefix = "# dunree-release "
+
+// legacySumsHeaderPrefix starts the header of the releases of the fork Dunree comes from. They
+// are signed with the same key, so the signature alone does not tell them apart: a file that
+// starts like this is recognised and refused by name. It is never written.
+const legacySumsHeaderPrefix = "# zoraxy-release " // legacy-compat
+
+// ErrOtherProduct is returned (wrapped) when a correctly signed SHA256SUMS belongs to a release
+// of another product.
+var ErrOtherProduct = errors.New("not a Dunree release")
 
 // FormatSumsHeader renders the header line (without trailing newline).
 func FormatSumsHeader(h SumsHeader) string {
-	return fmt.Sprintf("%stag=%s build=%d upstream=%s", sumsHeaderPrefix, h.Tag, h.Build, h.Upstream)
+	return fmt.Sprintf("%sproduct=%s tag=%s build=%d upstream=%s", sumsHeaderPrefix, Product, h.Tag, h.Build, h.Upstream)
 }
 
-// ParseSumsHeader reads the release header from the first line of sums.
+// ParseSumsHeader reads the release header from the first line of sums. It
+// accepts Dunree headers only.
 func ParseSumsHeader(sums []byte) (SumsHeader, error) {
 	line := string(sums)
 	if i := strings.IndexByte(line, '\n'); i >= 0 {
 		line = line[:i]
 	}
 	line = strings.TrimRight(line, "\r")
+	if strings.HasPrefix(line, legacySumsHeaderPrefix) {
+		return SumsHeader{}, fmt.Errorf("%w: SHA256SUMS is signed for a release of the earlier fork; Dunree does not install those", ErrOtherProduct)
+	}
 	if !strings.HasPrefix(line, sumsHeaderPrefix) {
 		return SumsHeader{}, errors.New("SHA256SUMS has no signed release header (old or unversioned release); refusing")
 	}
 	var h SumsHeader
+	seen := map[string]bool{}
 	for _, kv := range strings.Fields(strings.TrimPrefix(line, sumsHeaderPrefix)) {
 		k, v, ok := strings.Cut(kv, "=")
 		if !ok {
 			continue
 		}
 		switch k {
+		case "product", "tag", "build", "upstream":
+			if seen[k] {
+				return SumsHeader{}, fmt.Errorf("the signed release header names %s twice", k)
+			}
+			seen[k] = true
+		}
+		switch k {
+		case "product":
+			h.Product = v
 		case "tag":
 			h.Tag = v
 		case "upstream":
@@ -132,6 +161,9 @@ func ParseSumsHeader(sums []byte) (SumsHeader, error) {
 			}
 			h.Build = n
 		}
+	}
+	if h.Product != Product {
+		return SumsHeader{}, fmt.Errorf("%w: the signed release header says product %q", ErrOtherProduct, h.Product)
 	}
 	if h.Tag == "" || h.Build == 0 {
 		return SumsHeader{}, errors.New("incomplete signed release header (need tag and build)")

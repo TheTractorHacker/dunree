@@ -1,6 +1,6 @@
 # Keycloak and groups (OIDC)
 
-Answers upstream #775 ("how do I restrict an app to a Keycloak group, like oauth2-proxy `--allowed-group`").
+Answers Zoraxy issue #775 ("how do I restrict an app to a Keycloak group, like oauth2-proxy `--allowed-group`"). <!-- rebrand:keep -->
 Dunree side: verified with the project's fake OIDC provider tests (`mod/auth/sso/oauth2/*_test.go`:
 group allow-list, nested claim paths, header mapping). **Not tested against a real Keycloak**; the Keycloak
 screens below follow Keycloak's documentation and may differ slightly between versions.

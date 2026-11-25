@@ -419,3 +419,4 @@ The ban on {0} is lifted in CrowdSec.
 {0} supporter of Zoraxy.
 No supporters listed yet.
 Unable to load the supporters list.
+No plugins installed. Browse Add-ons to add one.

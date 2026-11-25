@@ -60,7 +60,7 @@ func (m *Manager) RunPreflight(assetSize int64) Preflight {
 
 	// Platform
 	if !platformSupported || m.cfg.GOOS != "linux" {
-		fail("platform", "Platform", fmt.Sprintf("Releases are published for Linux only (this is %s/%s).", m.cfg.GOOS, m.cfg.GOARCH))
+		fail("platform", "Platform", fmt.Sprintf("The in-app update works on Linux only (this is %s/%s). Replace the program file by hand, or use the package or installer it came from.", m.cfg.GOOS, m.cfg.GOARCH))
 	} else {
 		add("platform", "Platform", StatusOK, AssetName(m.cfg.GOOS, m.cfg.GOARCH))
 	}

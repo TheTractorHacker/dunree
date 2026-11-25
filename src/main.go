@@ -122,10 +122,10 @@ func main() {
 		ConfDir:        CONF_FOLDER,
 		DBPath:         *path_database,
 		UUIDPath:       *path_uuid,
-		CurrentVersion: SYSTEM_VERSION,
+		CurrentVersion: PRODUCT_VERSION, //compared with Dunree releases; never COMPAT_VERSION
 		InDocker:       *runningInDocker,
 		Migrate: func() error {
-			update.RunConfigUpdateInDir(CONF_FOLDER, 0, update.GetVersionIntFromVersionNumber(SYSTEM_VERSION))
+			update.RunConfigUpdateInDir(CONF_FOLDER, 0, configVersionInt())
 			return nil
 		},
 		Shutdown: func() {
@@ -143,7 +143,7 @@ func main() {
 	})
 	/* Maintaince Function Modes */
 	if *showver {
-		fmt.Println(SYSTEM_NAME + " - Version " + SYSTEM_VERSION)
+		fmt.Println(versionLine())
 		os.Exit(0)
 	}
 	if *clusterGenSecret {
@@ -190,7 +190,7 @@ func main() {
 
 	if *enableAutoUpdate {
 		fmt.Println("Checking required config update")
-		update.RunConfigUpdateInDir(CONF_FOLDER, 0, update.GetVersionIntFromVersionNumber(SYSTEM_VERSION))
+		update.RunConfigUpdateInDir(CONF_FOLDER, 0, configVersionInt())
 	}
 
 	runConfigSchemaMigration() //stamp / migrate the config folder before any module reads it (confpack.Migrate)
@@ -216,7 +216,7 @@ func main() {
 	//Create a new webmin mux, plugin mux and csrf middleware layer
 	webminPanelMux = http.NewServeMux()
 	pluginAPIMux := http.NewServeMux()
-	csrfMiddleware = newAdminCSRF([]byte(nodeUUID), webUITLSEnabled()) //dunreecompat.go: also accepts the CSRF cookie name of an upgraded install
+	csrfMiddleware = newAdminCSRF([]byte(nodeUUID), webUITLSEnabled()) //dunreecompat.go: also accepts the CSRF cookie name of an upgraded install; admincsrf.go: origin check per request (plain HTTP, HTTPS, behind a proxy)
 
 	//Prepare web UI TLS (if enabled) before modules start, as plugins need the loopback port
 	var webUICert *webuitls.CertInfo

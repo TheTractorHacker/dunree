@@ -1,6 +1,6 @@
 # Error pages and "521 Web server is down"
 
-Answers upstream #1095 (custom 521 page) and #1102 (Transmission web UI returns 521). Verified on a throw-away instance.
+Answers Zoraxy issues #1095 (custom 521 page) and #1102 (Transmission web UI returns 521). Verified on a throw-away instance. <!-- rebrand:keep -->
 
 ## What 521 means in Dunree
 
@@ -9,7 +9,7 @@ failure, endpoint disabled); **404 "host error"** when the upstream name does no
 upstream is at its concurrency limit. If the upstream itself answers with an error (500, 502...) that status is
 passed through.
 
-### Finding out why (new in this fork)
+### Finding out why
 
 The Logs page only shows `521`. Since this version the **reason is written to the system log** (once per upstream and
 reason every 30 seconds so a dead upstream cannot flood it), for example:

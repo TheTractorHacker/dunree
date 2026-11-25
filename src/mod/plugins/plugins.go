@@ -67,7 +67,7 @@ func NewPluginManager(options *ManagerOptions) *Manager {
 	// Store sources: none on a new installation; an installation that existed
 	// before keeps the source it synced from (once, see store_sources.go)
 	if state := thisManager.migrateStoreSources(); state == "existing-migrated" && options.Logger != nil {
-		options.Logger.PrintAndLog("plugin-manager", "This installation used the plugin store of the Zoraxy project before. It was kept as a store source (\"Zoraxy community store (third party)\"); remove it under System > App Store > Sources if you do not want it. Dunree itself ships without a store source.", nil) // legacy-compat
+		options.Logger.PrintAndLog("plugin-manager", "This installation used the plugin store of the Zoraxy project before. It was kept as a store source (\"Zoraxy community store (third party)\"); remove it under System > Add-ons > Sources if you do not want it. Dunree itself ships without a store source.", nil) // legacy-compat
 	}
 
 	//Check if hot reload is enabled

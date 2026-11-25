@@ -120,7 +120,7 @@ func TestDunreeSDKReadsHostHeadersUnderBothNames(t *testing.T) {
 		router.RegisterStaticCaptureHandle("/ingress", mux)
 		w := httptest.NewRecorder()
 		cr := httptest.NewRequest(http.MethodGet, "/ingress/thing", nil)
-		cr.Header.Set("X-Zoraxy-Capture", "/cap") // legacy-compat
+		cr.Header.Set("X-Zoraxy-Capture", "/cap")   // legacy-compat
 		cr.Header.Set("X-Zoraxy-Uri", "/cap/thing") // legacy-compat
 		cr.Header.Set("X-Dunree-Capture", "/admin")
 		cr.Header.Set("X-Dunree-Uri", "/admin/thing")

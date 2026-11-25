@@ -77,7 +77,7 @@ func (m *Manager) servePluginUI(plugin *Plugin, w http.ResponseWriter, r *http.R
 		ProxyDomain:     upstreamOrigin,
 		PathPrefix:      matchingPath,
 		AllowUpgrade:    true,
-		Version:         m.Options.SystemConst.DunreeVersion,
+		Version:         m.uiProxyCompatVersion(), //second token of the User-Agent sent to the plugin UI
 		UpstreamHeaders: upstreamHeaders,
 	}
 	if isolated {
@@ -104,4 +104,12 @@ func (m *Manager) servePluginUI(plugin *Plugin, w http.ResponseWriter, r *http.R
 	}
 	writePluginUIError(w, http.StatusBadGateway, "The page of the plugin could not be loaded", "Dunree could not reach the plugin. It may have stopped or it may not be listening yet.")
 
+}
+
+// uiProxyCompatVersion is the version dpcore puts in the legacy "Zoraxy/<version>" token of the // legacy-compat
+// User-Agent of requests to a plugin UI (dpcore.IdentityUserAgent; the first token already carries
+// the Dunree version). It is the version of the base, as on the proxy path (HostVersion), never
+// the Dunree version: an older plugin reading that token compares it with Zoraxy versions. // legacy-compat
+func (m *Manager) uiProxyCompatVersion() string {
+	return m.runtimeConstFor(false).ZoraxyVersion // legacy-compat
 }

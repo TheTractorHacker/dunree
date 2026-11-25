@@ -1,6 +1,6 @@
 # Certificates: creating, DNS challenge, LAN-only hosts, warnings, default site, IPv4/IPv6
 
-Answers upstream #386, #513, #543, #665, #681 and #750. Checks marked *verified* were done on a throw-away instance.
+Answers Zoraxy issues #386, #513, #543, #665, #681 and #750. Checks marked *verified* were done on a throw-away instance. <!-- rebrand:keep -->
 
 ## 1. "Cannot create a certificate" with the HTTP challenge (#386)
 
@@ -34,7 +34,7 @@ lego are built in), fill the credential fields, optionally *save as a DNS profil
 * Fill what the provider needs: for PowerDNS (`pdns`, e.g. udmedia.de) the required fields are **APIKey** and **Host**
   (the API base URL, `https://ns.example.org:8081`). **ServerName** is `localhost` (default), **APIVersion** is
   detected automatically, the rest stay empty.
-  *Fixed in this fork:* blank fields used to be sent as empty strings and overwrote those defaults (the PowerDNS API
+  *Fixed in Dunree:* blank fields used to be sent as empty strings and overwrote those defaults (the PowerDNS API
   was called as `/servers//zones`); empty fields are now ignored so the provider defaults apply
   (test `TestDNSProviderEmptyFieldsKeepProviderDefaults`).
 * Other examples: `ovh` = `APIEndpoint` (e.g. `ovh-eu`), `ApplicationKey`, `ApplicationSecret`, `ConsumerKey`;

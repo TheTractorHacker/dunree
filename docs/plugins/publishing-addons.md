@@ -150,7 +150,7 @@ Copy `site/` to the web server (`rsync -a site/ host:/var/www/addons/`). Order m
 by one: program files first, `index.json` and `index.json.sig` last and together. Serve it over https, with no
 rewriting of the files: the signature is over the exact bytes of `index.json`.
 
-Then check it from a Dunree: **System > App Store > Sources > Custom index URL**, with signature checking set to
+Then check it from a Dunree: **System > Add-ons > Sources > Custom index URL**, with signature checking set to
 `enforce`. The source must show **Signed**.
 
 To try a build without a web server, add `site/` as a **Local folder** source.

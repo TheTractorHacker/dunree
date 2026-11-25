@@ -111,7 +111,7 @@ func boolGauge(b bool) float64 {
 // state, WAF counters, certificate expiry and the cluster state.
 func collectDunreeMetrics(e *metrics.Emitter) {
 	e.Gauge("dunree_build_info", "Build information; value is always 1.", 1,
-		"version", SYSTEM_VERSION, "goversion", runtime.Version())
+		"version", PRODUCT_VERSION, "compat_version", COMPAT_VERSION, "goversion", runtime.Version())
 
 	// Upstreams (from the load balancer state)
 	if dynamicProxyRouter != nil {

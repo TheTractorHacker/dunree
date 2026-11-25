@@ -323,10 +323,10 @@
       "class": "D",
       "mode": "manual",
       "find": "zoraxy_(\\$\\(os\\)|\\$os|linux|windows|darwin|freebsd|\"\\s*\\+\\s*goos)|zoraxy-pre-update-|zoraxy_file_checksum",
-      "replace": "dunree_* primary; zoraxy_* byte-identical copies shipped in v1; readers accept both prefixes",
+      "replace": "dunree_* only for release files (no copies under the earlier names: there is no in-app path from a fork build, see docs/rebrand/plan.md 3.1 decision); backup and previous-binary readers accept both prefixes",
       "paths": ["src/Makefile", "src/mod/updater/**", "tools/build_release.sh", "tools/sign_release.go"],
       "wp": "WP7",
-      "test": "old verify.go fixture accepts Dunree SHA256SUMS; epoch ordering test"
+      "test": "mod/updater: TestForkReleasesAreNeverNewer, TestForkReleasesAreNotOffered, TestSumsHeader, TestAssetName; tools/sign_release_test.go; tools/build_release_test.sh"
     },
     {
       "id": "store-url",
@@ -483,6 +483,6 @@
     { "string": "zoraxy-captcha-session-v1|", "where": "src/mod/dynamicproxy/captcha/captcha.go", "why": "session token derivation; change = every visitor re-challenged" },
     { "string": "zoraxy-rule:", "where": "src/mod/plugins/ruleinfo.go", "why": "stable rule IDs derived from it" },
     { "string": "zoraxy-plugin-index", "where": "src/mod/plugins/store_verify.go, tools/plugin-index", "why": "signed index format id; accepted forever, dunree-plugin-index added" },
-    { "string": "# zoraxy-release ", "where": "src/mod/updater/verify.go, tools/sign_release.go", "why": "signed release header the installed updaters require; kept in v1 with product=dunree" }
+    { "string": "# zoraxy-release ", "where": "src/mod/updater/verify.go, tools/sign_release.go", "why": "signed release header of the earlier fork's releases (same signing key). Dunree writes '# dunree-release product=dunree'; this string stays in the verifier so that such a release is recognised and refused by name, and is never written" }
   ]
 }

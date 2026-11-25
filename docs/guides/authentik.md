@@ -1,6 +1,6 @@
 # Authentik forward auth: quick path and the 404 checklist
 
-Answers upstream #895 ("Forward Auth with Authentik", 404 pages from the outpost). The full guide, covering forward auth
+Answers Zoraxy issue #895 ("Forward Auth with Authentik", 404 pages from the outpost). The full guide, covering forward auth <!-- rebrand:keep -->
 and OIDC, Authentik-side settings and a verification checklist, is **[../authentik.md](../authentik.md)**. It was developed
 against fake outpost / OIDC servers (tests in `src/mod/auth/sso/forward` and `.../oauth2`), not yet against a real Authentik, so
 please run its checklist and report differences.

@@ -5,25 +5,29 @@
 //
 // Modes:
 //
-//	sign    (default)  go run tools/sign_release.go -dist DIR -key PRIVATE.pem -tag vX.Y.Z[-topic.N] -build N [-pub PUBLIC.pem]
-//	        Writes DIR/SHA256SUMS (sha256sum format, over every dunree_* and zoraxy_*
-//	        file in DIR (binaries and packages; zoraxy_* are the legacy asset names
-//	        the updater of an existing install looks for)
-//	        plus the fixed extra assets listed in extraAssets when present,
-//	        preceded by the signed header line
-//	        "# zoraxy-release tag=<tag> build=<n> upstream=<X.Y.Z>" that binds the
-//	        release tag and a monotonically increasing build number so an old signed
-//	        release cannot be replayed as a downgrade; `sha256sum -c` ignores it)
+//	sign    (default)  go run tools/sign_release.go -dist DIR -key PRIVATE.pem -tag vX.Y.Z[-beta.N] -build N [-upstream X.Y.Z] [-pub PUBLIC.pem]
+//	        Writes DIR/SHA256SUMS (sha256sum format, over every dunree_* file in
+//	        DIR (programs, archives and packages) plus the fixed extra assets
+//	        listed in extraAssets when present, preceded by the signed header line
+//	        "# dunree-release product=dunree tag=<tag> build=<n> upstream=<X.Y.Z>".
+//	        It names the product, binds the release tag and a monotonically
+//	        increasing build number, so an old signed release cannot be replayed as
+//	        a downgrade and a file signed for another product with the same key is
+//	        not taken for a Dunree release; `sha256sum -c` ignores the line.
+//	        upstream is the version of the code base the release is derived from
+//	        (COMPAT_VERSION); it is informational.)
 //	        and DIR/SHA256SUMS.sig (raw 64 byte ed25519 signature over the exact
 //	        bytes of SHA256SUMS), then re-verifies its own output.
 //	verify             go run tools/sign_release.go -verify -dist DIR -pub PUBLIC.pem
-//	        Checks the signature and every listed file's SHA-256.
+//	        Checks the signature, the header and every listed file's SHA-256.
 //	genkey             go run tools/sign_release.go -genkey PRIVATE.pem PUBLIC.pem
 //	        Creates a (throwaway or real) ed25519 key pair; refuses to overwrite.
 //
 // The private key path may also come from $DUNREE_RELEASE_KEY or, when that is
-// not set, from the older $ZORAXY_RELEASE_KEY. The key is read
-// only to sign; its contents are never printed or logged.
+// not set, from the older $ZORAXY_RELEASE_KEY; the public key path from
+// $DUNREE_RELEASE_PUB, then $ZORAXY_RELEASE_PUB. The key is the one the
+// releases were always signed with: it does not change with the product name.
+// It is read only to sign; its contents are never printed or logged.
 package main
 
 import (
@@ -55,10 +59,11 @@ const (
 )
 
 func main() {
-	dist := flag.String("dist", "", "directory containing the dunree_* (and legacy zoraxy_*) release files")
+	dist := flag.String("dist", "", "directory containing the dunree_* release files")
 	keyPath := flag.String("key", keyFromEnv(os.Getenv), "path to the ed25519 private key (PKCS#8 PEM); default $DUNREE_RELEASE_KEY, then $ZORAXY_RELEASE_KEY")
-	pubPath := flag.String("pub", "", "path to the ed25519 public key (SPKI PEM) used to verify")
-	tag := flag.String("tag", "", "release tag the signature is bound to, e.g. v3.3.6-topic.1 (must equal the GitHub release tag)")
+	pubPath := flag.String("pub", pubFromEnv(os.Getenv), "path to the ed25519 public key (SPKI PEM) used to verify; default $DUNREE_RELEASE_PUB, then $ZORAXY_RELEASE_PUB")
+	tag := flag.String("tag", "", "release tag the signature is bound to, e.g. v1.0.0-beta.1 (must equal the GitHub release tag)")
+	upstream := flag.String("upstream", "", "version of the code base the release is derived from, e.g. 3.3.6 (written into the header, informational)")
 	build := flag.Int("build", 0, "monotonically increasing build number (must exceed the previous release's)")
 	verify := flag.Bool("verify", false, "verify an existing dist directory instead of signing")
 	genkey := flag.Bool("genkey", false, "generate a key pair: -genkey PRIVATE.pem PUBLIC.pem")
@@ -75,7 +80,7 @@ func main() {
 	case *verify:
 		err = verifyDist(*dist, *pubPath)
 	default:
-		err = signDist(*dist, *keyPath, *pubPath, *tag, *build)
+		err = signDist(*dist, *keyPath, *pubPath, *tag, *upstream, *build)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -83,25 +88,34 @@ func main() {
 	}
 }
 
-// assetPrefixes are the file name prefixes of the release files that are signed.
-// "zoraxy_" stays: releases also carry the asset names an existing install asks for.
-var assetPrefixes = []string{"dunree_", "zoraxy_"}
+// product is the product name signed into the header, and headerPrefix the first word of it.
+// The in-app updater requires both (src/mod/updater/verify.go).
+const (
+	product      = "dunree"
+	headerPrefix = "# dunree-release "
+	assetPrefix  = "dunree_"
+	// legacyAssetPrefix is how the files of the earlier fork were named. A Dunree release does
+	// not carry them: no installed updater of that fork accepts a Dunree release.
+	legacyAssetPrefix = "zoraxy_" // legacy-compat
+)
 
-func isReleaseAsset(name string) bool {
-	for _, p := range assetPrefixes {
-		if strings.HasPrefix(name, p) {
-			return true
-		}
-	}
-	return false
-}
+func isReleaseAsset(name string) bool { return strings.HasPrefix(name, assetPrefix) }
 
 // keyFromEnv returns the private key path from the environment: the Dunree name first, then the older one.
 func keyFromEnv(getenv func(string) string) string {
-	if v := getenv("DUNREE_RELEASE_KEY"); v != "" {
+	return envFallback(getenv, "DUNREE_RELEASE_KEY", "ZORAXY_RELEASE_KEY")
+}
+
+// pubFromEnv returns the public key path from the environment, in the same order.
+func pubFromEnv(getenv func(string) string) string {
+	return envFallback(getenv, "DUNREE_RELEASE_PUB", "ZORAXY_RELEASE_PUB")
+}
+
+func envFallback(getenv func(string) string, name, older string) string {
+	if v := getenv(name); v != "" {
 		return v
 	}
-	return getenv("ZORAXY_RELEASE_KEY")
+	return getenv(older)
 }
 
 func generateKey(privPath, pubPath string) error {
@@ -191,12 +205,28 @@ func fileSum(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-var upstreamRe = regexp.MustCompile(`^v?(\d+\.\d+\.\d+)`)
+// tagRe is the tag form of a Dunree release: Semantic Versioning with an optional pre-release
+// part and a leading v (the same expression as in src/mod/updater/version.go, without the
+// optional v: a release tag always has it).
+var tagRe = regexp.MustCompile(`^v(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?$`)
 
-func signDist(dist, keyPath, pubPath, tag string, build int) error {
-	m := upstreamRe.FindStringSubmatch(tag)
-	if m == nil {
-		return errors.New("-tag is required and must look like v3.3.6 or v3.3.6-topic.1")
+var upstreamRe = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+
+// headerLine renders the signed first line of SHA256SUMS (without the newline).
+func headerLine(tag string, build int, upstream string) string {
+	l := fmt.Sprintf("%sproduct=%s tag=%s build=%d", headerPrefix, product, tag, build)
+	if upstream != "" {
+		l += " upstream=" + upstream
+	}
+	return l
+}
+
+func signDist(dist, keyPath, pubPath, tag, upstream string, build int) error {
+	if !tagRe.MatchString(tag) {
+		return errors.New("-tag is required and must look like v1.0.0 or v1.0.0-beta.1")
+	}
+	if upstream != "" && !upstreamRe.MatchString(upstream) {
+		return errors.New("-upstream must look like 3.3.6")
 	}
 	if build <= 0 {
 		return errors.New("-build is required and must be a positive, increasing number")
@@ -214,12 +244,15 @@ func signDist(dist, keyPath, pubPath, tag string, build int) error {
 	}
 	var names []string
 	for _, e := range ents {
+		if e.Type().IsRegular() && strings.HasPrefix(e.Name(), legacyAssetPrefix) {
+			return fmt.Errorf("%s in %s has the file name of the earlier fork; a Dunree release carries dunree_* files only, remove it", e.Name(), dist)
+		}
 		if e.Type().IsRegular() && isReleaseAsset(e.Name()) {
 			names = append(names, e.Name())
 		}
 	}
 	if len(names) == 0 {
-		return fmt.Errorf("no dunree_* or zoraxy_* files found in %s", dist)
+		return fmt.Errorf("no dunree_* files found in %s", dist)
 	}
 	for _, n := range extraAssets {
 		if st, err := os.Lstat(filepath.Join(dist, n)); err == nil && st.Mode().IsRegular() {
@@ -228,7 +261,7 @@ func signDist(dist, keyPath, pubPath, tag string, build int) error {
 	}
 	sort.Strings(names)
 	var sums strings.Builder
-	fmt.Fprintf(&sums, "# zoraxy-release tag=%s build=%d upstream=%s\n", tag, build, m[1])
+	sums.WriteString(headerLine(tag, build, upstream) + "\n")
 	for _, n := range names {
 		h, err := fileSum(filepath.Join(dist, n))
 		if err != nil {
@@ -236,7 +269,7 @@ func signDist(dist, keyPath, pubPath, tag string, build int) error {
 		}
 		fmt.Fprintf(&sums, "%s  %s\n", h, n)
 	}
-	sig := ed25519.Sign(priv, []byte(sums.String()))
+	sig := signBytes(priv, []byte(sums.String()))
 	if err := os.WriteFile(filepath.Join(dist, sumsName), []byte(sums.String()), 0o644); err != nil {
 		return err
 	}
@@ -260,6 +293,8 @@ func signDist(dist, keyPath, pubPath, tag string, build int) error {
 	fmt.Printf("signed %d files; wrote %s and %s\n", len(names), sumsName, sigName)
 	return nil
 }
+
+func signBytes(priv ed25519.PrivateKey, b []byte) []byte { return ed25519.Sign(priv, b) }
 
 func verifyDist(dist, pubPath string) error {
 	if dist == "" || pubPath == "" {
@@ -297,8 +332,8 @@ func verifyWith(dist string, pub ed25519.PublicKey) error {
 		}
 		if first {
 			first = false
-			if !strings.HasPrefix(line, "# zoraxy-release tag=") || !strings.Contains(line, " build=") {
-				return errors.New(sumsName + " has no signed release header")
+			if !validHeader(line) {
+				return errors.New(sumsName + " has no signed Dunree release header")
 			}
 			continue
 		}
@@ -318,4 +353,32 @@ func verifyWith(dist string, pub ed25519.PublicKey) error {
 		return errors.New(sumsName + " is empty")
 	}
 	return nil
+}
+
+// validHeader reports whether line is the header of a Dunree release: the Dunree first word,
+// product=dunree, a tag and a build number, each named once.
+func validHeader(line string) bool {
+	line = strings.TrimRight(line, "\r")
+	if !strings.HasPrefix(line, headerPrefix) {
+		return false
+	}
+	seen := map[string]string{}
+	for _, kv := range strings.Fields(strings.TrimPrefix(line, headerPrefix)) {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			continue
+		}
+		if _, dup := seen[k]; dup {
+			return false
+		}
+		seen[k] = v
+	}
+	n := 0
+	for _, c := range seen["build"] {
+		if c < '0' || c > '9' {
+			return false
+		}
+		n++
+	}
+	return seen["product"] == product && tagRe.MatchString(seen["tag"]) && n > 0
 }

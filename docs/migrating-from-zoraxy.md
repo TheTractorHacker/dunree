@@ -95,6 +95,22 @@ upgrade still has `Zoraxy` and `zoraxy_csrf`: <!-- rebrand:keep -->
 
 API tokens (`Authorization: Bearer zrx_...`) are not cookies and are not affected.
 
+### Admin interface behind another reverse proxy
+
+Dunree checks where a change comes from: a request that saves something must come from a page of the admin interface
+itself (the `Origin` header, or the `Referer` when there is none, against the address the request arrived for). The
+program before did not check this. Nothing changes when the admin interface is opened directly (plain HTTP or
+`-webui_tls`), from a script that sends cookie and token, or through a reverse proxy that passes the `Host` header on
+or sends `X-Forwarded-Host` (a proxy rule of Dunree, Caddy, Traefik, Apache `ProxyPass`, nginx with
+`proxy_set_header Host $host`).
+
+**What can change for you:** a proxy in front of the admin interface that replaces the `Host` header and sends no
+`X-Forwarded-Host` (nginx `proxy_pass` without `proxy_set_header`). Pages still load, but saving answers
+`403 Forbidden - origin invalid`, and the answer and the log name the fix: start Dunree with
+`-csrf_trusted_origins=<the address in the browser>`, for example `-csrf_trusted_origins=admin.example.com`, or let the
+proxy pass the `Host` header on. Logging in is such a request too: the login page only shows its general error
+("Something went wrong..."), the reason is in the log (`[csrf]`) and in the answer of the request.
+
 ## Environment variables
 
 Dunree reads `DUNREE_<NAME>`. When that is not set it reads `ZORAXY_<NAME>` and logs one line per variable: <!-- rebrand:keep -->

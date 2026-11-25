@@ -1,10 +1,10 @@
 # High CPU under load: measure first, then tune
 
-Answers upstream #770 (`wrk -c1024 -t100` pushes all cores to 80%). A Go reverse proxy that terminates TLS
+Answers Zoraxy issue #770 (`wrk -c1024 -t100` pushes all cores to 80%). A Go reverse proxy that terminates TLS <!-- rebrand:keep -->
 legitimately uses every core when 1024 clients hammer it, so "80% CPU" alone is not a bug. What matters is
 **requests per second per core** and **where the time goes**.
 
-## 1. Find where the CPU goes (new in this fork)
+## 1. Find where the CPU goes
 
 The Go profiler is now reachable below `/api/info/pprof/` (before, only an index page existed and every link on it
 returned 404). It needs the same admin login as the rest of the management API and is refused for *viewer* accounts.
@@ -48,4 +48,4 @@ That is not a benchmark, it only shows the endpoint works and how to look.
   machine**; the generator itself needs about as much CPU as the proxy.
 * Compare three targets: the backend directly, a rule with all optional features off, your real rule. The difference
   between the first two is the proxy's floor, between the last two the cost of your features.
-* Watch `zoraxy_*` Prometheus metrics (`-metrics`) for in-flight requests and upstream latency during the test.
+* Watch the `dunree_*` Prometheus metrics (`-metrics`) for in-flight requests and upstream latency during the test (each is also exported as `zoraxy_*` while *Also send legacy Zoraxy names* is on). <!-- rebrand:keep -->

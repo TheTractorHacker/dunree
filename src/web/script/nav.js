@@ -81,7 +81,7 @@
             { tag: "history", label: N_("History"), icon: "history", kw: "undo revert restore versions changes diff rollback snapshot backup" },
             { tag: "apitokens", label: N_("API Tokens"), icon: "key", kw: "api key automation bearer" },
             { tag: "plugins", label: N_("Plugin Manager"), icon: "puzzle piece", kw: "extensions addons plugins" },
-            { tag: "appstore", label: N_("App Store"), icon: "shopping bag", kw: "plugin store marketplace" },
+            { tag: "appstore", label: N_("Add-ons"), icon: "shopping bag", kw: "app store apps plugin store marketplace addon addons" },
             { tag: "utils", label: N_("Utilities"), icon: "paperclip", kw: "password change backup restore logs geoip cidr tools" },
             { tag: "settings", label: N_("Settings"), icon: "cog", kw: "language interface locale error pages preferences" },
             { tag: "kit", label: N_("UI kit"), icon: "paint brush", dev: true, href: "ui/kit.html", kw: "components design tokens styleguide" }

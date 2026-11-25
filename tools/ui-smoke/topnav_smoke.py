@@ -168,13 +168,56 @@ def topnav_ui(pg, ctx):
     pp.on("request", lambda r: hits.append(r.url) if any(x in r.url for x in ("/api/stats/glance", "/api/proxy/status", "/api/updater")) else None)
     pp.goto(base + "#qstart", wait_until="domcontentloaded", timeout=60000)
     pp.wait_for_function("document.querySelector('#zxTopStatus a') !== null", timeout=15000)
+    # The quiet window starts when the page has finished loading, not when the first pill shows: index.html loads some
+    # thirty components after the bar's first poll and reads /api/proxy/status once more when the last one is in
+    # (initRPStaste). On a slow machine those one-time requests came seconds after the pill and were counted as polling.
+    pp.wait_for_function("typeof loadingComponents !== 'undefined' && loadingComponents === 0", timeout=60000)
+    try:
+        pp.wait_for_load_state("networkidle", timeout=30000)
+    except Exception:
+        fail("topnav", "the page never became idle after loading (something keeps requesting)")
+    pp.wait_for_timeout(1000)
     n0 = len(hits)
     pp.wait_for_timeout(4000)
+    short = lambda urls: ", ".join(u.split("://", 1)[-1].split("/", 1)[-1].split("?")[0] for u in urls)
     if len(hits) - n0 > 0:
-        fail("topnav", f"the bar polls too often: {len(hits) - n0} requests in 4 s")
-    if any("/api/updater" in h and "/api/updater/badge" not in h for h in hits):
-        fail("topnav", "the bar may only read /api/updater/badge (cached, no GitHub request), nothing else of the updater")
+        fail("topnav", f"the bar polls too often: {len(hits) - n0} requests in 4 s ({short(hits[n0:])})")
+    # Nothing on a page load may read the updater except the bar's cached badge. A component that is loaded with the page
+    # but not opened (Utilities did this) must wait until its tab is opened.
+    other = [h for h in hits if "/api/updater" in h and "/api/updater/badge" not in h]
+    if other:
+        fail("topnav", f"a page load may only read /api/updater/badge (cached, no GitHub request), nothing else of the updater: {short(other)}")
+    if sum(1 for h in hits if "/api/updater/badge" in h) > 1:
+        fail("topnav", f"/api/updater/badge is read more than once on a page load: {short(hits)}")
+    # ... and the page that shows the updater settings still reads them when it is opened
+    pp.evaluate("openTabById('utils')")
+    try:
+        pp.wait_for_function("(document.getElementById('utUpChannel') || {}).textContent && /Stable|Beta/.test(document.getElementById('utUpChannel').textContent)", timeout=8000)
+    except Exception:
+        fail("topnav", "Utilities must read the updater settings when it is opened (Updates section: channel is empty)")
+    if not any("/api/updater/info" in h for h in hits):
+        fail("topnav", "opening Utilities must request /api/updater/info")
     pp.close()
+
+    # ---- recent-pinned-label: Recent and pinned entries stored before a rename show the page's current name ----
+    # The browser keeps the label a page had when it was visited or pinned; "App Store" is "Add-ons" now.
+    current["page"] = "topnav/recent-label"
+    rp = ctx.new_page()
+    rp.goto(base + "#status", wait_until="domcontentloaded", timeout=60000)
+    rp.evaluate("""() => {
+        localStorage.setItem('dunree_pinned_tabs', JSON.stringify([{tag: 'appstore', label: 'App Store', icon: 'simplistic shopping bag icon'}]));
+        localStorage.setItem('dunree_recent_tabs', JSON.stringify([{tag: 'appstore', label: 'App Store', icon: ''},
+            {tag: 'no-such-page', label: 'Old plugin page', icon: ''}]));
+    }""")
+    rp.reload(wait_until="domcontentloaded", timeout=60000)
+    rp.wait_for_function("typeof loadingComponents !== 'undefined' && loadingComponents === 0 && document.querySelector('#group-recent .recent-item')", timeout=60000)
+    labels = rp.evaluate("Array.from(document.querySelectorAll('#group-recent .recent-item-label')).map(e => e.textContent.trim())")
+    if "App Store" in labels or labels.count("Add-ons") != 1:
+        fail("topnav", f"a pinned 'App Store' entry stored before the rename must show as 'Add-ons' (once), got {labels!r}")
+    if "Old plugin page" not in labels:
+        fail("topnav", f"an entry whose page is not in the navigation map keeps its stored label, got {labels!r}")
+    rp.evaluate("() => { localStorage.removeItem('dunree_pinned_tabs'); localStorage.removeItem('dunree_recent_tabs'); }")
+    rp.close()
 
     # ---- update badge from the optional daily check: shown only while the server says the check is on ----
     current["page"] = "topnav/update-badge"

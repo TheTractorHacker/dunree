@@ -7,7 +7,8 @@ Dunree is a reverse proxy and web gateway, published by Foley IT under AGPL-3.0 
 | Document | What it covers |
 |---|---|
 | [Migrating from Zoraxy](migrating-from-zoraxy.md) | Replacing Zoraxy by Dunree on an existing install: what the first start does, cookies, environment variables, systemd, Docker, going back |
-| [Running under systemd](deploy/README.md) | The reference service unit and what each line is for |
+| [Running under systemd](deploy/README.md) | The reference service unit ([dunree.service](deploy/dunree.service)) and what each line is for |
+| [Windows](deploy/windows.md), [macOS](deploy/macos.md) | The Windows service and the launchd job; the files are in [packaging/](../packaging/README.md) |
 | [Updating](guides/updating.md) | The updater in the admin interface, manual update, rollback |
 | [Docker](../docker/README.md) | Building and running the container image |
 | [What is in sys.db](db-growth.md) | What the database holds, what makes it grow, how to compact it |
@@ -53,6 +54,7 @@ Dunree is a reverse proxy and web gateway, published by Foley IT under AGPL-3.0 
 
 | Document | What it covers |
 |---|---|
+| [Screenshots](img/screenshots/README.md) | Pictures of the admin interface with captions: first start, Status, sites and the site editor, certificates, the security pages, statistics, uptime, add-ons, Fleet, error pages, About. Made from demo data by `tools/screenshots/run.sh` |
 | [User-visible changes](ux/changes.md) | Every change of the interface and of behaviour, with known limits. The section "Dunree rebrand" lists what was renamed and what was kept. |
 | [Design v2](ux/design-v2.md) | The design rules of the interface |
 | [Component kit](ux/components.md) | The components and the navigation |
@@ -72,6 +74,13 @@ Dunree is a reverse proxy and web gateway, published by Foley IT under AGPL-3.0 
 | [Triage](triage/) | Review of issues of the Zoraxy project, kept as history |
 | [Brand](../brand/README.md) | Logo, colours and the rules for using them |
 
-## Not Dunree documentation
+## The index page
 
-The files `index.html`, `index_legacy.html`, `nginx2dunree.html`, `zorxauth.html`, `main.css`, `style.css`, `main.js` and the pictures `img/og.png`, `img/title.png`, `img/preview-*.png` and `img/zorxauth/` in this folder are the sources of the website of the Zoraxy project, taken over with the code. They are not published by Dunree and show Zoraxy. `docs/CNAME`, which named the address of that website, was removed so that publishing this folder can never claim that address.
+[index.html](index.html) is a plain static page that lists the documents above, so that this folder can be put on a web
+server as it is. It is written by `tools/docs/build_index.py` (do not edit it by hand), uses copies of the logo files of
+`brand/` (`img/brand/`) and of the licence files (`legal/`), loads nothing from another host and links nowhere outside
+this folder. `tools/docs/test_docs.py` checks that. It is not a product website: there is none yet.
+
+The sources of the website of the Zoraxy project that came with the code (its start page, the page about its sign-in <!-- rebrand:keep -->
+portal, the nginx converter page, their scripts, styles, pictures and old screenshots) were removed, and so was
+`docs/CNAME`, which named the address of that website: nothing in this folder can publish that site or claim its address.

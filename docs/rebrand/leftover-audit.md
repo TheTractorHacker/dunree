@@ -8,14 +8,14 @@ as `git grep -I -i --untracked` and every match of `zoraxy`, `imuslab`, `tobychu
 
 | Class | Matches | Files |
 |---|---:|---:|
-| attribution | 443 | 107 |
-| legacy-compat | 3013 | 384 |
-| historical | 1889 | 60 |
-| third-party | 149 | 38 |
+| attribution | 499 | 114 |
+| legacy-compat | 3094 | 402 |
+| historical | 1737 | 54 |
+| third-party | 152 | 38 |
 | LEFTOVER | 0 | 0 |
-| **total** | **5494** | **515** |
+| **total** | **5482** | **531** |
 
-By word: `aroz` 241, `imuslab` 173, `tobychui` 453, `zoraxy` 4627.
+By word: `aroz` 210, `imuslab` 189, `tobychui` 447, `zoraxy` 4636.
 
 Classes: **attribution** credits the upstream project and its authors; **legacy-compat** is a name an existing
 install, plugin, peer, monitor or signed file depends on, kept next to the Dunree name and tested; **historical** is
@@ -25,10 +25,11 @@ changelog, triage and records; **third-party** names things other people own; **
 
 | Group | Matches | Files | Justification |
 |---|---:|---:|---|
-| `attribution-lines` | 217 | 65 | the line names tobychui or imuslab: a credit ('based on Zoraxy by tobychui and imuslab', 'Added in Zoraxy vX by tobychui') |
+| `attribution-lines` | 228 | 69 | the line names tobychui or imuslab: a credit ('based on Zoraxy by tobychui and imuslab', 'Added in Zoraxy vX by tobychui') |
 | `upstream-example-plugins` | 73 | 20 | author, contact and ID fields of the example plugins the Zoraxy authors wrote (introspect fixtures, example code, plugin docs) |
+| `legal-files` | 57 | 3 | licence text, never edited |
 | `readme` | 52 | 4 | 'Based on Zoraxy v3.3.6', licence and attribution section, migration section |
-| `legal-files` | 38 | 2 | licence text, never edited |
+| `docs-index` | 26 | 2 | Dunree documentation index: 'based on Zoraxy by tobychui and imuslab', link to the migration guide |
 | `brand-package` | 22 | 2 | the one place the product's credit line, upstream name and URL are defined |
 | `upstream-supporters` | 19 | 4 | people who supported the Zoraxy project |
 | `copyright-headers` | 14 | 14 | upstream copyright and Author: headers, kept in the files they belong to |
@@ -39,43 +40,44 @@ changelog, triage and records; **third-party** names things other people own; **
 
 | Group | Matches | Files | Why it stays | Test |
 |---|---:|---:|---|---|
-| `marked-legacy-compat` | 865 | 104 | a line marked `// legacy-compat`: compat code or a test that asserts the old name on purpose | the lines carry `// legacy-compat`; they are the compat code and its tests: mod/wirecompat, mod/legacycompat, mod/plugins/dunree_wire_test.go, sdk_dunree_test.go, cluster/dynamicproxy/notify dunree_wire_test.go |
-| `rebrand-tooling` | 414 | 7 | rule tables of the rename itself; tested by tools/rebrand/test_rename.py | tools/rebrand/test_rename.py |
+| `marked-legacy-compat` | 892 | 112 | a line marked `// legacy-compat`: compat code or a test that asserts the old name on purpose | the lines carry `// legacy-compat`; they are the compat code and its tests: mod/wirecompat, mod/legacycompat, mod/plugins/dunree_wire_test.go, sdk_dunree_test.go, cluster/dynamicproxy/notify dunree_wire_test.go |
+| `rebrand-tooling` | 411 | 7 | rule tables of the rename itself; tested by tools/rebrand/test_rename.py | tools/rebrand/test_rename.py |
+| `keep-marked-docs` | 272 | 40 | documentation line marked `rebrand:keep`: explains a legacy name, the migration, or the upstream store | documentation of a legacy surface (no code); the surface itself is tested under its own group |
 | `old-sdk-fixtures` | 265 | 26 | frozen copies of the Zoraxy plugin SDK 1.0.0/1.1.0/1.2.0; old plugins are built from them in the contract tests | mod/plugins/sdk_dunree_test.go and phase2_contract_test.go build plugins from testdata/sdk-1.x |
-| `keep-marked-docs` | 211 | 19 | documentation line marked `rebrand:keep`: explains a legacy name, the migration, or the upstream store | documentation of a legacy surface (no code); the surface itself is tested under its own group |
 | `plugin-headers` | 120 | 57 | a plugin may not set the legacy invoke-token header either | mod/plugins/dunree_wire_test.go, hooks_test.go |
 | `brand-tests` | 105 | 2 | asserts the credit to tobychui/imuslab and the absence of the old name in the UI | src/brandweb_test.go, tools/ui-smoke/brand_smoke.py (they are the tests) |
 | `csrf-meta` | 89 | 70 | row 16 / WP4, WP5: meta tag name third-party plugin UIs read | src/brandweb_test.go (both meta tags), mod/plugins/phase2_store_test.go |
 | `plugin-fields` | 79 | 25 | row 23 / WP5: configure payload fields the old SDK decodes | mod/plugins/sdk_dunree_test.go, dunree_wire_test.go (configure payload golden test) |
 | `migration` | 74 | 6 | how an existing Zoraxy install becomes Dunree | mod/legacycompat/migratescript_test.go, migratescript_linux_test.go |
 | `plugin-ids` | 72 | 25 | row 22: plugin IDs are persisted (enabled state, tags, permissions, data folders) | persisted IDs of installed plugins; mod/plugins/phase3_reference_test.go loads the fork.zoraxy.ref.* examples by ID |
-| `binary-name` | 55 | 23 | row 37 / WP8: an install updated in place keeps the file name zoraxy | mod/instance/doctor_linux_test.go (IsDunreeName), unitname_test.go, startsh_test.go |
-| `release-assets` | 52 | 15 | row 34 / WP7: asset names the installed updaters download | mod/updater/version_verify_test.go, flow_test.go, tools/sign_release_test.go, tools/build_release_test.sh |
+| `docs-tests` | 55 | 1 | tests of the docs, deploy and docker files: asserts the attribution, the kept container label and paths, and that no upstream address is a default |  |
+| `install-paths` | 53 | 18 | row 39 / WP8: paths of existing installs and container volumes | packaging/test.sh, docker/test_entrypoint.py, mod/legacycompat/migratescript_test.go |
+| `binary-name` | 52 | 20 | row 37 / WP8: an install updated in place keeps the file name zoraxy | mod/instance/doctor_linux_test.go (IsDunreeName), unitname_test.go, startsh_test.go |
 | `legacycompat-package` | 51 | 6 | the code that reads the old names on existing installs, and its tests | its own *_test.go |
-| `install-paths` | 50 | 17 | row 39 / WP8: paths of existing installs and container volumes | packaging/test.sh, docker/test_entrypoint.py, mod/legacycompat/migratescript_test.go |
-| `release-asset-globs` | 45 | 30 | rows 34, 37 / WP7, WP8: asset name patterns and the executable-name prefixes IsProductName must keep matching | mod/instance/doctor_linux_test.go (IsDunreeName), mod/metrics/legacy_names_test.go, tools/sign_release_test.go |
 | `wirecompat-package` | 42 | 4 | the code that emits the old wire names while legacy_emit is ON, and its tests | mod/wirecompat/wirecompat_test.go, values_test.go |
-| `systemd-unit` | 40 | 13 | row 38 / WP8: unit name on existing installs; checks must accept both | mod/instance/parse_test.go, holder_test.go, startsh_test.go, packaging/test.sh |
-| `well-known-paths` | 34 | 17 | row 20 / WP3: health checks and custom captcha templates call the old prefix | mod/dynamicproxy/dunree_wire_test.go (both prefixes answer), mod/cluster/dunree_wire_test.go |
-| `frozen-strings` | 30 | 21 | key-derivation salts, rule-ID seed and signed-format identifiers (plan row 47): changing one breaks sessions, clusters, rule IDs or signatures | tools/rebrand/test_rename.py Repo.test_frozen_strings_still_in_the_source |
-| `env-input-vars` | 30 | 12 | rows 29-30 / WP3, WP7: variables set in users' unit files and release machines | src/wirecompatapi_test.go (metrics token), mod/legacycompat/env_test.go, tools/sign_release_test.go |
+| `systemd-unit` | 39 | 12 | row 38 / WP8: unit name on existing installs; checks must accept both | mod/instance/parse_test.go, holder_test.go, startsh_test.go, packaging/test.sh |
+| `well-known-paths` | 35 | 18 | row 20 / WP3: health checks and custom captcha templates call the old prefix | mod/dynamicproxy/dunree_wire_test.go (both prefixes answer), mod/cluster/dunree_wire_test.go |
+| `release-asset-globs` | 35 | 25 | rows 34, 37 / WP7, WP8: asset name patterns and the executable-name prefixes IsProductName must keep matching | mod/instance/doctor_linux_test.go (IsDunreeName), mod/metrics/legacy_names_test.go, tools/sign_release_test.go |
+| `env-input-vars` | 34 | 12 | rows 29-30 / WP3, WP7: variables set in users' unit files and release machines | src/wirecompatapi_test.go (metrics token), mod/legacycompat/env_test.go, tools/sign_release_test.go |
 | `public-headers` | 29 | 14 | rows 11, 17 / WP3: visitors, monitors and webhook receivers match these | mod/dynamicproxy/dunree_wire_test.go, mod/notify/dunree_wire_test.go |
 | `binary-and-unit-names` | 28 | 7 | an install updated in place keeps the file name zoraxy and the unit zoraxy.service (plan rows 37, 38); the doctor must still recognise it | mod/instance/unitname_test.go, doctor_linux_test.go, holder_test.go, startsh_test.go |
 | `headers-wildcard` | 26 | 13 | rows 11-18: prose and filters that mean "all the legacy headers" | prose naming the legacy headers; headers tested under public-headers / plugin-headers |
 | `headers-any` | 26 | 22 | rows 11-18: any other legacy header name; nothing with this prefix is renamed blindly | mod/plugins/dunree_wire_test.go, mod/wirecompat/wirecompat_test.go |
-| `updater-previous` | 20 | 8 | row 33 / WP7: previous-binary copies an installed updater left behind | mod/plugins/phase2_store_test.go, phase2_store_review_test.go; mod/updater/flow_test.go |
+| `frozen-strings` | 20 | 15 | key-derivation salts, rule-ID seed and signed-format identifiers (plan row 47): changing one breaks sessions, clusters, rule IDs or signatures | tools/rebrand/test_rename.py Repo.test_frozen_strings_still_in_the_source |
+| `updater-previous` | 18 | 7 | row 33 / WP7: previous-binary copies an installed updater left behind | mod/plugins/phase2_store_test.go, phase2_store_review_test.go; mod/updater/flow_test.go |
 | `user-agents` | 15 | 15 | the inherited User-Agent token, appended while legacy_emit is ON | mod/wirecompat/values_test.go (helper and source scan) |
+| `docker-label` | 15 | 5 | row 40 / WP8: label by which dockerux finds the running container | packaging/test.sh; tools/rebrand/test_rename.py Repo.test_legacy_surfaces_still_in_the_source |
 | `upgrade-notes` | 13 | 12 | a line that explains (or implements) the old name that an install upgraded from Zoraxy keeps, next to the Dunree name | explanatory lines next to the code they describe; tested under the group of that code |
+| `systemd-legacy-unit` | 13 | 1 | the unit file of existing installs, documented as legacy (plan row 38) | documentation file for existing installs; packaging/test.sh lints the Dunree unit |
 | `plugin-scope-units` | 13 | 4 | row 37 / WP8: systemd scope names of running plugins, matched by pattern at stop and on the next start | mod/plugins/fault_review_linux_test.go; tools/rebrand/test_rename.py (pinned) |
 | `headers-lowercase` | 13 | 2 | rows 11-18: same headers written in lower case (JS fetch, tests, docs) | mod/dynamicproxy/dunree_wire_test.go |
-| `docker-label` | 12 | 4 | row 40 / WP8: label by which dockerux finds the running container | packaging/test.sh; tools/rebrand/test_rename.py Repo.test_legacy_surfaces_still_in_the_source |
 | `ui-events` | 12 | 5 | row 16 / WP4: DOM event names and the postMessage field that plugin pages in iframes can listen to | tools/rebrand/test_rename.py (pinned); plugin pages listen to these events |
-| `systemd-legacy-unit` | 9 | 1 | the unit file of existing installs, documented as legacy (plan row 38) | documentation file for existing installs; packaging/test.sh lints the Dunree unit |
 | `release-key-dirs` | 8 | 5 | row 30 / WP7: where the signing keys live on the release machine | tools/sign_release_test.go |
-| `update-repo` | 7 | 5 | row 35 / WP7: release source until the Dunree repository has releases | policy variable UPDATE_REPO (deliberate until a Dunree repository has releases); mod/updater tests |
+| `release-assets` | 8 | 6 | row 34 / WP7: asset names the installed updaters download | mod/updater/version_verify_test.go, flow_test.go, tools/sign_release_test.go, tools/build_release_test.sh |
 | `confpack-field` | 7 | 5 | row 6 / WP2: field in exported configuration packs | src/confbackup_test.go |
 | `identity-values` | 6 | 3 | proves the X-Forwarded-Server value of older builds no longer decides access | mod/dynamicproxy/dpcore/identity_test.go, mod/auth/sso/zorxauth/authmethod_dunree_test.go, adminallow_test.go |
 | `build-outputs` | 5 | 3 | old build output names stay ignored so an old checkout's binaries are never committed | ignore patterns and cache cleanup only |
+| `update-repo` | 5 | 5 | row 35 / WP7: release source until the Dunree repository has releases | policy variable UPDATE_REPO (deliberate until a Dunree repository has releases); mod/updater tests |
 | `crowdsec-helper-legacy` | 5 | 3 | the helper keeps the acquisition file and key name an earlier run created (test_crowdsec_setup.py) | contrib/crowdsec/test_crowdsec_setup.py |
 | `format-ids` | 5 | 4 | rows 18, 6 (missed by the plan): format identifiers inside cluster snapshots, exported configuration packs and history diffs; old files and older peers carry them | tools/rebrand/test_rename.py (pinned); confbackup_test.go, cluster tests read them |
 | `updater-backups` | 4 | 4 | row 33 / WP7: backups already on disk must stay listable and restorable | mod/updater/backupname_test.go |
@@ -84,12 +86,11 @@ changelog, triage and records; **third-party** names things other people own; **
 | `crowdsec-scenario` | 3 | 3 | row 45 / WP3: decisions already in the LAPI carry this scenario | mod/crowdsec/scenario_dunree_test.go, admin_test.go |
 | `env-hook-vars` | 3 | 2 | row 28 / WP3: environment of user-written hook commands | mod/notify/hookenv_dunree_test.go |
 | `cookies` | 2 | 2 | row 21 / WP2: cookies already in visitors' and admins' browsers | mod/dynamicproxy/captcha/cookie_dunree_test.go, challenge_cookie_dunree_test.go, mod/legacycompat/csrfcookie_test.go |
-| `mdns-hostname` | 2 | 2 | row 41 / WP3: documented .local host name | src/mdnsnames_test.go |
 | `cluster-headers` | 2 | 1 | row 18 / WP3: mixed-version clusters during a rolling upgrade | mod/cluster/dunree_wire_test.go |
 | `container-legacy-layout` | 1 | 1 | the image answers on /opt/zoraxy and zoraxy for containers created from the older image (test_entrypoint.py) | docker/test_entrypoint.py, packaging/test.sh |
 | `plugin-contract-doc` | 1 | 1 | section 10 of the plugin contract documents both sets of names | documentation; the contract is tested by mod/plugins/phase2_contract_test.go |
 | `metrics-realm` | 1 | 1 | row 27 / WP3: Basic-auth realm of the metrics endpoint | mod/metrics/legacy_names_test.go |
-| `admin-cookie` | 1 | 1 | rows 5-6 / WP2: SYSTEM_NAME is also the admin session cookie name; renaming it logs every admin out | mod/auth/legacy_session_test.go |
+| `mdns-hostname` | 1 | 1 | row 41 / WP3: documented .local host name | src/mdnsnames_test.go |
 | `frozen-crypto` | 1 | 1 | key-derivation fallback label of sealed AI-assist secrets; changing it makes stored keys unreadable | tools/rebrand/test_rename.py Repo.test_legacy_surfaces_still_in_the_source |
 | `metrics` | 1 | 1 | metrics legacy-name test | mod/metrics/legacy_names_test.go |
 | `sdk-fixture-paths` | 1 | 1 | row 22 / WP5: frozen old-SDK fixtures and the fixture plugin built against them | mod/plugins/sdk_dunree_test.go |
@@ -100,10 +101,10 @@ changelog, triage and records; **third-party** names things other people own; **
 |---|---:|---:|---|
 | `changelog` | 1030 | 18 | release history, kept as written |
 | `triage` | 358 | 10 | triage of upstream issues, references by number |
-| `rebrand-records` | 255 | 1 | plan and audit of this rename |
-| `upstream-website` | 162 | 6 | explains which files in docs/ are the old Zoraxy website |
+| `rebrand-records` | 256 | 1 | plan and audit of this rename |
 | `verification-records` | 49 | 8 | recorded test runs from before the rename |
-| `upstream-history` | 21 | 15 | 'Original implementation: tobychui/zoraxy#NNN' |
+| `upstream-history` | 20 | 14 | 'Original implementation: tobychui/zoraxy#NNN' |
+| `upstream-website` | 10 | 1 | documentation index: credits, the migration guide, and the note that the old Zoraxy website sources were removed |
 | `roadmap` | 8 | 2 | compatibility goals with Zoraxy builds and plugins |
 | `ux-changelog` | 6 | 1 | change log of the admin interface; earlier entries stay as written |
 
@@ -114,12 +115,12 @@ changelog, triage and records; **third-party** names things other people own; **
 | `upstream-guard` | 62 | 4 | the test that fails when product code calls an upstream host; it has to name those hosts |
 | `upstream-links` | 34 | 13 | links a person clicks to upstream's repository or site, in attribution context or in the unpublished upstream example data; the guard test proves none is fetched |
 | `third-party-plugins` | 16 | 5 | manifests of real third-party plugins, used as fixtures |
-| `third-party-notices` | 10 | 2 | licences of bundled components |
+| `third-party-notices` | 15 | 3 | licences of bundled components |
 | `zoraxy-community-store` | 6 | 4 | store source kind of the Zoraxy community store (a third-party source on migrated installs) |
 | `third-party-names` | 6 | 3 | names of other people's things (a third-party plugin, upstream's wiki and repository) |
 | `upstream-website` | 6 | 5 | upstream's other projects |
-| `upstream-image` | 5 | 2 | upstream's Docker image named as someone else's (never as a default) |
 | `coincidental-bytes` | 4 | 4 | checksums of third-party modules; the letters occur inside a hash |
+| `upstream-image` | 3 | 1 | upstream's Docker image named as someone else's (never as a default) |
 
 ## LEFTOVER
 

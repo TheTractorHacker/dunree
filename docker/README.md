@@ -1,12 +1,26 @@
-# Dunree Docker
+# Dunree in a container
 
-The image name is a variable: Dunree has no default registry yet, and the image of the Zoraxy project is a different <!-- rebrand:keep -->
-product. Build the image yourself (see **Building** below, or `packaging/container/Dockerfile` for the multi-architecture
-image) and put its name in `DUNREE_IMAGE` (Compose) or in place of `<your-dunree-image>` (Docker run).
+Dunree is a reverse proxy and web gateway, published by Foley IT under AGPL-3.0 and based on Zoraxy v3.3.6 by tobychui
+and imuslab (see `NOTICE`).
+
+**There is no published Dunree image.** No registry is set up, so every file here takes the image name from you:
+`DUNREE_IMAGE` in the compose files, `<your-dunree-image>` in the commands below. Build the image first (see
+[Building](#building)); this page calls the result `dunree:local`.
+The image of the Zoraxy project on Docker Hub is a different product and is never a default here. <!-- rebrand:keep -->
+
+| File | What it is |
+|---|---|
+| `Dockerfile` | the image for one architecture, built from this folder |
+| `../packaging/container/Dockerfile` | the same image for several architectures (what a release would publish), built from the repository root |
+| `docker-compose.yml` | Dunree alone; the image is `DUNREE_IMAGE` |
+| `docker-compose.socket-proxy.yml` | optional addition: a read-only Docker socket proxy for the container picker |
+| `docker-compose-test.yaml`, `flake.nix` | a test container (`test-dunree`) for people who work on the image |
+| `entrypoint.py`, `test_entrypoint.py` | turns the environment variables into start parameters; its test |
 
 Coming from a container of the Zoraxy image: stop it and mount the same two folders. The Dunree image also answers on <!-- rebrand:keep -->
 the old paths `/opt/zoraxy/config/` and `/opt/zoraxy/plugin/` (they are links to `/opt/dunree`), so an existing
-compose file only needs its `image:` line changed. <!-- rebrand:keep -->
+compose file only needs its `image:` line changed. The first Dunree start keeps a copy of the configuration before it <!-- rebrand:keep -->
+writes anything; see [Migrating from Zoraxy](../docs/migrating-from-zoraxy.md#docker). <!-- rebrand:keep -->
 
 ## Usage
 
@@ -14,7 +28,7 @@ If you are attempting to access your service from outside your network, make sur
 
 In the examples below, make sure to update `/path/to/dunree/config/`. If a path is not provided, an anonymous Docker volume will be created instead to prevent data loss, but it is recommended to store the data at a defined host location or a named Docker volume.
 
-Once setup, access the webui at `http://<host-ip>:8000` to configure Dunree. Change the port in the URL if you changed the management port.
+Once set up, open the admin interface at `http://<host-ip>:8000` to configure Dunree. Change the port in the URL if you changed the management port. The examples publish port 8000 on every address of the host, as the image always did; `127.0.0.1:8000:8000` publishes it on the host only (`packaging/container/compose.yaml` does that).
 
 ### Docker Run
 
@@ -22,6 +36,7 @@ Once setup, access the webui at `http://<host-ip>:8000` to configure Dunree. Cha
 docker run -d \
   --name dunree \
   --restart unless-stopped \
+  --stop-timeout 30 \
   --add-host=host.docker.internal:host-gateway \
   -p 80:80 \
   -p 443:443 \
@@ -42,6 +57,7 @@ services:
     image: ${DUNREE_IMAGE:?set DUNREE_IMAGE}
     container_name: dunree
     restart: unless-stopped
+    stop_grace_period: 30s
     ports:
       - 80:80
       - 443:443
@@ -70,8 +86,24 @@ services:
 
 | Volume | Details |
 |:-|:-|
-| `/opt/dunree/config/` | Dunree configuration. |
-| `/opt/dunree/plugin/` | Dunree plugins. |
+| `/opt/dunree/config/` | Everything Dunree keeps: `conf/`, `sys.db`, `sys.uuid`, logs, the static web root. Declared as a volume in the image. |
+| `/opt/dunree/plugin/` | Installed plugins (add-ons). |
+
+`/opt/zoraxy/config/` and `/opt/zoraxy/plugin/` are the same folders under their older names (links inside the image).
+
+### Health check, stopping, labels
+
+* **Health check.** The image reports healthy when the admin port (`PORT`) accepts a TCP connection: checked every
+  15 s, unhealthy after three failures. It is a TCP check so that it works with and without `-webui_tls`. It does not
+  prove that ports 80 and 443 are bound; for a load balancer or an outside monitor use `GET /.dunree/health` on a
+  proxy port (the older path `/.zoraxy/health` answers the same way).
+* **Stopping.** Dunree needs up to 28 s to stop cleanly (requests are drained, statistics saved). Docker waits 10 s
+  by default and then kills the container: give it 30 s (`stop_grace_period: 30s`, `--stop-timeout 30`).
+* **Labels.** The image carries `ie.foleyit.dunree.container-identifier="Dunree"` and, unchanged from the image it
+  replaces, `com.imuslab.zoraxy.container-identifier="Zoraxy"`. The container picker of the admin interface
+  recognises Dunree's own container by the second one, so do not remove or change it. The image also has the usual
+  `org.opencontainers.image.*` labels (title, vendor, licence) and `ie.foleyit.dunree.based-on` (the attribution).
+* **Licence files** are in the image under `/usr/share/doc/dunree/`.
 
 ### Docker socket
 
@@ -95,7 +127,7 @@ Legacy (not recommended): to restore the previous behaviour, add the mount back 
 
 ### Environment
 
-Variables are the same as the start parameters of the program (`dunree -h` lists them).
+`entrypoint.py` turns these variables into the start parameters of the same name (`dunree -h` lists every parameter; a parameter without a variable here cannot be set through the environment).
 
 | Variable | Default | Details |
 |:-|:-|:-|
@@ -107,7 +139,7 @@ Variables are the same as the start parameters of the program (`dunree -h` lists
 | `ENABLELOG` | `true` (Boolean) | Enable system wide logging, set to false for writing log to STDOUT only. |
 | `FASTGEOIP` | `false`  (Boolean) | Enable high speed geoip lookup, requires 1GB extra memory (Not recommend for low end devices). |
 | `MDNS` | `true` (Boolean) | Enable mDNS scanner and transponder. |
-| `MDNSNAME` | `''` (String) | mDNS name, leave empty to use the default (`zoraxy_{node-uuid}.local`, the name existing installs are known by). |
+| `MDNSNAME` | `''` (String) | mDNS name, leave empty to use the default (`dunree_{node-uuid}.local`; `zoraxy_{node-uuid}.local`, the name existing installs are known by, is announced as well while *Also send legacy Zoraxy names* is on). | <!-- rebrand:keep -->
 | `NOAUTH` | `false` (Boolean) | Disable authentication for management interface. |
 | `PLUGIN` | `/opt/dunree/plugin/` (String) | Set the path for Dunree plugins. Only change this if you know what you are doing. |
 | `PORT` | `8000` (Integer) | Management web interface listening port |
@@ -119,7 +151,7 @@ Variables are the same as the start parameters of the program (`dunree -h` lists
 | `ZEROTIER` | `false` (Boolean) | Enable ZeroTier functionality for GAN. |
 
 > [!IMPORTANT]
-> Contrary to the Dunree README, Docker usage of the port flag should NOT include the colon. Ex: `-e PORT="8000"` for Docker run and `PORT: "8000"` for Docker compose.
+> Unlike the `-port` start parameter (`-port=:8000`), the `PORT` variable is the number only, without the colon: `-e PORT="8000"` for Docker run and `PORT: "8000"` for Docker Compose.
 
 ### ZeroTier
 
@@ -138,17 +170,55 @@ Or for Docker Compose:
     ZEROTIER: "true"
 ```
 
-### Plugins
+### Plugins and add-ons
 
-Dunree includes a (experimental) store to download and use official plugins right from inside Dunree, no preparation required.
-For those looking to use custom plugins, build your plugins and place them inside the volume `/path/to/dunree/plugin/:/opt/dunree/plugin/` (Adjust to your actual install location).
+Dunree ships **without an add-on store** and contacts none until an administrator adds a source under
+*System > Add-ons* (`docs/plugins/addon-store.md`). Installed plugins live in the plugin volume
+(`/path/to/dunree/plugin/:/opt/dunree/plugin/`); to use a plugin you built yourself, put its folder there.
+A *Local folder* source is read inside the container, so it has to be mounted too. Plugins must be built for
+Linux and for the architecture of the image.
 
-### Building
+The in-app updater is switched off in a container: update by building the image again and recreating the
+container (`docs/guides/updating.md`, section C).
 
-To build the Docker image:
-  - Check out the repository/branch.
-  - Copy the Dunree `src/` directory into the `docker/` (here) directory.
-  - Run the build command with `docker build -t dunree_build .`
-  - You can now use the image `dunree_build`
-    - If you wish to change the image tag name, then modify `dunree_build` in the previous step and then build again.
+## Building
 
+One architecture, from this folder:
+
+```
+cp -r ../src ./src
+docker build -t dunree:local .
+rm -rf ./src
+```
+
+Several architectures, from the repository root (the Go program is cross-compiled on the build machine, so the extra
+architectures need no emulation; ZeroTier is compiled under emulation and is slow, `--build-arg WITH_ZEROTIER=false`
+leaves it out):
+
+```
+docker buildx build -f packaging/container/Dockerfile --platform linux/amd64,linux/arm64 -t dunree:local .
+```
+
+A multi-architecture result cannot be loaded into the local image store of the classic Docker engine: build one
+platform with `--load`, or push to a registry with `--push -t <registry>/dunree:<version>`. `linux/arm/v7`,
+`linux/arm/v6`, `linux/386` and `linux/riscv64` build the same way where the base images exist for them. The
+workflow `.github/workflows/docker.yml` builds this file and pushes only when the repository variable
+`DOCKER_IMAGE` and registry credentials are set; none are, so nothing is published.
+
+Then run it: `DUNREE_IMAGE=dunree:local docker compose up -d` (after putting your folders in `docker-compose.yml`).
+
+## Tests
+
+```
+python3 docker/test_entrypoint.py     # both layouts of the image, old and new
+python3 tools/docs/test_docs.py       # this folder: image name is a variable, labels, paths, health check, no socket mount
+packaging/test.sh                     # the multi-architecture Dockerfile and its compose files
+```
+
+## Known limits
+
+* No image was built or run for this page: the machine it was written on has no Docker. The files are checked as
+  text and YAML only.
+* No published image, no registry, no signed image, no vulnerability scan of a built image.
+* The health check only looks at the admin port.
+* ZeroTier is compiled from a pinned old version (1.10.6) because newer ones do not build with this recipe.

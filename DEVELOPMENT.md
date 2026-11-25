@@ -1,58 +1,91 @@
-# Development notes (fork)
+# Dunree development notes
 
-This file collects fork-specific developer documentation. Dunree is licensed under
-the AGPL-3.0 (see `LICENSE`); all source headers and notices stay intact.
+Developer documentation of Dunree, section by feature. Dunree is published by Foley IT under AGPL-3.0 (see
+`LICENSE`) and is based on Zoraxy v3.3.6 by tobychui and imuslab (see `NOTICE`); source headers and notices of the
+code that came from there stay intact.
+
+Names used in this file:
+
+* The program is `dunree`, the systemd unit `dunree.service`, a tarball install lives in `/opt/dunree`
+  (`docs/deploy/`, `packaging/`). An install that was upgraded in place keeps the names it had; where that matters
+  the section says so, and `docs/migrating-from-zoraxy.md` has the whole list. <!-- rebrand:keep -->
+* The Go module is `github.com/foleyit/dunree` (a placeholder, one variable in `tools/rebrand/policy.json`).
+  Run `go` from `src/`.
+* Version: the Dunree version (`PRODUCT_VERSION`, shown to users) and the version of the code base it is derived
+  from (`COMPAT_VERSION`, 3.3.6: drives the configuration migrations and what plugins built with the older SDK are told).
+* Sections written before the rename say "upstream #N" for issue N of the Zoraxy project and "#N" or "fork #N" for <!-- rebrand:keep -->
+  issues of the fork that became Dunree. Branch names in headings (`feat/...`) are the branches the work was done on.
+* What changed for users, with known limits: `docs/ux/changes.md`. What was renamed and what was kept on purpose:
+  `docs/rebrand/plan.md`, `docs/rebrand/leftover-audit.md`.
 
 ## Updating / releasing
 
-The admin panel has an **Update** page (System menu, "Others" group, `src/web/components/updater.html`,
+The admin panel has an **Update** page (*System > Update*, `src/web/components/updater.html`,
 backend in `src/mod/updater`). It updates the running binary from signed GitHub releases of
-`TheTractorHacker/zoraxy` (override with the `-update_repo owner/name` flag) and can run the
-config/database migrations on demand.
+the repository named by the policy variable `UPDATE_REPO` (today `TheTractorHacker/zoraxy`, the release source of the
+fork that became Dunree; it stays until a Dunree repository has releases; override with the `-update_repo owner/name`
+flag) and can run the config/database migrations on demand.
 
 Properties worth knowing:
 
-* **No network traffic on its own.** Releases are only queried when an admin opens the Update page or
-  presses *Check for updates*. There is **no automatic update**. (A future "auto update" setting, if it is ever
-  added, must default to off; it does not exist today.)
-* **Channels:** `stable` (default; non-prerelease GitHub releases) and `beta` (also includes pre-releases).
-* **Forward only.** A release is offered only if it sorts strictly after the running build.
-  Tags look like `v<upstream>[-rc<N>][-<topic>].<build>`, e.g. `v3.3.5-rc5-grpcfix.1`. Because the topic is free
-  text, ordering is: upstream `major.minor.patch`, then the GitHub *published-at* time, then the trailing build
-  number. The running build's identity is recorded in `conf/updater/installed.json` when the updater installs a
-  binary (trusted only while the SHA-256 of the running executable still matches); a binary that was not installed
-  by the updater is treated as `SYSTEM_VERSION` with an unknown date, i.e. any dated release of the same or a
-  newer upstream version is offered. **Make sure each new release has a later published-at time than the previous
-  one.** Rolling back to the saved previous binary is a separate, explicit action.
+* **No network traffic on its own by default.** Releases are only queried when an admin opens the Update page or
+  presses *Check for updates*. The optional daily check (Update page, off by default) asks once a day and only fills
+  the badge in the top bar and a notification. There is **no automatic update**.
+* **Channels:** `stable` (default; final releases only: no GitHub pre-release flag and no pre-release part in the
+  tag) and `beta` (also includes pre-releases).
+* **Two version numbers.** `PRODUCT_VERSION` (`mod/brand` `Version`, today `1.0.0-beta.1`) is the Dunree version:
+  `-version`, the start-up log, About, the API and the updater use it. `COMPAT_VERSION` (`mod/brand`
+  `BasedOnVersion`, `3.3.6`) is the version of the code base Dunree is derived from; it feeds only the config
+  migrations (`conf/version`, 336), the version field of configuration backups and what plugins built with the
+  earlier SDK are told. `src/productversion.go` lists which is used where; `TestNoUndecidedVersionConstant` fails
+  when a new use appears.
+* **Forward only, Dunree releases only.** Tags are Semantic Versioning tags, `v<major>.<minor>.<patch>[-<pre>]`:
+  `v1.0.0-beta.1` < `v1.0.0-beta.2` < `v1.0.0-beta.10` < `v1.0.0-rc.1` < `v1.0.0` < `v1.0.1`. A release is offered
+  only if it sorts strictly after the running build by that order alone (the published-at time is not used). The
+  running build is `PRODUCT_VERSION`, or the tag in `conf/updater/installed.json` when the updater installed the
+  running file (trusted only while the SHA-256 of the executable still matches and the record says product
+  `dunree`). A release of the source counts only when it carries `dunree_<os>_<arch>` program files, and it is
+  installed only when the signed header names the product. The releases of the fork Dunree comes from (`v3.x`
+  tags, other file names, the header `# zoraxy-release`) are skipped and, being signed with the same key, refused by <!-- rebrand:keep -->
+  name. **There is no in-app path from a build of that fork to Dunree**; such an install is switched by replacing
+  the program file (`docs/migrating-from-zoraxy.md`). Rolling back to the saved previous binary is a separate, <!-- rebrand:keep -->
+  explicit action.
 * Not available in Docker (`-docker` flag or `/.dockerenv`): the buttons are disabled with the reason shown.
-  Releases are Linux-only.
+  The in-app updater installs Linux builds only; Windows, macOS and packages (.deb / .rpm) are updated with their
+  own installer or package manager (`packaging/README.md`).
 
 ### Release assets
 
-Attach exactly these files to a GitHub release (all produced by `tools/build_release.sh`):
+Attach the files `tools/build_release.sh` writes to its output folder to a release. The head of that script and of
+`tools/sign_release.go` is the reference for names, switches and the header line; the table is a summary:
 
 | file | content |
 | --- | --- |
-| `dunree_linux_amd64`, `dunree_linux_arm64`, `dunree_linux_arm` (GOARM=6), `dunree_linux_386`, `dunree_linux_riscv64`, `dunree_linux_mipsle`, each also as a byte-identical `zoraxy_<os>_<arch>` for the updaters of existing installs | static binaries, `CGO_ENABLED=0 go build -trimpath -ldflags "-s -w"` |
-| `SHA256SUMS` | `sha256sum` format list of the binaries, preceded by the signed header line `# zoraxy-release tag=<tag> build=<n> upstream=<ver>` (ignored by `sha256sum -c`) |
+| `dunree_linux_amd64`, `dunree_linux_arm64`, `dunree_linux_arm` (GOARM=6), `dunree_linux_386`, `dunree_linux_riscv64`, `dunree_linux_mipsle`, `dunree_windows_amd64.exe`, `dunree_windows_arm64.exe`, `dunree_darwin_amd64`, `dunree_darwin_arm64` (`--targets` builds a subset; FreeBSD only when named; `--targets-subset` is the same for a quick test build and marks the folder as not being a release) | static binaries, `CGO_ENABLED=0 go build -trimpath -ldflags "-s -w"` |
+| archives, `.deb`, `.rpm` (only with `--packages`) | built by `packaging/build_packages.sh` before signing, so they are in `SHA256SUMS` too |
+| `SHA256SUMS` | `sha256sum` format list of the binaries, preceded by the signed header line `# dunree-release product=dunree tag=<tag> build=<n> upstream=<COMPAT_VERSION>` (written by `tools/sign_release.go`; ignored by `sha256sum -c`). The header of the fork's releases, `# zoraxy-release ...`, is recognised and refused |
 | `SHA256SUMS.sig` | raw 64-byte ed25519 signature over the exact bytes of `SHA256SUMS` |
 
 The updater verifies, in this order: the signature of `SHA256SUMS` with the public key embedded in the binary
 (`src/mod/updater/release_pubkey.pem`), then the SHA-256 of the downloaded binary against the signed
 `SHA256SUMS`. Anything else is rejected and the running binary is never touched. The binary must also run
-`-version` successfully and report the release's upstream version before it is installed.
+`-version` successfully and report exactly the version of the release tag (`1.0.0-beta.2` for `v1.0.0-beta.2`)
+before it is installed.
 
 **Anti-replay (downgrade protection).** The signed header binds the release tag and a monotonically increasing
 build number. The updater refuses a `SHA256SUMS` whose header is missing, whose `tag` differs from the GitHub
 release it fetched, or whose `build` is not greater than the build recorded in `conf/updater/installed.json` for the
 running binary (unknown/unrecorded installs count as build 0). Releases signed before this scheme (no header) can
 no longer be installed by the in-app updater. Always pass the exact GitHub tag to the release script and keep the
-build number increasing: `tools/build_release.sh -t v3.3.6-topic.1 [-b N]` (default build = current unix time).
+build number increasing: `tools/build_release.sh -t <tag> [-b N]` (default build = current unix time). The tag must
+be `v` plus `PRODUCT_VERSION`; the script refuses any other.
 
 ### Signing key
 
 * The release **private key lives outside the repository**, by convention at
-  `~/.zoraxy-release-key/private.pem` (PKCS#8 PEM, ed25519, mode 0600, directory 0700) on the release machine.
+  `~/.dunree-release-key/private.pem` (PKCS#8 PEM, ed25519, mode 0600, directory 0700) on the release machine;
+  `~/.zoraxy-release-key/private.pem` is still found when the new folder does not exist. **The key itself did not
+  change with the name**: installed copies trust this key only.
   It is never committed, copied into the repo, logged or passed on a command line other than by *path*.
 * Only the **public key** (`src/mod/updater/release_pubkey.pem`, SPKI PEM) is in the repo and embedded in the
   binary with `go:embed`.
@@ -70,18 +103,20 @@ build number increasing: `tools/build_release.sh -t v3.3.6-topic.1 [-b N]` (defa
 ```bash
 # 1. make sure the working tree is at the commit you want to release and tests pass
 (cd src && go vet ./... && go test ./...)
+python3 tools/rebrand/test_rename.py && python3 tools/docs/test_docs.py && packaging/test.sh
 
-# 2. cross-compile (Linux amd64, arm64, arm v6, 386, riscv64, mipsle), sign, and self-verify
-tools/build_release.sh -t <tag>               # key: $ZORAXY_RELEASE_KEY or ~/.zoraxy-release-key/private.pem
+# 2. cross-compile (Linux, Windows, macOS; see the table above), sign, and self-verify
+tools/build_release.sh -t <tag> --dry-run     # prints what would be built and signed; needs no key
+tools/build_release.sh -t <tag>               # key: $DUNREE_RELEASE_KEY, then $ZORAXY_RELEASE_KEY, then ~/.dunree-release-key/private.pem, then ~/.zoraxy-release-key/private.pem
 tools/build_release.sh -t <tag> -k /path/to/private.pem -o /tmp/dunree-dist   # explicit key / output dir
 
-# 3. create a GitHub release (tag like v3.3.5-rc5-grpcfix.1, tick "pre-release" for the beta channel)
+# 3. create a release in the repository the updater reads (tick "pre-release" for the beta channel)
 #    and attach every file in dist/:  gh release create <tag> dist/* --title ... --notes ...
 ```
 
 `tools/build_release.sh` injects nothing into the binaries beyond `-s -w`, signs with
 `tools/sign_release.go`, then verifies its own output with the committed public key (set
-`ZORAXY_RELEASE_PUB` only for experiments with throwaway keys). The signing tool can be tested with
+`DUNREE_RELEASE_PUB`, or the older `ZORAXY_RELEASE_PUB`, only for experiments with throwaway keys). The signing tool can be tested with
 throwaway keys: `cd tools && go test sign_release.go sign_release_test.go`; the updater package additionally
 tests that its verifier accepts the tool's output (`go test ./mod/updater`).
 
@@ -151,6 +186,22 @@ Details:
 Example: `./dunree -port=:8000 -webui_tls=auto`
 
 Implementation: `src/mod/webuitls`.
+
+### Where a change may come from (origin check)
+
+A request to the management web UI that changes something (anything but GET, HEAD, OPTIONS, TRACE) needs the CSRF cookie and token as before, and since gorilla/csrf v1.7.3 (advisory GO-2025-3607) it must also come from a page of the web UI itself: the `Origin` header (or, without one, the `Referer`) is compared with the address the request arrived for. Nothing has to be set when the web UI is opened directly (plain HTTP or `-webui_tls`), or through a reverse proxy that passes the `Host` header on or sends `X-Forwarded-Host` (a Dunree rule does both).
+
+| Switch | Default | Meaning |
+|--------|---------|---------|
+| `-csrf_trusted_origins` | empty | Comma separated extra addresses (`host` or `host:port`, as the browser shows them; with `https://` in front only an https page of that address counts) from which the web UI may be used. For a reverse proxy in front of it that replaces the `Host` header and sends no `X-Forwarded-Host`. No wildcards; a list that cannot be read stops the start. |
+| `-csrf_strict` | off | Do not use `X-Forwarded-Host`, and require an `Origin` or `Referer` header over HTTPS from every client, also from scripts. |
+
+- A refused request gets `403` with `Forbidden - origin invalid` (or `referer invalid`, `referer not supplied`) and a second line that names the address and the switch; the same goes to the log, once per address and minute.
+- `http` and `https` are told apart: over the web UI's own HTTPS listener, or when the proxy in front sends `X-Forwarded-Proto: https`, an http page is refused, also one of the own or a listed address. The library's own `csrf.TrustedOrigins` option is not used, because it compares the host only (GO-2025-3884, no fixed version).
+- A script (curl, the e2e client) that sends cookie and token but no `Origin`, `Referer` or `Sec-Fetch-Site` keeps working over HTTP and HTTPS unless `-csrf_strict` is set.
+- The REST API (`/api/v1`, bearer token) and the plugin API (`/plugin/`) are outside this check, as before.
+
+Implementation: `src/mod/csrfguard`, `src/admincsrf.go`. Tests: `go test ./mod/csrfguard/`, `go test -run 'TestAdminCSRF|TestGorillaCSRF' .`, `tools/e2e-admin/run.sh --only csrf-origin`.
 
 ## Load balancing and health checks
 
@@ -2274,7 +2325,7 @@ GitHub Actions workflows on pushes and pull requests to `dev`/`main` and weekly.
 plus `security-events: write` on the analyze job only; every action is pinned to a commit SHA (comment = tag).
 `.github/dependabot.yml` covers `github-actions` and `gomod` (`/src`).
 
-**These only run once GitHub Actions is enabled on the fork** (Settings > Actions); until then nothing is scanned.
+**These only run once GitHub Actions is enabled on the repository** (Settings > Actions); until then nothing is scanned.
 Results appear under Security > Code scanning. To bump a pin: `gh api repos/github/codeql-action/commits/<tag> --jq .sha`
 (prefer tags that are at least two weeks old).
 

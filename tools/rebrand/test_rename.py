@@ -386,7 +386,10 @@ class Repo(unittest.TestCase):
     def test_legacy_surfaces_still_in_the_source(self):
         """One witness per class: a blind replace that slipped past the allowlist fails here."""
         for needle, rel in [
-            ('SYSTEM_NAME    = "%s"' % OLD, "src/def.go"),
+            # the admin session cookie of an upgraded install; SYSTEM_NAME itself is the Dunree name now
+            ('LEGACY_ADMIN_SESSION_COOKIE = "%s"' % OLD, "src/dunreecompat.go"),
+            # the header of the earlier fork's releases is recognised, to refuse them by name
+            ('legacySumsHeaderPrefix = "# %s-release "' % OLD_L, "src/mod/updater/verify.go"),
             ('"/.%s/health"' % OLD_L, "src/mod/cluster/health.go"),
             ('"/.%s/captcha/verify"' % OLD_L, "src/mod/dynamicproxy/captcha/captcha.go"),
             # metrics are written as dunree_* and doubled under this prefix (mod/metrics/expose.go, Registry.Write)

@@ -1,5 +1,5 @@
-// Package updater implements the in-app "Update" page backend of this Dunree
-// fork: release discovery on GitHub, ed25519 + SHA-256 verification, backup,
+// Package updater implements the in-app "Update" page backend of Dunree:
+// release discovery on GitHub, ed25519 + SHA-256 verification, backup,
 // atomic binary replacement, restart and automatic rollback.
 //
 // # Security / behaviour contract
@@ -15,15 +15,26 @@
 //
 // # Version ordering rule
 //
-// Release tags look like v<upstream>[-rc<N>][-<topic>].<build> e.g.
-// v3.3.5-rc5-grpcfix.1. Because the topic part is free text, tags are NOT
-// ordered as semver. Releases are ordered by (1) the upstream version triple
-// major.minor.patch, then (2) the GitHub published-at timestamp, then (3) the
-// trailing fork build number. A candidate is an upgrade only if it sorts
-// strictly after the running build. The identity of the running build is
-// recorded in <conf>/updater/installed.json when the updater installs a binary
-// (and is trusted only while the SHA-256 of the running executable still
-// matches); otherwise it falls back to SYSTEM_VERSION with an unknown date.
+// Dunree has its own version line, which starts at v1.0.0-beta.1 and is not the
+// version of the code base it is derived from. Release tags are Semantic
+// Versioning tags, v<major>.<minor>.<patch>[-<pre-release>] (v1.0.0-beta.1 <
+// v1.0.0-beta.2 < v1.0.0-rc.1 < v1.0.0 < v1.0.1), and are ordered by that
+// precedence alone (CompareTags). The running build is the PRODUCT_VERSION the
+// program was compiled with, or the tag in <conf>/updater/installed.json when
+// the updater installed the running file (trusted only while the SHA-256 of the
+// executable still matches and the record says product "dunree").
+//
+// Only Dunree releases are considered. A release counts as one when it carries
+// dunree_<os>_<arch> program files, and it is installed only when the signed
+// first line of SHA256SUMS reads "# dunree-release product=dunree tag=<tag>
+// build=<n> ...". The releases of the fork Dunree comes from carry v3.x tags,
+// other file names and another header: they are skipped in the list and, since
+// they are signed with the same key, refused by name at the header. A tag with
+// a pre-release part is never offered on the stable channel.
+//
+// There is no in-app path from a build of that fork to Dunree: its updater
+// does not know the Dunree file names, header or version line. Such an install
+// is switched by replacing the program file (the migration guide in docs/).
 //
 // # Restart strategy
 //

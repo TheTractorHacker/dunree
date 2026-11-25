@@ -256,7 +256,7 @@ def brand_ui(pg, ctx):
     pg.goto(base + "/index.html", wait_until="domcontentloaded", timeout=60000)
     settle(pg)
     # An existing installation keeps the plugin store of the Zoraxy project as a third-party source until an admin
-    # removes it (docs/plugins/addon-store.md); run.sh makes this instance such an installation, so the App Store
+    # removes it (docs/plugins/addon-store.md); run.sh makes this instance such an installation, so the Add-ons page
     # shows that store's plugin icons. Those requests belong to the migrated source, not to the product.
     legacy_store = pg.evaluate("""async () => { try { const r = await fetch('/api/plugins/store/sources', {cache: 'no-store'});
         const j = await r.json(); return (j || []).some(x => x.kind === 'zoraxy-community'); } catch (e) { return false; } }""")

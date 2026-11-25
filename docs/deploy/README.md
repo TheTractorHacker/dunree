@@ -1,8 +1,13 @@
 # Running Dunree under systemd
 
-The reference unit is `packaging/linux/dunree.service` (installed by `packaging/linux/install.sh`). Every line has a
-comment saying what it is for. `zoraxy.service` in this folder is the unit of installs made before the rename; it is
-kept for them and documented in its own comments. <!-- rebrand:keep -->
+The reference unit is [`dunree.service`](dunree.service) in this folder: every line has a comment saying what it is
+for. `packaging/linux/dunree.service` has the same settings with shorter comments and is the file that
+`packaging/linux/install.sh` installs. `zoraxy.service` in this folder is the unit of installs made before the rename; it is <!-- rebrand:keep -->
+kept for them and says so in its first lines.
+
+Other systems: [Windows](windows.md) (service built into `dunree.exe`), [macOS](macos.md) (launchd),
+FreeBSD (`packaging/freebsd/`), containers ([docker/README.md](../../docker/README.md)). The table of every
+platform's paths is in [`packaging/README.md`](../../packaging/README.md).
 
 An install upgraded in place from Zoraxy keeps its unit name, its program file name and its folder (`zoraxy.service`, <!-- rebrand:keep -->
 `./zoraxy`, `/opt/zoraxy`): on such an install use `zoraxy` wherever this page says `dunree`. Renaming them is optional <!-- rebrand:keep -->
@@ -31,7 +36,7 @@ What you see in `systemctl status dunree`:
 ```bash
 systemctl cat dunree                                   # note your current ExecStart= and WorkingDirectory=
 sudo cp /etc/systemd/system/dunree.service /etc/systemd/system/dunree.service.bak
-sudo cp packaging/linux/dunree.service /etc/systemd/system/dunree.service
+sudo cp docs/deploy/dunree.service /etc/systemd/system/dunree.service
 sudo nano /etc/systemd/system/dunree.service           # put YOUR ExecStart= (with your flags) and WorkingDirectory= back
 sudo systemctl daemon-reload
 sudo systemctl restart dunree

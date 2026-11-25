@@ -1,6 +1,6 @@
 # Authelia with Dunree (forward auth)
 
-Answers upstream #749 (404 on the Authelia login page), #793 (forward-auth configuration) and the Authelia part of
+Answers Zoraxy issues #749 (404 on the Authelia login page), #793 (forward-auth configuration) and the Authelia part of <!-- rebrand:keep -->
 #514. The Dunree side is read from the code (`mod/auth/sso/forward`, `web/components/sso.html`); I did **not** run a
 real Authelia, so the Authelia-side settings come from Authelia's documentation and from the maintainers'
 comments in the upstream issues. For Authentik see [../authentik.md](../authentik.md).

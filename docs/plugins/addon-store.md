@@ -10,7 +10,7 @@ version 1**. How an index is built and published is in [publishing-addons.md](pu
 ## What Dunree does by default: nothing
 
 Dunree ships **without a store source**. Until an administrator adds one, the store fetches nothing and opens no
-connection, and **System > App Store** shows "No add-on store configured" with the three ways to add a source:
+connection, and **System > Add-ons** shows "No add-on store configured" with the three ways to add a source:
 
 | Choice | What it is | Network |
 |---|---|---|
@@ -26,7 +26,7 @@ one-click choice is shown as "not open yet", cannot be chosen, and Dunree never 
 
 Sources are stored in the database (table `plugins`, key `custom_store_urls`). Removing a source stops every
 fetch from it. Add-ons that were installed from it keep running; they get no updates until the source is added
-again, and the App Store page says so.
+again, and the Add-ons page says so.
 
 ### Installations that existed before Dunree
 
@@ -117,8 +117,8 @@ One JSON document, conventionally `index.json`, UTF-8, at most 8 MB:
 | `licence` | no in the format, required by `tools/addon-store` | SPDX identifier of the licence the add-on is published under. `license` is accepted as a spelling |
 | `description`, `homepage` | no | text (at most 4000 characters) and a web address |
 | `type` | no | `router` (can handle requests of the sites it is assigned to) or `utility` (default) |
-| `categories` | no | the first one is the category the App Store files the add-on under |
-| `featured` | no | shown in the "Featured app" card of the App Store |
+| `categories` | no | the first one is the category the Add-ons page files the add-on under |
+| `featured` | no | shown in the "Featured app" card of the Add-ons page |
 | `permissions` | no | the Dunree API endpoints the add-on asks for: `method`, `endpoint`, `reason`. Shown before the install. What the installed program declares is what the administrator approves (`docs/plugins/contract.md`), so a permission that is missing here is not granted silently |
 | `changelog` | no | `version`, `date`, `notes`, newest first |
 | `icon`, `screenshots` | no | pictures, loaded by the browser of the administrator. Only web addresses are shown |
@@ -213,6 +213,6 @@ installed from.
 * **The minimum host version is only compared when the host version is `major.minor.patch`.** A development
   build with another version string installs with a note instead.
 * **An icon that cannot be downloaded fails the install** (as it does for every index format).
-* **The page is still called "App Store"** in the navigation; "add-on" is used for the store and its index.
+* **The page is called "Add-ons"** (it was "App Store"); its tag `appstore`, the file `appstore.html` and the API paths `/api/plugins/store/*` keep their names. What it lists is still called an "app" in most of its texts.
 * **Existing installations keep contacting the Zoraxy community store** until an administrator removes that <!-- rebrand:keep -->
   source. That is deliberate (nothing changes silently) and visible; see above for how to switch the migration off.

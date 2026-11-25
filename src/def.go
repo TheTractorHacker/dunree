@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
+	"github.com/foleyit/dunree/mod/brand"
 
 	"github.com/foleyit/dunree/mod/access"
 	"github.com/foleyit/dunree/mod/acme"
@@ -47,8 +48,17 @@ import (
 
 const (
 	/* Build Constants */
-	SYSTEM_NAME    = "Zoraxy"
-	SYSTEM_VERSION = "3.3.6"
+	// SYSTEM_NAME is the product name in the log and on the command line. It is not the admin
+	// session cookie any more (ADMIN_SESSION_COOKIE, dunreecompat.go).
+	SYSTEM_NAME = brand.Name
+	// PRODUCT_VERSION is the Dunree version: what -version, the log, the About page, the API and
+	// the update page show, and what the updater compares with Dunree releases.
+	PRODUCT_VERSION = brand.Version
+	// COMPAT_VERSION is the version of the code base Dunree is derived from. It is not shown as
+	// the version of the product. It keeps feeding what was written for that number line: the
+	// config migrations (conf/version, 336), the version field of backup manifests and the
+	// zoraxy_version plugins built with the earlier SDK read. // legacy-compat
+	COMPAT_VERSION = brand.BasedOnVersion
 
 	/* System Constants */
 	WEBSERV_DEFAULT_PORT         = 5487

@@ -109,6 +109,13 @@ higher than the last one it saw. Plan:
 
 Without the bridge, existing installs have to upgrade by hand. That has to be written in the release notes.
 
+**Decision (2026-11-24, replaces steps 1 to 3 and rows 34 and 36):** no bridge. Dunree releases carry `dunree_<os>_<arch>[.exe]`
+files only and the signed header `# dunree-release product=dunree tag=... build=... upstream=<COMPAT_VERSION>`, verified with
+the same key. Dunree's updater compares its own `PRODUCT_VERSION` with Dunree releases by Semantic Versioning precedence
+and never considers a release of the fork (other file names, the header `# zoraxy-release`, refused by name). An install <!-- rebrand:keep -->
+of the fork is switched by replacing the program file; no in-app path is promised. `UPDATE_REPO` stays the policy variable.
+What was built and its limits: `docs/ux/changes.md`, "Dunree rebrand: finish".
+
 ### 3.2 `SYSTEM_VERSION` has two jobs
 It is shown to users, and it also drives the config migrator (`conf/version` = `336`). If it became
 `1.0.0-beta.1` that would turn into `100`. Split it into `PRODUCT_VERSION` and `COMPAT_VERSION` (row 6).

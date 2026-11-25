@@ -39,15 +39,18 @@ func adminCSRFCookie(key []byte, secure bool) legacycompat.CSRFCookie {
 // newAdminCSRF is the CSRF middleware of the admin interface. A browser that still holds the CSRF cookie
 // under the old name keeps its token (an admin page that was open during the upgrade keeps working).
 func newAdminCSRF(key []byte, secure bool) func(http.Handler) http.Handler {
+	policy := adminCSRFPolicy() //admincsrf.go: where a request may come from (plain HTTP, HTTPS, behind a reverse proxy)
 	protect := csrf.Protect(
 		key,
-		csrf.CookieName(CSRF_COOKIENAME),
-		csrf.Secure(secure),
-		csrf.Path("/"),
-		csrf.SameSite(csrf.SameSiteLaxMode),
+		append([]csrf.Option{
+			csrf.CookieName(CSRF_COOKIENAME),
+			csrf.Secure(secure),
+			csrf.Path("/"),
+			csrf.SameSite(csrf.SameSiteLaxMode),
+		}, policy.Options()...)...,
 	)
 	compat := adminCSRFCookie(key, secure)
-	return func(next http.Handler) http.Handler { return compat.Wrap(protect(next)) }
+	return func(next http.Handler) http.Handler { return compat.Wrap(policy.Wrap(protect, next)) }
 }
 
 // runDunreeFirstStart runs once per configuration folder, before anything else writes to it: an install
@@ -56,7 +59,7 @@ func newAdminCSRF(key []byte, secure bool) func(http.Handler) http.Handler {
 func runDunreeFirstStart(confDir string, dbPath string, probe baseline.Probe) *legacycompat.FirstStartResult {
 	fresh, _ := baseline.IsFresh(probe)
 	res, err := legacycompat.FirstStart(legacycompat.FirstStartOptions{ConfDir: confDir, DBPath: dbPath,
-		Fresh: fresh, Version: SYSTEM_VERSION})
+		Fresh: fresh, Version: PRODUCT_VERSION, BasedOn: COMPAT_VERSION})
 	if err != nil {
 		log.Printf("WARNING: first Dunree start: %v. Nothing in %s was changed; the copy will be tried again at the next start.", err, confDir)
 		return res

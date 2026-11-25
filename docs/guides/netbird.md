@@ -1,6 +1,6 @@
 # NetBird (self-hosted) behind the proxy: gRPC paths with h2c
 
-Answers upstream issue #1029 (fork issue #201): "400/404 on some of the virtual directory endpoints".
+Answers Zoraxy issue #1029 (issue #201 of the fork that became Dunree): "400/404 on some of the virtual directory endpoints". <!-- rebrand:keep -->
 
 **Status.** The proxy side below is covered by automated tests with a fake gRPC-style backend (plain HTTP/2 only,
 bidirectional stream, trailers) next to a plain HTTP backend on the same host. It has **not been run against a real
@@ -17,7 +17,7 @@ NetBird serves several things on one host name:
 * depending on the version, WebSocket endpoints (relay, WebSocket fallback of the two gRPC services).
 
 The gRPC services in the containers listen **without TLS**, and gRPC needs HTTP/2. HTTP/2 without TLS is called
-**h2c**. A proxy that forwards these paths as HTTP/1.1 gets `400`, `404` or a broken stream back. The fork has an
+**h2c**. A proxy that forwards these paths as HTTP/1.1 gets `400`, `404` or a broken stream back. Dunree has an
 h2c switch per upstream (for a host that is gRPC only) and, for a mixed host like NetBird, **per path route**
 (virtual directory). Both are off by default.
 

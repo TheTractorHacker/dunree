@@ -340,7 +340,7 @@ func ReverseProxyInit() {
 		HostUUID:           nodeUUID,
 		SessionSecret:      clusterMgr.KeyMaterial(nodeUUID, cluster.PurposeCaptchaSession),
 		Health:             clusterMgr.Health(),
-		HostVersion:        SYSTEM_VERSION,
+		HostVersion:        COMPAT_VERSION, //second token of the default User-Agent (dpcore.IdentityUserAgent); the first is the Dunree version
 		Port:               inboundPort,
 		UseTls:             useTls,
 		MinTLSVersion:      minTlsVersionStringToUint16(minTLSVersion),

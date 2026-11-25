@@ -241,7 +241,7 @@
             <p class="zx-page-header__sub">Add custom features to Dunree.</p>
         </div>
         <div class="zx-page-header__actions zx-btn-row">
-            <button type="button" class="ui primary button" onclick="openPluginStore();"><i class="shopping bag icon"></i> Open App Store</button>
+            <button type="button" class="ui primary button" onclick="openPluginStore();"><i class="shopping bag icon"></i> Open Add-ons</button>
         </div>
     </header>
     <div class="zx-callout zx-callout--warn" role="note">
@@ -1624,7 +1624,7 @@ function initiatePluginList(){
     if (data.length == 0){
       $("#pluginTable").append(`
         <tr>
-          <td class="zx-empty-cell" colspan="6"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">${t("No plugins installed. Browse the App Store to add one.")}</p></div></td>
+          <td class="zx-empty-cell" colspan="6"><div class="zx-empty zx-empty--inline"><p class="zx-empty__text">${t("No plugins installed. Browse Add-ons to add one.")}</p></div></td>
         </tr>
       `);
     }
@@ -1806,7 +1806,7 @@ function getPluginInfo(pluginId, btn){
 }
 
 function openPluginStore(){
-  //The Plugin Store side wrapper is replaced by the App Store tab
+  //The Plugin Store side wrapper is replaced by the Add-ons tab (tag appstore)
   openTabById("appstore");
 }
 

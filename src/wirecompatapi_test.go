@@ -191,11 +191,11 @@ func TestPluginRuntimeConstKeepsTheZoraxyBaseVersion(t *testing.T) { // legacy-c
 	if rc.ZoraxyVersion != "3.3.6" { // legacy-compat: the Zoraxy release Dunree 1.0 is based on
 		t.Fatalf("zoraxy_version must stay the Zoraxy base version, got %q", rc.ZoraxyVersion) // legacy-compat
 	}
-	if rc.DunreeVersion != SYSTEM_VERSION || rc.DunreeUUID != nodeUUID || rc.ZoraxyUUID != nodeUUID { // legacy-compat
+	if rc.DunreeVersion != PRODUCT_VERSION || rc.DunreeUUID != nodeUUID || rc.ZoraxyUUID != nodeUUID { // legacy-compat
 		t.Fatalf("%+v", rc)
 	}
 	raw, _ := json.Marshal(rc)
-	for _, field := range []string{`"zoraxy_version":"3.3.6"`, `"zoraxy_uuid":"` + nodeUUID + `"`, `"dunree_uuid":"` + nodeUUID + `"`, `"dunree_version":"` + SYSTEM_VERSION + `"`} { // legacy-compat
+	for _, field := range []string{`"zoraxy_version":"3.3.6"`, `"zoraxy_uuid":"` + nodeUUID + `"`, `"dunree_uuid":"` + nodeUUID + `"`, `"dunree_version":"` + PRODUCT_VERSION + `"`} { // legacy-compat
 		if !strings.Contains(string(raw), field) {
 			t.Errorf("runtime_const lacks %s: %s", field, raw)
 		}

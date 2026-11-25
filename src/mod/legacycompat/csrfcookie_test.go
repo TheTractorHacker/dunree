@@ -62,7 +62,9 @@ func post(h http.Handler, token string, cookies ...*http.Cookie) *httptest.Respo
 		r.AddCookie(c)
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, r)
+	// the admin interface of these tests is plain HTTP: gorilla/csrf v1.7.3 has to be told, or it asks for
+	// an https Referer (in the program mod/csrfguard does this per request)
+	h.ServeHTTP(w, csrf.PlaintextHTTPRequest(r))
 	return w
 }
 

@@ -1,6 +1,6 @@
 # Pocket ID + Navidrome: passing the user name in a header
 
-Answers upstream #1118. The OIDC claim -> header mapping is covered by Dunree's tests with a fake provider
+Answers Zoraxy issue #1118. The OIDC claim -> header mapping is covered by Dunree's tests with a fake provider <!-- rebrand:keep -->
 (`TestFullLoginPKCES256AndSessionCookieFlags`, `TestScrubIdentityHeaders`); **Pocket ID and Navidrome themselves were not run**.
 
 ## The mistake in the report

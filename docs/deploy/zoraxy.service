@@ -1,11 +1,16 @@
-# Reference systemd unit for Dunree.
-# Copy to /etc/systemd/system/zoraxy.service, adjust the three paths marked CHANGE, then:
-#   sudo systemctl daemon-reload && sudo systemctl enable --now zoraxy
-# See docs/deploy/README.md for switching an existing unit and for what each line is for.
+# LEGACY unit: for an install that was upgraded in place from Zoraxy and keeps its old names   (rebrand:keep)
+# (unit zoraxy.service, program file zoraxy, folder /opt/zoraxy). New installs use dunree.service
+# in this folder. Dunree never renames a unit by itself; renaming is optional and done with
+# tools/install/migrate-from-zoraxy.sh (docs/migrating-from-zoraxy.md).
+#
+# Use this file to move such an install to Type=notify without renaming anything:
+# copy it to /etc/systemd/system/zoraxy.service, adjust the two lines marked CHANGE, then:
+#   sudo systemctl daemon-reload && sudo systemctl restart zoraxy
+# See docs/deploy/README.md for what each line is for. Never enable this unit and dunree.service
+# together: they would fight for the same ports and database.
 
 [Unit]
-Description=Dunree reverse proxy
-Documentation=https://github.com/tobychui/zoraxy
+Description=Dunree reverse proxy and web gateway
 # The network must be up before Dunree binds addresses and talks to ACME / upstreams.
 After=network-online.target
 Wants=network-online.target
@@ -29,7 +34,8 @@ ExecStart=/opt/zoraxy/zoraxy -port=:8000
 # A start that has not reported READY within 2 minutes (for example blocked on a locked database)
 # is killed and shown as "failed", instead of sitting "active" and silent forever.
 TimeoutStartSec=120
-# Time Dunree gets to shut down cleanly after SIGTERM (it saves statistics and logs) before SIGKILL.
+# Time Dunree gets to shut down cleanly after SIGTERM (it drains requests and saves statistics;
+# worst case 28 s) before SIGKILL.
 TimeoutStopSec=30
 
 # Restart after a crash or a failed start, but not after a deliberate "systemctl stop".

@@ -90,21 +90,28 @@ Network tools (IP and port scanner, mDNS, Wake-on-LAN, web SSH, DNS / TLS / HTTP
 
 ## Screenshots
 
-<!-- screenshots:begin
-     This section is filled by the screenshot step. It writes PNG files to docs/img/screenshots/ and replaces
-     the list below with images. Expected files (light theme, 1366 px wide unless the name says otherwise):
-       docs/img/screenshots/status.png            Status page
-       docs/img/screenshots/sites.png             Sites > HTTP Proxy
-       docs/img/screenshots/site-editor.png       Edit site
-       docs/img/screenshots/security-overview.png Security > Security Overview
-       docs/img/screenshots/rules.png             Security > Rules
-       docs/img/screenshots/certificates.png      Certificates
-       docs/img/screenshots/statistics.png        Traffic > Statistics
-       docs/img/screenshots/status-dark.png       Status page, dark theme
-       docs/img/screenshots/status-phone.png      Status page, 390 px wide
--->
+<!-- screenshots:begin written by tools/screenshots/capture.py (--docs-only) from its SHOTS list; do not edit by hand -->
 
-Screenshots of Dunree are not in the repository yet. They will be placed in [`docs/img/screenshots/`](docs/img/screenshots/).
+[![Status](docs/img/screenshots/status.png)](docs/img/screenshots/status.png)
+
+Status: is the proxy running, how much traffic it handles and what needs attention.
+
+| | |
+|---|---|
+| [![Status, dark theme](docs/img/screenshots/status-dark.png)](docs/img/screenshots/status-dark.png)<br>The same page in the dark theme. Every page has both. | [![HTTP Proxy](docs/img/screenshots/sites.png)](docs/img/screenshots/sites.png)<br>Sites > HTTP Proxy: every host name, where it is sent, its tags, protection and live state. |
+| [![Edit site: upstreams and load balancing](docs/img/screenshots/site-editor.png)](docs/img/screenshots/site-editor.png)<br>Edit site: several upstream servers behind one host name, with weights, health and fallback. | [![Certificates](docs/img/screenshots/certificates.png)](docs/img/screenshots/certificates.png)<br>Certificates: what each certificate covers, who issued it and when it expires. |
+| [![Security Overview](docs/img/screenshots/security-overview.png)](docs/img/screenshots/security-overview.png)<br>Security > Security Overview: what protects the sites, with a recommendation for each gap. | [![WAF](docs/img/screenshots/waf.png)](docs/img/screenshots/waf.png)<br>Security > WAF: the web application firewall (OWASP Core Rule Set), its mode per site and what it stopped. |
+| [![Rules](docs/img/screenshots/rules.png)](docs/img/screenshots/rules.png)<br>Security > Rules: when a request matches, block it, challenge it, limit its rate or only log it. | [![CrowdSec](docs/img/screenshots/crowdsec.png)](docs/img/screenshots/crowdsec.png)<br>Security Center > CrowdSec: Dunree as a CrowdSec bouncer, with the decisions that are loaded and what they matched. |
+| [![Statistics](docs/img/screenshots/statistics.png)](docs/img/screenshots/statistics.png)<br>Traffic > Statistics: requests, errors, blocked requests and visitors, in total and for each site. | [![Uptime Monitor](docs/img/screenshots/uptime.png)](docs/img/screenshots/uptime.png)<br>Traffic > Uptime Monitor: the upstream servers, checked every few minutes. |
+| [![Add-ons with a local index](docs/img/screenshots/addons.png)](docs/img/screenshots/addons.png)<br>System > Add-ons with a signed index from a local folder. | [![Fleet](docs/img/screenshots/fleet.png)](docs/img/screenshots/fleet.png)<br>Fleet & HA > Fleet: one Dunree as the hub of several others, with groups and staged roll-out. |
+| [![Error pages](docs/img/screenshots/error-pages.png)](docs/img/screenshots/error-pages.png)<br>Sites > Error pages: your own texts, colours and HTML for the pages Dunree shows, with a preview. | [![About Dunree](docs/img/screenshots/about.png)](docs/img/screenshots/about.png)<br>System > Utilities > About Dunree: version, publisher, licence, source code and the project Dunree is based on. |
+| [![Login](docs/img/screenshots/login.png)](docs/img/screenshots/login.png)<br>The login page. | |
+
+<img src="docs/img/screenshots/status-phone.png" alt="Status on a phone" width="260">
+
+The Status page at 390 px. The whole interface works at phone width.
+
+The pictures show a throw-away instance with demo data: sites under `example.com`, upstream servers on loopback addresses, generated traffic. They are made by `tools/screenshots/run.sh`. All 22 pictures, with the first-start page and more of the security and statistics pages, are in [docs/img/screenshots](docs/img/screenshots/README.md).
 
 <!-- screenshots:end -->
 
@@ -177,6 +184,7 @@ Keep the configuration in a volume, publish ports 80, 443 (TCP and UDP) and 8000
 | `-port :8000` | address and port of the admin interface |
 | `-conf ./conf`, `-dbpath ./sys.db`, `-log ./log` | where configuration, database and logs are kept |
 | `-webui_tls auto` | HTTPS for the admin interface with a self-signed certificate (`custom` for your own) |
+| `-csrf_trusted_origins host[:port],...` | extra addresses from which the admin interface may be used, for a reverse proxy in front of it that replaces the Host header (empty by default; see DEVELOPMENT.md) |
 | `-noauth` | no login for the admin interface. Only behind another gateway that does the login. |
 | `-reset_ac` | reset the administrator account and exit |
 | `-doctor` | check why a start fails (ports, files, database) and exit |
@@ -202,7 +210,7 @@ A plugin is a separate program that Dunree starts and supervises. It can filter 
 
 - Write a plugin: [`docs/plugins/contract.md`](docs/plugins/contract.md) (the contract between Dunree and a plugin), the SDK in `src/mod/plugins/dunree_plugin`, examples in [`example/plugins/`](example/plugins/).
 - Check a plugin: [`docs/plugins/conformance.md`](docs/plugins/conformance.md) and the tool in `tools/plugin-check`.
-- Add-on store: Dunree ships **without a store** and contacts none until an administrator adds one under *System > App Store*: an index by address, or a local folder. The index is signed. Format and behaviour: [`docs/plugins/addon-store.md`](docs/plugins/addon-store.md). Publishing your own: [`docs/plugins/publishing-addons.md`](docs/plugins/publishing-addons.md).
+- Add-on store: Dunree ships **without a store** and contacts none until an administrator adds one under *System > Add-ons*: an index by address, or a local folder. The index is signed. Format and behaviour: [`docs/plugins/addon-store.md`](docs/plugins/addon-store.md). Publishing your own: [`docs/plugins/publishing-addons.md`](docs/plugins/publishing-addons.md).
 - A Dunree add-on store run by Foley IT does not exist yet.
 
 A plugin runs with the rights of the Dunree process (or of the user set with `-plugin_user`). Install only plugins you trust.

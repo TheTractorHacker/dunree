@@ -1001,7 +1001,7 @@ footer { margin-top: 2rem; color: var(--muted); font-size: .85rem; }
 <section class="how">
 <h2>Use this store in Dunree</h2>
 <ol>
-<li>Open <b>System &gt; App Store &gt; Sources</b> and choose <b>Custom index URL</b>.</li>
+<li>Open <b>System &gt; Add-ons &gt; Sources</b> and choose <b>Custom index URL</b>.</li>
 <li>Enter the address of the index: <code>{{.IndexURL}}</code>{{if eq .IndexURL "index.json"}} (next to this page){{end}}.</li>
 {{if .Signed}}<li>Give Dunree the public key of this store under <b>Plugin Manager &gt; Plugin safety settings</b>{{if .HasPub}}: <a href="index.pub">index.pub</a>{{end}}{{if .Fingerprint}} (fingerprint <code>{{.Fingerprint}}</code>){{end}}. With signature checking set to <b>enforce</b>, only add-ons of a correctly signed index are installed.</li>{{end}}
 </ol>

@@ -1,7 +1,7 @@
 # Two Dunree proxies in a segmented network: modes, trust, failure and recovery
 
-Applies to the fork line `v3.3.6-fork.19` and later (deployment role, peer gate, CrowdSec, audit log, hardened
-headers). Background and the design decisions are in [../enterprise-dual-proxy-plan.md](../enterprise-dual-proxy-plan.md).
+Applies to every Dunree version, and to the builds `v3.3.6-fork.19` and later of the fork that became Dunree
+(deployment role, peer gate, CrowdSec, audit log, hardened headers). Background and the design decisions are in [../enterprise-dual-proxy-plan.md](../enterprise-dual-proxy-plan.md).
 
 **Status of this guide.** The Dunree side was exercised end to end on one machine with the harness
 `tools/e2e/dual_proxy/run.sh enterprise` (an external and an internal Dunree, a backend app, a private CA, optional

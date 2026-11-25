@@ -102,6 +102,7 @@ func startupSequence() {
 		}
 		SystemWideLogger.Println("System wide logging is enabled")
 	}
+	SystemWideLogger.Println(startupLine()) //product name and version, productversion.go
 
 	initWAFAuditLog() //WAF JSON audit log, see wafapi.go
 	initSiteLogs()    //Optional per-site request logs, see sitelogapi.go
@@ -323,7 +324,7 @@ func startupSequence() {
 			Model:        MDNS_IDENTIFY_DEVICE_TYPE,
 			UUID:         nodeUUID,
 			Vendor:       MDNS_IDENTIFY_VENDOR,
-			BuildVersion: SYSTEM_VERSION,
+			BuildVersion: PRODUCT_VERSION,
 		}, "")
 		if err != nil {
 			SystemWideLogger.Println("Unable to startup mDNS service. Disabling mDNS services")
@@ -472,7 +473,7 @@ func startupSequence() {
 			return csrf.Token(r)
 		},
 		SystemConst: pluginRuntimeConst(), //dunree_* and the legacy zoraxy_* fields, see wirecompatapi.go
-		/* Add-on store: no built-in source. The administrator chooses one under System > App Store
+		/* Add-on store: no built-in source. The administrator chooses one under System > Add-ons
 		   (mod/plugins/store_sources.go). An installation that existed before this start keeps the
 		   source it synced from, written into its settings once. */
 		PluginStoreURLs: nil,
@@ -494,7 +495,7 @@ func startupSequence() {
 			return
 		}
 		if !pluginManager.StoreConfigured() {
-			SystemWideLogger.PrintAndLog("plugin-manager", "No add-on store configured: nothing is fetched. Choose one under System > App Store", nil)
+			SystemWideLogger.PrintAndLog("plugin-manager", "No add-on store configured: nothing is fetched. Choose one under System > Add-ons", nil)
 			return
 		}
 		err = pluginManager.UpdateDownloadablePluginList()

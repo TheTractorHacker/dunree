@@ -1,6 +1,6 @@
 # Real client IP: Cloudflare, tunnels, VPNs, TCP streams, access rules
 
-Answers upstream #590, #514, #676, #612, #366 and #1087. The behaviour below was checked with a throw-away
+Answers Zoraxy issues #590, #514, #676, #612, #366 and #1087. The behaviour below was checked with a throw-away <!-- rebrand:keep -->
 instance (a fake backend printing the headers it receives) unless marked otherwise.
 
 ## Two different questions

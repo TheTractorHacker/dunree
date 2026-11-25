@@ -223,7 +223,7 @@ func postureHTTPSetup(t *testing.T) (http.Handler, *http.Cookie, *http.Cookie) {
 	rt.HandleFunc("/api/security/posture/undo", HandlePostureUndo)
 	rt.HandleFunc("/api/security/posture/settings", HandlePostureSettings)
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(csrf.Token(r))) })
-	protected := csrf.Protect([]byte("0123456789abcdef0123456789abcdef"), csrf.Secure(false), csrf.Path("/"))(mux)
+	protected := plainHTTPAdmin(csrf.Protect([]byte("0123456789abcdef0123456789abcdef"), csrf.Secure(false), csrf.Path("/"))(mux)) //admincsrf_test.go
 
 	login := func(user, pw string) *http.Cookie {
 		form := strings.NewReader("username=" + user + "&password=" + pw)

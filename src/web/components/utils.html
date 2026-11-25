@@ -662,16 +662,22 @@
             $("#utTokText").text(active === 0 ? t("No active tokens: nothing but a signed-in browser can use the API.") : t("Tokens let scripts use the REST API without your password."));
         });
     }
-    // What a section shows from other pages is read again when the section opens, and when the Utilities page is opened again
+    // What a section shows from other pages is read when the Utilities page is opened, not when this component is loaded:
+    // index.html loads every component at page load, and a page nobody opened must not ask the server for sessions, tokens
+    // and updater settings on every visit (tools/ui-smoke/topnav_smoke.py "topnav/poll" counts those requests).
+    // The first opening reads everything once; after that a section reads its own part again when it opens.
     var utLoadedOnce = false;
     function utRefresh(name){
-        if (!utLoadedOnce){ return; }   // the first load below fetches everything once
+        if (!utLoadedOnce){
+            utLoadedOnce = true;
+            utLoadUpdater(); utLoadSessions(); utLoadTokens();
+            return;
+        }
         if (name === "overview" || name === "security"){ utLoadTokens(); utLoadSessions(); }
         if (name === "overview" || name === "updates" || name === "backup"){ utLoadUpdater(); }
     }
-    utLoadUpdater(); utLoadSessions(); utLoadTokens();
-    utLoadedOnce = true;
     if (typeof tabSwitchEventBind !== "undefined"){ tabSwitchEventBind["utils"] = function(){ utRefresh(utNav.current()); }; }
+    else { utRefresh("overview"); }   // loaded outside index.html: no tab switching, read now
 
     // Backup & restore: both rows open the config tools side panel, "Restore" at the restore step
     $("#utilsPage").on("click", "[data-ut-conf]", function(){

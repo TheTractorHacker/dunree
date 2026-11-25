@@ -152,7 +152,7 @@ func buildSecurityOverview(now time.Time) map[string]interface{} {
 	})
 
 	sect("status", func() {
-		st := map[string]interface{}{"version": SYSTEM_VERSION, "uptimeSeconds": now.Unix() - bootTime, "offline": offline.Enabled()}
+		st := map[string]interface{}{"version": PRODUCT_VERSION, "uptimeSeconds": now.Unix() - bootTime, "offline": offline.Enabled()}
 		listeners := []map[string]interface{}{}
 		if dynamicProxyRouter != nil {
 			st["proxyRunning"] = dynamicProxyRouter.Running

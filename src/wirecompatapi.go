@@ -101,14 +101,14 @@ func HandleLegacyNames(w http.ResponseWriter, r *http.Request) {
 // zoraxyBaseVersion is the Zoraxy release Dunree is based on. Plugins built with the Zoraxy SDK // legacy-compat
 // read it as runtime_const.zoraxy_version: it must stay a Zoraxy version number (a plugin that // legacy-compat
 // checks for "3.x or newer" would otherwise refuse to run), whatever version Dunree itself has.
-const zoraxyBaseVersion = "3.3.6" // legacy-compat
+const zoraxyBaseVersion = COMPAT_VERSION // legacy-compat
 
 // pluginRuntimeConst is what plugins are told about this host (runtime_const of the configure
 // payload). The plugin manager sends the dunree_* fields only to plugins built for Dunree and the
 // zoraxy_* fields to every plugin (mod/plugins/wire.go).
 func pluginRuntimeConst() *dunree_plugin.RuntimeConstantValue {
 	return &dunree_plugin.RuntimeConstantValue{
-		DunreeVersion:    SYSTEM_VERSION,
+		DunreeVersion:    PRODUCT_VERSION,
 		DunreeUUID:       nodeUUID,
 		ZoraxyVersion:    zoraxyBaseVersion, // legacy-compat
 		ZoraxyUUID:       nodeUUID,          // legacy-compat

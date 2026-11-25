@@ -22,14 +22,15 @@ Dunree keeps its data in the folder it is started in, on every system. The servi
 ## Building the release files
 
 ```bash
-tools/build_release.sh -t vX.Y.Z-topic.N -b BUILD --packages
+tools/build_release.sh -t vX.Y.Z[-beta.N] -b BUILD --packages
 ```
 
 builds `dunree_<os>_<arch>[.exe]` for Linux (amd64, arm64, arm, 386, riscv64, mipsle), Windows (amd64, arm64) and macOS (amd64, arm64), the archives, and the `.deb` / `.rpm` when [nfpm](https://nfpm.goreleaser.com) is installed, then signs and verifies `SHA256SUMS`. Useful switches:
 
 * `--dry-run` prints what would be built and signed. It builds nothing and needs no key.
 * `--targets linux/amd64,windows/amd64` builds a subset. `freebsd/amd64` and `freebsd/arm64` are only built when named here.
-* `--no-legacy-names` leaves out the `zoraxy_linux_<arch>` copies (see "Legacy names").
+* `--targets-subset linux/amd64` is the same for a quick test of the whole path (build, sign, verify): the output folder gets `NOT-A-COMPLETE-RELEASE.txt` and must not be published.
+* The tag must be `v` plus the Dunree version of the source tree (`mod/brand` `Version`); another tag is refused.
 
 `packaging/build_packages.sh --dist DIR --version X.Y.Z` builds only the archives and packages from binaries that are already in `DIR`.
 
@@ -38,9 +39,9 @@ Two packages need their own system and are built by hand from the binaries in `d
 * **Windows installer:** on Windows with Inno Setup 6.3 or newer, `iscc /DAppVersion=X.Y.Z /DArch=amd64 /DSourceExe=...\dunree_windows_amd64.exe packaging\windows\dunree.iss` (and again with `arm64`).
 * **macOS package:** on macOS, `packaging/macos/build-pkg.sh --version X.Y.Z --dist dist` (a universal program for Intel and Apple silicon).
 
-### Legacy names
+### File names and the earlier fork
 
-The updater inside an existing install asks a release for `zoraxy_linux_<arch>`. Every Linux binary is therefore also written under that name: a byte-identical copy, listed in the same signed `SHA256SUMS`. Windows and macOS never had in-app updates, so they get no copy.
+A release carries `dunree_*` files only, and the signed first line of `SHA256SUMS` is `# dunree-release product=dunree tag=... build=... upstream=...`. Copies under the file names of the fork Dunree comes from are not made any more (`--no-legacy-names` is still accepted and does nothing): the updater inside an install of that fork cannot install a Dunree release anyway, because the Dunree version line starts below its version. Such an install is switched by replacing the program file, see `docs/migrating-from-zoraxy.md`. <!-- rebrand:keep -->
 
 ### Checks
 

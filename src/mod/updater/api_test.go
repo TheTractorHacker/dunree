@@ -27,7 +27,7 @@ func call(h http.HandlerFunc, method, target string, form url.Values) *httptest.
 
 func TestAPIHandlers(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	m := f.m
 
 	// mutations require POST
@@ -87,7 +87,7 @@ func TestAPIHandlers(t *testing.T) {
 
 	// start app, then a second start is throttled
 	gate := make(chan struct{})
-	f.smoke = func(context.Context, string) (string, error) { <-gate; return "Zoraxy 3.3.6", nil }
+	f.smoke = func(context.Context, string) (string, error) { <-gate; return "Dunree - Version 1.1.0", nil }
 	rec = call(m.HandleStart, "POST", "/s", url.Values{"action": {"app"}, "confirm": {"true"}, "backup": {"false"}})
 	if rec.Code != http.StatusAccepted {
 		t.Fatalf("start: %d %s", rec.Code, rec.Body.String())
@@ -115,7 +115,7 @@ func TestAPIHandlers(t *testing.T) {
 	// history newest first
 	var hist []HistoryEntry
 	json.Unmarshal(call(m.HandleHistory, "GET", "/h", nil).Body.Bytes(), &hist)
-	if len(hist) != 1 || hist[0].To != "v3.3.6-x.1" {
+	if len(hist) != 1 || hist[0].To != "v1.1.0" {
 		t.Errorf("history: %+v", hist)
 	}
 }
@@ -170,7 +170,7 @@ func TestAutoCheckDefaultsOffAndPersists(t *testing.T) {
 
 func TestBadgeFollowsTheSettingAndNeverUsesTheNetwork(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	m := f.m
 	badge := func() map[string]any {
 		before := f.gh.hit("/repos/o/r/releases")
@@ -193,7 +193,7 @@ func TestBadgeFollowsTheSettingAndNeverUsesTheNetwork(t *testing.T) {
 	}
 	m.SetAutoCheck(true)
 	out := badge()
-	if out["auto_check"] != true || out["update_available"] != true || out["latest"] != "v3.3.6-x.1" {
+	if out["auto_check"] != true || out["update_available"] != true || out["latest"] != "v1.1.0" {
 		t.Fatalf("with the daily check on the badge must show the cached release: %v", out)
 	}
 }

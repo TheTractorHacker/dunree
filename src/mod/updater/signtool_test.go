@@ -25,7 +25,7 @@ func TestSignToolRoundtrip(t *testing.T) {
 	priv, pubPath, dist := filepath.Join(dir, "k.pem"), filepath.Join(dir, "k.pub"), filepath.Join(dir, "dist")
 	must(t, os.MkdirAll(dist, 0o755))
 	bin := []byte("fake release binary")
-	must(t, os.WriteFile(filepath.Join(dist, "zoraxy_linux_amd64"), bin, 0o755))
+	must(t, os.WriteFile(filepath.Join(dist, "dunree_linux_amd64"), bin, 0o755))
 
 	run := func(args ...string) {
 		t.Helper()
@@ -36,7 +36,7 @@ func TestSignToolRoundtrip(t *testing.T) {
 		}
 	}
 	run("-genkey", priv, pubPath)
-	run("-dist", dist, "-key", priv, "-pub", pubPath, "-tag", "v3.3.6-x.1", "-build", "12")
+	run("-dist", dist, "-key", priv, "-pub", pubPath, "-tag", "v1.1.0", "-build", "12")
 
 	pemBytes, _ := os.ReadFile(pubPath)
 	pub, err := ParsePublicKeyPEM(pemBytes)
@@ -44,13 +44,13 @@ func TestSignToolRoundtrip(t *testing.T) {
 	sums, _ := os.ReadFile(filepath.Join(dist, "SHA256SUMS"))
 	sig, _ := os.ReadFile(filepath.Join(dist, "SHA256SUMS.sig"))
 	must(t, VerifySums(pub, sums, sig))
-	if _, err := CheckSumsHeader(sums, "v3.3.6-x.1", 11); err != nil {
+	if _, err := CheckSumsHeader(sums, "v1.1.0", 11); err != nil {
 		t.Fatalf("header from sign tool rejected: %v", err)
 	}
-	if _, err := CheckSumsHeader(sums, "v3.3.6-x.1", 12); err == nil {
+	if _, err := CheckSumsHeader(sums, "v1.1.0", 12); err == nil {
 		t.Fatal("equal build accepted")
 	}
-	want, err := SumFor(sums, "zoraxy_linux_amd64")
+	want, err := SumFor(sums, "dunree_linux_amd64")
 	must(t, err)
 	if len(want) != 64 {
 		t.Fatal("bad sum")

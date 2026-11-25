@@ -706,7 +706,7 @@ def plugins_mock_part(pg, ok, shot, no_injection, row_text, badge, open_details,
             ok("side menu wording for stopped, ended and no plugins")
         no_injection("side menu")
 
-        # ---- App Store: an install or update error can quote what a downloaded binary says its ID is; the toast renders HTML
+        # ---- Add-ons page: an install or update error can quote what a downloaded binary says its ID is; the toast renders HTML
         hostile_err = 'the downloaded plugin says its ID is "<img src=x onerror=window.__xss=40>", the index says "a.b": refused'
         store_err = re.compile(r"/api/plugins/store/(install|resync)$")
         pg.route(store_err, lambda rt: js(rt, {"error": hostile_err}))
@@ -720,8 +720,8 @@ def plugins_mock_part(pg, ok, shot, no_injection, row_text, badge, open_details,
             if "<img src=x onerror=window.__xss=40>" not in toast["text"] or toast["imgs"]:
                 fail("appstore", f"the install error must be shown as text: {toast!r}")
             else:
-                ok("App Store: an install error that quotes a hostile plugin ID is shown as text")
-            no_injection("App Store install error")
+                ok("Add-ons: an install error that quotes a hostile plugin ID is shown as text")
+            no_injection("Add-ons install error")
         except Exception as e:
             fail("appstore", f"install error check: {e}")
         finally:

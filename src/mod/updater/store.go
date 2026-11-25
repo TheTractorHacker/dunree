@@ -78,6 +78,7 @@ func (s *store) saveSettings(st Settings) error { return s.writeJSON("settings.j
 // Installed records which release the running executable was installed from.
 // It is only trusted while SHA256 equals the hash of the running executable.
 type Installed struct {
+	Product   string     `json:"product,omitempty"` // "dunree"; a record without it was written by another product and is not trusted
 	Tag       string     `json:"tag"`
 	Published time.Time  `json:"published"`
 	SHA256    string     `json:"sha256"`

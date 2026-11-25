@@ -34,6 +34,8 @@ type fakeRelease struct {
 	Build        int    // signed build number (0 = default 1000)
 	SignedTag    string // tag written into the signed header (default: Tag)
 	NoHeader     bool   // legacy SHA256SUMS without the release header
+	HeaderLine   string // when set, the first line of SHA256SUMS verbatim (without the newline)
+	NoBinaryOnly bool   // like NoBinary, but the release still carries the file of another platform
 	ExtraAssets  bool   // attach the CrowdSec helper files (and their lines in SHA256SUMS)
 }
 
@@ -76,10 +78,10 @@ func (g *fakeGitHub) set(r ...fakeRelease) {
 	g.mu.Unlock()
 }
 
-const testAsset = "zoraxy_linux_amd64"
+const testAsset = "dunree_linux_amd64"
 
 // extraTestAssets are the CrowdSec helper files plus look-alike names.
-var extraTestAssets = []string{"crowdsec-setup.sh", "crowdsec-docker-compose.yml", "CROWDSEC-README.md", "zoraxy_linux_amd64.sh", "zoraxy_linux_amd64_old"}
+var extraTestAssets = []string{"crowdsec-setup.sh", "crowdsec-docker-compose.yml", "CROWDSEC-README.md", "dunree_linux_amd64.sh", "dunree_linux_amd64_old"}
 
 func extraSums() []byte {
 	var b []byte
@@ -117,8 +119,11 @@ func (g *fakeGitHub) serve(w http.ResponseWriter, r *http.Request) {
 				assets = append(assets, map[string]any{"name": n, "size": size,
 					"browser_download_url": g.srv.URL + "/dl/" + fr.Tag + "/" + n})
 			}
-			if !fr.NoBinary {
+			if !fr.NoBinary && !fr.NoBinaryOnly {
 				add(testAsset, len(fr.Binary))
+			}
+			if fr.NoBinaryOnly {
+				add("dunree_plan9_amd64", 10)
 			}
 			for _, a := range fr.ArchAssets {
 				add(a, 10)
@@ -176,8 +181,11 @@ func (g *fakeGitHub) serve(w http.ResponseWriter, r *http.Request) {
 			if b == 0 {
 				b = 1000
 			}
-			pt, _ := ParseTag(st)
-			sums = append([]byte(fmt.Sprintf("# zoraxy-release tag=%s build=%d upstream=%s\n", st, b, pt.BaseVersion())), sums...)
+			line := FormatSumsHeader(SumsHeader{Tag: st, Build: b, Upstream: "3.3.6"})
+			if fr.HeaderLine != "" {
+				line = fr.HeaderLine
+			}
+			sums = append([]byte(line+"\n"), sums...)
 		}
 		key := g.priv
 		if fr.WrongKey {
@@ -223,13 +231,13 @@ type fixture struct {
 	now      time.Time
 }
 
-const oldBinary = "OLD-BINARY-3.3.5"
+const oldBinary = "OLD-BINARY-1.0.0"
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	root := t.TempDir()
 	f := &fixture{t: t, root: root, gh: newFakeGitHub(t), free: 10 << 30, env: map[string]string{}, now: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)}
-	f.exe = filepath.Join(root, "bin", "zoraxy")
+	f.exe = filepath.Join(root, "bin", "dunree")
 	f.conf = filepath.Join(root, "conf")
 	must(t, os.MkdirAll(filepath.Dir(f.exe), 0o755))
 	must(t, os.MkdirAll(filepath.Join(f.conf, "proxy"), 0o755))
@@ -246,7 +254,7 @@ func (f *fixture) build(mut func(*Config)) {
 	cfg := Config{
 		Repo: "o/r", APIBase: f.gh.srv.URL, Client: f.gh.srv.Client(), AllowHTTP: true,
 		ConfDir: f.conf, DBPath: filepath.Join(f.root, "sys.db"), UUIDPath: filepath.Join(f.root, "sys.uuid"),
-		CurrentVersion: "3.3.5", Executable: f.exe, Args: []string{"-port=:8000", "-noauth"},
+		CurrentVersion: "1.0.0", Executable: f.exe, Args: []string{"-port=:8000", "-noauth"},
 		GOOS: "linux", GOARCH: "amd64", PubKey: f.gh.pub, DockerEnvFile: filepath.Join(f.root, "no-dockerenv"),
 		Getenv: func(k string) string { f.mu.Lock(); defer f.mu.Unlock(); return f.env[k] },
 		Logf:   func(string, ...any) {}, HealthyTimeout: 5 * time.Second,
@@ -255,7 +263,7 @@ func (f *fixture) build(mut func(*Config)) {
 				if f.smoke != nil {
 					return f.smoke(ctx, bin)
 				}
-				return "Dunree - Version " + f.gh.latestBase(), nil
+				return "Dunree - Version " + f.gh.latestBase() + " (based on Zoraxy 3.3.6)", nil // legacy-compat: the base is named in the output
 			},
 			Restart: func(exe string, args []string) error {
 				f.mu.Lock()
@@ -306,7 +314,7 @@ func (f *fixture) leftoverTemp() []string {
 	return out
 }
 
-// latestBase returns the upstream version of the first served release.
+// latestBase returns the version of the first served release.
 func (g *fakeGitHub) latestBase() string {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -314,7 +322,7 @@ func (g *fakeGitHub) latestBase() string {
 		return "0.0.0"
 	}
 	t, _ := ParseTag(g.releases[0].Tag)
-	return t.BaseVersion()
+	return t.Version()
 }
 
 // unbusy simulates the process having been replaced by the restart.

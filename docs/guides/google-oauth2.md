@@ -1,6 +1,6 @@
 # Sign in with Google (OIDC)
 
-Answers upstream #959. Dunree side: verified with the project's fake OIDC provider (discovery, PKCE S256, e-mail and
+Answers Zoraxy issue #959. Dunree side: verified with the project's fake OIDC provider (discovery, PKCE S256, e-mail and <!-- rebrand:keep -->
 claim allow-lists). **Not tested against the real Google endpoints.**
 
 ## Google side
@@ -28,7 +28,7 @@ Leave Authorization / Token / User Info URL empty: they come from
 `https://accounts.google.com/.well-known/openid-configuration`. Press **Test discovery** (shows issuer, S256 support, JWKS
 keys), **Apply Change**, then on the proxy rule choose *Authentication Provider: OAuth2*.
 
-Why the upstream report "selecting OAuth2 behaves like None" does not apply here: in this fork a rule set to OAuth2
+Why the report "selecting OAuth2 behaves like None" does not apply here: in Dunree a rule set to OAuth2
 fails closed (HTTP 500 "OAuth2 is not configured") while Client ID or issuer are missing, it never falls back to
 *None*. (Issuer value from #959: use the bare `https://accounts.google.com`, not a `/o/oauth2/v2/auth` URL.)
 

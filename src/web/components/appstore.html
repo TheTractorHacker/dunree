@@ -1,4 +1,4 @@
-<!-- System > App Store (tag appstore). One column: stat row, the featured app (the one primary button of the page), a toolbar
+<!-- System > Add-ons (tag appstore; the page was called App Store, the tag, ids and API paths keep that name). One column: stat row, the featured app (the one primary button of the page), a toolbar
      (search, sort, source, grid / list), category chips with counts, then the apps. No sidebar: a category is picked once, with the chips.
      Data and actions are unchanged (/api/plugins/store/*, /api/plugins/list); installed apps are managed in the Plugin Manager.
      Dunree ships without a store: while no source is configured the page shows "No add-on store configured" with the three
@@ -123,8 +123,8 @@
     <header class="zx-page-header">
       <div class="zx-page-header__main">
         <div class="zx-page-header__crumbs" data-zx-crumbs></div>
-        <h2 class="zx-page-header__title">App Store</h2>
-        <p class="zx-page-header__sub">Add apps (add-ons) from the sources you choose. Dunree contacts no store until you add one. Nothing is installed until you press Install; installed apps are switched on and off in the Plugin Manager.</p>
+        <h2 class="zx-page-header__title">Add-ons</h2>
+        <p class="zx-page-header__sub">Add-ons are apps you install from the sources you choose. Dunree contacts no store until you add one. Nothing is installed until you press Install; installed apps are switched on and off in the Plugin Manager.</p>
       </div>
       <div class="zx-page-header__actions">
         <button type="button" class="zx-btn zx-btn--secondary" onclick="asOpenSettings();"><i class="server icon" aria-hidden="true"></i> Sources</button>
@@ -238,7 +238,7 @@
 <!-- Sources dialog -->
 <div class="ui small modal" id="asSettingsModal">
   <i class="close icon"></i>
-  <div class="header">App Store sources</div>
+  <div class="header">Add-on sources</div>
   <div class="scrolling content">
     <p class="zx-help" style="margin-top: 0;">Apps are loaded from the sources below, and from nowhere else. Dunree ships without a source. Only add sources you trust: an app runs on this server.</p>
     <div class="zx-table-wrap"><table class="zx-table">
@@ -292,7 +292,7 @@
 
 <script>
   /*
-    Dunree App Store
+    Dunree Add-ons page (tag appstore)
 
     Data sources:
     - /api/plugins/store/list          list of downloadable apps (with Source URL)
@@ -1117,7 +1117,7 @@
     .on("click", "[data-as-update]", function () { asUpdateApp(this.dataset.asUpdate, this); })
     .on("click", "[data-as-details]", function () { asShowAppDetails(this.dataset.asDetails); });
 
-  //Refresh the data whenever the App Store tab is opened
+  //Refresh the data whenever the Add-ons tab is opened
   tabSwitchEventBind["appstore"] = function () {
     asLoadData();
   };

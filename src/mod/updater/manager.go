@@ -40,7 +40,7 @@ type Config struct {
 	AllowHTTP bool // tests only: permit http:// release URLs
 
 	ConfDir, DBPath, UUIDPath string
-	CurrentVersion            string // SYSTEM_VERSION
+	CurrentVersion            string // PRODUCT_VERSION (the Dunree version), never the version of the base
 	InDocker                  bool
 	DockerEnvFile             string // default /.dockerenv
 
@@ -339,7 +339,7 @@ func (m *Manager) RestartMethod() string {
 
 // current describes the running build.
 type Current struct {
-	Version   string    `json:"version"`   // SYSTEM_VERSION
+	Version   string    `json:"version"`   // PRODUCT_VERSION
 	Tag       string    `json:"tag"`       // installed release tag, or "" if unknown
 	Published time.Time `json:"published"` // zero if unknown
 	Known     bool      `json:"known"`     // true when Tag came from a verified install record
@@ -353,7 +353,7 @@ func (m *Manager) current() (Current, BuildID) {
 				m.exeSHA, _ = fileSHA256(exe)
 			}
 		})
-		if m.exeSHA != "" && inst.SHA256 == m.exeSHA {
+		if m.exeSHA != "" && inst.SHA256 == m.exeSHA && inst.Product == Product {
 			if t, err := ParseTag(inst.Tag); err == nil {
 				c.Tag, c.Published, c.Known = inst.Tag, inst.Published, true
 				return c, BuildID{Tag: t, Published: inst.Published}
@@ -411,6 +411,16 @@ func (m *Manager) resolveFrom(rels []Release) (*resolved, Current, error) {
 	ch := m.st.settings().Channel
 	latest, err := LatestForChannel(rels, ch)
 	if err != nil {
+		var none *ErrNoRelease
+		if errors.As(err, &none) {
+			// Not a failed check: the source simply has nothing for Dunree (yet). Releases of
+			// another product in it are never offered, whatever their version number.
+			reason := fmt.Sprintf("The update source %s has no Dunree release on the %s channel.", m.cfg.Repo, ch)
+			if none.Other > 0 {
+				reason += fmt.Sprintf(" %d release(s) of another product there were ignored.", none.Other)
+			}
+			return &resolved{reason: reason, assetNameStr: AssetName(m.cfg.GOOS, m.cfg.GOARCH)}, cur, nil
+		}
 		return nil, cur, err
 	}
 	r := &resolved{rel: *latest, assetNameStr: AssetName(m.cfg.GOOS, m.cfg.GOARCH)}
@@ -460,9 +470,12 @@ func (m *Manager) Check(ctx context.Context, force bool) (*CheckResult, error) {
 		return nil, err
 	}
 	res := &CheckResult{
-		Channel: ch, Repo: m.cfg.Repo, Current: cur, Latest: &r.rel, AssetName: r.assetNameStr,
+		Channel: ch, Repo: m.cfg.Repo, Current: cur, AssetName: r.assetNameStr,
 		AssetSize: r.asset.Size, UpdateAvailable: r.newer && r.hasAssets, Reason: r.reason,
 		CheckedAt: m.cfg.Hooks.Now(),
+	}
+	if r.rel.Tag != "" {
+		res.Latest = &r.rel
 	}
 	m.audit("", fmt.Sprintf("check: channel=%s latest=%s update_available=%v", ch, r.rel.Tag, res.UpdateAvailable))
 	m.cacheMu.Lock()

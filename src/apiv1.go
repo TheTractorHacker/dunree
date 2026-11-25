@@ -230,7 +230,7 @@ func v1Routes(b v1Backend, guard func(http.Handler) http.Handler) []v1Route {
 	}
 	return []v1Route{
 		{"GET /api/v1/health", func(w http.ResponseWriter, r *http.Request) {
-			jsonOut(w, http.StatusOK, map[string]string{"status": "ok", "version": SYSTEM_VERSION})
+			jsonOut(w, http.StatusOK, map[string]string{"status": "ok", "version": PRODUCT_VERSION, "compat_version": COMPAT_VERSION})
 		}},
 		{"GET /api/v1/proxy-rules", read("/api/proxy/list", b.ProxyList, url.Values{"type": {"host"}})},
 		{"POST /api/v1/proxy-rules", write("/api/proxy/add", b.ProxyAdd, http.StatusCreated, func(r *http.Request, f url.Values) {

@@ -119,7 +119,7 @@ func TestBackupPrune(t *testing.T) {
 
 func TestInstallRotation(t *testing.T) {
 	dir := t.TempDir()
-	exe := filepath.Join(dir, "zoraxy")
+	exe := filepath.Join(dir, "dunree")
 	os.WriteFile(exe, []byte("v0"), 0o755)
 	for i := 1; i <= 5; i++ {
 		nb := filepath.Join(dir, "new")
@@ -144,11 +144,11 @@ func TestInstallRotation(t *testing.T) {
 
 func TestUpdateHappyPath(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.5-rc5-grpcfix.1", false, time.Hour, "NEW-BINARY"))
+	f.gh.set(f.release("v1.0.1", false, time.Hour, "NEW-BINARY"))
 
 	res, err := f.m.Check(context.Background(), true)
 	must(t, err)
-	if !res.UpdateAvailable || res.Latest.Tag != "v3.3.5-rc5-grpcfix.1" || res.Latest.Notes == "" || res.AssetSize != int64(len("NEW-BINARY")) {
+	if !res.UpdateAvailable || res.Latest.Tag != "v1.0.1" || res.Latest.Notes == "" || res.AssetSize != int64(len("NEW-BINARY")) {
 		t.Fatalf("check: %+v", res)
 	}
 
@@ -172,7 +172,7 @@ func TestUpdateHappyPath(t *testing.T) {
 		t.Errorf("expected one backup, got %v", zips)
 	}
 	p := f.m.st.pending()
-	if p == nil || p.Tag != "v3.3.5-rc5-grpcfix.1" || p.PrevBinary != f.exe+".prev" || p.Exe != f.exe {
+	if p == nil || p.Tag != "v1.0.1" || p.PrevBinary != f.exe+".prev" || p.Exe != f.exe {
 		t.Fatalf("pending marker: %+v", p)
 	}
 	if f.m.Status().State != "restarting" {
@@ -201,7 +201,7 @@ func TestUpdateHappyPath(t *testing.T) {
 	f.m.cacheRes = nil
 	res, err = f.m.Check(context.Background(), true)
 	must(t, err)
-	if res.UpdateAvailable || !res.Current.Known || res.Current.Tag != "v3.3.5-rc5-grpcfix.1" {
+	if res.UpdateAvailable || !res.Current.Known || res.Current.Tag != "v1.0.1" {
 		t.Errorf("after update: %+v", res)
 	}
 	f.unbusy()
@@ -212,12 +212,12 @@ func TestUpdateHappyPath(t *testing.T) {
 
 func TestForwardOnly(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.5-x.1", false, 10*24*time.Hour, "NEW1"))
+	f.gh.set(f.release("v1.0.1", false, 10*24*time.Hour, "NEW1"))
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	f.m.MarkHealthy()
 	f.unbusy()
 	// only an older release is on offer now
-	f.gh.set(f.release("v3.3.5-x.1", false, 10*24*time.Hour, "NEW1"), f.release("v3.3.4-hot.1", false, time.Hour, "OLDER"))
+	f.gh.set(f.release("v1.0.1", false, 10*24*time.Hour, "NEW1"), f.release("v0.9.9", false, time.Hour, "OLDER"))
 	err := f.m.RunApp(context.Background(), RunOptions{})
 	if err == nil {
 		t.Fatal("expected the update to be refused")
@@ -235,12 +235,12 @@ func TestForwardOnly(t *testing.T) {
 // is the same build, not an update: the refusal must not depend on the signed-build check.
 func TestSameTagRepublishedIsNotAnUpdate(t *testing.T) {
 	f := newFixture(t)
-	r1 := f.release("v3.3.5-x.1", false, 10*24*time.Hour, "NEW1")
+	r1 := f.release("v1.0.1", false, 10*24*time.Hour, "NEW1")
 	f.gh.set(r1)
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	f.m.MarkHealthy()
 	f.unbusy()
-	r2 := f.release("v3.3.5-x.1", false, 10*24*time.Hour, "NEW1")
+	r2 := f.release("v1.0.1", false, 10*24*time.Hour, "NEW1")
 	r2.Published = r1.Published.Add(3 * time.Second)
 	f.gh.set(r2)
 	err := f.m.RunApp(context.Background(), RunOptions{})
@@ -263,15 +263,19 @@ func TestUpdateFailuresLeaveBinaryUntouched(t *testing.T) {
 		{"tampered binary", func(r *fakeRelease) { r.TamperBinary = true }, "checksum mismatch"},
 		{"tampered sums", func(r *fakeRelease) { r.TamperSums = true }, "signature verification FAILED"},
 		{"wrong signing key", func(r *fakeRelease) { r.WrongKey = true }, "signature verification FAILED"},
-		{"replayed sums signed for another tag", func(r *fakeRelease) { r.SignedTag = "v3.3.5-old.1" }, "does not match release tag"},
+		{"replayed sums signed for another tag", func(r *fakeRelease) { r.SignedTag = "v1.0.1" }, "does not match release tag"},
 		{"legacy sums without release header", func(r *fakeRelease) { r.NoHeader = true }, "release header"},
 		{"missing signature asset", func(r *fakeRelease) { r.NoSig = true }, "not signed"},
-		{"missing platform asset", func(r *fakeRelease) { r.NoBinary = true }, "no asset"},
+		{"missing platform asset", func(r *fakeRelease) { r.NoBinaryOnly = true }, "no asset"},
+		{"no program file of Dunree at all", func(r *fakeRelease) { r.NoBinary = true }, "no Dunree release"},
+		{"header of the earlier fork, same key", func(r *fakeRelease) { r.HeaderLine = "# zoraxy-release tag=v1.1.0 build=1000 upstream=3.3.6" }, "not a Dunree release"}, // legacy-compat
+		{"header without the product", func(r *fakeRelease) { r.HeaderLine = "# dunree-release tag=v1.1.0 build=1000 upstream=3.3.6" }, "not a Dunree release"},
+		{"header of another product", func(r *fakeRelease) { r.HeaderLine = "# dunree-release product=other tag=v1.1.0 build=1000" }, "not a Dunree release"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			f := newFixture(t)
-			r := f.release("v3.3.6-x.1", false, time.Hour, "NEW")
+			r := f.release("v1.1.0", false, time.Hour, "NEW")
 			c.mut(&r)
 			f.gh.set(r)
 			err := f.m.RunApp(context.Background(), RunOptions{Backup: false})
@@ -301,7 +305,7 @@ func TestUpdateFailuresLeaveBinaryUntouched(t *testing.T) {
 // installable over a newer one, even if GitHub metadata claims it is newer.
 func TestSignedBuildMustIncrease(t *testing.T) {
 	f := newFixture(t)
-	r1 := f.release("v3.3.6-x.1", false, 10*24*time.Hour, "NEW1")
+	r1 := f.release("v1.1.0", false, 10*24*time.Hour, "NEW1")
 	r1.Build = 50
 	f.gh.set(r1)
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
@@ -310,7 +314,7 @@ func TestSignedBuildMustIncrease(t *testing.T) {
 	if inst := f.m.st.installed(); inst == nil || inst.Build != 50 {
 		t.Fatalf("installed build not recorded: %+v", inst)
 	}
-	r2 := f.release("v3.3.7-x.1", false, time.Hour, "NEW2")
+	r2 := f.release("v1.2.0", false, time.Hour, "NEW2")
 	r2.Build = 49 // replayed/older signed content
 	f.gh.set(r2)
 	err := f.m.RunApp(context.Background(), RunOptions{})
@@ -328,14 +332,14 @@ func TestSignedBuildMustIncrease(t *testing.T) {
 
 func TestBackupFailureAbortsBeforeDownload(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	// make <conf>/../backups an ordinary file so the backup cannot be created
 	must(t, os.WriteFile(filepath.Join(f.root, "backups"), []byte("x"), 0o644))
 	err := f.m.RunApp(context.Background(), RunOptions{Backup: true})
 	if err == nil || !strings.Contains(err.Error(), "backup failed") {
 		t.Fatalf("got %v", err)
 	}
-	if f.gh.hit("/dl/v3.3.6-x.1/"+testAsset) != 0 {
+	if f.gh.hit("/dl/v1.1.0/"+testAsset) != 0 {
 		t.Error("binary was downloaded despite backup failure")
 	}
 	if f.readExe() != oldBinary {
@@ -345,7 +349,7 @@ func TestBackupFailureAbortsBeforeDownload(t *testing.T) {
 
 func TestSmokeFailureAborts(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	f.smoke = func(context.Context, string) (string, error) { return "", errors.New("exec format error") }
 	err := f.m.RunApp(context.Background(), RunOptions{})
 	if err == nil || !strings.Contains(err.Error(), "smoke test") {
@@ -362,7 +366,7 @@ func TestSmokeFailureAborts(t *testing.T) {
 
 func TestRestartFailureReverts(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	f.build(func(c *Config) {
 		c.Hooks.Restart = func(string, []string) error { return errors.New("exec denied") }
 	})
@@ -381,7 +385,7 @@ func TestRestartFailureReverts(t *testing.T) {
 func TestDockerRefusesUpdate(t *testing.T) {
 	f := newFixture(t)
 	f.build(func(c *Config) { c.InDocker = true })
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	if err := f.m.RunApp(context.Background(), RunOptions{}); err == nil || !strings.Contains(err.Error(), "Docker") {
 		t.Fatalf("got %v", err)
 	}
@@ -392,9 +396,9 @@ func TestDockerRefusesUpdate(t *testing.T) {
 
 func TestOnlyOneRunningUpdate(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	gate := make(chan struct{})
-	f.smoke = func(context.Context, string) (string, error) { <-gate; return "Zoraxy 3.3.6", nil }
+	f.smoke = func(context.Context, string) (string, error) { <-gate; return "Dunree - Version 1.1.0", nil }
 	must(t, f.m.StartApp(RunOptions{}))
 	if err := f.m.StartApp(RunOptions{}); !errors.Is(err, errBusy) {
 		t.Errorf("second start: %v", err)
@@ -414,7 +418,7 @@ func TestOnlyOneRunningUpdate(t *testing.T) {
 
 func TestManualRollback(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	f.m.MarkHealthy()
 	f.unbusy()
@@ -441,7 +445,7 @@ func TestManualRollback(t *testing.T) {
 
 func TestGuardRollsBackWhenNotHealthy(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	f.build(func(c *Config) { c.HealthyTimeout = 150 * time.Millisecond })
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	if f.restarts != 1 {
@@ -470,7 +474,7 @@ func TestGuardRollsBackWhenNotHealthy(t *testing.T) {
 
 func TestGuardHealthyDisarms(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	f.build(func(c *Config) { c.HealthyTimeout = 150 * time.Millisecond })
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	f.m.StartGuard()
@@ -483,7 +487,7 @@ func TestGuardHealthyDisarms(t *testing.T) {
 
 func TestGuardCrashLoop(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	for i := 0; i < maxStartAttempts; i++ {
 		f.m.StartGuard() // each crash + supervisor restart counts one attempt
@@ -508,7 +512,7 @@ func TestGuardNoPendingIsNoop(t *testing.T) {
 
 func TestWatchdogRollsBack(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	must(t, f.m.RunApp(context.Background(), RunOptions{}))
 	p := f.m.st.pending()
 	p.Method = "systemd" // do not try to relaunch a process in the test
@@ -605,16 +609,16 @@ func TestSettings(t *testing.T) {
 
 func TestBetaChannelPicksPrerelease(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-s.1", false, 48*time.Hour, "S"), f.release("v3.3.6-b.2", true, time.Hour, "B"))
+	f.gh.set(f.release("v1.1.0", false, 48*time.Hour, "S"), f.release("v1.2.0-beta.1", true, time.Hour, "B"))
 	res, err := f.m.Check(context.Background(), true)
 	must(t, err)
-	if res.Latest.Tag != "v3.3.6-s.1" {
+	if res.Latest.Tag != "v1.1.0" {
 		t.Errorf("stable: %s", res.Latest.Tag)
 	}
 	must(t, f.m.SetChannel(ChannelBeta))
 	res, err = f.m.Check(context.Background(), false) // cache is per channel
 	must(t, err)
-	if res.Latest.Tag != "v3.3.6-b.2" {
+	if res.Latest.Tag != "v1.2.0-beta.1" {
 		t.Errorf("beta: %s", res.Latest.Tag)
 	}
 }
@@ -623,19 +627,19 @@ func TestPlatformAssetSelection(t *testing.T) {
 	for _, arch := range []string{"amd64", "arm64", "arm", "386", "riscv64", "mipsle"} {
 		f := newFixture(t)
 		f.build(func(c *Config) { c.GOARCH = arch })
-		r := f.release("v3.3.6-x.1", false, time.Hour, "NEW")
+		r := f.release("v1.1.0", false, time.Hour, "NEW")
 		r.NoBinary = true
 		r.ArchAssets = []string{AssetName("linux", arch)}
 		f.gh.set(r)
 		res, err := f.m.Check(context.Background(), true)
 		must(t, err)
-		if res.AssetName != "zoraxy_linux_"+arch || !res.UpdateAvailable {
+		if res.AssetName != "dunree_linux_"+arch || !res.UpdateAvailable {
 			t.Errorf("%s: %+v", arch, res)
 		}
 	}
 	f := newFixture(t)
 	f.build(func(c *Config) { c.GOARCH = "s390x" })
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	res, err := f.m.Check(context.Background(), true)
 	must(t, err)
 	if res.UpdateAvailable || !strings.Contains(res.Reason, "no asset") {
@@ -657,7 +661,7 @@ func TestRefuseNonHTTPS(t *testing.T) {
 // cannot block an update (and is covered by the signature, not verified by the updater).
 func TestUpdateWithExtraAssets(t *testing.T) {
 	f := newFixture(t)
-	r := f.release("v3.3.5-rc5-grpcfix.1", false, time.Hour, "NEW-BINARY")
+	r := f.release("v1.0.1", false, time.Hour, "NEW-BINARY")
 	r.ExtraAssets = true
 	f.gh.set(r)
 
@@ -675,7 +679,7 @@ func TestUpdateWithExtraAssets(t *testing.T) {
 func TestSumForIgnoresExtraLines(t *testing.T) {
 	bin := []byte("bin")
 	sums := append(append(extraSums(), sumsFor(testAsset, bin)...), extraSums()...)
-	sums = append([]byte("# zoraxy-release tag=v1.2.3-x.1 build=5 upstream=1.2.3\n"), sums...)
+	sums = append([]byte(FormatSumsHeader(SumsHeader{Tag: "v1.2.3", Build: 5, Upstream: "3.3.6"})+"\n"), sums...)
 	got := sha256.Sum256(bin)
 	if err := VerifyBinarySum(sums, testAsset, got); err != nil {
 		t.Fatalf("binary must verify with extra lines: %v", err)
@@ -689,13 +693,13 @@ func TestSumForIgnoresExtraLines(t *testing.T) {
 	if err := VerifyBinarySum(sums, testAsset, sha256.Sum256([]byte("other"))); err == nil {
 		t.Fatal("wrong binary hash must fail")
 	}
-	if _, err := SumFor(sums, "zoraxy_linux_arm64"); err == nil {
+	if _, err := SumFor(sums, "dunree_linux_arm64"); err == nil {
 		t.Fatal("unlisted binary must not be found via look-alike lines")
 	}
 	if _, err := ParseSumsHeader(sums); err != nil {
 		t.Fatalf("header: %v", err)
 	}
-	rel := Release{Assets: []Asset{{Name: "crowdsec-setup.sh"}, {Name: "zoraxy_linux_amd64.sh"}, {Name: testAsset}, {Name: SumsAsset}, {Name: SigAsset}}}
+	rel := Release{Assets: []Asset{{Name: "crowdsec-setup.sh"}, {Name: "dunree_linux_amd64.sh"}, {Name: testAsset}, {Name: SumsAsset}, {Name: SigAsset}}}
 	if a, ok := FindAsset(rel, AssetName("linux", "amd64")); !ok || a.Name != testAsset {
 		t.Fatalf("asset selection: %+v %v", a, ok)
 	}

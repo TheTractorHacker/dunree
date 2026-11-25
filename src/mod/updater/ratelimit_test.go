@@ -17,7 +17,7 @@ func relHits(f *fixture) int { return f.gh.hit("/repos/o/r/releases") }
 func TestCheckUsesCacheThenETag(t *testing.T) {
 	f := newFixture(t)
 	f.gh.useETag = true
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	ctx := context.Background()
 
 	if _, err := f.m.Check(ctx, true); err != nil {
@@ -44,9 +44,9 @@ func TestCheckUsesCacheThenETag(t *testing.T) {
 		t.Fatalf("hits=%d notModified=%d", relHits(f), f.gh.notMod)
 	}
 	// content change: the ETag differs, new data is returned
-	f.gh.set(f.release("v3.3.7-x.1", false, time.Hour, "NEWER"))
+	f.gh.set(f.release("v1.2.0", false, time.Hour, "NEWER"))
 	res, err = f.m.Check(ctx, true)
-	if err != nil || res.Latest.Tag != "v3.3.7-x.1" {
+	if err != nil || res.Latest.Tag != "v1.2.0" {
 		t.Fatalf("after change: %v %+v", err, res)
 	}
 }
@@ -55,7 +55,7 @@ func TestCacheExpires(t *testing.T) {
 	f := newFixture(t)
 	now := time.Now()
 	f.build(func(c *Config) { c.Hooks.Now = func() time.Time { return now } })
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	f.m.Check(context.Background(), true)
 	now = now.Add(9 * time.Minute)
 	f.m.cacheMu.Lock()
@@ -123,7 +123,7 @@ func TestRetryAfterAndPlain403(t *testing.T) {
 
 func TestGitHubTokenStoredPrivatelyAndSent(t *testing.T) {
 	f := newFixture(t)
-	f.gh.set(f.release("v3.3.6-x.1", false, time.Hour, "NEW"))
+	f.gh.set(f.release("v1.1.0", false, time.Hour, "NEW"))
 	const tok = "ghp_testtoken123"
 	rec := call(f.m.HandleSetToken, "POST", "/t", map[string][]string{"token": {tok}})
 	if rec.Code != 200 || strings.Contains(rec.Body.String(), tok) || !strings.Contains(rec.Body.String(), `"has_token":true`) {

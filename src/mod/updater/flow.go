@@ -200,8 +200,8 @@ func (m *Manager) runApp(ctx context.Context, opts RunOptions, reserved bool) (e
 	if err != nil {
 		return fmt.Errorf("smoke test failed: %w (%s)", err, out)
 	}
-	if !strings.Contains(out, tag.BaseVersion()) {
-		return fmt.Errorf("smoke test: unexpected version output %q (wanted %s)", out, tag.BaseVersion())
+	if !VersionInOutput(out, tag.Version()) {
+		return fmt.Errorf("smoke test: unexpected version output %q (wanted %s)", out, tag.Version())
 	}
 	m.logf(a, "New binary reports: %s", out)
 
@@ -218,7 +218,7 @@ func (m *Manager) runApp(ctx context.Context, opts RunOptions, reserved bool) (e
 	}
 	installed = true
 	newSHA := fmt.Sprintf("%x", sum)
-	newInst := &Installed{Tag: r.rel.Tag, Published: r.rel.Published, SHA256: newSHA, Build: hdr.Build, Previous: prevInst}
+	newInst := &Installed{Product: Product, Tag: r.rel.Tag, Published: r.rel.Published, SHA256: newSHA, Build: hdr.Build, Previous: prevInst}
 	now := m.cfg.Hooks.Now()
 	pend := &Pending{
 		Tag: r.rel.Tag, PrevTag: cur.label(), Exe: exe, PrevBinary: prevSlot(exe, 0), Args: m.cfg.Args,

@@ -54,7 +54,7 @@ func skipFullExport(rel string) bool {
 // writeConfigZip writes the config folder (and optionally the system database) as a full backup archive
 func writeConfigZip(out io.Writer, confDir string, dbPath string) error {
 	_, err := confpack.WriteExport(out, confpack.ExportOptions{ConfDir: confDir, DBPath: dbPath, Mode: confpack.ModeFull,
-		DunreeVersion: SYSTEM_VERSION, SkipFull: skipFullExport, OmitManifest: true})
+		DunreeVersion: COMPAT_VERSION, SkipFull: skipFullExport, OmitManifest: true})
 	return err
 }
 
@@ -91,7 +91,7 @@ func ExportConfigAsZip(w http.ResponseWriter, r *http.Request) {
 	//manifest=true adds it for integrity checking. The shareable export always has one.
 	withManifest, _ := utils.GetBool(r, "manifest")
 	_, err := confpack.WriteExport(w, confpack.ExportOptions{ConfDir: CONF_FOLDER, DBPath: dbPath, Mode: mode,
-		DunreeVersion: SYSTEM_VERSION, SkipFull: skipFullExport, OmitManifest: mode == confpack.ModeFull && !withManifest})
+		DunreeVersion: COMPAT_VERSION, SkipFull: skipFullExport, OmitManifest: mode == confpack.ModeFull && !withManifest})
 	if err != nil {
 		SystemWideLogger.PrintAndLog("Backup", "Unable to write the backup archive", err)
 	}

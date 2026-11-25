@@ -36,6 +36,7 @@ CSV, JSON, YAML, UUID, CPU, RAM. Keep `{0}` / `{1}` placeholders, HTML-like frag
 | security center | 安全中心 | 安全中心 | centro de seguridad | Sicherheitszentrale | centre de sécurité | セキュリティセンター | central de segurança | центр безопасности |
 | logs | 日志 | 日誌 | registros | Protokolle | journaux | ログ | logs | журналы |
 | plugin | 插件 | 外掛 | complemento | Plugin | extension (plugin) | プラグイン | plugin | плагин |
+| add-on (the page "Add-ons", add-on store) | 附加组件 | 附加元件 | extensión | Add-on | module complémentaire | アドオン | complemento | дополнение |
 | API token | API 令牌 | API 權杖 | token de API | API-Token | jeton d'API | APIトークン | token de API | токен API |
 | trusted proxy | 受信任代理 | 受信任的代理 | proxy de confianza | vertrauenswürdiger Proxy | proxy de confiance | 信頼されたプロキシ | proxy confiável | доверенный прокси |
 | client IP | 客户端 IP | 用戶端 IP | IP del cliente | Client-IP | IP du client | クライアントIP | IP do cliente | IP клиента |

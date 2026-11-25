@@ -1,0 +1,182 @@
+{
+ "note": "Written by tools/screenshots/capture.py. Do not edit by hand.",
+ "scale": 2,
+ "pictures": [
+  {
+   "file": "status.png",
+   "title": "Status",
+   "caption": "Status: is the proxy running, how much traffic it handles and what needs attention.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "status-dark.png",
+   "title": "Status, dark theme",
+   "caption": "The same page in the dark theme. Every page has both.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "sites.png",
+   "title": "HTTP Proxy",
+   "caption": "Sites > HTTP Proxy: every host name, where it is sent, its tags, protection and live state.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "site-editor.png",
+   "title": "Edit site: upstreams and load balancing",
+   "caption": "Edit site: several upstream servers behind one host name, with weights, health and fallback.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "certificates.png",
+   "title": "Certificates",
+   "caption": "Certificates: what each certificate covers, who issued it and when it expires.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "security-overview.png",
+   "title": "Security Overview",
+   "caption": "Security > Security Overview: what protects the sites, with a recommendation for each gap.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "security-center.png",
+   "title": "Security Center",
+   "caption": "Security Center: deployment role, network exposure, auto-ban, bots, admin accounts and the audit log.",
+   "readme": false,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "waf.png",
+   "title": "WAF",
+   "caption": "Security > WAF: the web application firewall (OWASP Core Rule Set), its mode per site and what it stopped.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "rules.png",
+   "title": "Rules",
+   "caption": "Security > Rules: when a request matches, block it, challenge it, limit its rate or only log it.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "crowdsec.png",
+   "title": "CrowdSec",
+   "caption": "Security Center > CrowdSec: Dunree as a CrowdSec bouncer, with the decisions that are loaded and what they matched.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "statistics.png",
+   "title": "Statistics",
+   "caption": "Traffic > Statistics: requests, errors, blocked requests and visitors, in total and for each site.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "statistics-visitors.png",
+   "title": "Statistics: visitors and devices",
+   "caption": "Further down the Statistics page: countries, the most active addresses, referring sites, devices and browsers.",
+   "readme": false,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "uptime.png",
+   "title": "Uptime Monitor",
+   "caption": "Traffic > Uptime Monitor: the upstream servers, checked every few minutes.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "addons-empty.png",
+   "title": "Add-ons, no source",
+   "caption": "System > Add-ons on a new install: no store is built in, you add a source yourself.",
+   "readme": false,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "addons.png",
+   "title": "Add-ons with a local index",
+   "caption": "System > Add-ons with a signed index from a local folder.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "fleet.png",
+   "title": "Fleet",
+   "caption": "Fleet & HA > Fleet: one Dunree as the hub of several others, with groups and staged roll-out.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "cluster.png",
+   "title": "Cluster / HA",
+   "caption": "Fleet & HA > Cluster / HA: the role of this node.",
+   "readme": false,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "error-pages.png",
+   "title": "Error pages",
+   "caption": "Sites > Error pages: your own texts, colours and HTML for the pages Dunree shows, with a preview.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "about.png",
+   "title": "About Dunree",
+   "caption": "System > Utilities > About Dunree: version, publisher, licence, source code and the project Dunree is based on.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "setup.png",
+   "title": "First start",
+   "caption": "First start: the page that creates the administrator account.",
+   "readme": false,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "login.png",
+   "title": "Login",
+   "caption": "The login page.",
+   "readme": true,
+   "width": 2880,
+   "height": 1800
+  },
+  {
+   "file": "status-phone.png",
+   "title": "Status on a phone",
+   "caption": "The Status page at 390 px. The whole interface works at phone width.",
+   "readme": true,
+   "width": 780,
+   "height": 1688
+  }
+ ]
+}

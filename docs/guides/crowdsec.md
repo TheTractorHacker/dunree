@@ -1,6 +1,6 @@
 # CrowdSec with Dunree
 
-Answers upstream #648 ("does CrowdSec need live logs?"). Log format and the ban API were checked on a throw-away
+Answers Zoraxy issue #648 ("does CrowdSec need live logs?"). Log format and the ban API were checked on a throw-away <!-- rebrand:keep -->
 instance; the CrowdSec configuration itself was **not** run (no CrowdSec here), treat the YAML as a starting point.
 
 ## Reading the logs (detection)
