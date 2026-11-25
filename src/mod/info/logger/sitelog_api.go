@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // LoadSiteLogConfig reads the config file; a missing or malformed file yields the (disabled) defaults

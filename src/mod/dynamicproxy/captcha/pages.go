@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/foleyit/dunree/mod/i18n"
+	"github.com/TheTractorHacker/dunree/mod/i18n"
 )
 
 /*

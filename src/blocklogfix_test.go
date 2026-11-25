@@ -12,14 +12,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/botrules"
-	"github.com/foleyit/dunree/mod/confhistory"
-	db "github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/confhistory"
+	db "github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // fixEnv is a router with one site (app.example.com, CAPTCHA configured), an access controller, bot rules and a blocked log

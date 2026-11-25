@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
-	"github.com/foleyit/dunree/mod/uservars"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/uservars"
 )
 
 /*

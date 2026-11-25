@@ -16,10 +16,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/luascript"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/luascript"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 func RegisterScriptAPIs(authRouter *auth.RouterDef) {

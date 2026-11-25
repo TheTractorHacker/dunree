@@ -23,9 +23,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/plugins/addonindex"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/plugins/addonindex"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 /*

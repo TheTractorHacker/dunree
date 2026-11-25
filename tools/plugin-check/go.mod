@@ -1,3 +1,3 @@
-module github.com/foleyit/dunree/tools/plugin-check
+module github.com/TheTractorHacker/dunree/tools/plugin-check
 
 go 1.21

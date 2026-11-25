@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/crowdsec"
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/crowdsec"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 )
 
 const csAPIKey = "api-test-KEY-98765432100"

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 )
 
 const ruleA = `{"RootOrMatchingDomain":"rule-a"}`

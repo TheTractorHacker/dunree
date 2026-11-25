@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/foleyit/dunree/mod/update/updateutil"
+	"github.com/TheTractorHacker/dunree/mod/update/updateutil"
 )
 
 func UpdateFrom314To315(confDir string) error {

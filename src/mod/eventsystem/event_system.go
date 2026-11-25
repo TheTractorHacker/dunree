@@ -4,10 +4,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 	"github.com/google/uuid"
 
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
 )
 
 type ListenerID string

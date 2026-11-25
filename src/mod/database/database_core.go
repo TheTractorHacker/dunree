@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database/dbbolt"
-	"github.com/foleyit/dunree/mod/database/dbinc"
-	"github.com/foleyit/dunree/mod/database/dbleveldb"
+	"github.com/TheTractorHacker/dunree/mod/database/dbbolt"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/database/dbleveldb"
 )
 
 func newDatabase(dbfile string, backendType dbinc.BackendType) (*Database, error) {

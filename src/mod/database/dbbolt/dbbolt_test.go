@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database/dbbolt"
+	"github.com/TheTractorHacker/dunree/mod/database/dbbolt"
 )
 
 func TestNewBoltDatabase(t *testing.T) {

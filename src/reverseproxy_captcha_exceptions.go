@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

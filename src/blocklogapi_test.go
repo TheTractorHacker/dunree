@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
 )
 
 func setupBlockAPI(t *testing.T) *blocklog.Log {

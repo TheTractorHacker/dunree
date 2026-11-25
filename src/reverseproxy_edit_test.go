@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // editTestBaseline returns a rule with every field the edit handler manages set to a

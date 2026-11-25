@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/access/blocklistimport"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/access/blocklistimport"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

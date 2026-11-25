@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/streamproxy"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/streamproxy"
 )
 
 func post(h http.HandlerFunc, form url.Values) string {

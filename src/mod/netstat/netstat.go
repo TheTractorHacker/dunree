@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 	"github.com/shirou/gopsutil/v4/net"
 )
 

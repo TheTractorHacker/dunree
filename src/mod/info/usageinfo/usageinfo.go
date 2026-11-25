@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/info/shellexec"
+	"github.com/TheTractorHacker/dunree/mod/info/shellexec"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 )

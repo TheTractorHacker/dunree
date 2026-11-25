@@ -7,11 +7,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
-	"github.com/foleyit/dunree/mod/eventsystem"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/redirection"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/eventsystem"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // newNonTLSTestRouter builds a Router with a real access controller, redirect

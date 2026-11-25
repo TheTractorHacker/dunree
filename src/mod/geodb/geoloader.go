@@ -7,7 +7,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 )
 
 func (s *Store) search(ip string) string {

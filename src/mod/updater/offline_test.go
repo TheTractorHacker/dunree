@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/offline/offlinetest"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/offline/offlinetest"
 )
 
 func TestUpdateCheckDoesNotDialOffline(t *testing.T) {

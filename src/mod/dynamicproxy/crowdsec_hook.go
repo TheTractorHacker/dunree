@@ -5,11 +5,11 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/crowdsec"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/metrics"
-	"github.com/foleyit/dunree/mod/netutils"
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/crowdsec"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 )
 
 // forwardedCandidates lists the resolved client address and every address the forwarding headers carry (at most 24)

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/botrules"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

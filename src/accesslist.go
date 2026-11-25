@@ -11,10 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/microcosm-cc/bluemonday"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/eventsystem"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/eventsystem"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

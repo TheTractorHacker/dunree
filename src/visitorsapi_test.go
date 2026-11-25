@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/statistic"
-	"github.com/foleyit/dunree/mod/visitors"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/visitors"
 )
 
 func setupVisitorAPI(t *testing.T) *visitors.Tracker {

@@ -3,11 +3,11 @@ package update
 import (
 	"fmt"
 
-	v308 "github.com/foleyit/dunree/mod/update/v308"
-	v315 "github.com/foleyit/dunree/mod/update/v315"
-	v322 "github.com/foleyit/dunree/mod/update/v322"
-	v334 "github.com/foleyit/dunree/mod/update/v334"
-	v335 "github.com/foleyit/dunree/mod/update/v335"
+	v308 "github.com/TheTractorHacker/dunree/mod/update/v308"
+	v315 "github.com/TheTractorHacker/dunree/mod/update/v315"
+	v322 "github.com/TheTractorHacker/dunree/mod/update/v322"
+	v334 "github.com/TheTractorHacker/dunree/mod/update/v334"
+	v335 "github.com/TheTractorHacker/dunree/mod/update/v335"
 )
 
 // Updater Core logic

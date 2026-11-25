@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
 )
 
 // Generate all the record keys from a given start and end dates

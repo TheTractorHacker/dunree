@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/streamproxy"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/streamproxy"
 )
 
 // Rejected clients are delayed 300 ms before the close. That delay must not block the accept

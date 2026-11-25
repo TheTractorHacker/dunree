@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/notify"
-	"github.com/foleyit/dunree/mod/utils"
-	"github.com/foleyit/dunree/mod/visitors"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/notify"
+	"github.com/TheTractorHacker/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/visitors"
 )
 
 /*

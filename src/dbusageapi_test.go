@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	db "github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/database/dbinc"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	db "github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // seeded BoltDB with a big and a small table behind the real managed router: an admin gets the sorted

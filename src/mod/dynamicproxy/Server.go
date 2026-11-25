@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/errorpages"
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
-	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
 )
 
 /*

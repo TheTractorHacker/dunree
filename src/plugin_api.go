@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/netstat"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/netstat"
 )
 
 /*

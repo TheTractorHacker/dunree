@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/sshprox"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/sshprox"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

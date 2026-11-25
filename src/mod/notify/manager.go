@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // SecretMask replaces the webhook secret in API responses; sending it back keeps the stored secret.

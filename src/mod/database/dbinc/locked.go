@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/instance"
+	"github.com/TheTractorHacker/dunree/mod/instance"
 )
 
 // HolderSummary names the process holding the lock on a path ("" when unknown). A var so tests can

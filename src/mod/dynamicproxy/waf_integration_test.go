@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/redirection"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // newWAFTestProxy wires a real Router + ProxyHandler in front of a recording

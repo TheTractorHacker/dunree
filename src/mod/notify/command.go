@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // CommandConfig describes the command hook. It only ever runs when the process was started with

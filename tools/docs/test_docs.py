@@ -242,7 +242,7 @@ class Guides(unittest.TestCase):
     def test_development_notes_name_dunree(self):
         d = read("DEVELOPMENT.md")
         self.assertTrue(d.startswith("# Dunree development notes\n"))
-        for want in ("github.com/foleyit/dunree", "PRODUCT_VERSION", "COMPAT_VERSION", "$DUNREE_RELEASE_KEY", "~/.dunree-release-key/private.pem",
+        for want in ("github.com/TheTractorHacker/dunree", "PRODUCT_VERSION", "COMPAT_VERSION", "$DUNREE_RELEASE_KEY", "~/.dunree-release-key/private.pem",
                      "dunree_windows_amd64.exe", "tools/docs/test_docs.py", "docs/migrating-from-zoraxy.md"):
             self.assertIn(want, d)
         self.assertNotIn("fork-specific", d)

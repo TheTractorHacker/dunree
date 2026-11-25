@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // initSiteLogs attaches the optional per-site request logs (disabled by default)

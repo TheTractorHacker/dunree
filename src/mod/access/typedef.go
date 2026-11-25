@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/geodb"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/geodb"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 type Options struct {

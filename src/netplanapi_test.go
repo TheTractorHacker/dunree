@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/adminallow"
-	"github.com/foleyit/dunree/mod/confhistory"
-	"github.com/foleyit/dunree/mod/deployrole"
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/posture"
-	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/adminallow"
+	"github.com/TheTractorHacker/dunree/mod/confhistory"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/posture"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 )
 
 func planPost(cfg string) *httptest.ResponseRecorder {

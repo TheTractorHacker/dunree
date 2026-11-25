@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
 )
 
 // useErrorPages installs a manager for one test and removes it afterwards (the hook is package wide)

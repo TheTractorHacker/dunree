@@ -12,9 +12,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/offline/offlinetest"
-	"github.com/foleyit/dunree/mod/plugins/addonindex"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/offline/offlinetest"
+	"github.com/TheTractorHacker/dunree/mod/plugins/addonindex"
 )
 
 /*

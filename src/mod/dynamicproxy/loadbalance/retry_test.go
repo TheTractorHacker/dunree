@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
 	"github.com/gorilla/sessions"
 )
 

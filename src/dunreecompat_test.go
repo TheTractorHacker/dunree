@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/baseline"
-	db "github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/legacycompat"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/baseline"
+	db "github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/legacycompat"
 	"github.com/gorilla/csrf"
 )
 

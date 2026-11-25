@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	zp "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*

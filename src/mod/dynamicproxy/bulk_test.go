@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
 )
 
 func bulkRouter(t *testing.T, names ...string) *Router {

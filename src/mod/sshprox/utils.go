@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 // Rewrite url based on proxy root (default site)

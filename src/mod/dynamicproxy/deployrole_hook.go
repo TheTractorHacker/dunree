@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/deployrole"
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 )
 
 /*

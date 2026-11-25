@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/acme/acmedns"
+	"github.com/TheTractorHacker/dunree/mod/acme/acmedns"
 	"github.com/go-acme/lego/v5/challenge"
 )
 

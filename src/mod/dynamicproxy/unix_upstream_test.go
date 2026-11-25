@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
 )
 
 func TestUnixSocketUpstreamServesThroughProxyHandler(t *testing.T) {

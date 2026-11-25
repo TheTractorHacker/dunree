@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/tlscert"
 )
 
 // A new proxy rule can name the stored certificate to serve ("certificate" form field of /api/proxy/add).

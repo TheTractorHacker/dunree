@@ -3,7 +3,7 @@ package geodb
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // LAN clients must never get a country, whatever form the socket reports them in.

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // HealthPath is served by the proxy listeners before host routing.

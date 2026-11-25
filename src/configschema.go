@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/foleyit/dunree/mod/confpack"
+	"github.com/TheTractorHacker/dunree/mod/confpack"
 )
 
 // runConfigSchemaMigration stamps the config folder with the schema version of this build and runs

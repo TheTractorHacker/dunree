@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
 )
 
 // ---------- helpers: every test uses a mock provider on loopback, never the real network ----------

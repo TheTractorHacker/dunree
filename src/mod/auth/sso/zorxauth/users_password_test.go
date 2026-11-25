@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/auth"
 )
 
 func TestValidateUsername_LegacyHashVerifiesAndUpgrades(t *testing.T) {

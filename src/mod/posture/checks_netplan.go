@@ -6,7 +6,7 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 /*

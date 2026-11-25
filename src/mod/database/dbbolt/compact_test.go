@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database/dbbolt"
-	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/database/dbbolt"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
 	bolt "go.etcd.io/bbolt"
 )
 

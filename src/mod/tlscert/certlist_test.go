@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/acme"
+	"github.com/TheTractorHacker/dunree/mod/acme"
 )
 
 func TestCertListShowsIssuerKeyTypeAndManagedBy(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database"
 )
 
 /*

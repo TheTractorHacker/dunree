@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/errorpages"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

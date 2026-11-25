@@ -1,6 +1,6 @@
 package v322
 
-import "github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+import "github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
 
 /*
 

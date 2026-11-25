@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/cluster"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/notify"
-	"github.com/foleyit/dunree/mod/uptime"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/notify"
+	"github.com/TheTractorHacker/dunree/mod/uptime"
 )
 
 /*

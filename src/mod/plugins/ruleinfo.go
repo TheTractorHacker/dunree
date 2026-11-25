@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 type ruleInfoKey struct{}

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
 )
 
 type zeroReader struct{ left int64 }

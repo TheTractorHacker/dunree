@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/apitoken"
-	"github.com/foleyit/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/apitoken"
+	"github.com/TheTractorHacker/dunree/mod/auth"
 	"gopkg.in/yaml.v3"
 )
 

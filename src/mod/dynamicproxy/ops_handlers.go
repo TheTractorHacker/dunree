@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
 )
 
 /*

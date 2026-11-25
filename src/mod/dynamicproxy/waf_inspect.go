@@ -2,7 +2,7 @@ package dynamicproxy
 
 import (
 	"fmt"
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 	"html"
 	"net/http"
 	"os"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
 )
 
 /*

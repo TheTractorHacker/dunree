@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/cluster"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

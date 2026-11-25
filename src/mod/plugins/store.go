@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/eventsystem"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/eventsystem"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 func useGuard(t *testing.T, s destguard.Settings) {

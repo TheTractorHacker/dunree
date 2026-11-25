@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // Paths served by a primary on the admin port, outside the admin session and

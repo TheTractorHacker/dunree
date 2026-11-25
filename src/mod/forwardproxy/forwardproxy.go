@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/TheTractorHacker/dunree/mod/adminallow"
 	"log"
 	"net"
 	"net/http"
@@ -19,11 +19,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/forwardproxy/cproxy"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/forwardproxy/cproxy"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // ZrFilter decides which clients may use the forward proxy. The proxy listens on all interfaces, so by

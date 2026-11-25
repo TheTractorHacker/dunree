@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
 )
 
 func errorPagesSetup(t *testing.T) string {

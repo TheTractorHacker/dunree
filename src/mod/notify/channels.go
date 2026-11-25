@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/email"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/email"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/textproto"
 
-	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
 )
 
 /*

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/statistic"
-	"github.com/foleyit/dunree/mod/visitors"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/visitors"
 )
 
 // The visitor list must attribute requests with the trusted-proxy aware client IP:

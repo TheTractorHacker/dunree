@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // Upstream #1193: deleting a certificate must also drop its ACME metadata file and

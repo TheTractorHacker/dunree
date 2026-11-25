@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
 )
 
 // country challenge without a CAPTCHA: it is a region block, so the region sentence is right here

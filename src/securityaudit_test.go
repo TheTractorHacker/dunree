@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/apitoken"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/apitoken"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 )
 
 func useSecAudit(t *testing.T) (*secaudit.Logger, string) {

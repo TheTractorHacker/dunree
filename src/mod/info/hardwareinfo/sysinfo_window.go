@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 func GetCPUInfo(w http.ResponseWriter, r *http.Request) {

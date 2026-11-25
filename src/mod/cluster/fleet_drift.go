@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/confpack"
+	"github.com/TheTractorHacker/dunree/mod/confpack"
 )
 
 /*

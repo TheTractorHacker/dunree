@@ -33,8 +33,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import (
 	"flag"
 	"fmt"
-	"github.com/foleyit/dunree/mod/baseline"
-	"github.com/foleyit/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/baseline"
+	"github.com/TheTractorHacker/dunree/mod/offline"
 	"log"
 	"net"
 	"net/http"
@@ -43,14 +43,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/cluster"
-	"github.com/foleyit/dunree/mod/geodb"
-	"github.com/foleyit/dunree/mod/instance"
-	"github.com/foleyit/dunree/mod/update"
-	"github.com/foleyit/dunree/mod/updater"
-	"github.com/foleyit/dunree/mod/utils"
-	"github.com/foleyit/dunree/mod/webuitls"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/geodb"
+	"github.com/TheTractorHacker/dunree/mod/instance"
+	"github.com/TheTractorHacker/dunree/mod/update"
+	"github.com/TheTractorHacker/dunree/mod/updater"
+	"github.com/TheTractorHacker/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/webuitls"
 	"github.com/google/uuid"
 )
 

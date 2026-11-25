@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
 )
 
 func newRetentionCollector(t *testing.T) (*Collector, *database.Database) {

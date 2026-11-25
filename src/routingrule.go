@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 )
 
 /*

@@ -13,10 +13,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/reverseproxy"
-	"github.com/foleyit/dunree/mod/sshprox/wintty"
-	"github.com/foleyit/dunree/mod/utils"
-	"github.com/foleyit/dunree/mod/websocketproxy"
+	"github.com/TheTractorHacker/dunree/mod/reverseproxy"
+	"github.com/TheTractorHacker/dunree/mod/sshprox/wintty"
+	"github.com/TheTractorHacker/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/websocketproxy"
 	"github.com/google/uuid"
 )
 

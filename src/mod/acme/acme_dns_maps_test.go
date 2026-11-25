@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/acme"
-	"github.com/foleyit/dunree/mod/acme/acmedns"
+	"github.com/TheTractorHacker/dunree/mod/acme"
+	"github.com/TheTractorHacker/dunree/mod/acme/acmedns"
 )
 
 // Upstream #1067: selfhost.de needs RecordsMapping, which had no UI field and always failed

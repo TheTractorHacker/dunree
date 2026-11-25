@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/TheTractorHacker/dunree/mod/tlscert"
 )
 
 func (router *Router) ResolveHostSpecificTlsBehaviorForHostname(hostname string) (*tlscert.HostSpecificTlsBehavior, error) {

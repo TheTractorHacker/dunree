@@ -4,7 +4,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 )
 
 /*

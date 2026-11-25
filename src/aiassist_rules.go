@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/aiassist"
-	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/aiassist"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
 )
 
 /*

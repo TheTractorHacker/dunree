@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
 )
 
 // Finding 1: the stored key never follows a changed destination.

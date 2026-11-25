@@ -3,7 +3,7 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
 )
 
 /*

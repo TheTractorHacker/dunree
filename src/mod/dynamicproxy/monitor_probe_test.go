@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
 )
 
 // Upstream #403 (Uptime Kuma): external monitors probe with HEAD, with keep-alive connections and against names

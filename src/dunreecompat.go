@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/baseline"
-	"github.com/foleyit/dunree/mod/legacycompat"
+	"github.com/TheTractorHacker/dunree/mod/baseline"
+	"github.com/TheTractorHacker/dunree/mod/legacycompat"
 	"github.com/gorilla/csrf"
 )
 

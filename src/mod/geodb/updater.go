@@ -10,7 +10,7 @@ package geodb
 
 import (
 	"errors"
-	"github.com/foleyit/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/offline"
 	"io"
 	"log"
 	"math/rand"
@@ -20,7 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 const (

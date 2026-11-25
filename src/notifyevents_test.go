@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/notify"
-	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/notify"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
 )
 
 func setupNotifyGlueTest(t *testing.T) (events func() []string) {

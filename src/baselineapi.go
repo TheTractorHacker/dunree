@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/baseline"
-	"github.com/foleyit/dunree/mod/deployrole"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/secaudit"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/baseline"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/acme"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/acme"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 func newTestManager(t *testing.T) *Manager {

@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/plugins/addonindex"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins/addonindex"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 /*

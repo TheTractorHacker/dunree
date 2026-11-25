@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
 )
 
 /*

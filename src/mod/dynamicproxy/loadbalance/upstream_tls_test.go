@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls/tlstest"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls/tlstest"
 )
 
 func tlsBackend(t *testing.T, cert tls.Certificate, clientCAs *x509.CertPool) string {

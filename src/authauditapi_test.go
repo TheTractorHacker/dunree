@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/notify"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/notify"
 )
 
 // Issue #216: opt-in auto-tagging when the login of a rule is saved, and the auth.drift report.

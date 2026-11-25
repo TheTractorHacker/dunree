@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
-	"github.com/foleyit/dunree/mod/update/updateutil"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/update/updateutil"
 )
 
 // UpdateFrom321To322 updates proxy config files from v3.2.1 to v3.2.2

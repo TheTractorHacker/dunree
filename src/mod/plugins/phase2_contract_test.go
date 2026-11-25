@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	zp "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*

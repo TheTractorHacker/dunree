@@ -20,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/foleyit/dunree/mod/utils"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

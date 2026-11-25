@@ -1,4 +1,4 @@
-module github.com/foleyit/dunree/tools/websocket-echo
+module github.com/TheTractorHacker/dunree/tools/websocket-echo
 
 go 1.23.2
 

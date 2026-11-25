@@ -3,8 +3,8 @@
 package dpcore
 
 import (
-	"github.com/foleyit/dunree/mod/brand"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

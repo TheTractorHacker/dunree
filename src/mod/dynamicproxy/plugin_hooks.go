@@ -3,8 +3,8 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/plugins"
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 /*

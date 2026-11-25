@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 func TestGuardedDialer(t *testing.T) {

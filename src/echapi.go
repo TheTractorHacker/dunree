@@ -31,11 +31,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/ech"
-	"github.com/foleyit/dunree/mod/tlscert"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/ech"
+	"github.com/TheTractorHacker/dunree/mod/tlscert"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 var echMgr *ech.Manager

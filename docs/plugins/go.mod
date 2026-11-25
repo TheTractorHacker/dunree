@@ -1,4 +1,4 @@
-module github.com/foleyit/dunree/docs
+module github.com/TheTractorHacker/dunree/docs
 
 go 1.24.1
 

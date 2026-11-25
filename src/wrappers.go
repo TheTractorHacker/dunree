@@ -24,13 +24,13 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/foleyit/dunree/mod/brand"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/mdns"
-	"github.com/foleyit/dunree/mod/uptime"
-	"github.com/foleyit/dunree/mod/utils"
-	"github.com/foleyit/dunree/mod/wakeonlan"
+	"github.com/TheTractorHacker/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/mdns"
+	"github.com/TheTractorHacker/dunree/mod/uptime"
+	"github.com/TheTractorHacker/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/wakeonlan"
 )
 
 /*

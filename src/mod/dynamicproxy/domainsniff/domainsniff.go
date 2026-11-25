@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // Check if the domain is reachable and return err if not reachable

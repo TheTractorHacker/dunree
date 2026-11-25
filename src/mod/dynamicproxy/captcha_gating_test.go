@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 var spoofableClientIPHeaders = []string{"X-Real-Ip", "CF-Connecting-IP", "Fastly-Client-IP", "X-Forwarded-For"}

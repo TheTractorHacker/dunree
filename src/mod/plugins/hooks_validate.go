@@ -7,7 +7,7 @@ import (
 	"net/textproto"
 	"strings"
 
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 /*

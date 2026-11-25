@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 // Editing an endpoint rebuilds the CAPTCHA config from form fields, which do

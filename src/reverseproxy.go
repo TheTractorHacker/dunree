@@ -14,17 +14,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/cluster"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
-	"github.com/foleyit/dunree/mod/netutils"
-	"github.com/foleyit/dunree/mod/tlscert"
-	"github.com/foleyit/dunree/mod/uptime"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/tlscert"
+	"github.com/TheTractorHacker/dunree/mod/uptime"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 const (

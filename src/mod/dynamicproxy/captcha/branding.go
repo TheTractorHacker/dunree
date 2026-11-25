@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/foleyit/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/brand"
 )
 
 /*

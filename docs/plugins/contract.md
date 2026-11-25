@@ -257,7 +257,7 @@ These are promises of the fork for contract major version "1.x" (versions 0 and 
 ## 9. The SDK (`dunree_plugin`) and where it lives
 
 **Decision (module path): the SDK stays a package inside the Dunree module**
-(`github.com/foleyit/dunree/mod/plugins/dunree_plugin`, folder `src/mod/plugins/dunree_plugin`) **and is distributed by
+(`github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin`, folder `src/mod/plugins/dunree_plugin`) **and is distributed by
 copying the folder** into a plugin (`mod/dunree_plugin`), as upstream does. It is **not** a Go module of its own.
 
 Why:
@@ -265,7 +265,7 @@ Why:
 - Dunree itself imports the package. A `go.mod` in that folder would take it out of the main module, and the main
   module would then need a `require` plus a `replace` to its own sub-folder, which every build, the vendoring check
   and the release script would have to follow. That is a real risk for no gain to the proxy.
-- A module needs an import path that resolves. `github.com/foleyit/dunree` is upstream's name and does not serve this
+- A module needs an import path that resolves. `github.com/TheTractorHacker/dunree` is upstream's name and does not serve this
   fork; a separate repository under the fork's own name is an owner decision (name, who tags, who answers issues).
 - Every existing plugin, upstream's documentation and all examples use the copy workflow. It needs no network at
   build time and pins the SDK version in the plugin's own tree.

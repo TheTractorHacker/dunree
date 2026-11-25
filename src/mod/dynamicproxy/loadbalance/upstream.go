@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls"
 )
 
 // StartProxy create and start a HTTP proxy using dpcore

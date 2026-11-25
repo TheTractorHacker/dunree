@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // Run config update. Version numbers are int. For example

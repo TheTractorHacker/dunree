@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 	"github.com/pquerna/otp/totp"
 )
 

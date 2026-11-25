@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
 )
 
 /*

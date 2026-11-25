@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
-	db "github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	db "github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // Every route registered on the managed router must refuse mutating requests from a

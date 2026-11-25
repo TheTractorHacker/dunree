@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 func TestAltchaChallengeEndpointThroughGatingAndCountryChallenge(t *testing.T) {

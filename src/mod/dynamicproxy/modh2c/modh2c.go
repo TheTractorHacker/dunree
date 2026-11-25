@@ -12,7 +12,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/TheTractorHacker/dunree/mod/adminallow"
 	"golang.org/x/net/http2"
 )
 

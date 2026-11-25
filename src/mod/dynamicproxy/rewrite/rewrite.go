@@ -9,7 +9,7 @@ package rewrite
 import (
 	"strconv"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
 )
 
 // SplitInboundOutboundHeaders split user defined headers into upstream and downstream headers

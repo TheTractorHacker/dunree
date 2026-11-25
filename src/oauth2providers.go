@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/oauth2"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

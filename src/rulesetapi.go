@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
 )
 
 /*

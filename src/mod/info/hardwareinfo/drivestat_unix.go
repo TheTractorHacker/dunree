@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // GetDriveStat returns the free space of each mounted filesystem.

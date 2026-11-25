@@ -14,14 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/crowdsec"
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/netplan"
-	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/crowdsec"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/netplan"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 	"github.com/gorilla/csrf"
 )
 

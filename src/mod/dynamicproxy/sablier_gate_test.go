@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/sablier"
+	"github.com/TheTractorHacker/dunree/mod/sablier"
 )
 
 type sablierFixture struct {

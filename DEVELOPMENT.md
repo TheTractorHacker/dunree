@@ -9,7 +9,7 @@ Names used in this file:
 * The program is `dunree`, the systemd unit `dunree.service`, a tarball install lives in `/opt/dunree`
   (`docs/deploy/`, `packaging/`). An install that was upgraded in place keeps the names it had; where that matters
   the section says so, and `docs/migrating-from-zoraxy.md` has the whole list. <!-- rebrand:keep -->
-* The Go module is `github.com/foleyit/dunree` (a placeholder, one variable in `tools/rebrand/policy.json`).
+* The Go module is `github.com/TheTractorHacker/dunree` (a placeholder, one variable in `tools/rebrand/policy.json`).
   Run `go` from `src/`.
 * Version: the Dunree version (`PRODUCT_VERSION`, shown to users) and the version of the code base it is derived
   from (`COMPAT_VERSION`, 3.3.6: drives the configuration migrations and what plugins built with the older SDK are told).

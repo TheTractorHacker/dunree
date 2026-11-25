@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
-	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
 )
 
 func newRulesRouter(t *testing.T) (*Router, *ProxyEndpoint, *ruleset.Engine) {

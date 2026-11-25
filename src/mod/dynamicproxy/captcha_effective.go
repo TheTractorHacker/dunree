@@ -1,6 +1,6 @@
 package dynamicproxy
 
-import "github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+import "github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 
 // EffectiveCaptchaConfig is the CAPTCHA configuration requests of this endpoint
 // are handled with. It is the one accessor every trigger (plain gate, exploit,

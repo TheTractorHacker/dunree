@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
 )
 
 func opsBackend(t *testing.T, h http.HandlerFunc) string {

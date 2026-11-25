@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 func drainRouter(t *testing.T, h http.Handler) (*Router, string) {

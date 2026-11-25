@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/foleyit/dunree/mod/acme"
-	"github.com/foleyit/dunree/mod/notify"
-	"github.com/foleyit/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/acme"
+	"github.com/TheTractorHacker/dunree/mod/notify"
+	"github.com/TheTractorHacker/dunree/mod/offline"
 )
 
 /*

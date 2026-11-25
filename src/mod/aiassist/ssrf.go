@@ -9,7 +9,7 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 /*

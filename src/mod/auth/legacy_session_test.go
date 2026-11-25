@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	db "github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
+	db "github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 	"github.com/gorilla/securecookie"
 )
 

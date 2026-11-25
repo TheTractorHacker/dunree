@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
 )
 
 func newTestCollector(t *testing.T, maxEntries int) *Collector {

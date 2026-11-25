@@ -3,8 +3,8 @@ package dynamicproxy
 import (
 	"errors"
 	"fmt"
-	"github.com/foleyit/dunree/mod/errorpages"
-	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
 	"net/http"
 	"strings"
 	"sync"

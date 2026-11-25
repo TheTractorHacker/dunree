@@ -38,7 +38,7 @@ const (
 // decided yet, so they are empty in the source tree and the owner sets them for
 // a release build, for example
 //
-//	go build -ldflags "-X github.com/foleyit/dunree/mod/brand.SourceURL=https://..."
+//	go build -ldflags "-X github.com/TheTractorHacker/dunree/mod/brand.SourceURL=https://..."
 //
 // Empty means "not set": the interface then shows the text without a link.
 // Dunree never fetches these addresses; they are links a person follows.

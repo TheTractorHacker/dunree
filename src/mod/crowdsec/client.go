@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // UserAgent identifies this bouncer to the LAPI: "dunree-crowdsec-bouncer/1.0", with the inherited token

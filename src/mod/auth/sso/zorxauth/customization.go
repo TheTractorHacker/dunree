@@ -31,7 +31,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 //go:embed brand_mark.svg

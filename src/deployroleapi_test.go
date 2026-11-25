@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/deployrole"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 func deployTestSetup(t *testing.T) {

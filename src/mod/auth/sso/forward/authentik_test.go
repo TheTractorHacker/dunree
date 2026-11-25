@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // fakeOutpost emulates the parts of an Authentik proxy outpost that Dunree talks to.

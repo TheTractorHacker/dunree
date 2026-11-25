@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/foleyit/dunree/mod/updater"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/updater"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

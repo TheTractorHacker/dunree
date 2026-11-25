@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/offline"
 )
 
 func writeCert(t *testing.T, dir, name string, notAfter time.Time) {

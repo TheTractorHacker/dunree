@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
 )
 
 func drRouter(t *testing.T, s deployrole.Settings, trusted ...string) *Router {

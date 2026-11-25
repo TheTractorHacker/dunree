@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls"
 )
 
 const (

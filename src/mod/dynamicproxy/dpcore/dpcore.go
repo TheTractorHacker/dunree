@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/adminallow"
-	"github.com/foleyit/dunree/mod/dynamicproxy/domainsniff"
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/adminallow"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/domainsniff"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // Tunnel settings for generic HTTP protocol upgrades, see upgrade.go

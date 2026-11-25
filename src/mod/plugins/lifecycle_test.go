@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 // TestStartPluginOutputReadersDoNotRaceProcessField starts a plugin that writes

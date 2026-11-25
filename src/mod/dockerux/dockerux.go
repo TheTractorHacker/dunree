@@ -1,6 +1,6 @@
 package dockerux
 
-import "github.com/foleyit/dunree/mod/info/logger"
+import "github.com/TheTractorHacker/dunree/mod/info/logger"
 
 /*
 	Docker Optimizer

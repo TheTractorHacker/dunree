@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/redirection"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // Editing a redirect rule with a missing destination used to report an error but carry on,

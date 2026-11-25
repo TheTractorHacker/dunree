@@ -12,15 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/cluster"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/posture"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/posture"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth/sso/forward"
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/forward"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 func exRule(mode, pattern string, nocase bool) *AuthExceptionRule {

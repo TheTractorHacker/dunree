@@ -1,4 +1,4 @@
-module github.com/foleyit/dunree
+module github.com/TheTractorHacker/dunree
 
 go 1.20
 

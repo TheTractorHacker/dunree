@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
-	"github.com/foleyit/dunree/mod/netutils"
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/oauth2"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 )
 
 /*

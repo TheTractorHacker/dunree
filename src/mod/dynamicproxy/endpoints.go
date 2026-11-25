@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

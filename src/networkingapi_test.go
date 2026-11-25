@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 )
 
 func testCAPEM(t *testing.T) string {

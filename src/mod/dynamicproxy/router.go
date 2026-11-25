@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/dynamicproxy/exploits"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/exploits"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

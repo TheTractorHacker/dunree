@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 )
 
 // Default template of new rules (upstream #877): off until chosen, only existing non-preset templates are

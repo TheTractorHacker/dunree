@@ -10,8 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 )
 
 func hhSetup(t *testing.T) {

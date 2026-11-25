@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/foleyit/dunree/mod/apitoken"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/secaudit"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/apitoken"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

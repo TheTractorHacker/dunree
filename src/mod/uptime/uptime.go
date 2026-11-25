@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 	"golang.org/x/net/publicsuffix"
 )
 

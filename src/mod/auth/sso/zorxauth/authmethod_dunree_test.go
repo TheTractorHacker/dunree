@@ -5,7 +5,7 @@ package zorxauth
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 func TestAuthMethodFollowsTheLegacySwitch(t *testing.T) {

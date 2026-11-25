@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/foleyit/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/offline"
 	"net/http"
 	"net/mail"
 	"os"
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

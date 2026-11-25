@@ -3,8 +3,8 @@
 package main
 
 import (
-	"github.com/foleyit/dunree/mod/brand"
-	"github.com/foleyit/dunree/mod/update"
+	"github.com/TheTractorHacker/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/update"
 )
 
 /*

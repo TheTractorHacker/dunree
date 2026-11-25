@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // validateVdirH2C refuses h2c together with TLS: h2c is HTTP/2 over a plain TCP connection,

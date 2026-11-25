@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/botrules"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 func newBotRouter(t *testing.T, mod func(*botrules.Config)) (*Router, *ProxyEndpoint, *botrules.Engine) {

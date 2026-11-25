@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
 )
 
 func newHealthTestRouter(health *cluster.HealthEndpoint) *Router {

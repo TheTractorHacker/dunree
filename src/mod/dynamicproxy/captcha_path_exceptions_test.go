@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 // Path exemptions (prefix, exact, regex) behave the same for every CAPTCHA provider (fork #222).

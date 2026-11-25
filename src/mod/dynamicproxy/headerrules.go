@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 )
 
 /*

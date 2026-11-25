@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/apitoken"
-	"github.com/foleyit/dunree/mod/confhistory"
+	"github.com/TheTractorHacker/dunree/mod/apitoken"
+	"github.com/TheTractorHacker/dunree/mod/confhistory"
 )
 
 // A REST API v1 change made with a token creates a version attributed to the token,

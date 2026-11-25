@@ -1,4 +1,4 @@
-package eventsystem // import "github.com/foleyit/dunree/mod/eventsystem"
+package eventsystem // import "github.com/TheTractorHacker/dunree/mod/eventsystem"
 
 
 VARIABLES

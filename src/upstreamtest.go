@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 type upstreamTestResult struct {

@@ -3,7 +3,7 @@ package rewrite
 import (
 	"encoding/json"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
 )
 
 /*

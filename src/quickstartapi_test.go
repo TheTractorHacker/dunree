@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database"
 )
 
 func TestQuickStartDecide(t *testing.T) {

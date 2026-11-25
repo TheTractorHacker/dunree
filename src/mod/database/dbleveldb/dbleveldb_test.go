@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database/dbleveldb"
+	"github.com/TheTractorHacker/dunree/mod/database/dbleveldb"
 )
 
 func TestNewDB(t *testing.T) {

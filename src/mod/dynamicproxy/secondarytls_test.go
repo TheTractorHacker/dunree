@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/tlscert"
+	"github.com/TheTractorHacker/dunree/mod/tlscert"
 )
 
 func freeTCPPort(t *testing.T) int {
 	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		t.Fatal(err)
 	}

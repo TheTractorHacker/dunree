@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/foleyit/dunree/mod/database/dbinc"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 /*

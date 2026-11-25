@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/TheTractorHacker/dunree/mod/adminallow"
 	"github.com/gorilla/websocket"
 )
 

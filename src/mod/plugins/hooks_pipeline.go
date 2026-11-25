@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 	"github.com/google/uuid"
 )
 

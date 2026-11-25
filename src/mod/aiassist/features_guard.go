@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
 )
 
 // exclusionPathOK is true for paths that may be excluded: absolute, short, without delimiters or

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 )
 
 /*

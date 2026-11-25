@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // mkCert returns a certificate; with a ca it is a leaf issued by that CA, otherwise it is self-signed.

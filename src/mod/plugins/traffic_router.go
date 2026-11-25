@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/armon/go-radix"
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 // HandleRoute handles the request to the plugin at the post_auth stage: filter

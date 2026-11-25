@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database"
 )
 
 // newTestGateway creates an AuthRouter backed by a temporary database with the

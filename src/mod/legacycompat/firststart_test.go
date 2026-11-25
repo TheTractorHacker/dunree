@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/apitoken"
-	db "github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/apitoken"
+	db "github.com/TheTractorHacker/dunree/mod/database"
 )
 
 type quietLog struct{}

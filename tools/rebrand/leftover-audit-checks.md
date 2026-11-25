@@ -32,7 +32,7 @@
 
 ### Module path and the rename tool
 
-* `src/go.mod` says `module github.com/foleyit/dunree`, which is `MODULE_ROOT` in `tools/rebrand/policy.json`. The
+* `src/go.mod` says `module github.com/TheTractorHacker/dunree`, which is `MODULE_ROOT` in `tools/rebrand/policy.json`. The
   secondary modules are `MODULE_ROOT/docs`, `/benchmark`, `/tools/...`, the `tools/nt6.1_go_mod` copies use
   `MODULE_ROOT`, the example plugins use `example.com/dunree/<name>`. No `.go` or `go.mod` file outside the frozen
   SDK fixtures imports `imuslab.com/zoraxy` (`Repo.test_module_root_matches_policy`).

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls"
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls/tlstest"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls/tlstest"
 )
 
 func TestUpstreamTestUsesTrustPolicy(t *testing.T) {

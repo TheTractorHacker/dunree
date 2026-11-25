@@ -16,8 +16,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/i18n"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/i18n"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 const uiLanguageKey = "uiLanguage"

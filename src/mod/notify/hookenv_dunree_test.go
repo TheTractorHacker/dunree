@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // Hook commands get DUNREE_* always and ZORAXY_* while the legacy names are on (plan row 28).

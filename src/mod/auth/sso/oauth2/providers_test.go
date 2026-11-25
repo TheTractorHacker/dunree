@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 const testNodeUUID = "11111111-2222-3333-4444-555555555555"

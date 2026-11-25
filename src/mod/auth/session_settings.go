@@ -25,7 +25,7 @@ import (
 
 	"github.com/gorilla/securecookie"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 const (

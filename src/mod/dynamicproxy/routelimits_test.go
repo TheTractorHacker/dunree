@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
 )
 
 // routeLimitFixture builds a host rule in front of backend with the given limits and returns the proxy URL.

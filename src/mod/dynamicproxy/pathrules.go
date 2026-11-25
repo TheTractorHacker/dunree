@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/errorpages"
-	"github.com/foleyit/dunree/mod/metrics"
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 )
 
 /*

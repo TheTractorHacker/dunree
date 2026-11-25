@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/baseline"
-	"github.com/foleyit/dunree/mod/deployrole"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/baseline"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 )
 
 func baselineSetup(t *testing.T, fresh bool) {

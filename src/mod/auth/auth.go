@@ -16,9 +16,9 @@ import (
 
 	"encoding/hex"
 
-	db "github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/utils"
+	db "github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )

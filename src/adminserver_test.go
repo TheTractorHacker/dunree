@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/webuitls"
+	"github.com/TheTractorHacker/dunree/mod/webuitls"
 )
 
 func TestAdminHTTPServerHasTimeouts(t *testing.T) {

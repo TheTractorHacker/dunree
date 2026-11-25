@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 func newRouterOn(t *testing.T, db *database.Database, uuid string, shared bool, idp *fakeIdP) *OAuth2Router {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
 )
 
 func scrapeText(t *testing.T, reg *metrics.Registry) string {

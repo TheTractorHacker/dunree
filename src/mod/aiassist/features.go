@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
 )
 
 // Name cleans a short identifier such as a variable name: no kv-secret rule (a variable called

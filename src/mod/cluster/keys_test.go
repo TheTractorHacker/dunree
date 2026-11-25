@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/sessions"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
 )
 
 const testSecret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

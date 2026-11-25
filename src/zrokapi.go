@@ -26,9 +26,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/utils"
-	"github.com/foleyit/dunree/mod/zrok"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/zrok"
 )
 
 var allowExternalTools = flag.Bool("allow_external_tools", false, "Allow Dunree to run external helper programs it supervises (currently: the zrok CLI for the Tunnels (zrok) page). Executing a binary is a privilege: off by default")

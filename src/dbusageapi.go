@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/database/dbinc"
-	"github.com/foleyit/dunree/mod/instance"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/instance"
 )
 
 /*

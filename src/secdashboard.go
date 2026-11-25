@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/confpack"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/posture"
-	"github.com/foleyit/dunree/mod/secaudit"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/confpack"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/posture"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

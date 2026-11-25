@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/geodb"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/geodb"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 )

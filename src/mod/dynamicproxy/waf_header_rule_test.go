@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
 )
 
 // Upstream #1356 asks for header based access rules ("drop requests that do not carry

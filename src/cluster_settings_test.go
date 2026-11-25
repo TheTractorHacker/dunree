@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth/sso/forward"
-	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
-	"github.com/foleyit/dunree/mod/cluster"
-	"github.com/foleyit/dunree/mod/confpack"
-	"github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/forward"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/zorxauth"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/confpack"
+	"github.com/TheTractorHacker/dunree/mod/database"
 )
 
 func settingsTestDB(t *testing.T) *database.Database {

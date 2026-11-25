@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/brand"
 )
 
 /*

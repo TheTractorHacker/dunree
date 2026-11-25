@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
-	"github.com/foleyit/dunree/mod/utils"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

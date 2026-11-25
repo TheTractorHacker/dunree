@@ -6,7 +6,7 @@ are approximate (one regex per class, some overlap between classes).
 
 **Product:** Dunree (`dunree`, `DUNREE`), published by Foley IT, AGPL-3.0, "Reverse proxy and web gateway".
 Based on Zoraxy v3.3.6 by tobychui and imuslab. First version: v1.0.0-beta.1.
-**Module root:** `github.com/foleyit/dunree`. This is a placeholder and lives in one variable (`MODULE_ROOT` in
+**Module root:** `github.com/TheTractorHacker/dunree`. This is a placeholder and lives in one variable (`MODULE_ROOT` in
 policy.json). Nothing is pushed or renamed on GitHub.
 
 Totals: about 8,000 case-insensitive matches of `zoraxy|imuslab|tobychui` in 1,241 tracked files.

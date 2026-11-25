@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 // StartDynamicForwardRouter create and start a dynamic forward router for

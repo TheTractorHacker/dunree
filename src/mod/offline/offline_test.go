@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/geodb"
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/offline/offlinetest"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/geodb"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/offline/offlinetest"
 )
 
 func TestCheck(t *testing.T) {

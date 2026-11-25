@@ -2,18 +2,18 @@ package dynamicproxy
 
 import (
 	"context"
-	"github.com/foleyit/dunree/mod/errorpages"
-	"github.com/foleyit/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/metrics"
-	"github.com/foleyit/dunree/mod/ruleset"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

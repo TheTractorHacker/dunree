@@ -3,9 +3,9 @@ package dynamicproxy
 import (
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/botrules"
-	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
 )
 
 /*

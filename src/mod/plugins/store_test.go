@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database"
 )
 
 // The list format of the Zoraxy plugin store, served by a local test server (no // legacy-compat

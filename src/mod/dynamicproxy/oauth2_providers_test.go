@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/oauth2"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // Two OAuth2 providers on two rules: every rule signs in with its own provider, the path exemptions

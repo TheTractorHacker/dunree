@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*
@@ -40,7 +40,8 @@ import (
 // OWNER: SET BEFORE THE FIRST RELEASE WITH A STORE.
 //
 // These two constants are the only place the address and the key of the Dunree
-// add-on store are written down. Both are placeholders today:
+// add-on store are written down. They point at the store repository
+// TheTractorHacker/dunree-addons (GitHub Pages); move them here when the store moves:
 //
 //   - DunreeAddonStoreIndexURL is the index.json that tools/addon-store
 //     publishes (docs/plugins/publishing-addons.md). While its host is a
@@ -54,8 +55,10 @@ import (
 //
 // ---------------------------------------------------------------------------
 const (
-	DunreeAddonStoreIndexURL  = "https://addons.dunree.example/index.json"
-	DunreeAddonStorePublicKey = ""
+	DunreeAddonStoreIndexURL  = "https://thetractorhacker.github.io/dunree-addons/index.json"
+	DunreeAddonStorePublicKey = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAEaDXYOjHyrKrLdbJYA0frdmww/Wd2xIfrRCpnHn+PMw=
+-----END PUBLIC KEY-----`
 )
 
 // LegacyZoraxyStoreIndexURL is the plugin store of the Zoraxy project, a third // legacy-compat

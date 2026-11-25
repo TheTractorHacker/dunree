@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/acme"
-	"github.com/foleyit/dunree/mod/notify"
+	"github.com/TheTractorHacker/dunree/mod/acme"
+	"github.com/TheTractorHacker/dunree/mod/notify"
 )
 
 // The bridge between the ACME handler and the notification centre (issue #178): a webhook that

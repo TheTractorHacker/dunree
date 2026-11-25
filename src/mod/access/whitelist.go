@@ -3,7 +3,7 @@ package access
 import (
 	"strings"
 
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 )
 
 /*

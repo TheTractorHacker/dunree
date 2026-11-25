@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/foleyit/dunree/mod/acme/acmedns"
-	"github.com/foleyit/dunree/mod/acme/acmewizard"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/dynamicproxy/domainsniff"
-	"github.com/foleyit/dunree/mod/info/hardwareinfo"
-	"github.com/foleyit/dunree/mod/ipscan"
-	"github.com/foleyit/dunree/mod/netcalc"
-	"github.com/foleyit/dunree/mod/netstat"
-	"github.com/foleyit/dunree/mod/netutils"
-	"github.com/foleyit/dunree/mod/tlscert"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/acme/acmedns"
+	"github.com/TheTractorHacker/dunree/mod/acme/acmewizard"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/domainsniff"
+	"github.com/TheTractorHacker/dunree/mod/info/hardwareinfo"
+	"github.com/TheTractorHacker/dunree/mod/ipscan"
+	"github.com/TheTractorHacker/dunree/mod/netcalc"
+	"github.com/TheTractorHacker/dunree/mod/netstat"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/tlscert"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

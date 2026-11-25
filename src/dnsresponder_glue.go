@@ -18,9 +18,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/foleyit/dunree/mod/dnsresponder"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/dnsresponder"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 var (

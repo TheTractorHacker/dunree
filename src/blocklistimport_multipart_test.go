@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/access"
 )
 
 // The admin UI sends the import form as multipart/form-data (FormData, also for pasted text and uploaded files).

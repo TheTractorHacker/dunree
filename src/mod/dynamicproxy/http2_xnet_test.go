@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // minXNetMinor is the first golang.org/x/net v0.x release that carries the fixes

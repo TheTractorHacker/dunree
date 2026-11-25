@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"github.com/foleyit/dunree/mod/abuse"
-	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/abuse"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,10 +20,10 @@ import (
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/pathmatch"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/pathmatch"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 /*

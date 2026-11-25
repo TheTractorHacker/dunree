@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 // OpenedPort holds information about an open port and its service type

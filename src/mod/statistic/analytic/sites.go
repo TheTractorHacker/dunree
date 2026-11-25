@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/foleyit/dunree/mod/statistic"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // siteView reduces a day summary to the numbers of one site, in the shape of a

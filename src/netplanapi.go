@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/deployrole"
-	"github.com/foleyit/dunree/mod/destguard"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/netplan"
-	"github.com/foleyit/dunree/mod/posture"
-	"github.com/foleyit/dunree/mod/secaudit"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/deployrole"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/netplan"
+	"github.com/TheTractorHacker/dunree/mod/posture"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

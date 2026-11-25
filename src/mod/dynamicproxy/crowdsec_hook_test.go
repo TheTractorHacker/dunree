@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/crowdsec"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/crowdsec"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 const csTestKey = "hook-test-key-123456"

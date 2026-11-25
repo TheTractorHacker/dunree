@@ -9,10 +9,10 @@ import (
 
 	"math/rand"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/database/dbinc"
-	"github.com/foleyit/dunree/mod/geodb"
-	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/geodb"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
 )
 
 const test_db_path = "test_db"

@@ -14,11 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/brand"
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/update"
-	"github.com/foleyit/dunree/mod/updater"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/update"
+	"github.com/TheTractorHacker/dunree/mod/updater"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // The two version numbers, and where each one comes from.

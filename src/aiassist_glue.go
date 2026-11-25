@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/aiassist"
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/dynamicproxy/waf"
-	"github.com/foleyit/dunree/mod/posture"
+	"github.com/TheTractorHacker/dunree/mod/aiassist"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/posture"
 )
 
 /*

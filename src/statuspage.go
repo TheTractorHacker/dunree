@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/info/usageinfo"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/info/usageinfo"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 	"github.com/shirou/gopsutil/v4/disk"
 	gonet "github.com/shirou/gopsutil/v4/net"
 )

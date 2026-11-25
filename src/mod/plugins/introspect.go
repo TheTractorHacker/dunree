@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	dunreePlugin "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	dunreePlugin "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 // checkSupportHotRebuild checks if a Makefile or main.go exists in the given directory

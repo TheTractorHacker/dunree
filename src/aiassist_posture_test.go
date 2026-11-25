@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/aiassist"
-	"github.com/foleyit/dunree/mod/posture"
+	"github.com/TheTractorHacker/dunree/mod/aiassist"
+	"github.com/TheTractorHacker/dunree/mod/posture"
 )
 
 func TestAIPostureAdapterMapsChecksAndIsReadOnly(t *testing.T) {

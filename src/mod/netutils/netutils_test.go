@@ -3,7 +3,7 @@ package netutils_test
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 )
 
 func TestHandleTraceRoute(t *testing.T) {

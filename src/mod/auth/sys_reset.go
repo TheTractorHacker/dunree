@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/foleyit/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database"
 )
 
 /* Handle account reset by removing all users from the system */

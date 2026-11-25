@@ -8,10 +8,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
-	"github.com/foleyit/dunree/mod/ruleset"
-	"github.com/foleyit/dunree/mod/uservars"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/uservars"
 )
 
 func withTestUserVars(t *testing.T, e *ruleset.Engine) *uservars.Store {

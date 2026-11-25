@@ -26,7 +26,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 const (

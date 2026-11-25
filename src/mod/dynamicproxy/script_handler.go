@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/luascript"
+	"github.com/TheTractorHacker/dunree/mod/luascript"
 )
 
 /*

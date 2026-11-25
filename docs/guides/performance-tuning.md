@@ -20,7 +20,7 @@ curl -s -b '...' 'http://127.0.0.1:8000/api/info/pprof/goroutine?debug=1' | head
 ```
 
 (`profile`, `heap`, `goroutine`, `allocs`, `block`, `mutex`, `threadcreate`, `trace`, `cmdline`, `symbol`.) Read
-the biggest `cum` lines that belong to `github.com/foleyit/dunree/...`; everything under `crypto/tls` is handshake/encryption cost, under
+the biggest `cum` lines that belong to `github.com/TheTractorHacker/dunree/...`; everything under `crypto/tls` is handshake/encryption cost, under
 `net/http` + `syscall` is plain I/O. Attach the profile when you report a performance problem.
 
 Reproduction note: a quick run on a 4 core VM (64 keep-alive TLS connections, trivial backend, no features enabled) gave about

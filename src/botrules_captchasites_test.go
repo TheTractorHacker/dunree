@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"

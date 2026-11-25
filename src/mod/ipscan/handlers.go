@@ -11,7 +11,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 // HandleScanPort is the HTTP handler for scanning opened ports on a given IP address

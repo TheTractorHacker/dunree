@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/botrules"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
 )
 
 /*

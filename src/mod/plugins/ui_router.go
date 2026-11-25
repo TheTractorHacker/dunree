@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // HandlePluginUI handles the request to the plugin UI

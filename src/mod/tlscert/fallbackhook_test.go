@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // OnFallbackServed is diagnostics: it fires for names that got the localhost or configured fallback certificate

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 )
 
 func TestApplyTlsCipherProfile(t *testing.T) {

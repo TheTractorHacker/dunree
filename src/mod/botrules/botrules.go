@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/exploits"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/exploits"
 )
 
 const (

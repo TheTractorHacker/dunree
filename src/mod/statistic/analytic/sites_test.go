@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/statistic"
+	"github.com/TheTractorHacker/dunree/mod/statistic"
 )
 
 func day(total int64, sites map[string]*statistic.SiteSummaryExport) *statistic.DailySummaryExport {

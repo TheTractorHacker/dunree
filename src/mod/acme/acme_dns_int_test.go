@@ -3,7 +3,7 @@ package acme_test
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/acme"
+	"github.com/TheTractorHacker/dunree/mod/acme"
 )
 
 // Upstream #331: Route 53 failed with "cannot unmarshal string into ...MaxRetries of type int".

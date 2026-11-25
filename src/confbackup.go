@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/aiassist"
-	"github.com/foleyit/dunree/mod/confpack"
-	"github.com/foleyit/dunree/mod/crowdsec"
-	"github.com/foleyit/dunree/mod/secaudit"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/aiassist"
+	"github.com/TheTractorHacker/dunree/mod/confpack"
+	"github.com/TheTractorHacker/dunree/mod/crowdsec"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

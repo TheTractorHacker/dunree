@@ -1,15 +1,15 @@
 package dynamicproxy
 
 import (
-	"github.com/foleyit/dunree/mod/metrics"
+	"github.com/TheTractorHacker/dunree/mod/metrics"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/foleyit/dunree/mod/access"
-	"github.com/foleyit/dunree/mod/eventsystem"
-	"github.com/foleyit/dunree/mod/netutils"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/TheTractorHacker/dunree/mod/access"
+	"github.com/TheTractorHacker/dunree/mod/eventsystem"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
 )
 
 // Handle access check (blacklist / whitelist), return true if request is handled (aka blocked)

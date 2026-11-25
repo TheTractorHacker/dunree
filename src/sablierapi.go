@@ -17,10 +17,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
-	"github.com/foleyit/dunree/mod/dynamicproxy"
-	"github.com/foleyit/dunree/mod/sablier"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/sablier"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 func RegisterSablierAPIs(authRouter *auth.RouterDef) {

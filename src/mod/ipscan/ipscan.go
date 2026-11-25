@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 	"github.com/go-ping/ping"
 )
 

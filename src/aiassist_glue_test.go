@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
 )
 
 func TestAIEventLookupAndBackupExclusion(t *testing.T) {

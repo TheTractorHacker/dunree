@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/eventsystem"
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin/events"
+	"github.com/TheTractorHacker/dunree/mod/eventsystem"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin/events"
 )
 
 /*

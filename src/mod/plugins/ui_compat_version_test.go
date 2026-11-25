@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/dpcore"
-	zp "github.com/foleyit/dunree/mod/plugins/dunree_plugin"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/dpcore"
+	zp "github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // The User-Agent of a request to a plugin UI carries the Dunree version first and, while the

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/auth"
 )
 
 func basicAuthEndpoint(hash string, persisted *atomic.Int32) *ProxyEndpoint {

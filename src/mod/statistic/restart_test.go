@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
 )
 
 // Upstream #561: today's statistics must survive a restart of the process.

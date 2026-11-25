@@ -3,7 +3,7 @@ package auth
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/plugins/dunree_plugin"
+	"github.com/TheTractorHacker/dunree/mod/plugins/dunree_plugin"
 )
 
 // Approving or withdrawing a permission changes what the live key of a plugin opens,

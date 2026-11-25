@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/auth"
 )
 
 func fastHash(p string) string {

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/foleyit/dunree/mod/blocklog"
-	"github.com/foleyit/dunree/mod/errorpages"
+	"github.com/TheTractorHacker/dunree/mod/blocklog"
+	"github.com/TheTractorHacker/dunree/mod/errorpages"
 )
 
 /*

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/database/dbinc"
-	"github.com/foleyit/dunree/mod/database/dbleveldb"
+	"github.com/TheTractorHacker/dunree/mod/database/dbinc"
+	"github.com/TheTractorHacker/dunree/mod/database/dbleveldb"
 )
 
 // LevelDB takes a non-blocking lock: a second open fails at once (it never hangs) and

@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 func newRunAsManager(userName, group string) *Manager {

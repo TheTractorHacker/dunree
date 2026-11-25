@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/destguard"
+	"github.com/TheTractorHacker/dunree/mod/destguard"
 )
 
 func guardWith(t *testing.T, s destguard.Settings) {

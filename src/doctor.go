@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/foleyit/dunree/mod/instance"
+	"github.com/TheTractorHacker/dunree/mod/instance"
 )
 
 var doctorMode = flag.Bool("doctor", false, "Diagnose this machine and exit: other Dunree processes, who holds the database lock, frozen (Ctrl+Z) processes, systemd state and stuck listening ports. Read-only, does not open the database. Exit code 0 healthy, 1 problems found")

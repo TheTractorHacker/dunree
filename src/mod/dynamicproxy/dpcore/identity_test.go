@@ -5,8 +5,8 @@ package dpcore
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/brand"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/brand"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 func TestIdentityValuesFollowTheLegacySwitch(t *testing.T) {

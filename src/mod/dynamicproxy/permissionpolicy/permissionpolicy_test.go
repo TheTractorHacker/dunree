@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
 )
 
 func TestInjectPermissionPolicyHeader(t *testing.T) {

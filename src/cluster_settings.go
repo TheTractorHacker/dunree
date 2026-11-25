@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/foleyit/dunree/mod/auth/sso/forward"
-	"github.com/foleyit/dunree/mod/auth/sso/oauth2"
-	"github.com/foleyit/dunree/mod/auth/sso/zorxauth"
-	"github.com/foleyit/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/forward"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/oauth2"
+	"github.com/TheTractorHacker/dunree/mod/auth/sso/zorxauth"
+	"github.com/TheTractorHacker/dunree/mod/cluster"
 )
 
 /*

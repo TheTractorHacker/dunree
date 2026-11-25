@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/foleyit/dunree/mod/offline"
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/offline"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 	"io"
 	"net/http"
 	"net/url"
@@ -19,7 +19,7 @@ import (
 
 // DefaultRepo is the GitHub repository releases are fetched from. It can be
 // overridden with the -update_repo startup flag.
-const DefaultRepo = "TheTractorHacker/zoraxy"
+const DefaultRepo = "TheTractorHacker/dunree"
 
 // DefaultAPIBase is the GitHub REST API root.
 const DefaultAPIBase = "https://api.github.com"

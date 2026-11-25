@@ -3,7 +3,7 @@ package streamproxy
 import (
 	"errors"
 	"fmt"
-	"github.com/foleyit/dunree/mod/adminallow"
+	"github.com/TheTractorHacker/dunree/mod/adminallow"
 	"io"
 	"log"
 	"net"

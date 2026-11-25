@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/apitoken"
+	"github.com/TheTractorHacker/dunree/mod/apitoken"
 	"github.com/gorilla/csrf"
 	"gopkg.in/yaml.v3"
 )

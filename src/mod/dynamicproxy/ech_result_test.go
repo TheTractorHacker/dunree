@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/ech"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/ech"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 const echTestPublic = "public.ech.test"

@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/netutils"
+	"github.com/TheTractorHacker/dunree/mod/netutils"
 )
 
 // legacyIsIPBlacklisted is the pre-#986 implementation, kept as the reference the indexed

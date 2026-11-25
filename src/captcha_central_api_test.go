@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/database"
-	"github.com/foleyit/dunree/mod/dynamicproxy/captcha"
+	"github.com/TheTractorHacker/dunree/mod/database"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/captcha"
 )
 
 const centralTestSecret = "TOP-SECRET-central-value-123"

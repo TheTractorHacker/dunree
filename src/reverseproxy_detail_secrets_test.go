@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 )
 
 // API-04: /api/proxy/detail and /api/proxy/list (readable by viewers and by plugins) must not

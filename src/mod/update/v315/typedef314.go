@@ -1,9 +1,9 @@
 package v315
 
 import (
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/permissionpolicy"
-	"github.com/foleyit/dunree/mod/dynamicproxy/rewrite"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/permissionpolicy"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/rewrite"
 )
 
 // A proxy endpoint record, a general interface for handling inbound routing

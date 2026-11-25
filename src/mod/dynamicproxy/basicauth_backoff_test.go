@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/auth"
+	"github.com/TheTractorHacker/dunree/mod/auth"
 )
 
 func countVerifies(t *testing.T) *atomic.Int64 {

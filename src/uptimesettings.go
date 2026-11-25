@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/foleyit/dunree/mod/uptime"
-	"github.com/foleyit/dunree/mod/utils"
+	"github.com/TheTractorHacker/dunree/mod/uptime"
+	"github.com/TheTractorHacker/dunree/mod/utils"
 )
 
 /*

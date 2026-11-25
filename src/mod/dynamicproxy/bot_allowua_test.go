@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/foleyit/dunree/mod/botrules"
+	"github.com/TheTractorHacker/dunree/mod/botrules"
 )
 
 func TestBotAllowUASkipsOnlyOnThisSite(t *testing.T) {

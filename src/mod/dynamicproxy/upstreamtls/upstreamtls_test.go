@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/upstreamtls/tlstest"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/upstreamtls/tlstest"
 )
 
 func newTLSServer(t *testing.T, cert tls.Certificate, clientCAs *x509.CertPool) *httptest.Server {

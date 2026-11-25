@@ -3,7 +3,7 @@ package dynamicproxy
 import (
 	"testing"
 
-	"github.com/foleyit/dunree/mod/ruleset"
+	"github.com/TheTractorHacker/dunree/mod/ruleset"
 )
 
 func TestRulesSkipAuth(t *testing.T) {

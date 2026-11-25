@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/dynamicproxy/loadbalance"
-	"github.com/foleyit/dunree/mod/dynamicproxy/redirection"
-	"github.com/foleyit/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/loadbalance"
+	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/redirection"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
 )
 
 // Through the real request handler: if the upstream drops the connection after it

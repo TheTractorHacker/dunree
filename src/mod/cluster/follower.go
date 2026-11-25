@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/foleyit/dunree/mod/wirecompat"
+	"github.com/TheTractorHacker/dunree/mod/wirecompat"
 )
 
 // followerStatus is persisted to <conf>/.cluster/follower.json so the last

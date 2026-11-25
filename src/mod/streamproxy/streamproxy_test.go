@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foleyit/dunree/mod/info/logger"
-	"github.com/foleyit/dunree/mod/streamproxy"
+	"github.com/TheTractorHacker/dunree/mod/info/logger"
+	"github.com/TheTractorHacker/dunree/mod/streamproxy"
 )
 
 // freeLoopbackAddr returns a 127.0.0.1:port address that was free a moment ago.
