@@ -43,6 +43,7 @@ var viewerDeniedPrefixes = []string{
 	"/api/info/pprof",        //heap / goroutine dumps
 	"/api/system/dbusage",    //database file path and table sizes
 	"/api/users/",            //account management
+	"/api/cluster/vip/",      //floating IP: internal topology, the generated keepalived.conf holds the VRRP password
 	"/api/history/",          //configuration history (diffs, restore)
 	"/api/security/audit/",   //security audit log (actors, addresses, what changed)
 	"/api/deployrole/get",    //deployment role, trusted proxy count, direct CIDRs, peer gate counters

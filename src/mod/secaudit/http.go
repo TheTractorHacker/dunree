@@ -70,7 +70,7 @@ var skip = []string{
 	"/api/proxy/testupstream", "/api/proxy/tlscheck", "/api/proxy/upstream/tlsinspect", "/api/proxy/script/test",
 	"/api/proxy/sablier/test", "/api/proxy/templates/preview", "/api/proxy/ops/errorpreview", "/api/proxy/captcha/preview",
 	"/api/waf/validate", "/api/security/posture/preview", "/api/cert/download", "/api/history/list", "/api/history/get",
-	"/api/history/diff", "/api/abuse/remote/", "/api/cluster/status", "/api/cluster/nodes", "/api/fleet/node/info",
+	"/api/history/diff", "/api/abuse/remote/", "/api/cluster/status", "/api/cluster/nodes", "/api/cluster/vip/preflight", "/api/fleet/node/info",
 	"/api/fleet/node/probe", "/api/sso/zorxauth/customization/preview", "/api/conf/importcheck",
 	"/api/errorpages/preview", "/api/crowdsec/check",
 }

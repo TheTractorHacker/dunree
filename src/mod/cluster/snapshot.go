@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/TheTractorHacker/dunree/mod/cluster/vip"
 	"io"
 	"io/fs"
 	"os"
@@ -131,7 +132,12 @@ var (
 // CollectFiles reads the syncable files from a conf folder. Symlinks and
 // non-regular files are skipped.
 func CollectFiles(confDir string, includeCerts bool) (*Payload, error) {
-	p, err := collectRoots(confDir, ManagedRoots(includeCerts))
+	roots := ManagedRoots(includeCerts)
+	if vipFileExists(confDir) {
+		//the floating IP settings join the snapshot once they exist (and stay, so a disable reaches the followers)
+		roots = append(roots, haRoot)
+	}
+	p, err := collectRoots(confDir, roots)
 	if err != nil {
 		return nil, err
 	}
@@ -249,6 +255,8 @@ func validEntryPath(p string, roots []string) bool {
 		return len(parts) == 1
 	case SettingsRoot:
 		return len(parts) == 2 && strings.HasSuffix(parts[1], ".json")
+	case haRoot:
+		return len(parts) == 2 && parts[1] == vipFileName
 	default:
 		return len(parts) >= 2
 	}
@@ -274,10 +282,20 @@ func ValidatePayload(p *Payload) error {
 				return fmt.Errorf("snapshot file %q is not valid JSON", f.Path)
 			}
 		}
+		if f.Path == haRoot+"/"+vipFileName {
+			//the same strict validator as on save: a follower never installs settings that could render a bad keepalived.conf
+			sh, err := vip.ParseShared(f.Data, vip.Defaults(true))
+			if err == nil {
+				err = vip.ValidateShared(&sh)
+			}
+			if err != nil {
+				return fmt.Errorf("snapshot file %q: %w", f.Path, err)
+			}
+		}
 	}
 	for _, r := range p.Roots {
 		okRoot := false
-		for _, a := range managedRoots(true, true) {
+		for _, a := range append(managedRoots(true, true), haRoot) {
 			if r == a {
 				okRoot = true
 			}

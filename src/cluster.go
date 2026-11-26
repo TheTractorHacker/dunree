@@ -15,8 +15,10 @@ import (
 	"github.com/TheTractorHacker/dunree/mod/access"
 	"github.com/TheTractorHacker/dunree/mod/auth"
 	"github.com/TheTractorHacker/dunree/mod/cluster"
+	"github.com/TheTractorHacker/dunree/mod/cluster/vip"
 	"github.com/TheTractorHacker/dunree/mod/dynamicproxy"
 	"github.com/TheTractorHacker/dunree/mod/dynamicproxy/waf"
+	"github.com/TheTractorHacker/dunree/mod/secaudit"
 )
 
 /*
@@ -60,6 +62,14 @@ func initCluster() {
 		Actor:           fleetActor,
 		Stats:           fleetNodeStats,
 		HubFingerprint:  func() string { return webUIFingerprint },
+		VIP: cluster.VIPOptions{
+			Listener: vipListenerFacts,
+			Audit: func(r *http.Request, event string, detail map[string]string) {
+				if secAudit != nil {
+					secAudit.Record(secaudit.Event{Actor: fleetActor(r), IP: callerIP(r), Event: event, Target: "floating IP", Detail: detail})
+				}
+			},
+		},
 		Logf: func(format string, a ...any) {
 			if SystemWideLogger != nil {
 				SystemWideLogger.Println(fmt.Sprintf(format, a...))
@@ -178,6 +188,13 @@ func RegisterClusterAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/cluster/generateSecret", clusterMgr.HandleGenerateSecret)
 	authRouter.HandleFunc("/api/cluster/syncNow", clusterMgr.HandleSyncNow)
 	authRouter.HandleFunc("/api/cluster/nodes", clusterMgr.HandleNodes)
+	// Floating IP (keepalived): generates text and reads status, applies nothing
+	authRouter.HandleFunc(cluster.VIPRouteConfig, clusterMgr.HandleVIPConfig)
+	authRouter.HandleFunc(cluster.VIPRouteShared, clusterMgr.HandleVIPShared)
+	authRouter.HandleFunc(cluster.VIPRouteLocal, clusterMgr.HandleVIPLocal)
+	authRouter.HandleFunc(cluster.VIPRoutePreflight, clusterMgr.HandleVIPPreflight)
+	authRouter.HandleFunc(cluster.VIPRouteGenerate, clusterMgr.HandleVIPGenerate)
+	authRouter.HandleFunc(cluster.VIPRouteStatus, clusterMgr.HandleVIPStatus)
 	// Fleet (central management): hub admin API and node side join/leave/info
 	authRouter.HandleFunc(cluster.FleetAPIPrefix, clusterMgr.HandleFleetHub)
 	authRouter.HandleFunc("/api/fleet/node/info", clusterMgr.HandleFleetNodeInfo)
@@ -185,4 +202,18 @@ func RegisterClusterAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc("/api/fleet/node/join", clusterMgr.HandleFleetJoin)
 	authRouter.HandleFunc("/api/fleet/node/leave", clusterMgr.HandleFleetLeave)
 	authRouter.HandleFunc("/api/fleet/node/syncNow", clusterMgr.HandleFleetNodeSync)
+}
+
+// vipListenerFacts tells the floating IP generator how the proxy listens, so
+// the keepalived health probe targets a port that really answers.
+func vipListenerFacts() vip.ListenerFacts {
+	f := vip.ListenerFacts{HealthPort: *healthPort}
+	if dynamicProxyRouter != nil {
+		o := dynamicProxyRouter.Option
+		f.InboundPort, f.TLS, f.Port80 = o.Port, o.UseTls, o.ListenOnPort80
+		if _, port, err := dynamicproxy.ParseHttpListenAddr(dynamicProxyRouter.HttpListenAddr()); err == nil {
+			f.HTTPPort = port
+		}
+	}
+	return f
 }

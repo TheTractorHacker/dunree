@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/TheTractorHacker/dunree/mod/cluster/vip"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,6 +42,8 @@ type Config struct {
 	SharedSSOSessions   bool     `json:"sharedSsoSessions,omitempty"` //any role, off by default: SSO portal (ZorxAuth) sessions become signed tokens every node with the same secret accepts (needs a restart)
 	HealthDisabled      bool     `json:"healthDisabled,omitempty"`
 	HealthAllow         []string `json:"healthAllow,omitempty"`
+	// VIPLocal holds the node-local overrides of the floating IP (never synced, see vip_store.go). Absent = auto-detect everything.
+	VIPLocal *vip.Local `json:"vipLocal,omitempty"`
 }
 
 // Options configures a Manager.
@@ -75,12 +78,17 @@ type Options struct {
 	// HubFingerprint returns the SHA-256 fingerprint of this node's own admin
 	// TLS certificate ("" when the admin port is plain http). Optional.
 	HubFingerprint func() string
+	// VIP carries the injectable pieces of the floating IP feature. The zero
+	// value uses the real host.
+	VIP VIPOptions
 }
 
 // Manager owns the cluster configuration and both roles of the sync.
 type Manager struct {
 	opt    Options
 	health *HealthEndpoint
+
+	vipStatus vip.Reader
 
 	mu          sync.RWMutex
 	cfg         Config
@@ -374,6 +382,10 @@ func (m *Manager) Config() Config {
 	defer m.mu.RUnlock()
 	c := m.cfg
 	c.Secret = ""
+	if c.VIPLocal != nil {
+		l := *c.VIPLocal
+		c.VIPLocal = &l
+	}
 	return c
 }
 

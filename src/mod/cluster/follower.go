@@ -401,6 +401,7 @@ func (m *Manager) sendHeartbeat(ctx context.Context, cfg Config, st followerStat
 		AppliedVersion: st.AppliedVersion,
 		LastSyncAt:     st.LastSuccessAt,
 		LastError:      st.LastError,
+		VIP:            m.vipBeat(),
 	})
 	req, err := m.primaryRequest(ctx, cfg, http.MethodPost, HeartbeatPath, hb)
 	if err != nil {

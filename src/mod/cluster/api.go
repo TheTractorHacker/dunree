@@ -238,6 +238,9 @@ func (m *Manager) isSyncedWrite(r *http.Request, syncCerts bool) bool {
 		return false
 	}
 	p := r.URL.Path
+	if p == VIPRouteShared {
+		return true //the shared floating IP settings come from the primary; /local stays editable
+	}
 	m.mu.RLock()
 	settingsSynced, keepLocal := m.status.SettingsSynced, m.cfg.KeepLocalListener
 	m.mu.RUnlock()

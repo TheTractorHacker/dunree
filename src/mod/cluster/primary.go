@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"encoding/json"
+	"github.com/TheTractorHacker/dunree/mod/cluster/vip"
 	"io"
 	"net"
 	"net/http"
@@ -31,14 +32,16 @@ const (
 
 // NodeInfo is what the primary knows about a follower.
 type NodeInfo struct {
-	ID             string `json:"id"`
-	Name           string `json:"name"`
-	Version        string `json:"version"`
-	AppliedVersion int64  `json:"appliedVersion"`
-	LastSyncAt     int64  `json:"lastSyncAt"`
-	LastError      string `json:"lastError"`
-	LastSeen       int64  `json:"lastSeen"`
-	Addr           string `json:"addr"`
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Version        string             `json:"version"`
+	AppliedVersion int64              `json:"appliedVersion"`
+	LastSyncAt     int64              `json:"lastSyncAt"`
+	LastError      string             `json:"lastError"`
+	LastSeen       int64              `json:"lastSeen"`
+	Addr           string             `json:"addr"`
+	VIP            *vip.HeartbeatFact `json:"vip,omitempty"`
+	VIPSeen        int64              `json:"vipSeen,omitempty"`
 }
 
 type primaryFile struct {
@@ -193,6 +196,8 @@ type heartbeatBody struct {
 	AppliedVersion int64  `json:"appliedVersion"`
 	LastSyncAt     int64  `json:"lastSyncAt"`
 	LastError      string `json:"lastError"`
+	// VIP is the optional floating IP fact (older followers do not send it).
+	VIP *vip.HeartbeatFact `json:"vip,omitempty"`
 }
 
 func trunc(s string, n int) string {
@@ -225,6 +230,10 @@ func (p *primaryState) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	n.AppliedVersion = hb.AppliedVersion
 	n.LastSyncAt = hb.LastSyncAt
 	n.LastError = trunc(hb.LastError, 200)
+	n.VIP = sanitizeBeat(hb.VIP)
+	if n.VIP != nil {
+		n.VIPSeen = p.m.opt.Now().Unix()
+	}
 	p.mu.Unlock()
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -1,6 +1,6 @@
 # Floating IP (keepalived) on the Cluster / HA page: design
 
-Status: design, not implemented. Owner request: two Dunree nodes keep their own static addresses, a third unused
+Status: backend implemented (`src/mod/cluster/vip`, `vip_store.go`, `vip_api.go`); the page (section 8) and the Fleet scope / Fleet variables (sections 1.3, 1.4) are still open. Owner request: two Dunree nodes keep their own static addresses, a third unused
 address in the same subnet (the floating IP, "VIP") moves between them with keepalived/VRRP, and the firewall's NAT
 rule always points at the VIP. Node A normally holds it. Node B takes over when Node A or **Dunree on Node A** stops
 answering, not only when the VM goes down.

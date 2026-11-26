@@ -1190,6 +1190,9 @@ HTTP-01 on a VIP-fronted pair only works on the node that currently owns the VIP
 
 Two nodes, `192.0.2.11` (node-a) and `192.0.2.12` (node-b), VIP `192.0.2.10`, interface `eth0`.
 
+The Cluster / HA page can generate this file for you (section "Floating IP"; backend in `src/mod/cluster/vip`, user guide
+`docs/guides/floating-ip-keepalived.md`). Dunree only generates text and reads status: it never edits keepalived, UniFi or the OS network.
+
 ```
 # /etc/keepalived/keepalived.conf on node-a (node-b: state BACKUP, priority 100, swap unicast addresses)
 global_defs {
@@ -1198,7 +1201,7 @@ global_defs {
 }
 
 vrrp_script chk_dunree {
-    script "/usr/bin/curl -fsS --max-time 2 http://127.0.0.1/.dunree/health -H 'Host: health.local' -o /dev/null"
+    script "/usr/bin/curl -fsS --max-time 2 -o /dev/null http://127.0.0.1/.dunree/health"
     interval 2
     timeout 3
     fall 2
@@ -1217,7 +1220,7 @@ vrrp_instance VI_DUNREE {
     }
     authentication {
         auth_type PASS
-        auth_pass change-me-8ch
+        auth_pass Xb7kQ2mT
     }
     virtual_ipaddress {
         192.0.2.10/24
@@ -1423,9 +1426,9 @@ Report: `docs/triage/sweep-1.md|json`. Developer notes for the fixes on `fix/bug
 ## Central management (Fleet)
 
 Fleet turns one Dunree into a management hub for several others. It extends `src/mod/cluster` (files `fleet_*.go`, page
-`web/components/fleet.html`, glue `src/fleet.go`); the legacy shared-secret primary/follower mode above is unchanged, still works with
-its `conf/cluster.json` and flags, and is labelled "Legacy shared-secret mode" on the Cluster / HA page. A node uses one mode:
-`standalone`, legacy `primary`/`follower`, or Fleet `hub`/`node`. Everything is inert until the hub role is enabled.
+`web/components/fleet.html`, glue `src/fleet.go`); the shared-secret primary/follower mode above is unchanged and still works with
+its `conf/cluster.json` and flags (it is a first-class part of Cluster / HA). A node uses one mode:
+`standalone`, shared-secret `primary`/`follower`, or Fleet `hub`/`node`. Everything is inert until the hub role is enabled.
 
 **What the hub can do, and what it cannot.** The hub publishes immutable, versioned configuration and can ask a node to "sync now".
 A node pulls a bundle, validates it, applies it atomically (stage, backup, rename, local rollback, boot guard) and reports. There
@@ -1585,7 +1588,8 @@ self-reported by the node.
 - [ ] Edit a managed file on node A by hand: drift icon on the hub.
 - [ ] Rotate A's key: A keeps syncing; the old key no longer authenticates. Revoke B: B's next sync fails immediately and the hub shows it revoked.
 - [ ] Audit log lists every action above with who and when.
-- [ ] Legacy: another pair in primary/follower mode keeps working and says "Legacy shared-secret mode".
+- [ ] Shared-secret mode: another pair in primary/follower mode keeps working.
+- [ ] Floating IP (manual, two real nodes): generate on both, install, `ip -br addr` shows the VIP on node A only; stop Dunree on node A, the VIP moves to node B within about 6 s; start it again, the VIP returns after the preempt delay; the port forward keeps working throughout.
 ## Networking features (feat/networking-1)
 
 All of these are opt-in; a rule without the new fields behaves exactly as before. Logic lives in new files of `src/mod/dynamicproxy`, the shared
