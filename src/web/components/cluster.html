@@ -1,9 +1,10 @@
-<!-- Cluster / HA (tag cluster). Shared-secret mode: a status header (role, secret, followers or last sync, health endpoint), the role as a
-     guided choice of three, the secret, the sync state of this role and the health endpoint. Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
+<!-- Cluster / HA (tag cluster). Shared-secret mode: a status header (role, secret, followers or last sync, health endpoint), the floating IP
+     (keepalived: status, settings, pre-flight checks, generated configuration; docs/cluster/vip-plan.md), the role as a guided choice of
+     three, the secret, the sync state of this role and the health endpoint. Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
 <style>
     #clusterPage code.nobreak { white-space: nowrap; }
     #clusterPage .zx-page-header__sub .zx-whatis { vertical-align: middle; margin: -4px 0 -4px var(--zx-space-1); }
-    #clusterPage [hidden] { display: none; }
+    #clusterPage [hidden] { display: none !important; }
     #clusterPage .clPaste { display: flex; gap: var(--zx-space-2); }
     #clusterPage .clPaste input { flex: 1 1 auto; min-width: 0; }
     #clusterPage .zx-card__body > .zx-callout { margin-top: var(--zx-space-4); }
@@ -20,6 +21,92 @@
     #clusterPage .clHealthAddr { margin: 0 0 var(--zx-space-4); color: var(--zx-text-muted); }
     #clusterPage .clHealthAddr code { color: var(--zx-text); overflow-wrap: anywhere; }
     #clusterPage .cx-path .zx-form-grid .zx-field { margin-bottom: 0; }
+    /* Floating IP (keepalived): one status card with a small topology picture, then three numbered steps. The page scrolls as one:
+       code blocks wrap and are never height-limited. Design: docs/cluster/vip-plan.md section 8. */
+    #clusterPage .vipTopo { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.25fr); align-items: center; gap: var(--zx-space-3); padding: 0 var(--zx-card-pad) var(--zx-card-pad); }
+    #clusterPage .vipTopo__box { min-width: 0; padding: var(--zx-space-3) var(--zx-space-4); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); background: var(--zx-surface-2); color: var(--zx-text); }
+    #clusterPage .vipTopo__kicker { display: flex; align-items: center; gap: 6px; color: var(--zx-text-muted); font-size: var(--zx-fs-xs); font-weight: 700; }
+    #clusterPage .vipTopo__kicker i.icon { margin: 0; height: auto; }
+    #clusterPage .vipTopo__main { display: block; margin-top: 2px; font-size: var(--zx-fs-lg); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    #clusterPage .vipTopo__sub { display: block; margin-top: 2px; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.4; overflow-wrap: anywhere; }
+    #clusterPage .vipTopo__vip { border-color: var(--zx-primary); background: var(--zx-primary-soft); box-shadow: inset 0 0 0 1px var(--zx-primary); }
+    #clusterPage .vipTopo__vip .vipTopo__kicker, #clusterPage .vipTopo__vip .vipTopo__sub { color: var(--zx-text); }
+    #clusterPage .vipTopo__arrow { color: var(--zx-text-faint); font-size: 1.1rem; text-align: center; }
+    #clusterPage .vipTopo__arrow i.icon { margin: 0; height: auto; }
+    #clusterPage .vipTopo__members { display: grid; gap: var(--zx-space-2); min-width: 0; }
+    #clusterPage .vipTopo__member { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px var(--zx-space-3); background: var(--zx-surface); }
+    #clusterPage .vipTopo__member > span:first-child { min-width: 0; flex: 1 1 9rem; }
+    #clusterPage .vipTopo__member .vipTopo__main { font-size: var(--zx-fs-md); }
+    #clusterPage .vipTopo__member.is-holder { border-color: var(--zx-ok-line); background: var(--zx-ok-bg); }
+    #clusterPage .vipTopo__member.is-holder .vipTopo__sub { color: var(--zx-text); }
+    #clusterPage .vipNeeds { margin: 0; padding: 0 var(--zx-card-pad) var(--zx-card-pad); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--zx-space-3) var(--zx-space-5); list-style: none; }
+    #clusterPage .vipNeeds li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px var(--zx-space-3); color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.45; }
+    #clusterPage .vipNeeds li > i.icon { grid-row: 1 / span 2; margin: 2px 0 0; height: auto; color: var(--zx-text-faint); }
+    #clusterPage .vipNeeds b { color: var(--zx-text); font-size: var(--zx-fs-md); }
+    #clusterPage .vipStepNo { flex: 0 0 auto; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--zx-primary-soft); color: var(--zx-primary-soft-text); font-size: var(--zx-fs-sm); font-weight: 700; font-variant-numeric: tabular-nums; }
+    #clusterPage .vipStep > .zx-card__head { flex-wrap: nowrap; align-items: flex-start; }
+    #clusterPage .vipStep > .zx-card__head .zx-card__title { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding-top: 2px; }
+    #clusterPage .vipStep > .zx-card__desc { padding-left: calc(var(--zx-card-pad) + 26px + var(--zx-space-3)); max-width: 52rem; }
+    #clusterPage .vipSub { margin: var(--zx-space-5) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
+    #clusterPage .vipSub:first-child { margin-top: 0; }
+    #clusterPage .vipSubDesc { margin: 0 0 var(--zx-space-3); max-width: 52rem; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
+    #clusterPage .vipAddr { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 12rem); gap: 0 var(--zx-space-4); align-items: start; }
+    #clusterPage .vipMembers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--zx-space-3); }
+    #clusterPage .vipMember { min-width: 0; margin: 0; padding: var(--zx-space-3) var(--zx-space-4) var(--zx-space-1); border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); background: var(--zx-surface-2); }
+    #clusterPage .vipMember__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-2); min-height: 32px; margin-bottom: var(--zx-space-2); font-weight: 700; color: var(--zx-text); }
+    #clusterPage .vipMember__head > span:first-child { flex: 1 1 auto; }
+    #clusterPage .vipMember__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--zx-space-3); }
+    #clusterPage .vipMember .zx-input { background: var(--zx-surface); }
+    #clusterPage .vipHint { margin: var(--zx-space-1) 0 0; font-size: var(--zx-fs-sm); font-weight: 700; }
+    #clusterPage .vipHint.is-ok { color: var(--zx-ok-text); } #clusterPage .vipHint.is-danger { color: var(--zx-danger-text); }
+    #clusterPage .vipInline { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--zx-space-4); }
+    #clusterPage .vipInline > .zx-field { flex: 0 1 15rem; min-width: 8rem; }
+    #clusterPage .vipSentence { margin: var(--zx-space-1) 0 0; padding: var(--zx-space-2) var(--zx-space-3); border-radius: var(--zx-radius-md); background: var(--zx-surface-2); border: 1px solid var(--zx-border); color: var(--zx-text); }
+    #clusterPage .vipPass { display: flex; gap: var(--zx-space-2); }
+    #clusterPage .vipPass .zx-input { flex: 1 1 auto; min-width: 0; font-family: var(--zx-font-mono); }
+    #clusterPage .vipStep .zx-disclosure__body { color: var(--zx-text); font-size: var(--zx-fs-md); padding-top: var(--zx-space-3); }
+    #clusterPage .vipStep .zx-disclosure:last-child { margin-bottom: 0; }
+    #clusterPage .vipChecks { list-style: none; margin: 0; padding: 0; border: 1px solid var(--zx-border); border-radius: var(--zx-radius-lg); }
+    #clusterPage .vipCheck { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 2px var(--zx-space-3); align-items: start; padding: var(--zx-space-3) var(--zx-space-4); border-bottom: 1px solid var(--zx-border); }
+    #clusterPage .vipCheck:last-child { border-bottom: 0; }
+    #clusterPage .vipCheck__icon { grid-row: 1 / span 2; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--zx-surface-2); color: var(--zx-text-muted); }
+    #clusterPage .vipCheck__icon i.icon { margin: 0; height: auto; font-size: 0.95rem; }
+    #clusterPage .vipCheck[data-level=ok] .vipCheck__icon { background: var(--zx-ok-bg); color: var(--zx-ok-text); }
+    #clusterPage .vipCheck[data-level=warn] .vipCheck__icon { background: var(--zx-warn-bg); color: var(--zx-warn-text); }
+    #clusterPage .vipCheck[data-level=block] .vipCheck__icon { background: var(--zx-danger-bg); color: var(--zx-danger-text); }
+    #clusterPage .vipCheck[data-level=info] .vipCheck__icon { background: var(--zx-info-bg); color: var(--zx-info-text); }
+    #clusterPage .vipCheck__title { font-weight: 700; color: var(--zx-text); min-width: 0; }
+    #clusterPage .vipCheck__msg { grid-column: 2 / -1; color: var(--zx-text-muted); line-height: 1.45; overflow-wrap: anywhere; }
+    #clusterPage .vipCheck__msg .zx-btn { margin-top: var(--zx-space-2); display: flex; width: fit-content; }
+    #clusterPage .vipCheckSum { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-3); }
+    #clusterPage .vipCheckSum > span:first-child { flex: 1 1 14rem; min-width: 0; color: var(--zx-text-muted); }
+    #clusterPage .vipList { margin: var(--zx-space-1) 0 0; padding-left: 1.2em; }
+    #clusterPage .vipFor { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-4); }
+    #clusterPage .vipFor label { font-weight: 700; }
+    #clusterPage .vipFor .zx-select { width: auto; min-width: min(100%, 16rem); max-width: 100%; }
+    #clusterPage .vipCodeHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2) var(--zx-space-3); margin: 0 0 var(--zx-space-2); }
+    #clusterPage .vipCodeHead > span:first-child { flex: 1 1 14rem; min-width: 0; color: var(--zx-text-muted); overflow-wrap: anywhere; }
+    #clusterPage .vipCodeHead code { color: var(--zx-text); }
+    #clusterPage .vipStep .zx-codeblock { overflow: visible; margin: 0 0 var(--zx-space-4); line-height: 1.55; tab-size: 4; }
+    #clusterPage .vipStep .zx-codeblock:last-child { margin-bottom: 0; }
+    #clusterPage .vipNote { margin: 0 0 var(--zx-space-4); max-width: 52rem; color: var(--zx-text-muted); }
+    #clusterPage #vipSteps > .zx-card, #clusterPage #vipWrap > .zx-card { margin-bottom: var(--zx-space-4); }
+    #clusterPage #vipCard .cx-status__action .zx-btn { white-space: nowrap; }
+    #clusterPage #vipLocalFacts { margin-bottom: var(--zx-space-2); }
+    @media (max-width: 860px) {
+        #clusterPage .vipTopo { grid-template-columns: minmax(0, 1fr); }
+        #clusterPage .vipTopo__arrow i.icon { transform: rotate(90deg); }
+    }
+    @media (max-width: 640px) {
+        #clusterPage #vipCard .cx-status__top { flex-wrap: wrap; }
+        #clusterPage #vipCard .cx-status__text { flex: 1 1 60%; }
+        #clusterPage #vipCard .cx-status__action { flex: 1 0 100%; min-height: 0; }
+        #clusterPage .vipStep > .zx-card__desc { padding-left: var(--zx-card-pad); }
+        #clusterPage .vipAddr { grid-template-columns: minmax(0, 1fr) 9.5rem; }
+        #clusterPage .vipCheck { grid-template-columns: 28px minmax(0, 1fr); }
+        #clusterPage .vipCheck > .zx-badge { grid-column: 2; justify-self: start; }
+        #clusterPage .vipCheck__msg { grid-column: 2; }
+    }
     @media (max-width: 480px) {
         #clusterPage .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
         #clusterPage .zx-card .zx-table tbody tr:last-child { border-bottom: 0; }
@@ -30,7 +117,7 @@
         <div class="zx-page-header__main">
             <div class="zx-page-header__crumbs" data-zx-crumbs></div>
             <h2 class="zx-page-header__title">Cluster / HA</h2>
-            <p class="zx-page-header__sub">Run two or more Dunree nodes behind a load balancer: they share one secret, and a primary can copy its configuration to followers.
+            <p class="zx-page-header__sub">Run two or more Dunree nodes behind a floating IP or a load balancer: they share one secret, and a primary can copy its configuration to followers.
                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="clModeWhat" aria-label="More about shared-secret mode">?</button></p>
             <div class="zx-popover" id="clModeWhat" role="note" hidden>The shared secret makes visitor sessions (CAPTCHA, load balancer stickiness) valid on every node. Followers pull a signed, encrypted snapshot of the primary's proxy configuration. Standalone nodes (the default) are unaffected. Fleet, the other tab, adds per-node credentials, groups and staged rollouts; a node uses one of the two modes.</div>
         </div>
@@ -69,6 +156,301 @@
         </div>
         <dl class="cx-facts" id="clFacts" aria-live="polite"></dl>
     </section>
+
+    <!-- Floating IP (keepalived / VRRP). Dunree generates the configuration and reads the status; it applies nothing on the host. -->
+    <div id="vipWrap">
+    <section class="zx-card cx-status" id="vipCard" aria-labelledby="vipTitle" data-vip-state="loading">
+        <div class="cx-status__top">
+            <span class="cx-status__icon" aria-hidden="true"><i class="exchange icon"></i></span>
+            <div class="cx-status__text">
+                <div class="cx-status__title" role="heading" aria-level="3"><span id="vipTitle">Floating IP</span> <span class="zx-badge zx-badge--dot" id="vipBadge" hidden></span>
+                    <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="vipWhat" aria-label="More about the floating IP">?</button></div>
+                <div class="zx-popover" id="vipWhat" role="note" hidden>Each node keeps its own static address. keepalived (VRRP) puts one more address, the floating IP, on the node that is healthy, and moves it when that node or Dunree on it stops answering. Dunree writes the keepalived configuration and the commands for you and shows the status. It never changes keepalived, your firewall or the network settings of this host: you run the commands yourself. Guide: <code>docs/guides/floating-ip-keepalived.md</code>.</div>
+                <p class="cx-status__desc" id="vipDesc">Two nodes keep their own addresses. A third address in the same subnet moves to the node that is healthy, and your firewall always points at it. Off by default.</p>
+            </div>
+            <div class="cx-status__action">
+                <button type="button" class="zx-btn zx-btn--primary" id="vipSetupBtn" hidden><i class="magic icon" aria-hidden="true"></i> Set up a floating IP</button>
+                <button type="button" class="zx-btn zx-btn--primary" id="vipOnBtn" hidden>Switch on</button>
+                <button type="button" class="zx-btn zx-btn--secondary" id="vipOffBtn" hidden>Switch off</button>
+            </div>
+        </div>
+        <div id="vipSplit" class="zx-callout zx-callout--danger" role="alert" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title">Split brain: more than one node holds the floating IP</span>
+            <span id="vipSplitText"></span> The nodes cannot see each other's VRRP messages, so traffic flips between them. Check that both run the same generated configuration (same settings fingerprint), that they are on the same VLAN, and that a host firewall does not drop VRRP (protocol 112).</div>
+        </div>
+        <div id="vipLock" class="zx-callout zx-callout--warn" role="note" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span>
+            <div class="zx-callout__body">The floating IP settings are managed by the primary and arrive here with the normal sync. Change them on the primary. What belongs to this node only (interface, priority override, health check target) can still be set here.</div>
+        </div>
+        <div id="vipKept" class="zx-callout zx-callout--warn" role="note" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title">Switched off. Your settings are kept.</span>
+            Dunree no longer checks or reports the floating IP. keepalived keeps running on your nodes until you stop it yourself on each node: <code>sudo systemctl disable --now keepalived</code></div>
+        </div>
+        <div id="vipNotMember" class="zx-callout zx-callout--warn" role="note" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="question circle icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title">This node is not in the list of nodes</span>
+            None of the node addresses in the settings is an address of this host, so Dunree cannot write a configuration for it. Correct the node addresses in step 1, or set this node's own address in step 2.</div>
+        </div>
+        <div class="vipTopo" id="vipTopo" role="img" aria-label="Your firewall points at the floating IP. The floating IP is held by one of the nodes."></div>
+        <ul class="vipNeeds" id="vipNeeds" hidden>
+            <li><i class="map marker alternate icon" aria-hidden="true"></i><b>Pick a third, unused address</b><span>In the same subnet as both nodes and outside the DHCP range of your router. No device may use it.</span></li>
+            <li><i class="ban icon" aria-hidden="true"></i><b>No fixed-IP reservation for it</b><span>The address moves between two network cards, so a reservation tied to one of them is wrong.</span></li>
+            <li><i class="shield alternate icon" aria-hidden="true"></i><b>Point the port forward at it</b><span>Your firewall's NAT rule goes to the floating IP, never to a node. It does not change during a failover.</span></li>
+            <li><i class="terminal icon" aria-hidden="true"></i><b>You run the commands</b><span>Dunree writes the keepalived configuration and shows the status. It changes nothing on the host.</span></li>
+        </ul>
+        <dl class="cx-facts" id="vipFacts" aria-live="polite"></dl>
+    </section>
+
+    <section class="zx-card" id="vipPeersWrap" aria-labelledby="vipPeersTitle" hidden>
+        <div class="zx-card__head"><h3 class="zx-card__title" id="vipPeersTitle">Who holds the floating IP</h3></div>
+        <p class="zx-card__desc">What this primary and its followers reported with their last sync.</p>
+        <div class="zx-card__body">
+            <div class="zx-table-wrap zx-table-wrap--flush" role="region" aria-label="Who holds the floating IP">
+                <table class="zx-table zx-table--comfortable clNodes">
+                    <thead><tr><th scope="col">Node</th><th scope="col">Floating IP</th><th scope="col">keepalived</th><th scope="col">Last report</th></tr></thead>
+                    <tbody id="vipPeers"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div id="vipSteps" hidden>
+    <!-- step 1: the shared settings -->
+    <section class="zx-card vipStep" id="vipStep1" aria-labelledby="vipStep1Title">
+        <div class="zx-card__head"><span class="vipStepNo" aria-hidden="true">1</span><h3 class="zx-card__title" id="vipStep1Title">Addresses and failover <span class="zx-badge zx-badge--dot" id="vipStep1Badge" hidden></span></h3>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="vipEditBtn" hidden><i class="edit icon" aria-hidden="true"></i> Change settings</button></div>
+        <p class="zx-card__desc" id="vipStep1Desc">The same on every node. With a primary and followers you enter them once on the primary and the sync carries them over. Without a cluster, enter the same values on both nodes and compare the settings fingerprint.</p>
+        <div class="zx-card__body" id="vipSummaryWrap" hidden>
+            <dl class="cx-kvlist" id="vipSummary"></dl>
+        </div>
+        <div id="vipForm" hidden>
+        <div class="zx-card__body">
+            <h4 class="vipSub">The floating IP</h4>
+            <p class="vipSubDesc">A third address that no device uses, in the same subnet as the nodes and outside the DHCP range of your router. Do not create a fixed-IP reservation for it. Your firewall's port forward points at this address.</p>
+            <div class="vipAddr">
+                <div class="zx-field">
+                    <label class="zx-field__label" for="vipAddrIn">Floating IP</label>
+                    <input type="text" id="vipAddrIn" class="zx-input" data-vip-field="vip" placeholder="192.0.2.10" autocomplete="off" spellcheck="false" inputmode="decimal">
+                    <p class="vipHint" id="vipAddrHint" hidden></p>
+                </div>
+                <div class="zx-field">
+                    <label class="zx-field__label" for="vipPrefixIn">Prefix</label>
+                    <input type="number" id="vipPrefixIn" class="zx-input" data-vip-field="prefix" min="1" max="128" placeholder="24">
+                    <p class="zx-help">/24 is 255.255.255.0.</p>
+                </div>
+            </div>
+
+            <h4 class="vipSub">The nodes</h4>
+            <p class="vipSubDesc">Each node keeps the static address it has today. The node with the highest priority normally holds the floating IP. Every node finds itself in this list by its own address, so nothing else has to be typed on the other node.</p>
+            <div class="vipMembers" id="vipMembers"></div>
+            <div class="zx-field" data-vip-field-row="members"><p class="zx-error"></p></div>
+            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" id="vipAddMember"><i class="plus icon" aria-hidden="true"></i> Add another node</button>
+
+            <h4 class="vipSub">When does it fail over?</h4>
+            <p class="vipSubDesc">keepalived asks Dunree's health endpoint on each node. A node that stops answering gives up the floating IP at once, also when the machine itself is still running.</p>
+            <div class="vipInline">
+                <div class="zx-field">
+                    <label class="zx-field__label" for="vipHInterval">Check every</label>
+                    <input type="number" id="vipHInterval" class="zx-input" data-vip-field="health.interval" min="1" max="60">
+                    <p class="zx-help">1 to 60 seconds. Default: 2.</p>
+                </div>
+                <div class="zx-field">
+                    <label class="zx-field__label" for="vipHFall">Failed checks before failover</label>
+                    <input type="number" id="vipHFall" class="zx-input" data-vip-field="health.fall" min="1" max="10">
+                    <p class="zx-help">1 to 10. Default: 3.</p>
+                </div>
+            </div>
+            <p class="vipSentence" id="vipFailSentence" aria-live="polite"></p>
+
+            <div class="zx-toggle-row clRowGap">
+                <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">The preferred node takes the floating IP back</span>
+                    <span class="zx-toggle-row__desc">On by default. When the node with the highest priority is healthy again it takes the address back, which is one more short interruption. Off: whoever holds the address keeps it, and the other node may stay the active one for a long time.</span></span>
+                <div class="ui toggle checkbox"><input type="checkbox" id="vipPreempt" aria-label="The preferred node takes the floating IP back"><label></label></div>
+            </div>
+            <div class="zx-field" id="vipPreemptDelayRow">
+                <label class="zx-field__label" for="vipPreemptDelay">Wait before taking it back (seconds)</label>
+                <input type="number" id="vipPreemptDelay" class="zx-input zx-input--short" data-vip-field="preemptDelay" min="0" max="1000">
+                <p class="zx-help">0 to 1000 seconds the node has to be healthy first. Default: 60.</p>
+            </div>
+
+            <details class="zx-disclosure" id="vipAdvanced">
+                <summary>Advanced: VRRP, authentication, timing</summary>
+                <div class="zx-disclosure__body">
+                    <div class="zx-form-grid">
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipVrid">Virtual router ID</label>
+                            <input type="number" id="vipVrid" class="zx-input" data-vip-field="vrid" min="1" max="255">
+                            <p class="zx-help">1 to 255. Default: 51. No other VRRP device on the same VLAN may use it; Dunree cannot detect a collision.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipAdvert">Advert interval (seconds)</label>
+                            <input type="number" id="vipAdvert" class="zx-input" data-vip-field="advertInt" min="1" max="10">
+                            <p class="zx-help">1 to 10 seconds. Default: 1.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipTransport">How the nodes talk to each other</label>
+                            <select id="vipTransport" class="zx-select" data-vip-field="transport">
+                                <option value="unicast">Unicast: directly, node to node</option>
+                                <option value="multicast">Multicast: to the whole VLAN</option>
+                            </select>
+                            <p class="zx-help">Default: unicast.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipAuth">Authentication</label>
+                            <select id="vipAuth" class="zx-select" data-vip-field="auth">
+                                <option value="cluster">Derived from the cluster secret</option>
+                                <option value="password">Password</option>
+                                <option value="none">None</option>
+                            </select>
+                            <p class="zx-help" id="vipAuthHelp"></p>
+                        </div>
+                        <div class="zx-field zx-field--wide" id="vipPassRow" hidden>
+                            <label class="zx-field__label" for="vipPass">VRRP password <span class="zx-field__optional" id="vipPassState"></span></label>
+                            <div class="vipPass">
+                                <input type="password" id="vipPass" class="zx-input" data-vip-field="password" maxlength="8" autocomplete="new-password" spellcheck="false">
+                                <button type="button" class="zx-btn zx-btn--secondary" id="vipPassGen"><i class="random icon" aria-hidden="true"></i> Generate</button>
+                            </div>
+                            <p class="zx-help">1 to 8 characters from A-Z a-z 0-9 . _ ~ + - and the same on every node. keepalived sends it unencrypted: it keeps two VRRP groups apart, it is not security. It is not shown again after saving, but it is part of the generated file.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipHTimeout">Health check time limit (seconds)</label>
+                            <input type="number" id="vipHTimeout" class="zx-input" data-vip-field="health.timeout" min="2" max="60">
+                            <p class="zx-help">2 to 60 seconds. Default: 3.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipHRise">Good checks before a node counts as healthy</label>
+                            <input type="number" id="vipHRise" class="zx-input" data-vip-field="health.rise" min="1" max="10">
+                            <p class="zx-help">1 to 10. Default: 2.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipGarp">Repeat the address announcement (seconds)</label>
+                            <input type="number" id="vipGarp" class="zx-input" data-vip-field="garpRefresh" min="0" max="3600">
+                            <p class="zx-help">0 to 3600. Default: 0 (off). Try 60 if traffic still goes to the old node after a failover.</p>
+                        </div>
+                    </div>
+                    <div class="zx-toggle-row">
+                        <span class="zx-toggle-row__text"><span class="zx-toggle-row__title">Write state changes to the system log</span>
+                            <span class="zx-toggle-row__desc">Off by default. Adds fixed <code>logger</code> lines, readable with <code class="nobreak">journalctl -t dunree-vip</code>.</span></span>
+                        <div class="ui toggle checkbox"><input type="checkbox" id="vipNotify" aria-label="Write state changes to the system log"><label></label></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        <div class="zx-card__foot">
+            <button type="button" class="zx-btn zx-btn--secondary" id="vipCancelBtn">Cancel</button>
+            <button type="button" class="zx-btn zx-btn--primary" id="vipSaveBtn">Save floating IP settings</button>
+        </div>
+        </div>
+    </section>
+
+    <!-- step 2: this node and the pre-flight checks -->
+    <section class="zx-card vipStep" id="vipStep2" aria-labelledby="vipStep2Title" hidden>
+        <div class="zx-card__head"><span class="vipStepNo" aria-hidden="true">2</span><h3 class="zx-card__title" id="vipStep2Title">Check this node <span class="zx-badge zx-badge--dot" id="vipStep2Badge" hidden></span></h3></div>
+        <p class="zx-card__desc">Do this on every node. The checks only read: they look at this host's interfaces, ask the health endpoint, and try the floating IP and the other nodes you entered.</p>
+        <div class="zx-card__body">
+            <dl class="cx-kvlist" id="vipLocalFacts"></dl>
+            <details class="zx-disclosure" id="vipLocalBox">
+                <summary>Set this node's values by hand</summary>
+                <div class="zx-disclosure__body">
+                    <p class="vipSubDesc">Only needed when the automatic choice is wrong, for example with several interfaces in the subnet. Stored on this node and never synced. Leave a field empty for the automatic value.</p>
+                    <div class="zx-form-grid">
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipLIface">Interface <span class="zx-field__optional">optional</span></label>
+                            <input type="text" id="vipLIface" class="zx-input" data-vip-lfield="interface" placeholder="ens18" maxlength="15" autocomplete="off" spellcheck="false">
+                            <p class="zx-help">The interface that carries the floating IP on this node.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipLSource">This node's address <span class="zx-field__optional">optional</span></label>
+                            <input type="text" id="vipLSource" class="zx-input" data-vip-lfield="sourceAddress" placeholder="192.0.2.11" autocomplete="off" spellcheck="false">
+                            <p class="zx-help">Has to be one of the node addresses of step 1.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipLPrio">Priority override <span class="zx-field__optional">optional</span></label>
+                            <input type="number" id="vipLPrio" class="zx-input" data-vip-lfield="priorityOverride" min="0" max="254" placeholder="0">
+                            <p class="zx-help">1 to 254, or 0 for none. For maintenance: lower it to hand the floating IP to the other node.</p>
+                        </div>
+                        <div class="zx-field">
+                            <label class="zx-field__label" for="vipLHealth">Health check target <span class="zx-field__optional">optional</span></label>
+                            <input type="text" id="vipLHealth" class="zx-input" data-vip-lfield="healthTarget" placeholder="http://127.0.0.1:8081" autocomplete="off" spellcheck="false">
+                            <p class="zx-help">Only this host itself: http(s)://127.0.0.1:port or http(s)://[::1]:port. Empty: chosen from the listeners.</p>
+                        </div>
+                    </div>
+                    <div class="zx-btn-row"><button type="button" class="zx-btn zx-btn--secondary" id="vipLocalSave">Save this node's values</button></div>
+                </div>
+            </details>
+            <h4 class="vipSub">Pre-flight checks</h4>
+            <div class="vipCheckSum"><span id="vipCheckSum">Not run yet on this node.</span>
+                <button type="button" class="zx-btn zx-btn--secondary" id="vipCheckBtn"><i class="tasks icon" aria-hidden="true"></i> Run checks</button></div>
+            <ul class="vipChecks" id="vipChecks" aria-live="polite" hidden></ul>
+        </div>
+    </section>
+
+    <!-- step 3: the generated configuration and the commands -->
+    <section class="zx-card vipStep" id="vipStep3" aria-labelledby="vipStep3Title" hidden>
+        <div class="zx-card__head"><span class="vipStepNo" aria-hidden="true">3</span><h3 class="zx-card__title" id="vipStep3Title">Install keepalived on each node <span class="zx-badge zx-badge--dot" id="vipStep3Badge" hidden></span></h3></div>
+        <p class="zx-card__desc">Dunree does not change your system. Copy the commands and run them yourself in a terminal on the node, then do the same on the other node with its own configuration.</p>
+        <div class="zx-card__body">
+            <div class="vipFor">
+                <label for="vipGenFor">Configuration for</label>
+                <select id="vipGenFor" class="zx-select"></select>
+            </div>
+            <div id="vipBlocked" class="zx-callout zx-callout--danger" role="note" hidden>
+                <span class="zx-callout__icon" aria-hidden="true"><i class="times circle icon"></i></span>
+                <div class="zx-callout__body"><span class="zx-callout__title">The configuration cannot be written yet</span>
+                <ul class="vipList" id="vipBlockers"></ul></div>
+            </div>
+            <div id="vipGenWarn" class="zx-callout zx-callout--warn" role="note" hidden>
+                <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                <div class="zx-callout__body"><span class="zx-callout__title">Check before you use this file on the other node</span>
+                <ul class="vipList" id="vipGenWarnings"></ul></div>
+            </div>
+            <div id="vipGenOk" hidden>
+                <div class="zx-tabs" id="vipTabs" aria-label="Generated files and commands">
+                    <button type="button" class="zx-tab" data-zx-panel="vipPanelInstall" aria-selected="true">Install commands</button>
+                    <button type="button" class="zx-tab" data-zx-panel="vipPanelConf">keepalived.conf</button>
+                    <button type="button" class="zx-tab" data-zx-panel="vipPanelVerify">Verify</button>
+                </div>
+                <div id="vipPanelInstall">
+                    <p class="vipNote">Installs keepalived, creates the unprivileged user that runs the health check, writes the configuration, tests it and starts the service. Paste the whole block into a terminal on <b class="vipForName"></b>. Running it again after a change is safe.</p>
+                    <div class="vipCodeHead"><span>Run on <b class="vipForName"></b></span>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-vip-copy="vipInstallCode"><i class="copy icon" aria-hidden="true"></i> Copy commands</button></div>
+                    <div class="zx-codeblock"><pre id="vipInstallCode"></pre></div>
+                    <div id="vipSysctlWrap" hidden>
+                        <p class="vipNote">A Dunree listener is bound to the floating IP itself, so the standby node has to be allowed to bind an address it does not hold yet. Run this once as well:</p>
+                        <div class="vipCodeHead"><span>Run on <b class="vipForName"></b></span>
+                            <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-vip-copy="vipSysctlCode"><i class="copy icon" aria-hidden="true"></i> Copy</button></div>
+                        <div class="zx-codeblock"><pre id="vipSysctlCode"></pre></div>
+                    </div>
+                    <div id="vipFwWrap" hidden>
+                        <p class="vipNote">The host firewall (ufw) is on. It has to let VRRP through, or both nodes take the floating IP:</p>
+                        <div class="zx-codeblock"><pre id="vipFwCode"></pre></div>
+                    </div>
+                </div>
+                <div id="vipPanelConf" hidden>
+                    <p class="vipNote">The file the install commands write. It contains the VRRP password, so keep it out of chats and tickets.</p>
+                    <div class="vipCodeHead"><span><code>/etc/keepalived/keepalived.conf</code> on <b class="vipForName"></b></span>
+                        <a class="zx-btn zx-btn--secondary zx-btn--sm" id="vipDownload" href="#" download><i class="download icon" aria-hidden="true"></i> Download</a>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-vip-copy="vipConfCode"><i class="copy icon" aria-hidden="true"></i> Copy file</button></div>
+                    <div class="zx-codeblock"><pre id="vipConfCode"></pre></div>
+                </div>
+                <div id="vipPanelVerify" hidden>
+                    <p class="vipNote">On the node that holds the floating IP the first command lists it next to the node's own address. To test the failover, stop Dunree on that node: after about <b id="vipVerifySecs"></b> seconds the other node should show the address, and this page says so.</p>
+                    <div class="vipCodeHead"><span>Run on <b class="vipForName"></b></span>
+                        <button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-vip-copy="vipVerifyCode"><i class="copy icon" aria-hidden="true"></i> Copy commands</button></div>
+                    <div class="zx-codeblock"><pre id="vipVerifyCode"></pre></div>
+                </div>
+                <div class="zx-callout" role="note">
+                    <span class="zx-callout__icon" aria-hidden="true"><i class="shield alternate icon"></i></span>
+                    <div class="zx-callout__body"><span class="zx-callout__title">Last step, on your firewall</span>
+                    Point the port forward (NAT rule) at <code id="vipNatAddr"></code>, not at the address of a node. It stays the same during a failover. Certificates by HTTP challenge are only issued on the node that holds the floating IP.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    </div>
+    </div>
 
     <!-- Role -->
     <section class="zx-card">
@@ -285,6 +667,7 @@
                 fact("Settings", f.settingsSynced ? t("From the primary") : t("Own"), f.settingsSynced ? "" : "muted", f.settingsSynced ? (s.keepLocalListener ? t("listening ports stay local") : t("port, SSO providers, SSO portal users")) : t("the primary does not sync settings"));
         }
         facts += fact("Health endpoint", s.healthDisabled ? t("Off") : t("On"), s.healthDisabled ? "muted" : "", s.healthDisabled ? "" : ((s.healthAllow || []).length ? tf("{0} allowed clients", s.healthAllow.length) : t("open to everyone")));
+        facts += vipFact();
         $("#clFacts").html(facts);
     }
     //Results are toasts (visible wherever the page is scrolled). Backend messages start lower case: show them capitalised.
@@ -368,10 +751,11 @@
 
     function load(){
         $.ajax({url: "./api/cluster/status", method: "GET", success: render, error: fail});
+        vipLoad();
     }
 
     $("input[name=clRole]").on("change", showRoleFields);
-    $("#clusterPage input, #clusterPage textarea").not("#clSharedSso").on("input change", function(){ dirty = true; });
+    $("#clusterPage input, #clusterPage textarea").not("#clSharedSso").not("#vipWrap input, #vipWrap textarea").on("input change", function(){ dirty = true; });
 
     //Saved on its own, right away (like the secret buttons of this card); the result is a toast
     $("#clSharedSso").on("change", function(){
@@ -457,6 +841,474 @@
         post("./api/cluster/config", {healthAllow: $("#clHealthAllow").val(), healthDisabled: $("#clHealthOff").is(":checked")},
             function(){ dirty = false; msg(t("Health settings saved")); load(); });
     });
+
+
+    // ================= Floating IP (keepalived / VRRP) =================
+    // Dunree only generates text and reads status here (docs/cluster/vip-plan.md): nothing on this page changes the host.
+    // vc = GET vip/config, vs = GET vip/status. The settings form is filled when it opens and never overwritten by the polling.
+    const VIP = "./api/cluster/vip/";
+    let vc = null, vs = null, vipEditing = false, vipChecks = null, vipCheckNote = "", vipGen = null, vipGenKey = "", vipGenSeq = 0, vipNics = null, vipLocalDirty = false, vipFormMembers = [];
+    function cap(s){ s = String(s == null ? "" : s); return s.charAt(0).toUpperCase() + s.slice(1); }
+    function ip4(s){
+        let m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(String(s == null ? "" : s).trim());
+        if (!m) return null;
+        let n = 0;
+        for (let i = 1; i <= 4; i++) { if (+m[i] > 255) return null; n = n * 256 + (+m[i]); }
+        return n;
+    }
+    function sameNet(a, b, p){ if (a == null || b == null || !(p >= 1 && p <= 32)) return null; let size = Math.pow(2, 32 - p); return Math.floor(a / size) == Math.floor(b / size); }
+    function num(sel){ let v = parseInt($(sel).val(), 10); return isNaN(v) ? 0 : v; }
+    function vipShared(){ return (vc && vc.shared) || {}; }
+    function vipOn(){ return !!(vc && vc.exists && vc.shared.enabled); }
+    function vipSelfAddr(){ return (vc && vc.effective && vc.effective.sourceAddress) || ""; }
+    function vipLocalAddrs(){
+        let out = [];
+        (vipNics || []).forEach(function(n){ (n.IPs || []).forEach(function(ip){ out.push(String(ip).split("/")[0]); }); });
+        return out;
+    }
+    //The node the primary knows to hold the address, when that is not this node ("" = not known)
+    function vipOtherHolder(){
+        let peers = (vs && vs.peers) || [];
+        for (let i = 1; i < peers.length; i++) if (peers[i].held) return peers[i].name || peers[i].id;
+        return "";
+    }
+    function vipFact(){
+        if (!vc) return "";
+        let s = vipShared(), stat = (vs && vs.status) || {};
+        if (!vc.exists) return fact("Floating IP", t("Not set up"), "muted");
+        if (!s.enabled) return fact("Floating IP", t("Off"), "muted", s.vip || "");
+        let other = vipOtherHolder();
+        return fact("Floating IP", s.vip, "", stat.held ? t("held by this node") : (other ? tf("held by {0}", other) : t("not held by this node")));
+    }
+
+    function topoBox(cls, icon, kicker, main, sub, extra){
+        return "<div class='vipTopo__box " + cls + "'><span><span class='vipTopo__kicker'>" + (icon ? "<i class='" + icon + " icon' aria-hidden='true'></i>" : "") + esc(kicker) + "</span><span class='vipTopo__main'>" + esc(main) + "</span>" +
+            (sub ? "<span class='vipTopo__sub'>" + esc(sub) + "</span>" : "") + "</span>" + (extra || "") + "</div>";
+    }
+    function vipRenderTopo(){
+        let s = vipShared(), stat = (vs && vs.status) || {}, reach = stat.reach, on = vipOn();
+        let arrow = "<div class='vipTopo__arrow' aria-hidden='true'><i class='arrow right icon'></i></div>", html, label;
+        if (!s.vip || !(s.members || []).length) {
+            html = topoBox("", "shield alternate", t("Your firewall"), t("Port forward"), t("always points at the floating IP")) + arrow +
+                topoBox("vipTopo__vip", "exchange", t("Floating IP"), t("A third address"), t("moves to the node that is healthy")) + arrow +
+                "<div class='vipTopo__members'>" + topoBox("vipTopo__member", "server", t("Node A"), t("Keeps its own address"), t("normally holds the floating IP")) +
+                topoBox("vipTopo__member", "server", t("Node B"), t("Keeps its own address"), t("takes over when Node A or Dunree on it stops answering")) + "</div>";
+            label = t("Your firewall points at the floating IP. The floating IP is held by one of the nodes.");
+        } else {
+            let self = vipSelfAddr(), members = s.members.slice().sort(function(a, b){ return b.priority - a.priority; });
+            let others = ((vs && vs.peers) || []).slice(1), otherMembers = members.filter(function(m){ return m.address != self; });
+            let vsub = !on ? t("switched off") : !reach ? "" : reach.code == 200 ? (reach.local ? t("answered by this node") : tf("another node answers in {0} ms", reach.latencyMs || 0)) : reach.code ? tf("answers HTTP {0}", reach.code) : t("no answer on the health check port");
+            let holder = "";
+            let tiles = members.map(function(m, i){
+                let isSelf = m.address == self, badge = "", held = false;
+                if (on && isSelf) held = !!stat.held;
+                else if (on && others.length == 1 && otherMembers.length == 1) held = !!others[0].held;
+                else if (on) held = null;
+                if (on) badge = held ? dot("ok", t("Holds the floating IP")) : held === false ? dot("", t("Standby")) : dot("", t("Not reported here"));
+                if (held) holder = m.label;
+                return topoBox("vipTopo__member" + (held ? " is-holder" : ""), "server", m.label + (isSelf ? " · " + t("this node") : ""), m.address, tf("priority {0}", m.priority) + (i == 0 ? ", " + t("preferred") : ""), badge);
+            }).join("");
+            html = topoBox("", "shield alternate", t("Your firewall"), t("Port forward"), tf("points at {0}", s.vip)) + arrow +
+                topoBox("vipTopo__vip", "exchange", t("Floating IP"), s.vip + "/" + s.prefix, vsub) + arrow + "<div class='vipTopo__members'>" + tiles + "</div>";
+            label = holder ? tf("Your firewall points at the floating IP {0}. {1} holds it.", s.vip, holder) : tf("Your firewall points at the floating IP {0}.", s.vip);
+        }
+        $("#vipTopo").html(html).attr("aria-label", label);
+    }
+
+    function vipRenderHead(){
+        let s = vipShared(), stat = (vs && vs.status) || {}, on = vipOn(), editable = !!vc.sharedEditable;
+        let kind = "", word = "", desc = "", split = !!(vs && vs.splitBrain), other = vipOtherHolder();
+        let notMember = on && vs && !stat.isMember;
+        if (!vc.exists) {
+            word = t("Not set up");
+            desc = editable ? t("Two nodes keep their own addresses. A third address in the same subnet moves to the node that is healthy, and your firewall always points at it. Off by default.")
+                : t("Two nodes keep their own addresses and a third address moves to the node that is healthy. Nothing is set up yet: do that on the primary.");
+        } else if (!s.enabled) {
+            word = t("Off");
+            desc = tf("The floating IP {0} is switched off.", s.vip || "");
+        } else {
+            if (split) { kind = "danger"; word = t("Split brain"); }
+            else if (notMember) { kind = "warn"; word = t("This node is not a member"); }
+            else if (!stat.held && stat.keepalivedInstalled == "no") { kind = "warn"; word = t("keepalived is not installed"); }
+            else if (stat.keepalivedRunning == "no") { kind = "warn"; word = t("keepalived is not running"); }
+            else if (stat.installedConfigMatches == "no") { kind = "warn"; word = t("Settings changed since the configuration was installed"); }
+            else if (stat.held) { kind = "ok"; word = t("Active on this node"); }
+            else { word = t("Standby"); }
+            desc = notMember ? tf("{0} is set up, but this host is not one of its nodes, so it cannot take the address.", s.vip) : stat.held ? tf("This node holds {0} on {1}. Traffic from your firewall arrives here.", s.vip, stat.heldInterface || stat.interface || "?")
+                : other ? tf("{0} holds {1}. This node is on standby and takes over when that node or Dunree on it stops answering.", other, s.vip)
+                : tf("This node does not hold {0}. It takes over when the active node or Dunree on it stops answering.", s.vip);
+        }
+        $("#vipCard").attr("data-vip-state", !vc.exists ? "new" : on ? "on" : "off").attr("data-state", kind || null);
+        $("#vipBadge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).text(word).prop("hidden", !word);
+        $("#vipDesc").text(desc);
+        $("#vipSetupBtn").prop("hidden", !(editable && !vc.exists && !vipEditing));
+        $("#vipOnBtn").prop("hidden", !(editable && vc.exists && !s.enabled));
+        $("#vipOffBtn").prop("hidden", !(editable && on));
+        $("#vipLock").prop("hidden", editable);
+        $("#vipKept").prop("hidden", !(vc.exists && !s.enabled));
+        $("#vipNotMember").prop("hidden", !notMember);
+        $("#vipSplit").prop("hidden", !split);
+        if (split) $("#vipSplitText").text(tf("{0} report it at the same time.", ((vs && vs.peers) || []).filter(function(p){ return p.held; }).map(function(p){ return p.name || p.id; }).join(", ")));
+        $("#vipNeeds").prop("hidden", vc.exists);
+        vipRenderTopo();
+        let facts = "";
+        if (on && vs) {
+            let reach = stat.reach;
+            facts += stat.held ? fact("Held by", t("This node"), "ok", tf("on {0}", stat.heldInterface || stat.interface || "?"))
+                : other ? fact("Held by", other, "", t("as reported to this primary"))
+                : fact("Held by", t("Not this node"), reach && reach.code == 200 ? "" : "warn", reach && reach.code == 200 ? t("another node answers on it") : t("nothing answers on it yet"));
+            let ka = stat.keepalivedInstalled == "no" ? fact("keepalived", t("Not installed"), "warn", t("see step 3"))
+                : stat.keepalivedRunning == "yes" ? fact("keepalived", t("Running"), "", stat.keepalivedEnabled == "no" ? t("not enabled at boot") : stat.keepalivedEnabled == "yes" ? t("starts at boot") : "")
+                : stat.keepalivedRunning == "no" ? fact("keepalived", t("Not running"), "warn", stat.keepalivedEnabled == "no" ? t("not enabled at boot") : "")
+                : fact("keepalived", t("Installed"), "", t("Dunree cannot tell whether it runs"));
+            facts += ka;
+            facts += stat.installedConfigMatches == "yes" ? fact("Installed configuration", t("Up to date"))
+                : stat.installedConfigMatches == "no" ? fact("Installed configuration", t("Out of date"), "warn", t("install it again, step 3"))
+                : fact("Installed configuration", t("Not readable"), "muted", t("normal: only root can read the file"));
+            facts += fact("Health check", tf("Every {0} s", s.health.interval), "", tf("fails over after about {0} s", s.health.interval * s.health.fall));
+        }
+        if (vc.exists && vc.fingerprint) facts += fact("Settings fingerprint", vc.fingerprint, "", t("the same on every node"));
+        $("#vipFacts").html(facts);
+    }
+
+    function vipRenderSummary(){
+        let s = vipShared(), members = (s.members || []).slice().sort(function(a, b){ return b.priority - a.priority; });
+        function kv(k, v, small){ return "<dt>" + esc(t(k)) + "</dt><dd>" + esc(v) + (small ? "<div class='cx-cell__sub'>" + esc(small) + "</div>" : "") + "</dd>"; }
+        let auth = s.auth == "cluster" ? t("Derived from the cluster secret") : s.auth == "password" ? (s.passwordSet ? t("Password, set") : t("Password, not set")) : t("None");
+        $("#vipSummary").html(
+            kv("Floating IP", s.vip ? s.vip + "/" + s.prefix : "-") +
+            "<dt>" + esc(t("Nodes")) + "</dt><dd>" + (members.map(function(m, i){ return "<div>" + esc(m.label) + " · " + esc(m.address) + " <span class='cx-cell__sub'>" + esc(tf("priority {0}", m.priority) + (i == 0 ? ", " + t("preferred") : "")) + "</span></div>"; }).join("") || "-") + "</dd>" +
+            kv("Failover", tf("After about {0} s without an answer from Dunree", s.health.interval * s.health.fall), tf("checked every {0} s, {1} failed checks", s.health.interval, s.health.fall)) +
+            kv("Taking it back", s.preempt ? tf("The preferred node takes it back after {0} s of being healthy", s.preemptDelay) : t("Whoever holds it keeps it")) +
+            kv("VRRP", tf("Router ID {0}, {1}", s.vrid, s.transport == "multicast" ? t("multicast") : t("unicast")), tf("authentication: {0}", auth)));
+    }
+
+    function vipMemberTile(m, i, n){
+        let id = "vipM" + i;
+        function f(key, label, attrs, help, opt){
+            return "<div class='zx-field'><label class='zx-field__label' for='" + id + key + "'>" + esc(t(label)) + (opt ? " <span class='zx-field__optional'>" + esc(t("optional")) + "</span>" : "") + "</label>" +
+                "<input id='" + id + key + "' class='zx-input' data-vip-field='members[" + i + "]." + key + "' data-key='" + key + "' autocomplete='off' spellcheck='false' " + attrs + " value='" + esc(m[key] == null || m[key] === 0 ? "" : m[key]).replace(/'/g, "&#39;") + "'>" +
+                (key == "address" ? "<p class='vipHint' hidden></p>" : "") + (help ? "<p class='zx-help'>" + esc(t(help)) + "</p>" : "") + "</div>";
+        }
+        return "<div class='vipMember' role='group' aria-label='" + esc(tf("Node {0}", i + 1)).replace(/'/g, "&#39;") + "' data-i='" + i + "'>" +
+            "<div class='vipMember__head'><span>" + esc(tf("Node {0}", i + 1)) + "</span><span class='zx-badge zx-badge--info vipMSelf' hidden>" + esc(t("This node")) + "</span><span class='zx-badge vipMPref' hidden>" + esc(t("Preferred")) + "</span>" +
+            (n > 2 ? "<button type='button' class='zx-btn zx-btn--ghost zx-btn--sm vipMRemove' aria-label='" + esc(tf("Remove node {0}", i + 1)).replace(/'/g, "&#39;") + "'><i class='trash alternate outline icon' aria-hidden='true'></i></button>" : "") + "</div>" +
+            "<div class='vipMember__grid'>" +
+            f("address", "Address", "placeholder='192.0.2." + (11 + i) + "' inputmode='decimal'", "") +
+            f("label", "Name", "maxlength='32' placeholder='node-" + String.fromCharCode(97 + i) + "'", "") +
+            f("priority", "Priority", "type='number' min='1' max='254'", "1 to 254, highest wins.") +
+            f("interfaceHint", "Interface", "maxlength='15' placeholder='ens18'", "Only to write its file from another node.", true) +
+            "</div></div>";
+    }
+    function vipReadMembers(){
+        return $("#vipMembers .vipMember").map(function(){
+            let el = $(this), g = function(k){ return String(el.find("[data-key=" + k + "]").val() || "").trim(); };
+            let p = parseInt(g("priority"), 10);
+            return {label: g("label"), address: g("address"), priority: isNaN(p) ? 0 : p, interfaceHint: g("interfaceHint")};
+        }).get();
+    }
+    function vipRenderMembers(members){
+        $("#vipMembers").html(members.map(function(m, i){ return vipMemberTile(m, i, members.length); }).join(""));
+        $("#vipAddMember").prop("hidden", members.length >= 8);
+        vipHints();
+    }
+    //Live hints while typing: same subnet, the floating IP is a third address, the failover time in words
+    function vipHints(){
+        let vip = ip4($("#vipAddrIn").val()), prefix = num("#vipPrefixIn"), local = vipLocalAddrs(), self = vipSelfAddr(), clash = false, best = -1, bestPrio = 0;
+        let rows = $("#vipMembers .vipMember");
+        rows.each(function(i){ let p = parseInt($(this).find("[data-key=priority]").val(), 10); if (p > bestPrio) { bestPrio = p; best = i; } });
+        rows.each(function(i){
+            let el = $(this), raw = String(el.find("[data-key=address]").val() || "").trim(), a = ip4(raw), hint = el.find(".vipHint"), same = sameNet(vip, a, prefix);
+            if (a != null && a === vip) clash = true;
+            if (a == null || vip == null || same == null || a === vip) hint.prop("hidden", true);
+            else hint.prop("hidden", false).attr("class", "vipHint " + (same ? "is-ok" : "is-danger")).text(same ? t("Same subnet as the floating IP") : t("Not in the same subnet as the floating IP"));
+            el.find(".vipMSelf").prop("hidden", !(raw && (raw == self || local.indexOf(raw) >= 0)));
+            el.find(".vipMPref").prop("hidden", i != best);
+        });
+        $("#vipAddrHint").prop("hidden", !clash).attr("class", "vipHint is-danger").text(clash ? t("A node already uses this address. The floating IP has to be a third address.") : "");
+        let secs = num("#vipHInterval") * num("#vipHFall");
+        $("#vipFailSentence").text(secs > 0 ? tf("A node whose Dunree stops answering gives up the floating IP after about {0} seconds, and the other node takes it.", secs) : "");
+        $("#vipPreemptDelayRow").prop("hidden", !$("#vipPreempt").is(":checked"));
+        let auth = $("#vipAuth").val();
+        $("#vipPassRow").prop("hidden", auth != "password");
+        $("#vipAuthHelp").text(auth == "cluster" ? (vc && vc.haveSecret ? t("The same on every node with the same cluster secret. Nothing to type.") : t("Needs a cluster secret: set one in the Cluster secret card first."))
+            : auth == "password" ? t("Type the same password on every node.") : t("Any VRRP device on the VLAN with the same router ID can interfere."));
+    }
+    function vipGenPass(){
+        let chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789", buf = new Uint8Array(8), out = "";
+        (window.crypto || window.msCrypto).getRandomValues(buf);
+        for (let i = 0; i < 8; i++) out += chars.charAt(buf[i] % chars.length);
+        $("#vipPass").attr("type", "text").val(out);
+    }
+    function vipClearErrors(scope){
+        $(scope).find(".zx-field.is-invalid").each(function(){ $(this).removeClass("is-invalid").find("[aria-invalid]").removeAttr("aria-invalid aria-describedby"); });
+    }
+    function vipFieldError(attr, field, text){
+        let el = $("[" + attr + "='" + String(field).replace(/'/g, "") + "']").first();
+        if (field == "members") { $("[data-vip-field-row=members]").addClass("is-invalid").find(".zx-error").text(cap(text)); $("#vipMembers")[0].scrollIntoView({block: "center"}); return true; }
+        if (!el.length) return false;
+        el.closest("details").prop("open", true);
+        ZxUI.field(el).setError(cap(text));
+        el[0].scrollIntoView({block: "center"});
+        el.trigger("focus");
+        return true;
+    }
+    function vipFillForm(){
+        let fresh = !vc.exists, s = fresh ? $.extend(true, {}, vc.defaults) : vipShared(), h = s.health || {};
+        let members = (s.members || []).map(function(m){ return $.extend({}, m); });
+        if (fresh && !members.length) {
+            //first setup: this host's own address as node 1, and its prefix
+            let mine = null;
+            (vipNics || []).forEach(function(n){
+                if (mine || /^(lo|docker|br-|veth|virbr|tailscale|wg)/.test(n.Name || "")) return;
+                (n.IPs || []).forEach(function(ip){ let p = String(ip).split("/"); if (!mine && ip4(p[0]) != null && !/^(127|169\.254)\./.test(p[0])) mine = {addr: p[0], prefix: parseInt(p[1], 10) || 0}; });
+            });
+            members = [{label: "node-a", address: mine ? mine.addr : "", priority: 150, interfaceHint: ""}, {label: "node-b", address: "", priority: 100, interfaceHint: ""}];
+            if (mine && mine.prefix) s.prefix = mine.prefix;
+        }
+        vipClearErrors("#vipForm");
+        $("#vipAddrIn").val(s.vip || "");
+        $("#vipPrefixIn").val(s.prefix || "");
+        $("#vipHInterval").val(h.interval); $("#vipHFall").val(h.fall); $("#vipHTimeout").val(h.timeout); $("#vipHRise").val(h.rise);
+        $("#vipPreempt").prop("checked", !!s.preempt);
+        $("#vipPreemptDelay").val(s.preemptDelay);
+        $("#vipVrid").val(s.vrid); $("#vipAdvert").val(s.advertInt); $("#vipTransport").val(s.transport); $("#vipGarp").val(s.garpRefresh);
+        $("#vipAuth").val(s.auth).find("option[value=cluster]").prop("disabled", !vc.haveSecret && s.auth != "cluster");
+        $("#vipNotify").prop("checked", !!s.notifyLog);
+        $("#vipPass").attr("type", "password").val("").attr("placeholder", s.passwordSet ? t("Leave empty to keep the saved password") : "");
+        $("#vipPassState").text(s.passwordSet ? t("set") : t("not set"));
+        $("#vipAdvanced").prop("open", false);
+        //without a cluster secret the nodes need a password of their own: make one, and show it, because the other node needs the same
+        if (s.auth == "password" && !s.passwordSet) { vipGenPass(); $("#vipAdvanced").prop("open", true); }
+        vipRenderMembers(members);
+    }
+    function vipCollect(){
+        return {enabled: vc.exists ? !!vc.shared.enabled : true, vip: String($("#vipAddrIn").val() || "").trim(), prefix: num("#vipPrefixIn"), vrid: num("#vipVrid"), advertInt: num("#vipAdvert"),
+            transport: $("#vipTransport").val(), members: vipReadMembers(), auth: $("#vipAuth").val(), preempt: $("#vipPreempt").is(":checked"), preemptDelay: num("#vipPreemptDelay"),
+            health: {interval: num("#vipHInterval"), timeout: num("#vipHTimeout"), fall: num("#vipHFall"), rise: num("#vipHRise")}, notifyLog: $("#vipNotify").is(":checked"), garpRefresh: num("#vipGarp")};
+    }
+    //POST the shared settings. A primary with followers of another version asks once more before the settings join the snapshot.
+    function vipSaveShared(cfg, password, done, ack){
+        let data = {config: JSON.stringify(cfg), password: password || ""};
+        if (ack) data.ackOldFollowers = "true";
+        $.cjax({method: "POST", url: VIP + "shared", data: data, success: function(d){
+            if (d && d.oldFollowers) {
+                ZxUI.confirm({title: t("Some followers run another version"), message: tf("These followers may refuse the whole configuration sync until they are updated, because it now carries the floating IP settings: {0}. Update them first, or go on if they already run this version.", d.oldFollowers.join(", ")), confirmLabel: t("Save anyway"), danger: true})
+                    .then(function(ok){ if (ok) vipSaveShared(cfg, password, done, true); });
+                return;
+            }
+            if (d && d.error) {
+                if (!(d.field && vipEditing && vipFieldError("data-vip-field", d.field, d.error))) msg(d.error, true);
+                else ZxUI.toast(t("Not saved. Check the marked field."), {type: "error"});
+                return;
+            }
+            done();
+        }, error: fail});
+    }
+    function vipSharedForToggle(on){
+        let s = $.extend(true, {}, vipShared());
+        delete s.passwordSet; delete s.password;
+        s.enabled = on;
+        return s;
+    }
+
+    function vipRenderLocal(){
+        let e = vc.effective || {}, s = vipShared(), l = vc.local || {};
+        function kv(k, v, small, cls){ return "<dt>" + esc(t(k)) + "</dt><dd" + (cls ? " class='is-" + cls + "'" : "") + ">" + esc(v) + (small ? "<div class='cx-cell__sub'>" + esc(small) + "</div>" : "") + "</dd>"; }
+        let own = (s.members || []).filter(function(m){ return m.address == e.sourceAddress; })[0];
+        let html = e.error ? kv("This node", t("Not found in the list of nodes"), cap(e.error), "danger")
+            : kv("This node", (e.member || "-") + " · " + (e.sourceAddress || "-"), t("found by its own address in the list of step 1")) +
+              kv("Interface", e.interface || "-", e.interfaceSource == "local override" ? t("set by hand on this node") : t("the interface that has this node's address")) +
+              kv("Priority", e.priority || "-", e.prioritySource == "local override" ? tf("override on this node; the shared settings say {0}", own ? own.priority : "-") : t("from the settings of step 1"), e.prioritySource == "local override" ? "warn" : "");
+        html += kv("Health check", e.healthUrl || "-", e.healthUrl ? t("keepalived asks this address on this node") : t("not known yet"));
+        $("#vipLocalFacts").html(html);
+        if (!vipLocalDirty) {
+            $("#vipLIface").val(l.interface || ""); $("#vipLSource").val(l.sourceAddress || "");
+            $("#vipLPrio").val(l.priorityOverride || ""); $("#vipLHealth").val(l.healthTarget && l.healthTarget != "auto" ? l.healthTarget : "");
+        }
+    }
+
+    const VIP_CHECK = {settings: "Settings", local: "This node's own values", interfaces: "Network interfaces", "vip-distinct": "A third address", member: "This node is in the list", prefix: "Prefix",
+        interface: "Interface", subnet: "Same subnet", priority: "Priority", "health-config": "Health check", health: "Health check answers", "vip-free": "Address not used by another device",
+        auth: "Authentication", "old-followers": "Followers", netplan: "Network plan", keepalived: "keepalived"};
+    const VIP_LEVEL = {ok: ["check", "ok", "Passed"], warn: ["exclamation", "warn", "Check this"], block: ["times", "danger", "Has to be fixed"], info: ["info", "info", "Note"]};
+    function vipRenderChecks(){
+        let list = vipChecks || [], n = {ok: 0, warn: 0, block: 0, info: 0};
+        list.forEach(function(c){ if (n[c.level] != null) n[c.level]++; });
+        $("#vipChecks").prop("hidden", !list.length).html(list.map(function(c){
+            let lv = VIP_LEVEL[c.level] || VIP_LEVEL.info, title = VIP_CHECK[c.id] ? t(VIP_CHECK[c.id]) : /^peer-/.test(c.id) ? tf("Other node: {0}", c.id.slice(5)) : cap(c.id), fix = "";
+            if (c.id == "health-config" && /allow-list/.test(c.message)) fix = "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-fix='allow'>" + esc(t("Add 127.0.0.1 to the allowed clients")) + "</button>";
+            else if (c.id == "health-config" && /switched off/.test(c.message)) fix = "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-fix='health'>" + esc(t("Switch the health endpoint on")) + "</button>";
+            return "<li class='vipCheck' data-level='" + esc(c.level) + "' data-id='" + esc(c.id) + "'><span class='vipCheck__icon' aria-hidden='true'><i class='" + lv[0] + " icon'></i></span>" +
+                "<span class='vipCheck__title'>" + esc(title) + "</span><span class='zx-badge zx-badge--" + lv[1] + "'>" + esc(t(lv[2])) + "</span>" +
+                "<span class='vipCheck__msg'>" + esc(cap(c.message)) + fix + "</span></li>";
+        }).join(""));
+        let sum = vipCheckNote || (!vipChecks ? t("Not run yet on this node.") : n.block ? tf("{0} passed, {1} to check, {2} to fix before the configuration can be written.", n.ok, n.warn, n.block)
+            : n.warn ? tf("{0} passed, {1} to check. Nothing stops the configuration.", n.ok, n.warn) : tf("All {0} checks passed.", n.ok));
+        $("#vipCheckSum").text(sum);
+        $("#vipCheckBtn").html("<i class='tasks icon' aria-hidden='true'></i> " + esc(vipChecks ? t("Run checks again") : t("Run checks")));
+        let kind = !vipChecks ? "" : n.block ? "danger" : n.warn ? "warn" : "ok";
+        $("#vipStep2Badge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).prop("hidden", false)
+            .text(!vipChecks ? t("Not checked yet") : n.block ? tf("{0} to fix", n.block) : n.warn ? tf("{0} to check", n.warn) : t("Passed"));
+    }
+    function vipRunChecks(){
+        let btn = $("#vipCheckBtn").prop("disabled", true).attr("aria-busy", "true");
+        vipCheckNote = "";
+        $.cjax({method: "POST", url: VIP + "preflight", data: {}, success: function(d){
+            if (d && d.error) { vipChecks = null; vipCheckNote = cap(d.error); } else vipChecks = (d && d.checks) || [];
+        }, error: function(xhr){ if (xhr && xhr.status == 429) { vipCheckNote = t("Too many checks within a minute. Wait a moment, then run them again."); } },
+        complete: function(){ btn.prop("disabled", false).removeAttr("aria-busy"); vipRenderChecks(); }});
+    }
+
+    function vipRenderGenFor(){
+        let s = vipShared(), self = vipSelfAddr(), sel = $("#vipGenFor"), cur = sel.val() || "self";
+        let opts = "<option value='self'>" + esc(self && vc.effective.member ? tf("This node ({0})", vc.effective.member) : t("This node")) + "</option>";
+        (s.members || []).forEach(function(m, i){ if (m.address != self) opts += "<option value='" + i + "'>" + esc(tf("{0} ({1}), written from here", m.label, m.address)) + "</option>"; });
+        if (sel.data("opts") === opts) return;   //unchanged: an open list must not close with every poll
+        sel.data("opts", opts).html(opts).val(cur);
+        if (sel.val() == null) sel.val("self");
+    }
+    function vipRenderGen(){
+        let g = vipGen, ok = !!(g && !g.error);
+        $("#vipBlocked").prop("hidden", !(g && g.error));
+        $("#vipGenOk").prop("hidden", !ok);
+        $("#vipGenWarn").prop("hidden", !(ok && (g.warnings || []).length));
+        let stat = (vs && vs.status) || {}, kind = "", word = "";
+        if (g && g.error) {
+            $("#vipBlockers").html((g.blockers && g.blockers.length ? g.blockers : [g.error]).map(function(b){ return "<li>" + esc(cap(b)) + "</li>"; }).join(""));
+            kind = "danger"; word = t("Cannot be written yet");
+        } else if (ok) {
+            $("#vipGenWarnings").html((g.warnings || []).map(function(w){ return "<li>" + esc(cap(w)) + "</li>"; }).join(""));
+            $("#vipConfCode").text(g.keepalivedConf || ""); $("#vipInstallCode").text(g.installCommands || ""); $("#vipVerifyCode").text(g.verifyCommands || "");
+            $("#vipSysctlWrap").prop("hidden", !g.sysctl); $("#vipSysctlCode").text(g.sysctl || "");
+            $("#vipFwWrap").prop("hidden", !g.firewallNote); $("#vipFwCode").text(g.firewallNote || "");
+            $("#vipStep3 .vipForName").text(g.member || "");
+            $("#vipDownload").attr("href", VIP + "generate?member=" + encodeURIComponent($("#vipGenFor").val() || "self") + "&download=1");
+            let s = vipShared();
+            $("#vipNatAddr").text(s.vip || ""); $("#vipVerifySecs").text(s.health.interval * s.health.fall);
+            if (stat.keepalivedInstalled == "no") word = t("Not installed on this node yet");
+            else if (stat.installedConfigMatches == "no") { kind = "warn"; word = t("Install it again: the settings changed"); }
+            else if (stat.keepalivedRunning == "yes") { kind = "ok"; word = t("Running on this node"); }
+            else if (stat.keepalivedRunning == "no") { kind = "warn"; word = t("Installed, not running"); }
+        }
+        $("#vipStep3Badge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).text(word).prop("hidden", !word);
+    }
+    function vipLoadGen(force){
+        if (!vipOn()) { vipGen = null; vipGenKey = ""; return; }
+        let member = $("#vipGenFor").val() || "self", key = member + "|" + vc.fingerprint + "|" + JSON.stringify(vc.local || {}) + "|" + JSON.stringify(vc.effective || {});
+        if (!force && key == vipGenKey) { vipRenderGen(); return; }
+        vipGenKey = key;
+        let seq = ++vipGenSeq;
+        $.ajax({url: VIP + "generate", method: "GET", data: {member: member}, cache: false, success: function(d){ if (seq == vipGenSeq) { vipGen = d; vipRenderGen(); } }, error: function(){ if (seq == vipGenSeq) vipGenKey = ""; }});
+    }
+
+    function vipRenderPeers(){
+        let peers = (vs && vs.peers) || [], show = vipOn() && peers.length > 1;
+        $("#vipPeersWrap").prop("hidden", !show);
+        if (!show) return;
+        $("#vipPeers").html(peers.map(function(p){
+            let ka = p.keepalived == "yes" ? dot("ok", t("Running")) : p.keepalived == "no" ? dot("warn", t("Not running")) : "<span class='cx-no'>" + esc(t("Not known")) + "</span>";
+            return "<tr><td data-label='" + esc(t("Node")) + "'><span class='cx-cell__main'>" + esc(p.name || p.id) + "</span></td>" +
+                "<td data-label='" + esc(t("Floating IP")) + "'>" + (p.held ? dot("ok", t("Holds it")) : dot("", t("Standby"))) + "</td>" +
+                "<td data-label='keepalived'>" + ka + "</td><td data-label='" + esc(t("Last report")) + "'>" + esc(ago(p.lastSeen)) + "</td></tr>";
+        }).join(""));
+    }
+
+    function vipRender(){
+        if (!vc) return;
+        let on = vipOn(), editable = !!vc.sharedEditable;
+        vipRenderHead();
+        $("#vipSteps").prop("hidden", !(vc.exists || vipEditing));
+        $("#vipForm").prop("hidden", !vipEditing);
+        $("#vipSummaryWrap").prop("hidden", !(vc.exists && !vipEditing));
+        $("#vipEditBtn").prop("hidden", !(vc.exists && !vipEditing && editable));
+        $("#vipStep1Badge").attr("class", "zx-badge zx-badge--dot" + (vc.exists ? " zx-badge--ok" : "")).text(vc.exists ? (editable ? t("Saved") : t("From the primary")) : t("Not saved yet")).prop("hidden", false);
+        $("#vipSaveBtn").text(vc.exists ? t("Save floating IP settings") : t("Save and switch on"));
+        if (vc.exists && !vipEditing) vipRenderSummary();
+        $("#vipStep2, #vipStep3").prop("hidden", !on);
+        if (on) { vipRenderLocal(); vipRenderChecks(); vipRenderGenFor(); vipLoadGen(false); }
+        vipRenderPeers();
+        if (st) renderStatus(st);
+    }
+    function vipLoad(then){
+        let left = 2, done = function(){ if (--left == 0) { vipRender(); then && then(); } };
+        $.ajax({url: VIP + "config", method: "GET", cache: false, success: function(d){ if (d && !d.error) vc = d; }, error: fail, complete: done});
+        $.ajax({url: VIP + "status", method: "GET", cache: false, success: function(d){ if (d && !d.error) vs = $.extend({}, d, {status: d.status || {}}); }, error: fail, complete: done});
+        if (vipNics === null) { vipNics = []; $.ajax({url: "./api/stats/listnic", method: "GET", success: function(d){ if (Array.isArray(d)) { vipNics = d; if (vipEditing) vipHints(); } }, error: fail}); }
+    }
+    function vipOpenForm(){
+        vipEditing = true;
+        vipFillForm();
+        vipRender();
+        $("#vipStep1")[0].scrollIntoView({block: "start", behavior: "smooth"});
+    }
+    $("#vipSetupBtn, #vipEditBtn").on("click", vipOpenForm);
+    $("#vipCancelBtn").on("click", function(){ vipEditing = false; vipRender(); });
+    $("#vipForm").on("input change", "input, select", function(){
+        //the server's reason may be about two fields (the floating IP and a node's address): any correction takes the marks away
+        vipClearErrors("#vipForm");
+        vipHints();
+    });
+    $("#vipAddMember").on("click", function(){
+        let m = vipReadMembers(), low = m.reduce(function(a, b){ return Math.min(a, b.priority || 254); }, 254);
+        m.push({label: "node-" + String.fromCharCode(97 + m.length), address: "", priority: Math.max(1, low - 50), interfaceHint: ""});
+        vipRenderMembers(m);
+    });
+    $("#vipMembers").on("click", ".vipMRemove", function(){
+        let m = vipReadMembers();
+        m.splice(+$(this).closest(".vipMember").attr("data-i"), 1);
+        vipRenderMembers(m);
+    });
+    $("#vipPassGen").on("click", vipGenPass);
+    $("#vipSaveBtn").on("click", function(){
+        vipClearErrors("#vipForm");
+        $("[data-vip-field-row=members]").removeClass("is-invalid");
+        let cfg = vipCollect(), first = !vc.exists;
+        vipSaveShared(cfg, cfg.auth == "password" ? $("#vipPass").val() : "", function(){
+            vipEditing = false; vipGenKey = ""; vipChecks = null;
+            msg(first ? t("Floating IP settings saved and switched on") : t("Floating IP settings saved"));
+            vipLoad(function(){ if (vipOn()) vipRunChecks(); });
+        });
+    });
+    $("#vipOnBtn").on("click", function(){
+        vipSaveShared(vipSharedForToggle(true), "", function(){ vipGenKey = ""; msg(t("Floating IP switched on")); vipLoad(); });
+    });
+    $("#vipOffBtn").on("click", function(){
+        ZxUI.confirm({title: t("Switch the floating IP off?"), message: t("Dunree then stops checking and reporting the floating IP, and keeps your settings. This does not stop keepalived: the address stays on your nodes until you run \"sudo systemctl disable --now keepalived\" on each of them."), confirmLabel: t("Switch off")}).then(function(ok){
+            if (ok) vipSaveShared(vipSharedForToggle(false), "", function(){ vipEditing = false; msg(t("Floating IP switched off. keepalived keeps running until you stop it.")); vipLoad(); });
+        });
+    });
+    $("#vipLocalBox").on("input change", "input", function(){ vipLocalDirty = true; let row = $(this).closest(".zx-field"); if (row.hasClass("is-invalid")) ZxUI.field(this).clearError(); });
+    $("#vipLocalSave").on("click", function(){
+        vipClearErrors("#vipLocalBox");
+        let cfg = {interface: $("#vipLIface").val().trim(), sourceAddress: $("#vipLSource").val().trim(), priorityOverride: num("#vipLPrio"), healthTarget: $("#vipLHealth").val().trim()};
+        $.cjax({method: "POST", url: VIP + "local", data: {config: JSON.stringify(cfg)}, success: function(d){
+            if (d && d.error) { if (!(d.field && vipFieldError("data-vip-lfield", d.field, d.error))) msg(d.error, true); return; }
+            vipLocalDirty = false; vipGenKey = "";
+            msg(t("This node's values saved"));
+            vipLoad(function(){ if (vipOn()) vipRunChecks(); });
+        }, error: fail});
+    });
+    $("#vipCheckBtn").on("click", vipRunChecks);
+    //the two blockers this page can lift itself, through the health settings that already exist
+    $("#vipChecks").on("click", "[data-vip-fix]", function(){
+        if (!st) return;
+        let allow = (st.healthAllow || []).slice(), fix = $(this).attr("data-vip-fix");
+        if (fix == "allow" && allow.indexOf("127.0.0.1") < 0) allow.push("127.0.0.1");
+        post("./api/cluster/config", {healthAllow: allow.join(", "), healthDisabled: fix == "health" ? false : !!st.healthDisabled}, function(){
+            msg(fix == "health" ? t("Health endpoint switched on") : t("127.0.0.1 added to the allowed clients of the health endpoint"));
+            dirty = false; vipGenKey = ""; load(); vipRunChecks();
+        });
+    });
+    $("#vipGenFor").on("change", function(){ vipLoadGen(true); });
+    $("#vipStep3").on("click", "[data-vip-copy]", function(){
+        let pre = document.getElementById($(this).attr("data-vip-copy")), text = pre ? pre.textContent : "";
+        function manual(){ let r = document.createRange(); r.selectNodeContents(pre); let sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); msg(t("Select and copy manually"), true); }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ msg(t("Copied")); }, manual); else manual();
+    });
+    ZxUI.tabs("#vipTabs");
+    //for the UI smoke: read everything again, with the page-local state of the floating IP section reset
+    window.ClusterPage = {reload: function(){ vipEditing = false; vipChecks = null; vipCheckNote = ""; vipGen = null; vipGenKey = ""; vipLocalDirty = false; vipNics = null; load(); }};
 
     load();
     timer = setInterval(function(){

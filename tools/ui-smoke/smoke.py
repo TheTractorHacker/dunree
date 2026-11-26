@@ -47,6 +47,7 @@ ap.add_argument("--ech-fallback-only", action="store_true", help="run only the f
 ap.add_argument("--live-map-only", action="store_true", help="run only the Status page Traffic map Live mode scenario (live_map_smoke.py; proxy port must be UI port + 1, ports + 2 and + 3 free)")
 ap.add_argument("--live-sites-only", action="store_true", help="run only the Sites table Live column scenario (live_sites_smoke.py; proxy port must be UI port + 1, UI port + 2 free)")
 ap.add_argument("--newrule-cert-only", action="store_true", help="run only the New proxy rule certificate choice scenario (newrule_cert_smoke.py)")
+ap.add_argument("--cluster-vip-only", action="store_true", help="run only the Floating IP section of Cluster / HA (cluster_vip_smoke.py: off state, guided setup, field errors, pre-flight list, generated keepalived.conf and commands, standby, split brain, follower; saves placeholder settings and switches them off again, run it on a throw-away standalone instance)")
 ap.add_argument("--db-usage-only", action="store_true", help="run only the System > Settings Database card scenario (dbusage_smoke.py)")
 ap.add_argument("--ca-profiles-only", action="store_true", help="run only the saved CA scenario (ca_profiles_smoke.py, issue #233: registration email, default CA, saving the ACME page settings as a saved CA, CA of existing certificates; makes and removes its own saved CAs and one certificate, run it on a throw-away instance; needs openssl)")
 ap.add_argument("--renew-notice-only", action="store_true", help="run only the certificate.renewing scenario (renew_notice_smoke.py: Event Hooks lead time and opt-in event, Notifications channel editor; makes and removes its own webhook, run it on a throw-away instance)")
@@ -3234,6 +3235,7 @@ exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "erro
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage_smoke.py")).read(), "storage_smoke.py", "exec"))  # defines storage_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "authaudit_smoke.py")).read(), "authaudit_smoke.py", "exec"))  # defines authaudit_ui
 exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "headerrules_smoke.py")).read(), "headerrules_smoke.py", "exec"))  # defines headerrules_ui
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cluster_vip_smoke.py")).read(), "cluster_vip_smoke.py", "exec"))  # defines cluster_vip_ui
 
 def main():
     with sync_playwright() as p:
@@ -3259,6 +3261,10 @@ def main():
             return
         if args.headerrules_only:
             headerrules_ui(pg, ctx)
+            b.close()
+            return
+        if args.cluster_vip_only:
+            cluster_vip_ui(pg, ctx)
             b.close()
             return
         if args.db_usage_only:
@@ -3410,6 +3416,7 @@ def main():
         enterprise_ui(pg, ctx)
         plugins_ui(pg, ctx)  # mocked plugin API (works without plugins); the part with real plugins runs in plugins_run.sh
         errorpages_ui(pg, ctx)  # Sites > Error pages: saves a customisation and resets it at the end
+        cluster_vip_ui(pg, ctx)  # Cluster / HA > Floating IP: saves placeholder settings on this standalone instance and switches them off again
         storage_ui(pg, ctx)  # blocked localStorage / sessionStorage in fresh contexts, then the dark theme keeps kit colours; reads only
         current["page"] = "storage-migration"
         __import__("storage_migration_smoke").run(ctx.browser, args.url, fail)  # storage keys of the earlier product name are copied once (safestorage.js); own browser contexts

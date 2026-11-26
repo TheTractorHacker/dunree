@@ -1173,3 +1173,32 @@ Known limits:
 * **Colours are reduced to 256 per picture** (median cut, no dithering). Flat areas keep their exact colour; the gradient of the login page shows faint bands at full size.
 * **Needs** a Python with Playwright and Chromium, openssl, Go and Linux; about 600 MB of memory for the four instances. Chromium was the only browser. The script was run on one machine.
 * **Not in the pictures:** the pages that are not in the list (Visitors, Access Rules, SSO, CAPTCHA, Stream Proxy, Redirection, Plugin Manager, Update, Settings and the network pages), other languages than English, and the node side of Fleet.
+
+### Cluster / HA: Floating IP section
+
+**Cluster / HA has a Floating IP section** (`src/web/components/cluster.html`, design `docs/cluster/vip-plan.md` section 8, guide `docs/guides/floating-ip-keepalived.md`). It sits right under the status card of the page, which gains one fact ("Floating IP: not set up / off / held by this node / held by node-b"). The page title stays "Cluster / HA".
+
+* **Status card.** State in words (Not set up, Off, Active on this node, Standby, Split brain, keepalived is not installed / not running, Settings changed since the configuration was installed, This node is not a member), an on / off button, and a small picture: your firewall, the floating IP, the nodes, with the node that holds the address marked. Facts below: held by, keepalived, installed configuration, health check, settings fingerprint. A primary also gets a table of who holds the address per node.
+* **Off (the default).** The card explains the idea in the picture and four short hints (a third unused address outside the DHCP range, no fixed-IP reservation, the port forward points at it, you run the commands) and offers **Set up a floating IP**. Nothing else shows.
+* **Step 1, Addresses and failover.** The floating IP and prefix, one tile per node (address, name, priority, optional interface), the failover time as a sentence, "the preferred node takes it back" with its delay, and an Advanced disclosure (router ID, advert interval, unicast / multicast, authentication, timing, log lines). The first setup pre-fills node 1 and the prefix from this host. Hints while typing: same subnet or not, and "has to be a third address". A reason the server gives appears next to its field. Once saved the step is a summary with **Change settings**.
+* **Step 2, Check this node.** Which node this host is, its interface, priority and health check address, a disclosure for the node's own values, and the pre-flight list: one row per check with Passed / Check this / Has to be fixed / Note. Two blockers have a one-click fix that uses the existing health settings (add 127.0.0.1 to the allowed clients, switch the health endpoint on).
+* **Step 3, Install keepalived on each node.** A choice of node, then three tabs: Install commands, keepalived.conf (Copy, Download), Verify. Code wraps and is never height-limited, so the page stays one scroller. Notes for sysctl and ufw appear only when the generator sends them. When the configuration cannot be written the reasons are listed instead.
+* **Follower.** The shared settings are a read-only summary with a lock note; the node's own values and the checks stay usable.
+
+Unchanged for existing installs: the feature is off, the page makes no write until the admin saves, and Dunree still applies nothing on the host.
+
+Differences from the plan: the checks are step 2 and run on the saved settings (the route checks what is stored), so they follow the save instead of sitting inside the form; a follower sees a summary, not the disabled form; the first save switches the feature on (later saves keep the on / off state); there is no page-local section navigation, the sections are numbered cards in the one page scroll.
+
+Tests: `tools/ui-smoke/cluster_vip_smoke.py`, part of the full smoke and alone with `--cluster-vip-only`.
+
+Known limits:
+
+* **The states that need a host holding a floating IP are shown by mocked answers in the smoke** (active, standby, split brain, follower, keepalived missing). The real instance covers off, setup, field errors, a real save, the real pre-flight list, the blocked install step and switching off. Nothing was tested with a running keepalived or on two machines.
+* **The two-process scenario (`cluster_ha_run.sh`) does not cover the section yet**, so the follower view is tested against mocks only, not after a real sync.
+* **Texts of the checks, blockers and warnings come from the server in English** and are not in the translation catalogue. The row titles and state words are.
+* **The picture maps the other node to the other reporting follower only in a two-node setup on a primary.** With more nodes, or on a standalone pair, other nodes read "Not reported here"; the table and the "answers on the floating IP" line are what is known.
+* **Same-subnet hints are for IPv4.** IPv6 addresses get no hint while typing; the server still checks them on save.
+* **The VRRP password is not shown again after saving**, only inside the generated file. The first setup without a cluster secret makes one and shows it once in the form, because the other node needs the same.
+* **Fleet hub and node** see the section as a normal editable node: the Fleet scope for these settings does not exist yet.
+* **Copy needs the browser's clipboard access** (HTTPS or localhost). Without it the text is selected and the page says to copy by hand.
+* Chromium was the only browser.
