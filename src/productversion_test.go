@@ -26,7 +26,7 @@ func TestProductAndCompatVersion(t *testing.T) {
 	if SYSTEM_NAME != "Dunree" || brand.Name != "Dunree" {
 		t.Errorf("SYSTEM_NAME = %q", SYSTEM_NAME)
 	}
-	if PRODUCT_VERSION != "1.0.0-beta.1" || brand.Version != "1.0.0-beta.1" {
+	if PRODUCT_VERSION != "1.0.0-beta.2" || brand.Version != "1.0.0-beta.2" {
 		t.Errorf("PRODUCT_VERSION = %q, mod/brand Version = %q", PRODUCT_VERSION, brand.Version)
 	}
 	if COMPAT_VERSION != "3.3.6" || brand.BasedOnVersion != "3.3.6" {
@@ -53,7 +53,7 @@ func TestProductAndCompatVersion(t *testing.T) {
 
 // -version and the first line of the log name Dunree and its version; the base is named as the base.
 func TestVersionFlagOutputAndStartupLine(t *testing.T) {
-	const want = "Dunree - Version 1.0.0-beta.1 (based on Zoraxy 3.3.6)" // legacy-compat: names the base
+	const want = "Dunree - Version 1.0.0-beta.2 (based on Zoraxy 3.3.6)" // legacy-compat: names the base
 	if got := versionLine(); got != want {
 		t.Errorf("versionLine() = %q, want %q", got, want)
 	}
@@ -64,13 +64,13 @@ func TestVersionFlagOutputAndStartupLine(t *testing.T) {
 	if !updater.VersionInOutput(versionLine(), PRODUCT_VERSION) {
 		t.Error("the updater would not find the version in the -version output")
 	}
-	if updater.VersionInOutput(versionLine(), "1.0.0") || updater.VersionInOutput(versionLine(), "1.0.0-beta.2") {
+	if updater.VersionInOutput(versionLine(), "1.0.0") || updater.VersionInOutput(versionLine(), "1.0.0-beta.1") {
 		t.Error("another version passes for the version of this build")
 	}
 	if strings.Contains(versionLine(), "Version "+COMPAT_VERSION) {
 		t.Error("-version shows the base version as the version")
 	}
-	const wantStart = "Dunree 1.0.0-beta.1 starting (Published by Foley IT; based on Zoraxy 3.3.6 by tobychui and imuslab, AGPL-3.0)"
+	const wantStart = "Dunree 1.0.0-beta.2 starting (Published by Foley IT; based on Zoraxy 3.3.6 by tobychui and imuslab, AGPL-3.0)"
 	if got := startupLine(); got != wantStart {
 		t.Errorf("startupLine() = %q, want %q", got, wantStart)
 	}
@@ -239,23 +239,23 @@ func TestVersionsOnTheWire(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatal(err)
 	}
-	if got["status"] != "ok" || got["version"] != "1.0.0-beta.1" || got["compat_version"] != "3.3.6" {
+	if got["status"] != "ok" || got["version"] != "1.0.0-beta.2" || got["compat_version"] != "3.3.6" {
 		t.Errorf("/api/v1/health: %v", got)
 	}
 
 	rc := pluginRuntimeConst()
-	if rc.DunreeVersion != "1.0.0-beta.1" || rc.ZoraxyVersion != "3.3.6" { // legacy-compat
+	if rc.DunreeVersion != "1.0.0-beta.2" || rc.ZoraxyVersion != "3.3.6" { // legacy-compat
 		t.Errorf("plugin runtime constants: dunree %q, base %q", rc.DunreeVersion, rc.ZoraxyVersion) // legacy-compat
 	}
 
 	was := wirecompat.EmitLegacy()
 	defer wirecompat.SetEmitLegacy(was)
 	wirecompat.SetEmitLegacy(true)
-	if ua := dpcore.IdentityUserAgent(COMPAT_VERSION); ua != "Dunree/1.0.0-beta.1 Zoraxy/3.3.6" { // legacy-compat
+	if ua := dpcore.IdentityUserAgent(COMPAT_VERSION); ua != "Dunree/1.0.0-beta.2 Zoraxy/3.3.6" { // legacy-compat
 		t.Errorf("default User-Agent with the legacy names on: %q", ua)
 	}
 	wirecompat.SetEmitLegacy(false)
-	if ua := dpcore.IdentityUserAgent(COMPAT_VERSION); ua != "Dunree/1.0.0-beta.1" {
+	if ua := dpcore.IdentityUserAgent(COMPAT_VERSION); ua != "Dunree/1.0.0-beta.2" {
 		t.Errorf("default User-Agent with the legacy names off: %q", ua)
 	}
 }

@@ -4,7 +4,18 @@ Dunree is a reverse proxy and web gateway published by Foley IT under AGPL-3.0. 
 
 This file has two parts. The first part is the Dunree version line, which starts at v1.0.0-beta.1. The second part is the change log of Zoraxy as its authors wrote it, kept unchanged as the history of the code Dunree is built on.
 
-# Dunree v1.0.0-beta.1 (unreleased)
+# Dunree v1.0.0-beta.2 (unreleased)
+
+**Cluster / HA: floating IP (keepalived)**
+
++ New section on *Cluster / HA*: choose one unused address on your subnet as a floating IP (VIP) that moves between two nodes. Each node keeps its own static address; your firewall port forward points at the VIP.
++ Dunree generates a `keepalived.conf` per node, the install commands to copy, and a pre-flight checklist. It reads status (which node holds the VIP, whether keepalived runs) and never installs or edits keepalived, the network or the firewall itself.
++ The health check calls Dunree's own health endpoint, so the VIP also moves when Dunree stops answering, not only when the machine goes down.
++ Shared settings (VIP, router ID, password) sync through the existing cluster snapshot; interface name, own address and own priority stay on each node. Off by default; nodes that never use it produce the same snapshots as before.
++ Known limits: tested with generated files and fakes, not yet with a running keepalived on two hosts. The Fleet-managed version is not built. VRRP password authentication is sent in clear on the VLAN, so use unicast on an isolated VLAN. See `docs/guides/floating-ip-keepalived.md`.
++ Translation strings: extraction now also reads strings nested in expressions, so about 480 more strings appear in `en.json`; they are untranslated in other languages.
+
+# Dunree v1.0.0-beta.1
 
 Based on Zoraxy v3.3.6. First version under the name Dunree.
 
