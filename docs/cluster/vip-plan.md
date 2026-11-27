@@ -71,10 +71,11 @@ How it is stored: as a JSON file `conf/ha/vip.json` (0600) under a new snapshot 
 key, because the cluster transport syncs files and the follower import path for database values (`dbsync`) is tied
 to the "sync settings" switch, which ships SSO secrets. The VIP config must not depend on that switch.
 
-Derived `auth=cluster` password: `DeriveKey(secret, "vrrp-auth", ...)` mapped to 8 characters of `[A-Za-z0-9]`. It is
-the same on every node with the same secret, is **never stored**, and changes when the secret changes (the UI warns
-that both nodes need the regenerated config after a secret change). Not available in Fleet mode, where there is no
-shared cluster secret (there the hub writes `auth=password` with a generated value, section 1.4).
+`auth=cluster` password (changed after review): a random 8 character `[A-Za-z0-9]` value made once by the primary with
+`crypto/rand` and stored in `conf/ha/vip.json` as `clusterPass`. It travels to the followers inside the AES-GCM snapshot and
+is derived from nothing: keepalived sends PASS in clear in every advert, so a derived value would hand an offline
+guessing oracle against the cluster secret to anyone on the VLAN. A "Make a new password" button (`rotateAuth=true`)
+replaces it. The page never receives it (`clusterPassSet` only). Not available in Fleet mode (section 1.4 as before).
 
 ### 1.3 Node-local settings: `vipLocal` in `conf/cluster.json`
 
@@ -196,7 +197,7 @@ vrrp_script chk_dunree {
 }
 
 vrrp_instance VI_DUNREE {
-    state MASTER
+    state BACKUP
     interface ens18
     virtual_router_id 51
     priority 150
@@ -221,7 +222,7 @@ vrrp_instance VI_DUNREE {
 
 Rules:
 
-- `state MASTER` for the member with the highest effective priority, `BACKUP` for the others. With `preempt=false`
+- `state BACKUP` on every member while `preempt` is on with a `preemptDelay` above 0 (keepalived ignores `preempt_delay` on an instance that starts as MASTER and `keepalived -t` exits 5; priority still makes the highest member the normal owner). `state MASTER` only for the highest priority member when the delay is 0, `BACKUP` for the others. The health script has `init_fail`, so a node is only eligible after `rise` good probes. With `preempt=false`
   every member gets `state BACKUP` plus `nopreempt` (keepalived ignores `nopreempt` on a MASTER-state instance), and
   `preempt_delay` is omitted.
 - The track script has **no `weight`**: when the check fails the instance goes to FAULT and releases the VIP at once.

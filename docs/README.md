@@ -21,6 +21,7 @@ Dunree is a reverse proxy and web gateway, published by Foley IT under AGPL-3.0 
 | [Real client IP](guides/real-client-ip-cloudflare.md) | Cloudflare, tunnels, VPNs, TCP streams, access rules |
 | [Path routes and rewriting](guides/url-rewrite-and-locations.md) | Sending a path to another server, rewriting paths |
 | [WebSockets](guides/websockets-odoo-cleanslate-domoticz.md) | WebSockets, with Odoo, Hasura and Domoticz as examples |
+| [Floating IP (keepalived)](guides/floating-ip-keepalived.md) | Two nodes and a floating IP for Cluster / HA: generated keepalived configuration, checks, verifying failover |
 | [Error pages and 521](guides/error-pages-and-521.md) | What the error pages mean, "521 Web server is down" |
 | [Customisable error pages](errorpages.md) | Your own texts, theme and HTML for the pages Dunree shows |
 | [CAPTCHA, phones and apps](guides/captcha-and-mobile-apps.md) | Challenge pages and clients that are not browsers |

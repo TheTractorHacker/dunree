@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -26,8 +27,6 @@ import (
 const (
 	haRoot      = "ha"
 	vipFileName = "vip.json"
-	// vipAuthPurpose derives the VRRP password for auth=cluster.
-	vipAuthPurpose = "vrrp-auth"
 )
 
 // VIPOptions are the injectable parts of the feature. The zero value uses
@@ -145,25 +144,30 @@ func (m *Manager) SetVIPLocal(l vip.Local) error {
 	return nil
 }
 
-// DeriveVIPPassword derives the 8 character VRRP password of auth=cluster
-// from the cluster secret. It is never stored; every node with the same
-// secret derives the same value.
-func DeriveVIPPassword(secret string) string {
-	if secret == "" {
-		return ""
-	}
+// NewVIPPassword returns a random 8 character VRRP password (crypto/rand,
+// no modulo bias). It is derived from nothing: keepalived PASS auth sends it
+// in clear in every advert, so it must not reveal any key material.
+func NewVIPPassword() (string, error) {
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	k := DeriveKey(secret, vipAuthPurpose, 8)
-	out := make([]byte, 8)
-	for i, b := range k {
-		out[i] = alphabet[int(b)%len(alphabet)]
+	const limit = 256 - 256%len(alphabet) // 248: bytes at or above are rejected
+	out := make([]byte, 0, 8)
+	buf := make([]byte, 16)
+	for len(out) < 8 {
+		if _, err := rand.Read(buf); err != nil {
+			return "", err
+		}
+		for _, c := range buf {
+			if int(c) < limit && len(out) < 8 {
+				out = append(out, alphabet[int(c)%len(alphabet)])
+			}
+		}
 	}
-	return string(out)
+	return string(out), nil
 }
 
 // vipEnv collects what only this process knows.
 func (m *Manager) vipEnv() *vip.Env {
-	env := &vip.Env{Version: m.opt.Version, ClusterPassword: DeriveVIPPassword(m.secret())}
+	env := &vip.Env{Version: m.opt.Version}
 	if m.opt.VIP.Listener != nil {
 		env.Listener = m.opt.VIP.Listener()
 	}

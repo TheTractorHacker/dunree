@@ -12,10 +12,11 @@ vrrp_script chk_dunree {
     timeout 3
     fall 3
     rise 2
+    init_fail
 }
 
 vrrp_instance VI_DUNREE {
-    state MASTER
+    state BACKUP
     interface ens18
     virtual_router_id 51
     priority 150

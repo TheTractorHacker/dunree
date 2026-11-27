@@ -92,6 +92,18 @@ The old path `/.zoraxy/health` keeps working for existing scripts; generated fil
 
 ## Known limits
 
+- **The VRRP password is public on the VLAN.** keepalived PASS authentication sends it unencrypted in every advert. With
+  `auth=cluster` it is random and independent of the cluster secret, so capturing it reveals nothing about the secret.
+  It is stored in `conf/ha/vip.json` and synced inside the encrypted snapshot. It is still not security: use a dedicated VLAN.
+- The generated configuration was checked with `keepalived -t` only when a keepalived binary was present (the Go test
+  `TestKeepalivedAcceptsGolden` skips otherwise; set `KEEPALIVED_BIN`).
+- The health probe always asks `127.0.0.1`, also for an IPv6 floating IP. With "reject unknown server names" on and the
+  proxy listener as the only probe target, the probe cannot work: start Dunree with `-health_port` (for example `:8081`).
+  `-health_port` must be a port only or an IP address.
+- The page says what it observes. It does not know your firewall rule, and only the Verify tab (stop Dunree on the active
+  node) proves failover. A follower report older than three sync intervals is shown as "No recent report".
+- The audit log records reading the generated file (`cluster.vip.generate`), because it holds the VRRP password.
+
 - **Tested with fakes and a rendered config, not on two real hosts behind a real UniFi NAT.** The automated tests cover the
   validator, golden keepalived.conf files (master and backup, IPv4 and IPv6, unicast and multicast), the status reader with fake
   interfaces and a temp root, the sync between a primary and a follower, and the admin API. Run the failover checklist in

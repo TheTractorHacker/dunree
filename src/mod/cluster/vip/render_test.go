@@ -2,6 +2,10 @@ package vip
 
 import (
 	"errors"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -52,8 +56,8 @@ func TestGoldenIPv6(t *testing.T) {
 		if !strings.Contains(c, "vrrp_version 3") || !strings.Contains(c, "native_ipv6") || strings.Contains(c, "authentication") || !strings.Contains(c, "VI_DUNREE6") {
 			t.Errorf("IPv6 needs VRRPv3, native_ipv6 and no authentication:\n%s", c)
 		}
-		if !strings.Contains(c, "http://[::1]:8081/.dunree/health") {
-			t.Errorf("IPv6 probe should use [::1]:\n%s", c)
+		if !strings.Contains(c, "http://127.0.0.1:8081/.dunree/health") || strings.Contains(c, "::1]") {
+			t.Errorf("the loopback probe is IPv4 whatever the VIP family:\n%s", c)
 		}
 		golden(t, h.name, c)
 	}
@@ -64,9 +68,9 @@ func TestClusterAuthDerivedPassword(t *testing.T) {
 	s.Auth, s.Password = AuthCluster, ""
 	env := envFor("192.0.2.11/24")
 	if _, err := Generate(&s, nil, env, -1); err == nil {
-		t.Fatal("auth=cluster without a cluster secret must block")
+		t.Fatal("auth=cluster without a generated cluster password must block")
 	}
-	env.ClusterPassword = "Zq81LmPx"
+	s.ClusterPass = "Zq81LmPx"
 	o := gen(t, s, nil, env, -1)
 	if !strings.Contains(o.KeepalivedConf, "auth_pass Zq81LmPx") {
 		t.Errorf("derived password missing:\n%s", o.KeepalivedConf)
@@ -85,7 +89,8 @@ func TestHealthTargetBranches(t *testing.T) {
 		{"health_port", ListenerFacts{HealthPort: ":8081", Port80: true, InboundPort: 443, TLS: true}, nil, "http://127.0.0.1:8081/.dunree/health", false},
 		{"health_port_bound", ListenerFacts{HealthPort: "192.0.2.11:8081"}, nil, "http://192.0.2.11:8081/.dunree/health", false},
 		{"port80", ListenerFacts{Port80: true, InboundPort: 443, TLS: true}, nil, "http://127.0.0.1:80/.dunree/health", false},
-		{"port80_custom", ListenerFacts{Port80: true, HTTPPort: 8080}, nil, "http://127.0.0.1:8080/.dunree/health", false},
+		{"port80_custom", ListenerFacts{Port80: true, TLS: true, InboundPort: 443, HTTPPort: 8080}, nil, "http://127.0.0.1:8080/.dunree/health", false},
+		{"port80_plain_http_proxy", ListenerFacts{Port80: true, InboundPort: 8443}, nil, "http://127.0.0.1:8443/.dunree/health", false},
 		{"tls", ListenerFacts{InboundPort: 443, TLS: true}, nil, "https://127.0.0.1:443/.dunree/health", true},
 		{"plain", ListenerFacts{InboundPort: 8443}, nil, "http://127.0.0.1:8443/.dunree/health", false},
 		{"override", ListenerFacts{HealthPort: ":8081"}, &Local{HealthTarget: "https://127.0.0.1:9443"}, "https://127.0.0.1:9443/.dunree/health", true},
@@ -114,6 +119,11 @@ func TestBlockers(t *testing.T) {
 		{"allow list excludes loopback", func(e *Env) { e.Listener.HealthAllow = []string{"198.51.100.0/24"} }, "allow-list"},
 		{"health bound to the vip", func(e *Env) { e.Listener.HealthPort = "192.0.2.10:8081" }, "floating IP"},
 		{"not a member", func(e *Env) { e.Interfaces = nil }, "not a member"},
+		{"health_port host with spaces", func(e *Env) { e.Listener.HealthPort = "127.0.0.1/ -o /etc/cron.d/dunree:8081" }, "not an IP address"},
+		{"health_port host name", func(e *Env) { e.Listener.HealthPort = "evil.example:8081" }, "not an IP address"},
+		{"reject unknown sni on the tls probe", func(e *Env) {
+			e.Listener = ListenerFacts{InboundPort: 443, TLS: true, RejectUnknownSNI: true}
+		}, "-health_port"},
 	}
 	for _, c := range cases {
 		env := envFor("192.0.2.11/24")
@@ -164,9 +174,16 @@ func TestLocalOverrides(t *testing.T) {
 
 func TestInstallCommandsAndSysctl(t *testing.T) {
 	o := gen(t, fixture4(), nil, envFor("192.0.2.11/24"), -1)
-	for _, want := range []string{"sudo apt update", "sudo apt install -y keepalived curl", "<<'DUNREE_EOF'", "keepalived -t -f", "systemctl enable --now keepalived", "systemctl restart keepalived"} {
+	for _, want := range []string{"sudo apt update", "sudo apt install -y keepalived curl", "<<'DUNREE_EOF'",
+		"sudo keepalived -t -f /etc/keepalived/keepalived.conf && sudo systemctl enable keepalived && sudo systemctl restart keepalived\n"} {
 		if !strings.Contains(o.InstallCommands, want) {
 			t.Errorf("install commands miss %q", want)
+		}
+	}
+	// the config test, enable and restart are one chain: a failed test must not start keepalived
+	for _, line := range strings.Split(o.InstallCommands, "\n") {
+		if (strings.HasPrefix(line, "sudo systemctl") || strings.HasPrefix(line, "sudo keepalived")) && !strings.HasPrefix(line, "sudo keepalived -t") {
+			t.Errorf("systemctl on its own line: %q", line)
 		}
 	}
 	if o.Sysctl != "" || o.FirewallNote != "" {
@@ -214,5 +231,130 @@ func TestDeterministic(t *testing.T) {
 	b := gen(t, fixture4(), nil, envFor("192.0.2.11/24"), -1)
 	if a.KeepalivedConf != b.KeepalivedConf || a.InstallCommands != b.InstallCommands {
 		t.Error("output must be deterministic")
+	}
+}
+
+func TestNeverMasterWithPreemptDelay(t *testing.T) {
+	for _, s := range []Shared{fixture4(), fixture6()} {
+		for _, addr := range []string{"192.0.2.11/24", "192.0.2.12/24", "2001:db8::11/64", "2001:db8::12/64"} {
+			if (s.VIP[0] == '2') != (addr[0] == '2') {
+				continue
+			}
+			for _, delay := range []int{0, 60} {
+				s.PreemptDelay = delay
+				c := gen(t, s, nil, envFor(addr), -1).KeepalivedConf
+				if strings.Contains(c, "state MASTER") && strings.Contains(c, "preempt_delay") {
+					t.Errorf("state MASTER with preempt_delay is ignored by keepalived:\n%s", c)
+				}
+				if delay > 0 && !strings.Contains(c, "state BACKUP") {
+					t.Errorf("preempt_delay needs the initial state BACKUP:\n%s", c)
+				}
+				if !strings.Contains(c, "    init_fail\n") {
+					t.Errorf("the health script needs init_fail:\n%s", c)
+				}
+			}
+		}
+	}
+}
+
+func TestScriptGuard(t *testing.T) {
+	good := []string{
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null http://127.0.0.1:8081/.dunree/health",
+		"/usr/bin/curl -fsS --max-time 2 -k -o /dev/null https://127.0.0.1:443/.dunree/health",
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null http://[::1]:8081/.dunree/health",
+	}
+	for _, g := range good {
+		if err := checkScript(g); err != nil {
+			t.Errorf("%q: %v", g, err)
+		}
+	}
+	bad := []string{
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null http://127.0.0.1/ -o /etc/cron.d/dunree:8081/.dunree/health",
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null http://127.0.0.1:8081/.dunree/health extra",
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null  http://127.0.0.1:8081/.dunree/health",
+		"/usr/bin/curl -fsS --max-time 2 -K -o /dev/null http://127.0.0.1:8081/.dunree/health",
+		"/usr/bin/curl -fsS --max-time x -o /dev/null http://127.0.0.1:8081/.dunree/health",
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null file:///etc/passwd",
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null http://127.0.0.1:8081/other",
+		"/usr/bin/curl -fsS --max-time 2 -o /dev/null http://u@127.0.0.1:8081/.dunree/health",
+		"/bin/sh -c x",
+	}
+	for _, b := range bad {
+		if checkScript(b) == nil {
+			t.Errorf("guard accepted %q", b)
+		}
+	}
+}
+
+func TestUFWNoteIPv6(t *testing.T) {
+	env := envFor("2001:db8::11/64")
+	env.UFWEnabled = true
+	o := gen(t, fixture6(), nil, env, -1)
+	n := o.FirewallNote
+	if !strings.Contains(n, "/etc/ufw/before6.rules") || !strings.Contains(n, "-A ufw6-before-input -p vrrp -s 2001:db8::12 -j ACCEPT") || strings.Contains(n, "ufw-before-input -p") && !strings.Contains(n, "ufw6-before-input") {
+		t.Errorf("v6 unicast note:\n%s", n)
+	}
+	s := fixture6()
+	s.Transport = TransportMulticast
+	n = gen(t, s, nil, env, -1).FirewallNote
+	if !strings.Contains(n, "-d ff02::12") || strings.Contains(n, "224.0.0.18") {
+		t.Errorf("v6 multicast note:\n%s", n)
+	}
+	env = envFor("192.0.2.11/24")
+	env.UFWEnabled = true
+	n = gen(t, fixture4(), nil, env, -1).FirewallNote
+	if !strings.Contains(n, "/etc/ufw/before.rules") || strings.Contains(n, "before6") {
+		t.Errorf("v4 note changed:\n%s", n)
+	}
+}
+
+func TestFingerprintHidesPassword(t *testing.T) {
+	a := fixture4()
+	fp := Fingerprint(&a, "Xb7kQ2mT")
+	if strings.Contains(fp, "Xb7k") || len(fp) != 8 {
+		t.Errorf("fingerprint %q", fp)
+	}
+	// the stored secrets are not part of the settings part
+	b := fixture4()
+	b.Password, b.ClusterPass = "other123", "zzzzzzzz"
+	if Fingerprint(&a, "p") != Fingerprint(&b, "p") {
+		t.Error("only the effective password may feed the fingerprint")
+	}
+}
+
+// TestKeepalivedAcceptsGolden runs the real keepalived config test over every
+// golden file when a binary is available (PATH or $KEEPALIVED_BIN). The
+// unit test host usually has none, so it skips.
+func TestKeepalivedAcceptsGolden(t *testing.T) {
+	bin := os.Getenv("KEEPALIVED_BIN")
+	if bin == "" {
+		p, err := exec.LookPath("keepalived")
+		if err != nil {
+			t.Skip("no keepalived binary (set KEEPALIVED_BIN to run the config test)")
+		}
+		bin = p
+	}
+	u, err := user.Current()
+	if err != nil {
+		t.Skip("no current user")
+	}
+	files, _ := filepath.Glob(filepath.Join("testdata", "*.golden"))
+	if len(files) == 0 {
+		t.Fatal("no golden files")
+	}
+	for _, f := range files {
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		conf := strings.Replace(string(raw), "script_user keepalived_script", "script_user "+u.Username, 1)
+		tmp := filepath.Join(t.TempDir(), "keepalived.conf")
+		if err := os.WriteFile(tmp, []byte(conf), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		out, err := exec.Command(bin, "-t", "-f", tmp).CombinedOutput()
+		if err != nil || strings.Contains(string(out), "Warning") {
+			t.Errorf("%s: keepalived -t: %v\n%s", filepath.Base(f), err, out)
+		}
 	}
 }

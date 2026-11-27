@@ -205,7 +205,7 @@ func TestInjectionNeverRendersExtraBlocks(t *testing.T) {
 func structureOK(conf string) bool {
 	known := map[string]bool{
 		"global_defs": true, "enable_script_security": true, "script_user": true, "vrrp_version": true, "vrrp_garp_master_refresh": true,
-		"vrrp_script": true, "script": true, "interval": true, "timeout": true, "fall": true, "rise": true,
+		"vrrp_script": true, "script": true, "interval": true, "timeout": true, "fall": true, "rise": true, "init_fail": true,
 		"vrrp_instance": true, "state": true, "nopreempt": true, "interface": true, "native_ipv6": true, "virtual_router_id": true,
 		"priority": true, "advert_int": true, "preempt_delay": true, "unicast_src_ip": true, "unicast_peer": true,
 		"authentication": true, "auth_type": true, "auth_pass": true, "virtual_ipaddress": true,

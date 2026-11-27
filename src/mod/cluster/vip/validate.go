@@ -170,6 +170,11 @@ func ValidateShared(s *Shared) error {
 			return err
 		}
 	}
+	if s.ClusterPass != "" {
+		if err := ValidatePassword(s.ClusterPass); err != nil {
+			return fe("clusterPass", "the generated password is not valid; rotate it")
+		}
+	}
 	if s.Enabled && s.Auth == AuthPassword && s.Password == "" {
 		return fe("password", "enter a password (1 to 8 characters) or choose another authentication mode")
 	}

@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -438,6 +439,19 @@ func TestVIPBeatAndSplitBrain(t *testing.T) {
 	if out.SplitBrain {
 		t.Fatalf("stale report counted: %s", w.Body.String())
 	}
+	// ... and is flagged, so the page never shows it as current; the own row is flagged self
+	if len(out.Peers) != 2 || !out.Peers[0].Self || strings.Contains(out.Peers[0].Name, "this node") || out.Peers[0].Stale || !out.Peers[1].Stale {
+		t.Fatalf("stale/self flags: %+v", out.Peers)
+	}
+	if got := p.primary.peerHolding(); got != "" {
+		t.Fatalf("a stale holder must not be named, got %q", got)
+	}
+	p.primary.primary.mu.Lock()
+	p.primary.primary.nodes["f1"].VIPSeen = p.pClock.Now().Unix()
+	p.primary.primary.mu.Unlock()
+	if got := p.primary.peerHolding(); got != "node-b" {
+		t.Fatalf("a current holder is named, got %q", got)
+	}
 }
 
 func TestVIPOldFollowerAck(t *testing.T) {
@@ -456,17 +470,105 @@ func TestVIPOldFollowerAck(t *testing.T) {
 	}
 }
 
-func TestDeriveVIPPassword(t *testing.T) {
-	a, b := DeriveVIPPassword(testSecret), DeriveVIPPassword(testSecret)
-	if a != b || len(a) != 8 || vip.ValidatePassword(a) != nil {
-		t.Fatalf("%q", a)
+func TestNewVIPPassword(t *testing.T) {
+	seen := map[string]bool{}
+	for i := 0; i < 50; i++ {
+		a, err := NewVIPPassword()
+		if err != nil || len(a) != 8 || vip.ValidatePassword(a) != nil {
+			t.Fatalf("%q %v", a, err)
+		}
+		seen[a] = true
 	}
-	if a == DeriveVIPPassword(testSecret+"x") || DeriveVIPPassword("") != "" {
-		t.Fatal("derived password must depend on the secret")
+	if len(seen) < 49 {
+		t.Fatalf("passwords repeat: %d distinct of 50", len(seen))
 	}
-	// the key is separated from the other purposes
-	if a == KeyMaterial(testSecret, "u", PurposeSyncSign)[:8] {
-		t.Fatal("purpose separation")
+}
+
+// The VRRP password travels in clear in every advert, so it must not be
+// derived from the cluster secret.
+func TestVIPClusterPasswordIsRandomAndNotDerived(t *testing.T) {
+	rec := &auditRec{}
+	m, _ := NewManager(Options{ConfDir: t.TempDir(), NodeID: "a", Version: "1.0", VIP: vipTestOptions("192.0.2.11/24", rec)})
+	role := RolePrimary
+	if err := m.Update(ConfigUpdate{Role: &role, Secret: strPtr(testSecret)}); err != nil {
+		t.Fatal(err)
+	}
+	doc := strings.Replace(vipDoc, `"auth":"password"`, `"auth":"cluster","clusterPass":"Attack3r"`, 1)
+	w := vipPost(m.HandleVIPShared, VIPRouteShared, url.Values{"config": {doc}})
+	if errOf(w) != "" {
+		t.Fatalf("%s", w.Body.String())
+	}
+	s, _, _ := m.LoadVIPShared()
+	first := s.ClusterPass
+	if len(first) != 8 || first == "Attack3r" {
+		t.Fatalf("the page must not choose the password, got %q", first)
+	}
+	for _, purpose := range []string{PurposeCaptchaSession, PurposeStickySession, PurposeOAuth2Session, PurposeZorxAuth, PurposeSyncToken, PurposeSyncSign, PurposeSyncEncrypt, PurposeFingerprint, "vrrp-auth", "vip", "vrrp"} {
+		k := DeriveKey(testSecret, purpose, 8)
+		const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		d := make([]byte, 8)
+		for i, b := range k {
+			d[i] = alphabet[int(b)%len(alphabet)]
+		}
+		if first == string(d) || first == string(k) || first == hex.EncodeToString(k) {
+			t.Fatalf("password equals the key derived for %q", purpose)
+		}
+	}
+	// the page and the audit log never see it
+	gw := httptest.NewRecorder()
+	m.HandleVIPConfig(gw, httptest.NewRequest("GET", VIPRouteConfig, nil))
+	if strings.Contains(gw.Body.String(), first) || !strings.Contains(gw.Body.String(), `"clusterPassSet":true`) {
+		t.Fatalf("config leaks or hides the cluster password flag: %s", gw.Body.String())
+	}
+	for _, e := range rec.events {
+		if strings.Contains(e, first) || strings.Contains(e, "fingerprint") {
+			t.Fatalf("audit entry: %s", e)
+		}
+	}
+	// a plain save keeps it, a rotation replaces it
+	vipPost(m.HandleVIPShared, VIPRouteShared, url.Values{"config": {doc}})
+	if s, _, _ = m.LoadVIPShared(); s.ClusterPass != first {
+		t.Fatal("a normal save must keep the password")
+	}
+	vipPost(m.HandleVIPShared, VIPRouteShared, url.Values{"config": {doc}, "rotateAuth": {"true"}})
+	if s, _, _ = m.LoadVIPShared(); s.ClusterPass == first || len(s.ClusterPass) != 8 {
+		t.Fatal("rotateAuth must replace the password")
+	}
+	// the generated file carries it; switching away drops it
+	gen := httptest.NewRecorder()
+	m.HandleVIPGenerate(gen, httptest.NewRequest("GET", VIPRouteGenerate+"?member=self", nil))
+	if !strings.Contains(gen.Body.String(), "auth_pass "+s.ClusterPass) {
+		t.Fatalf("generated file lacks the password: %s", gen.Body.String())
+	}
+	vipPost(m.HandleVIPShared, VIPRouteShared, url.Values{"config": {vipDoc}, "password": {"abc"}})
+	if s, _, _ = m.LoadVIPShared(); s.ClusterPass != "" {
+		t.Fatal("the cluster password is dropped when auth is not cluster")
+	}
+}
+
+func TestVIPSharedAuditHasNoFingerprint(t *testing.T) {
+	rec := &auditRec{}
+	m, _ := NewManager(Options{ConfDir: t.TempDir(), NodeID: "a", Version: "1.0", VIP: vipTestOptions("192.0.2.11/24", rec)})
+	vipPost(m.HandleVIPShared, VIPRouteShared, url.Values{"config": {vipDoc}, "password": {"Xb7kQ2mT"}})
+	if len(rec.events) != 1 || strings.Contains(rec.events[0], "ingerprint") || strings.Contains(rec.events[0], "Xb7kQ2mT") {
+		t.Fatalf("audit: %v", rec.events)
+	}
+}
+
+// vipHTTPGet must accept a self-signed certificate, like the generated `curl -k`.
+func TestVIPHTTPGetAcceptsSelfSigned(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }))
+	defer srv.Close()
+	code, err := vipHTTPGet(srv.URL + HealthPath)
+	if err != nil || code != 200 {
+		t.Fatalf("code %d err %v", code, err)
+	}
+	// a pre-flight with a TLS health target passes the probe check
+	m, _ := NewManager(Options{ConfDir: t.TempDir(), NodeID: "a", Version: "1.0", VIP: vipTestOptions("192.0.2.11/24", nil)})
+	m.opt.VIP.HTTPGet = nil
+	pe := m.vipPreflightEnv()
+	if c, err := pe.HTTPGet(srv.URL + HealthPath); err != nil || c != 200 {
+		t.Fatalf("preflight probe: %d %v", c, err)
 	}
 }
 

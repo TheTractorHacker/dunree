@@ -46,20 +46,25 @@ type Health struct {
 // Shared is the part of the configuration that must match on all nodes. It is
 // stored in conf/ha/vip.json and travels with the cluster snapshot.
 type Shared struct {
-	Enabled      bool     `json:"enabled"`
-	VIP          string   `json:"vip"`
-	Prefix       int      `json:"prefix"`
-	VRID         int      `json:"vrid"`
-	AdvertInt    int      `json:"advertInt"`
-	Transport    string   `json:"transport"`
-	Members      []Member `json:"members"`
-	Auth         string   `json:"auth"`
-	Password     string   `json:"password,omitempty"`
-	Preempt      bool     `json:"preempt"`
-	PreemptDelay int      `json:"preemptDelay"`
-	Health       Health   `json:"health"`
-	NotifyLog    bool     `json:"notifyLog"`
-	GarpRefresh  int      `json:"garpRefresh"`
+	Enabled   bool     `json:"enabled"`
+	VIP       string   `json:"vip"`
+	Prefix    int      `json:"prefix"`
+	VRID      int      `json:"vrid"`
+	AdvertInt int      `json:"advertInt"`
+	Transport string   `json:"transport"`
+	Members   []Member `json:"members"`
+	Auth      string   `json:"auth"`
+	Password  string   `json:"password,omitempty"`
+	// ClusterPass is the random VRRP password of auth=cluster. The primary
+	// generates it once (crypto/rand); it travels in the encrypted snapshot
+	// and is derived from nothing, so a sniffed advert says nothing about the
+	// cluster secret.
+	ClusterPass  string `json:"clusterPass,omitempty"`
+	Preempt      bool   `json:"preempt"`
+	PreemptDelay int    `json:"preemptDelay"`
+	Health       Health `json:"health"`
+	NotifyLog    bool   `json:"notifyLog"`
+	GarpRefresh  int    `json:"garpRefresh"`
 }
 
 // Local holds the node-local overrides (conf/cluster.json, "vipLocal").
@@ -100,21 +105,23 @@ type InterfaceLister interface {
 // ListenerFacts are what only the running process knows about its listeners.
 type ListenerFacts struct {
 	HealthPort     string   // value of -health_port ("", ":8081", "192.0.2.11:8081")
-	Port80         bool     // plain HTTP listener is on
+	Port80         bool     // plain HTTP listener is running (it only runs next to a TLS listener)
 	HTTPPort       int      // its port (0 = 80)
 	InboundPort    int      // proxy listener port
 	TLS            bool     // proxy listener serves TLS
 	BoundAddr      string   // address the proxy listener binds ("" = all addresses)
 	HealthDisabled bool     // cluster health endpoint switched off
 	HealthAllow    []string // health allow-list entries (IPs or CIDRs)
+	// RejectUnknownSNI: the TLS listener turns down a client that sends no
+	// (or an unknown) server name, which the probe to an IP literal does.
+	RejectUnknownSNI bool
 }
 
 // Env is everything Generate needs beyond the settings. It makes the
 // generator a pure function.
 type Env struct {
-	Version         string
-	Interfaces      []IfaceInfo
-	ClusterPassword string // derived password for auth=cluster ("" = no cluster secret)
-	Listener        ListenerFacts
-	UFWEnabled      bool
+	Version    string
+	Interfaces []IfaceInfo
+	Listener   ListenerFacts
+	UFWEnabled bool
 }

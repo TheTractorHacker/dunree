@@ -172,8 +172,8 @@ func Preflight(s *Shared, l *Local, env *Env, pe *PreflightEnv) []Check {
 			}
 		}
 	}
-	if s.Auth == AuthCluster && env.ClusterPassword == "" {
-		add(ck("auth", "block", "Authentication uses the cluster secret, but this node has no cluster secret."))
+	if s.Auth == AuthCluster && s.ClusterPass == "" {
+		add(ck("auth", "block", "Authentication uses the cluster password, but none has been generated yet. Save the Floating IP settings on the primary."))
 	}
 	if s.Auth == AuthNone || s.Auth == AuthPassword {
 		add(ck("auth", "info", "VRRP password authentication is not security: anyone on the VLAN can take the floating IP."))

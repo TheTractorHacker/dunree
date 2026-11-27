@@ -32,10 +32,11 @@ vrrp_script chk_dunree {
     timeout 3
     fall 3
     rise 2
+    init_fail
 }
 
 vrrp_instance VI_DUNREE {
-    state MASTER
+    state BACKUP
     interface ens18
     virtual_router_id 51
     priority 150
@@ -60,13 +61,14 @@ vrrp_instance VI_DUNREE {
 VIP_INSTALL = ("sudo apt update\nsudo apt install -y keepalived curl\n"
                "id keepalived_script >/dev/null 2>&1 || sudo useradd -r -s /usr/sbin/nologin -M keepalived_script\n"
                "sudo tee /etc/keepalived/keepalived.conf >/dev/null <<'DUNREE_EOF'\n" + VIP_CONF + "DUNREE_EOF\n"
-               "sudo chmod 600 /etc/keepalived/keepalived.conf\nsudo keepalived -t -f /etc/keepalived/keepalived.conf\n"
-               "sudo systemctl enable --now keepalived\nsudo systemctl restart keepalived\n")
+               "sudo chmod 600 /etc/keepalived/keepalived.conf\n"
+               "sudo keepalived -t -f /etc/keepalived/keepalived.conf && sudo systemctl enable keepalived && sudo systemctl restart keepalived\n")
 VIP_VERIFY = "ip -br addr show dev ens18\nsystemctl status keepalived --no-pager\njournalctl -u keepalived -n 50 --no-pager\n"
 
 
 def cluster_vip_ui(pg, ctx):
     out = lambda n: os.path.join(args.out, n)
+    produced = []
     api = lambda path, data=None, method="POST": pg.evaluate(API, ["./api/cluster/vip/" + path, data or {}, method])
 
     def theme(want_dark):
@@ -116,6 +118,7 @@ def cluster_vip_ui(pg, ctx):
             clear_toasts()
             layout(f"{name}/{label}")
             pg.locator("#vipWrap").screenshot(path=out(f"cluster-vip-{name}-{label}.png"))
+            produced.append(f"cluster-vip-{name}-{label}.png")
         theme(False)
         pg.set_viewport_size({"width": 1366, "height": 900})
         pg.wait_for_timeout(300)
@@ -138,6 +141,15 @@ def cluster_vip_ui(pg, ctx):
     pg.set_viewport_size({"width": 1366, "height": 900})
     try:
         _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible, text, reload, out)
+        produced.append("cluster-vip-active-1920.png")
+        # every picture of the scenario has to exist: light, dark, wide and phone
+        want = ["cluster-vip-off-light.png", "cluster-vip-off-dark.png", "cluster-vip-off-390.png", "cluster-vip-setup-light.png", "cluster-vip-blocked-light.png",
+                "cluster-vip-active-light.png", "cluster-vip-active-dark.png", "cluster-vip-active-390.png", "cluster-vip-active-1920.png",
+                "cluster-vip-conf-390-dark.png", "cluster-vip-standby-light.png", "cluster-vip-stale-light.png",
+                "cluster-vip-split-light.png", "cluster-vip-split-dark.png", "cluster-vip-split-390.png", "cluster-vip-follower-light.png", "cluster-vip-follower-390.png"]
+        for n in want:
+            if n not in produced or not os.path.exists(out(n)) or os.path.getsize(out(n)) < 2000:
+                fail("cluster-vip", f"screenshot missing: {n}")
     except Exception as ex:   # a step that timed out is a failure of that step, not a crashed run
         fail("cluster-vip", f"scenario aborted: {' '.join(str(ex).split()[:40])}")
         pg.screenshot(path=out("cluster-vip-failure.png"), full_page=True)
@@ -191,7 +203,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", "first setup: the defaults (priorities 150 / 100, check every 2 s, 3 failed checks) are not in the form")
     if not visible("#vipMembers .vipMember[data-i='0'] .vipMSelf") or not visible("#vipMembers .vipMember[data-i='0'] .vipMPref"):
         fail("cluster-vip", "node 1 must be marked as this node and as the preferred node")
-    if "about 6 seconds" not in text("#vipFailSentence"):
+    if "about 6 to 9 seconds" not in text("#vipFailSentence"):
         fail("cluster-vip", f"the failover time must be said in words: {text('#vipFailSentence')!r}")
     # no cluster secret on this instance: a password is needed, made for the admin and shown (the other node needs the same)
     pw = pg.input_value("#vipPass")
@@ -208,7 +220,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     if "Same subnet" not in text("#vipMembers .vipMember[data-i='1'] .vipHint"):
         fail("cluster-vip", "a node inside the subnet must get the 'same subnet' hint")
     pg.fill("#vipHFall", "5")
-    if "about 10 seconds" not in text("#vipFailSentence"):
+    if "about 10 to 13 seconds" not in text("#vipFailSentence"):
         fail("cluster-vip", "the failover sentence must follow the fields")
     pg.fill("#vipHFall", "3")
     # a third node can be added and removed again
@@ -246,7 +258,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", f"the saved settings are wrong, or the password came back: {sh}")
     if visible("#vipForm") or not visible("#vipSummary") or not visible("#vipEditBtn"):
         fail("cluster-vip", "after saving, step 1 must be a summary with 'Change settings'")
-    for want in ("192.0.2.10/24", "node-a", "192.0.2.12", "about 6 s", "Password, set"):
+    for want in ("192.0.2.10/24", "node-a", "192.0.2.12", "about 6 to 9 s", "Password, set"):
         if want not in text("#vipSummary"):
             fail("cluster-vip", f"the summary lacks {want!r}: {text('#vipSummary')!r}")
     if pw in pg.evaluate("document.getElementById('vipWrap').innerText"):
@@ -297,7 +309,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     # ================= part 2: states a smoke host cannot be in, answered by mocks =================
     shared = {"enabled": True, "vip": "192.0.2.10", "prefix": 24, "vrid": 51, "advertInt": 1, "transport": "unicast",
               "members": [{"label": "node-a", "address": "192.0.2.11", "priority": 150, "interfaceHint": "ens18"}, {"label": "node-b", "address": "192.0.2.12", "priority": 100}],
-              "auth": "cluster", "preempt": True, "preemptDelay": 60, "health": {"interval": 2, "timeout": 3, "fall": 3, "rise": 2}, "notifyLog": False, "garpRefresh": 0, "passwordSet": False}
+              "auth": "cluster", "preempt": True, "preemptDelay": 60, "health": {"interval": 2, "timeout": 3, "fall": 3, "rise": 2}, "notifyLog": False, "garpRefresh": 0, "passwordSet": False, "clusterPassSet": True}
     mock = {
         "config": {"exists": True, "shared": shared, "local": {}, "defaults": dict(shared, enabled=False, vip="", members=[]), "source": "local", "sharedEditable": True, "role": "primary",
                    "haveSecret": True, "fingerprint": "3f9a1c2e",
@@ -307,7 +319,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
                    "status": {"configured": True, "held": True, "heldInterface": "ens18", "isMember": True, "memberLabel": "node-a", "interface": "ens18", "prefix": 24,
                               "keepalivedInstalled": "yes", "keepalivedEnabled": "yes", "keepalivedRunning": "yes", "installedConfigMatches": "unknown", "fingerprint": "3f9a1c2e",
                               "ufwEnabled": False, "reach": {"code": 200, "latencyMs": 1, "local": True}},
-                   "peers": [{"id": "n1", "name": "proxy-a (this node)", "held": True, "keepalived": "yes", "lastSeen": 0},
+                   "peers": [{"id": "n1", "name": "proxy-a", "self": True, "held": True, "keepalived": "yes", "lastSeen": 0},
                              {"id": "n2", "name": "proxy-b", "held": False, "keepalived": "yes", "lastSeen": 0}]},
         "generate": {"keepalivedConf": VIP_CONF, "installCommands": VIP_INSTALL, "verifyCommands": VIP_VERIFY, "fingerprint": "3f9a1c2e", "member": "node-a",
                      "healthUrl": "http://127.0.0.1:8081/.dunree/health"},
@@ -333,7 +345,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         if name == "status":
             now = int(pg.evaluate("Date.now()") / 1000)
             for p in body.get("peers", []):
-                p["lastSeen"] = now - 20
+                p["lastSeen"] = 1 if p.get("stale") else now - 20
         if name == "generate" and "member=1" in req.url and "error" not in body:
             body = dict(body, member="node-b", warnings=["the interface name was taken from this node (ens18); check the interface name on node-b",
                                                          "the health check target was chosen from this node's listener settings; check it on node-b"])
@@ -347,18 +359,23 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     pg.wait_for_selector("#vipGenOk", state="visible", timeout=6000)
     if "Active on this node" not in text("#vipBadge") or pg.get_attribute("#vipCard", "data-state") != "ok":
         fail("cluster-vip", f"holding the address must read 'Active on this node': {text('#vipBadge')!r}")
+    desc = text("#vipDesc")
+    if "If your port forward points at 192.0.2.10, traffic arrives here" not in desc or "Traffic from your firewall" in desc:
+        fail("cluster-vip", f"the header may only say what is observed, not where the firewall sends traffic: {desc!r}")
+    if re.search(r"takes over when|fails over after|the same on every node", pg.evaluate("document.getElementById('vipWrap').innerText")):
+        fail("cluster-vip", "the page must not state failover as a fact: say 'should' / 'expected' and point to the Verify tab")
     holder = pg.eval_on_selector_all("#vipTopo .vipTopo__member.is-holder", "els => els.map(e => e.innerText)")
     if len(holder) != 1 or "node-a" not in holder[0] or "Holds the floating IP" not in holder[0] or "this node" not in holder[0]:
         fail("cluster-vip", f"the picture must mark node-a (this node) as the holder: {holder}")
-    if "Standby" not in text("#vipTopo .vipTopo__member:not(.is-holder)") or "points at 192.0.2.10" not in text("#vipTopo"):
+    if "Not holding it" not in text("#vipTopo .vipTopo__member:not(.is-holder)") or "points at 192.0.2.10" not in text("#vipTopo"):
         fail("cluster-vip", "the picture must show node-b on standby and the firewall pointing at the floating IP")
     facts = text("#vipFacts")
-    for want in ("This node", "on ens18", "Running", "starts at boot", "Not readable", "Every 2 s", "about 6 s", "3f9a1c2e"):
+    for want in ("This node", "on ens18", "Running", "starts at boot", "Not readable", "Every 2 s", "about 6 to 9 s", "compare it on the other node", "3f9a1c2e"):
         if want not in facts:
             fail("cluster-vip", f"status facts lack {want!r}: {facts!r}")
     if "held by this node" not in text("#clFacts"):
         fail("cluster-vip", "the status card of the page must say who holds the floating IP")
-    if not visible("#vipPeersWrap") or pg.locator("#vipPeers tr").count() != 2 or "Holds it" not in text("#vipPeers tr:first-child"):
+    if not visible("#vipPeersWrap") or pg.locator("#vipPeers tr").count() != 2 or "Holds it" not in text("#vipPeers tr:first-child") or "proxy-a · this node" not in text("#vipPeers tr:first-child"):
         fail("cluster-vip", "a primary must list who holds the address, per node")
     if "node-a · 192.0.2.11" not in text("#vipLocalFacts") or "http://127.0.0.1:8081/.dunree/health" not in text("#vipLocalFacts"):
         fail("cluster-vip", f"step 2 must say which node this is and what keepalived asks: {text('#vipLocalFacts')!r}")
@@ -373,7 +390,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     if pg.get_attribute("#vipTabs .zx-tab[data-zx-panel=vipPanelInstall]", "aria-selected") != "true" or not visible("#vipInstallCode") or visible("#vipConfCode"):
         fail("cluster-vip", "the install commands must be the tab that is open")
     inst = pg.inner_text("#vipInstallCode")
-    if "sudo apt install -y keepalived curl" not in inst or "DUNREE_EOF" not in inst or "sudo systemctl enable --now keepalived" not in inst:
+    if "sudo apt install -y keepalived curl" not in inst or "DUNREE_EOF" not in inst or "sudo keepalived -t -f /etc/keepalived/keepalived.conf && sudo systemctl enable keepalived && sudo systemctl restart keepalived" not in inst:
         fail("cluster-vip", "the install commands are not shown as generated")
     try:
         ctx.grant_permissions(["clipboard-read", "clipboard-write"], origin=args.url)
@@ -401,8 +418,17 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", f"the download link is wrong: {href}")
     pg.locator("#vipStep3").scroll_into_view_if_needed()
     shots("conf", (("light", False, 1366), ("dark", True, 1366), ("390", False, 390), ("390-dark", True, 390)))
+    pg.set_viewport_size({"width": 390, "height": 900})
+    pg.wait_for_timeout(300)
+    tabs = pg.eval_on_selector_all("#vipTabs .zx-tab", "els => els.map(e => { const r = e.getBoundingClientRect(); return [e.innerText.trim(), Math.round(r.left), Math.round(r.right)]; })")
+    if len(tabs) != 3 or any(t[1] < 0 or t[2] > 390 for t in tabs):
+        fail("cluster-vip", f"at 390 px every tab of step 3 must be fully inside the screen: {tabs}")
+    if pg.evaluate("(() => { const a = document.querySelector('#vipTitle').getBoundingClientRect(), b = document.querySelector('#vipCard .zx-whatis').getBoundingClientRect(); return Math.abs((a.top + a.bottom) / 2 - (b.top + b.bottom) / 2) > 14; })()"):
+        fail("cluster-vip", "at 390 px the help button must stay next to the title")
+    pg.set_viewport_size({"width": 1366, "height": 900})
+    pg.wait_for_timeout(300)
     pg.click("#vipTabs .zx-tab[data-zx-panel=vipPanelVerify]")
-    if "ip -br addr show dev ens18" not in pg.inner_text("#vipVerifyCode") or text("#vipVerifySecs") != "6" or text("#vipNatAddr") != "192.0.2.10":
+    if "ip -br addr show dev ens18" not in pg.inner_text("#vipVerifyCode") or text("#vipVerifySecs") != "6 to 9" or text("#vipNatAddr") != "192.0.2.10":
         fail("cluster-vip", "the verify tab must hold the commands, the failover time and the address for the firewall")
     # the file for the other node, written from here: named, with the warnings
     pg.select_option("#vipGenFor", "1")
@@ -415,8 +441,9 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     # the settings open in the form, filled, and Cancel leaves everything as it was
     pg.click("#vipEditBtn")
     pg.wait_for_selector("#vipForm", state="visible", timeout=4000)
-    if pg.input_value("#vipAddrIn") != "192.0.2.10" or pg.input_value("#vipM1address") != "192.0.2.12" or pg.input_value("#vipM0interfaceHint") != "ens18" or pg.input_value("#vipAuth") != "cluster" or visible("#vipPassRow"):
-        fail("cluster-vip", "'Change settings' must open the form with the saved values (no password field with the cluster secret)")
+    pg.evaluate("document.getElementById('vipAdvanced').open = true")
+    if pg.input_value("#vipAddrIn") != "192.0.2.10" or pg.input_value("#vipM1address") != "192.0.2.12" or pg.input_value("#vipM0interfaceHint") != "ens18" or pg.input_value("#vipAuth") != "cluster" or visible("#vipPassRow") or not visible("#vipRotateBtn"):
+        fail("cluster-vip", "'Change settings' must open the form with the saved values (no password field with the cluster secret, a button to make a new random password)")
     pg.click("#vipCancelBtn")
     if visible("#vipForm") or not visible("#vipSummary"):
         fail("cluster-vip", "Cancel must go back to the summary")
@@ -434,6 +461,20 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", f"standby: the picture must mark the other node as the holder: {holder}")
     shots("standby", (("light", False, 1366),))
 
+    # ---- the other node stopped reporting: an old report is not shown as current ----
+    current["page"] = "cluster-vip/stale"
+    mock["status"]["peers"][1].update(stale=True, lastSeen=1)
+    reload()
+    desc = text("#vipDesc")
+    if "proxy-b holds" in desc or "holds 192.0.2.10" in desc:
+        fail("cluster-vip", f"a holder that stopped reporting must not be named: {desc!r}")
+    if "No recent report" not in text("#vipPeers tr:nth-child(2)") or "Standby" in text("#vipPeers tr:nth-child(2)") or "Holds it" in text("#vipPeers tr:nth-child(2)"):
+        fail("cluster-vip", f"an old follower report must read 'No recent report': {text('#vipPeers tr:nth-child(2)')!r}")
+    if "No recent report" not in text("#vipTopo") or pg.locator("#vipTopo .vipTopo__member.is-holder").count() != 0:
+        fail("cluster-vip", "the picture must not mark a node from an old report as the holder")
+    shots("stale", (("light", False, 1366),))
+    mock["status"]["peers"][1].update(stale=False)
+
     # ---- split brain ----
     current["page"] = "cluster-vip/split"
     stt.update(held=True, heldInterface="ens18")
@@ -442,6 +483,15 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     reload()
     if not visible("#vipSplit") or "Split brain" not in text("#vipBadge") or pg.get_attribute("#vipCard", "data-state") != "danger" or "proxy-b" not in text("#vipSplitText"):
         fail("cluster-vip", "two holders must show as split brain, in red, with the names")
+    desc = text("#vipDesc")
+    if "More than one node holds 192.0.2.10" not in desc or "arrives here" in desc or "Traffic may go to either node" not in desc:
+        fail("cluster-vip", f"split brain: the header must not say that traffic arrives here: {desc!r}")
+    if pg.locator("#vipTopo .vipTopo__member.is-split").count() != 2 or pg.locator("#vipTopo .vipTopo__member.is-holder").count() != 0 or "Holds the floating IP" in text("#vipTopo"):
+        fail("cluster-vip", "split brain: every holder tile must be marked in red, none as the healthy holder")
+    if pg.locator("#vipPeers .zx-badge--danger").count() != 2 or "another node answers" in text("#vipTopo"):
+        fail("cluster-vip", "split brain: both holders are marked in the table and the address tile must not say that another node answers")
+    if pg.get_attribute("#vipStep3Badge", "class").find("zx-badge--ok") >= 0:
+        fail("cluster-vip", "split brain: step 3 must not show a green 'Running' badge")
     shots("split", (("light", False, 1366), ("dark", True, 1366), ("390", False, 390)))
     mock["status"]["splitBrain"] = False
 

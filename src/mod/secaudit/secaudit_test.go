@@ -116,6 +116,20 @@ func TestReadOnlyAndUnlistedRequestsNotRecorded(t *testing.T) {
 	if pg, _ := l.List(Query{Event: "config.*"}); len(pg.Entries) != 1 || pg.Entries[0].Event != "config.export" {
 		t.Fatalf("export not recorded: %+v", pg.Entries)
 	}
+	//the generated keepalived file holds the VRRP password: reading it is recorded too
+	r = httptest.NewRequest(http.MethodGet, "/api/cluster/vip/generate?member=1", nil)
+	r.AddCookie(&http.Cookie{Name: "who", Value: "a"})
+	h.ServeHTTP(httptest.NewRecorder(), r)
+	pg, _ := l.List(Query{Event: "cluster.*"})
+	if len(pg.Entries) != 1 || pg.Entries[0].Event != "cluster.vip.generate" || pg.Entries[0].Detail["member"] != "1" {
+		t.Fatalf("vip generate read not recorded: %+v", pg.Entries)
+	}
+	if ev, ok := Classify("GET", "/api/cluster/vip/generate", nil); !ok || ev != "cluster.vip.generate" {
+		t.Fatalf("classify GET generate: %q %v", ev, ok)
+	}
+	if _, ok := Classify("GET", "/api/cluster/vip/status", nil); ok {
+		t.Fatal("status reads must stay unrecorded")
+	}
 }
 
 func TestClassifyEvents(t *testing.T) {

@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -59,23 +60,25 @@ func (m *Manager) vipSource() string {
 // never leaves, only whether one is set.
 type maskedShared struct {
 	vip.Shared
-	Password    string `json:"-"`
-	PasswordSet bool   `json:"passwordSet"`
+	Password       string `json:"-"`
+	ClusterPass    string `json:"-"`
+	PasswordSet    bool   `json:"passwordSet"`
+	ClusterPassSet bool   `json:"clusterPassSet"`
 }
 
 func maskShared(s vip.Shared) maskedShared {
-	return maskedShared{Shared: s, PasswordSet: s.Password != ""}
+	return maskedShared{Shared: s, PasswordSet: s.Password != "", ClusterPassSet: s.ClusterPass != ""}
 }
 
 // MarshalJSON writes the embedded fields without the password.
 func (ms maskedShared) MarshalJSON() ([]byte, error) {
 	s := ms.Shared
-	s.Password = ""
+	s.Password, s.ClusterPass = "", ""
 	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	extra, _ := json.Marshal(map[string]bool{"passwordSet": ms.PasswordSet})
+	extra, _ := json.Marshal(map[string]bool{"passwordSet": ms.PasswordSet, "clusterPassSet": ms.ClusterPassSet})
 	return append(b[:len(b)-1], append([]byte(","), extra[1:]...)...), nil
 }
 
@@ -173,6 +176,20 @@ func (m *Manager) HandleVIPShared(w http.ResponseWriter, r *http.Request) {
 	if s.Auth != vip.AuthPassword {
 		s.Password = ""
 	}
+	// The cluster password never comes from the page: keep the saved one, make
+	// one the first time auth=cluster is used, or replace it on request.
+	s.ClusterPass = old.ClusterPass
+	rotated := false
+	if s.Auth != vip.AuthCluster {
+		s.ClusterPass = ""
+	} else if s.ClusterPass == "" || r.PostForm.Get("rotateAuth") == "true" {
+		np, perr := NewVIPPassword()
+		if perr != nil {
+			writeErr(w, "cannot generate a password: "+perr.Error())
+			return
+		}
+		s.ClusterPass, rotated = np, true
+	}
 	if err := vip.ValidateShared(&s); err != nil {
 		vipWriteErr(w, err)
 		return
@@ -195,10 +212,11 @@ func (m *Manager) HandleVIPShared(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m.vipStatus.Invalidate()
-	pass := m.effectivePassword(&s)
+	// No fingerprint here: the audit log may be exported, and the fingerprint
+	// depends on the VRRP password.
 	m.vipAudit(r, "cluster.vip.shared", map[string]string{
 		"enabled": strconv.FormatBool(s.Enabled), "vip": s.VIP, "members": strconv.Itoa(len(s.Members)),
-		"transport": s.Transport, "auth": s.Auth, "fingerprint": vip.Fingerprint(&s, pass),
+		"transport": s.Transport, "auth": s.Auth, "authRotated": strconv.FormatBool(rotated),
 	})
 	writeJSON(w, "ok")
 }
@@ -258,7 +276,12 @@ func (m *Manager) vipPreflightEnv() *vip.PreflightEnv {
 }
 
 func vipHTTPGet(u string) (int, error) {
-	c := &http.Client{Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	// Like `curl -k` in the generated script: the probe goes to loopback, the
+	// node's own address or the floating IP, where the certificate name never
+	// matches. Only URLs built by ProbeTarget and vipReach reach this.
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, DisableKeepAlives: true}
+	defer tr.CloseIdleConnections()
+	c := &http.Client{Transport: tr, Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := c.Get(u)
 	if err != nil {
 		return 0, errors.New("no answer")
@@ -440,17 +463,30 @@ func netJoin(host, port string) string {
 type vipPeer struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
+	Self       bool   `json:"self,omitempty"`
 	Held       bool   `json:"held"`
 	Keepalived string `json:"keepalived"`
 	LastSeen   int64  `json:"lastSeen"`
+	// Stale: the follower has not reported within three sync intervals, so
+	// Held and Keepalived are old news and the page must not show them as current.
+	Stale bool `json:"stale,omitempty"`
+}
+
+// vipWindow is how long a follower report counts as current.
+func (m *Manager) vipWindow() int64 {
+	iv := m.Config().SyncIntervalSeconds
+	if iv <= 0 {
+		iv = 1
+	}
+	return int64(3 * iv)
 }
 
 // vipPeers lists the holders known to the primary. Split brain: more than one
 // node holds the VIP within three sync intervals.
 func (m *Manager) vipPeers(self vip.Status) ([]vipPeer, bool) {
 	now := m.opt.Now().Unix()
-	window := int64(3 * m.Config().SyncIntervalSeconds)
-	peers := []vipPeer{{ID: m.opt.NodeID, Name: m.opt.NodeName + " (this node)", Held: self.Held, Keepalived: string(self.KeepalivedUp), LastSeen: now}}
+	window := m.vipWindow()
+	peers := []vipPeer{{ID: m.opt.NodeID, Name: m.opt.NodeName, Self: true, Held: self.Held, Keepalived: string(self.KeepalivedUp), LastSeen: now}}
 	holders := 0
 	if self.Held {
 		holders++
@@ -459,19 +495,23 @@ func (m *Manager) vipPeers(self vip.Status) ([]vipPeer, bool) {
 		if n.VIP == nil {
 			continue
 		}
-		p := vipPeer{ID: n.ID, Name: n.Name, Held: n.VIP.Held, Keepalived: string(n.VIP.Keepalived), LastSeen: n.VIPSeen}
+		stale := now-n.VIPSeen > window
+		p := vipPeer{ID: n.ID, Name: n.Name, Held: n.VIP.Held, Keepalived: string(n.VIP.Keepalived), LastSeen: n.VIPSeen, Stale: stale}
 		peers = append(peers, p)
-		if n.VIP.Held && now-n.VIPSeen <= window {
+		if n.VIP.Held && !stale {
 			holders++
 		}
 	}
 	return peers, holders > 1
 }
 
-// peerHolding names a follower currently reported as holding the VIP.
+// peerHolding names a follower currently reported as holding the VIP. A
+// report older than the window is ignored.
 func (m *Manager) peerHolding() string {
+	now := m.opt.Now().Unix()
+	window := m.vipWindow()
 	for _, n := range m.Nodes() {
-		if n.VIP != nil && n.VIP.Held {
+		if n.VIP != nil && n.VIP.Held && now-n.VIPSeen <= window {
 			if n.Name != "" {
 				return n.Name
 			}

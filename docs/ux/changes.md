@@ -1202,3 +1202,16 @@ Known limits:
 * **Fleet hub and node** see the section as a normal editable node: the Fleet scope for these settings does not exist yet.
 * **Copy needs the browser's clipboard access** (HTTPS or localhost). Without it the text is selected and the page says to copy by hand.
 * Chromium was the only browser.
+
+## Floating IP (keepalived) for Cluster / HA
+
+Cluster / HA stays a first-class page. The Floating IP section was reviewed and corrected. Dunree still only generates configuration and reads status.
+
+* **VRRP password.** `auth=cluster` now uses a random password made once on the primary and synced in the encrypted snapshot, not one derived from the cluster secret (PASS is sent in clear). "Make a new password" rotates it. The settings fingerprint is no longer written to the audit log and hashes the password only through PBKDF2. Reading the generated file is audited (`cluster.vip.generate`).
+* **Generated file.** `state BACKUP` whenever preempt delay is used (keepalived ignored it with MASTER), `init_fail` on the health script, one chained install command (a failed `keepalived -t` stops the restart), IPv4 loopback probe for every VIP family, ufw notes for IPv6 (`before6.rules`, `ufw6-before-input`, `ff02::12`), a strict argv check of the probe command, `-health_port` must be a port or an IP. The port 80 probe is used only when that listener really runs next to TLS; a "reject unknown server names" proxy needs `-health_port`.
+* **Pre-flight and status.** The probe accepts self-signed certificates like `curl -k`. Follower reports older than three sync intervals read "No recent report"; the own row is flagged `self` and translated on the client.
+* **Page wording.** Split brain no longer says traffic arrives here; holders are red, the step 3 badge is amber. Failover is "expected after about X to Y s" (check time limit included) and points to the Verify tab; the fingerprint says "compare it on the other node". The step 3 tabs wrap at 390 px and the help button stays by the title.
+* **i18n.** `extract.py` now also reads strings nested in `+` operands; `tools/i18n/test_component_keys.py` guards `cluster.html` (63 strings were missing from `en.json`).
+* **Smoke.** `cluster_vip_smoke.py` covers split brain wording, stale reports, tabs at 390 px, and fails when an expected `cluster-vip-*.png` is missing.
+
+Known limits: not run against a real keepalived or two hosts (no binary here, the config test skips); the i18n guard covers only `cluster.html`, other pages (for example `waf.html`, `plugins.html`, template literals) still have strings the extractor misses; the PASS password stays readable on the VLAN.

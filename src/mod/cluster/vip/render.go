@@ -2,6 +2,7 @@ package vip
 
 import (
 	"bytes"
+	"crypto/pbkdf2"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/netip"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -40,16 +42,26 @@ type Output struct {
 	HealthURL       string   `json:"healthUrl"`
 }
 
-// Fingerprint is a short hash of the canonical shared settings plus the
-// effective authentication password, so two nodes can be compared at a glance.
+// fingerprintSalt keys the password part of the fingerprint.
+const fingerprintSalt = "dunree-vip-fp"
+
+// Fingerprint is a short hash of the canonical shared settings plus a slow,
+// keyed digest of the effective authentication password, so two nodes can be
+// compared at a glance. It never contains the password itself and it is not
+// written to the audit log: the password only enters through PBKDF2, so the
+// 32 bit value is no cheap check for a guessed password.
 func Fingerprint(s *Shared, effectivePassword string) string {
 	c := *s
-	c.Password = ""
+	c.Password, c.ClusterPass = "", ""
 	b, _ := json.Marshal(c)
 	h := sha256.New()
 	h.Write(b)
 	h.Write([]byte{0})
-	h.Write([]byte(effectivePassword))
+	if effectivePassword != "" {
+		if k, err := pbkdf2.Key(sha256.New, effectivePassword, []byte(fingerprintSalt), 20000, 16); err == nil {
+			h.Write(k)
+		}
+	}
 	return hex.EncodeToString(h.Sum(nil))[:8]
 }
 
@@ -59,10 +71,10 @@ func EffectivePassword(s *Shared, env *Env) (string, error) {
 	case AuthPassword:
 		return s.Password, nil
 	case AuthCluster:
-		if env.ClusterPassword == "" {
-			return "", errors.New("authentication is set to the cluster secret, but this node has no cluster secret")
+		if s.ClusterPass == "" {
+			return "", errors.New("authentication is set to the cluster password, but none has been generated yet; save the Floating IP settings on the primary")
 		}
-		return env.ClusterPassword, nil
+		return s.ClusterPass, nil
 	}
 	return "", nil
 }
@@ -107,10 +119,10 @@ func urlHost(h string) string {
 // separately from warnings.
 func ProbeTarget(s *Shared, l *Local, env *Env) (p probe, blockers []string, err error) {
 	vip := netip.MustParseAddr(s.VIP)
+	// The probe only asks the local Dunree, which listens on all addresses, so
+	// the address family of the VIP does not matter. Always IPv4 loopback: a
+	// host with IPv6 disabled on lo would otherwise never pass.
 	loop := "127.0.0.1"
-	if vip.Is6() {
-		loop = "::1"
-	}
 	f := env.Listener
 	if f.HealthDisabled {
 		blockers = append(blockers, "the health endpoint is switched off, so a probe would reach normal routing and mean nothing; switch it on")
@@ -141,22 +153,32 @@ func ProbeTarget(s *Shared, l *Local, env *Env) (p probe, blockers []string, err
 			break
 		}
 		if !isWildcardHost(h) {
-			if a, e := netip.ParseAddr(h); e == nil && a == vip {
+			a, e := netip.ParseAddr(h)
+			if e != nil {
+				blockers = append(blockers, "the -health_port host is not an IP address: use a port only (:8081) or an IP address")
+				break
+			}
+			if a == vip {
 				blockers = append(blockers, "the health listener is bound to the floating IP, so the probe fails on the standby node; bind it to all addresses or to the node's own address")
 				break
 			}
-			host = h
+			host = a.String()
 		} else {
 			host = loop
 		}
 		p.Base = "http://" + urlHost(host) + ":" + strconv.Itoa(port)
-	case f.Port80:
+	case f.Port80 && f.TLS:
+		// The plain HTTP listener only runs next to a TLS proxy listener.
 		hp := f.HTTPPort
 		if hp == 0 {
 			hp = 80
 		}
 		p.Base = "http://" + urlHost(host) + ":" + strconv.Itoa(hp)
 	case f.TLS && f.InboundPort > 0:
+		if f.RejectUnknownSNI {
+			blockers = append(blockers, "the proxy rejects unknown server names and the probe to 127.0.0.1 sends none; start Dunree with -health_port (for example :8081) or set a node-local health target")
+			break
+		}
 		p.Base = "https://" + urlHost(host) + ":" + strconv.Itoa(f.InboundPort)
 		p.TLS = true
 	case f.InboundPort > 0:
@@ -240,6 +262,7 @@ vrrp_script chk_dunree {
     timeout {{.Timeout}}
     fall {{.Fall}}
     rise {{.Rise}}
+    init_fail
 }
 
 vrrp_instance {{.InstanceName}} {
@@ -311,17 +334,55 @@ func checkRendered(d *tmplData) error {
 	if !reComment.MatchString(d.Label) {
 		return fmt.Errorf("render guard: label %q", d.Label)
 	}
-	// the script is a fixed command with a URL of validated parts
-	if !strings.HasPrefix(d.Script, "/usr/bin/curl -fsS --max-time ") {
-		return errors.New("render guard: script")
+	return checkScript(d.Script)
+}
+
+// checkScript requires the exact argv shape this generator emits:
+//
+//	/usr/bin/curl -fsS --max-time N [-k] -o /dev/null URL
+//
+// with N a number and URL one http(s) URL without whitespace, user info,
+// query or fragment. Anything else is an internal error.
+func checkScript(script string) error {
+	f := strings.Split(script, " ")
+	n := len(f)
+	if n != 7 && n != 8 {
+		return errors.New("render guard: script shape")
 	}
-	for _, f := range strings.Fields(d.Script) {
-		if !reToken.MatchString(f) {
-			return fmt.Errorf("render guard: script token %q", f)
+	fixed := []string{"/usr/bin/curl", "-fsS", "--max-time"}
+	for i, w := range fixed {
+		if f[i] != w {
+			return errors.New("render guard: script")
 		}
+	}
+	if v, err := strconv.Atoi(f[3]); err != nil || v < 1 || v > 60 || strconv.Itoa(v) != f[3] {
+		return errors.New("render guard: script time limit")
+	}
+	rest := f[4:]
+	if len(rest) == 4 {
+		if rest[0] != "-k" {
+			return errors.New("render guard: script flag")
+		}
+		rest = rest[1:]
+	}
+	if len(rest) != 3 || rest[0] != "-o" || rest[1] != "/dev/null" {
+		return errors.New("render guard: script output")
+	}
+	u := rest[2]
+	if !reToken.MatchString(u) || strings.ContainsAny(u, "?#@") {
+		return fmt.Errorf("render guard: script url %q", u)
+	}
+	pu, err := url.Parse(u)
+	if err != nil || (pu.Scheme != "http" && pu.Scheme != "https") || pu.Host == "" || pu.Path != HealthPath || pu.Port() == "" {
+		return fmt.Errorf("render guard: script url %q", u)
+	}
+	if _, err := netip.ParseAddr(strings.Trim(pu.Hostname(), "[]")); err != nil && !reHostName.MatchString(pu.Hostname()) {
+		return fmt.Errorf("render guard: script host %q", u)
 	}
 	return nil
 }
+
+var reHostName = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
 
 // Generate renders keepalived.conf for one member (section 3). member < 0
 // means this node. It is a pure function of its inputs.
@@ -407,6 +468,13 @@ func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
 		d.State, d.NoPreempt = "BACKUP", true
 	} else {
 		d.PreemptDelay = s.PreemptDelay
+		// keepalived only honours preempt_delay when the instance starts in
+		// BACKUP ("preempt delay will not work with initial state MASTER" and
+		// the config test exits 5). The priority still makes the highest
+		// member the normal owner.
+		if d.PreemptDelay > 0 {
+			d.State = "BACKUP"
+		}
 	}
 	if !d.V6 && s.Auth != AuthNone {
 		d.AuthType, d.AuthPass = "PASS", pass
@@ -484,9 +552,8 @@ func installCommands(conf string) string {
 	b.WriteString(conf)
 	b.WriteString(heredocDelim + "\n")
 	b.WriteString("sudo chmod 600 /etc/keepalived/keepalived.conf\n")
-	b.WriteString("sudo keepalived -t -f /etc/keepalived/keepalived.conf\n")
-	b.WriteString("sudo systemctl enable --now keepalived\n")
-	b.WriteString("sudo systemctl restart keepalived\n")
+	// one chained command: a failed config test must not start keepalived
+	b.WriteString("sudo keepalived -t -f /etc/keepalived/keepalived.conf && sudo systemctl enable keepalived && sudo systemctl restart keepalived\n")
 	return b.String()
 }
 
@@ -497,13 +564,17 @@ func verifyCommands(iface string) string {
 }
 
 func ufwNote(s *Shared, d *tmplData) string {
+	file, chain, group := "/etc/ufw/before.rules", "ufw-before-input", "224.0.0.18"
+	if d.V6 {
+		file, chain, group = "/etc/ufw/before6.rules", "ufw6-before-input", "ff02::12"
+	}
 	var b strings.Builder
-	b.WriteString("ufw is enabled on this host. ufw has no \"proto vrrp\" rule, so add the following to /etc/ufw/before.rules (before the final COMMIT), then run: sudo ufw reload\n")
+	b.WriteString("ufw is enabled on this host. ufw has no \"proto vrrp\" rule, so add the following to " + file + " (before the final COMMIT), then run: sudo ufw reload\n")
 	if d.Multicast {
-		b.WriteString("-A ufw-before-input -p vrrp -d 224.0.0.18 -j ACCEPT\n")
+		b.WriteString("-A " + chain + " -p vrrp -d " + group + " -j ACCEPT\n")
 	} else {
 		for _, p := range d.Peers {
-			b.WriteString("-A ufw-before-input -p vrrp -s " + p + " -j ACCEPT\n")
+			b.WriteString("-A " + chain + " -p vrrp -s " + p + " -j ACCEPT\n")
 		}
 	}
 	return b.String()

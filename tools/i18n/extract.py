@@ -145,6 +145,9 @@ def js_strings(src):
                         k2 += 1
                     nxt = re.match(r"\s*\+\s*['\"`]", src[k2:])
                     if k2 > k:
+                        # t("...") and friends inside the operand are strings of their own
+                        for t3, s3, e3 in js_strings(src[k:k2]):
+                            yield t3, k + s3, k + e3
                         txt += "\x00"
                         i = k2
                     if not nxt:

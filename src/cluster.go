@@ -210,9 +210,20 @@ func vipListenerFacts() vip.ListenerFacts {
 	f := vip.ListenerFacts{HealthPort: *healthPort}
 	if dynamicProxyRouter != nil {
 		o := dynamicProxyRouter.Option
-		f.InboundPort, f.TLS, f.Port80 = o.Port, o.UseTls, o.ListenOnPort80
+		f.InboundPort, f.TLS = o.Port, o.UseTls
 		if _, port, err := dynamicproxy.ParseHttpListenAddr(dynamicProxyRouter.HttpListenAddr()); err == nil {
 			f.HTTPPort = port
+		}
+		// The plain HTTP listener only starts next to a TLS listener and when
+		// its port differs from the main one (StartProxyService); a stored
+		// listenOnPort80=true alone does not mean something answers on :80.
+		hp := f.HTTPPort
+		if hp == 0 {
+			hp = 80
+		}
+		f.Port80 = o.UseTls && o.ListenOnPort80 && hp != o.Port
+		if tlsCertManager != nil {
+			f.RejectUnknownSNI = tlsCertManager.RejectUnknownSNI.Load()
 		}
 	}
 	return f

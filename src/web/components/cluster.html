@@ -47,6 +47,9 @@
     #clusterPage .vipStep > .zx-card__head { flex-wrap: nowrap; align-items: flex-start; }
     #clusterPage .vipStep > .zx-card__head .zx-card__title { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-1) var(--zx-space-3); padding-top: 2px; }
     #clusterPage .vipStep > .zx-card__desc { padding-left: calc(var(--zx-card-pad) + 26px + var(--zx-space-3)); max-width: 52rem; }
+    #clusterPage .vipTitleRow { display: inline-flex; align-items: center; gap: var(--zx-space-2); white-space: nowrap; }
+    #clusterPage .vipTopo__member.is-split { border-color: var(--zx-danger-line); background: var(--zx-danger-bg); }
+    #clusterPage .vipTopo__member.is-split .vipTopo__sub { color: var(--zx-text); }
     #clusterPage .vipSub { margin: var(--zx-space-5) 0 var(--zx-space-1); font-size: var(--zx-fs-md); font-weight: 700; color: var(--zx-text); }
     #clusterPage .vipSub:first-child { margin-top: 0; }
     #clusterPage .vipSubDesc { margin: 0 0 var(--zx-space-3); max-width: 52rem; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); }
@@ -106,6 +109,8 @@
         #clusterPage .vipCheck { grid-template-columns: 28px minmax(0, 1fr); }
         #clusterPage .vipCheck > .zx-badge { grid-column: 2; justify-self: start; }
         #clusterPage .vipCheck__msg { grid-column: 2; }
+        #clusterPage #vipTabs { flex-wrap: wrap; overflow: visible; }
+        #clusterPage #vipTabs .zx-tab { padding: 9px 10px; }
     }
     @media (max-width: 480px) {
         #clusterPage .zx-card .zx-table tbody tr { border: 0; border-bottom: 1px solid var(--zx-border); border-radius: 0; box-shadow: none; background: transparent; margin: 0; }
@@ -163,8 +168,8 @@
         <div class="cx-status__top">
             <span class="cx-status__icon" aria-hidden="true"><i class="exchange icon"></i></span>
             <div class="cx-status__text">
-                <div class="cx-status__title" role="heading" aria-level="3"><span id="vipTitle">Floating IP</span> <span class="zx-badge zx-badge--dot" id="vipBadge" hidden></span>
-                    <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="vipWhat" aria-label="More about the floating IP">?</button></div>
+                <div class="cx-status__title" role="heading" aria-level="3"><span class="vipTitleRow"><span id="vipTitle">Floating IP</span>
+                    <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="vipWhat" aria-label="More about the floating IP">?</button></span> <span class="zx-badge zx-badge--dot" id="vipBadge" hidden></span></div>
                 <div class="zx-popover" id="vipWhat" role="note" hidden>Each node keeps its own static address. keepalived (VRRP) puts one more address, the floating IP, on the node that is healthy, and moves it when that node or Dunree on it stops answering. Dunree writes the keepalived configuration and the commands for you and shows the status. It never changes keepalived, your firewall or the network settings of this host: you run the commands yourself. Guide: <code>docs/guides/floating-ip-keepalived.md</code>.</div>
                 <p class="cx-status__desc" id="vipDesc">Two nodes keep their own addresses. A third address in the same subnet moves to the node that is healthy, and your firewall always points at it. Off by default.</p>
             </div>
@@ -300,11 +305,15 @@
                         <div class="zx-field">
                             <label class="zx-field__label" for="vipAuth">Authentication</label>
                             <select id="vipAuth" class="zx-select" data-vip-field="auth">
-                                <option value="cluster">Derived from the cluster secret</option>
+                                <option value="cluster">Random password, shared by the cluster</option>
                                 <option value="password">Password</option>
                                 <option value="none">None</option>
                             </select>
                             <p class="zx-help" id="vipAuthHelp"></p>
+                        </div>
+                        <div class="zx-field zx-field--wide" id="vipRotateRow" hidden>
+                            <button type="button" class="zx-btn zx-btn--secondary" id="vipRotateBtn"><i class="sync icon" aria-hidden="true"></i> Make a new password</button>
+                            <p class="zx-help">keepalived sends this password unencrypted in every VRRP message, so anyone on the VLAN can read it. It is random and not derived from the cluster secret. Make a new one if you think it leaked, then install the configuration again on every node.</p>
                         </div>
                         <div class="zx-field zx-field--wide" id="vipPassRow" hidden>
                             <label class="zx-field__label" for="vipPass">VRRP password <span class="zx-field__optional" id="vipPassState"></span></label>
@@ -848,6 +857,7 @@
     // vc = GET vip/config, vs = GET vip/status. The settings form is filled when it opens and never overwritten by the polling.
     const VIP = "./api/cluster/vip/";
     let vc = null, vs = null, vipEditing = false, vipChecks = null, vipCheckNote = "", vipGen = null, vipGenKey = "", vipGenSeq = 0, vipNics = null, vipLocalDirty = false, vipFormMembers = [];
+    function escAttr(s){ return esc(s).split("'").join("&#39;"); }   //esc() for a single-quoted attribute (no regex literal with a quote: the i18n extractor lexes the script)
     function cap(s){ s = String(s == null ? "" : s); return s.charAt(0).toUpperCase() + s.slice(1); }
     function ip4(s){
         let m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(String(s == null ? "" : s).trim());
@@ -867,11 +877,20 @@
         return out;
     }
     //The node the primary knows to hold the address, when that is not this node ("" = not known)
+    //A report older than three sync intervals (stale) says nothing about now.
     function vipOtherHolder(){
         let peers = (vs && vs.peers) || [];
-        for (let i = 1; i < peers.length; i++) if (peers[i].held) return peers[i].name || peers[i].id;
+        for (let i = 1; i < peers.length; i++) if (peers[i].held && !peers[i].stale) return peers[i].name || peers[i].id;
         return "";
     }
+    //held / standby / not known / no recent report, for one entry of vs.peers
+    function vipPeerState(p, split){
+        if (p.stale) return dot("warn", t("No recent report"));
+        if (p.held) return dot(split ? "danger" : "ok", t("Holds it"));
+        if (p.keepalived == "yes") return dot("", t("Standby"));
+        return dot("", t("Not known"));
+    }
+    function vipFailSecs(s){ let lo = s.health.interval * s.health.fall; return [lo, lo + s.health.timeout]; }
     function vipFact(){
         if (!vc) return "";
         let s = vipShared(), stat = (vs && vs.status) || {};
@@ -897,20 +916,22 @@
         } else {
             let self = vipSelfAddr(), members = s.members.slice().sort(function(a, b){ return b.priority - a.priority; });
             let others = ((vs && vs.peers) || []).slice(1), otherMembers = members.filter(function(m){ return m.address != self; });
-            let vsub = !on ? t("switched off") : !reach ? "" : reach.code == 200 ? (reach.local ? t("answered by this node") : tf("another node answers in {0} ms", reach.latencyMs || 0)) : reach.code ? tf("answers HTTP {0}", reach.code) : t("no answer on the health check port");
+            let split = !!(vs && vs.splitBrain);
+            let vsub = !on ? t("switched off") : split ? t("held by more than one node") : !reach ? "" : reach.code == 200 ? (reach.local ? t("answered by this node") : tf("another node answers in {0} ms", reach.latencyMs || 0)) : reach.code ? tf("answers HTTP {0}", reach.code) : t("no answer on the health check port");
             let holder = "";
             let tiles = members.map(function(m, i){
                 let isSelf = m.address == self, badge = "", held = false;
+                let stale = false;
                 if (on && isSelf) held = !!stat.held;
-                else if (on && others.length == 1 && otherMembers.length == 1) held = !!others[0].held;
+                else if (on && others.length == 1 && otherMembers.length == 1) { stale = !!others[0].stale; held = stale ? null : !!others[0].held; }
                 else if (on) held = null;
-                if (on) badge = held ? dot("ok", t("Holds the floating IP")) : held === false ? dot("", t("Standby")) : dot("", t("Not reported here"));
-                if (held) holder = m.label;
-                return topoBox("vipTopo__member" + (held ? " is-holder" : ""), "server", m.label + (isSelf ? " · " + t("this node") : ""), m.address, tf("priority {0}", m.priority) + (i == 0 ? ", " + t("preferred") : ""), badge);
+                if (on) badge = stale ? dot("warn", t("No recent report")) : held ? dot(split ? "danger" : "ok", split ? t("Holds it too") : t("Holds the floating IP")) : held === false ? dot("", t("Not holding it")) : dot("", t("Not reported here"));
+                if (held && !holder) holder = m.label;
+                return topoBox("vipTopo__member" + (held ? (split ? " is-split" : " is-holder") : ""), "server", m.label + (isSelf ? " · " + t("this node") : ""), m.address, tf("priority {0}", m.priority) + (i == 0 ? ", " + t("preferred") : ""), badge);
             }).join("");
             html = topoBox("", "shield alternate", t("Your firewall"), t("Port forward"), tf("points at {0}", s.vip)) + arrow +
                 topoBox("vipTopo__vip", "exchange", t("Floating IP"), s.vip + "/" + s.prefix, vsub) + arrow + "<div class='vipTopo__members'>" + tiles + "</div>";
-            label = holder ? tf("Your firewall points at the floating IP {0}. {1} holds it.", s.vip, holder) : tf("Your firewall points at the floating IP {0}.", s.vip);
+            label = split ? tf("Your firewall points at the floating IP {0}. More than one node holds it.", s.vip) : holder ? tf("Your firewall points at the floating IP {0}. {1} holds it.", s.vip, holder) : tf("Your firewall points at the floating IP {0}.", s.vip);
         }
         $("#vipTopo").html(html).attr("aria-label", label);
     }
@@ -934,9 +955,11 @@
             else if (stat.installedConfigMatches == "no") { kind = "warn"; word = t("Settings changed since the configuration was installed"); }
             else if (stat.held) { kind = "ok"; word = t("Active on this node"); }
             else { word = t("Standby"); }
-            desc = notMember ? tf("{0} is set up, but this host is not one of its nodes, so it cannot take the address.", s.vip) : stat.held ? tf("This node holds {0} on {1}. Traffic from your firewall arrives here.", s.vip, stat.heldInterface || stat.interface || "?")
-                : other ? tf("{0} holds {1}. This node is on standby and takes over when that node or Dunree on it stops answering.", other, s.vip)
-                : tf("This node does not hold {0}. It takes over when the active node or Dunree on it stops answering.", s.vip);
+            desc = notMember ? tf("{0} is set up, but this host is not one of its nodes, so it cannot take the address.", s.vip)
+                : split ? tf("More than one node holds {0}. Traffic may go to either node.", s.vip)
+                : stat.held ? tf("This node holds {0} on {1}. If your port forward points at {0}, traffic arrives here.", s.vip, stat.heldInterface || stat.interface || "?")
+                : other ? tf("{0} holds {1}. This node is on standby and should take over if that node or Dunree on it stops answering. Only the Verify tab proves it.", other, s.vip)
+                : tf("This node does not hold {0}. It should take over if the active node or Dunree on it stops answering, once keepalived runs the generated configuration.", s.vip);
         }
         $("#vipCard").attr("data-vip-state", !vc.exists ? "new" : on ? "on" : "off").attr("data-state", kind || null);
         $("#vipBadge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).text(word).prop("hidden", !word);
@@ -954,7 +977,8 @@
         let facts = "";
         if (on && vs) {
             let reach = stat.reach;
-            facts += stat.held ? fact("Held by", t("This node"), "ok", tf("on {0}", stat.heldInterface || stat.interface || "?"))
+            facts += split ? fact("Held by", t("More than one node"), "danger", t("see the table below"))
+                : stat.held ? fact("Held by", t("This node"), "ok", tf("on {0}", stat.heldInterface || stat.interface || "?"))
                 : other ? fact("Held by", other, "", t("as reported to this primary"))
                 : fact("Held by", t("Not this node"), reach && reach.code == 200 ? "" : "warn", reach && reach.code == 200 ? t("another node answers on it") : t("nothing answers on it yet"));
             let ka = stat.keepalivedInstalled == "no" ? fact("keepalived", t("Not installed"), "warn", t("see step 3"))
@@ -965,20 +989,21 @@
             facts += stat.installedConfigMatches == "yes" ? fact("Installed configuration", t("Up to date"))
                 : stat.installedConfigMatches == "no" ? fact("Installed configuration", t("Out of date"), "warn", t("install it again, step 3"))
                 : fact("Installed configuration", t("Not readable"), "muted", t("normal: only root can read the file"));
-            facts += fact("Health check", tf("Every {0} s", s.health.interval), "", tf("fails over after about {0} s", s.health.interval * s.health.fall));
+            let fs = vipFailSecs(s);
+            facts += fact("Health check", tf("Every {0} s", s.health.interval), "", tf("failover expected after about {0} to {1} s", fs[0], fs[1]));
         }
-        if (vc.exists && vc.fingerprint) facts += fact("Settings fingerprint", vc.fingerprint, "", t("the same on every node"));
+        if (vc.exists && vc.fingerprint) facts += fact("Settings fingerprint", vc.fingerprint, "", t("compare it on the other node"));
         $("#vipFacts").html(facts);
     }
 
     function vipRenderSummary(){
         let s = vipShared(), members = (s.members || []).slice().sort(function(a, b){ return b.priority - a.priority; });
         function kv(k, v, small){ return "<dt>" + esc(t(k)) + "</dt><dd>" + esc(v) + (small ? "<div class='cx-cell__sub'>" + esc(small) + "</div>" : "") + "</dd>"; }
-        let auth = s.auth == "cluster" ? t("Derived from the cluster secret") : s.auth == "password" ? (s.passwordSet ? t("Password, set") : t("Password, not set")) : t("None");
+        let auth = s.auth == "cluster" ? t("Random password, shared by the cluster") : s.auth == "password" ? (s.passwordSet ? t("Password, set") : t("Password, not set")) : t("None");
         $("#vipSummary").html(
             kv("Floating IP", s.vip ? s.vip + "/" + s.prefix : "-") +
             "<dt>" + esc(t("Nodes")) + "</dt><dd>" + (members.map(function(m, i){ return "<div>" + esc(m.label) + " · " + esc(m.address) + " <span class='cx-cell__sub'>" + esc(tf("priority {0}", m.priority) + (i == 0 ? ", " + t("preferred") : "")) + "</span></div>"; }).join("") || "-") + "</dd>" +
-            kv("Failover", tf("After about {0} s without an answer from Dunree", s.health.interval * s.health.fall), tf("checked every {0} s, {1} failed checks", s.health.interval, s.health.fall)) +
+            kv("Failover", tf("After about {0} to {1} s without an answer from Dunree", vipFailSecs(s)[0], vipFailSecs(s)[1]), tf("checked every {0} s, {1} failed checks, {2} s time limit", s.health.interval, s.health.fall, s.health.timeout)) +
             kv("Taking it back", s.preempt ? tf("The preferred node takes it back after {0} s of being healthy", s.preemptDelay) : t("Whoever holds it keeps it")) +
             kv("VRRP", tf("Router ID {0}, {1}", s.vrid, s.transport == "multicast" ? t("multicast") : t("unicast")), tf("authentication: {0}", auth)));
     }
@@ -987,12 +1012,12 @@
         let id = "vipM" + i;
         function f(key, label, attrs, help, opt){
             return "<div class='zx-field'><label class='zx-field__label' for='" + id + key + "'>" + esc(t(label)) + (opt ? " <span class='zx-field__optional'>" + esc(t("optional")) + "</span>" : "") + "</label>" +
-                "<input id='" + id + key + "' class='zx-input' data-vip-field='members[" + i + "]." + key + "' data-key='" + key + "' autocomplete='off' spellcheck='false' " + attrs + " value='" + esc(m[key] == null || m[key] === 0 ? "" : m[key]).replace(/'/g, "&#39;") + "'>" +
+                "<input id='" + id + key + "' class='zx-input' data-vip-field='members[" + i + "]." + key + "' data-key='" + key + "' autocomplete='off' spellcheck='false' " + attrs + " value='" + escAttr(m[key] == null || m[key] === 0 ? "" : m[key]) + "'>" +
                 (key == "address" ? "<p class='vipHint' hidden></p>" : "") + (help ? "<p class='zx-help'>" + esc(t(help)) + "</p>" : "") + "</div>";
         }
-        return "<div class='vipMember' role='group' aria-label='" + esc(tf("Node {0}", i + 1)).replace(/'/g, "&#39;") + "' data-i='" + i + "'>" +
+        return "<div class='vipMember' role='group' aria-label='" + escAttr(tf("Node {0}", i + 1)) + "' data-i='" + i + "'>" +
             "<div class='vipMember__head'><span>" + esc(tf("Node {0}", i + 1)) + "</span><span class='zx-badge zx-badge--info vipMSelf' hidden>" + esc(t("This node")) + "</span><span class='zx-badge vipMPref' hidden>" + esc(t("Preferred")) + "</span>" +
-            (n > 2 ? "<button type='button' class='zx-btn zx-btn--ghost zx-btn--sm vipMRemove' aria-label='" + esc(tf("Remove node {0}", i + 1)).replace(/'/g, "&#39;") + "'><i class='trash alternate outline icon' aria-hidden='true'></i></button>" : "") + "</div>" +
+            (n > 2 ? "<button type='button' class='zx-btn zx-btn--ghost zx-btn--sm vipMRemove' aria-label='" + escAttr(tf("Remove node {0}", i + 1)) + "'><i class='trash alternate outline icon' aria-hidden='true'></i></button>" : "") + "</div>" +
             "<div class='vipMember__grid'>" +
             f("address", "Address", "placeholder='192.0.2." + (11 + i) + "' inputmode='decimal'", "") +
             f("label", "Name", "maxlength='32' placeholder='node-" + String.fromCharCode(97 + i) + "'", "") +
@@ -1026,12 +1051,13 @@
             el.find(".vipMPref").prop("hidden", i != best);
         });
         $("#vipAddrHint").prop("hidden", !clash).attr("class", "vipHint is-danger").text(clash ? t("A node already uses this address. The floating IP has to be a third address.") : "");
-        let secs = num("#vipHInterval") * num("#vipHFall");
-        $("#vipFailSentence").text(secs > 0 ? tf("A node whose Dunree stops answering gives up the floating IP after about {0} seconds, and the other node takes it.", secs) : "");
+        let secs = num("#vipHInterval") * num("#vipHFall"), secsMax = secs + num("#vipHTimeout");
+        $("#vipFailSentence").text(secs > 0 ? tf("A node whose Dunree stops answering should give up the floating IP after about {0} to {1} seconds, and the other node should take it.", secs, secsMax) : "");
         $("#vipPreemptDelayRow").prop("hidden", !$("#vipPreempt").is(":checked"));
         let auth = $("#vipAuth").val();
         $("#vipPassRow").prop("hidden", auth != "password");
-        $("#vipAuthHelp").text(auth == "cluster" ? (vc && vc.haveSecret ? t("The same on every node with the same cluster secret. Nothing to type.") : t("Needs a cluster secret: set one in the Cluster secret card first."))
+        $("#vipRotateRow").prop("hidden", !(auth == "cluster" && vc && vc.exists && vipShared().auth == "cluster" && vipShared().clusterPassSet));
+        $("#vipAuthHelp").text(auth == "cluster" ? (vc && vc.haveSecret ? t("Made once on the primary and sent to the other nodes with the settings. Nothing to type.") : t("Needs a cluster secret: set one in the Cluster secret card first."))
             : auth == "password" ? t("Type the same password on every node.") : t("Any VRRP device on the VLAN with the same router ID can interfere."));
     }
     function vipGenPass(){
@@ -1044,7 +1070,7 @@
         $(scope).find(".zx-field.is-invalid").each(function(){ $(this).removeClass("is-invalid").find("[aria-invalid]").removeAttr("aria-invalid aria-describedby"); });
     }
     function vipFieldError(attr, field, text){
-        let el = $("[" + attr + "='" + String(field).replace(/'/g, "") + "']").first();
+        let el = $("[" + attr + "='" + String(field).split("'").join("") + "']").first();
         if (field == "members") { $("[data-vip-field-row=members]").addClass("is-invalid").find(".zx-error").text(cap(text)); $("#vipMembers")[0].scrollIntoView({block: "center"}); return true; }
         if (!el.length) return false;
         el.closest("details").prop("open", true);
@@ -1088,13 +1114,14 @@
             health: {interval: num("#vipHInterval"), timeout: num("#vipHTimeout"), fall: num("#vipHFall"), rise: num("#vipHRise")}, notifyLog: $("#vipNotify").is(":checked"), garpRefresh: num("#vipGarp")};
     }
     //POST the shared settings. A primary with followers of another version asks once more before the settings join the snapshot.
-    function vipSaveShared(cfg, password, done, ack){
+    function vipSaveShared(cfg, password, done, ack, rotate){
         let data = {config: JSON.stringify(cfg), password: password || ""};
         if (ack) data.ackOldFollowers = "true";
+        if (rotate) data.rotateAuth = "true";
         $.cjax({method: "POST", url: VIP + "shared", data: data, success: function(d){
             if (d && d.oldFollowers) {
                 ZxUI.confirm({title: t("Some followers run another version"), message: tf("These followers may refuse the whole configuration sync until they are updated, because it now carries the floating IP settings: {0}. Update them first, or go on if they already run this version.", d.oldFollowers.join(", ")), confirmLabel: t("Save anyway"), danger: true})
-                    .then(function(ok){ if (ok) vipSaveShared(cfg, password, done, true); });
+                    .then(function(ok){ if (ok) vipSaveShared(cfg, password, done, true, rotate); });
                 return;
             }
             if (d && d.error) {
@@ -1107,7 +1134,7 @@
     }
     function vipSharedForToggle(on){
         let s = $.extend(true, {}, vipShared());
-        delete s.passwordSet; delete s.password;
+        delete s.passwordSet; delete s.password; delete s.clusterPassSet;
         s.enabled = on;
         return s;
     }
@@ -1173,7 +1200,7 @@
         $("#vipBlocked").prop("hidden", !(g && g.error));
         $("#vipGenOk").prop("hidden", !ok);
         $("#vipGenWarn").prop("hidden", !(ok && (g.warnings || []).length));
-        let stat = (vs && vs.status) || {}, kind = "", word = "";
+        let stat = (vs && vs.status) || {}, kind = "", word = "", split = !!(vs && vs.splitBrain);
         if (g && g.error) {
             $("#vipBlockers").html((g.blockers && g.blockers.length ? g.blockers : [g.error]).map(function(b){ return "<li>" + esc(cap(b)) + "</li>"; }).join(""));
             kind = "danger"; word = t("Cannot be written yet");
@@ -1185,10 +1212,10 @@
             $("#vipStep3 .vipForName").text(g.member || "");
             $("#vipDownload").attr("href", VIP + "generate?member=" + encodeURIComponent($("#vipGenFor").val() || "self") + "&download=1");
             let s = vipShared();
-            $("#vipNatAddr").text(s.vip || ""); $("#vipVerifySecs").text(s.health.interval * s.health.fall);
+            $("#vipNatAddr").text(s.vip || ""); $("#vipVerifySecs").text(vipFailSecs(s)[0] + " to " + vipFailSecs(s)[1]);
             if (stat.keepalivedInstalled == "no") word = t("Not installed on this node yet");
             else if (stat.installedConfigMatches == "no") { kind = "warn"; word = t("Install it again: the settings changed"); }
-            else if (stat.keepalivedRunning == "yes") { kind = "ok"; word = t("Running on this node"); }
+            else if (stat.keepalivedRunning == "yes") { kind = split ? "warn" : "ok"; word = split ? t("Running, split brain") : t("Running on this node"); }
             else if (stat.keepalivedRunning == "no") { kind = "warn"; word = t("Installed, not running"); }
         }
         $("#vipStep3Badge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).text(word).prop("hidden", !word);
@@ -1207,9 +1234,9 @@
         $("#vipPeersWrap").prop("hidden", !show);
         if (!show) return;
         $("#vipPeers").html(peers.map(function(p){
-            let ka = p.keepalived == "yes" ? dot("ok", t("Running")) : p.keepalived == "no" ? dot("warn", t("Not running")) : "<span class='cx-no'>" + esc(t("Not known")) + "</span>";
-            return "<tr><td data-label='" + esc(t("Node")) + "'><span class='cx-cell__main'>" + esc(p.name || p.id) + "</span></td>" +
-                "<td data-label='" + esc(t("Floating IP")) + "'>" + (p.held ? dot("ok", t("Holds it")) : dot("", t("Standby"))) + "</td>" +
+            let ka = p.stale ? "<span class='cx-no'>" + esc(t("No recent report")) + "</span>" : p.keepalived == "yes" ? dot("ok", t("Running")) : p.keepalived == "no" ? dot("warn", t("Not running")) : "<span class='cx-no'>" + esc(t("Not known")) + "</span>";
+            return "<tr><td data-label='" + esc(t("Node")) + "'><span class='cx-cell__main'>" + esc(p.name || p.id) + (p.self ? " · " + esc(t("this node")) : "") + "</span></td>" +
+                "<td data-label='" + esc(t("Floating IP")) + "'>" + vipPeerState(p, !!(vs && vs.splitBrain)) + "</td>" +
                 "<td data-label='keepalived'>" + ka + "</td><td data-label='" + esc(t("Last report")) + "'>" + esc(ago(p.lastSeen)) + "</td></tr>";
         }).join(""));
     }
@@ -1260,6 +1287,11 @@
         vipRenderMembers(m);
     });
     $("#vipPassGen").on("click", vipGenPass);
+    $("#vipRotateBtn").on("click", function(){
+        ZxUI.confirm({title: t("Make a new VRRP password?"), message: t("The nodes stop hearing each other until the new configuration is installed on every node. Do this one node at a time and check the Verify tab afterwards."), confirmLabel: t("Make a new password"), danger: true}).then(function(ok){
+            if (ok) vipSaveShared(vipSharedForToggle(!!vipShared().enabled), "", function(){ vipEditing = false; vipGenKey = ""; msg(t("New VRRP password made. Install the configuration again on every node.")); vipLoad(function(){ if (vipOn()) vipRunChecks(); }); }, false, true);
+        });
+    });
     $("#vipSaveBtn").on("click", function(){
         vipClearErrors("#vipForm");
         $("[data-vip-field-row=members]").removeClass("is-invalid");
