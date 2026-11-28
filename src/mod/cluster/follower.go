@@ -44,6 +44,13 @@ type followerStatus struct {
 	FleetScopes []string            `json:"fleetScopes,omitempty"`
 	Conflicts   []Conflict          `json:"conflicts,omitempty"`
 	FleetGroup  string              `json:"fleetGroup,omitempty"`
+
+	// The hub answered 401 or 404 to this node's last authenticated request:
+	// the node was removed or revoked, the hub role is off, or the clocks
+	// differ too much. Cleared by the first accepted request. The node never
+	// leaves on its own: this only tells the admin.
+	HubRejected      bool  `json:"hubRejected,omitempty"`
+	HubRejectedSince int64 `json:"hubRejectedSince,omitempty"`
 }
 
 func (m *Manager) followerStateFile() string {

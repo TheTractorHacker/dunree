@@ -491,6 +491,13 @@ func (h *Hub) RotateNode(by, id string) error {
 	return h.saveLocked()
 }
 
+// NodeCount is the number of nodes enrolled at this hub (revoked ones included).
+func (h *Hub) NodeCount() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.st.Nodes)
+}
+
 // RemoveNode deletes the node record (its credentials stop working).
 func (h *Hub) RemoveNode(by, id string) error {
 	h.mu.Lock()

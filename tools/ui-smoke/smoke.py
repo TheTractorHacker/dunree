@@ -3043,8 +3043,14 @@ def _network_system_body(pg, ctx, args, after, shot, dialogs, api, toast_text, w
     # Cluster page while this node is a hub: the roles look and are locked
     current["page"] = "netsys/cluster"
     go("cluster", 1200)
-    if not pg.locator("input[name=clRole]").first.is_disabled() or not pg.is_visible("#clFleetLock"):
-        fail("cluster", "as a Fleet hub the Cluster roles must be locked with an explanation")
+    # (the full flow with a hub and two nodes is fleet_cluster_run.sh)
+    pg.wait_for_function("document.getElementById('clStatusTitle').innerText == 'This node is the Fleet hub'", timeout=4000)  # opened from the menu: never the old role
+    if pg.locator("input[name=clRole]").first.is_visible() or pg.is_visible("#clSaveBtn") or not pg.is_visible("#clFleetLock") or not pg.is_visible("#clRoleLocked"):
+        fail("cluster", "as a Fleet hub the role choice must be replaced by one sentence, with the reason in the status header")
+    if pg.inner_text("#clFleetLockBtn").strip() != "Stop being a hub":
+        fail("cluster", "as a Fleet hub the status header must offer the one way out: Stop being a hub")
+    if pg.locator("#clusterPage .zx-pagetabs, #fleetPage .zx-pagetabs").count():
+        fail("cluster", "Fleet and Cluster / HA are two pages: the cross-link tab strip is back")
     wraps = pg.evaluate("[...document.querySelectorAll('#clusterPage code.nobreak')].map(c => c.getClientRects().length)")
     if not wraps or any(n > 1 for n in wraps):
         fail("cluster", f"a flag like -health_port must not break across lines: {wraps}")

@@ -17,6 +17,17 @@ This file has two parts. The first part is the Dunree version line, which starts
 + A status that cannot be read for about 10 seconds is shown as such instead of as the last good state.
 + Servers that are not linked now show their progress too (the script leaves the floating IP and the other servers' addresses in its marker file), a server whose Dunree answers 503 reads "health check fails", and a server set up with the classic commands counts as set up.
 
+**Fleet and Cluster / HA are two separate pages**
+
++ The "Fleet | Cluster / HA" tab strip at the top of both pages is gone. Each page is opened from its own entry in the menu (Fleet & HA). Fleet keeps its own sections (Nodes, Join nodes, ...).
++ Cluster / HA always says in one sentence what this node is: on its own, primary, follower, the Fleet hub (with the number of nodes) or managed by a Fleet hub (with its address). While Fleet owns the role, one box says why primary and follower are off and has the one button that ends it: "Stop being a hub" or "Leave Fleet". Both ask first. The greyed-out role choice and the dead "Save role" button are gone.
++ A node that the hub removed, or whose hub was switched off, now says so: "The hub no longer accepts this node", on both pages, with "Leave Fleet" as the way out. Before, it kept saying "In sync" for up to a minute and then only "Last sync failed", forever. The node never leaves by itself.
++ Neither page shows an old role any more. Both read the state again when they are opened from the menu, when the browser window comes back, and right after a role change made on the other page. The "Managed by hub" and "cluster follower" banners above every page now disappear without a reload.
++ Leaving a Fleet forgets the hub's address (it used to come back as the "Primary admin URL").
++ An unsaved edit in the health card no longer freezes the role choice.
++ On a Fleet node, setting a cluster secret is a closed, optional section.
++ Known limits: the hub cannot tell a node that it was removed; the node finds out the next time it contacts the hub (heartbeat, 20 seconds by default) and until then shows its last state. The node cannot tell "removed" from "hub switched off", "wrong hub address" or "clocks out of sync" (the hub answers all of them the same way), so the message names the likely causes and leaving stays a manual step. A node that left on its own stays in the hub's list as offline until you remove it there. "Stop being a hub" keeps the hub's nodes, groups and versions, so switching the hub role on again brings the nodes back.
+
 **Installer script (generated, never run by Dunree)**
 
 + A health check address that another server reports goes into its script only when it is that server's own loopback or own address (an attacker on the LAN could point the failover check at a host of their choice). Host names are no longer accepted in the generated check.

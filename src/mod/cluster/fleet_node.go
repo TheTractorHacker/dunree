@@ -187,6 +187,7 @@ func (m *Manager) Join(ctx context.Context, jr JoinRequest) error {
 	}
 	m.mu.Lock()
 	m.status.FleetGroup = res.Group
+	m.status.HubRejected, m.status.HubRejectedSince = false, 0
 	m.saveStatusLocked()
 	m.mu.Unlock()
 	m.opt.Logf("[fleet] joined hub %s as node %s (group %s)", hubURL, m.opt.NodeID, res.Group)
@@ -199,13 +200,17 @@ func (m *Manager) Leave() error {
 	if m.Role() != RoleNode {
 		return errors.New("this node is not part of a fleet")
 	}
-	role := RoleStandalone
-	if err := m.Update(ConfigUpdate{Role: &role}); err != nil {
+	// the hub address goes with the membership: kept, it would come back as
+	// the "primary admin URL" of a node that is later made a follower
+	role, none := RoleStandalone, ""
+	if err := m.Update(ConfigUpdate{Role: &role, PrimaryURL: &none, PrimaryFingerprint: &none}); err != nil {
 		return err
 	}
 	os.Remove(m.nodeCredFile())
 	m.mu.Lock()
 	m.creds = nodeCreds{}
+	m.status.HubRejected, m.status.HubRejectedSince = false, 0
+	m.status.LastError, m.status.LastResult = "", ""
 	m.status.Managed, m.status.ManagedHash, m.status.FleetScopes, m.status.Conflicts = nil, "", nil, nil
 	m.status.AppliedHash, m.status.AttemptHash = "", ""
 	m.saveStatusLocked()
@@ -228,6 +233,44 @@ func (m *Manager) fleetRequest(ctx context.Context, cfg Config, method, p string
 	req.Header.Set("Authorization", "Bearer "+MakeToken(c.NodeKey, method, p, m.opt.NodeID, m.opt.Now()))
 	req.Header.Set("User-Agent", wirecompat.UserAgent("dunree-fleet/"+m.opt.Version, "zoraxy-fleet/"+m.opt.Version))
 	return req, nil
+}
+
+// hubRejectedMsg is what the node shows when the hub refuses its credentials.
+const hubRejectedMsg = "hub rejected this node (revoked, removed, hub switched off, wrong hub URL or clock out of sync)"
+
+// noteHubAnswer records whether the hub still accepts this node, from the
+// HTTP status of an authenticated request. 401 (unknown, removed or revoked
+// node, clock out of sync) and 404 (hub role off) mark the node as rejected;
+// an accepted request clears the mark. Other answers (rate limit, server
+// error, network error) say nothing either way. The node never leaves the
+// fleet by itself: the admin decides.
+func (m *Manager) noteHubAnswer(code int) {
+	var rejected bool
+	switch code {
+	case http.StatusUnauthorized, http.StatusNotFound:
+		rejected = true
+	case http.StatusOK, http.StatusNotModified:
+	default:
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.cfg.Role != RoleNode || m.status.HubRejected == rejected {
+		return
+	}
+	m.status.HubRejected = rejected
+	if rejected {
+		m.status.HubRejectedSince = m.opt.Now().Unix()
+		m.status.LastError, m.status.LastResult = hubRejectedMsg, "error"
+		m.opt.Logf("[fleet] the hub no longer accepts this node (HTTP %d): it was removed or revoked, the hub role is off, or the clocks differ. This node keeps its configuration and stays a Fleet node until an admin leaves the Fleet here.", code)
+	} else {
+		m.status.HubRejectedSince = 0
+		if m.status.LastError == hubRejectedMsg {
+			m.status.LastError, m.status.LastResult = "", ""
+		}
+		m.opt.Logf("[fleet] the hub accepts this node again")
+	}
+	m.saveStatusLocked()
 }
 
 func (m *Manager) fleetLoop(ctx context.Context) {
@@ -293,6 +336,7 @@ func (m *Manager) sendFleetHeartbeat(ctx context.Context) (*fleetHeartbeatReply,
 		return nil, sanitizeErr(err)
 	}
 	defer resp.Body.Close()
+	m.noteHubAnswer(resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
 		return nil, fmt.Errorf("hub answered HTTP %d to the heartbeat", resp.StatusCode)
@@ -374,12 +418,13 @@ func (m *Manager) fleetSync(ctx context.Context, cfg Config, have string, force 
 		return "", fmt.Errorf("cannot reach hub: %w", sanitizeErr(err))
 	}
 	defer resp.Body.Close()
+	m.noteHubAnswer(resp.StatusCode)
 	switch resp.StatusCode {
 	case http.StatusNotModified:
 		return "unchanged", nil
 	case http.StatusOK:
 	case http.StatusUnauthorized, http.StatusNotFound:
-		return "", errors.New("hub rejected this node (revoked, removed, wrong hub URL or clock out of sync)")
+		return "", errors.New(hubRejectedMsg)
 	case http.StatusTooManyRequests:
 		return "", errors.New("hub rate limited this node")
 	default:
@@ -609,6 +654,11 @@ type FleetNodeInfo struct {
 	LastError  string     `json:"lastError,omitempty"`
 	LastOK     int64      `json:"lastSuccessAt"`
 	Insecure   bool       `json:"insecureTransport"`
+	// The hub answered "not allowed" to this node's last request (removed,
+	// revoked, hub role off or clocks out of sync). The node stays a node
+	// until an admin leaves the fleet on it.
+	HubRejected      bool  `json:"hubRejected"`
+	HubRejectedSince int64 `json:"hubRejectedSince,omitempty"`
 }
 
 // FleetInfo describes the fleet state of this node.
@@ -621,7 +671,8 @@ func (m *Manager) FleetInfo() FleetNodeInfo {
 	st := m.status
 	m.mu.RUnlock()
 	info := FleetNodeInfo{Managed: true, HubURL: cfg.PrimaryURL, Pinned: cfg.PrimaryFingerprint != "", Group: st.FleetGroup, Scopes: st.FleetScopes,
-		Conflicts: st.Conflicts, Applied: st.AppliedVersion, LastResult: st.LastResult, LastError: st.LastError, LastOK: st.LastSuccessAt}
+		Conflicts: st.Conflicts, Applied: st.AppliedVersion, LastResult: st.LastResult, LastError: st.LastError, LastOK: st.LastSuccessAt,
+		HubRejected: st.HubRejected, HubRejectedSince: st.HubRejectedSince}
 	if u, err := url.Parse(cfg.PrimaryURL); err == nil {
 		info.HubHost = u.Host
 		info.Insecure = u.Scheme == "http"

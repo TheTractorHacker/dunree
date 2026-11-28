@@ -2,6 +2,13 @@
 
 Newest first within each area. Each item names the page and what a user notices; design background is in [audit-2026-11.md](audit-2026-11.md), the components in [components.md](components.md).
 
+## Fleet and Cluster / HA: two separate pages
+* **No more tab strip.** System > Fleet & HA has two entries, **Fleet** and **Cluster / HA**, and neither page repeats them as tabs. Where one page has to send you to the other (a primary or follower that wants to start a Fleet), it is one link in that message.
+* **Cluster / HA says what this node is and what to do.** One sentence in the header (on its own, primary, follower, the Fleet hub with its number of nodes, or managed by a Fleet hub with its address). While the node is a hub or a Fleet node, one box says why primary and follower are off, with exactly one button: **Stop being a hub** or **Leave Fleet** (both ask first). The role choice is hidden instead of greyed out.
+* **"The hub no longer accepts this node".** A node that was removed on the hub, or whose hub was switched off, shows this on both pages with **Leave Fleet** as the main action. It stays a Fleet node until you leave: Dunree never leaves by itself.
+* **Never an old state.** Both pages read the role again when opened from the menu, when the window gets the focus back and after a role change on the other page; the two banners above every page follow without a reload.
+* Known limits: a removed node finds out at its next contact with the hub (20 s heartbeat by default); it cannot tell "removed" from "hub switched off", "wrong hub address" or "clocks out of sync"; a node that left on its own stays listed as offline on the hub until it is removed there. Tests: `mod/cluster/fleet_test.go` (`TestRemovedNodeReportsHubRejected`, `TestHubSwitchedOffAndBackOn`, `TestHubRejectedOnlyOn401And404`), three processes: `tools/ui-smoke/fleet_cluster_run.sh`.
+
 ## Security Center: CrowdSec (see it in action, more configuration)
 * **Security Center > CrowdSec** now leads with what CrowdSec is doing. The header says it in words ("Blocking banned addresses: 1,204 decisions loaded, synced 8 s ago, 37 requests blocked today out of 12,430 checked", or "Watching only: nobody is blocked"), with five counters for today. While it is on, the settings move below the activity.
 * **Activity**: a timeline of matched requests (blocked, CAPTCHA shown, would block) for 24 hours or 7 days with all checked requests on a second chart, and top lists of scenarios, sources, countries and sites.

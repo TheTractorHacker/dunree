@@ -918,13 +918,23 @@
             }
         </script>
         <script>
-            //Cluster follower banner (synced objects are read-only on a follower)
-            $(document).ready(function(){
-                $.ajax({url: "./api/cluster/status", method: "GET", success: function(s){
-                    if (s && s.readOnly) $("#clusterFollowerBanner").show();
-                    if (s && s.fleet && s.fleet.managed) { $("#fleetManagedHub").text(s.fleet.hubHost || ""); $("#fleetManagedBanner").show(); }
-                }});
-            });
+            //The role of this node (Cluster / HA and Fleet) and the two banners above every page that follow from it: "cluster follower"
+            //(synced objects are read-only) and "managed by hub". They are shown AND hidden from the current status, so a node that left
+            //its Fleet or stopped being a follower loses its banner without a page reload.
+            //ZxRole.changed(): call after anything that changes the role. The Cluster / HA page, the Fleet page and the banners listen to
+            //the document event "zx:rolechange" and read the new state at once.
+            window.ZxRole = {
+                show: function(s){
+                    $("#clusterFollowerBanner").toggle(!!(s && s.readOnly));
+                    let managed = !!(s && s.fleet && s.fleet.managed);
+                    if (managed) $("#fleetManagedHub").text(s.fleet.hubHost || "");
+                    $("#fleetManagedBanner").toggle(managed);
+                },
+                refresh: function(){ $.ajax({url: "./api/cluster/status", method: "GET", success: function(s){ window.ZxRole.show(s); }}); },
+                changed: function(){ $(document).trigger("zx:rolechange"); }
+            };
+            $(document).on("zx:rolechange", window.ZxRole.refresh);
+            $(document).ready(window.ZxRole.refresh);
         </script>
         <script src="script/uxkit.js"></script>
         <script src="script/palette.js"></script>

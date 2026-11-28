@@ -49,6 +49,9 @@ func (m *Manager) HandleStatus(w http.ResponseWriter, r *http.Request) {
 		"legacyMode":         cfg.Role == RolePrimary || cfg.Role == RoleFollower,
 		"fleet":              m.FleetInfo(),
 	}
+	if cfg.Role == RoleHub {
+		out["nodeCount"] = m.hub.NodeCount() //so the page can say how many nodes this hub manages
+	}
 	if cfg.Role == RoleFollower {
 		out["follower"] = m.Status()
 	}

@@ -84,10 +84,6 @@
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Fleet"><i class="history icon" aria-hidden="true"></i> History</button>
         </div>
     </header>
-    <nav class="zx-pagetabs" aria-label="Fleet and high availability pages">
-        <a href="#fleet" data-nav-open="fleet" aria-current="page">Fleet</a>
-        <a href="#cluster" data-nav-open="cluster">Cluster / HA</a>
-    </nav>
 
     <!-- status: the role of this Dunree and its numbers -->
     <section class="zx-card cx-status" id="flStatus" aria-labelledby="flStatusTitle">
@@ -99,8 +95,13 @@
             </div>
             <div class="cx-status__action" id="flNodeActions" style="display:none;">
                 <button class="zx-btn zx-btn--secondary" id="flNodeSync"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
-                <button class="zx-btn zx-btn--danger-outline" id="flNodeLeave">Leave fleet</button>
+                <button class="zx-btn zx-btn--danger-outline" id="flNodeLeave">Leave Fleet</button>
             </div>
+        </div>
+        <div id="flRejected" class="zx-callout zx-callout--danger" role="alert" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title">The hub no longer accepts this node.</span>
+            It was removed from the Fleet, or the hub was switched off. Leave the Fleet to manage this node on its own again. Everything the hub set up stays here. <span id="flRejectedSince"></span></div>
         </div>
         <dl class="cx-facts" id="flAgg" aria-live="polite"></dl>
     </section>
@@ -109,7 +110,7 @@
     <div id="flStandalone" style="display:none;">
         <div id="flLegacyNote" class="zx-callout zx-callout--warn" role="note" style="display:none;margin-bottom:var(--zx-space-4);">
             <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
-            <div class="zx-callout__body">This node uses the shared-secret cluster (Cluster / HA page). Switch it to standalone there before you start or join a fleet.</div>
+            <div class="zx-callout__body">This node is a primary or a follower. Switch it to standalone before you start or join a Fleet. <a href="#cluster" data-nav-open="cluster" id="flLegacyLink">Open Cluster / HA</a></div>
         </div>
         <div class="flChoice">
             <section class="zx-card">
@@ -255,7 +256,7 @@
                             <li><p class="zx-help"><b>Move to another group</b>The node then receives what that group manages.</p><span class="flMove"><input type="text" id="flNodeGroupIn" class="zx-input" list="flGroupList" aria-label="New group name" placeholder="Group name"><datalist id="flGroupList"></datalist><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="nodeGroup">Move</button></span></li>
                             <li><p class="zx-help"><b>Rotate the node key</b>The node picks the new key up at its next sync.</p><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-act="nodeRotate"><i class="key icon" aria-hidden="true"></i> Rotate key</button></li>
                             <li><p class="zx-help"><b>Revoke</b>Its credentials stop working immediately. The node stays in the list.</p><button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm" data-act="nodeRevoke"><i class="ban icon" aria-hidden="true"></i> Revoke</button></li>
-                            <li><p class="zx-help"><b>Remove from the hub</b>The node keeps its current configuration but is no longer managed.</p><button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm" data-act="nodeRemove"><i class="trash icon" aria-hidden="true"></i> Remove</button></li>
+                            <li><p class="zx-help"><b>Remove from the hub</b>The node keeps its current configuration but is no longer managed. It finds out the next time it contacts the hub and then offers to leave the Fleet. A node that left on its own stays in this list as offline until you remove it here.</p><button type="button" class="zx-btn zx-btn--danger-outline zx-btn--sm" data-act="nodeRemove"><i class="trash icon" aria-hidden="true"></i> Remove</button></li>
                         </ul>
                     </div>
                 </section>
@@ -400,6 +401,7 @@
 
 <script>
 (function(){
+    let shownRole = null;   //the role at the last render: a change seen here is passed on to the other pages (index.html: ZxRole)
     let ov = null, info = null, timer = null, openNode = null, probedFp = null, editGroup = "";
     function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
     function ts(u){ return u ? new Date(u * 1000).toLocaleString() : "-"; }
@@ -475,15 +477,20 @@
 
     /* ---------------- standalone / node ---------------- */
     function renderInfo(i){
-        info = i;
+        let roleChanged = shownRole !== null && shownRole != i.role;
+        info = i; shownRole = i.role;
         $("#flStandalone, #flNode, #flHub, #flNodeActions").hide();
+        let rejected = i.role == "node" && !!(i.fleet && i.fleet.hubRejected);
+        $("#flRejected").prop("hidden", !rejected);
+        $("#flRejectedSince").text(rejected && i.fleet.hubRejectedSince ? tf("Refused since {0}.", ts(i.fleet.hubRejectedSince)) : "");
+        if (roleChanged && window.ZxRole) window.ZxRole.changed();
         if (i.role == "hub") { $("#flHub").show(); if (!ov) setStatus(true, "sitemap", t("This Dunree is the hub"), "", "", t("It publishes configuration to the nodes that joined it and watches their health."), ""); loadHub(); return; }
         if (i.role == "node") {
             let f = i.fleet || {}, res = resultWord(f.lastResult);
             $("#flNode, #flNodeActions").show();
             $("#flNodeHub").text(f.hubHost || t("hub"));
             let kind = f.lastError ? "danger" : !f.lastResult ? "" : f.insecureTransport ? "warn" : "ok";
-            let word = f.lastError ? t("Last sync failed") : !f.lastResult ? t("Not synced yet") : f.insecureTransport ? t("In sync, but over plain http") : t("In sync with the hub");
+            let word = f.hubRejected ? t("The hub no longer accepts this node") : f.lastError ? t("Last sync failed") : !f.lastResult ? t("Not synced yet") : f.insecureTransport ? t("In sync, but over plain http") : t("In sync with the hub");
             setStatus(true, "cube", tf("Managed by the hub {0}", f.hubHost || ""), kind, word,
                 t("This Dunree pulls the configuration of its group from the hub and keeps everything else local. The hub can never run commands here."),
                 fact("Group", f.group || "-") +
@@ -507,15 +514,17 @@
         $("#flJoinBtn").prop("disabled", !!i.legacy || probedFp === null);   //Join stays locked until the hub certificate was checked
     }
     function loadInfo(){ $.ajax({url: "./api/fleet/node/info", method: "GET", success: renderInfo, error: fail}); }
+    //after a role change made here: this page, the Cluster / HA page and the banners above every page read the new state at once
+    function roleChanged(){ if (window.ZxRole) window.ZxRole.changed(); else loadInfo(); }
 
     $("#flBecomeHub").on("click", function(){
         ask(t("Turn this Dunree into a Fleet hub?"), t("This node becomes the management console. Its configuration is published to the nodes you add."), t("Enable hub role")).then(function(ok){
-            if (ok) post("./api/cluster/config", {role: "hub"}, function(){ loadInfo(); });
+            if (ok) post("./api/cluster/config", {role: "hub"}, roleChanged);
         });
     });
     $("#flBecomeStandalone").on("click", function(){
         ask(t("Turn the hub role off?"), t("Nodes keep their current configuration but stop receiving updates."), t("Turn the hub role off"), true).then(function(ok){
-            if (ok) post("./api/cluster/config", {role: "standalone"}, function(){ loadInfo(); });
+            if (ok) post("./api/cluster/config", {role: "standalone"}, roleChanged);
         });
     });
     /* Step 1 of joining: ask the hub for its certificate. The result stays in the card (working, answered, plain http or
@@ -559,7 +568,7 @@
         let plain = probedFp === "";
         function doJoin(){
             post("./api/fleet/node/join", {hubUrl: $("#flJoinUrl").val(), token: $("#flJoinToken").val(), fingerprint: probedFp || "", allowHttp: plain ? "true" : "false"}, function(){
-                $("#flJoinToken").val(""); $("#flProbeBox").prop("hidden", true).empty(); msg(t("Joined the fleet")); loadInfo();
+                $("#flJoinToken").val(""); $("#flProbeBox").prop("hidden", true).empty(); msg(t("Joined the fleet")); roleChanged();
             });
         }
         if (!plain) { doJoin(); return; }
@@ -568,8 +577,8 @@
     $("#flJoinUrl").on("input", function(){ probedFp = null; $("#flJoinBtn").prop("disabled", true); $("#flProbeBox").prop("hidden", true).empty(); });
     $("#flNodeSync").on("click", function(){ post("./api/fleet/node/syncNow", {}, function(){ msg(t("Synced")); loadInfo(); }); });
     $("#flNodeLeave").on("click", function(){
-        ask(t("Leave the fleet?"), t("The current files stay as local configuration."), t("Leave fleet"), true).then(function(ok){
-            if (ok) post("./api/fleet/node/leave", {}, function(){ loadInfo(); });
+        ask(t("Leave the Fleet?"), t("Everything the hub set up stays here as this node's own settings, and you can change it again. The hub sends this node no more updates."), t("Leave Fleet"), true).then(function(ok){
+            if (ok) post("./api/fleet/node/leave", {}, function(){ msg(t("This node left the Fleet and runs on its own again")); roleChanged(); });
         });
     });
 
@@ -946,5 +955,18 @@
         if (!document.getElementById("fleetPage")) { clearInterval(timer); return; }
         if ($("#fleet").is(":visible")) loadInfo();
     }, 10000);
+    //Never show an old role: read it again when this page is opened from the menu, when the browser tab or window comes back,
+    //and right after a role change made on any page.
+    let lastFresh = 0;
+    function freshen(){
+        if (!document.getElementById("fleetPage") || !$("#fleet").is(":visible") || document.visibilityState == "hidden") return;
+        if (Date.now() - lastFresh < 1000) return;
+        lastFresh = Date.now();
+        loadInfo();
+    }
+    if (typeof tabSwitchEventBind !== "undefined") tabSwitchEventBind["fleet"] = function(){ lastFresh = 0; freshen(); };
+    $(document).off("visibilitychange.fleetPage").on("visibilitychange.fleetPage", freshen);
+    $(window).off("focus.fleetPage").on("focus.fleetPage", freshen);
+    $(document).off("zx:rolechange.fleetPage").on("zx:rolechange.fleetPage", function(){ if (document.getElementById("fleetPage")) loadInfo(); });
 })();
 </script>

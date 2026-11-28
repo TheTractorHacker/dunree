@@ -1437,6 +1437,22 @@ bundle can only contain files of the allow-listed roots (`proxy`, `redirect`, `a
 `acme_conf.json`, optionally `certs`) and items of registered scopes. Admin accounts, `sys.uuid`, `conf/webui` (admin TLS keys), updater
 state, `cluster.json`, node keys and logs are never exported or accepted.
 
+**A node the hub no longer accepts.** The hub never pushes: `Hub.RemoveNode` / `RevokeNode` only change the hub's record, and a hub
+whose role is off answers 404 (`gate`). The node learns it from its own next request: `noteHubAnswer` (`fleet_node.go`) sets
+`followerStatus.HubRejected` / `HubRejectedSince` on a 401 or 404 to the heartbeat or the config pull and clears them on the first
+200 / 304; other answers (429, 5xx, network errors) change nothing. It is exposed as `fleet.hubRejected` / `fleet.hubRejectedSince`
+in `/api/cluster/status` and `/api/fleet/node/info`; `/api/cluster/status` of a hub also carries `nodeCount`. The node **never
+leaves on its own** (the cause can be a hub switched off on purpose or clock skew): both pages show "The hub no longer accepts
+this node" with a Leave Fleet button. `Leave()` also clears `primaryUrl` / `primaryFingerprint`. Known limits: detection takes up
+to one heartbeat (20 s default); removed, revoked, hub off, wrong hub URL and clock skew look the same to the node; a node that
+left on its own stays on the hub as offline until removed there.
+
+**Role changes in the admin UI.** `window.ZxRole` (`web/index.html`) owns the two banners above every page and the document event
+`zx:rolechange`. Anything that changes the role calls `ZxRole.changed()`; `cluster.html` and `fleet.html` listen, and both also
+re-read the status on `tabSwitchEventBind`, window focus and `visibilitychange` (the pages are loaded once and only shown again).
+The two pages do not link to each other with a tab strip. Three-process UI test: `tools/ui-smoke/fleet_cluster_run.sh`
+(`fleet_cluster_smoke.py`; PORT..PORT+5, not part of `run.sh`).
+
 ### Data model and files
 
 | File (in `conf/.cluster/`, all 0600) | Side | Content |

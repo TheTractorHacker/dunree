@@ -1,4 +1,5 @@
-<!-- Cluster / HA (tag cluster). Shared-secret mode: a status header (role, secret, followers or last sync, health endpoint), the floating IP
+<!-- Cluster / HA (tag cluster). Shared-secret mode: a status header (role, secret, followers or last sync, health endpoint; when Fleet owns
+     this node's role: one sentence that says so and the one button that ends it), the floating IP
      (keepalived: a guided setup with one script per server and live progress; docs/cluster/vip-simple-setup.md), the role as a guided choice of
      three, the secret, the sync state of this role and the health endpoint. Shared styles: ui/zxpages.css "area: certs" (cx-*). -->
 <style>
@@ -18,6 +19,14 @@
     #clusterPage .clSecretLine { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); margin: 0 0 var(--zx-space-4); }
     #clusterPage #clSecretOnce { display: block; margin: var(--zx-space-2) 0 var(--zx-space-3); word-break: break-all; user-select: all; }
     #clusterPage .clNodes td { vertical-align: top; }
+    /* the role belongs to Fleet: why the roles are off, and the one way out */
+    #clusterPage .clLock { flex-wrap: wrap; align-items: center; }
+    #clusterPage .clLock .zx-callout__body { flex: 1 1 12rem; }
+    #clusterPage .clLock .zx-btn { flex: 0 0 auto; white-space: nowrap; }
+    #clusterPage #clRoleLocked { margin: 0; color: var(--zx-text-muted); }
+    #clusterPage #clSecretNode { margin-bottom: 0; }
+    #clusterPage #clSecretNode .zx-disclosure__body { padding-top: var(--zx-space-3); font-size: inherit; }
+    @media (max-width: 480px) { #clusterPage .clLock .zx-btn { flex: 1 1 100%; white-space: normal; } }
     #clusterPage .clHealthAddr { margin: 0 0 var(--zx-space-4); color: var(--zx-text-muted); }
     #clusterPage .clHealthAddr code { color: var(--zx-text); overflow-wrap: anywhere; }
     #clusterPage .cx-path .zx-form-grid .zx-field { margin-bottom: 0; }
@@ -262,16 +271,12 @@
             <h2 class="zx-page-header__title">Cluster / HA</h2>
             <p class="zx-page-header__sub">Run two or more Dunree nodes behind a floating IP or a load balancer: they share one secret, and a primary can copy its configuration to followers.
                 <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="clModeWhat" aria-label="More about shared-secret mode">?</button></p>
-            <div class="zx-popover" id="clModeWhat" role="note" hidden>The shared secret makes visitor sessions (CAPTCHA, load balancer stickiness) valid on every node. Followers pull a signed, encrypted snapshot of the primary's proxy configuration. Standalone nodes (the default) are unaffected. Fleet, the other tab, adds per-node credentials, groups and staged rollouts; a node uses one of the two modes.</div>
+            <div class="zx-popover" id="clModeWhat" role="note" hidden>The shared secret makes visitor sessions (CAPTCHA, load balancer stickiness) valid on every node. Followers pull a signed, encrypted snapshot of the primary's proxy configuration. Standalone nodes (the default) are unaffected. Fleet has its own page in the menu: it adds per-node credentials, groups and staged rollouts. A node uses one of the two, never both.</div>
         </div>
         <div class="zx-page-header__actions">
             <button type="button" class="zx-btn zx-btn--secondary" data-zx-history="Cluster"><i class="history icon" aria-hidden="true"></i> History</button>
         </div>
     </header>
-    <nav class="zx-pagetabs" aria-label="Fleet and high availability pages">
-        <a href="#fleet" data-nav-open="fleet">Fleet</a>
-        <a href="#cluster" data-nav-open="cluster" aria-current="page">Cluster / HA</a>
-    </nav>
 
     <!-- status: role, secret, peers, health endpoint -->
     <section class="zx-card cx-status" id="clStatus" aria-labelledby="clStatusTitle">
@@ -281,6 +286,11 @@
                 <div class="cx-status__title" role="heading" aria-level="3"><span id="clStatusTitle">Cluster</span> <span class="zx-badge zx-badge--dot" id="clRoleBadge" hidden></span></div>
                 <p class="cx-status__desc" id="clStatusDesc"></p>
             </div>
+        </div>
+        <div id="clFleetLock" class="zx-callout zx-callout--info clLock" role="note" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span>
+            <div class="zx-callout__body"><span class="zx-callout__title" id="clFleetLockTitle"></span><span id="clFleetLockText"></span></div>
+            <button type="button" class="zx-btn zx-btn--secondary" id="clFleetLockBtn"></button>
         </div>
         <div id="clRestart" class="zx-callout zx-callout--warn" role="note" style="display:none;">
             <span class="zx-callout__icon" aria-hidden="true"><i class="redo icon"></i></span>
@@ -629,11 +639,11 @@
     </div>
 
     <!-- Role -->
-    <section class="zx-card">
+    <section class="zx-card" id="clRoleCard">
         <div class="zx-card__head"><h3 class="zx-card__title">Role of this node</h3></div>
         <p class="zx-card__desc">What this node does in the cluster. Default: standalone.</p>
         <div class="zx-card__body">
-            <div id="clFleetLock" class="zx-callout zx-callout--warn" role="note" style="display:none;"><span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span><div class="zx-callout__body"><span id="clFleetLockText"></span><span id="clFleetRole" hidden></span></div></div>
+            <p id="clRoleLocked" hidden></p>
             <fieldset class="cx-choice" id="clRoleChoice">
                 <legend class="zx-sr-only">Role of this node</legend>
                 <label class="cx-choice__item">
@@ -692,7 +702,7 @@
                 </div>
             </div>
         </div>
-        <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="clSaveBtn">Save role</button></div>
+        <div class="zx-card__foot" id="clRoleFoot"><button class="zx-btn zx-btn--primary" id="clSaveBtn">Save role</button></div>
     </section>
 
     <!-- Secret -->
@@ -715,7 +725,12 @@
                     <button class="zx-btn zx-btn--secondary zx-btn--sm" id="clHideBtn">I have saved it</button>
                 </div></div>
             </div>
-            <div class="cx-either">
+            <!-- on a Fleet node the secret is optional: the two ways to set it move into this closed section (script: placeSecretSet) -->
+            <details class="zx-disclosure" id="clSecretNode" hidden>
+                <summary>Set a secret (optional on a Fleet node)</summary>
+                <div class="zx-disclosure__body"><p class="zx-help">Fleet does not use this secret. Set it only if visitors should stay signed in when they reach another of your nodes (CAPTCHA, sticky sessions, shared SSO sign-ins).</p></div>
+            </details>
+            <div class="cx-either" id="clSecretSet">
                 <div>
                     <span class="cx-either__title">First node of the cluster</span>
                     <p class="zx-help">Create a secret here, then give it to the other nodes.</p>
@@ -786,7 +801,9 @@
 
 <script>
 (function(){
-    let st = null, timer = null, dirty = false, sharedBusy = false;
+    //dirtyRole / dirtyHealth: this card has edits that were not saved yet, so a refresh must not overwrite its fields. One flag per card:
+    //typing in the health list must never freeze the role card. A role that changed on the server always wins over dirtyRole.
+    let st = null, timer = null, dirtyRole = false, dirtyHealth = false, shownRole = null, sharedBusy = false, lockBusy = false;
     function esc(s){ return $("<div>").text(s == null ? "" : String(s)).html(); }
     function errText(xhr){
         if (xhr && xhr.responseJSON && xhr.responseJSON.error) return xhr.responseJSON.error;
@@ -805,12 +822,15 @@
     function dot(kind, word){ return "<span class='zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "") + "'>" + esc(word) + "</span>"; }
     //The status header: role in words, then secret, peers and the health endpoint as facts
     function renderStatus(s){
-        let fleetManaged = s.role == "hub" || s.role == "node", nodes = s.nodes || [], f = s.follower || {};
+        let nodes = s.nodes || [], f = s.follower || {}, fl = s.fleet || {}, hubNodes = s.nodeCount || 0;
         let behind = nodes.filter(function(n){ return s.snapshotVersion && n.appliedVersion != s.snapshotVersion; }).length;
-        let title = {standalone: t("This node runs on its own"), primary: t("This node is the primary"), follower: t("This node follows a primary")}[s.role] || t("The role of this node is managed by Fleet");
+        let title = {standalone: t("This node runs on its own"), primary: t("This node is the primary"), follower: t("This node follows a primary"),
+            hub: t("This node is the Fleet hub"), node: fl.hubHost ? tf("This node is managed by the Fleet hub {0}", fl.hubHost) : t("This node is managed by a Fleet hub")}[s.role] || s.role;
         let desc = {standalone: t("The default. It keeps its own configuration. Give every node the same secret and they accept each other's visitor sessions."),
             primary: t("You configure this node. Followers pull a signed, encrypted snapshot of its proxy configuration."),
-            follower: t("It copies the configuration of the primary on a schedule. The settings the primary manages are read-only here.")}[s.role] || t("This Dunree is part of a fleet, so the shared-secret roles do not apply. The secret and the health endpoint below still work.");
+            follower: t("It copies the configuration of the primary on a schedule. The settings the primary manages are read-only here."),
+            hub: hubNodes == 0 ? t("No node has joined it yet. You manage the hub and its nodes on the Fleet page.") : hubNodes == 1 ? t("It manages 1 node. You manage the hub and its nodes on the Fleet page.") : tf("It manages {0} nodes. You manage the hub and its nodes on the Fleet page.", hubNodes),
+            node: t("The hub sends this node its configuration. The floating IP, the secret and the health endpoint on this page still work.")}[s.role] || "";
         //the icon tile shows the role (neutral blue for primary and follower, never a state colour); the state is the dot badge in words
         let kind = "", word = "";
         if (s.role == "primary") {
@@ -823,9 +843,14 @@
             else if (!s.secretSet) { kind = "warn"; word = t("No secret set"); }
             else if (!f.lastResult) { word = t("Not synced yet"); }
             else { kind = "ok"; word = t("In sync with the primary"); }
-        }
-        $("#clStatus").attr("data-state", (s.role == "primary" || s.role == "follower") ? "role" : null);
-        $("#clStatus .cx-status__icon i").attr("class", ({primary: "star", follower: "clone outline", standalone: "cube"}[s.role] || "sitemap") + " icon");
+        } else if (s.role == "node") {
+            if (fl.hubRejected) { kind = "danger"; word = t("The hub no longer accepts this node"); }
+            else if (fl.lastError) { kind = "danger"; word = t("Last sync failed"); }
+            else if (!fl.lastResult) { word = t("Not synced yet"); }
+            else { kind = "ok"; word = t("In sync with the hub"); }
+        } else if (s.role == "hub" && !hubNodes) { word = t("No nodes yet"); }
+        $("#clStatus").attr("data-state", s.role != "standalone" ? "role" : null).attr("data-role", s.role);
+        $("#clStatus .cx-status__icon i").attr("class", ({primary: "star", follower: "clone outline", standalone: "cube", node: "cube"}[s.role] || "sitemap") + " icon");
         $("#clStatusTitle").text(title);
         $("#clRoleBadge").attr("class", "zx-badge zx-badge--dot" + (kind ? " zx-badge--" + kind : "")).text(word).prop("hidden", !word);
         $("#clStatusDesc").text(desc);
@@ -836,6 +861,10 @@
                 fact("Behind the primary", behind, behind ? "warn" : "", behind ? t("do not run the current snapshot") : (nodes.length ? t("all run the current snapshot") : "")) +
                 fact("Snapshot version", s.snapshotVersion || "-") +
                 fact("Settings sync", s.syncSettings ? t("On") : t("Off"), s.syncSettings ? "" : "muted", s.syncSettings ? t("port, SSO providers, SSO portal users") : t("followers keep their own settings"));
+        } else if (s.role == "hub") {
+            facts += fact("Fleet nodes", hubNodes, hubNodes ? "" : "muted", hubNodes ? "" : t("none has joined yet"));
+        } else if (s.role == "node") {
+            facts += fact("Fleet hub", fl.hubHost || "-", fl.hubRejected ? "danger" : "", fl.hubRejected ? t("no longer accepts this node") : (fl.lastSuccessAt ? tf("last success {0}", ago(fl.lastSuccessAt)) : ""));
         } else if (s.role == "follower") {
             facts += fact("Last sync", f.lastResult ? resultWord(f.lastResult).word : t("Never synced"), f.lastError ? "danger" : "", f.lastSuccessAt ? tf("last success {0}", ago(f.lastSuccessAt)) : "") +
                 fact("Applied snapshot", f.appliedVersion || "-") +
@@ -845,6 +874,41 @@
         facts += fact("Health endpoint", s.healthDisabled ? t("Off") : t("On"), s.healthDisabled ? "muted" : "", s.healthDisabled ? "" : ((s.healthAllow || []).length ? tf("{0} allowed clients", s.healthAllow.length) : t("open to everyone")));
         facts += vipFact();
         $("#clFacts").html(facts);
+        renderLock(s);
+    }
+    //Fleet owns the role of a hub and of a node. One callout in the status header says why primary and follower are off, with the one
+    //button that ends it. The same button shows as the main action when the hub no longer accepts this node.
+    function renderLock(s){
+        let fl = s.fleet || {}, on = s.role == "hub" || s.role == "node", rejected = s.role == "node" && !!fl.hubRejected;
+        $("#clFleetLock").prop("hidden", !on).attr("class", "zx-callout clLock zx-callout--" + (rejected ? "danger" : "info")).attr("role", rejected ? "alert" : "note").attr("data-lock", on ? (rejected ? "rejected" : s.role) : null);
+        $("#clFleetLock .zx-callout__icon i").attr("class", (rejected ? "exclamation triangle" : "lock") + " icon");
+        if (!on) return;
+        let title, text, btn;
+        if (s.role == "hub") {
+            title = t("Primary and follower are off because this node is the Fleet hub.");
+            text = t("To use them, stop being a hub first. Your nodes keep their configuration but get no more updates.");
+            btn = t("Stop being a hub");
+        } else if (rejected) {
+            title = t("The hub no longer accepts this node.");
+            text = t("It was removed from the Fleet, or the hub was switched off. Leave the Fleet to manage this node on its own again. Everything the hub set up stays here.") +
+                (fl.hubRejectedSince ? " " + tf("Refused since {0}.", ts(fl.hubRejectedSince)) : "");
+            btn = t("Leave Fleet");
+        } else {
+            title = t("Primary and follower are off because this node is a Fleet node.");
+            text = t("To use them, leave the Fleet first. Everything the hub set up stays here as this node's own settings.");
+            btn = t("Leave Fleet");
+        }
+        $("#clFleetLockTitle").text(title);
+        $("#clFleetLockText").text(text);
+        $("#clFleetLockBtn").text(btn).attr("class", "zx-btn " + (rejected ? "zx-btn--primary" : "zx-btn--secondary")).attr("data-act", s.role == "hub" ? "stopHub" : "leave").prop("disabled", lockBusy);
+    }
+    //the two ways to set the secret: in the card for every role, inside a closed "optional" section on a Fleet node
+    function placeSecretSet(isNode){
+        let box = document.getElementById("clSecretNode"), set = document.getElementById("clSecretSet");
+        if (isNode == !box.hidden) return;
+        box.hidden = !isNode;
+        if (isNode) { box.open = false; box.querySelector(".zx-disclosure__body").appendChild(set); }
+        else box.parentNode.insertBefore(set, box.nextSibling);
     }
     //Results are toasts (visible wherever the page is scrolled). Backend messages start lower case: show them capitalised.
     function msg(text, bad){ text = String(text); ZxUI.toast(text.charAt(0).toUpperCase() + text.slice(1), {type: bad ? "error" : "success"}); }
@@ -864,17 +928,21 @@
     }
 
     function render(s){
+        let roleChanged = shownRole !== null && shownRole != s.role;
         st = s;
+        if (shownRole != s.role) dirtyRole = false;   //the role changed on the server: what was being edited for the old role is void
+        shownRole = s.role;
         renderStatus(s);
+        if (window.ZxRole) window.ZxRole.show(s);   //the banners above every page (index.html)
         let fleetManaged = s.role == "hub" || s.role == "node";
-        $("#clSaveBtn").prop("disabled", fleetManaged);
-        //Fleet owns the role: the radios and fields must not look editable
-        $("input[name=clRole], #clPrimaryUrl, #clPrimaryFp, #clInterval, #clSyncCerts, #clKeepListener").prop("disabled", fleetManaged);
-        $("#clSyncSettings").prop("disabled", fleetManaged || s.syncSettingsAvail === false);
-        $("#clFleetLock").toggle(fleetManaged);
-        $("#clFleetLockText").text(fleetManaged ? (s.role == "hub" ? t("This node is a Fleet hub. Its role is managed on the Fleet page and cannot be changed here.") : t("This node is a Fleet node. Its role is managed on the Fleet page and cannot be changed here.")) : "");
-        if (!dirty) {
-        $("input[name=clRole][value=" + s.role + "]").prop("checked", true);
+        //Fleet owns the role: no greyed-out choice, only one sentence that says when the choice comes back
+        $("#clRoleChoice, #clRoleFoot").prop("hidden", fleetManaged);
+        $("#clRoleLocked").prop("hidden", !fleetManaged).text(s.role == "hub" ? t("You can choose primary or follower here after this node has stopped being a hub.") : s.role == "node" ? t("You can choose primary or follower here after this node has left the Fleet.") : "");
+        $("#clSyncSettings").prop("disabled", s.syncSettingsAvail === false);
+        placeSecretSet(s.role == "node");
+        if (!dirtyRole) {
+        //uncheck first: hub and node have no radio, and the role shown before must not stay checked
+        $("input[name=clRole]").prop("checked", false).filter(function(){ return this.value == s.role; }).prop("checked", true);
         showRoleFields();
         $("#clPrimaryUrl").val(s.primaryUrl || "");
         $("#clPrimaryFp").val(s.primaryFingerprint || "");
@@ -883,8 +951,8 @@
         $("#clSyncSettings").prop("checked", !!s.syncSettings);
         $("#clKeepListener").prop("checked", !!s.keepLocalListener);
         }
-        if (!dirty) $("#clHealthAllow").val((s.healthAllow || []).join(", "));
-        if (!dirty) $("#clHealthOff").prop("checked", !!s.healthDisabled);
+        if (!dirtyHealth) $("#clHealthAllow").val((s.healthAllow || []).join(", "));
+        if (!dirtyHealth) $("#clHealthOff").prop("checked", !!s.healthDisabled);
         $("#clHealthUrl").text(location.protocol + "//<proxy-host>" + s.healthPath);
         $("#clSecretState").text(s.secretSet ? t("Secret set") : t("No secret set"));
         $("#clSecretBadge").toggleClass("zx-badge--ok", !!s.secretSet);
@@ -923,15 +991,45 @@
             });
             $("#clNodes").html(rows || "<tr><td colspan='4' class='zx-empty-cell'>" + esc(t("No follower has reported in yet. A follower shows up here after its first sync with this primary.")) + "</td></tr>");
         }
+        //seen here first (the role was changed on another page, in another window or by an API client): the other pages and the banners follow
+        if (roleChanged && window.ZxRole) window.ZxRole.changed();
     }
 
+    //the role, the secret and the health settings (cheap: one GET)
+    function loadStatus(){ $.ajax({url: "./api/cluster/status", method: "GET", success: render, error: fail}); }
     function load(){
-        $.ajax({url: "./api/cluster/status", method: "GET", success: render, error: fail});
+        loadStatus();
         vipLoad();
     }
 
     $("input[name=clRole]").on("change", showRoleFields);
-    $("#clusterPage input, #clusterPage textarea").not("#clSharedSso").not("#vipWrap input, #vipWrap textarea").on("input change", function(){ dirty = true; });
+    $("#clRoleCard").on("input change", "input, textarea", function(){ dirtyRole = true; });
+    $("#clHealthAllow, #clHealthOff").on("input change", function(){ dirtyHealth = true; });
+
+    //The one way out of a Fleet role, from the callout in the status header. Same endpoints as the Fleet page.
+    $("#clFleetLockBtn").on("click", function(){
+        let act = $(this).attr("data-act"), n = (st && st.nodeCount) || 0;
+        function go(url, data, done){
+            lockBusy = true; $("#clFleetLockBtn").prop("disabled", true).attr("aria-busy", "true");
+            $.cjax({method: "POST", url: url, data: data, success: function(d){
+                if (d && d.error) { msg(d.error, true); return; }
+                msg(done);
+            }, error: fail, complete: function(){
+                lockBusy = false; $("#clFleetLockBtn").removeAttr("aria-busy");
+                if (window.ZxRole) window.ZxRole.changed(); else load();
+            }});
+        }
+        if (act == "stopHub") {
+            ZxUI.confirm({title: t("Stop being a hub?"), message: (n == 0 ? t("No node has joined this hub.") : n == 1 ? t("1 node has joined this hub. It keeps its current configuration but gets no more updates.") : tf("{0} nodes have joined this hub. They keep their current configuration but get no more updates.", n)) + " " +
+                t("The hub's list of nodes, groups and versions is kept: switch the hub role on again on the Fleet page and the nodes reconnect."), confirmLabel: t("Stop being a hub"), danger: true}).then(function(ok){
+                if (ok) go("./api/cluster/config", {role: "standalone"}, t("This node runs on its own again"));
+            });
+        } else {
+            ZxUI.confirm({title: t("Leave the Fleet?"), message: t("Everything the hub set up stays here as this node's own settings, and you can change it again. The hub sends this node no more updates."), confirmLabel: t("Leave Fleet"), danger: true}).then(function(ok){
+                if (ok) go("./api/fleet/node/leave", {}, t("This node left the Fleet and runs on its own again"));
+            });
+        }
+    });
 
     //Saved on its own, right away (like the secret buttons of this card); the result is a toast
     $("#clSharedSso").on("change", function(){
@@ -957,7 +1055,7 @@
             data.syncInterval = $("#clInterval").val();
             data.keepLocalListener = $("#clKeepListener").is(":checked");
         }
-        function save(){ post("./api/cluster/config", data, function(){ dirty = false; msg(t("Role saved")); load(); }); }
+        function save(){ post("./api/cluster/config", data, function(){ dirtyRole = false; msg(t("Role saved")); if (window.ZxRole) window.ZxRole.changed(); else load(); }); }
         //each switch that sends secrets to the followers is confirmed on its own, then the role is saved once
         function confirmSettings(){
             if (!(data.syncSettings && !(st && st.syncSettings))) { save(); return; }
@@ -999,7 +1097,7 @@
     $("#clSetSecretBtn").on("click", function(){
         let v = $("#clSecretIn").val();
         if (!v) return;
-        post("./api/cluster/config", {secret: v}, function(){ $("#clSecretIn").val(""); dirty = false; msg(t("Secret saved")); load(); });
+        post("./api/cluster/config", {secret: v}, function(){ $("#clSecretIn").val(""); msg(t("Secret saved")); load(); });
     });
 
     function syncNow(force){
@@ -1015,7 +1113,7 @@
 
     $("#clHealthSave").on("click", function(){
         post("./api/cluster/config", {healthAllow: $("#clHealthAllow").val(), healthDisabled: $("#clHealthOff").is(":checked")},
-            function(){ dirty = false; msg(t("Health settings saved")); load(); });
+            function(){ dirtyHealth = false; msg(t("Health settings saved")); load(); });
     });
 
 
@@ -1998,7 +2096,7 @@
         if (fix == "allow" && allow.indexOf("127.0.0.1") < 0) allow.push("127.0.0.1");
         post("./api/cluster/config", {healthAllow: allow.join(", "), healthDisabled: fix == "health" ? false : !!st.healthDisabled}, function(){
             msg(fix == "health" ? t("Health check switched on") : t("127.0.0.1 added to the allowed clients of the health check"));
-            dirty = false; vipScriptKey = ""; load(); vipRunChecks();
+            dirtyHealth = false; vipScriptKey = ""; load(); vipRunChecks();
         });
     }
     function vipAct(act, src){
@@ -2138,6 +2236,19 @@
         if (!document.getElementById("clSaveBtn")) { clearInterval(timer); return; }
         if ($("#cluster").is(":visible")) load();
     }, 15000);
+    //Never show an old role: read the status again when this page is opened from the menu, when the browser tab or window comes back,
+    //and right after a role change made on any page (index.html: ZxRole).
+    let lastFresh = 0;
+    function freshen(){
+        if (!document.getElementById("clSaveBtn") || !$("#cluster").is(":visible") || document.visibilityState == "hidden") return;
+        if (Date.now() - lastFresh < 1000) return;
+        lastFresh = Date.now();
+        loadStatus();
+    }
+    if (typeof tabSwitchEventBind !== "undefined") tabSwitchEventBind["cluster"] = function(){ lastFresh = 0; freshen(); };
+    $(document).off("visibilitychange.clusterPage").on("visibilitychange.clusterPage", freshen);
+    $(window).off("focus.clusterPage").on("focus.clusterPage", freshen);
+    $(document).off("zx:rolechange.clusterPage").on("zx:rolechange.clusterPage", function(){ if (document.getElementById("clSaveBtn")) load(); });
     let vipTimer = setInterval(function(){
         if (!document.getElementById("vipWrap")) { clearInterval(vipTimer); return; }
         if ($("#cluster").is(":visible") && document.visibilityState != "hidden") vipPoll();

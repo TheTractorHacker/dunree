@@ -3,6 +3,7 @@ package cluster
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -1276,5 +1277,160 @@ func TestPausedNodeGetsNothingAndKeepsDetails(t *testing.T) {
 	n := s.h.st.Nodes["a"]
 	if n.Name != "edge-1" || n.AdminURL != "https://10.1.0.25:3000" || n.Notes != "rack 2" {
 		t.Fatalf("node = %+v", n)
+	}
+}
+
+// ---------------------------------------------------------------------
+// a node the hub no longer accepts, and leaving
+
+func statusOf(t *testing.T, m *Manager) map[string]any {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	m.HandleStatus(rec, httptest.NewRequest("GET", "/api/cluster/status", nil))
+	var out map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// The hub cannot tell a node that it was removed. The node finds out at its
+// next heartbeat or sync, says so in its status and stays a node: it never
+// leaves on its own.
+func TestRemovedNodeReportsHubRejected(t *testing.T) {
+	e := newFleetEnv(t)
+	a := e.addNode("node-a", "g1")
+	b := e.addNode("node-b", "g1")
+	if err := a.sync(t); err != nil {
+		t.Fatal(err)
+	}
+	a.heartbeat(t)
+	if fi := a.m.FleetInfo(); fi.HubRejected || fi.HubRejectedSince != 0 {
+		t.Fatalf("healthy node flagged as rejected: %+v", fi)
+	}
+	if n := statusOf(t, e.hub)["nodeCount"]; n != float64(2) {
+		t.Fatalf("hub status nodeCount = %v, want 2", n)
+	}
+
+	if err := e.hub.hub.RemoveNode("tester", "node-a"); err != nil {
+		t.Fatal(err)
+	}
+	if n := statusOf(t, e.hub)["nodeCount"]; n != float64(1) {
+		t.Fatalf("hub status nodeCount after removal = %v, want 1", n)
+	}
+	// the heartbeat alone is enough: no need to wait for the next config sync
+	if _, err := a.m.sendFleetHeartbeat(context.Background()); err == nil {
+		t.Fatal("removed node can still send heartbeats")
+	}
+	fi := a.m.FleetInfo()
+	if !fi.HubRejected || fi.HubRejectedSince != e.clock.Now().Unix() || fi.LastResult != "error" || !strings.Contains(fi.LastError, "rejected") {
+		t.Fatalf("removed node does not report the rejection after a heartbeat: %+v", fi)
+	}
+	since := fi.HubRejectedSince
+	e.clock.Add(time.Minute)
+	if err := a.sync(t); err == nil {
+		t.Fatal("removed node still syncs")
+	}
+	fi = a.m.FleetInfo()
+	if !fi.HubRejected || fi.HubRejectedSince != since {
+		t.Fatalf("rejection lost or its start moved after a sync: %+v", fi)
+	}
+	if a.m.Role() != RoleNode {
+		t.Fatalf("node left the fleet on its own: role %s", a.m.Role())
+	}
+	st := statusOf(t, a.m)
+	if st["role"] != RoleNode || st["fleet"].(map[string]any)["hubRejected"] != true {
+		t.Fatalf("status API does not carry the rejection: %v", st["fleet"])
+	}
+	// the flag survives a restart of the node
+	re, err := NewManager(Options{ConfDir: a.dir, NodeID: "node-a", Version: "1.0", Now: e.clock.Now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi := re.FleetInfo(); !fi.HubRejected || re.Role() != RoleNode {
+		t.Fatalf("after a restart: role %s, %+v", re.Role(), fi)
+	}
+	re.Stop()
+	// the other node is untouched
+	b.heartbeat(t)
+	if b.m.FleetInfo().HubRejected {
+		t.Fatal("removal of one node flagged another")
+	}
+
+	// leaving is the way out: standalone, no trace of the hub
+	if err := a.m.Leave(); err != nil {
+		t.Fatal(err)
+	}
+	st = statusOf(t, a.m)
+	if st["role"] != RoleStandalone || st["primaryUrl"] != "" || st["primaryFingerprint"] != "" {
+		t.Fatalf("after leaving: role %v primaryUrl %q", st["role"], st["primaryUrl"])
+	}
+	if fi := st["fleet"].(map[string]any); fi["managed"] != false || fi["hubRejected"] != false {
+		t.Fatalf("after leaving, fleet info = %v", fi)
+	}
+	if _, err := os.Stat(a.m.nodeCredFile()); !os.IsNotExist(err) {
+		t.Fatal("node key kept after leaving")
+	}
+	// it can join again and starts clean
+	tok, _, _ := e.hub.hub.CreateJoinToken("tester", time.Minute, "", "g1")
+	if err := a.m.Join(context.Background(), JoinRequest{HubURL: e.srv.URL, Token: tok, AllowHTTP: true}); err != nil {
+		t.Fatal(err)
+	}
+	a.heartbeat(t)
+	if fi := a.m.FleetInfo(); fi.HubRejected || fi.LastError != "" {
+		t.Fatalf("rejoined node still flagged: %+v", fi)
+	}
+}
+
+// Switching the hub role off answers 404 to every node; switching it back on
+// (the hub keeps its nodes) clears the flag at the next accepted request.
+func TestHubSwitchedOffAndBackOn(t *testing.T) {
+	e := newFleetEnv(t)
+	a := e.addNode("node-a", "g1")
+	if err := a.sync(t); err != nil {
+		t.Fatal(err)
+	}
+	off, on := RoleStandalone, RoleHub
+	if err := e.hub.Update(ConfigUpdate{Role: &off}); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := statusOf(t, e.hub)["nodeCount"]; ok {
+		t.Fatal("nodeCount reported by a node that is not a hub")
+	}
+	if err := a.sync(t); err == nil {
+		t.Fatal("sync against a switched-off hub succeeded")
+	}
+	if fi := a.m.FleetInfo(); !fi.HubRejected || a.m.Role() != RoleNode {
+		t.Fatalf("hub off: role %s, %+v", a.m.Role(), fi)
+	}
+	if err := e.hub.Update(ConfigUpdate{Role: &on}); err != nil {
+		t.Fatal(err)
+	}
+	if n := statusOf(t, e.hub)["nodeCount"]; n != float64(1) {
+		t.Fatalf("hub back on: nodeCount = %v, want 1 (the hub keeps its nodes)", n)
+	}
+	a.heartbeat(t)
+	if fi := a.m.FleetInfo(); fi.HubRejected || fi.HubRejectedSince != 0 || fi.LastError != "" {
+		t.Fatalf("flag not cleared by an accepted heartbeat: %+v", fi)
+	}
+	if err := a.sync(t); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A hub that is unreachable or overloaded is not a rejection.
+func TestHubRejectedOnlyOn401And404(t *testing.T) {
+	e := newFleetEnv(t)
+	a := e.addNode("node-a", "g1")
+	for _, code := range []int{http.StatusTooManyRequests, http.StatusInternalServerError, http.StatusBadGateway} {
+		a.m.noteHubAnswer(code)
+		if a.m.FleetInfo().HubRejected {
+			t.Fatalf("HTTP %d counted as a rejection", code)
+		}
+	}
+	a.m.noteHubAnswer(http.StatusUnauthorized)
+	a.m.noteHubAnswer(http.StatusBadGateway)
+	if !a.m.FleetInfo().HubRejected {
+		t.Fatal("a later server error cleared the rejection")
 	}
 }
