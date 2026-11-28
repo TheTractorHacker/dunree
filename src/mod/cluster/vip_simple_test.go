@@ -405,3 +405,13 @@ func TestVIPMainOldFollowerWarning(t *testing.T) {
 		t.Errorf("%s", w.Body.String())
 	}
 }
+
+// The page offers this server's host name as its default name in a first
+// setup, so the config answer has to carry it.
+func TestVIPConfigNodeName(t *testing.T) {
+	m := newSimpleMgr(t, "192.0.2.11/24", &auditRec{})
+	cfg, _ := getJSON(t, m.HandleVIPConfig, VIPRouteConfig)
+	if cfg["nodeName"] != "node-a" {
+		t.Fatalf("nodeName = %v", cfg["nodeName"])
+	}
+}

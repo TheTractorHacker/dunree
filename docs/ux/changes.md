@@ -1215,3 +1215,68 @@ Cluster / HA stays a first-class page. The Floating IP section was reviewed and 
 * **Smoke.** `cluster_vip_smoke.py` covers split brain wording, stale reports, tabs at 390 px, and fails when an expected `cluster-vip-*.png` is missing.
 
 Known limits: not run against a real keepalived or two hosts (no binary here, the config test skips); the i18n guard covers only `cluster.html`, other pages (for example `waf.html`, `plugins.html`, template literals) still have strings the extractor misses; the PASS password stays readable on the VLAN.
+
+## Floating IP: simple guided setup
+
+Owner feedback on the first page: the install steps were confusing. It was not clear where the password goes on each server, how
+"proxy2 is my priority" maps to the page, which configuration belongs to which server (a small "Configuration for" dropdown above
+three tabs), or what the cluster secret has to do with it. The blue "Last step, on your firewall" box repeated under every tab with
+a shield icon, and the Copy button was taller than its heading. The section was redesigned after `docs/cluster/vip-simple-setup.md`.
+
+* **One path, top to bottom, one scroll.** A header with two sentences and a small picture, a "Next step" banner (one sentence,
+  one button, `aria-live`), "Before you start", five numbered steps, and "Show details". A step that cannot be done yet is dimmed
+  and says which step comes first.
+* **Plain words.** Main server and backup server, the servers' own names, "answers on the floating IP", "standing by". Priority,
+  VRRP, virtual router ID, preempt, unicast, GARP and fingerprint appear only under "Show details". The smoke fails when one of
+  them is on the main path.
+* **Before you start.** This server (named by its host name), the other server (found, or asked for with one button), linking
+  (optional, and it says that the scripts do not need it), the health check (one sentence and one button per cause, with a
+  "Why?"). It folds into "All set" when every item is ticked.
+* **Step 1.** One big card per server (`role="radiogroup"`, arrow keys, Space, Enter). Click the one that should normally answer.
+  The priorities are derived (150 / 100 / 99 ...) and stored through the `main` field. One switch: "When the main server is back,
+  it takes over again after 1 minute".
+* **Step 2.** One field, up to three suggested addresses, the network in words ("192.0.2.0 to 192.0.2.255"), warnings in one
+  sentence (a server's own address, outside the network, the router's address, looks like DHCP space) and a required tick
+  "outside my router's DHCP range". The prefix is filled in from the network card and lives under "Show details".
+* **Step 3.** One card per server: "Run this on proxy2 (192.0.2.12)", its role, "You are here", ONE primary button "Copy script",
+  a download link for consoles that cannot paste, and a state line that follows the polling (waiting, older settings, not running,
+  answers, standing by, health check fails, not visible from here). The card title is taken from the script that was made, so the
+  name on the card and the first line of the script cannot differ. The password is never shown on the main path. The raw
+  `keepalived.conf` and the single commands are under the card's "Show details".
+* **Step 4.** "Start the test" shows the command to stop Dunree on the server that answers, watches every second and writes a
+  timeline ("4 s proxy2 took over the floating IP"). It warns first when this page runs on the server to be stopped. A failed
+  request while the address moves is shown as waiting, not as an error.
+* **Step 5.** The firewall note is shown once, here, with an info icon and a tick.
+* **Failures.** Both servers answer, no server answers, the address keeps moving: one sentence, one fix, a "Why?" with the
+  technical reason.
+* **Removed.** The "Configuration for" dropdown, the three tabs, the "Who holds the floating IP" table, the repeated firewall
+  box, the shield icons, the visible password field of a first setup.
+* **Backend.** `GET /api/cluster/vip/config` also returns `nodeName` (this server's host name, the default name of this server).
+  Nothing else changed; the page uses the routes of the backend commit (`script`, `suggest`, `status.nodes`).
+
+Unchanged for existing installs: the feature is off until "Set up a floating IP" is clicked; saved settings are not rewritten
+(settings without `main` keep their hand-set numbers until the user turns "Set the numbers by hand" off and saves); Dunree still
+only makes text and reads status.
+
+Tests: `tools/ui-smoke/cluster_vip_smoke.py` (not ready, ready, a real save, waiting, one running, both running, the test
+timeline, failover happened, split brain, nobody answers, keeps moving, every card state, a blocked health check, a script that
+cannot be made, old settings, follower; 390 px, 1366 px, 1920 px, light and dark), `TestVIPConfigNodeName`,
+`tools/i18n/test_component_keys.py`.
+
+Known limits:
+
+* **Not built from the design:** the link code and "Join with a link code" (the button takes the user to the Role card); the
+  notice "the other server already set this up" on a second, unlinked server (set the floating IP up on ONE server's page and use
+  both scripts from there); the DHCP-assigned address and cloud platform rows; "Use /16" and "Use the new address" one-click
+  fixes; the detected service name for the test (the command is always `sudo systemctl stop dunree`, with a sentence for Docker
+  and other names); the read-only port forward detection of step 5.
+* **Before you start checks the health check of this server only.** The other server's health check is checked by its script.
+* **A server this page cannot reach reads "Can't see it from here".** The page then never claims that the pair works; the
+  script still reports its own result in the terminal.
+* **The states that need running keepalived are shown from fixtures in the smoke.** The real instance covers off, setup, field
+  errors, a real save with a server-made password, real scripts and switching off. Nothing was run on two machines.
+* **The ticks of steps 4 and 5 are remembered per browser** (`localStorage`), not per account.
+* **"Keeps moving" is counted by the open page** (more than four moves in two minutes), so a closed page notices nothing.
+* **Messages from the server** (validator and script blockers, the "Why?" of a check) are English and not in the catalogue.
+* **Suggestions and warnings are IPv4 only.**
+* Chromium was the only browser. Copy falls back to `document.execCommand` on plain HTTP.

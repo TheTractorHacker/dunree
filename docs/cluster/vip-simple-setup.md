@@ -1,6 +1,8 @@
 # Floating IP: simple guided setup (design)
 
-Status: design, not built. It replaces the setup part of section 8 of `docs/cluster/vip-plan.md` (the "Setup" and
+Status: built, with the differences and known limits listed in `docs/ux/changes.md` ("Floating IP: simple guided setup"). The link
+code (4.1), the "already set up on the other server" notice (4.2), the DHCP and platform rows (9.6), the detected service name for
+the test (9.4) and phase 2 of step 5 (12.2) are not built. It replaces the setup part of section 8 of `docs/cluster/vip-plan.md` (the "Setup" and
 "Install" states, the "Configuration for" dropdown and the three tabs). The data model, validators, render guard,
 read-only status and the rule "Dunree applies nothing outside itself" from `vip-plan.md` all stay. Where this file
 and `vip-plan.md` disagree on the page, this file wins. `vip-plan.md` gets a pointer when this is built.

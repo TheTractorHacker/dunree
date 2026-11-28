@@ -111,7 +111,10 @@ func (m *Manager) HandleVIPConfig(w http.ResponseWriter, r *http.Request) {
 		"sharedEditable": m.vipSharedEditable(),
 		"role":           m.Role(),
 		"haveSecret":     m.secret() != "",
-		"fingerprint":    "",
+		// this server's host name: the page offers it as the default name of
+		// this server in a first setup (display only, validated on save)
+		"nodeName":    m.opt.NodeName,
+		"fingerprint": "",
 	}
 	if pass, perr := vip.EffectivePassword(&s, env); perr == nil && s.VIP != "" {
 		out["fingerprint"] = vip.Fingerprint(&s, pass)

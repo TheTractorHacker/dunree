@@ -11,6 +11,25 @@ Dunree **applies nothing** on its own. It validates your settings, **generates**
 and **reads** status. It never edits keepalived, your UniFi controller or the network settings of the host. You copy the
 generated text to each node and run it yourself.
 
+## The short way: follow the page
+
+The Floating IP section of the Cluster / HA page leads you through it, top to bottom. You type one address (your other server),
+pick the floating IP, and run one script on each server. You never type a password, a number or a command.
+
+1. Click **Set up a floating IP**. "Before you start" shows what Dunree found by itself.
+2. **Step 1**: click the server that should normally answer. It becomes the main server, the other one the backup.
+3. **Step 2**: pick the floating IP (the page suggests addresses nothing answered on), tick that it is outside your router's
+   DHCP range, and click **Save and make scripts**.
+4. **Step 3**: one card per server, for example "Run this on proxy2 (192.0.2.12)". Click **Copy script** and paste it into a
+   terminal on that server. The password the servers use to recognise each other is already inside each script. Each card
+   turns green by itself when its server is running.
+5. **Step 4**: click **Start the test**, stop Dunree on the main server as the page says, and watch the backup take over.
+6. **Step 5**: point your router's port forward at the floating IP.
+
+The big "Next step" banner always says the one thing to do now. Everything with numbers (the generated `keepalived.conf`, the
+single commands, timing, the settings for experts) is under "Show details". The rest of this guide explains the same steps by
+hand.
+
 ## What you need
 
 | Item | Example | Notes |
