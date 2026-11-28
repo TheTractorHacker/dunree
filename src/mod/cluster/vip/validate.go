@@ -189,6 +189,11 @@ func ValidateShared(s *Shared) error {
 			return fe("members", "enter at least 2 members")
 		}
 	}
+	if s.Main != "" {
+		if err := checkMain(s); err != nil {
+			return err
+		}
+	}
 	if s.VIP == "" && len(s.Members) == 0 {
 		return nil
 	}
@@ -349,4 +354,52 @@ func ParseHealthTarget(t string) (base string, custom bool, err error) {
 		host = "[::1]"
 	}
 	return u.Scheme + "://" + host + ":" + strconv.Itoa(p), true, nil
+}
+
+// checkMain requires Main to be one member's address and that member to have
+// the highest priority (ApplyMain makes it so; hand-edited files are refused).
+func checkMain(s *Shared) error {
+	idx := -1
+	for i, m := range s.Members {
+		if m.Address == s.Main {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		return fe("main", "must be the address of one of the members")
+	}
+	for i, m := range s.Members {
+		if i != idx && m.Priority >= s.Members[idx].Priority {
+			return fe("main", "the main server needs the highest priority")
+		}
+	}
+	return nil
+}
+
+// ApplyMain derives the member priorities from Main: the main server gets
+// 150, the others 100, 99, 98 ... in list order. It does nothing when Main is
+// empty (priorities set by hand stay as they are).
+func ApplyMain(s *Shared) error {
+	if s.Main == "" {
+		return nil
+	}
+	found := false
+	for _, m := range s.Members {
+		if m.Address == s.Main {
+			found = true
+		}
+	}
+	if !found {
+		return fe("main", "must be the address of one of the members")
+	}
+	next := 100
+	for i := range s.Members {
+		if s.Members[i].Address == s.Main {
+			s.Members[i].Priority = 150
+			continue
+		}
+		s.Members[i].Priority = next
+		next--
+	}
+	return nil
 }

@@ -41,6 +41,8 @@ type VIPOptions struct {
 	Audit func(r *http.Request, event string, detail map[string]string)
 	// NetplanOutside reports whether the VIP is outside the Network plan's proxy network.
 	NetplanOutside func(vip string) bool
+	// HTTPBody fetches a peer's health JSON (at most 8 KiB). Tests replace it.
+	HTTPBody func(url string) ([]byte, error)
 }
 
 func (m *Manager) vipPath() string { return filepath.Join(m.opt.ConfDir, haRoot, vipFileName) }

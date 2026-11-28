@@ -114,6 +114,7 @@ func NewManager(opt Options) (*Manager, error) {
 		opt.Logf = func(string, ...any) {}
 	}
 	m := &Manager{opt: opt, health: NewHealthEndpoint(opt.Version)}
+	m.health.SetExtra(m.healthVIPBlock)
 	m.cfg = Config{Role: RoleStandalone}
 	if b, err := os.ReadFile(m.configPath()); err == nil {
 		if err := json.Unmarshal(b, &m.cfg); err != nil {

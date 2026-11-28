@@ -24,6 +24,8 @@ const (
 	VIPRoutePreflight = "/api/cluster/vip/preflight"
 	VIPRouteGenerate  = "/api/cluster/vip/generate"
 	VIPRouteStatus    = "/api/cluster/vip/status"
+	VIPRouteScript    = "/api/cluster/vip/script"
+	VIPRouteSuggest   = "/api/cluster/vip/suggest"
 )
 
 const vipMaxForm = 64 << 10
@@ -176,6 +178,20 @@ func (m *Manager) HandleVIPShared(w http.ResponseWriter, r *http.Request) {
 	if s.Auth != vip.AuthPassword {
 		s.Password = ""
 	}
+	if r.PostForm.Get("generatePassword") == "1" && s.Auth == vip.AuthPassword && s.Password == "" {
+		// "Automatic" without linked servers: the server makes the password, once
+		np, perr := NewVIPPassword()
+		if perr != nil {
+			writeErr(w, "cannot generate a password: "+perr.Error())
+			return
+		}
+		s.Password = np
+	}
+	// The main server decides the priorities (they are derived, never typed)
+	if err := vip.ApplyMain(&s); err != nil {
+		vipWriteErr(w, err)
+		return
+	}
 	// The cluster password never comes from the page: keep the saved one, make
 	// one the first time auth=cluster is used, or replace it on request.
 	s.ClusterPass = old.ClusterPass
@@ -198,7 +214,7 @@ func (m *Manager) HandleVIPShared(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, "authentication is set to the cluster secret, but no cluster secret is set")
 		return
 	}
-	if m.Role() == RolePrimary && !exists && r.PostForm.Get("ackOldFollowers") != "true" {
+	if m.Role() == RolePrimary && (!exists || (s.Main != "" && old.Main == "")) && r.PostForm.Get("ackOldFollowers") != "true" {
 		if old := m.oldFollowers(); len(old) > 0 {
 			writeJSON(w, map[string]any{
 				"error":        "These followers run another version and may refuse a snapshot that carries the floating IP settings until they are updated: " + strings.Join(old, ", ") + ". Update them first, or confirm with ackOldFollowers=true.",
@@ -415,6 +431,10 @@ func (m *Manager) HandleVIPStatus(w http.ResponseWriter, r *http.Request) {
 		resp.Reach = m.vipReach(&s, cached)
 	}
 	out := map[string]any{"status": resp, "exists": exists, "enabled": s.Enabled}
+	if exists && s.VIP != "" && len(s.Members) > 0 {
+		l := m.VIPLocal()
+		out["nodes"] = m.vipNodes(&s, &l, m.vipEnv(), cached)
+	}
 	if m.Role() == RolePrimary && exists {
 		peers, split := m.vipPeers(cached)
 		out["peers"] = peers

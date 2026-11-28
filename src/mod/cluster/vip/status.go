@@ -21,6 +21,8 @@ type Paths struct {
 	ConfFile       string
 	ARPFile        string
 	UFWConf        string
+	RouteFile      string // /proc/net/route, for the address suggestions
+	MarkerFile     string // written by the installer script, read for the install progress
 }
 
 // SystemPaths are the real locations on a Debian / Ubuntu host.
@@ -33,6 +35,8 @@ func SystemPaths() Paths {
 		ConfFile:       "/etc/keepalived/keepalived.conf",
 		ARPFile:        "/proc/net/arp",
 		UFWConf:        "/etc/ufw/ufw.conf",
+		RouteFile:      "/proc/net/route",
+		MarkerFile:     "/etc/keepalived/dunree-installed",
 	}
 }
 
@@ -88,8 +92,12 @@ type Status struct {
 	ConfigMatches   Tri    `json:"installedConfigMatches"`
 	InstalledFinger string `json:"installedFingerprint,omitempty"`
 	CurrentFinger   string `json:"fingerprint,omitempty"`
-	UFWEnabled      bool   `json:"ufwEnabled"`
-	Error           string `json:"error,omitempty"`
+	// Installed is true when the installer script left its marker file.
+	Installed    bool   `json:"installed"`
+	MarkerFinger string `json:"markerFingerprint,omitempty"`
+	MarkerAt     string `json:"installedAt,omitempty"`
+	UFWEnabled   bool   `json:"ufwEnabled"`
+	Error        string `json:"error,omitempty"`
 }
 
 // HeartbeatFact is the optional field a node adds to its heartbeat.
@@ -119,6 +127,9 @@ func ReadStatus(s *Shared, l *Local, lister InterfaceLister, p Paths, env *Env) 
 		}
 	}
 	st.KeepalivedUp = readRunning(p)
+	if mk, ok := ReadMarker(p.MarkerFile); ok {
+		st.Installed, st.MarkerFinger, st.MarkerAt = true, mk.Fingerprint, mk.InstalledAt
+	}
 	ifs, err := lister.Interfaces()
 	if err != nil {
 		st.Error = "cannot list network interfaces"
@@ -233,7 +244,7 @@ func (r *Reader) Get(build func() Status) Status {
 	}
 	ttl := r.TTL
 	if ttl == 0 {
-		ttl = 5 * time.Second
+		ttl = 2 * time.Second
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()

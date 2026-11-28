@@ -195,6 +195,8 @@ func RegisterClusterAPIs(authRouter *auth.RouterDef) {
 	authRouter.HandleFunc(cluster.VIPRoutePreflight, clusterMgr.HandleVIPPreflight)
 	authRouter.HandleFunc(cluster.VIPRouteGenerate, clusterMgr.HandleVIPGenerate)
 	authRouter.HandleFunc(cluster.VIPRouteStatus, clusterMgr.HandleVIPStatus)
+	authRouter.HandleFunc(cluster.VIPRouteScript, clusterMgr.HandleVIPScript)
+	authRouter.HandleFunc(cluster.VIPRouteSuggest, clusterMgr.HandleVIPSuggest)
 	// Fleet (central management): hub admin API and node side join/leave/info
 	authRouter.HandleFunc(cluster.FleetAPIPrefix, clusterMgr.HandleFleetHub)
 	authRouter.HandleFunc("/api/fleet/node/info", clusterMgr.HandleFleetNodeInfo)

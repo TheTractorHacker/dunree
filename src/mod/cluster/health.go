@@ -29,6 +29,15 @@ type HealthEndpoint struct {
 	mu       sync.RWMutex
 	allow    []*net.IPNet
 	disabled bool
+	extra    func(r *http.Request) map[string]any
+}
+
+// SetExtra registers a function whose result is added to the health JSON
+// under "vip" (floating IP facts). It returns nil when there is nothing to add.
+func (h *HealthEndpoint) SetExtra(f func(r *http.Request) map[string]any) {
+	h.mu.Lock()
+	h.extra = f
+	h.mu.Unlock()
 }
 
 // NewHealthEndpoint creates an endpoint that allows everyone.
@@ -128,13 +137,22 @@ func (h *HealthEndpoint) Serve(w http.ResponseWriter, r *http.Request, running b
 	if !running {
 		status, code = "unavailable", http.StatusServiceUnavailable
 	}
-	body, _ := json.Marshal(map[string]any{
+	doc := map[string]any{
 		"status":          status,
 		"version":         h.Version,
 		"uptimeSeconds":   int64(time.Since(h.Started).Seconds()),
 		"proxyRunning":    running,
 		"activeEndpoints": endpoints,
-	})
+	}
+	h.mu.RLock()
+	extra := h.extra
+	h.mu.RUnlock()
+	if extra != nil {
+		if v := extra(r); v != nil {
+			doc["vip"] = v
+		}
+	}
+	body, _ := json.Marshal(doc)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(code)

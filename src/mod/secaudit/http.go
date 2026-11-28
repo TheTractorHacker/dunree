@@ -76,7 +76,7 @@ var skip = []string{
 }
 
 // always are recorded for any method: reading them hands out secrets.
-var always = []string{"/api/conf/export", "/api/cluster/vip/generate"}
+var always = []string{"/api/conf/export", "/api/cluster/vip/generate", "/api/cluster/vip/script"}
 
 func hasPrefixAny(p string, list []string) bool {
 	for _, s := range list {

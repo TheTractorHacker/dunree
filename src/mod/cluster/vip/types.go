@@ -65,6 +65,13 @@ type Shared struct {
 	Health       Health `json:"health"`
 	NotifyLog    bool   `json:"notifyLog"`
 	GarpRefresh  int    `json:"garpRefresh"`
+	// Main is the address of the member that normally holds the floating IP.
+	// "" means the priorities were set by hand (older settings, or "set the
+	// numbers by hand"). When set, the priorities are derived by ApplyMain.
+	Main string `json:"main,omitempty"`
+	// DHCPChecked records the user's tick "outside my router's DHCP range"
+	// for the current VIP. Informational: it changes no generated text.
+	DHCPChecked bool `json:"dhcpChecked,omitempty"`
 }
 
 // Local holds the node-local overrides (conf/cluster.json, "vipLocal").

@@ -387,17 +387,30 @@ var reHostName = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
 // Generate renders keepalived.conf for one member (section 3). member < 0
 // means this node. It is a pure function of its inputs.
 func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
+	out, _, err := generate(s, l, env, member, nil)
+	return out, err
+}
+
+// PeerFacts are what the peer's own Dunree reported about itself (its
+// interface name and health check base URL). Empty fields are guessed from
+// this node and listed in ScriptOutput.Guessed.
+type PeerFacts struct {
+	Iface     string // interface carrying the member address
+	ProbeBase string // scheme://host:port of the health listener, "" = guess
+}
+
+func generate(s *Shared, l *Local, env *Env, member int, pf *PeerFacts) (*Output, *tmplData, error) {
 	if l == nil {
 		l = &Local{}
 	}
 	if err := ValidateShared(s); err != nil {
-		return nil, &BlockedError{Blockers: []string{err.Error()}}
+		return nil, nil, &BlockedError{Blockers: []string{err.Error()}}
 	}
 	if err := ValidateLocal(l, s); err != nil {
-		return nil, &BlockedError{Blockers: []string{err.Error()}}
+		return nil, nil, &BlockedError{Blockers: []string{err.Error()}}
 	}
 	if s.VIP == "" || len(s.Members) < 2 {
-		return nil, &BlockedError{Blockers: []string{"enter the floating IP and at least two members"}}
+		return nil, nil, &BlockedError{Blockers: []string{"enter the floating IP and at least two members"}}
 	}
 	var blockers, warnings []string
 	pass, err := EffectivePassword(s, env)
@@ -428,11 +441,14 @@ func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
 		}
 	} else {
 		if member >= len(s.Members) {
-			return nil, &BlockedError{Blockers: []string{"no such member"}}
+			return nil, nil, &BlockedError{Blockers: []string{"no such member"}}
 		}
 		idx = member
 		prio = s.Members[idx].Priority
 		ifaceName = s.Members[idx].InterfaceHint
+		if pf != nil && pf.Iface != "" {
+			ifaceName = pf.Iface
+		}
 		if ifaceName == "" && serr == nil {
 			ifaceName = self.Interface
 			warnings = append(warnings, "the interface name was taken from this node ("+ifaceName+"); check the interface name on "+s.Members[idx].Label)
@@ -440,15 +456,21 @@ func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
 		if ifaceName == "" {
 			blockers = append(blockers, "set an interface hint for "+s.Members[idx].Label+" or open the page on that node")
 		}
-		warnings = append(warnings, "the health check target was chosen from this node's listener settings; check it on "+s.Members[idx].Label)
+		if pf == nil || pf.ProbeBase == "" {
+			warnings = append(warnings, "the health check target was chosen from this node's listener settings; check it on "+s.Members[idx].Label)
+		}
 	}
 	pr, pb, perr := ProbeTarget(s, l, env)
+	if member >= 0 && pf != nil && pf.ProbeBase != "" {
+		// the peer told us how it reaches its own health check
+		pr, pb, perr = probe{Base: pf.ProbeBase, TLS: strings.HasPrefix(pf.ProbeBase, "https://")}, nil, nil
+	}
 	blockers = append(blockers, pb...)
 	if perr != nil {
 		blockers = append(blockers, perr.Error())
 	}
 	if len(blockers) > 0 {
-		return nil, &BlockedError{Blockers: blockers}
+		return nil, nil, &BlockedError{Blockers: blockers}
 	}
 	m := s.Members[idx]
 	d.Label, d.Source, d.Iface, d.Priority = m.Label, m.Address, ifaceName, prio
@@ -492,16 +514,16 @@ func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
 	d.Script = script
 	d.Fingerprint = Fingerprint(s, pass)
 	if err := checkRendered(d); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, d); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	conf := buf.String()
 	for _, line := range strings.Split(conf, "\n") {
 		if strings.TrimSpace(line) == heredocDelim {
-			return nil, errors.New("render guard: heredoc delimiter in output")
+			return nil, nil, errors.New("render guard: heredoc delimiter in output")
 		}
 	}
 	out := &Output{KeepalivedConf: conf, Fingerprint: d.Fingerprint, Member: m.Label, HealthURL: healthURL, Warnings: warnings}
@@ -518,7 +540,7 @@ func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
 	if env.UFWEnabled {
 		out.FirewallNote = ufwNote(s, d)
 	}
-	return out, nil
+	return out, d, nil
 }
 
 func bindsVIP(f ListenerFacts, vip netip.Addr) bool {
