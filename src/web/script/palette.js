@@ -147,6 +147,8 @@
     function reveal(sel, focus) {
         var el = typeof sel === "string" ? document.querySelector(sel) : sel;
         if (!el) { return; }
+        // a target inside a closed <details> (an optional section) is opened first, or nothing visible would be scrolled to
+        try { for (var d = el.closest && el.closest("details:not([open])"); d; d = d.parentElement && d.parentElement.closest("details:not([open])")) { d.open = true; } } catch (e) { /* not a details */ }
         var box = el.closest(".field, .ui.checkbox, .ui.input, .ui.dropdown, .zx-field, .zx-toggle-row") || el;
         try { box.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { box.scrollIntoView(); }
         box.classList.add("zx-flash");

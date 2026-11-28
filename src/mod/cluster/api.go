@@ -50,7 +50,8 @@ func (m *Manager) HandleStatus(w http.ResponseWriter, r *http.Request) {
 		"fleet":              m.FleetInfo(),
 	}
 	if cfg.Role == RoleHub {
-		out["nodeCount"] = m.hub.NodeCount() //so the page can say how many nodes this hub manages
+		out["nodeCount"] = m.hub.NodeCount() //nodes this hub manages (revoked ones are not counted)
+		out["revokedCount"] = m.hub.RevokedCount()
 	}
 	if cfg.Role == RoleFollower {
 		out["follower"] = m.Status()
@@ -79,6 +80,12 @@ func (m *Manager) HandleConfig(w http.ResponseWriter, r *http.Request) {
 		return strings.TrimSpace(r.PostForm.Get(k)), true
 	}
 	if v, ok := has("role"); ok {
+		if m.Role() == RoleNode && v != RoleNode {
+			// leaving forgets the hub address and the node key; a plain role
+			// switch would keep both and leave a half-left node behind
+			writeErr(w, "This node is part of a Fleet. Use Leave Fleet on the Fleet page to leave it first.")
+			return
+		}
 		u.Role = &v
 	}
 	if v, ok := has("secret"); ok && v != "" {

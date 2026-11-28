@@ -60,6 +60,7 @@
         #fleetPage .flActions b { display: block; color: var(--zx-text); }
         #fleetPage .flMove { display: flex; gap: var(--zx-space-2); }
         #fleetPage .flMove input { min-width: 0; width: 9rem; }
+        #fleetPage .flWhyOff { flex: 1 1 100%; margin: 0; }
         #fleetPage .flSteps { margin: 0 0 var(--zx-space-3); padding-left: 1.3em; color: var(--zx-text); line-height: var(--zx-lh); }
         #fleetPage .flSteps li { margin-bottom: var(--zx-space-1); }
         #fleetPage #flProbeBox { margin: 0; }
@@ -94,14 +95,13 @@
                 <p class="cx-status__desc" id="flStatusDesc"></p>
             </div>
             <div class="cx-status__action" id="flNodeActions" style="display:none;">
-                <button class="zx-btn zx-btn--secondary" id="flNodeSync"><i class="sync icon" aria-hidden="true"></i> Sync now</button>
+                <button class="zx-btn zx-btn--secondary" id="flNodeSync"><i class="sync icon" aria-hidden="true"></i> <span id="flNodeSyncText">Sync now</span></button>
                 <button class="zx-btn zx-btn--danger-outline" id="flNodeLeave">Leave Fleet</button>
             </div>
         </div>
         <div id="flRejected" class="zx-callout zx-callout--danger" role="alert" hidden>
             <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
-            <div class="zx-callout__body"><span class="zx-callout__title">The hub no longer accepts this node.</span>
-            It was removed from the Fleet, or the hub was switched off. Leave the Fleet to manage this node on its own again. Everything the hub set up stays here. <span id="flRejectedSince"></span></div>
+            <div class="zx-callout__body"><span class="zx-callout__title" id="flRejectedTitle"></span><span id="flRejectedText"></span></div>
         </div>
         <dl class="cx-facts" id="flAgg" aria-live="polite"></dl>
     </section>
@@ -110,7 +110,7 @@
     <div id="flStandalone" style="display:none;">
         <div id="flLegacyNote" class="zx-callout zx-callout--warn" role="note" style="display:none;margin-bottom:var(--zx-space-4);">
             <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation circle icon"></i></span>
-            <div class="zx-callout__body">This node is a primary or a follower. Switch it to standalone before you start or join a Fleet. <a href="#cluster" data-nav-open="cluster" id="flLegacyLink">Open Cluster / HA</a></div>
+            <div class="zx-callout__body"><span id="flLegacyText">This node is part of Cluster / HA. Switch it to standalone there before you start or join a Fleet.</span> <a href="#cluster" data-nav-open="cluster" id="flLegacyLink">Open Cluster / HA</a></div>
         </div>
         <div class="flChoice">
             <section class="zx-card">
@@ -125,7 +125,7 @@
                     </ul>
                     <p class="zx-help">Its own configuration is what gets published to the nodes. Use node variables in proxy rules only if the hub does not proxy those sites itself.</p>
                 </div>
-                <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="flBecomeHub">Enable hub role</button></div>
+                <div class="zx-card__foot"><button class="zx-btn zx-btn--primary" id="flBecomeHub">Enable hub role</button> <span class="zx-help flWhyOff" hidden>Not available while this node is in Cluster / HA. See the note above.</span></div>
             </section>
             <section class="zx-card">
                 <div class="zx-card__head"><h3 class="zx-card__title">Join a fleet</h3></div>
@@ -138,6 +138,7 @@
                 <div class="zx-card__foot">
                     <button class="zx-btn zx-btn--secondary" id="flProbeBtn">1. Check hub certificate</button>
                     <button class="zx-btn zx-btn--primary" id="flJoinBtn" disabled>2. Join</button>
+                    <span class="zx-help flWhyOff" hidden>Not available while this node is in Cluster / HA. See the note above.</span>
                 </div>
             </section>
         </div>
@@ -439,8 +440,13 @@
         $("#flStatusIcon").attr("class", icon + " icon");
         $("#flStatusTitle").text(title);
         $("#flRoleBadge").attr("class", "zx-badge zx-badge--dot" + (badgeKind ? " zx-badge--" + badgeKind : "")).text(badge || "").prop("hidden", !badge);
-        $("#flStatusDesc").text(desc);
+        $("#flStatusDesc").text(desc).prop("hidden", !desc);
         $("#flAgg").html(facts || "");
+    }
+    function clockGap(sec){
+        let m = Math.max(1, Math.round(Math.abs(sec) / 60));
+        if (m >= 120) return tf("about {0} hours", Math.round(m / 60));
+        return m == 1 ? t("about 1 minute") : tf("about {0} minutes", m);
     }
     function dur(s){ if (!s) return "-"; return s < 3600 ? Math.round(s/60) + "m" : s < 172800 ? Math.round(s/3600) + "h" : Math.round(s/86400) + "d"; }
     //Results are toasts (visible wherever the page is scrolled), not a banner that pushes the page down
@@ -480,19 +486,33 @@
         let roleChanged = shownRole !== null && shownRole != i.role;
         info = i; shownRole = i.role;
         $("#flStandalone, #flNode, #flHub, #flNodeActions").hide();
-        let rejected = i.role == "node" && !!(i.fleet && i.fleet.hubRejected);
-        $("#flRejected").prop("hidden", !rejected);
-        $("#flRejectedSince").text(rejected && i.fleet.hubRejectedSince ? tf("Refused since {0}.", ts(i.fleet.hubRejectedSince)) : "");
+        let rejected = i.role == "node" && !!(i.fleet && i.fleet.hubRejected), clock = rejected && i.fleet.hubRejectReason == "clock";
+        $("#flRejected").prop("hidden", !rejected).attr("class", "zx-callout zx-callout--" + (clock ? "warn" : "danger")).attr("data-reason", rejected ? (clock ? "clock" : "refused") : null);
+        if (rejected) {
+            let f = i.fleet;
+            if (clock) {
+                $("#flRejectedTitle").text(t("The clock of this server and the clock of the hub differ."));
+                $("#flRejectedText").text((f.hubClockOffset > 0 ? tf("This server is {0} behind the hub.", clockGap(f.hubClockOffset)) : tf("This server is {0} ahead of the hub.", clockGap(f.hubClockOffset))) + " " +
+                    t("Set the correct time on both (use an NTP time service), then press Try again. Do not leave the Fleet because of this."));
+            } else {
+                $("#flRejectedTitle").text(f.hubRejectedSince ? tf("The hub has refused this node since {0}.", ts(f.hubRejectedSince)) : t("The hub has refused this node."));
+                $("#flRejectedText").text(t("Usually the node was removed on the hub, or Fleet was turned off there. If you did neither, check that the clock of this server is correct and that the hub address is right, then press Try again. Otherwise, leave the Fleet to manage this node on its own. Everything the hub set up stays here."));
+            }
+        }
+        //while the hub refuses the node, leaving is the way out (the main button) and syncing is only a retry; a clock problem is not a reason to leave
+        $("#flNodeLeave").attr("class", "zx-btn " + (rejected && !clock ? "zx-btn--primary" : "zx-btn--danger-outline")).prop("hidden", clock);
+        $("#flNodeSync").attr("class", "zx-btn " + (rejected && !clock ? "zx-btn--secondary" : rejected ? "zx-btn--primary" : "zx-btn--secondary"));
+        $("#flNodeSyncText").text(rejected ? t("Try again") : t("Sync now"));
         if (roleChanged && window.ZxRole) window.ZxRole.changed();
         if (i.role == "hub") { $("#flHub").show(); if (!ov) setStatus(true, "sitemap", t("This Dunree is the hub"), "", "", t("It publishes configuration to the nodes that joined it and watches their health."), ""); loadHub(); return; }
         if (i.role == "node") {
             let f = i.fleet || {}, res = resultWord(f.lastResult);
             $("#flNode, #flNodeActions").show();
             $("#flNodeHub").text(f.hubHost || t("hub"));
-            let kind = f.lastError ? "danger" : !f.lastResult ? "" : f.insecureTransport ? "warn" : "ok";
-            let word = f.hubRejected ? t("The hub no longer accepts this node") : f.lastError ? t("Last sync failed") : !f.lastResult ? t("Not synced yet") : f.insecureTransport ? t("In sync, but over plain http") : t("In sync with the hub");
-            setStatus(true, "cube", tf("Managed by the hub {0}", f.hubHost || ""), kind, word,
-                t("This Dunree pulls the configuration of its group from the hub and keeps everything else local. The hub can never run commands here."),
+            let gone = rejected && !clock, kind = gone ? "danger" : clock ? "warn" : f.lastError ? "danger" : !f.lastResult ? "" : f.insecureTransport ? "warn" : "ok";
+            let word = clock ? t("Clocks differ") : gone ? t("Cut off") : f.lastError ? t("Last sync failed") : !f.lastResult ? t("Not synced yet") : f.insecureTransport ? t("In sync, but over plain http") : t("In sync with the hub");
+            setStatus(true, "cube", gone ? t("This node was in a Fleet") : tf("Managed by the hub {0}", f.hubHost || ""), kind, word,
+                gone ? "" : t("This Dunree pulls the configuration of its group from the hub and keeps everything else local. The hub can never run commands here."),
                 fact("Group", f.group || "-") +
                 fact("Applied version", f.appliedVersion ? "v" + f.appliedVersion : t("None yet")) +
                 fact("Last sync", f.lastResult ? res.word : t("Never"), f.lastError ? "danger" : "", f.lastSuccessAt ? tf("last success {0}", ago(f.lastSuccessAt)) : "") +
@@ -510,6 +530,8 @@
         setStatus(false, "cube", t("This Dunree runs on its own"), "", t("Fleet is off"), t("Fleet is off, which is the default. Make this node the hub that manages the others, or join a hub that already exists."), "");
         $("#flStandalone").show();
         $("#flLegacyNote").toggle(!!i.legacy);
+        $("#flLegacyText").text(i.role == "follower" ? t("This node is a follower in Cluster / HA. Switch it to standalone there before you start or join a Fleet.") : i.role == "primary" ? t("This node is the primary in Cluster / HA. Switch it to standalone there before you start or join a Fleet.") : t("This node is part of Cluster / HA. Switch it to standalone there before you start or join a Fleet."));
+        $(".flWhyOff").prop("hidden", !i.legacy);
         $("#flBecomeHub, #flProbeBtn").prop("disabled", !!i.legacy);
         $("#flJoinBtn").prop("disabled", !!i.legacy || probedFp === null);   //Join stays locked until the hub certificate was checked
     }
@@ -577,7 +599,7 @@
     $("#flJoinUrl").on("input", function(){ probedFp = null; $("#flJoinBtn").prop("disabled", true); $("#flProbeBox").prop("hidden", true).empty(); });
     $("#flNodeSync").on("click", function(){ post("./api/fleet/node/syncNow", {}, function(){ msg(t("Synced")); loadInfo(); }); });
     $("#flNodeLeave").on("click", function(){
-        ask(t("Leave the Fleet?"), t("Everything the hub set up stays here as this node's own settings, and you can change it again. The hub sends this node no more updates."), t("Leave Fleet"), true).then(function(ok){
+        ask(t("Leave the Fleet?"), t("Everything the hub set up stays here as this node's own settings, and you can change it again. The hub sends this node no more updates.") + (info && info.fleet && info.fleet.hubRejected ? "" : " " + t("The hub still lists this node as offline until you remove it on the hub's Fleet page.")), t("Leave Fleet"), true).then(function(ok){
             if (ok) post("./api/fleet/node/leave", {}, function(){ msg(t("This node left the Fleet and runs on its own again")); roleChanged(); });
         });
     });

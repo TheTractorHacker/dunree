@@ -21,7 +21,12 @@ func (m *Manager) FleetHandler() http.Handler {
 	mux.HandleFunc(FleetJoinPath, m.hub.handleJoin)
 	mux.HandleFunc(FleetConfigPath, m.hub.handleConfig)
 	mux.HandleFunc(FleetHeartbeatPath, m.hub.handleHeartbeat)
-	return mux
+	// the node compares this Date with its own clock to tell "clocks differ"
+	// from "removed" when it is refused; it comes from the hub's clock
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Date", m.hub.now().UTC().Format(http.TimeFormat))
+		mux.ServeHTTP(w, r)
+	})
 }
 
 func (h *Hub) gate(w http.ResponseWriter, r *http.Request, method string, lim *RateLimiter) bool {

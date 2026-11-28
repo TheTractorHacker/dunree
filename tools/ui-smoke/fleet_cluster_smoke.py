@@ -160,7 +160,11 @@ with sync_playwright() as p:
             buttons: [...document.querySelectorAll('#clStatus button')].filter(b => b.offsetParent !== null).map(b => b.innerText.trim()), text: l.innerText,
             radios: [...document.querySelectorAll('input[name=clRole]')].filter(r => r.offsetParent !== null).length,
             checked: [...document.querySelectorAll('input[name=clRole]:checked')].map(r => r.value),
-            save: document.getElementById('clSaveBtn').offsetParent !== null, note: document.getElementById('clRoleLocked').offsetParent !== null ? document.getElementById('clRoleLocked').innerText : ''}; }""")
+            save: document.getElementById('clSaveBtn').offsetParent !== null, roleCard: document.getElementById('clRoleCard').offsetParent !== null,
+            desc: document.getElementById('clStatusDesc').offsetParent !== null ? document.getElementById('clStatusDesc').innerText : ''}; }""")
+
+    def banner(pg):
+        return pg.evaluate("""() => { const b = document.getElementById('fleetManagedBanner'); return {shown: b.offsetParent !== null, text: b.offsetParent !== null ? b.innerText : '', warn: b.classList.contains('warning')}; }""")
 
     def confirm(pg):
         pg.wait_for_selector(".zx-dialog", timeout=3000)
@@ -187,7 +191,7 @@ with sync_playwright() as p:
     check("2 nodes" in hub.inner_text("#clStatusDesc"), "hub: the status says how many nodes it manages", hub.inner_text("#clStatusDesc"))
     lk = lock(hub)
     check(lk["shown"] and lk["kind"] == "hub" and lk["buttons"] == ["Stop being a hub"], "hub: one callout says why the roles are off, with exactly one button", str(lk))
-    check(lk["radios"] == 0 and not lk["save"] and "stopped being a hub" in lk["note"] and lk["checked"] == [], "hub: no greyed role choice and no dead Save button, one sentence instead", str(lk))
+    check(lk["radios"] == 0 and not lk["save"] and not lk["roleCard"] and lk["checked"] == [], "hub: no Role card at all (no greyed choice, no dead Save button, no repeated sentence)", str(lk))
     check("managed on the Fleet page and cannot be changed here" not in hub.inner_text("#clusterPage"), "hub: the old dead-end sentence is gone")
     shots(hub, "cluster-hub")
 
@@ -195,36 +199,51 @@ with sync_playwright() as p:
     title_is(na, f"managed by the Fleet hub {re.escape(HUB_HOST)}$", "node: the Cluster / HA page names the hub")
     lk = lock(na)
     check(lk["shown"] and lk["kind"] == "node" and lk["buttons"] == ["Leave Fleet"], "node: one callout says why the roles are off, with exactly one button", str(lk))
-    check(lk["radios"] == 0 and not lk["save"] and "left the Fleet" in lk["note"], "node: no greyed role choice, one sentence instead", str(lk))
+    check(lk["radios"] == 0 and not lk["save"] and not lk["roleCard"], "node: no Role card at all", str(lk))
     check(na.inner_text("#clRoleBadge") == "In sync with the hub", "node: the badge shows the sync state", na.inner_text("#clRoleBadge"))
     check(na.is_visible("#clSecretNode") and not na.is_visible("#clGenBtn"), "node: setting a secret is a closed, optional section")
     na.click("#clSecretNode > summary")
     check(na.is_visible("#clGenBtn") and na.is_visible("#clSecretIn"), "node: the optional section opens to the two ways to set the secret")
     na.click("#clSecretNode > summary")
-    check(na.is_visible("#fleetManagedBanner"), "node: the 'Managed by hub' banner is shown")
+    bn = banner(na)
+    check(bn["shown"] and not bn["warn"] and "manages some settings on this node" in bn["text"] and "read-only here" in bn["text"] and "managed scopes" not in bn["text"] and "node local" not in bn["text"],
+          "node: the banner above every page says in plain words what the hub manages", str(bn))
     shots(na, "cluster-node")
 
     # ---------- the hub removes node A while A looks at another page ----------
     go(na, "status")
     ok(api(args.hub, "/api/fleet/hub/nodeRemove", {"id": id_a}), "hub: node-a removed")
     code, body = api(args.node_a, "/api/fleet/node/syncNow", {})  # the node's next contact with the hub (normally its heartbeat, 20 s)
-    check(isinstance(body, dict) and "rejected" in str(body.get("error", "")), "node-a: its next contact with the hub is refused", str(body)[:200])
+    check(isinstance(body, dict) and "refused this node" in str(body.get("error", "")), "node-a: its next contact with the hub is refused", str(body)[:200])
     st = status(args.node_a)
     check(st["role"] == "node" and st["fleet"].get("hubRejected") is True and st["fleet"].get("hubRejectedSince", 0) > 0, "node-a: still a node, and the status says the hub refuses it", str(st.get("fleet")))
     go(na, "cluster")  # opened from the menu: must not show what it showed before
     try:
-        na.wait_for_function("document.getElementById('clRoleBadge').innerText == 'The hub no longer accepts this node'", timeout=FAST)
+        na.wait_for_function("document.getElementById('clRoleBadge').innerText == 'Cut off'", timeout=FAST)
         check(True, "node-a: Cluster / HA opened from the menu shows the new state at once (no wait for the polling)")
     except Exception:
         check(False, "node-a: Cluster / HA opened from the menu shows the new state at once", na.inner_text("#clStatus"))
     lk = lock(na)
-    check(lk["kind"] == "rejected" and lk["buttons"] == ["Leave Fleet"] and "removed from the Fleet, or the hub was switched off" in lk["text"], "node-a: plain message and the one way out", str(lk))
+    check(lk["kind"] == "rejected" and lk["buttons"] == ["Leave Fleet"] and "has refused this node since" in lk["text"] and "removed on the hub" in lk["text"] and "clock of this server" in lk["text"] and "hub address" in lk["text"],
+          "node-a: plain message that names the possible causes (removed, clock, address) before the way out", str(lk))
+    title_is(na, "^This node was in a Fleet$", "node-a: the title no longer says the hub manages this node")
+    check(lk["desc"] == "" and "The hub sends this node its configuration" not in na.inner_text("#clStatus"), "node-a: the sentence 'the hub sends this node its configuration' is gone", lk["desc"])
+    shown = [m for m in ("Managed by hub", "manages some settings", "is managed by the Fleet hub") if m in na.inner_text("#clStatus")]
+    check(not shown, "node-a: nothing in the status card still says the hub manages this node", str(shown))
+    bn = banner(na)
+    check(bn["shown"] and bn["warn"] and "no longer accepts this node" in bn["text"] and "manages some settings" not in bn["text"] and "Leave the Fleet" in bn["text"], "node-a: the banner above every page turns into a warning", str(bn))
+    check(na.inner_text("#clFacts").count("no longer accepts") == 0, "node-a: the hub fact has no repeated sentence", na.inner_text("#clFacts")[:200])
     check("zx-btn--primary" in na.get_attribute("#clFleetLockBtn", "class") and "zx-callout--danger" in na.get_attribute("#clFleetLock", "class"), "node-a: Leave Fleet is the main action of a red callout")
     shots(na, "cluster-node-rejected")
     go(na, "fleet")
     try:
         na.wait_for_selector("#flRejected", state="visible", timeout=FAST)
-        check(na.inner_text("#flRoleBadge") == "The hub no longer accepts this node" and na.is_visible("#flNodeLeave"), "node-a: the Fleet page says the same, next to its Leave Fleet button", na.inner_text("#flStatus")[:200])
+        check(na.inner_text("#flRoleBadge") == "Cut off" and na.is_visible("#flNodeLeave"), "node-a: the Fleet page says the same, next to its Leave Fleet button", na.inner_text("#flStatus")[:200])
+        rt = na.inner_text("#flRejected")
+        check("has refused this node since" in rt and "clock of this server" in rt and "hub address" in rt, "node-a: the Fleet page names the same possible causes", rt)
+        check("zx-btn--primary" in na.get_attribute("#flNodeLeave", "class") and "zx-btn--secondary" in na.get_attribute("#flNodeSync", "class") and na.inner_text("#flNodeSync").strip() == "Try again",
+              "node-a: Fleet page: Leave Fleet is the main button, Sync now is only 'Try again'", na.get_attribute("#flNodeLeave", "class") + " / " + na.inner_text("#flNodeSync"))
+        check("hub rejected this node (" not in na.inner_text("#flNode"), "node-a: no raw 'hub rejected this node (...)' text in the Last error row", na.inner_text("#flNode")[:300])
     except Exception:
         check(False, "node-a: the Fleet page shows the rejection at once", na.inner_text("#flStatus")[:200])
     shots(na, "fleet-node-rejected", "fleetPage", "#flStatus")
@@ -235,13 +254,13 @@ with sync_playwright() as p:
     na.wait_for_timeout(400)
     na.click("#clFleetLockBtn")
     na.wait_for_selector(".zx-dialog", timeout=3000)
-    check("stays here as this node's own settings" in na.inner_text(".zx-dialog"), "node-a: Leave Fleet asks first and says what stays", na.inner_text(".zx-dialog")[:200])
+    check("stays here as this node's own settings" in na.inner_text(".zx-dialog") and "listed as offline" not in na.inner_text(".zx-dialog"), "node-a: Leave Fleet asks first and says what stays (no offline note: the hub removed this node)", na.inner_text(".zx-dialog")[:200])
     na.screenshot(path=os.path.join(args.out, "fleet-cluster-leave-confirm.png"))
     confirm(na)
     title_is(na, "^This node runs on its own$", "node-a: unlocked at once after leaving")
     na.wait_for_timeout(500)
     lk = lock(na)
-    check(not lk["shown"] and lk["radios"] == 3 and lk["save"] and lk["checked"] == ["standalone"] and lk["note"] == "", "node-a: the role choice is back, Standalone selected", str(lk))
+    check(not lk["shown"] and lk["radios"] == 3 and lk["save"] and lk["checked"] == ["standalone"] and lk["roleCard"], "node-a: the role choice is back, Standalone selected", str(lk))
     check(not na.is_visible("#clSecretNode") and na.is_visible("#clGenBtn"), "node-a: the secret card is back to normal")
     check(not na.is_visible("#fleetManagedBanner"), "node-a: the 'Managed by hub' banner is gone without a reload")
     st = status(args.node_a)
@@ -256,6 +275,52 @@ with sync_playwright() as p:
         check(not na.is_visible("#flRejected"), "node-a: the Fleet page shows 'runs on its own' at once")
     except Exception:
         check(False, "node-a: the Fleet page shows 'runs on its own' at once", na.inner_text("#flStatus")[:200])
+
+    # ---------- node B is fine: Leave Fleet says the hub keeps listing it, and the palette opens the closed secret section ----------
+    go(nb, "cluster")
+    nb.wait_for_timeout(400)
+    nb.click("#clFleetLockBtn")
+    nb.wait_for_selector(".zx-dialog", timeout=3000)
+    check("The hub still lists this node as offline until you remove it on the hub's Fleet page." in nb.inner_text(".zx-dialog"), "node-b: Leave Fleet says that the hub keeps listing the node until it is removed there", nb.inner_text(".zx-dialog")[:300])
+    nb.click(".zx-dialog [data-zx-cancel]")
+    nb.wait_for_timeout(300)
+    go(nb, "status")
+    nb.keyboard.press("Control+k")
+    nb.wait_for_selector("#zxPalette:not([hidden]) input", timeout=3000)
+    nb.fill("#zxPalette input", "Cluster secret")
+    nb.wait_for_function("document.querySelectorAll('#zxPalette [role=option]').length >= 1", timeout=5000)
+    nb.keyboard.press("Enter")
+    try:
+        nb.wait_for_function("document.getElementById('clSecretNode').open === true", timeout=4000)
+        nb.wait_for_timeout(500)
+        check(nb.is_visible("#clGenBtn"), "node-b: the palette entry 'Cluster secret' opens the closed section and shows the button")
+    except Exception:
+        check(False, "node-b: the palette entry 'Cluster secret' opens the closed section", "")
+    # a clock that differs from the hub's (cannot be made with three processes on one clock: the status answers are changed in the browser)
+    def skewed(route):
+        resp = route.fetch()
+        body = resp.json()
+        body.setdefault("fleet", {}).update({"hubRejected": True, "hubRejectedSince": int(time.time()) - 90, "hubRejectReason": "clock", "hubClockOffset": 300})
+        route.fulfill(response=resp, body=json.dumps(body))
+    nb.route("**/api/cluster/status", skewed)
+    nb.route("**/api/fleet/node/info", skewed)
+    go(nb, "cluster")
+    nb.wait_for_function("document.getElementById('clFleetLock').getAttribute('data-lock') === 'clock'", timeout=FAST)
+    lk = lock(nb)
+    check(lk["buttons"] == [] and "5 minutes behind the hub" in lk["text"] and "NTP" in lk["text"] and "Do not leave the Fleet" in lk["text"], "node-b: a clock that differs is named, with the cure and no Leave Fleet button", str(lk))
+    check(nb.inner_text("#clRoleBadge") == "Clocks differ", "node-b: the badge says the clocks differ", nb.inner_text("#clRoleBadge"))
+    bn = banner(nb)
+    check(bn["shown"] and bn["warn"] and "clock" in bn["text"], "node-b: the banner above every page says it is the clock", str(bn))
+    shots(nb, "cluster-node-clock")
+    go(nb, "fleet")
+    nb.wait_for_selector("#flRejected", state="visible", timeout=FAST)
+    check("5 minutes behind the hub" in nb.inner_text("#flRejected") and not nb.is_visible("#flNodeLeave") and nb.inner_text("#flNodeSync").strip() == "Try again",
+          "node-b: Fleet page: the same clock message, no Leave Fleet button", nb.inner_text("#flStatus")[:300])
+    shots(nb, "fleet-node-clock", "fleetPage", "#flStatus")
+    nb.unroute("**/api/cluster/status")
+    nb.unroute("**/api/fleet/node/info")
+    go(nb, "cluster")
+    nb.wait_for_function("document.getElementById('clFleetLock').getAttribute('data-lock') === 'node'", timeout=FAST)
 
     # ---------- an unsaved edit in the health card must not freeze the role card (node B leaves through the API) ----------
     nb.fill("#clHealthAllow", "10.9.8.0/24")
@@ -288,10 +353,21 @@ with sync_playwright() as p:
     go(hub, "cluster")
     title_is(hub, "^This node is the Fleet hub$", "hub: switched on on the Fleet page, Cluster / HA shows it at once")
     check("1 node." in hub.inner_text("#clStatusDesc"), "hub: node-b left on its own and is still listed (known limit: the hub is not told)", hub.inner_text("#clStatusDesc"))
+    id_b = [i for i in node_ids() if i != id_a][0]
+    ok(api(args.hub, "/api/fleet/hub/nodeRevoke", {"id": id_b}), "hub: node-b revoked")
+    hub.evaluate("window.dispatchEvent(new Event('focus'))")
+    try:
+        hub.wait_for_function("document.getElementById('clStatusDesc').innerText.includes('No node is in this Fleet now.')", timeout=FAST)
+        d = hub.inner_text("#clStatusDesc")
+        check("1 node is revoked and gets nothing" in d and "It manages" not in d and "has not joined" not in d and "joined it yet" not in d, "hub: a revoked node is not counted as managed, and the page does not say 'none has joined yet'", d)
+        check("no node right now" in hub.inner_text("#clFacts") and "none has joined" not in hub.inner_text("#clFacts"), "hub: the Fleet nodes fact says 'no node right now'", hub.inner_text("#clFacts")[:300])
+    except Exception:
+        check(False, "hub: the revoked node is not counted as managed", hub.inner_text("#clStatusDesc"))
+    check(status(args.hub).get("nodeCount") == 0 and status(args.hub).get("revokedCount") == 1, "hub: status API: nodeCount 0, revokedCount 1", str({k: status(args.hub).get(k) for k in ("nodeCount", "revokedCount")}))
     check(lock(hub)["checked"] == [], "hub: no role radio stays checked from before")
     hub.click("#clFleetLockBtn")
     hub.wait_for_selector(".zx-dialog", timeout=3000)
-    check("1 node has joined this hub" in hub.inner_text(".zx-dialog") and "kept" in hub.inner_text(".zx-dialog"), "hub: Stop being a hub asks first and says what happens to the nodes", hub.inner_text(".zx-dialog")[:300])
+    check("No node is in this Fleet now." in hub.inner_text(".zx-dialog") and "has not joined" not in hub.inner_text(".zx-dialog") and "No node has joined" not in hub.inner_text(".zx-dialog") and "kept" in hub.inner_text(".zx-dialog"), "hub: Stop being a hub asks first, says no node is in the Fleet now, and what is kept", hub.inner_text(".zx-dialog")[:300])
     hub.screenshot(path=os.path.join(args.out, "fleet-cluster-stop-hub-confirm.png"))
     confirm(hub)
     title_is(hub, "^This node runs on its own$", "hub: unlocked at once after Stop being a hub")
@@ -310,7 +386,7 @@ with sync_playwright() as p:
     go(na, "fleet")
     try:
         na.wait_for_selector("#flLegacyNote", state="visible", timeout=FAST)
-        check(na.is_disabled("#flBecomeHub"), "primary: the Fleet page says why it cannot start a Fleet")
+        check(na.is_disabled("#flBecomeHub") and "primary in Cluster / HA" in na.inner_text("#flLegacyNote") and na.is_visible("#flBecomeHub ~ .flWhyOff"), "primary: the Fleet page names the role (primary) and says why the buttons are off")
         shots(na, "fleet-primary-note", "fleetPage", "#flLegacyNote")
         na.click("#flLegacyLink")
         na.wait_for_selector("#cluster", state="visible", timeout=3000)

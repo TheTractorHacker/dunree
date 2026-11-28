@@ -49,8 +49,10 @@ type followerStatus struct {
 	// the node was removed or revoked, the hub role is off, or the clocks
 	// differ too much. Cleared by the first accepted request. The node never
 	// leaves on its own: this only tells the admin.
-	HubRejected      bool  `json:"hubRejected,omitempty"`
-	HubRejectedSince int64 `json:"hubRejectedSince,omitempty"`
+	HubRejected      bool   `json:"hubRejected,omitempty"`
+	HubRejectedSince int64  `json:"hubRejectedSince,omitempty"`
+	HubRejectReason  string `json:"hubRejectReason,omitempty"` //"clock" when the hub's Date differs from ours
+	HubClockOffset   int64  `json:"hubClockOffset,omitempty"`  //hub time minus our time, seconds
 }
 
 func (m *Manager) followerStateFile() string {

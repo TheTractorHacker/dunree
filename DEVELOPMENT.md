@@ -1443,8 +1443,8 @@ whose role is off answers 404 (`gate`). The node learns it from its own next req
 200 / 304; other answers (429, 5xx, network errors) change nothing. It is exposed as `fleet.hubRejected` / `fleet.hubRejectedSince`
 in `/api/cluster/status` and `/api/fleet/node/info`; `/api/cluster/status` of a hub also carries `nodeCount`. The node **never
 leaves on its own** (the cause can be a hub switched off on purpose or clock skew): both pages show "The hub no longer accepts
-this node" with a Leave Fleet button. `Leave()` also clears `primaryUrl` / `primaryFingerprint`. Known limits: detection takes up
-to one heartbeat (20 s default); removed, revoked, hub off, wrong hub URL and clock skew look the same to the node; a node that
+this node" with a Leave Fleet button. A 401 whose hub `Date` header (set by `FleetHandler` from the hub clock) differs from the node clock by more than 50 s is recorded as `hubRejectReason: "clock"` / `hubClockOffset` and the pages offer no Leave button then. The rejection never touches `LastResult` / `LastError` (`errHubRejected` is not stored), so the heartbeat does not carry it to the hub. `/api/cluster/status` of a hub carries `nodeCount` (not revoked) and `revokedCount`; `HandleConfig` refuses a role switch of a node (use `Leave()`). `Leave()` also clears `primaryUrl` / `primaryFingerprint`. Known limits: detection takes up
+to one heartbeat (20 s default); removed, revoked, hub off and wrong hub URL look the same to the node (clock skew is told apart by the hub Date header, 1 s resolution); a node that
 left on its own stays on the hub as offline until removed there.
 
 **Role changes in the admin UI.** `window.ZxRole` (`web/index.html`) owns the two banners above every page and the document event

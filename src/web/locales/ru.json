@@ -3,8 +3,8 @@
   "language": "Russian",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 9.9,
-  "coreCoverage": 18.0
+  "coverage": 9.0,
+  "coreCoverage": 16.7
  },
  "strings": {
   "\"Add Redirection Rule\"": "«Добавить правило перенаправления»",
@@ -546,7 +546,6 @@
   "Manage": "Управление",
   "Managed": "Управляемый",
   "Managed (default)": "Управляемый (по умолчанию)",
-  "Managed by hub": "Управляется хабом",
   "Managed lists": "Управляемые списки",
   "Match": "Совпадение",
   "Message": "Сообщение",

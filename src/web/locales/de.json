@@ -3,8 +3,8 @@
   "language": "German",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 9.7,
-  "coreCoverage": 17.7
+  "coverage": 8.9,
+  "coreCoverage": 16.4
  },
  "strings": {
   "\"Add Redirection Rule\"": "„Weiterleitungsregel hinzufügen“",
@@ -538,7 +538,6 @@
   "Manage": "Verwalten",
   "Managed": "Verwaltet",
   "Managed (default)": "Verwaltet (Standard)",
-  "Managed by hub": "Vom Hub verwaltet",
   "Managed lists": "Verwaltete Listen",
   "Match": "Treffer",
   "Message": "Nachricht",

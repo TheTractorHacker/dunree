@@ -3,8 +3,8 @@
   "language": "French",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 9.5,
-  "coreCoverage": 17.0
+  "coverage": 8.7,
+  "coreCoverage": 15.8
  },
  "strings": {
   "\"Add Redirection Rule\"": "« Ajouter une règle de redirection »",
@@ -524,7 +524,6 @@
   "Manage": "Gérer",
   "Managed": "Géré",
   "Managed (default)": "Géré (par défaut)",
-  "Managed by hub": "Géré par le hub",
   "Managed lists": "Listes gérées",
   "Match": "Correspondance",
   "Message": "Message",

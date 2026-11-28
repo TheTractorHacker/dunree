@@ -274,7 +274,7 @@ func TestPerNodeAuthRevokeAndReplay(t *testing.T) {
 	if err := e.hub.hub.RevokeNode("tester", "node-b"); err != nil {
 		t.Fatal(err)
 	}
-	if err := b.sync(t); err == nil || !strings.Contains(err.Error(), "rejected") {
+	if err := b.sync(t); !errors.Is(err, errHubRejected) {
 		t.Fatalf("revoked node still syncs: %v", err)
 	}
 	if _, err := b.m.sendFleetHeartbeat(context.Background()); err == nil {
@@ -1323,7 +1323,7 @@ func TestRemovedNodeReportsHubRejected(t *testing.T) {
 		t.Fatal("removed node can still send heartbeats")
 	}
 	fi := a.m.FleetInfo()
-	if !fi.HubRejected || fi.HubRejectedSince != e.clock.Now().Unix() || fi.LastResult != "error" || !strings.Contains(fi.LastError, "rejected") {
+	if !fi.HubRejected || fi.HubRejectedSince != e.clock.Now().Unix() || fi.HubRejectReason != "" || fi.LastResult == "error" || fi.LastError != "" {
 		t.Fatalf("removed node does not report the rejection after a heartbeat: %+v", fi)
 	}
 	since := fi.HubRejectedSince
@@ -1413,6 +1413,14 @@ func TestHubSwitchedOffAndBackOn(t *testing.T) {
 	if fi := a.m.FleetInfo(); fi.HubRejected || fi.HubRejectedSince != 0 || fi.LastError != "" {
 		t.Fatalf("flag not cleared by an accepted heartbeat: %+v", fi)
 	}
+	// the result of the last real sync is still there: the heartbeat that
+	// cleared the flag did not wipe it, and none of the rejection went to the hub
+	if fi := a.m.FleetInfo(); fi.LastResult == "" || fi.LastResult == "error" {
+		t.Fatalf("last sync result lost after the hub came back: %+v", fi)
+	}
+	if rt := e.hub.hub.rt["node-a"]; rt == nil || len(rt.Errors) != 0 || rt.HB.LastError != "" {
+		t.Fatalf("the hub reads the node's rejection as the node's own error: %+v", rt)
+	}
 	if err := a.sync(t); err != nil {
 		t.Fatal(err)
 	}
@@ -1423,14 +1431,87 @@ func TestHubRejectedOnlyOn401And404(t *testing.T) {
 	e := newFleetEnv(t)
 	a := e.addNode("node-a", "g1")
 	for _, code := range []int{http.StatusTooManyRequests, http.StatusInternalServerError, http.StatusBadGateway} {
-		a.m.noteHubAnswer(code)
+		a.m.noteHubAnswer(code, "")
 		if a.m.FleetInfo().HubRejected {
 			t.Fatalf("HTTP %d counted as a rejection", code)
 		}
 	}
-	a.m.noteHubAnswer(http.StatusUnauthorized)
-	a.m.noteHubAnswer(http.StatusBadGateway)
+	a.m.noteHubAnswer(http.StatusUnauthorized, "")
+	a.m.noteHubAnswer(http.StatusBadGateway, "")
 	if !a.m.FleetInfo().HubRejected {
 		t.Fatal("a later server error cleared the rejection")
+	}
+}
+
+// A node whose clock is off by a minute or more is refused with a 401 too,
+// but the node is fine: the page must say "fix the clock", not "leave".
+func TestClockSkewIsNamedAsTheReason(t *testing.T) {
+	e := newFleetEnv(t)
+	a := e.addNode("node-a", "g1")
+	if err := a.sync(t); err != nil {
+		t.Fatal(err)
+	}
+	a.m.opt.Now = func() time.Time { return e.clock.Now().Add(-5 * time.Minute) }
+	a.m.sendFleetHeartbeat(context.Background())
+	fi := a.m.FleetInfo()
+	if !fi.HubRejected || fi.HubRejectReason != "clock" || fi.HubClockOffset < 299 || fi.HubClockOffset > 301 {
+		t.Fatalf("clock skew not recognised: %+v", fi)
+	}
+	if fi.LastError != "" {
+		t.Fatalf("the rejection was stored as a sync error: %q", fi.LastError)
+	}
+	st := statusOf(t, a.m)["fleet"].(map[string]any)
+	if st["hubRejectReason"] != "clock" {
+		t.Fatalf("status API: %v", st)
+	}
+	// a node that is really removed (right clock) has no reason
+	a.m.opt.Now = e.clock.Now
+	if err := e.hub.hub.RemoveNode("tester", "node-a"); err != nil {
+		t.Fatal(err)
+	}
+	a.m.sendFleetHeartbeat(context.Background())
+	if fi := a.m.FleetInfo(); !fi.HubRejected || fi.HubRejectReason != "" || fi.HubClockOffset != 0 {
+		t.Fatalf("a removed node was blamed on its clock: %+v", fi)
+	}
+	// a skew below the limit is not blamed on the clock
+	a.m.noteHubAnswer(http.StatusUnauthorized, e.clock.Now().Add(30*time.Second).UTC().Format(http.TimeFormat))
+	if fi := a.m.FleetInfo(); fi.HubRejectReason != "" {
+		t.Fatalf("a 30 s difference blamed on the clock: %+v", fi)
+	}
+}
+
+// A revoked node gets nothing, so the hub does not count it as managed.
+func TestRevokedNodeIsNotCounted(t *testing.T) {
+	e := newFleetEnv(t)
+	e.addNode("node-a", "g1")
+	e.addNode("node-b", "g1")
+	if err := e.hub.hub.RevokeNode("tester", "node-a"); err != nil {
+		t.Fatal(err)
+	}
+	st := statusOf(t, e.hub)
+	if st["nodeCount"] != float64(1) || st["revokedCount"] != float64(1) {
+		t.Fatalf("nodeCount %v revokedCount %v, want 1 and 1", st["nodeCount"], st["revokedCount"])
+	}
+}
+
+// The config API cannot switch a Fleet node to another role behind Leave's
+// back: that would keep the hub address and the node key.
+func TestConfigAPIDoesNotLeaveAFleetNode(t *testing.T) {
+	e := newFleetEnv(t)
+	a := e.addNode("node-a", "g1")
+	for _, role := range []string{RoleStandalone, RolePrimary, RoleFollower} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/api/cluster/config", strings.NewReader("role="+role))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		a.m.HandleConfig(rec, req)
+		if !strings.Contains(rec.Body.String(), "Leave Fleet") {
+			t.Fatalf("role %s: answer %q", role, rec.Body.String())
+		}
+		if a.m.Role() != RoleNode || a.m.Config().PrimaryURL == "" {
+			t.Fatalf("role %s changed the node: %s %q", role, a.m.Role(), a.m.Config().PrimaryURL)
+		}
+	}
+	if _, err := os.Stat(a.m.nodeCredFile()); err != nil {
+		t.Fatal("node key removed by a role switch")
 	}
 }

@@ -3,8 +3,8 @@
   "language": "Simplified Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 33.9,
-  "coreCoverage": 31.1
+  "coverage": 30.9,
+  "coreCoverage": 28.9
  },
  "strings": {
   "\"Add Redirection Rule\"": "“添加重定向规则”",
@@ -129,7 +129,6 @@
   "5. Google reCAPTCHA options": "5. Google reCAPTCHA 选项",
   "521 - Web server is down": "521 - Web 服务器已关闭",
   "7 days": "7 天",
-  ": the objects of the managed scopes are read-only on this node, node local objects stay editable.": "：受管范围内的对象在此节点上为只读，节点本地对象仍可编辑。",
   ":8080 or 192.168.1.1:8080": ":8080 或 192.168.1.1:8080",
   "; look in": ";请在",
   "; tick it if the upstream is case insensitive (IIS, Windows file systems).": "；如果上游不区分大小写（IIS、Windows 文件系统），请勾选。",
@@ -1545,7 +1544,6 @@
   "Manage your preferences": "管理您的偏好设置",
   "Managed": "托管",
   "Managed (default)": "托管（默认）",
-  "Managed by hub": "由中心节点管理",
   "Managed lists": "托管列表",
   "Managed scopes": "受管范围",
   "Manual approval": "手动批准",

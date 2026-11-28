@@ -3,8 +3,8 @@
   "language": "Brazilian Portuguese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 9.7,
-  "coreCoverage": 17.6
+  "coverage": 8.9,
+  "coreCoverage": 16.3
  },
  "strings": {
   "\"Add Redirection Rule\"": "\"Adicionar regra de redirecionamento\"",
@@ -536,7 +536,6 @@
   "Manage": "Gerenciar",
   "Managed": "Gerenciado",
   "Managed (default)": "Gerenciado (padrão)",
-  "Managed by hub": "Gerenciado pelo hub",
   "Managed lists": "Listas gerenciadas",
   "Match": "Correspondência",
   "Message": "Mensagem",

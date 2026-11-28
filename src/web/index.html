@@ -91,7 +91,7 @@
                 </div>
             </div>
             <div class="contentWindow">
-                <div id="fleetManagedBanner" class="ui info message" style="display:none; margin:0.5em 1em 0;"><i class="lock icon"></i> Managed by hub <b id="fleetManagedHub"></b>: the objects of the managed scopes are read-only on this node, node local objects stay editable. <a href="#" onclick="$('[tag=fleet]').first().click(); return false;">Fleet</a></div>
+                <div id="fleetManagedBanner" class="ui info message" style="display:none; margin:0.5em 1em 0;"><i class="lock icon"></i> <span id="fleetManagedOk">The Fleet hub <b id="fleetManagedHub"></b> manages some settings on this node. Those are read-only here; everything else you can still change.</span><span id="fleetManagedCut" style="display:none;">The hub no longer accepts this node. Leave the Fleet to manage it on its own again.</span><span id="fleetManagedClock" style="display:none;">The clock of this server and the hub's clock differ, so the hub turns this node away. Set the correct time on both.</span> <a href="#" onclick="$('[tag=fleet]').first().click(); return false;">Fleet</a></div>
                 <div id="clusterFollowerBanner" class="ui warning message" style="display:none; margin:0.5em 1em 0;"><i class="lock icon"></i> This node is a cluster follower: proxy rules, redirects, access rules, stream proxies and ACME settings are managed by the primary and read-only here. <a href="#" onclick="$('[tag=cluster]').first().click(); return false;">Cluster / HA</a></div>
                 <!-- Quick Start -->
                 <div id="qstart" class="functiontab" target="quickstart.html"></div>
@@ -928,7 +928,12 @@
                     $("#clusterFollowerBanner").toggle(!!(s && s.readOnly));
                     let managed = !!(s && s.fleet && s.fleet.managed);
                     if (managed) $("#fleetManagedHub").text(s.fleet.hubHost || "");
-                    $("#fleetManagedBanner").toggle(managed);
+                    //a node the hub refuses is not "managed" any more: say that instead, in a warning
+                    let cut = managed && !!s.fleet.hubRejected, clock = cut && s.fleet.hubRejectReason == "clock";
+                    $("#fleetManagedOk").toggle(!cut);
+                    $("#fleetManagedCut").toggle(cut && !clock);
+                    $("#fleetManagedClock").toggle(clock);
+                    $("#fleetManagedBanner").toggleClass("info", !cut).toggleClass("warning", cut).attr("data-state", cut ? (clock ? "clock" : "refused") : "ok").toggle(managed);
                 },
                 refresh: function(){ $.ajax({url: "./api/cluster/status", method: "GET", success: function(s){ window.ZxRole.show(s); }}); },
                 changed: function(){ $(document).trigger("zx:rolechange"); }

@@ -3,8 +3,8 @@
   "language": "Traditional Chinese",
   "reviewed": false,
   "author": "machine-assisted (Claude)",
-  "coverage": 9.8,
-  "coreCoverage": 17.7
+  "coverage": 9.0,
+  "coreCoverage": 16.4
  },
  "strings": {
   "\"Add Redirection Rule\"": "「新增重新導向規則」",
@@ -544,7 +544,6 @@
   "Manage": "管理",
   "Managed": "受管理",
   "Managed (default)": "受管理（預設）",
-  "Managed by hub": "由中樞管理",
   "Managed lists": "受管清單",
   "Match": "比對",
   "Message": "訊息",
