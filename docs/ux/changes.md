@@ -1280,3 +1280,76 @@ Known limits:
 * **Messages from the server** (validator and script blockers, the "Why?" of a check) are English and not in the catalogue.
 * **Suggestions and warnings are IPv4 only.**
 * Chromium was the only browser. Copy falls back to `document.execCommand` on plain HTTP.
+
+## Floating IP: simple guided setup, second round
+
+Owner feedback on the guided page: the install steps were still confusing. It did not say where the password goes on each server,
+"Proxy2 is my priority" did not map onto the page, the cluster secret appeared somewhere and was unclear, and end users may not be
+technical. Every unclear step becomes a support question. A review of the screenshots and of the code found these and they are fixed.
+
+* **Passwords.** Step 3 opens with one box, "Passwords you will need": (1) your normal login password for each server, when the
+  terminal asks after you paste, not a Dunree password; (2) nothing else, the secret the servers share is inside the script. The
+  word sudo is gone from the cards and the script comment. Optional linking now says it is not part of the floating IP and where the
+  linking settings are (Role and Cluster secret further down; there is no "Cluster > Join" screen).
+* **Which server is which.** The picture uses the real server names as soon as two are known, with the role next to each name. Before
+  that, one line says that step 1 is where the main server is chosen. A follower reads "These settings are managed on proxy1
+  (192.0.2.11)" with a link to it and an info icon instead of a padlock.
+* **Getting the script to the server.** "How do I do this?" on every card: `ssh yourname@address`, then the file way (download,
+  `scp`, `sudo sh`), the same on both cards. The guessed value is named ("Dunree guessed the network card of proxy2 (ens18)") with
+  what to do when the script stops. The "Done" marker is gone: the green state line says it.
+* **No claim before the page knows.** "Ready to test" until the test passed; "Working" only after. The last banner says "All steps
+  done. The floating IP moves between ..." and how to check visitors (open the site on a phone with Wi-Fi off). The test text says
+  what it shows (the other server takes over the address), not that it proves the floating IP works.
+* **Step 5 is locked** until the test passed ("Finish step 4 first"), named "Send visitors to X (port forward on your router)" with no
+  extra icon. If the box is ticked and no server answers for a while: a red "Your site is down. Set the port forward back to Y".
+* **Step 4 from the wrong page.** When the page runs on the server that answers (by its own answer, by address, by host name, through
+  the floating IP, or by an IPv6 address), step 4 is only a callout with one big button that opens the page on the other server.
+  The stop command appears only on the page of the other server. The card of "You are here" never says "Can't see".
+* **The test is patient.** The 29 s "did not take over" clock starts when the old server is first seen to stop. Nobody stopping Dunree
+  ends the test after 5 minutes ("timed out"). A page that loses its server for as long as a failover takes says "This page lost its
+  server" and where to look. A status that cannot be read for 10 s shows "This page lost contact with Dunree" and every card goes
+  to "not visible".
+* **Failures in words.** Split: "The two servers cannot hear each other", run the newest script again, the Proxmox path, and one
+  copyable temporary command per server; "protocol 112" only under Why?. Health check: "Dunree is blocking its own health check" /
+  "Let this server check itself" with one line saying what it changes. The faulty card says what a good and a bad answer look like.
+* **Smaller.** Placeholders read as examples ("e.g. 192.0.2.12", italic) with a "Required" tag while empty; the DHCP sentence is under
+  the tick, not behind a ?; "not one of the servers" says the scripts are fine instead of disabling them; the script's systems
+  (Debian, Ubuntu, Rocky, Alma, RHEL, Fedora) are named.
+* **Installer script.** Own-address-only probe URLs; ufw rule in `*filter` and a second reload after a rollback; a failed start puts the
+  old setup back and enables at boot only after a successful start; a foreign keepalived.conf is never replaced silently
+  (`mv` it away, or `D_REPLACE=1` as root on the downloaded file); the floating IP may not be the default gateway or already on the
+  host; the pasted block starts with a space for shell history; a per-server priority that contradicts step 1 is reported.
+* **Backend.** The health JSON `vip` block comes from the installer marker (`vip=`, `peers=`) on a server without saved settings, so
+  unlinked servers show progress; it carries the priority override; 503 is read as "health check fails"; a classic install without
+  marker counts as set up; a reachable server without a block is "not visible", not "waiting". `GET .../script` also returns `interface`.
+
+Not applied as proposed (checked first):
+
+* The suggested `sudo ufw allow from X proto vrrp` does not exist: ufw has no vrrp protocol (the script edits `before.rules`). The
+  split banner offers `sudo iptables -I INPUT -p 112 -s X -j ACCEPT` as a temporary test and the script for the permanent rule.
+* "Works on Debian and Ubuntu only" is wrong: the script also supports Rocky, Alma, RHEL and Fedora. The page names those and says
+  that other systems stop before anything changes.
+* "Good: it prints ok": the health check prints a JSON line, so the card says `"status":"ok"`, and adds the 503 case.
+* "Open Cluster > Join": there is no such screen, the button is "Open the linking settings".
+* A "How?" popover became a disclosure (no floating layer on a phone). Disabling Copy script on "not one of the servers" was not
+  done: those scripts are correct and are meant to be copied to the other servers.
+* `arping` duplicate detection was not added (it probes the network; the page's own "address may be in use" check stays).
+
+Unchanged: off by default, no saved setting rewritten, Dunree still only makes text and reads status.
+
+Tests: `tools/ui-smoke/cluster_vip_smoke.py` (locked step 5, the self-test callout in light, dark and 390 px, slow user, timeout, lost
+server, stale status, IPv6, split commands, priority rows, follower banner), `vip/guided_test.go` (sandbox runs of every rollback and
+refusal), `cluster/vip_guided_test.go`.
+
+Known limits:
+
+* **The script is tested with stub commands in a sandbox, not on two machines with a running keepalived.**
+* **Shell history:** the leading space helps bash with `HISTCONTROL=ignorespace`/`ignoreboth` (the Debian and Ubuntu default). zsh needs
+  `HIST_IGNORE_SPACE`, and the downloaded `.sh` file contains the VRRP password like the paste does.
+* **A Rocky/RHEL server where keepalived was installed first** has the package's sample `keepalived.conf`; the script then asks to move
+  it away.
+* **The stop clock needs the old server to be seen stopping.** If it never reports at all (a page on the server being stopped, servers
+  not linked), the test ends as "lost its server" or "timed out".
+* **"Site is down" waits about 11 s** (default timing) before it shows, so a normal failover does not flash it.
+* **An unlinked server's marker** holds the floating IP and peers from the script run; it does not follow later setting changes until the
+  script runs again (its fingerprint then reads "older settings").

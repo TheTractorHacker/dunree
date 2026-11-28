@@ -9,12 +9,16 @@ switching off again ("settings kept"). The interface list and the address sugges
 hold placeholder addresses only and the smoke never probes the real network.
 
 Part 2, with every floating IP route answered by a fixture (a host that really holds a floating IP cannot be had in a smoke run):
-waiting, one server running, both running, the guided test with its timeline, failover happened, split brain, nobody answers, keeps
-moving, each card state, a blocked health check and a follower.
+waiting, one server running, both running (this page runs on the server the test would stop: the callout is all that step 4 shows),
+the guided test run from the other server (it never ends early because the user is slow, it times out when nobody stops Dunree, it
+says so when this page loses its server), failover happened, split brain, nobody answers (with the port forward already changed:
+"your site is down"), keeps moving, each card state, a blocked health check, a status that goes stale, a server with its own
+priority and a follower. Step 5 stays closed until the test passed.
 
-In every state: no horizontal overflow, nothing leaves its card, NO nested scroll area, no code block that scrolls, the firewall
-step exactly once, no shield icon, no "Configuration for" dropdown, no tabs, and none of the expert words (priority, VRRP, ...) on
-the main path. Screenshots (light and dark at 1366px, 390px, 1920px) go to --out as cluster-vip-*.png.
+In every state: no horizontal overflow, nothing leaves its card, NO nested scroll area, no code block that scrolls, step 5 exactly
+once and without an extra icon, no shield icon, no "Configuration for" dropdown, no tabs, no "Can't see" on the card of the server the
+page runs on, and none of the expert words (priority, VRRP, ...) on the main path. Screenshots (light and dark at 1366px, 390px,
+1920px) go to --out as cluster-vip-*.png.
 
 All addresses are placeholders (192.0.2.0/24, 203.0.113.0/24). Nothing here touches keepalived or the host network."""
 
@@ -74,8 +78,8 @@ VIP_EXPERT = r"\b(priority|VRRP|VRID|preempt\w*|MASTER|BACKUP state|unicast|mult
 
 def vip_script(label, addr, role):
     """the installer as the server would make it, shortened: first line and password are what the page is checked against"""
-    return ("# Dunree floating IP installer for %s (%s) - %s\n# Paste all of this into a terminal ON %s. It asks for your sudo password if needed.\n"
-            "if [ \"$(id -u)\" = 0 ]; then sh -s\nelif command -v sudo >/dev/null 2>&1; then sudo sh -s\nelse echo \"Dunree: please log in as root (type: su -) and paste this again.\"; cat >/dev/null\n"
+    return ("# Dunree floating IP installer for %s (%s) - %s\n# Paste all of this into a terminal ON %s. It may ask for your login password for this server.\n"
+            " if [ \"$(id -u)\" = 0 ]; then sh -s\nelif command -v sudo >/dev/null 2>&1; then sudo sh -s\nelse echo \"Dunree: please log in as root (type: su -) and paste this again.\"; cat >/dev/null\n"
             "fi <<'DUNREE_SETUP_END'\nset -eu\nD_LABEL='%s'\nD_ROLE='%s'\nD_ADDR='%s'\n# ... the rest of the installer ...\nDUNREE_SETUP_END\n") % (label, addr, role, label, label, role, addr)
 
 
@@ -130,8 +134,11 @@ def cluster_vip_ui(pg, ctx):
             if (wrap.querySelector('i.shield.icon, i.icon.shield')) msgs.push('a shield icon is back in the floating IP section');
             if (wrap.querySelector('#vipGenFor, .zx-tabs, .zx-tab')) msgs.push('the "Configuration for" dropdown or the tabs are back');
             if (/Configuration for/.test(wrap.textContent)) msgs.push('the words "Configuration for" are back');
-            const fw = [...wrap.querySelectorAll('h3, h4, .zx-callout__title')].filter(e => /firewall/i.test(e.textContent));
-            if (document.getElementById('vipFlow').hidden ? fw.length !== 1 : fw.length !== 1 || !shown(fw[0])) msgs.push('the firewall step must be there exactly once, found ' + fw.length);
+            const fw = [...wrap.querySelectorAll('h3')].filter(e => /port forward/i.test(e.textContent));
+            if (document.getElementById('vipFlow').hidden ? fw.length > 1 : fw.length !== 1 || !shown(fw[0])) msgs.push('step 5 (the port forward) must be there exactly once, found ' + fw.length);
+            if (wrap.querySelector('#vipStep5Title i')) msgs.push('the heading of step 5 has an icon, the other steps have none');
+            if (/firewall/i.test((document.getElementById('vipStep5') || {}).textContent || '')) msgs.push('step 5 says firewall where the page says router and port forward');
+            wrap.querySelectorAll('.vipNode').forEach(n => { if (shown(n) && /You are here/.test(n.querySelector('.vipNode__tags').textContent) && /Can.t see/.test(n.textContent)) msgs.push('a card says it cannot see the server that is marked You are here'); });
             // the main path: everything visible that is not inside a <details>, a help popover or a field of the form
             const clone = wrap.cloneNode(true);
             wrap.querySelectorAll('*').forEach((e, i) => { if (!shown(e) && e.tagName !== 'OPTION') e.setAttribute('data-gone', '1'); });
@@ -145,14 +152,14 @@ def cluster_vip_ui(pg, ctx):
         for m in bad:
             fail("layout", f"{label}: {m}")
 
-    def shots(name, variants=(("light", False, 1366), ("dark", True, 1366), ("390", False, 390))):
+    def shots(name, variants=(("light", False, 1366), ("dark", True, 1366), ("390", False, 390)), sel="#vipWrap"):
         for label, dark, w in variants:
             theme(dark)
             pg.set_viewport_size({"width": w, "height": 1000 if w > 1500 else 900})
             pg.wait_for_timeout(400)
             clear_toasts()
             layout(f"{name}/{label}")
-            pg.locator("#vipWrap").screenshot(path=out(f"cluster-vip-{name}-{label}.png"))
+            pg.locator(sel).screenshot(path=out(f"cluster-vip-{name}-{label}.png"))
             produced.append(f"cluster-vip-{name}-{label}.png")
         theme(False)
         pg.set_viewport_size({"width": 1366, "height": 900})
@@ -253,12 +260,17 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", f"Before you start must name this server by its host name and address: {rows}")
     if not any(r[0] == "peer" and r[1] == "warn" for r in rows) or pg.locator("#vipBeforeList [data-id=peer] .zx-btn").count() != 1:
         fail("cluster-vip", f"Before you start must ask for the other server with one button: {rows}")
-    if not any(r[0] == "linked" and r[1] == "info" and "Optional" in r[2] and "already inside" in r[2] for r in rows):
-        fail("cluster-vip", f"linking must be optional and must say that the password is already in the scripts: {rows}")
+    if not any(r[0] == "linked" and r[1] == "info" and "Optional, not needed for the floating IP" in r[2] and "its own secret" in r[2] and "different thing" in r[2] for r in rows) or text("#vipBeforeList [data-id=linked] .zx-btn") != "Open the linking settings":
+        fail("cluster-vip", f"linking must be optional, say that it is a different thing from the floating IP and name where it is: {rows}")
     if "0 of" in text("#vipBeforeCount") or "1 of 2 done" not in text("#vipBeforeCount"):
         fail("cluster-vip", f"the count of Before you start is wrong: {text('#vipBeforeCount')!r}")
     if "other server" not in banner() or pg.get_attribute("#vipNext", "data-kind") != "todo" or not visible("#vipNextBtn"):
         fail("cluster-vip", f"not ready: the banner must ask for the other server's address, with one button: {banner()!r}")
+    topo = text("#vipTopo")
+    if own not in topo or other not in topo or "Server 1" in topo or "Main server" not in topo or "Backup server" not in topo or visible("#vipTopoNote"):
+        fail("cluster-vip", f"once the names are known the picture must show them, each with its role: {topo!r}")
+    if not visible("#vipAddrReq") or not visible("#vipServers .vipServer[data-i='1'] .vipReq") or not pg.get_attribute("#vipAddrIn", "placeholder").startswith("e.g.") or not pg.get_attribute("#vipS1address", "placeholder").startswith("e.g."):
+        fail("cluster-vip", "empty required fields must say Required, and an example must read as an example (e.g. ...)")
     p = picks()
     if len(p) != 2 or p[0][0] != "true" or own not in p[0][1] or "You are here" not in p[0][1] or "MAIN SERVER" not in p[0][1].upper() or "BACKUP SERVER" not in p[1][1].upper() or "192.0.2.11" not in p[0][1]:
         fail("cluster-vip", f"step 1 must show one card per server, this one as main and marked 'You are here': {p}")
@@ -279,6 +291,8 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     if pg.evaluate("document.activeElement.id") != "vipS1address":
         fail("cluster-vip", "the banner's button must focus the address field of the other server")
     pg.keyboard.type("192.0.2.12")
+    if visible("#vipServers .vipServer[data-i='1'] .vipReq"):
+        fail("cluster-vip", "the Required marker must go once the address is typed")
     if "192.0.2.12" not in picks()[1][1] or "Pick a spare address" not in banner():
         fail("cluster-vip", f"typing the other server's address must fill its card and move the banner on: {picks()} / {banner()!r}")
     if f"{own} is the main server. Click {other} to change that." not in text("#vipMainSay"):
@@ -321,9 +335,11 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     pg.click("#vipSaveBtn")
     if not visible("#vipTickErr") or api("config", method="GET").get("exists"):
         fail("cluster-vip", "saving without the DHCP tick must ask for it and store nothing")
+    if not visible("#vipTickHelp") or "UniFi: Settings > Networks > your network > DHCP range" not in text("#vipTickHelp") or "outside it" not in text("#vipTickHelp"):
+        fail("cluster-vip", f"the tick must say what the DHCP range is and where to find it in one sentence under it, not behind a ?: {text('#vipTickHelp')!r}")
     pg.click("#vipTickRow .zx-whatis")
-    if not visible("#vipDhcpWhat") or "UniFi" not in text("#vipDhcpWhat"):
-        fail("cluster-vip", "the ? next to the tick must say where the DHCP range is found")
+    if not visible("#vipDhcpWhat") or "fixed-IP reservation" not in text("#vipDhcpWhat"):
+        fail("cluster-vip", "the ? next to the tick must say why it matters")
     pg.click("#vipTickRow .zx-whatis")
     pg.check("#vipDhcpTick")
     if visible("#vipTickErr"):
@@ -391,8 +407,13 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         t = sc.get("title", {})
         if title != f"Run this on {t.get('label')} ({t.get('address')})" or t.get("role") not in tags or first != f"# Dunree floating IP installer for {t.get('label')} ({t.get('address')}) - {t.get('role')}":
             fail("cluster-vip", f"the card title must name the server the script was made for: {title!r} / {tags!r} / {first!r}")
-    if "already inside each script" not in text("#vipStep3Desc") or "You never type it" not in text("#vipStep3Desc"):
-        fail("cluster-vip", "step 3 must say once that the password is inside the scripts")
+    pw = text("#vipPasswords")
+    if "Passwords you will need" not in pw or "Your normal login password for each server" not in pw or "not a Dunree password" not in pw or "Nothing else" not in pw or "already inside the script" not in pw:
+        fail("cluster-vip", f"step 3 must start with the one box that says which passwords are needed: {pw!r}")
+    if re.search(r"sudo|You never type", text("#vipStep3Desc") + " " + text("#vipNodes")):
+        fail("cluster-vip", "step 3 must not talk about a sudo password (the box says which password it is)")
+    if "Debian, Ubuntu, Rocky, Alma, RHEL and Fedora" not in text("#vipStep3Os"):
+        fail("cluster-vip", "step 3 must say which systems the script is for")
     # this smoke host is not 192.0.2.11: said in one sentence, with one button, and the banner repeats it
     rows = before()
     if not any(r[0] == "self" and r[1] == "block" for r in rows) or pg.get_attribute("#vipNext", "data-kind") != "problem" or "not one of the servers" not in banner():
@@ -405,6 +426,8 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         ctx.grant_permissions(["clipboard-read", "clipboard-write"], origin=args.url)
     except Exception:
         pass
+    if not visible("#vipStep3Note") or "are fine. This server simply is not one of them" not in text("#vipStep3Note") or pg.locator("#vipNodes [data-vip-act^=copy]:enabled").count() != 2:
+        fail("cluster-vip", f"a server that is not in the list must say that the scripts are fine and still offer both: {text('#vipStep3Note')!r}")
     pg.click("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]")
     pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-copied]", state="visible", timeout=4000)
     if f"Paste it into a terminal on {other}" not in text("#vipNodes .vipNode[data-i='1'] [data-vip-copied]"):
@@ -504,7 +527,7 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         role = "Main server" if m["address"] == shared["main"] else "Backup server"
         return {"title": {"label": m["label"], "address": m["address"], "role": role}, "script": vip_script(m["label"], m["address"], role),
                 "keepalivedConf": VIP_CONF, "commands": {"install": VIP_INSTALL, "verify": VIP_VERIFY}, "fingerprint": "3f9a1c2e",
-                "healthUrl": "http://127.0.0.1:8081/.dunree/health", "guessed": [] if i == 0 else ["interface"], "warnings": [], "blockers": []}
+                "healthUrl": "http://127.0.0.1:8081/.dunree/health", "interface": "ens18", "guessed": [] if i == 0 else ["interface"], "warnings": [], "blockers": []}
 
     def handler(route):
         req = route.request
@@ -526,9 +549,17 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
 
     pg.route("**/api/cluster/vip/**", handler)
 
+    me = {"i": 0}   # which server this page runs on (the status of THIS server is the one of that card)
+
     def nodes(a, b, **kw):
         mock["status"]["nodes"] = [node(0, a), node(1, b)]
-        mock["status"]["status"].update(held=a == "holding", keepalivedInstalled="no" if a == "waiting" else "yes", keepalivedRunning="yes" if a in ("holding", "standby", "fault") else "no", installed=a != "waiting", **kw)
+        mine = (a, b)[me["i"]]
+        mock["status"]["status"].update(held=mine == "holding", keepalivedInstalled="no" if mine == "waiting" else "yes", keepalivedRunning="yes" if mine in ("holding", "standby", "fault") else "no", installed=mine != "waiting", **kw)
+
+    def page_on(i):
+        """the page runs on server i: what the config says about 'this server'"""
+        me["i"] = i
+        mock["config"]["effective"].update(member=members[i]["label"], sourceAddress=members[i]["address"], priority=members[i]["priority"])
 
     def poll():
         pg.evaluate("ClusterPage.poll()")
@@ -549,8 +580,10 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", "every server card must have exactly ONE primary button")
     if "Waiting for this server" not in card(0) or "Copy the script and run it on proxy2" not in card(1) or pg.get_attribute("#vipNodes .vipNode[data-i='1']", "data-state") != "waiting":
         fail("cluster-vip", f"waiting: each card must say that it waits for its server: {card(1)!r}")
-    if "Dunree guessed some values for proxy2" not in card(1) or "guessed" in card(0):
-        fail("cluster-vip", "a card made with guessed values must say that the script checks them")
+    if "Dunree guessed the network card of proxy2 (ens18)." not in card(1) or "the script stops and prints the right name" not in card(1) or "Show details > Network card" not in card(1) or "guessed" in card(0):
+        fail("cluster-vip", f"a card made with guessed values must name the value and say what to do when the script stops: {card(1)!r}")
+    if "Then open a terminal on proxy2 and paste it. It may ask for your login password for that server." not in card(1) or re.search(r"sudo", card(1)):
+        fail("cluster-vip", f"the card must say which password it may ask for, without the word sudo: {card(1)!r}")
     pg.click("#vipNextBtn")
     if pg.evaluate("document.activeElement.getAttribute('data-vip-act')") != "copy:0":
         fail("cluster-vip", "the banner's button must focus the Copy button of that server's card")
@@ -567,13 +600,17 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     href = pg.get_attribute("#vipNodes .vipNode[data-i='1'] [data-vip-dl]", "href")
     if "script?member=1&download=1" not in href:
         fail("cluster-vip", f"the download link of proxy2 is wrong: {href}")
-    pg.evaluate("(() => { const a = document.querySelector(\"#vipNodes .vipNode[data-i='1'] [data-vip-dl]\"); a.addEventListener('click', e => e.preventDefault(), {once: true}); a.click(); })()")
-    if "sudo sh dunree-floating-ip-proxy2.sh" not in card(1):
-        fail("cluster-vip", "after 'Download the script' the card must show the command that runs the file")
-    if "is-dim" not in pg.get_attribute("#vipStep4", "class") or visible("#vipTestBtn") or "is-dim" in pg.get_attribute("#vipStep5", "class") or not visible("#vipFwTick"):
-        fail("cluster-vip", "waiting: the test is not offered yet; the firewall step can be read ahead")
-    if "Point your firewall at 192.0.2.10" not in text("#vipStep5Title") or "instead of 192.0.2.11" not in text("#vipFwText") or pg.locator("#vipStep5 i.info.circle.icon").count() != 1:
-        fail("cluster-vip", "step 5 must name the floating IP and the address it replaces, with an info icon")
+    # the way into the terminal and the file way are explained on BOTH cards, behind one "How do I do this?"
+    for i, nm, ad in ((0, "proxy1", "192.0.2.11"), (1, "proxy2", "192.0.2.12")):
+        pg.click(f"#vipNodes .vipNode[data-i='{i}'] .vipHow > summary")
+        c = card(i)
+        if f"ssh yourname@{ad}" not in c or f"scp dunree-floating-ip-{nm}.sh yourname@{ad}:" not in c or f"sudo sh dunree-floating-ip-{nm}.sh" not in c or "Download the script" not in c:
+            fail("cluster-vip", f"'How do I do this?' must show the ssh line, the scp line and the line that runs the file, on both cards: {c!r}")
+        pg.click(f"#vipNodes .vipNode[data-i='{i}'] .vipHow > summary")
+    if "is-dim" not in pg.get_attribute("#vipStep4", "class") or visible("#vipTestBtn") or "is-dim" not in pg.get_attribute("#vipStep5", "class") or visible("#vipFwTick"):
+        fail("cluster-vip", "waiting: neither the test nor the port forward is offered yet")
+    if "Finish step 4 first: test it before you send visitors to the floating IP." not in text("#vipFwText") or "Send visitors to 192.0.2.10 (port forward on your router)" not in text("#vipStep5Title") or pg.locator("#vipStep5Title i").count() != 0:
+        fail("cluster-vip", f"step 5 must be locked until the test passed, and be named for what it does, without an icon: {text('#vipStep5')!r}")
     # Before you start: everything this page can check is fine, so it folds into "All set"
     if not visible("#vipAllSet") or visible("#vipBeforeList") or "3 of 3 done" not in text("#vipBeforeCount"):
         fail("cluster-vip", f"Before you start must fold into 'All set' when every item is ticked: {text('#vipBeforeCount')!r}")
@@ -585,17 +622,17 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     shots("waiting")
     want += ["cluster-vip-waiting-light.png", "cluster-vip-waiting-dark.png", "cluster-vip-waiting-390.png"]
     # Show details of a card: the raw file and the single commands, same text as generated, wrapped, copyable
-    pg.click("#vipNodes .vipNode[data-i='0'] details > summary")
+    pg.click("#vipNodes .vipNode[data-i='0'] details:not(.vipHow) > summary")
     if pg.inner_text("#vipN0Conf").strip() != VIP_CONF.strip() or "sudo apt install -y keepalived curl" not in pg.inner_text("#vipN0Install") or "ip -br addr show dev ens18" not in pg.inner_text("#vipN0Verify"):
         fail("cluster-vip", "Show details of a card must hold the generated keepalived.conf and the commands, unchanged")
-    if "generate?member=0&download=1" not in pg.get_attribute("#vipNodes .vipNode[data-i='0'] details a[download]", "href") or "3f9a1c2e" not in card(0):
+    if "generate?member=0&download=1" not in pg.get_attribute("#vipNodes .vipNode[data-i='0'] details:not(.vipHow) a[download]", "href") or "3f9a1c2e" not in card(0):
         fail("cluster-vip", "Show details of a card must offer the file as a download and name the settings fingerprint")
     pg.click("[data-vip-copy=vipN0Install]")
     toast("copied")
     pg.locator("#vipStep3").scroll_into_view_if_needed()
     shots("details", (("light", False, 1366), ("390-dark", True, 390)))
     want += ["cluster-vip-details-light.png", "cluster-vip-details-390-dark.png"]
-    pg.click("#vipNodes .vipNode[data-i='0'] details > summary")
+    pg.click("#vipNodes .vipNode[data-i='0'] details:not(.vipHow) > summary")
     calls = len(mock["script_calls"])
     poll()
     poll()
@@ -607,47 +644,142 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     nodes("holding", "waiting")
     poll()
     wait_banner("^Copy the script for proxy2 and run it on proxy2\\.$")
-    if "Answers on the floating IP" not in card(0) or not visible("#vipNodes .vipNode[data-i='0'] [data-vip-done]") or visible("#vipNodes .vipNode[data-i='1'] [data-vip-done]"):
-        fail("cluster-vip", f"one running: the card of proxy1 must turn green by itself and say Done: {card(0)!r}")
-    if "Not finished yet" not in text("#vipBadge") or "is-dim" not in pg.get_attribute("#vipStep4", "class"):
-        fail("cluster-vip", "one running: the header must say that it is not finished, and the test stays closed")
+    if "Answers on the floating IP" not in card(0) or pg.get_attribute("#vipNodes .vipNode[data-i='0']", "data-tone") != "ok" or pg.locator("#vipNodes [data-vip-done]").count() or re.search(r"\bDone\b", card(0)):
+        fail("cluster-vip", f"one running: the card of proxy1 must turn green by itself, in words and colour, with no separate 'Done': {card(0)!r}")
+    if "Not finished yet" not in text("#vipBadge") or "is-dim" not in pg.get_attribute("#vipStep4", "class") or "is-dim" not in pg.get_attribute("#vipStep5", "class"):
+        fail("cluster-vip", "one running: the header must say that it is not finished, and the test and the port forward stay closed")
     if pg.locator("#vipTopo .vipTopo__member.is-holder").count() != 1 or "Answers now" not in text("#vipTopo .vipTopo__member.is-holder"):
         fail("cluster-vip", "the picture must mark the server that answers")
     shots("one", (("light", False, 1366), ("390", False, 390)))
     want += ["cluster-vip-one-light.png", "cluster-vip-one-390.png"]
 
-    # ---- both running ----
+    # ---- both running, no test yet: "ready", not "working". This page runs on the server the test would stop. ----
     current["page"] = "cluster-vip/both"
     nodes("holding", "standby")
     poll()
-    wait_banner("^It works\\. Now test it: stop Dunree on proxy1 and watch proxy2 take over\\.$")
-    if "Standing by, ready to take over" not in card(1) or "Working" not in text("#vipBadge") or pg.get_attribute("#vipCard", "data-state") != "ok":
-        fail("cluster-vip", f"both running: the backup stands by and the header says Working: {card(1)!r} / {text('#vipBadge')!r}")
-    if "is-dim" in pg.get_attribute("#vipStep4", "class") or not visible("#vipTestBtn") or text("#vipNextBtn") != "Start the test" or "about 9 seconds" not in text("#vipStep4Desc"):
-        fail("cluster-vip", "both running: the test must be offered, in the banner and in step 4")
+    wait_banner("^Both servers are ready\\. To test that proxy2 really takes over, open this page on proxy2\\.$")
+    if "Standing by, ready to take over" not in card(1) or text("#vipBadge") != "Ready to test" or "Working" in text("#vipBadge") or pg.get_attribute("#vipCard", "data-state") != "info":
+        fail("cluster-vip", f"both running, not tested: the header must say Ready to test, not Working: {card(1)!r} / {text('#vipBadge')!r}")
+    if "is-dim" not in pg.get_attribute("#vipStep5", "class") or visible("#vipFwTick") or "Finish step 4 first" not in text("#vipStep5"):
+        fail("cluster-vip", "before the test passed, step 5 must stay closed (a changed port forward could take the site offline)")
     if "this server answers on it" not in text("#clFacts"):
         fail("cluster-vip", "the status card of the page must say who answers on the floating IP")
     shots("both", (("light", False, 1366), ("dark", True, 1366), ("390", False, 390), ("1920", False, 1920)))
     want += ["cluster-vip-both-light.png", "cluster-vip-both-dark.png", "cluster-vip-both-390.png", "cluster-vip-both-1920.png"]
 
-    # ---- the guided test: warning when this page runs on the server to be stopped, the command, the timeline ----
+    # ---- step 4 when the page runs on the server that answers: the callout is ALL of step 4 ----
+    current["page"] = "cluster-vip/testself"
+    if not visible("#vipTestSelf") or visible("#vipTestBtn") or visible("#vipTestRun") or visible("#vipTestLog") or "Run this on proxy1 now" in text("#vipStep4"):
+        fail("cluster-vip", f"the page runs on proxy1, which answers: step 4 must show only the callout, no test button and no stop command: {text('#vipStep4')!r}")
+    if "stop Dunree on proxy1, which runs this page" not in text("#vipTestSelf") or text("#vipTestOther") != "Open this page on proxy2 to run the test" or "//192.0.2.12" not in pg.get_attribute("#vipTestOther", "href") or "zx-btn--primary" not in pg.get_attribute("#vipTestOther", "class"):
+        fail("cluster-vip", f"the callout must offer one big button that opens this page on proxy2: {text('#vipTestSelf')!r}")
+    if pg.get_attribute("#vipTestOther", "href") != pg.evaluate("location.protocol + '//192.0.2.12' + (location.port ? ':' + location.port : '') + location.pathname + location.search + location.hash"):
+        fail("cluster-vip", "the button must open the same page, on proxy2")
+    shots("testself", sel="#vipStep4")
+    want += ["cluster-vip-testself-light.png", "cluster-vip-testself-dark.png", "cluster-vip-testself-390.png"]
+    # the same guard when the page was opened by the host name of the server, or through the floating IP (not only by its address)
+    pg.evaluate("ClusterPage.pageHost = 'proxy1.lan'")
+    poll()
+    if not visible("#vipTestSelf"):
+        fail("cluster-vip", "the guard must not depend on how the page was opened: this server answers, so it is the one to be stopped")
+    page_on(1)
+    reload()
+    pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
+    if visible("#vipTestSelf") or not visible("#vipTestBtn"):
+        fail("cluster-vip", "on proxy2 (which stands by) the test may start: no callout")
+    pg.evaluate("ClusterPage.pageHost = '192.0.2.10'")
+    poll()
+    if not visible("#vipTestSelf"):
+        fail("cluster-vip", "a page opened through the floating IP is served by the server that answers: it has to be guarded as well")
+    pg.evaluate("ClusterPage.pageHost = ''")
+    # IPv6: the host of the page has brackets, and so does the address in the link to the other server
+    old = [(m["address"], n["address"]) for m, n in zip(members, mock["status"]["nodes"])], shared["main"]
+    for m, n, a6 in zip(members, mock["status"]["nodes"], ("2001:db8::11", "2001:db8::12")):
+        m["address"] = n["address"] = a6
+    shared["main"] = "2001:db8::11"
+    page_on(1)
+    pg.evaluate("ClusterPage.pageHost = '[2001:db8::11]'")
+    reload()
+    pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
+    if not visible("#vipTestSelf"):
+        fail("cluster-vip", "an IPv6 host name has brackets: the guard must still see that the page was opened by the address of the server that answers")
+    href = pg.get_attribute("#vipTestOther", "href")
+    if not re.match(r"^https?://\[2001:db8::12\](:\d+)?/", href or ""):
+        fail("cluster-vip", f"the link to an IPv6 server needs brackets: {href!r}")
+    for (a4, na4), m, n in zip(old[0], members, mock["status"]["nodes"]):
+        m["address"], n["address"] = a4, na4
+    shared["main"] = old[1]
+    pg.evaluate("ClusterPage.pageHost = ''")
+    page_on(0)
+
+    # ---- the guided test, from the page of proxy2 (proxy1 answers and is stopped) ----
     current["page"] = "cluster-vip/test"
-    pg.evaluate("ClusterPage.pageHost = '192.0.2.11'")
-    pg.click("#vipNextBtn")
-    pg.wait_for_selector("#vipTestSelf", state="visible", timeout=4000)
-    if "stop Dunree on proxy1, which runs this page" not in text("#vipTestSelf") or "//192.0.2.12" not in pg.get_attribute("#vipTestOther", "href") or "//192.0.2.10" not in pg.get_attribute("#vipTestVip", "href") or visible("#vipTestRun"):
-        fail("cluster-vip", "starting the test on the server to be stopped must offer the page on the other server and through the floating IP first")
-    layout("test-self")
-    pg.click("#vipTestAnyway")
+    page_on(1)
+    nodes("holding", "standby")
+    reload()
+    pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
+    wait_banner("^Both servers are ready\\. Now test that proxy2 really takes over\\.$")
+    if visible("#vipTestSelf") or text("#vipNextBtn") != "Start the test" or not visible("#vipTestBtn") or "about 9 seconds" not in text("#vipStep4Desc") or "shows that proxy2 takes over the address" not in text("#vipStep4Desc") or "proves" in text("#vipStep4Desc"):
+        fail("cluster-vip", f"on proxy2 the test is offered, and says what it shows (not that it proves the floating IP works): {text('#vipStep4Desc')!r} / {banner()!r}")
+    tolerated = re.compile(r"cluster-vip/[a-z-]+\] (requestfailed|console\.error): .*api/cluster/vip/status")
+    allow.append(tolerated)
+    log = lambda: pg.eval_on_selector_all("#vipTestLog li", "els => els.map(e => e.innerText.replace(/\\s+/g, ' ').trim())")
+    result = lambda: (visible("#vipTestResult"), text("#vipTestResultTitle") if visible("#vipTestResult") else "")
+    lsget_tested = lambda: pg.evaluate("localStorage.getItem('dunree.vip.tested.3f9a1c2e')") == "1"
+
+    # (a) nobody stops Dunree: the test waits, it does not blame the other server, and it ends by itself after 5 minutes
+    pg.click("#vipTestBtn")
     pg.wait_for_selector("#vipTestRun", state="visible", timeout=4000)
     if text("#vipTestCmd") != "sudo systemctl stop dunree" or "Run this on proxy1 now" not in text("#vipTestRunOn") or not visible("#vipTestStop") or visible("#vipTestBtn"):
         fail("cluster-vip", "the test must show the exact command, where to run it, and 'Stop the test'")
-    log = lambda: pg.eval_on_selector_all("#vipTestLog li", "els => els.map(e => e.innerText.replace(/\\s+/g, ' ').trim())")
-    if not log() or not re.fullmatch(r"0 s proxy1 answers on the floating IP", log()[0]) or "The test is running" not in banner():
-        fail("cluster-vip", f"the timeline must start with who answers now: {log()} / {banner()!r}")
+    if "Waiting for you to stop Dunree on proxy1" not in text("#vipTestWait") or not log() or not re.fullmatch(r"0 s proxy1 answers on the floating IP", log()[0]) or "The test is running" not in banner():
+        fail("cluster-vip", f"the timeline must start with who answers now, and the page must wait for the user: {log()} / {text('#vipTestWait')!r} / {banner()!r}")
+    pg.evaluate("ClusterPage.skew(60000)")   # a user who needs a minute to open a terminal: well past the 29 s of a failover
+    pg.wait_for_timeout(1600)
+    if result()[0] or not visible("#vipTestStop") or any("did not take over" in l for l in log()):
+        fail("cluster-vip", f"a slow user is not a failed failover: the test must keep waiting for Dunree to be stopped: {result()} / {log()}")
+    pg.evaluate("ClusterPage.skew(250000)")
+    pg.wait_for_selector("#vipTestResult", state="visible", timeout=6000)
+    if text("#vipTestResultTitle") != "The test timed out." or "not stopped on proxy1 within 5 minutes" not in text("#vipTestResultText") or visible("#vipTestStop") or not visible("#vipTestBtn"):
+        fail("cluster-vip", f"nobody stopped Dunree: the test must end with a timeout and offer 'Test again': {text('#vipTestResult')!r}")
+
+    # (b) Dunree was stopped, the other server did not take over: the 29 s start then, not at the click
+    pg.click("#vipTestBtn")
+    pg.wait_for_selector("#vipTestRun", state="visible", timeout=4000)
+    nodes("unknown", "fault")
+    pg.wait_for_function("[...document.querySelectorAll('#vipTestLog li')].some(e => /proxy1 does not answer its health check/.test(e.innerText))", timeout=6000)
+    if result()[0] or visible("#vipTestWait"):
+        fail("cluster-vip", "right after Dunree was stopped the other server still has time")
+    pg.evaluate("ClusterPage.skew(40000)")
+    pg.wait_for_selector("#vipTestResult", state="visible", timeout=6000)
+    if "proxy2 did not take over." != text("#vipTestResultTitle") or pg.get_attribute("#vipTestResult", "data-kind") != "bad":
+        fail("cluster-vip", f"the other server did not take over in time: {text('#vipTestResult')!r}")
+    if lsget_tested():
+        fail("cluster-vip", "a failed test must not count as tested")
+    if text("#vipBadge") == "Working":
+        fail("cluster-vip", "a failed test must not say Working")
+
+    # (c) this page loses its server (the page is served by the server that is stopped): said, instead of waiting for ever
+    nodes("holding", "standby")
+    poll()
+    pg.click("#vipTestBtn")
+    pg.wait_for_selector("#vipTestRun", state="visible", timeout=4000)
+    mock["drop_status"] = True
+    pg.wait_for_function("document.querySelectorAll('#vipTestLog li.is-wait').length === 1", timeout=6000)
+    pg.evaluate("ClusterPage.skew(60000)")
+    pg.wait_for_selector("#vipTestResult", state="visible", timeout=6000)
+    mock["drop_status"] = False
+    if text("#vipTestResultTitle") != "This page lost its server." or "to see whether it took over" not in text("#vipTestResultText") or not any("This page lost its server" in l for l in log()):
+        fail("cluster-vip", f"a page that lost its server must say so and where to look: {text('#vipTestResult')!r}")
+    shots("lost", (("light", False, 1366), ("390", False, 390)), sel="#vipStep4")
+    want += ["cluster-vip-lost-light.png", "cluster-vip-lost-390.png"]
+
+    # (d) the real thing: proxy1 is stopped, proxy2 takes over, proxy1 comes back
+    nodes("holding", "standby")
+    poll()
+    pg.click("#vipTestBtn")
+    pg.wait_for_selector("#vipTestRun", state="visible", timeout=4000)
     # while the address moves a status request may fail: the browser logs that, the page must not treat it as an error
-    tolerated = re.compile(r"cluster-vip/test\] (requestfailed|console\.error): .*api/cluster/vip/status")
-    allow.append(tolerated)
     mock["drop_status"] = True
     pg.wait_for_function("document.querySelectorAll('#vipTestLog li.is-wait').length === 1", timeout=6000)
     mock["drop_status"] = False
@@ -664,6 +796,8 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
         fail("cluster-vip", f"the result must be said plainly, with the command that starts Dunree again: {text('#vipTestResult')!r}")
     if pg.locator(".zx-toast--error, .zx-toast[data-type=error], #vipWrap [role=alert]:visible").count():
         fail("cluster-vip", "a failed status request during the move is not an error")
+    if "Can't see" in card(1) or "Can't see proxy1 from here" not in card(0):
+        fail("cluster-vip", f"the stopped server is not visible, the one the page runs on never is: {card(0)!r} / {card(1)!r}")
     pg.locator("#vipStep4").scroll_into_view_if_needed()
     shots("failover")
     want += ["cluster-vip-failover-light.png", "cluster-vip-failover-dark.png", "cluster-vip-failover-390.png"]
@@ -674,13 +808,15 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     pg.wait_for_selector("#vipTestBtn", state="visible", timeout=4000)
     if "Test again" not in text("#vipTestBtn") or "The test is finished" not in text("#vipTestResultText") or visible("#vipTestStop"):
         fail("cluster-vip", "after the way back the test must end by itself and offer 'Test again'")
-    # tested: the banner moves on to the firewall, then says it works
-    wait_banner("^Point your firewall at 192\\.0\\.2\\.10\\.$")
+    # tested: step 5 opens, the banner moves on to the port forward, then says that all steps are done
+    if "is-dim" in pg.get_attribute("#vipStep5", "class") or not visible("#vipFwTick") or text("#vipBadge") != "Working":
+        fail("cluster-vip", f"after the test step 5 opens and the header says Working: {text('#vipBadge')!r}")
+    wait_banner("^Send visitors to 192\\.0\\.2\\.10: change the port forward on your router\\.$")
     pg.click("#vipNextBtn")
     pg.check("#vipFwTick")
-    wait_banner("^It works\\. Visitors reach 192\\.0\\.2\\.10, and proxy2 takes over if proxy1 fails\\.$")
-    if pg.get_attribute("#vipNext", "data-kind") != "done" or visible("#vipNextBtn") or "all done" not in text("#vipNextKicker").lower():
-        fail("cluster-vip", "done: a green banner without a button")
+    wait_banner("^All steps done\\. The floating IP moves between proxy1 and proxy2\\. To check that visitors get through, open your site on your phone with Wi-Fi off\\.$")
+    if pg.get_attribute("#vipNext", "data-kind") != "done" or visible("#vipNextBtn") or "all done" not in text("#vipNextKicker").lower() or "It works" in text("#vipNext") or "Visitors reach" in text("#vipNext"):
+        fail("cluster-vip", "done: a green banner without a button, that does not claim to know that visitors arrive")
     pg.locator("#vipCard").scroll_into_view_if_needed()
     shots("done", (("light", False, 1366), ("390", False, 390)))
     want += ["cluster-vip-done-light.png", "cluster-vip-done-390.png"]
@@ -689,13 +825,14 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     if pg.get_attribute("#vipNext", "data-kind") != "done" or not pg.is_checked("#vipFwTick"):
         fail("cluster-vip", "the ticks of steps 4 and 5 must be remembered in this browser")
     pg.evaluate("ClusterPage.pageHost = ''")
+    page_on(0)
 
     # ---- failover happened: the backup answers, the main server stands by ----
     current["page"] = "cluster-vip/failedover"
     nodes("standby", "holding")
     reload()
     pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
-    wait_banner("^It works\\. Visitors reach 192\\.0\\.2\\.10, and proxy1 takes over if proxy2 fails\\.$")
+    wait_banner("^All steps done\\. The floating IP moves between proxy1 and proxy2\\.")
     if "proxy2 answers right now. The main server takes over again about 1 minute after it is healthy." not in text("#vipNextFix") or "Answers on the floating IP" not in card(1) or "Standing by" not in card(0):
         fail("cluster-vip", f"failover happened: the page must say who answers now and that the main server comes back: {text('#vipNextFix')!r}")
     if "This server stands by" in text("#vipBadge") or "Working" not in text("#vipBadge") or "proxy2 answers on it" not in text("#clFacts"):
@@ -707,9 +844,16 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     current["page"] = "cluster-vip/split"
     nodes("holding", "holding")
     poll()
-    wait_banner("^Both servers answer on 192\\.0\\.2\\.10\\. Something between them blocks the messages they send each other\\.$")
-    if pg.get_attribute("#vipNext", "data-kind") != "problem" or "Allow protocol 112 between 192.0.2.11 and 192.0.2.12" not in text("#vipNextFix") or not visible("#vipNextWhy") or "fix this first" not in text("#vipNextKicker").lower():
-        fail("cluster-vip", f"split brain: one sentence, one fix and a 'Why?': {text('#vipNext')!r}")
+    wait_banner("^The two servers cannot hear each other, so both answer on 192\\.0\\.2\\.10\\.$")
+    if pg.get_attribute("#vipNext", "data-kind") != "problem" or "Run the newest script again on both servers" not in text("#vipNextFix") or "Datacenter or VM > Firewall > Add rule" not in text("#vipNextFix") or not visible("#vipNextWhy") or "fix this first" not in text("#vipNextKicker").lower():
+        fail("cluster-vip", f"split brain: one plain sentence, what to do, and a 'Why?': {text('#vipNext')!r}")
+    cmds = pg.eval_on_selector_all("#vipNextCmds .vipCmd", "els => els.map(e => [e.querySelector('b').innerText, e.querySelector('code').innerText])")
+    if cmds != [["On proxy1", "sudo iptables -I INPUT -p 112 -s 192.0.2.12 -j ACCEPT"], ["On proxy2", "sudo iptables -I INPUT -p 112 -s 192.0.2.11 -j ACCEPT"]] or pg.locator("#vipNextCmds [data-vip-copy]").count() != 2:
+        fail("cluster-vip", f"split brain: one copyable command for each server: {cmds}")
+    if re.search(r"protocol 112|VRRP|multicast|nftables", text("#vipNext")):
+        fail("cluster-vip", "split brain: the jargon belongs under 'Why?', not in the banner")
+    if "is-dim" not in pg.get_attribute("#vipStep5", "class") or visible("#vipFwTick"):
+        fail("cluster-vip", "split brain: nobody should be told to point the router at an address that two servers answer")
     pg.click("#vipNextWhy > summary")
     if "VRRP" not in text("#vipNextWhyText") or "protocol 112" not in text("#vipNextWhyText"):
         fail("cluster-vip", "the 'Why?' of split brain must hold the technical reason")
@@ -753,9 +897,16 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     poll()
     if text("#vipN0Fix") != "sudo -u keepalived_script curl -fsS http://127.0.0.1:8081/.dunree/health":
         fail("cluster-vip", f"fault: the card must give the command that shows the health check: {card(0)!r}")
+    if '"status":"ok"' not in card(0) or "Connection refused" not in card(0) or "sudo systemctl start dunree" not in card(0) or "error: 503" not in card(0) or "support request" not in card(0):
+        fail("cluster-vip", f"fault: the card must say what a good and a bad answer look like and what to do: {card(0)!r}")
     wait_banner("^Neither server answers on 192\\.0\\.2\\.10 because both health checks fail\\.$", 25000)
     if "No server answers" not in text("#vipBadge") or not visible("#vipNextWhy"):
         fail("cluster-vip", "nobody answers: red header, and a 'Why?'")
+    # the port forward was changed earlier (the tick is remembered): the site is down, and the page says so in red
+    if not visible("#vipFwDownBox") or "Your router sends visitors to 192.0.2.10 but no server answers there." not in text("#vipFwDown") or "Your site is down. Set the port forward back to 192.0.2.11 until this is fixed." not in text("#vipFwDown"):
+        fail("cluster-vip", f"nobody answers and the port forward is changed: step 5 must say that the site is down: {text('#vipStep5')!r}")
+    if "is-dim" not in pg.get_attribute("#vipStep5", "class") or visible("#vipFwTick"):
+        fail("cluster-vip", "nobody answers: step 5 is closed")
     shots("nobody", (("light", False, 1366),))
     want += ["cluster-vip-nobody-light.png"]
     # keeps moving: the holder changes more than four times within two minutes
@@ -772,10 +923,12 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     mock["preflight"] = {"blocked": True, "checks": [{"id": "settings", "level": "ok", "message": "The settings are valid."},
                                                       {"id": "health-config", "level": "block", "message": "the health allow-list does not admit the probe source 127.0.0.1 (add it to the health allow-list)"}]}
     reload()
-    wait_banner("^Dunree's health check refuses this server itself\\.$")
+    wait_banner("^Dunree is blocking its own health check\\.$")
     rows = before()
-    if not any(r[0] == "health" and r[1] == "block" for r in rows) or text("#vipBeforeList [data-id=health] .zx-btn") != "Allow 127.0.0.1" or text("#vipNextBtn") != "Allow 127.0.0.1" or visible("#vipAllSet"):
+    if not any(r[0] == "health" and r[1] == "block" for r in rows) or text("#vipBeforeList [data-id=health] .zx-btn") != "Let this server check itself" or text("#vipNextBtn") != "Let this server check itself" or visible("#vipAllSet"):
         fail("cluster-vip", f"a blocked health check must be one sentence with one fix: {rows}")
+    if "Adds 127.0.0.1 (this server) to the health check allow-list in Dunree. Nothing outside Dunree changes." not in text("#vipNextFix") or "Nothing outside Dunree changes" not in text("#vipBeforeList [data-id=health]"):
+        fail("cluster-vip", "the button must say what it changes and that nothing outside Dunree changes")
     pg.click("#vipDetails > summary")
     pg.click("#vipTechBox > summary")
     if pg.locator("#vipChecks .vipCheck").count() != 2 or "1 passed, 0 to check, 1 to fix" not in text("#vipCheckSum") or "3f9a1c2e" not in text("#vipFacts"):
@@ -815,6 +968,52 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     pg.click("#vipCancelBtn")
     mock["config"]["shared"] = shared
 
+    # ---- this page loses contact with Dunree on this server: it says so instead of showing old facts ----
+    current["page"] = "cluster-vip/stale"
+    mock["preflight"] = {"blocked": False, "checks": [{"id": "health", "level": "ok", "message": "The health probe answers 200."}]}
+    nodes("holding", "standby")
+    reload()
+    pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
+    if visible("#vipStale") or "Answers on the floating IP" not in card(0):
+        fail("cluster-vip", "a page that is in contact must not show the stale notice")
+    stale_ok = re.compile(r"cluster-vip/stale\] (requestfailed|console\.error): .*api/cluster/vip/status")
+    allow.append(stale_ok)
+    mock["drop_status"] = True
+    poll()
+    poll()
+    poll()
+    pg.evaluate("ClusterPage.ageStatus(12000)")
+    poll()
+    if not visible("#vipStale") or "lost contact with Dunree on this server" not in text("#vipStale") or "may be old" not in text("#vipStale"):
+        fail("cluster-vip", f"a status that cannot be read for a while must be said, not shown as if it were current: {text('#vipFlow')[:200]!r}")
+    if "No contact with Dunree" not in text("#vipBadge") or "Answers on the floating IP" in card(0) or "lost contact" not in banner():
+        fail("cluster-vip", f"stale: the header, the cards and the banner must not keep saying that it works: {text('#vipBadge')!r} / {card(0)!r} / {banner()!r}")
+    shots("stale", (("light", False, 1366), ("390", False, 390)))
+    want += ["cluster-vip-stale-light.png", "cluster-vip-stale-390.png"]
+    mock["drop_status"] = False
+    poll()
+    if visible("#vipStale") or "Answers on the floating IP" not in card(0):
+        fail("cluster-vip", "when the status can be read again the notice must go and the cards must follow")
+    allow.remove(stale_ok)
+
+    # ---- an old priority of this server (Show details) that contradicts step 1: said, with the way out ----
+    current["page"] = "cluster-vip/priority"
+    mock["config"]["effective"].update(prioritySource="local override", priority=200)
+    nodes("holding", "standby")
+    mock["status"]["nodes"][1]["prio"] = 180
+    reload()
+    pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
+    pg.click("#vipBeforeShow") if visible("#vipBeforeShow") else None
+    rows = before()
+    own = [r for r in rows if r[0] == "prio"]
+    peer = [r for r in rows if r[0] == "prio-1"]
+    if not own or own[0][1] != "warn" or "own priority (200)" not in own[0][2] or "overrides your choice of the main server in step 1" not in own[0][2] or text("#vipBeforeList [data-id=prio] .zx-btn") != "Remove it":
+        fail("cluster-vip", f"a priority of this server that contradicts step 1 must be said, with 'Remove it': {rows}")
+    if not peer or "proxy2 has its own priority (180)" not in peer[0][2] or "Remove it on proxy2" not in peer[0][2]:
+        fail("cluster-vip", f"the priority of the other server must be said too: {rows}")
+    mock["config"]["effective"].update(prioritySource="shared", priority=150)
+    mock["status"]["nodes"][1].pop("prio", None)
+
     # ---- a follower: the settings come from the other server, the scripts are still here ----
     current["page"] = "cluster-vip/follower"
     mock["config"].update(sharedEditable=False, source="primary", role="follower")
@@ -822,6 +1021,8 @@ def _cluster_vip_body(pg, ctx, api, shots, layout, toast, clear_toasts, visible,
     mock["status"]["nodes"] = [dict(node(0, "holding"), self=False), dict(node(1, "waiting"), self=True)]
     reload()
     pg.wait_for_selector("#vipNodes .vipNode[data-i='1'] [data-vip-act^=copy]", state="visible", timeout=6000)
+    if not visible("#vipLock") or "These settings are managed on proxy1 (192.0.2.11)." not in text("#vipLock") or text("#vipLockLink") != "Open Dunree on proxy1" or not (pg.get_attribute("#vipLockLink", "href") or "").startswith("http://192.0.2.11") or pg.locator("#vipLock i.lock.icon").count() or not pg.locator("#vipLock i.info.circle.icon").count():
+        fail("cluster-vip", f"a follower must be told which server the settings come from, with a link to it, and no padlock: {text('#vipLock')!r}")
     if not visible("#vipLock") or pg.locator("#vipWrap .vipEditBtn:visible").count() or visible("#vipOffBtn") or visible("#vipOnBtn") or visible("#vipSetupBtn") or visible("#vipIpForm"):
         fail("cluster-vip", "a follower must see the lock note and no way to change the shared settings")
     order = pg.eval_on_selector_all("#vipNodes .vipNode", "els => els.map(e => e.dataset.i)")

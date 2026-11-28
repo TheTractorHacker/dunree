@@ -4,6 +4,29 @@ Dunree is a reverse proxy and web gateway published by Foley IT under AGPL-3.0. 
 
 This file has two parts. The first part is the Dunree version line, which starts at v1.0.0-beta.1. The second part is the change log of Zoraxy as its authors wrote it, kept unchanged as the history of the code Dunree is built on.
 
+# Dunree v1.0.0-beta.3 (unreleased)
+
+**Cluster / HA: floating IP, a simpler guided setup**
+
++ Step 3 starts with one box, "Passwords you will need": the normal login password of each server (asked by the terminal after you paste), and nothing else. The secret the two servers share is already inside the script. The word sudo is gone from the cards.
++ Every server card explains how to get the script onto the server ("How do I do this?": `ssh`, or download, `scp` and `sudo sh`), names the value Dunree had to guess (the network card) and says what to do when the script stops.
++ The page no longer says "Working" or "It works" before it knows. The header says "Ready to test" until the test passed, and the last banner says what was shown ("the floating IP moves between proxy1 and proxy2") and how to check that visitors get through.
++ Step 5 (change the port forward on your router) stays closed until the test passed. If it was changed and no server answers for a while, the page says in red that the site is down and which address to set it back to.
++ Step 4 on the page of the server that would be stopped shows only a callout with one button, "Open this page on proxy2 to run the test". The guard also works when the page was opened by host name, through the floating IP or by an IPv6 address. The "did not take over" clock starts when Dunree is seen to stop, not at the click. A test nobody starts ends after 5 minutes, and a page that loses its server says so.
++ Plainer words for the split case ("The two servers cannot hear each other", one command per server, the Proxmox firewall path), the health check fix ("Let this server check itself"), the follower note (names the server and links to it), the diagram (real server names from the start) and optional linking (it is not part of the floating IP).
++ A status that cannot be read for about 10 seconds is shown as such instead of as the last good state.
++ Servers that are not linked now show their progress too (the script leaves the floating IP and the other servers' addresses in its marker file), a server whose Dunree answers 503 reads "health check fails", and a server set up with the classic commands counts as set up.
+
+**Installer script (generated, never run by Dunree)**
+
++ A health check address that another server reports goes into its script only when it is that server's own loopback or own address (an attacker on the LAN could point the failover check at a host of their choice). Host names are no longer accepted in the generated check.
++ The ufw rule goes into the `*filter` table only (a `*nat` block first in `before.rules` broke `ufw reload`), and a failed reload puts the old rules back AND reloads them.
++ A keepalived start that fails puts the previous setup back (and restarts it when it ran), and `systemctl enable` runs only after a successful start.
++ A keepalived.conf that Dunree did not make is never replaced silently: the script stops and says how to replace it on purpose.
++ The script refuses a floating IP that is the default gateway, or that is already set on the server while keepalived is not running.
++ The pasted block starts with a space, so bash with `HISTCONTROL=ignorespace` keeps the VRRP password out of its history.
++ A per-server priority under Show details that contradicts the main server of step 1 is reported (warning row with "Remove it", warning in the script) and the other server's override is used for its script.
+
 # Dunree v1.0.0-beta.2 (unreleased)
 
 **Cluster / HA: floating IP (keepalived)**

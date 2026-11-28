@@ -376,13 +376,37 @@ func checkScript(script string) error {
 	if err != nil || (pu.Scheme != "http" && pu.Scheme != "https") || pu.Host == "" || pu.Path != HealthPath || pu.Port() == "" {
 		return fmt.Errorf("render guard: script url %q", u)
 	}
-	if _, err := netip.ParseAddr(strings.Trim(pu.Hostname(), "[]")); err != nil && !reHostName.MatchString(pu.Hostname()) {
+	// The probe only ever asks a Dunree by its IP address: a host name would let
+	// whoever controls the name steer the failover.
+	if _, err := netip.ParseAddr(strings.Trim(pu.Hostname(), "[]")); err != nil {
 		return fmt.Errorf("render guard: script host %q", u)
 	}
 	return nil
 }
 
-var reHostName = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$`)
+// ValidProbeBase says whether a health check base URL ("scheme://host:port")
+// that another member reported may go into that member's script: the host has
+// to be that member's own loopback or its own address, and the port a plain
+// number. Anything else would let whoever answers at that address point the
+// failover check at a host of their choice.
+func ValidProbeBase(base, member string) bool {
+	u, err := url.Parse(base)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" {
+		return false
+	}
+	port := u.Port()
+	n, err := strconv.Atoi(port)
+	if err != nil || n < 1 || n > 65535 || strconv.Itoa(n) != port {
+		return false
+	}
+	host := u.Hostname()
+	if host == "127.0.0.1" || host == "::1" {
+		return true
+	}
+	h, herr := netip.ParseAddr(host)
+	m, merr := netip.ParseAddr(member)
+	return herr == nil && merr == nil && h.Zone() == "" && h.Unmap() == m.Unmap()
+}
 
 // Generate renders keepalived.conf for one member (section 3). member < 0
 // means this node. It is a pure function of its inputs.
@@ -397,6 +421,9 @@ func Generate(s *Shared, l *Local, env *Env, member int) (*Output, error) {
 type PeerFacts struct {
 	Iface     string // interface carrying the member address
 	ProbeBase string // scheme://host:port of the health listener, "" = guess
+	// Priority is the priority this member itself uses when it has its own
+	// override (0 = none), so a script made for it elsewhere carries the same number.
+	Priority int
 }
 
 func generate(s *Shared, l *Local, env *Env, member int, pf *PeerFacts) (*Output, *tmplData, error) {
@@ -456,9 +483,21 @@ func generate(s *Shared, l *Local, env *Env, member int, pf *PeerFacts) (*Output
 		if ifaceName == "" {
 			blockers = append(blockers, "set an interface hint for "+s.Members[idx].Label+" or open the page on that node")
 		}
+		if pf != nil && pf.ProbeBase != "" && !ValidProbeBase(pf.ProbeBase, s.Members[idx].Address) {
+			return nil, nil, &BlockedError{Blockers: []string{"the health check address reported by " + s.Members[idx].Label + " is not that server's own address"}}
+		}
 		if pf == nil || pf.ProbeBase == "" {
 			warnings = append(warnings, "the health check target was chosen from this node's listener settings; check it on "+s.Members[idx].Label)
 		}
+		if pf != nil && pf.Priority >= 1 && pf.Priority <= 254 {
+			prio = pf.Priority
+			if s.Main != "" {
+				warnings = append(warnings, s.Members[idx].Label+" has its own priority ("+strconv.Itoa(prio)+") under Expert values, which overrides your choice of the main server")
+			}
+		}
+	}
+	if member < 0 && l.PriorityOverride != 0 && s.Main != "" {
+		warnings = append(warnings, "this server has its own priority ("+strconv.Itoa(l.PriorityOverride)+") under Expert values, which overrides your choice of the main server")
 	}
 	pr, pb, perr := ProbeTarget(s, l, env)
 	if member >= 0 && pf != nil && pf.ProbeBase != "" {

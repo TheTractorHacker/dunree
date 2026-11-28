@@ -139,9 +139,8 @@
     #clusterPage .vipTick .zx-check { font-weight: 700; }
     #clusterPage .vipTick .zx-popover, #clusterPage .vipTick .vipHint { flex: 1 0 100%; }
     #clusterPage .vipTick .vipHint { margin: 0; }
-    #clusterPage .vipTick .zx-check { flex: 0 1 auto; min-width: 0; }
-    #clusterPage .vipTick { flex-wrap: nowrap; } #clusterPage .vipTick:has(.zx-popover:not([hidden])), #clusterPage .vipTick.is-invalid { flex-wrap: wrap; }
-    #clusterPage .vipTick.is-invalid .zx-check, #clusterPage .vipTick:has(.zx-popover:not([hidden])) .zx-check { flex-basis: calc(100% - 44px); }
+    #clusterPage .vipTick .zx-check { min-width: 0; }
+    #clusterPage .vipTick .zx-check { flex: 0 1 calc(100% - 44px); }
     #clusterPage .vipBig { margin: 0; font-size: 1.429rem; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
     /* step 3: one card per server, one button */
@@ -176,6 +175,23 @@
     #clusterPage .vipCodeHead > span:first-child { flex: 1 1 10rem; min-width: 0; font-weight: 700; line-height: 28px; color: var(--zx-text); overflow-wrap: anywhere; }
     #clusterPage .vipCodeHead .zx-btn { margin: 0; }
     #clusterPage .vipNote { margin: 0 0 var(--zx-space-3); max-width: 54rem; color: var(--zx-text-muted); font-size: var(--zx-fs-sm); line-height: 1.5; }
+
+    #clusterPage .vipReq { margin-left: var(--zx-space-1); padding: 1px 8px; border-radius: var(--zx-radius-pill); background: var(--zx-warn-bg); border: 1px solid var(--zx-warn-line); color: var(--zx-warn-text); font-size: var(--zx-fs-xs); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 1px; }
+    #clusterPage .vipServer .zx-input::placeholder, #clusterPage #vipAddrIn::placeholder { font-style: italic; font-weight: 400; color: var(--zx-text-faint); }
+    #clusterPage .vipTickHelp { flex: 1 0 100%; margin: 0; color: var(--zx-text-muted); line-height: 1.5; }
+    #clusterPage .vipTopoNote { margin: calc(-1 * var(--zx-space-2)) 0 0; padding: 0 var(--zx-card-pad) var(--zx-card-pad); color: var(--zx-text-muted); }
+    #clusterPage .vipPasswords { margin: 0 0 var(--zx-space-4); padding: var(--zx-space-3) var(--zx-space-4); border: 1px solid var(--zx-info-line, var(--zx-border-strong)); border-radius: var(--zx-radius-lg); background: var(--zx-info-bg); color: var(--zx-text); }
+    #clusterPage .vipPasswords b { display: block; margin-bottom: var(--zx-space-1); font-size: 1.071rem; }
+    #clusterPage .vipPasswords ol { margin: 0; padding-left: 1.4em; line-height: 1.5; }
+    #clusterPage .vipPasswords li + li { margin-top: var(--zx-space-1); }
+    #clusterPage .vipNext__cmds { margin: var(--zx-space-2) 0 0; }
+    #clusterPage .vipNext__cmds .vipCmd { align-items: center; }
+    #clusterPage .vipNext__cmds .vipCmd > b { flex: 0 0 auto; }
+    #clusterPage .zx-callout a.zx-btn { text-decoration: none; }
+    #clusterPage .zx-callout a.zx-btn--primary { color: var(--zx-on-primary); }
+    #clusterPage .vipNodeHow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--zx-space-2); }
+    #clusterPage .vipBigBtn { min-height: 44px; padding: 0 var(--zx-space-5); font-size: 1.071rem; white-space: normal; text-align: center; }
+    #clusterPage .vipNodeHow .zx-popover { flex: 1 0 100%; }
 
     /* step 4: the guided test */
     #clusterPage .vipLog { list-style: none; margin: var(--zx-space-4) 0 0; padding: 0; border-left: 2px solid var(--zx-border-strong); }
@@ -301,9 +317,9 @@
                 <button type="button" class="zx-btn zx-btn--secondary" id="vipOffBtn" hidden>Switch off</button>
             </div>
         </div>
-        <div id="vipLock" class="zx-callout zx-callout--warn" role="note" hidden>
-            <span class="zx-callout__icon" aria-hidden="true"><i class="lock icon"></i></span>
-            <div class="zx-callout__body">These settings come from your other server and arrive here by themselves. Change them on that server. The scripts below are made for the same settings.</div>
+        <div id="vipLock" class="zx-callout zx-callout--info" role="note" hidden>
+            <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
+            <div class="zx-callout__body"><span id="vipLockText"></span> <a id="vipLockLink" href="#" hidden></a> The scripts below are made for the same settings.</div>
         </div>
         <div id="vipKept" class="zx-callout zx-callout--warn" role="note" hidden>
             <span class="zx-callout__icon" aria-hidden="true"><i class="info circle icon"></i></span>
@@ -311,15 +327,21 @@
             Dunree no longer checks or reports the floating IP. The floating IP itself keeps working until you stop it yourself on each server: <code>sudo systemctl disable --now keepalived</code></div>
         </div>
         <div class="vipTopo" id="vipTopo" role="img" aria-label="Your router sends visitors to the floating IP. One of your two servers answers on it."></div>
+        <p class="vipTopoNote" id="vipTopoNote" hidden>In step 1 you choose which of your servers is the main one.</p>
     </section>
 
     <div id="vipFlow" hidden>
+    <div id="vipStale" class="zx-callout zx-callout--warn" role="alert" hidden>
+        <span class="zx-callout__icon" aria-hidden="true"><i class="plug icon"></i></span>
+        <div class="zx-callout__body"><span class="zx-callout__title">This page lost contact with Dunree on this server.</span> <span id="vipStaleText"></span></div>
+    </div>
     <!-- the one thing to do now -->
     <section class="vipNext" id="vipNext" aria-live="polite" aria-labelledby="vipNextKicker" hidden>
         <div class="vipNext__text">
             <span class="vipNext__kicker" id="vipNextKicker">Next step</span>
             <p class="vipNext__say" id="vipNextSay"></p>
             <p class="vipNext__fix" id="vipNextFix" hidden></p>
+            <div class="vipNext__cmds" id="vipNextCmds" hidden></div>
         </div>
         <button type="button" class="zx-btn zx-btn--primary" id="vipNextBtn" hidden></button>
         <details class="zx-disclosure vipWhy" id="vipNextWhy" hidden><summary>Why?</summary><div class="zx-disclosure__body" id="vipNextWhyText"></div></details>
@@ -369,8 +391,8 @@
         <div class="zx-card__body">
             <div class="vipIpRow">
                 <div class="zx-field">
-                    <label class="zx-field__label" for="vipAddrIn">Floating IP</label>
-                    <input type="text" id="vipAddrIn" class="zx-input" data-vip-field="vip" placeholder="192.0.2.10" autocomplete="off" spellcheck="false" inputmode="decimal">
+                    <label class="zx-field__label" for="vipAddrIn">Floating IP <span class="vipReq" id="vipAddrReq">Required</span></label>
+                    <input type="text" id="vipAddrIn" class="zx-input" data-vip-field="vip" placeholder="e.g. 192.0.2.10" autocomplete="off" spellcheck="false" inputmode="decimal" aria-required="true">
                     <p class="vipHint" id="vipAddrHint" aria-live="polite" hidden></p>
                 </div>
                 <div class="vipSug" id="vipSug" hidden>
@@ -382,8 +404,9 @@
             <p id="vipNetLine"></p>
             <div class="vipTick" id="vipTickRow">
                 <label class="zx-check"><input type="checkbox" id="vipDhcpTick"><span>I checked: this address is outside my router's DHCP range</span></label>
-                <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="vipDhcpWhat" aria-label="Where do I find the DHCP range?">?</button>
-                <div class="zx-popover" id="vipDhcpWhat" role="note" hidden>Your router hands out addresses from a range (DHCP). The floating IP has to be outside that range, or the router may give it to another device. In UniFi: Settings &gt; Networks &gt; your network &gt; DHCP range. Don't make a fixed-IP reservation for the floating IP: it moves between two servers.</div>
+                <button type="button" class="zx-whatis" aria-expanded="false" aria-controls="vipDhcpWhat" aria-label="Why does it matter?">?</button>
+                <p class="vipTickHelp" id="vipTickHelp">Your router gives out addresses automatically from a range. Pick one outside it. In UniFi: Settings &gt; Networks &gt; your network &gt; DHCP range.</p>
+                <div class="zx-popover" id="vipDhcpWhat" role="note" hidden>If the router gives the floating IP to another device, two devices answer on it and your site breaks. Don't make a fixed-IP reservation for the floating IP either: it moves between two servers.</div>
                 <p class="vipHint is-danger" id="vipTickErr" role="alert" hidden>Tick this box once you have checked it in your router.</p>
             </div>
         </div>
@@ -399,6 +422,15 @@
         <div class="zx-card__head"><span class="vipStepNo" aria-hidden="true">3</span><h3 class="zx-card__title" id="vipStep3Title">Run one script on each server</h3></div>
         <p class="zx-card__desc" id="vipStep3Desc"></p>
         <div class="zx-card__body" id="vipStep3Body">
+            <div class="vipPasswords" id="vipPasswords" role="note" aria-labelledby="vipPasswordsTitle">
+                <b id="vipPasswordsTitle">Passwords you will need</b>
+                <ol>
+                    <li>Your normal login password for each server, when the terminal asks after you paste. This is the password you use to log in to that server, not a Dunree password.</li>
+                    <li>Nothing else. The secret the two servers share is already inside the script.</li>
+                </ol>
+            </div>
+            <p class="vipSay vipMuted" id="vipStep3Os">Works on Debian, Ubuntu, Rocky, Alma, RHEL and Fedora servers with systemd. On another system the script stops before it changes anything: see <code>docs/guides/floating-ip-keepalived.md</code>.</p>
+            <p class="vipSay" id="vipStep3Note" hidden></p>
             <div class="vipNodes" id="vipNodes"></div>
         </div>
     </section>
@@ -414,11 +446,13 @@
                 <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
                 <div class="zx-callout__body"><span class="zx-callout__title" id="vipTestSelfTitle"></span>
                     <span id="vipTestSelfText"></span>
-                    <div class="zx-btn-row" style="margin-top: var(--zx-space-3);"><a class="zx-btn zx-btn--secondary zx-btn--sm" id="vipTestOther" href="#"></a><a class="zx-btn zx-btn--secondary zx-btn--sm" id="vipTestVip" href="#"></a><button type="button" class="vipLinkBtn" id="vipTestAnyway">Start the test here anyway</button></div></div>
+                    <div class="zx-btn-row" style="margin-top: var(--zx-space-3);"><a class="zx-btn zx-btn--primary vipBigBtn" id="vipTestOther" href="#"></a></div>
+                    <div style="margin-top: var(--zx-space-3);"><button type="button" class="vipLinkBtn" id="vipTestAnyway">Start the test here anyway</button></div></div>
             </div>
             <div id="vipTestRun" hidden>
                 <p class="vipRunOn" id="vipTestRunOn"></p>
                 <div class="vipCmd"><code id="vipTestCmd"></code><button type="button" class="zx-btn zx-btn--secondary zx-btn--sm" data-vip-copy="vipTestCmd"><i class="copy icon" aria-hidden="true"></i> Copy</button></div>
+                <p class="vipSay vipMuted" id="vipTestWait" aria-live="polite" hidden></p>
                 <p class="vipNote" style="margin-top: var(--zx-space-2);">Dunree runs in Docker or under another name? Stop it the way you normally do, for example <code>docker stop</code> with the name of your Dunree container.</p>
                 <ol class="vipLog" id="vipTestLog" aria-live="polite" aria-label="What happened"></ol>
                 <div class="vipResult" id="vipTestResult" role="status" hidden><i class="check circle icon" aria-hidden="true"></i><div><b id="vipTestResultTitle"></b><p id="vipTestResultText"></p>
@@ -429,8 +463,14 @@
 
     <!-- step 5: shown once, here only -->
     <section class="zx-card vipStep" id="vipStep5" aria-labelledby="vipStep5Title">
-        <div class="zx-card__head"><span class="vipStepNo" aria-hidden="true">5</span><h3 class="zx-card__title" id="vipStep5Title"><i class="info circle icon" aria-hidden="true"></i> <span id="vipFwTitle">Point your firewall at the floating IP</span></h3></div>
+        <div class="zx-card__head"><span class="vipStepNo" aria-hidden="true">5</span><h3 class="zx-card__title" id="vipStep5Title"><span id="vipFwTitle">Send visitors to the floating IP (port forward on your router)</span></h3></div>
         <p class="zx-card__desc" id="vipFwText"></p>
+        <div class="zx-card__body" id="vipFwDownBox" hidden>
+            <div class="zx-callout zx-callout--danger" role="alert" id="vipFwDown">
+                <span class="zx-callout__icon" aria-hidden="true"><i class="exclamation triangle icon"></i></span>
+                <div class="zx-callout__body"><span class="zx-callout__title" id="vipFwDownTitle"></span> <span id="vipFwDownText"></span></div>
+            </div>
+        </div>
         <div class="zx-card__body" id="vipFwBody">
             <div class="vipTick"><label class="zx-check"><input type="checkbox" id="vipFwTick"><span>I've changed the port forward</span></label></div>
         </div>
@@ -986,7 +1026,8 @@
     let vc = null, vs = null, vipEditing = false, vipChecks = null, vipCheckNote = "", vipCheckBusy = false, vipAutoChecked = false, vipNics = null, vipLocalDirty = false;
     let vipForm = {members: [], mainIdx: 0, manual: false}, vipSug = null;
     let vipScripts = {}, vipScriptKey = "", vipScriptSeq = 0, vipCardsKey = "";
-    let vipTest = null, vipTestAsk = false, vipHolderLog = [], vipLastHolder = "", vipNobodySince = 0, vipBeforeOpen = false, vipStatusBusy = false, vipHtml = {};
+    let vipTest = null, vipHolderLog = [], vipLastHolder = "", vipNobodySince = 0, vipDownSince = 0, vipBeforeOpen = false, vipStatusBusy = false, vipHtml = {};
+    let vsAt = 0, vsFails = 0;   //when the status of THIS server was last read, and how many reads in a row failed since
     function escAttr(s){ return esc(s).split("'").join("&#39;"); }   //esc() for a single-quoted attribute (no regex literal with a quote: the i18n extractor lexes the script)
     function cap(s){ s = String(s == null ? "" : s); return s.charAt(0).toUpperCase() + s.slice(1); }
     function trim(s){ return String(s == null ? "" : s).trim(); }
@@ -1044,14 +1085,22 @@
         return best ? best.address : "";
     }
     function vipFailSecs(s){ let lo = s.health.interval * s.health.fall; return [lo, lo + s.health.timeout]; }
+    //The page has not heard from Dunree on this server for about 10 seconds (it restarted, the network dropped, the login ran out)
+    function vipStale(){ return !!(vs && vsAt && vsFails >= 2 && Date.now() - vsAt > 9000); }
     //One entry per server of the saved settings: its live state from the status, its name and its role
     function vipNodeList(){
-        let ms = vipShared().members || [], ns = (vs && vs.nodes) || [], main = vipMainAddr();
+        let ms = vipShared().members || [], ns = (vs && vs.nodes) || [], main = vipMainAddr(), stale = vipStale();
         return ms.map(function(m, i){
             let n = ns.filter(function(x){ return x.address == m.address; })[0] || {};
-            return $.extend({state: "unknown"}, n, {label: m.label, address: m.address, index: i, name: vipNm(m, i), self: vipIsSelf(m.address), main: m.address == main});
+            return $.extend({state: "unknown"}, n, {label: m.label, address: m.address, index: i, name: vipNm(m, i), self: vipIsSelf(m.address), main: m.address == main}, stale ? {state: "unknown", held: false} : {});
         });
     }
+    function vipNameList(nodes){
+        let names = nodes.map(function(n){ return n.name; });
+        return names.length < 2 ? names.join("") : names.slice(0, -1).join(", ") + " " + t("and") + " " + names[names.length - 1];
+    }
+    //An address in a URL: IPv6 needs its brackets
+    function vipHostUrl(h){ h = String(h); return h.indexOf(":") >= 0 && h.charAt(0) != "[" ? "[" + h + "]" : h; }
     function vipGood(n){ return n.state == "holding" || n.state == "standby"; }
     //"yes": one server answers and every other one stands by. "partial": the same for every server Dunree can see, and one it cannot see.
     function vipWorks(nodes){
@@ -1066,9 +1115,11 @@
     function vipFailure(nodes){
         let s = vipShared(), hold = vipHolders(nodes);
         if (hold.length > 1 || (vs && vs.splitBrain)) {
-            let a = (hold[0] || nodes[0] || {}).address, b = (hold[1] || nodes[1] || {}).address;
-            return {id: "split", say: nodes.length > 2 ? tf("More than one server answers on {0}. Something between them blocks the messages they send each other.", s.vip) : tf("Both servers answer on {0}. Something between them blocks the messages they send each other.", s.vip),
-                fix: tf("Allow protocol 112 between {0} and {1} in the Proxmox or host firewall, then wait a minute.", a, b),
+            let na = hold[0] || nodes[0] || {}, nb = hold[1] || nodes[1] || {};
+            return {id: "split", say: nodes.length > 2 ? tf("The servers cannot hear each other, so more than one answers on {0}.", s.vip) : tf("The two servers cannot hear each other, so both answer on {0}.", s.vip),
+                fix: t("Run the newest script again on both servers: it lets their messages through in ufw and firewalld. If a Proxmox firewall sits in between, add a rule: Datacenter or VM > Firewall > Add rule, direction in, action ACCEPT, protocol vrrp."),
+                cmdsNote: t("To try it right now, run one command on each server. It lasts until the next reboot; the script makes it permanent."),
+                cmds: [{label: tf("On {0}", na.name), cmd: "sudo iptables -I INPUT -p 112 -s " + nb.address + " -j ACCEPT"}, {label: tf("On {0}", nb.name), cmd: "sudo iptables -I INPUT -p 112 -s " + na.address + " -j ACCEPT"}],
                 why: t("The servers tell each other that they are alive with VRRP messages (IP protocol 112). A host firewall (ufw, firewalld, nftables), the Proxmox VM or datacenter firewall, VLAN rules or a switch that drops multicast stops these messages, and then each server thinks the other one is gone and takes the floating IP. Also make sure you ran the newest script on both servers: scripts from different settings do not understand each other.")};
         }
         if (nodes.length > 1 && nodes.every(function(n){ return n.state == "fault"; })) {
@@ -1107,25 +1158,28 @@
     function vipRenderTopo(){
         let s = vipShared(), on = vipOn(), ms = vipEditing ? vipForm.members : (s.members || []);
         let arrow = "<div class='vipTopo__arrow' aria-hidden='true'><i class='arrow right icon'></i></div>", html, label;
-        let named = ms.filter(function(m){ return trim(m.address); }).length >= 2;
+        //two servers with names: show them by name from the start, each with its role next to the name
+        let named = ms.filter(function(m){ return trim(m.label) || trim(m.address); }).length >= 2;
         if (!named || (!s.vip && !vipEditing)) {
             html = topoBox("", "globe", t("Your router"), t("Port forward"), t("sends visitors to the floating IP")) + arrow +
                 topoBox("vipTopo__vip", "exchange", t("Floating IP"), t("One extra address"), t("moves to the server that is healthy")) + arrow +
                 "<div class='vipTopo__members'>" + topoBox("vipTopo__member", "server", t("Server 1"), t("Main server"), t("normally answers")) +
                 topoBox("vipTopo__member", "server", t("Server 2"), t("Backup server"), t("takes over when server 1 stops answering")) + "</div>";
             label = t("Your router sends visitors to the floating IP. One of your two servers answers on it.");
+            $("#vipTopoNote").prop("hidden", false);
         } else {
+            $("#vipTopoNote").prop("hidden", true);
             let nodes = vipEditing ? [] : vipNodeList(), split = !vipEditing && on && !!vipFailure(nodes) && vipFailure(nodes).id == "split", holder = "";
             let mainAddr = vipEditing ? trim((vipForm.members[vipForm.mainIdx] || {}).address) : vipMainAddr(), vip = vipEditing ? trim($("#vipAddrIn").val()) : s.vip;
             let tiles = ms.map(function(m, i){
-                let n = nodes[i] || {}, badge = "", cls = "";
+                let n = nodes[i] || {}, badge = "", cls = "", isMain = vipEditing ? i == vipForm.mainIdx : trim(m.address) == mainAddr;
                 if (on && !vipEditing) {
                     if (n.state == "holding") { badge = dot(split ? "danger" : "ok", split ? t("Answers too") : t("Answers now")); cls = split ? " is-split" : " is-holder"; if (!holder) holder = vipNm(m, i); }
                     else if (n.state == "standby") badge = dot("", t("Standing by"));
                     else if (n.state == "unknown") badge = dot("", t("Not visible from here"));
                     else badge = dot("warn", t("Not ready"));
                 }
-                return topoBox("vipTopo__member" + cls, "server", (trim(m.address) == mainAddr ? t("Main server") : t("Backup server")) + (vipIsSelf(m.address) ? " · " + t("you are here") : ""), vipNm(m, i), trim(m.address), badge);
+                return topoBox("vipTopo__member" + cls, "server", (isMain ? t("Main server") : t("Backup server")) + (vipIsSelf(m.address) ? " · " + t("you are here") : ""), vipNm(m, i), trim(m.address), badge);
             }).join("");
             html = topoBox("", "globe", t("Your router"), t("Port forward"), vip ? tf("sends visitors to {0}", vip) : t("sends visitors to the floating IP")) + arrow +
                 topoBox("vipTopo__vip", "exchange", t("Floating IP"), vip || t("Not chosen yet"), !on && !vipEditing ? t("switched off") : split ? t("more than one server answers") : holder ? tf("{0} answers on it", holder) : "") + arrow + "<div class='vipTopo__members'>" + tiles + "</div>";
@@ -1144,9 +1198,11 @@
             desc = tf("The floating IP {0} is switched off.", s.vip || "");
         } else {
             let nodes = vipNodeList(), fail = vipFailure(nodes), works = vipWorks(nodes), self = nodes.filter(function(n){ return n.self; })[0];
-            if (fail) { kind = "danger"; word = fail.id == "split" ? t("More than one server answers") : fail.id == "nobody" ? t("No server answers") : t("Keeps moving"); }
+            if (vipStale()) { kind = "warn"; word = t("No contact with Dunree"); }
+            else if (fail) { kind = "danger"; word = fail.id == "split" ? t("More than one server answers") : fail.id == "nobody" ? t("No server answers") : t("Keeps moving"); }
             else if (!self) { kind = "warn"; word = t("This server is not one of the servers"); }
-            else if (works == "yes") { kind = "ok"; word = t("Working"); }
+            else if (works == "yes" && vipTested()) { kind = "ok"; word = t("Working"); }
+            else if (works == "yes") { kind = "info"; word = t("Ready to test"); }
             else if (works == "partial") { kind = "ok"; word = self.state == "holding" ? t("This server answers") : t("This server stands by"); }
             else { kind = "warn"; word = t("Not finished yet"); }
         }
@@ -1157,8 +1213,20 @@
         $("#vipOnBtn").prop("hidden", !(editable && vc.exists && !s.enabled));
         $("#vipOffBtn").prop("hidden", !(editable && on));
         $("#vipLock").prop("hidden", editable);
+        if (!editable) vipRenderLock();
         $("#vipKept").prop("hidden", !(vc.exists && !s.enabled));
         vipRenderTopo();
+    }
+
+    //Which server the settings come from: the primary of a follower, else the other server of the list. Named and linked.
+    function vipRenderLock(){
+        let ms = vipShared().members || [], pu = (st && st.primaryUrl) || "", host = "", other = null;
+        try { host = new URL(pu).hostname.replace(/^\[|\]$/g, ""); } catch (e) {}
+        ms.forEach(function(m, i){ if (!other && host && m.address == host) other = {name: vipNm(m, i), addr: m.address}; });
+        ms.forEach(function(m, i){ if (!other && !vipIsSelf(m.address)) other = {name: vipNm(m, i), addr: m.address}; });
+        let url = pu && /^https?:\/\//.test(pu) ? pu : other ? location.protocol + "//" + vipHostUrl(other.addr) + (location.port ? ":" + location.port : "") + "/" : "";
+        $("#vipLockText").text(other ? tf("These settings are managed on {0} ({1}). Change them there; they arrive here by themselves.", other.name, other.addr) : t("These settings are managed on your other server. Change them there; they arrive here by themselves."));
+        $("#vipLockLink").prop("hidden", !url).attr("href", url || "#").attr("rel", "noopener").text(other ? tf("Open Dunree on {0}", other.name) : t("Open Dunree on your other server"));
     }
 
     // ---- Before you start: Dunree checks each item itself; every item that is not ticked has one button ----
@@ -1186,10 +1254,16 @@
             else rows.push({id: "peer", level: "info", text: tf("Dunree can't see {0} ({1}) from here. You can go on: its script checks itself when you run it.", name, addr),
                 why: t("Dunree asks the other server's health check address directly. A firewall between the servers, a health check that only admits certain clients, or another health check port stops that. It does not stop the floating IP from working; this page then only shows the progress of the server you are on.")});
         });
+        //an old per-server priority (Show details) can contradict the choice of step 1: said, with the way out
+        if (saved && s.main && e.prioritySource == "local override") rows.push({id: "prio", level: "warn", text: tf("This server has its own priority ({0}) under Show details. It overrides your choice of the main server in step 1.", e.priority),
+            btn: {label: t("Remove it"), act: "dropprio"}, why: t("Scripts made on this page for this server, and on the other server's page, then differ from what step 1 says. Remove the override to follow step 1.")});
+        nodes.forEach(function(n){
+            if (saved && s.main && n.prio && !n.self) rows.push({id: "prio-" + n.index, level: "warn", text: tf("{0} has its own priority ({1}) under Show details. It overrides your choice of the main server in step 1.", n.name, n.prio), small: tf("Remove it on {0}, under Show details.", n.name)});
+        });
         if (st && st.role != "hub" && st.role != "node") {
             if ((st.role == "primary" || st.role == "follower") && st.secretSet) rows.push({id: "linked", level: "ok", text: t("The servers are linked: settings stay the same on both")});
-            else rows.push({id: "linked", level: "info", text: t("Optional: link the servers, and your other server always gets the same settings by itself."),
-                small: t("Not needed for the scripts. The password the servers use to recognise each other is already inside them."), btn: {label: t("Show me where"), act: "link"}});
+            else rows.push({id: "linked", level: "info", text: t("Optional, not needed for the floating IP: link the servers so settings copy across by themselves."),
+                small: t("Linking uses its own secret, set further down this page under Role and Cluster secret. It is a different thing from the floating IP."), btn: {label: t("Open the linking settings"), act: "link"}});
         }
         if (!saved || !s.enabled) { rows.push({id: "health", level: "info", text: t("Dunree tests its health check when you save step 2.")}); return rows; }
         if (!vipChecks) {
@@ -1198,7 +1272,7 @@
         }
         let hc = null, h = null;
         vipChecks.forEach(function(c){ if (c.id == "health-config" && c.level == "block" && !hc) hc = c; if (c.id == "health") h = c; });
-        if (hc && /allow-list/.test(hc.message)) rows.push({id: "health", level: "block", text: t("Dunree's health check refuses this server itself."), btn: {label: t("Allow 127.0.0.1"), act: "allow"}, why: cap(hc.message) + "."});
+        if (hc && /allow-list/.test(hc.message)) rows.push({id: "health", level: "block", text: t("Dunree is blocking its own health check."), small: t("Adds 127.0.0.1 (this server) to the health check allow-list in Dunree. Nothing outside Dunree changes."), btn: {label: t("Let this server check itself"), act: "allow"}, why: cap(hc.message) + "."});
         else if (hc && /switched off/.test(hc.message)) rows.push({id: "health", level: "block", text: t("Dunree's health check is switched off."), btn: {label: t("Switch it on"), act: "health"}, why: cap(hc.message) + "."});
         else if (hc && /health_port|server names/.test(hc.message)) rows.push({id: "health", level: "block", text: t("Dunree needs a separate health port for this. Start Dunree with -health_port=127.0.0.1:8081, then check again."), btn: {label: t("Check again"), act: "recheck"}, why: cap(hc.message) + "."});
         else if (hc) rows.push({id: "health", level: "block", text: t("Dunree's health check cannot be used the way it is set up."), btn: {label: t("Check again"), act: "recheck"}, why: cap(hc.message) + "."});
@@ -1236,9 +1310,10 @@
         let s = vipShared();
         if (!vc.exists && !vipEditing) return null;
         if (vc.exists && !s.enabled && !vipEditing) return null;
+        if (!vipEditing && vipStale()) return {kind: "problem", say: t("This page lost contact with Dunree on this server. Reload the page. If it stays like this, Dunree is not running here.")};
         if (vipTest && !vipTest.over) return {kind: "todo", say: tf("The test is running. Run the command on {0} and watch step 4.", vipTest.fromName), btn: t("Go to the test"), act: "goto:vipStep4"};
         let red = rows.filter(function(r){ return r.level == "block"; })[0];
-        if (red) return {kind: "problem", say: red.text, btn: red.btn ? red.btn.label : "", act: red.btn ? red.btn.act : "", why: red.why};
+        if (red) return {kind: "problem", say: red.text, fix: red.small || "", btn: red.btn ? red.btn.label : "", act: red.btn ? red.btn.act : "", why: red.why};
         if (vipEditing) {
             let missing = -1, vip = trim($("#vipAddrIn").val());
             vipForm.members.forEach(function(m, i){ if (missing < 0 && !trim(m.address)) missing = i; });
@@ -1249,7 +1324,7 @@
         }
         if (vc.sharedEditable && !s.dhcpChecked) return {kind: "todo", say: tf("Check that {0} is outside your router's DHCP range.", s.vip), btn: t("Go to step 2"), act: "tick"};
         let nodes = vipNodeList(), fail = vipFailure(nodes);
-        if (fail && fail.id == "split") return {kind: "problem", say: fail.say, fix: fail.fix, why: fail.why};
+        if (fail && fail.id == "split") return {kind: "problem", say: fail.say, fix: fail.fix, cmds: fail.cmds, cmdsNote: fail.cmdsNote, why: fail.why};
         let order = nodes.slice().sort(function(a, b){ return (b.self ? 2 : 0) + (b.main ? 1 : 0) - (a.self ? 2 : 0) - (a.main ? 1 : 0); });
         for (let i = 0; i < order.length; i++) {
             let n = order[i], sc = vipScripts[n.index];
@@ -1274,10 +1349,12 @@
         //a server this page cannot see: never claimed to work
         if (works == "partial") return {kind: "todo", say: tf("This server is ready. Dunree can't see {0} from here: run its script there too, and look at the Dunree page on {0} to see that it worked.", unseen.name), btn: vipTested() ? "" : t("Start the test"), act: "test"};
         if (!vipTested()) {
-            return {kind: "todo", say: tf("It works. Now test it: stop Dunree on {0} and watch {1} take over.", hold.name, other.name), btn: t("Start the test"), act: "test"};
+            //the page runs on the server the test would stop: the test has to be started from the other server's page
+            if (vipSelfStops(hold)) return {kind: "todo", say: tf("Both servers are ready. To test that {0} really takes over, open this page on {0}.", other.name), btn: t("Go to the test"), act: "goto:vipStep4"};
+            return {kind: "todo", say: tf("Both servers are ready. Now test that {0} really takes over.", other.name), btn: t("Start the test"), act: "test"};
         }
-        if (!vipFwDone()) return {kind: "todo", say: tf("Point your firewall at {0}.", s.vip), btn: t("Go to step 5"), act: "goto:vipStep5"};
-        let out = {kind: "done", say: tf("It works. Visitors reach {0}, and {1} takes over if {2} fails.", s.vip, other.name, hold.name)};
+        if (!vipFwDone()) return {kind: "todo", say: tf("Send visitors to {0}: change the port forward on your router.", s.vip), btn: t("Go to step 5"), act: "goto:vipStep5"};
+        let out = {kind: "done", say: tf("All steps done. The floating IP moves between {0}. To check that visitors get through, open your site on your phone with Wi-Fi off.", vipNameList(nodes))};
         if (!hold.main && nodes.some(function(n){ return n.main; }))
             out.fix = s.preempt ? tf("{0} answers right now. The main server takes over again about {1} after it is healthy.", hold.name, vipDur(s.preemptDelay)) : tf("{0} answers right now and keeps the floating IP until it has a problem itself.", hold.name);
         return out;
@@ -1290,6 +1367,11 @@
         $("#vipNextKicker").text(n.kind == "problem" ? t("Fix this first") : n.kind == "done" ? t("All done") : t("Next step"));
         if ($("#vipNextSay").text() != n.say) $("#vipNextSay").text(n.say);
         $("#vipNextFix").prop("hidden", !n.fix).text(n.fix || "");
+        let cmdHtml = n.cmds ? "<p class='vipNext__fix'>" + esc(n.cmdsNote || "") + "</p>" + n.cmds.map(function(c, i){
+            return "<div class='vipCmd'><b>" + esc(c.label) + "</b><code id='vipNextCmd" + i + "'>" + esc(c.cmd) + "</code><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='vipNextCmd" + i + "'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div>";
+        }).join("") : "";
+        $("#vipNextCmds").prop("hidden", !cmdHtml);
+        setHtml("#vipNextCmds", cmdHtml);
         $("#vipNextBtn").prop("hidden", !n.btn).text(n.btn || "").attr("data-vip-act", n.act || "").attr("class", "zx-btn " + (n.kind == "problem" ? "zx-btn--secondary" : "zx-btn--primary"));
         $("#vipNextWhy").prop("hidden", !n.why);
         if ($("#vipNextWhyText").text() != (n.why || "")) $("#vipNextWhyText").text(n.why || "");
@@ -1338,8 +1420,8 @@
             return "<div class='vipServer' data-i='" + i + "'>" +
                 "<div class='zx-field'><label class='zx-field__label' for='vipS" + i + "label'>" + esc(self ? t("Name of this server") : n == 2 ? t("Name of your other server") : tf("Name of server {0}", i + 1)) + "</label>" +
                 "<input id='vipS" + i + "label' class='zx-input' data-vip-field='members[" + i + "].label' data-key='label' maxlength='32' autocomplete='off' spellcheck='false' value='" + escAttr(m.label || "") + "'></div>" +
-                "<div class='zx-field'><label class='zx-field__label' for='vipS" + i + "address'>" + esc(self ? t("Address of this server") : n == 2 ? t("Address of your other server") : tf("Address of server {0}", i + 1)) + "</label>" +
-                "<input id='vipS" + i + "address' class='zx-input' data-vip-field='members[" + i + "].address' data-key='address' placeholder='192.0.2." + (11 + i) + "' inputmode='decimal' autocomplete='off' spellcheck='false' value='" + escAttr(m.address || "") + "'>" +
+                "<div class='zx-field'><label class='zx-field__label' for='vipS" + i + "address'>" + esc(self ? t("Address of this server") : n == 2 ? t("Address of your other server") : tf("Address of server {0}", i + 1)) + " <span class='vipReq'" + (trim(m.address) ? " hidden" : "") + ">" + esc(t("Required")) + "</span></label>" +
+                "<input id='vipS" + i + "address' class='zx-input' data-vip-field='members[" + i + "].address' data-key='address' placeholder='" + escAttr(tf("e.g. {0}", "192.0.2." + (11 + i))) + "' aria-required='true' inputmode='decimal' autocomplete='off' spellcheck='false' value='" + escAttr(m.address || "") + "'>" +
                 "<p class='vipHint' hidden></p></div>" +
                 (n > 2 ? "<button type='button' class='zx-btn zx-btn--ghost zx-btn--sm vipMRemove' aria-label='" + escAttr(tf("Remove {0}", vipNm(m, i))) + "'><i class='trash alternate outline icon' aria-hidden='true'></i></button>" : "") + "</div>";
         }).join(""));
@@ -1372,6 +1454,7 @@
         let base = (ms[vipFormSelf() >= 0 ? vipFormSelf() : 0] || {}).address, range = vipNetRange(base, prefix), gw = vipSug && vipSug.gateway;
         ms.forEach(function(m, i){
             let hint = $("#vipS" + i + "address").closest(".zx-field").find(".vipHint"), a = ip4(m.address), same = sameNet(ip4(base), a, prefix);
+            $("#vipS" + i + "address").closest(".zx-field").find(".vipReq").prop("hidden", !!trim(m.address));
             if (a == null || same !== false) hint.prop("hidden", true);
             else hint.prop("hidden", false).attr("class", "vipHint is-danger").text(t("Not in the same network as this server"));
             if (vip != null && a === vip && !text) { cls = "is-danger"; text = tf("That is the address of {0} itself. Pick a spare one.", vipNm(m, i)); }
@@ -1387,6 +1470,7 @@
                 { cls = "is-warn"; text = t("This looks like it may be inside your router's DHCP range. Check it in your router before you tick the box."); }
         }
         $("#vipAddrHint").prop("hidden", !text).attr("class", "vipHint " + cls).text(text);
+        $("#vipAddrReq").prop("hidden", !!vipRaw);
         $("#vipNetLine").text(range ? tf("Your network: {0} to {1}", range[0], range[1]) : "");
         let secs = num("#vipHInterval") * num("#vipHFall"), secsMax = secs + num("#vipHTimeout");
         $("#vipFailSentence").text(secs > 0 ? tf("A server whose Dunree stops answering gives up the floating IP after about {0} to {1} seconds, and the other server takes it.", secs, secsMax) : "");
@@ -1603,15 +1687,25 @@
     function vipNodeState(n, split){
         let name = n.name;
         switch (n.state) {
-        case "holding": return split ? {tone: "danger", icon: "exclamation", title: t("Answers on the floating IP, and so does another server")} : {tone: "ok", icon: "check", title: t("Answers on the floating IP"), done: true};
-        case "standby": return {tone: "ok", icon: "check", title: t("Standing by, ready to take over"), done: true};
+        case "holding": return split ? {tone: "danger", icon: "exclamation", title: t("Answers on the floating IP, and so does another server")} : {tone: "ok", icon: "check", title: t("Answers on the floating IP")};
+        case "standby": return {tone: "ok", icon: "check", title: t("Standing by, ready to take over")};
         case "waiting": return {tone: "", icon: "hourglass half", title: t("Waiting for this server"), text: tf("Copy the script and run it on {0}.", name)};
         case "outdated": return {tone: "warn", icon: "exclamation", title: tf("{0} runs older settings", name), text: tf("Copy the script again and run it on {0}.", name)};
         case "stopped": return {tone: "danger", icon: "times", title: tf("The floating IP service (keepalived) is not running on {0}", name), text: tf("Start it on {0}:", name), cmd: "sudo systemctl start keepalived"};
-        case "fault": return {tone: "danger", icon: "times", title: tf("{0} is set up, but its health check fails, so it does not take the floating IP", name), text: tf("See what the health check says. Run this on {0}:", name), cmd: "probe"};
+        case "fault": return {tone: "danger", icon: "times", title: tf("{0} is set up, but its health check fails, so it does not take the floating IP", name), text: tf("See what the health check says. Run this on {0}:", name), cmd: "probe",
+            after: tf("Good: it prints a line with \"status\":\"ok\". If it says \"Connection refused\", Dunree is not running on {0}: start it with sudo systemctl start dunree. If it says \"error: 503\", Dunree runs but its proxy is stopped: start the proxy on the Status page. Anything else: copy the output into a support request.", name)};
         case "old-version": return {tone: "warn", icon: "exclamation", title: tf("Update Dunree on {0} first", name), text: t("It runs another version than this server. See docs/guides/updating.md.")};
         }
+        //this very server is never "not visible": the page runs on it
+        if (n.self) return {tone: "", icon: "question", title: tf("Dunree can't tell yet what {0} is doing", name), text: t("Run its script again, or look under Show details.")};
         return {tone: "", icon: "question", title: tf("Can't see {0} from here", name), text: t("Its script checks itself when you run it, and tells you the result in the terminal.")};
+    }
+    //which values Dunree had to guess for a server it cannot ask, and what happens when the guess is wrong
+    function vipGuessNote(sc, label){
+        let g = sc.guessed || [], out = [];
+        if (g.indexOf("interface") >= 0) out.push(esc(tf("Dunree guessed the network card of {0}{1}. If it is wrong, the script stops and prints the right name. Type that name in Show details > Network card and copy the script again.", label, sc.interface ? " (" + sc.interface + ")" : "")));
+        if (g.indexOf("healthUrl") >= 0) out.push(esc(tf("Dunree guessed the health check address of {0}. The script checks it on {0} and stops safely if it is wrong.", label)));
+        return out.join(" ");
     }
     function vipRenderNodes(){
         if (!vipOn()) { setHtml("#vipNodes", ""); vipCardsKey = ""; return; }
@@ -1638,14 +1732,19 @@
                     html += "<div class='vipNode__blocked' role='note'><b>" + esc(tf("Dunree cannot make the script for {0} yet.", label)) + "</b><ul>" + bl.map(function(b){ return "<li>" + esc(b) + "</li>"; }).join("") + "</ul></div>" +
                         (vc.sharedEditable ? "<div class='vipNode__act'><button type='button' class='zx-btn zx-btn--secondary' data-vip-act='hint:" + i + "'>" + esc(t("Change the settings")) + "</button></div>" : "");
                 } else {
-                    html += "<div class='vipNode__act'><button type='button' class='zx-btn zx-btn--primary' data-vip-act='copy:" + i + "'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy script")) + "</button>" +
-                        "<span class='vipNode__done' data-vip-done hidden><i class='check circle icon' aria-hidden='true'></i> " + esc(t("Done")) + "</span></div>" +
+                    let file = "dunree-floating-ip-" + (String(label).replace(/[^A-Za-z0-9_-]/g, "-") || "node") + ".sh";
+                    html += "<div class='vipNode__act'><button type='button' class='zx-btn zx-btn--primary' data-vip-act='copy:" + i + "'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy script")) + "</button></div>" +
                         "<p class='vipNode__note is-live' data-vip-copied role='status' hidden></p>" +
-                        "<p class='vipNode__note'>" + esc(tf("Then open a terminal on {0} and paste it. It asks for your sudo password if needed.", label)) + "</p>" +
-                        "<p class='vipNode__note'><a href='" + VIP + "script?member=" + i + "&download=1' download data-vip-dl='" + i + "'>" + esc(t("Can't paste? Download the script")) + "</a></p>" +
-                        "<div data-vip-dlhint hidden><p class='vipNode__note'>" + esc(tf("Copy the file to {0}, then run this there:", label)) + "</p><div class='vipCmd'><code id='" + id + "Dl'>sudo sh dunree-floating-ip-" + esc(String(label).replace(/[^A-Za-z0-9_-]/g, "-") || "node") + ".sh</code>" +
-                        "<button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='" + id + "Dl'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div></div>" +
-                        ((sc.guessed || []).length ? "<p class='vipNode__note'><i class='info circle icon' aria-hidden='true'></i> " + esc(tf("Dunree guessed some values for {0}. The script checks them on {0} and stops safely if they are wrong.", label)) + "</p>" : "") +
+                        "<p class='vipNode__note'>" + esc(tf("Then open a terminal on {0} and paste it. It may ask for your login password for that server.", label)) + "</p>" +
+                        "<details class='zx-disclosure vipHow'><summary>" + esc(t("How do I do this?")) + "</summary><div class='zx-disclosure__body'>" +
+                        "<p class='vipNote'>" + esc(t("From your PC, open a terminal and type this, with your own user name instead of yourname. Then paste the script.")) + "</p>" +
+                        "<div class='vipCmd'><code id='" + id + "Ssh'>ssh yourname@" + esc(addr) + "</code><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='" + id + "Ssh'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div>" +
+                        "<p class='vipNote' style='margin-top: var(--zx-space-4);'>" + esc(t("Can't paste? Use a file instead.")) + " <a href='" + VIP + "script?member=" + i + "&download=1' download data-vip-dl='" + i + "'>" + esc(t("Download the script")) + "</a>. " + esc(t("Then, in the folder where it landed, copy it to the server and run it there:")) + "</p>" +
+                        "<div class='vipCmd'><code id='" + id + "Scp'>scp " + esc(file) + " yourname@" + esc(addr) + ":</code><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='" + id + "Scp'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div>" +
+                        "<div class='vipCmd'><code id='" + id + "Dl'>sudo sh " + esc(file) + "</code><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='" + id + "Dl'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div>" +
+                        "<p class='vipNote'>" + esc(t("The second command runs on the server itself, after you log in to it.")) + "</p>" +
+                        "</div></details>" +
+                        ((sc.guessed || []).length ? "<p class='vipNode__note'><i class='info circle icon' aria-hidden='true'></i> " + vipGuessNote(sc, label) + "</p>" : "") +
                         "<details class='zx-disclosure'><summary>" + esc(t("Show details")) + "</summary><div class='zx-disclosure__body'>" +
                         "<p class='vipNote'>" + esc(t("The script writes this file, tests it and starts the service. The file holds the password the servers use to recognise each other, so keep it out of chats and tickets.")) + "</p>" +
                         ((sc.warnings || []).length ? "<ul class='vipNote'>" + sc.warnings.map(function(w){ return "<li>" + esc(cap(w)) + "</li>"; }).join("") + "</ul>" : "") +
@@ -1665,37 +1764,44 @@
             let card = $("#vipNodes .vipNode[data-i=" + n.index + "]"), sc = vipScripts[n.index], v = vipNodeState(n, split);
             let line = "<span aria-hidden='true'><i class='" + v.icon + " icon'></i></span><span><b>" + esc(v.title) + "</b>" + esc(v.text || "") + "</span>";
             let cmd = v.cmd == "probe" ? "sudo -u keepalived_script curl -fsS " + ((sc && sc.healthUrl) || "http://127.0.0.1:8081/.dunree/health") : v.cmd;
-            let fix = cmd ? "<div class='vipCmd'><code id='vipN" + n.index + "Fix'>" + esc(cmd) + "</code><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='vipN" + n.index + "Fix'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div>" : "";
+            let fix = cmd ? "<div class='vipCmd'><code id='vipN" + n.index + "Fix'>" + esc(cmd) + "</code><button type='button' class='zx-btn zx-btn--secondary zx-btn--sm' data-vip-copy='vipN" + n.index + "Fix'><i class='copy icon' aria-hidden='true'></i> " + esc(t("Copy")) + "</button></div>" + (v.after ? "<p class='vipNode__note'>" + esc(v.after) + "</p>" : "") : "";
             card.attr("data-state", n.state).attr("data-tone", v.tone == "ok" || v.tone == "danger" ? v.tone : null);
             let el = card.find("[data-vip-line]");
             if (el.data("h") !== line) el.data("h", line).attr("data-tone", v.tone || null).html(line);
             let fx = card.find("[data-vip-fix]");
             if (fx.data("h") !== fix) fx.data("h", fix).html(fix);
-            card.find("[data-vip-done]").prop("hidden", !v.done);
         });
     }
 
     // ---- step 4: the guided test. The user stops Dunree on the server that answers; the page watches the address move. ----
-    function vipPageHost(){ return (window.ClusterPage && window.ClusterPage.pageHost) || location.hostname; }
+    //the host the page was opened with, without the brackets of an IPv6 address
+    function vipPageHost(){ return String((window.ClusterPage && window.ClusterPage.pageHost) || location.hostname).replace(/^\[|\]$/g, ""); }
+    function vipPageUrl(host){ return location.protocol + "//" + vipHostUrl(host) + (location.port ? ":" + location.port : "") + location.pathname + location.search + location.hash; }
+    //The test stops Dunree on the server that answers. If this page runs on that server, it would stop itself: this server holds the
+    //address, or the page was opened by that server's address or through the floating IP.
+    function vipSelfStops(hold){ return !!hold && (!!hold.self || vipPageHost() == hold.address || vipPageHost() == vipShared().vip); }
     function vipTestEvent(text, cls){ vipTest.events.push({s: Math.round((Date.now() - vipTest.start) / 1000), text: text, cls: cls || ""}); }
     function vipTestEnd(){ if (vipTest) { clearInterval(vipTest.timer); vipTest.over = true; } }
     function vipTestStart(force){
         let nodes = vipNodeList(), hold = nodes.filter(function(n){ return n.state == "holding"; })[0], other = nodes.filter(function(n){ return n !== hold; })[0];
         if (!hold || !other) { msg(t("No server answers on the floating IP right now, so there is nothing to test yet."), true); return; }
-        if (!force && vipPageHost() == hold.address) { vipTestAsk = true; vipRender(); return; }
-        vipTestAsk = false;
+        if (!force && vipSelfStops(hold)) { vipRender(); return; }
         if (vipTest) clearInterval(vipTest.timer);
-        vipTest = {start: Date.now(), from: hold.address, fromName: hold.name, otherName: other.name, toName: "", events: [], last: {}, over: false, took: -1, tookAt: 0, back: false, bad: false, waiting: false, busy: false, timer: null};
+        vipTest = {start: Date.now(), from: hold.address, fromName: hold.name, otherName: other.name, toName: "", events: [], last: {}, over: false, took: -1, tookAt: 0, stoppedAt: 0, failSince: 0, back: false, bad: false, lost: false, timeout: false, waiting: false, busy: false, timer: null};
         nodes.forEach(function(n){ vipTest.last[n.address] = {held: !!n.held && n.state != "unknown", seen: n.state != "unknown"}; });
         vipTestEvent(tf("{0} answers on the floating IP", hold.name));
         vipTest.timer = setInterval(vipTestTick, 1000);
         vipRender();
     }
+    //the time a failover takes: the health check has to fail, then the other server takes the address
+    function vipTestLimit(){ return vipFailSecs(vipShared())[1] + 20; }
     function vipTestObserve(){
         let s = vipShared(), secs = Math.round((Date.now() - vipTest.start) / 1000);
         vipTest.waiting = false;
         vipNodeList().forEach(function(n){
             let was = vipTest.last[n.address] || {}, seen = n.state != "unknown", held = !!n.held && seen;
+            //the clock for "did not take over" starts when the server that answered is first seen to stop
+            if (n.address == vipTest.from && !vipTest.stoppedAt && ((was.seen && !seen) || (was.held && !held))) vipTest.stoppedAt = Date.now();
             if (was.seen && !seen) vipTestEvent(tf("{0} does not answer its health check", n.name));
             if (was.seen === false && seen && n.address == vipTest.from) vipTestEvent(tf("{0} answers again", n.name));
             if (was.held && !held && seen) vipTestEvent(tf("{0} gave up the floating IP", n.name));
@@ -1712,7 +1818,11 @@
             }
             vipTest.last[n.address] = {held: held, seen: seen};
         });
-        if (vipTest.took < 0 && secs > s.health.fall * s.health.interval + s.health.timeout + 20) { vipTest.bad = true; vipTestEvent(tf("{0} did not take over", vipTest.otherName)); vipTestEnd(); }
+        if (vipTest.took < 0) {
+            if (vipTest.stoppedAt && (Date.now() - vipTest.stoppedAt) / 1000 > vipTestLimit()) { vipTest.bad = true; vipTestEvent(tf("{0} did not take over", vipTest.otherName)); vipTestEnd(); }
+            //nobody stopped Dunree: wait for the user, but not forever
+            else if (!vipTest.stoppedAt && secs > 300) { vipTest.timeout = true; vipTestEvent(tf("Dunree was not stopped on {0}", vipTest.fromName)); vipTestEnd(); }
+        }
         //after the move: keep watching for the way back, then stop by itself
         if (vipTest.took >= 0 && !vipTest.over && Date.now() - vipTest.tookAt > ((s.preempt ? s.preemptDelay : 0) + 180) * 1000) vipTestEnd();
     }
@@ -1724,46 +1834,61 @@
         let mine = vipTest;
         $.ajax({url: VIP + "status", method: "GET", cache: false, timeout: 2500, global: false, success: function(d){
             if (mine !== vipTest || !d || d.error) return;
-            vs = $.extend({}, d, {status: d.status || {}});
+            vs = $.extend({}, d, {status: d.status || {}}); vsAt = Date.now(); vsFails = 0; mine.failSince = 0;
             vipTestObserve();
         }, error: function(){
-            //the page may be served by the server that is being stopped, or through the address that is moving: not an error
-            if (mine === vipTest && !mine.waiting) { mine.waiting = true; vipTestEvent(t("Waiting while the floating IP moves..."), "is-wait"); }
+            //the page may be served by the server that is being stopped, or through the address that is moving: not an error at first.
+            //If it stays that way, this page has lost its server: say so and end the test instead of waiting for ever.
+            if (mine !== vipTest || mine.over) return;
+            if (!mine.waiting) { mine.waiting = true; vipTestEvent(t("Waiting while the floating IP moves..."), "is-wait"); }
+            if (!mine.failSince) mine.failSince = Date.now();
+            if ((Date.now() - mine.failSince) / 1000 > vipTestLimit()) { mine.lost = true; vipTestEvent(t("This page lost its server")); vipTestEnd(); }
         }, complete: function(){ mine.busy = false; if (mine === vipTest) vipRender(); }});
     }
     function vipRenderTest(works, nodes){
         let s = vipShared(), on = vipOn(), running = !!(vipTest && !vipTest.over), hold = nodes.filter(function(n){ return n.state == "holding"; })[0], other = nodes.filter(function(n){ return n !== hold; })[0];
         let ready = on && (works != "no" || !!vipTest), dim = !ready;
         let fs = on ? vipFailSecs(s) : [0, 0];
+        //this page runs on the server the test would stop: the callout is all that step 4 shows
+        let selfStops = !dim && !vipTest && !!hold && !!other && vipSelfStops(hold);
         $("#vipStep4").toggleClass("is-dim", dim).attr("aria-disabled", dim ? "true" : null);
         $("#vipStep4Desc").text(!on ? (vc.exists && !s.enabled ? t("Switch the floating IP on first.") : t("Finish step 3 first."))
             : dim ? t("Finish step 3 first: every server has to be running before you can test.")
-            : vipTest ? tf("Stop Dunree on {0} and watch {1} take over. It takes about {2} seconds and proves that the floating IP works.", vipTest.fromName, vipTest.otherName, fs[1])
-            : hold && other ? tf("Stop Dunree on {0} and watch {1} take over. It takes about {2} seconds and proves that the floating IP works.", hold.name, other.name, fs[1])
+            : selfStops ? tf("The test stops Dunree on {0}. This page runs there, so run the test from {1}.", hold.name, other.name)
+            : vipTest ? tf("Stop Dunree on {0} and watch {1} take over. It takes about {2} seconds and shows that {1} takes over the address.", vipTest.fromName, vipTest.otherName, fs[1])
+            : hold && other ? tf("Stop Dunree on {0} and watch {1} take over. It takes about {2} seconds and shows that {1} takes over the address.", hold.name, other.name, fs[1])
             : t("Stop Dunree on the server that answers and watch the other one take over."));
-        $("#vipTestBtn").prop("hidden", dim || running).html("<i class='play icon' aria-hidden='true'></i> " + esc(vipTest || vipTested() ? t("Test again") : t("Start the test")));
+        $("#vipTestBtn").prop("hidden", dim || running || selfStops).html("<i class='play icon' aria-hidden='true'></i> " + esc(vipTest || vipTested() ? t("Test again") : t("Start the test")));
         $("#vipTestStop").prop("hidden", !running);
-        $("#vipStep4Body").prop("hidden", dim || !(vipTest || vipTestAsk));
-        $("#vipTestSelf").prop("hidden", !(vipTestAsk && hold && other));
-        if (vipTestAsk && hold && other) {
-            let port = location.port ? ":" + location.port : "", tail = location.pathname + location.search + location.hash;
+        $("#vipStep4Body").prop("hidden", dim || !(vipTest || selfStops));
+        $("#vipTestSelf").prop("hidden", !selfStops);
+        if (selfStops) {
             $("#vipTestSelfTitle").text(tf("You are about to stop Dunree on {0}, which runs this page.", hold.name));
-            $("#vipTestSelfText").text(tf("Open this page on {0} or through the floating IP, then start the test there. {0} asks for its own login unless the servers are linked.", other.name));
-            $("#vipTestOther").attr("href", location.protocol + "//" + other.address + port + tail).text(tf("Open this page on {0}", other.name));
-            $("#vipTestVip").attr("href", location.protocol + "//" + s.vip + port + tail).text(tf("Open it through {0}", s.vip));
+            $("#vipTestSelfText").text(tf("Open this page on {0} and run the test from there. You may have to log in to Dunree on {0} first, unless the servers are linked.", other.name));
+            $("#vipTestOther").attr("href", vipPageUrl(other.address)).text(tf("Open this page on {0} to run the test", other.name));
         }
         $("#vipTestRun").prop("hidden", !vipTest);
         if (!vipTest) return;
         $("#vipTestRunOn").text(tf("Run this on {0} now:", vipTest.fromName));
         $("#vipTestCmd").text("sudo systemctl stop dunree");
+        let waitingStop = !vipTest.over && vipTest.took < 0 && !vipTest.stoppedAt;
+        $("#vipTestWait").prop("hidden", !waitingStop).text(tf("Waiting for you to stop Dunree on {0}...", vipTest.fromName));
         setHtml("#vipTestLog", vipTest.events.map(function(e){ return "<li class='" + e.cls + "'><span>" + esc(tf("{0} s", e.s)) + "</span><span>" + esc(e.text) + "</span></li>"; }).join(""));
-        let good = vipTest.took >= 0, bad = vipTest.bad;
-        $("#vipTestResult").prop("hidden", !(good || bad)).attr("data-kind", bad ? "bad" : "ok").find("> i.icon").attr("class", (bad ? "times circle" : "check circle") + " icon");
+        let good = vipTest.took >= 0, bad = vipTest.bad || vipTest.lost || vipTest.timeout;
+        $("#vipTestResult").prop("hidden", !(good || bad)).attr("data-kind", bad && !good ? "bad" : "ok").find("> i.icon").attr("class", (bad && !good ? "times circle" : "check circle") + " icon");
         if (good) {
             $("#vipTestResultTitle").text(tf("It worked: {0} took over after {1} seconds.", vipTest.toName, vipTest.took));
             $("#vipTestResultText").text(vipTest.back ? tf("{0} is healthy again and took the floating IP back. The test is finished.", vipTest.fromName)
                 : tf("Now start Dunree again on {0}.", vipTest.fromName) + " " + (s.preempt ? tf("{0} takes the floating IP back about {1} after it is healthy.", vipTest.fromName, vipDur(s.preemptDelay)) : tf("{0} keeps the floating IP until it has a problem itself.", vipTest.toName)));
             $("#vipTestStartRow").prop("hidden", vipTest.back); $("#vipTestStartCmd").text("sudo systemctl start dunree");
+        } else if (vipTest.lost) {
+            $("#vipTestResultTitle").text(t("This page lost its server."));
+            $("#vipTestResultText").text(tf("The server this page runs on stopped answering, so the page cannot see the rest. Open this page on {0} to see whether it took over. Start Dunree again on {1} with: sudo systemctl start dunree", vipTest.otherName, vipTest.fromName));
+            $("#vipTestStartRow").prop("hidden", false); $("#vipTestStartCmd").text("sudo systemctl start dunree");
+        } else if (vipTest.timeout) {
+            $("#vipTestResultTitle").text(t("The test timed out."));
+            $("#vipTestResultText").text(tf("Dunree was not stopped on {0} within 5 minutes. Start the test again when you are ready.", vipTest.fromName));
+            $("#vipTestStartRow").prop("hidden", true);
         } else if (bad) {
             $("#vipTestResultTitle").text(tf("{0} did not take over.", vipTest.otherName));
             $("#vipTestResultText").text(tf("Check that you ran the command on {0} and that Dunree really stopped there. If it did, look at the card of {1} in step 3: it says what is wrong. Start Dunree again on {0} with: sudo systemctl start dunree", vipTest.fromName, vipTest.otherName));
@@ -1797,24 +1922,39 @@
         let off = vc.exists && !s.enabled, nodes = on ? vipNodeList() : [], works = on ? vipWorks(nodes) : "no";
         $("#vipStep3").toggleClass("is-dim", !on).attr("aria-disabled", on ? null : "true");
         $("#vipStep3Desc").text(off ? t("Switch the floating IP on first.") : !on ? t("Finish step 2 first.")
-            : t("The password the two servers use to recognise each other is already inside each script. You never type it. Dunree changes nothing on your servers itself: you paste each script into a terminal on its server."));
+            : t("Dunree changes nothing on your servers itself: you paste each script into a terminal on its server."));
         $("#vipStep3Body").prop("hidden", !on);
+        let selfBlock = !!(vc.exists && vc.effective && vc.effective.error);
+        $("#vipStep3Note").prop("hidden", !(on && selfBlock)).text(tf("The scripts for {0} are fine. This server simply is not one of them: copy each script to its own server.", vipNameList(nodes)));
+        $("#vipStale").prop("hidden", !(on && vipStale()));
+        if (on && vipStale()) $("#vipStaleText").text(tf("Last update {0} seconds ago, so what you see may be old. Reload the page. If it stays like this, Dunree is not running on this server.", Math.round((Date.now() - vsAt) / 1000)));
         if (on) vipLoadScripts(false);
         vipRenderNodes();
         vipRenderTest(works, nodes);
         let mainAddr = vipMainAddr();
-        $("#vipStep5").toggleClass("is-dim", !on).attr("aria-disabled", on ? null : "true");
-        $("#vipFwTitle").text(s.vip ? tf("Point your firewall at {0}", s.vip) : t("Point your firewall at the floating IP"));
-        $("#vipFwText").text(off ? t("Switch the floating IP on first.") : !on ? t("Finish step 2 first.")
-            : tf("In your router or firewall, change the port forward for ports 80 and 443 so it goes to {0} instead of {1}. In UniFi: Settings > Security > Port Forwarding. Example: public 203.0.113.5:443 goes to {0}:443. It stays the same when the servers switch.", s.vip, mainAddr));
-        $("#vipFwBody").prop("hidden", !on);
+        //Step 5 opens only when one server answers and the test passed. Before that, sending visitors to the floating IP could take the site offline.
+        let fwOpen = on && works != "no" && vipTested();
+        $("#vipStep5").toggleClass("is-dim", !fwOpen).attr("aria-disabled", fwOpen ? null : "true");
+        $("#vipFwTitle").text(s.vip ? tf("Send visitors to {0} (port forward on your router)", s.vip) : t("Send visitors to the floating IP (port forward on your router)"));
+        $("#vipFwText").text(off ? t("Switch the floating IP on first.") : !on ? t("Finish step 2 first.") : !fwOpen ? t("Finish step 4 first: test it before you send visitors to the floating IP.")
+            : tf("In your router, change the port forward for ports 80 and 443 so it goes to {0} instead of {1}. In UniFi: Settings > Security > Port Forwarding. Example: public 203.0.113.5:443 goes to {0}:443. It stays the same when the servers switch.", s.vip, mainAddr));
+        $("#vipFwBody").prop("hidden", !fwOpen);
         $("#vipFwTick").prop("checked", vipFwDone());
+        //the port forward was changed (ticked), but no server answers on the floating IP for a while: the site is down
+        let none = on && nodes.some(function(n){ return n.state != "unknown"; }) && !nodes.some(function(n){ return n.held && n.state != "unknown"; });
+        if (none && vipFwDone()) { if (!vipDownSince) vipDownSince = Date.now(); } else vipDownSince = 0;
+        let down = !!vipDownSince && Date.now() - vipDownSince >= (s.health.fall * s.health.interval + 5) * 1000;
+        $("#vipFwDownBox").prop("hidden", !down);
+        if (down) {
+            $("#vipFwDownTitle").text(tf("Your router sends visitors to {0} but no server answers there.", s.vip));
+            $("#vipFwDownText").text(tf("Your site is down. Set the port forward back to {0} until this is fixed.", mainAddr));
+        }
         vipRenderLocal(); vipRenderChecks(); vipRenderFacts(); vipRenderGuide();
         //the checks run by themselves once when the section opens (they count towards the limit of 6 a minute)
         if (on && !vipEditing && !vipChecks && !vipCheckBusy && !vipAutoChecked) vipRunChecks();
         if (st) renderStatus(st);
     }
-    function vipSetStatus(d){ vs = $.extend({}, d, {status: d.status || {}}); vipTrackHolder(); }
+    function vipSetStatus(d){ vs = $.extend({}, d, {status: d.status || {}}); vsAt = Date.now(); vsFails = 0; vipTrackHolder(); }
     function vipLoad(then){
         let left = 2, done = function(){ if (--left == 0) { vipRender(); then && then(); } };
         $.ajax({url: VIP + "config", method: "GET", cache: false, success: function(d){ if (d && !d.error) vc = d; }, error: fail, complete: done});
@@ -1825,7 +1965,8 @@
     function vipPoll(){
         if (vipStatusBusy || !vipOn() || (vipTest && !vipTest.over)) return;
         vipStatusBusy = true;
-        $.ajax({url: VIP + "status", method: "GET", cache: false, global: false, success: function(d){ if (d && !d.error && !(vipTest && !vipTest.over)) { vipSetStatus(d); vipRender(); } }, complete: function(){ vipStatusBusy = false; }});
+        $.ajax({url: VIP + "status", method: "GET", cache: false, global: false, success: function(d){ if (d && !d.error && !(vipTest && !vipTest.over)) { vipSetStatus(d); vipRender(); } },
+            error: function(){ vsFails++; if (vipStale()) vipRender(); }, complete: function(){ vipStatusBusy = false; }});
     }
     function vipOpenForm(focus, keepPlace){
         if (!vc || !vc.sharedEditable) return;
@@ -1874,6 +2015,13 @@
         case "test": document.getElementById("vipStep4").scrollIntoView({block: "start", behavior: "smooth"}); vipTestStart(false); break;
         case "link": el = $("#clRoleChoice").closest(".zx-card")[0]; if (el) { el.scrollIntoView({block: "start", behavior: "smooth"}); $("#clRoleChoice input:checked").trigger("focus"); } break;
         case "allow": case "health": vipFixHealth(p[0]); break;
+        case "dropprio": {
+            let l = vc.local || {};
+            $.cjax({method: "POST", url: VIP + "local", data: {config: JSON.stringify({interface: l.interface || "", sourceAddress: l.sourceAddress || "", priorityOverride: 0, healthTarget: l.healthTarget && l.healthTarget != "auto" ? l.healthTarget : ""})}, success: function(d){
+                if (d && d.error) { msg(d.error, true); return; }
+                vipScriptKey = ""; msg(t("The priority of this server follows step 1 again.")); vipLoad(function(){ if (vipOn()) vipRunChecks(); });
+            }, error: fail});
+            break; }
         case "recheck": vipRunChecks(); break;
         case "copy": {
             let i = parseInt(p[1], 10), sc = vipScripts[i], card = $("#vipNodes .vipNode[data-i=" + i + "]"), name = sc && sc.title ? sc.title.label : "";
@@ -1966,11 +2114,10 @@
     });
     $("#vipCheckBtn").on("click", vipRunChecks);
     $("#vipBeforeShow").on("click", function(){ vipBeforeOpen = !vipBeforeOpen; vipRenderGuide(); });
-    $("#vipFwTick").on("change", function(){ lsSet("dunree.vip.fw." + (vipShared().vip || ""), $(this).is(":checked") ? "1" : null); vipRenderGuide(); });
+    $("#vipFwTick").on("change", function(){ lsSet("dunree.vip.fw." + (vipShared().vip || ""), $(this).is(":checked") ? "1" : null); vipRender(); });
     $("#vipTestBtn").on("click", function(){ vipTestStart(false); });
     $("#vipTestAnyway").on("click", function(){ vipTestStart(true); });
-    $("#vipTestStop").on("click", function(){ if (vipTest) clearInterval(vipTest.timer); vipTest = null; vipTestAsk = false; vipRender(); });
-    $("#vipWrap").on("click", "[data-vip-dl]", function(){ $(this).closest(".vipNode").find("[data-vip-dlhint]").prop("hidden", false); });
+    $("#vipTestStop").on("click", function(){ if (vipTest) clearInterval(vipTest.timer); vipTest = null; vipRender(); });
     $("#vipWrap").on("click", "[data-vip-copy]", function(){
         let pre = document.getElementById($(this).attr("data-vip-copy"));
         if (pre) vipCopyText(pre.textContent, function(){ msg(t("Copied")); }, pre);
@@ -1979,9 +2126,12 @@
     window.ClusterPage = {pageHost: "", reload: function(){
         if (vipTest) clearInterval(vipTest.timer);
         vipEditing = false; vipChecks = null; vipCheckNote = ""; vipCheckBusy = false; vipAutoChecked = false; vipScripts = {}; vipScriptKey = ""; vipCardsKey = ""; vipLocalDirty = false; vipNics = null; vipSug = null;
-        vipTest = null; vipTestAsk = false; vipHolderLog = []; vipLastHolder = ""; vipNobodySince = 0; vipBeforeOpen = false; vipFillKey = ""; vipHtml = {};
+        vipTest = null; vipHolderLog = []; vipLastHolder = ""; vipNobodySince = 0; vipDownSince = 0; vsAt = 0; vsFails = 0; vipBeforeOpen = false; vipFillKey = ""; vipHtml = {};
         load();
-    }, poll: function(){ vipPoll(); }};
+    }, poll: function(){ vipPoll(); },
+    //for the UI smoke: make the clocks of the test and of the status older, instead of waiting minutes
+    skew: function(ms){ if (vipTest) { vipTest.start -= ms; if (vipTest.stoppedAt) vipTest.stoppedAt -= ms; if (vipTest.tookAt) vipTest.tookAt -= ms; if (vipTest.failSince) vipTest.failSince -= ms; } },
+    ageStatus: function(ms){ vsAt -= ms; }};
 
     load();
     timer = setInterval(function(){

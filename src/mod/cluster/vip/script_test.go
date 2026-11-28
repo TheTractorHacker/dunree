@@ -288,11 +288,15 @@ func newSandbox(t *testing.T) *sandbox {
 		os.WriteFile(filepath.Join(dir, name), []byte("#!"+sh+"\n"+body), 0o755)
 	}
 	log := `echo "${0##*/} $*" >> "$ST/calls.log"` + "\n"
+	// countok NAME: succeeds unless the flag file ST/NAME asks for a failure. An empty file fails every time, a number fails that many times.
+	os.WriteFile(filepath.Join(b.st, "countok"), []byte("#!"+sh+"\n"+`f="$ST/$1"; [ -f "$f" ] || exit 0; n=$(cat "$f"); [ -n "$n" ] || exit 1; if [ "$n" -gt 0 ]; then echo $((n - 1)) > "$f"; exit 1; fi; exit 0`+"\n"), 0o755)
 	stub(b.bin, "id", log+`case "$*" in "-u") cat "$ST/uid" 2>/dev/null || echo 0;; *) [ -f "$ST/has-user" ];; esac`+"\n")
 	stub(b.bin, "ip", log+`case "$*" in
 "-o addr show dev "*) awk -v d="$5" '$2==d' "$ST/ip-addr.txt";;
 "-o addr show") cat "$ST/ip-addr.txt";;
 "-o link show dev "*) awk -v d="$5" '$2==d{f=1} END{exit !f}' "$ST/ip-addr.txt";;
+"-o route show default") cat "$ST/ip-route4.txt" 2>/dev/null;;
+"-o -6 route show default") cat "$ST/ip-route6.txt" 2>/dev/null;;
 *) exit 2;;
 esac
 `)
@@ -304,7 +308,7 @@ esac
 	stub(b.bin, "journalctl", log+`echo "keepalived: auth_pass `+testPass+` in a log line"`+"\n")
 	stub(b.bin, "systemctl", log+`case "$1" in
 is-active) [ -f "$ST/active" ];;
-restart|start) if [ -f "$ST/fail-start" ]; then exit 1; fi; : > "$ST/active"; if [ -f "$ST/will-hold" ]; then cat "$ST/vip-line" >> "$ST/ip-addr.txt"; fi;;
+restart|start) if ! "$ST/countok" fail-start; then rm -f "$ST/active"; exit 1; fi; : > "$ST/active"; if [ -f "$ST/will-hold" ]; then cat "$ST/vip-line" >> "$ST/ip-addr.txt"; fi;;
 *) :;;
 esac
 `)
@@ -314,7 +318,7 @@ esac
 		stub(d, "keepalived", kaBody)
 		stub(d, "curl", "")
 	}
-	stub(b.bin, "ufw", log+`case "$1" in status) if [ -f "$ST/ufw-active" ]; then echo "Status: active"; else echo "Status: inactive"; fi;; reload) [ ! -f "$ST/ufw-fail" ];; esac`+"\n")
+	stub(b.bin, "ufw", log+`case "$1" in status) if [ -f "$ST/ufw-active" ]; then echo "Status: active"; else echo "Status: inactive"; fi;; reload) "$ST/countok" ufw-fail;; esac`+"\n")
 	stub(b.bin, "firewall-cmd", log+`case "$1" in --state) [ -f "$ST/fwd" ];; --permanent) case "$2" in --query-rich-rule=*) [ -f "$ST/fwd-has" ];; *) :;; esac;; *) :;; esac`+"\n")
 	inst := `cp "$ST/pkgs/"* "` + b.bin + `/"`
 	stub(b.bin, "apt-get", log+`case "$1" in update) [ ! -f "$ST/pkg-fail" ];; install) `+inst+`;; esac`+"\n")
