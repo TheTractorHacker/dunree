@@ -4,7 +4,7 @@ Dunree is a reverse proxy and web gateway published by Foley IT under AGPL-3.0. 
 
 This file has two parts. The first part is the Dunree version line, which starts at v1.0.0-beta.1. The second part is the change log of Zoraxy as its authors wrote it, kept unchanged as the history of the code Dunree is built on.
 
-# Dunree v1.0.0-beta.3 (unreleased)
+# Dunree v1.0.0-beta.3
 
 **Cluster / HA: floating IP, a simpler guided setup**
 
@@ -38,7 +38,7 @@ This file has two parts. The first part is the Dunree version line, which starts
 + The pasted block starts with a space, so bash with `HISTCONTROL=ignorespace` keeps the VRRP password out of its history.
 + A per-server priority under Show details that contradicts the main server of step 1 is reported (warning row with "Remove it", warning in the script) and the other server's override is used for its script.
 
-# Dunree v1.0.0-beta.2 (unreleased)
+# Dunree v1.0.0-beta.2
 
 **Cluster / HA: floating IP (keepalived)**
 

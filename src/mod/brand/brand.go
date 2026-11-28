@@ -25,7 +25,7 @@ const (
 
 	// Version is the Dunree version of this source tree. The Dunree version line
 	// starts at 1.0.0-beta.1; it is not the Zoraxy version the code is based on.
-	Version = "1.0.0-beta.2"
+	Version = "1.0.0-beta.3"
 
 	// BasedOnName, BasedOnVersion and BasedOnAuthors name the work Dunree is
 	// derived from. They are attribution and must stay.

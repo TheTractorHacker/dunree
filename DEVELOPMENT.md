@@ -33,7 +33,7 @@ Properties worth knowing:
   the badge in the top bar and a notification. There is **no automatic update**.
 * **Channels:** `stable` (default; final releases only: no GitHub pre-release flag and no pre-release part in the
   tag) and `beta` (also includes pre-releases).
-* **Two version numbers.** `PRODUCT_VERSION` (`mod/brand` `Version`, today `1.0.0-beta.2`) is the Dunree version:
+* **Two version numbers.** `PRODUCT_VERSION` (`mod/brand` `Version`, today `1.0.0-beta.3`) is the Dunree version:
   `-version`, the start-up log, About, the API and the updater use it. `COMPAT_VERSION` (`mod/brand`
   `BasedOnVersion`, `3.3.6`) is the version of the code base Dunree is derived from; it feeds only the config
   migrations (`conf/version`, 336), the version field of configuration backups and what plugins built with the
